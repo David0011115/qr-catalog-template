@@ -389,6 +389,20 @@ body {
 .skin { background: var(--row); border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .skin.locked { opacity: .55; }
 .sw { width: 48px; height: 48px; border-radius: 50%; position: relative; }
+/* glint on epic and legendary skin swatches (stays inside the circle, crown above is not clipped) */
+.sw.shine::before { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.85) 50%, transparent 62%); background-size: 260% 100%; animation: swShine 2.8s linear infinite; }
+.sw.shine.leg::before { background-image: linear-gradient(115deg, transparent 36%, rgba(255,242,176,.95) 50%, transparent 64%); animation-duration: 1.8s; }
+@keyframes swShine { 0% { background-position: 130% 0; } 60%, 100% { background-position: -40% 0; } }
+@media (prefers-reduced-motion: reduce) { .sw.shine::before { animation: none; background-position: 50% 0; } }
+.sw .hi { position: absolute; top: -19px; left: 50%; transform: translateX(-50%); width: 22px; height: 22px; filter: drop-shadow(0 0 4px rgba(255,255,255,.5)); }
+.reveal .sw .hi { top: -22px; width: 26px; height: 26px; }
+.sw .hi svg { width: 100%; height: 100%; display: block; }
+.sw.shine.bolt::before { background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 48'><path d='M12 0 L3 24 L10 24 L5 48 L17 18 L10 18 L15 0 Z' fill='white'/></svg>") no-repeat;
+  background-size: 34% 90%; animation: swBolt 2.4s linear infinite; }
+.sw.shine.bolt.leg::before { animation-duration: 1.7s; filter: sepia(1) saturate(3) brightness(1.6); }
+@keyframes swBolt { 0% { background-position: -30% 50%; opacity: 0; } 8% { opacity: 1; } 30% { background-position: 130% 50%; opacity: 1; } 31%, 100% { background-position: 130% 50%; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sw.shine.bolt::before { animation: none; opacity: 1; background-position: 50% 50%; } }
 .sw.crown::after { content: "♛"; position: absolute; top: -16px; left: 50%; transform: translateX(-50%); color: var(--gold); font-size: 1.1rem; }
 .skin .name { font-weight: 600; font-size: .88rem; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
@@ -748,7 +762,15 @@ body {
     { id: 'heartEat',     slot: 'eat',   name: 'Сердечки',       desc: 'Из добычи вылетают сердечки',       price: 200, lvl: 2 },
     { id: 'shockEat',     slot: 'eat',   name: 'Ударная волна',  desc: 'Кольцо расходится от добычи',       price: 300, lvl: 3 },
     { id: 'boltEat',      slot: 'eat',   name: 'Молнии',         desc: 'Вспышка с молниями',                price: 350, lvl: 4 },
-    { id: 'starfall',     slot: 'eat',   name: 'Звездопад',      desc: 'Россыпь золотых звёзд',             ex: true },
+    // premium shop effects (final price = base × 6: from 3600 up to 12 000 ◆)
+    { id: 'cometTrail',   slot: 'trail', name: 'Кометный хвост',       desc: 'Длинная лента белого, голубого и фиолетового', colors: ['#ffffff', '#22e6ff', '#b26bff'], style: 'ribbon', price: 600,  lvl: 8 },
+    { id: 'galaxyTrail',  slot: 'trail', name: 'Галактическая пыль',   desc: 'Звёзды глубокого фиолетового, бирюзового и золотого',             colors: ['#6a3dff', '#2ee6c8', '#ffd23f'], style: 'stars',  price: 1000, lvl: 10 },
+    { id: 'quantumTrail', slot: 'trail', name: 'Квантовая спираль',    desc: 'Спираль из зелёных, фиолетовых и белых искр', colors: ['#3dffa2', '#7b3dff', '#ffffff'], style: 'spiral', price: 1500, lvl: 12 },
+    { id: 'starveilTrail', slot: 'trail', name: 'Звёздный шлейф',      desc: 'Золотые, фиолетовые и оранжевые кольца за каплей',     colors: ['#ffd23f', '#b26bff', '#ff9a3d'], style: 'rings',  price: 2000, lvl: 15 },
+    { id: 'prismAura',    slot: 'aura',  name: 'Призма',               desc: 'Шесть радужных огней на наклонной орбите', price: 1200, lvl: 11 },
+    { id: 'starAura',     slot: 'aura',  name: 'Созвездие',            desc: 'Два кольца золотых звёзд вращаются навстречу', price: 2000, lvl: 15 },
+    { id: 'prismEat',     slot: 'eat',   name: 'Призматический взрыв', desc: 'Радужная вспышка и три волны',             price: 1500, lvl: 12 },
+    { id: 'goldEat',      slot: 'eat',   name: 'Золотой дождь',        desc: 'Ливень золотых звёзд и золотая волна',     price: 2000, lvl: 15 },    { id: 'starfall',     slot: 'eat',   name: 'Звездопад',      desc: 'Россыпь золотых звёзд',             ex: true },
     { id: 'supernova',    slot: 'eat',   name: 'Сверхновая',     desc: 'Яркий взрыв и две ударные волны',   ex: true },
     { id: 'snowTrail',    slot: 'trail', name: 'Снежинки',       desc: 'Белые и голубые снежинки',          ex: true },
     { id: 'sparkTrail',   slot: 'trail', name: 'Разряды',        desc: 'Быстрые бело-голубые искры',        ex: true },
@@ -801,10 +823,11 @@ body {
     { id: 'blackhole', name: 'Чёрная дыра', color: '#000000', accent: '#ff4fd8', pattern: 'rings', glow: true, price: 2000, lvl: 14 },
     { id: 'lc_shield',  name: 'Лиговый щит',       color: '#c0c8e0', accent: '#4d7cff', pattern: 'stripes', glow: true, lchest: 'common' },
     { id: 'lc_cup',     name: 'Чемпионский кубок', color: '#ffd23f', accent: '#ff9a3d', pattern: 'gradient', glow: true, crown: true, lchest: 'rare' },
-    { id: 'lc_diamond', name: 'Рейтинговый алмаз', color: '#b26bff', accent: '#e8fbff', pattern: 'grid', pulse: true, glow: true, lchest: 'epic' },
-    { id: 'lc_absolute', name: 'Абсолют',          color: '#ff4fd8', rainbow: true, glow: true, crown: true, lchest: 'legendary' },
+    { id: 'lc_diamond', name: 'Рейтинговый алмаз', color: '#b26bff', accent: '#e8fbff', pattern: 'grid', pulse: true, glow: true, head: 'gem', shine: 'bolt', lchest: 'epic' },
+    { id: 'lc_absolute', name: 'Абсолют',          color: '#ff4fd8', accent: '#ffd23f', pattern: 'stars', holo: true, holoBase: .9, holoSpan: .115, glow: true, head: 'halo', lchest: 'legendary' },
   ];
-  [...SKINS, ...FX].forEach(x => { if (x.price) x.price *= PRICE_MULT; });
+  const COSMETIC_MULT = 3;   // skins and effects cost 3x more on top of the general shop multiplier
+  [...SKINS, ...FX].forEach(x => { if (x.price) x.price *= PRICE_MULT * COSMETIC_MULT; });
   // rarities for chest loot; a duplicate turns into coins
   const RARITY = {
     common:    { name: 'Обычный',     color: '#b8b5d6', dup: 100,  w: 60 },
@@ -820,11 +843,11 @@ body {
     { id: 'c_circuit',  name: 'Микросхема',    color: '#002b1f', accent: '#ffd23f', pattern: 'grid', glow: true, chest: 'rare' },
     { id: 'c_nebula',   name: 'Туманность',    color: '#2a0a4a', accent: '#ff9ef2', pattern: 'stars', glow: true, chest: 'rare' },
     { id: 'c_neontiger',name: 'Неон-тигр',     color: '#ff4fd8', accent: '#120020', pattern: 'zigzag', glow: true, chest: 'rare' },
-    { id: 'c_lavalamp', name: 'Лава-лампа',    color: '#ff3d6e', accent: '#7b3dff', pattern: 'gradient', pulse: true, glow: true, chest: 'epic' },
-    { id: 'c_chameleon',name: 'Хамелеон',      color: '#3dffa2', holo: true, glow: true, chest: 'epic' },
-    { id: 'c_solar',    name: 'Солнечная вспышка', color: '#fff6a0', accent: '#ff6a00', pattern: 'gradient', pulse: true, glow: true, chest: 'epic' },
-    { id: 'c_diamond',  name: 'Бриллиант',     color: '#e8fbff', accent: '#9fd8ff', pattern: 'grid', pulse: true, glow: true, crown: true, chest: 'legendary' },
-    { id: 'c_starborn', name: 'Звездорождённый', color: '#ff4fd8', rainbow: true, glow: true, crown: true, chest: 'legendary' },
+    { id: 'c_lavalamp', name: 'Лава-лампа',    color: '#ff3d6e', accent: '#7b3dff', pattern: 'gradient', pulse: true, glow: true, head: 'horns', chest: 'epic' },
+    { id: 'c_chameleon',name: 'Хамелеон',      color: '#3dffa2', holo: true, glow: true, head: 'antenna', shine: 'bolt', chest: 'epic' },
+    { id: 'c_solar',    name: 'Солнечная вспышка', color: '#fff6a0', accent: '#ff6a00', pattern: 'gradient', pulse: true, glow: true, head: 'flame', chest: 'epic' },
+    { id: 'c_diamond',  name: 'Бриллиант',     color: '#e8fbff', accent: '#9fd8ff', pattern: 'grid', pulse: true, glow: true, head: 'star', chest: 'legendary' },
+    { id: 'c_starborn', name: 'Звездорождённый', color: '#ff4fd8', rainbow: true, glow: true, head: 'wings', shine: 'bolt', chest: 'legendary' },
   );
   FX.push(
     { id: 'leafTrail',     slot: 'trail', name: 'Листопад',          desc: 'Зелёные и жёлтые листья', chest: 'common' },
@@ -1361,8 +1384,36 @@ body {
     }
     return (texCache[s.id] = new THREE.CanvasTexture(cv));
   }
-  function applySkin(vis) {
-    const s = skin(), m = vis.mesh.material;
+  // a glint that sweeps over epic and legendary skins
+  const isShiny = k => ['epic', 'legendary'].includes(k.chest || k.lchest);
+  const HEAD_SVG = {
+    flame: '<path d="M12 2c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3-1-3 0-5 0-7z" fill="#ff9a3d"/><path d="M12 11c1 2 3 3 3 5a3 3 0 0 1-6 0c0-1 1-2 1.5-3 .5 1 1 1.5 1.5 1.5-.5-1.5 0-2.5 0-3.5z" fill="#ffd23f"/>',
+    antenna: '<path d="M9 23 L6 7 M15 23 L18 7" stroke="#3dffa2" stroke-width="2" fill="none"/><circle cx="6" cy="5" r="3" fill="#b9ff3d"/><circle cx="18" cy="5" r="3" fill="#b9ff3d"/>',
+    halo: '<ellipse cx="12" cy="12" rx="10" ry="4.5" fill="none" stroke="#ffd23f" stroke-width="3"/>',
+    gem: '<path d="M12 2 L20 10 L12 22 L4 10 Z" fill="#b26bff" stroke="#e8fbff" stroke-width="1.2"/><path d="M4 10 L20 10 M12 2 L9 10 L12 22 L15 10 Z" fill="none" stroke="#e8fbff" stroke-width=".8"/>',
+    star: '<path d="M12 2 l3 7 7.4.6-5.6 4.8 1.8 7.4L12 17.8l-6.6 4 1.8-7.4L1.6 9.6 9 9z" fill="#ffd23f"/>',
+    horns: '<path d="M4 21 C3 13 5 7 9 3 C8 9 9 15 11 21 Z M20 21 C21 13 19 7 15 3 C16 9 15 15 13 21 Z" fill="#ff3d6e"/>',
+    wings: '<path d="M12 15 C8 6 3 6 1 9 C4 10 6 14 12 17 Z M12 15 C16 6 21 6 23 9 C20 10 18 14 12 17 Z" fill="#ffffff"/>',
+  };
+  const swClass = k => `sw ${k.crown ? 'crown' : ''} ${isShiny(k) ? 'shine' + ((k.chest || k.lchest) === 'legendary' ? ' leg' : '') + (k.shine === 'bolt' ? ' bolt' : '') : ''}`;
+  const headIcon = k => k.head ? `<i class="hi" aria-hidden="true"><svg viewBox="0 0 24 24">${HEAD_SVG[k.head]}</svg></i>` : '';
+  const shineT = { value: 0 }, shineMats = {};
+  const shineMat = (leg, bolt) => shineMats[+leg + 2 * bolt] || (shineMats[+leg + 2 * bolt] = new THREE.ShaderMaterial({
+    uniforms: { uT: shineT, uMode: { value: bolt ? 1 : 0 },
+      uCol: { value: new THREE.Color(bolt ? (leg ? '#fff6c8' : '#bff6ff') : (leg ? '#fff2b0' : '#ffffff')) },
+      uSpeed: { value: bolt ? (leg ? 1.3 : 1) : (leg ? .75 : .45) }, uPow: { value: bolt ? (leg ? 2.8 : 2.2) : (leg ? 2.2 : 1.6) } },
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: 'varying vec3 vN; void main(){ vN = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    // uMode 0 = soft stripe, 1 = jagged flickering lightning bolt
+    fragmentShader: 'uniform float uT; uniform vec3 uCol; uniform float uSpeed; uniform float uPow; uniform float uMode; varying vec3 vN;' +
+      'void main(){ float d = dot(vN, normalize(vec3(1., .25, .2))); float q = vN.y + vN.z * .5;' +
+      ' float zig = (abs(fract(q * 2.5) - .5) - .25) * .45 * uMode; float p = mod(uT * uSpeed, 2.6) - 1.3; float w = mix(.2, .07, uMode);' +
+      ' float b = pow(smoothstep(w, 0., abs(d + zig - p)), 1.5) * uPow;' +
+      ' b *= mix(1., .4 + .6 * step(.3, fract(sin(floor(uT * 16.) * 12.9898) * 43758.5453)), uMode); gl_FragColor = vec4(uCol * b, b); }',
+  }));
+  const shineGeo = new THREE.SphereGeometry(1.025, 32, 24);
+  function applySkin(vis, s = skin()) {
+    const m = vis.mesh.material;
     m.map = skinTex(s);
     m.emissiveMap = skinTex(s);
     m.color.set(s.pattern ? '#ffffff' : s.color);
@@ -1371,8 +1422,48 @@ body {
     vis.glow.material.color.set(s.color);
     vis.glow.material.opacity = s.glow ? 1 : .85;
     m.needsUpdate = true;
+    vis.look = s;
     vis.crown.visible = !!s.crown;
+    if (isShiny(s)) {
+      const mat = shineMat((s.chest || s.lchest) === 'legendary', s.shine === 'bolt');
+      if (!vis.shine) { vis.shine = new THREE.Mesh(shineGeo, mat); vis.mesh.add(vis.shine); }
+      vis.shine.material = mat; vis.shine.visible = true;
+    } else if (vis.shine) vis.shine.visible = false;
+    if (vis.head) { vis.mesh.remove(vis.head); vis.head = null; }
+    if (s.head) { vis.head = buildHead(s.head); vis.mesh.add(vis.head); }
     vis.ring.material.color.set(0xffffff);
+  }
+  // items above the head for epic and legendary skins (the crown stays for the others)
+  function buildHead(type) {
+    const g = new THREE.Group(); g.userData.type = type;
+    // the camera looks from above, so shift items back (they read as "above the head" on screen) and enlarge them
+    if (type !== 'wings') { g.position.set(0, -.1, -.75); g.scale.setScalar(1.3); }
+    const M = (geo, mat, x, y, z) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); g.add(o); return o; };
+    const basic = c => new THREE.MeshBasicMaterial({ color: c });
+    switch (type) {
+      case 'flame': ['#ff3d00', '#ff9a3d', '#ffd23f'].forEach((c, i) => { const sz = 1.15 - i * .25; const sp = glowSprite(c, sz, 1); sp.position.set(0, 1.15 + i * .2, 0); sp.userData.base = sz; g.add(sp); }); break;
+      case 'antenna': [-1, 1].forEach(sx => { const st = M(new THREE.CylinderGeometry(.025, .03, .6, 6), basic('#3dffa2'), sx * .28, 1.15, 0); st.rotation.z = -sx * .35;
+        const tip = M(new THREE.SphereGeometry(.09, 10, 8), basic('#b9ff3d'), sx * .4, 1.45, 0); tip.userData.tip = sx; tip.add(glowSprite('#3dffa2', .7, 1)); }); break;
+      case 'halo': { const t = M(new THREE.TorusGeometry(.5, .05, 8, 40), basic('#ffd23f'), 0, 1.42, 0); t.rotation.x = Math.PI / 2; t.add(glowSprite('#ffd23f', 2, .5)); break; }
+      case 'gem': { const gm = M(new THREE.OctahedronGeometry(.27), new THREE.MeshStandardMaterial({ color: '#b26bff', emissive: '#b26bff', emissiveIntensity: .8, metalness: .3, roughness: .15 }), 0, 1.5, 0); gm.add(glowSprite('#e8fbff', 1.2, .6)); break; }
+      case 'star': { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.star, color: '#ffd23f', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); sp.scale.setScalar(.85); sp.position.y = 1.5; g.add(sp); break; }
+      case 'horns': [-1, 1].forEach(sx => { const h = M(new THREE.ConeGeometry(.12, .5, 12), new THREE.MeshStandardMaterial({ color: '#ff3d6e', emissive: '#7b0020', emissiveIntensity: .7, roughness: .3 }), sx * .38, 1.0, .1); h.rotation.z = -sx * .45; }); break;
+      case 'wings': [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.6, 16, 10), new THREE.MeshBasicMaterial({ color: '#ffffff' }), sx * 1.05, .5, -.55);
+        w.scale.set(1, .42, .14); w.rotation.z = sx * .5; w.userData.wing = sx; w.add(glowSprite('#ffb8f0', 2.2, .8)); }); break;
+    }
+    return g;
+  }
+  function animateHead(v, now) {
+    const g = v.head; if (!g) return;
+    const t = now / 1000;
+    switch (g.userData.type) {
+      case 'flame': g.children.forEach((o, i) => { o.scale.setScalar(o.userData.base * (.85 + Math.random() * .3)); o.position.y = 1.15 + i * .2 + Math.sin(t * 9 + i) * .03; }); break;
+      case 'antenna': g.children.forEach(o => { if (o.userData.tip) o.position.y = 1.45 + Math.sin(t * 5 + o.userData.tip) * .04; }); break;
+      case 'halo': g.children[0].position.y = 1.42 + Math.sin(t * 2) * .06; break;
+      case 'gem': g.children[0].rotation.y = t * 1.6; g.children[0].position.y = 1.5 + Math.sin(t * 2.4) * .08; break;
+      case 'star': g.children[0].material.rotation = t * .8; g.children[0].position.y = 1.5 + Math.sin(t * 2) * .07; break;
+      case 'wings': g.children.forEach(o => { if (o.userData.wing) o.rotation.z = o.userData.wing * (.5 + Math.sin(t * 7) * .25); }); break;
+    }
   }
 
   // ================= particles =================
@@ -1469,13 +1560,15 @@ body {
       const f = w.life / w.max; w.m.scale.setScalar(w.r0 + (w.r1 - w.r0) * (1 - f)); w.m.material.opacity = f;
     }
   }
-  function eatFx(x, z, r, color) {
+  function eatFx(x, z, r, color, id = save.fx.eat) {
     const y = r * 0.9;
-    switch (save.fx.eat) {
+    switch (id) {
       case 'heartEat': emitIcons(x, y, z, 'heart', '#ff4f9a', 9, 1.4 + r * 0.25); break;
-      case 'shockEat': wave(x, z, skin().color, r, r * 4 + 4, .6); break;
+      case 'shockEat': wave(x, z, color, r, r * 4 + 4, .6); break;
       case 'boltEat': emitIcons(x, y, z, 'bolt', '#ffd23f', 7, 1.6 + r * 0.25); emit(x, y, z, '#ffffff', 24, 16, .35); break;
       case 'starfall': emitIcons(x, y, z, 'star', '#ffd23f', 12, 1.5 + r * 0.25); emit(x, y, z, '#ffd23f', 24, 12, .7); break;
+      case 'prismEat': for (let k = 0; k < 6; k++) emit(x, y, z, tmpCol.setHSL(k / 6, 1, .6).getHex(), 10, 18, .9); wave(x, z, '#ff4fd8', r, r * 5 + 5, .8); wave(x, z, '#ffd23f', r * .7, r * 4 + 4, .65); wave(x, z, '#22e6ff', r * .4, r * 3 + 3, .5); break;
+      case 'goldEat': emitIcons(x, y, z, 'star', '#ffd23f', 14, 1.6 + r * .25); emit(x, y, z, '#ffd23f', 36, 14, .9); emit(x, y, z, '#ffffff', 14, 10, .5); wave(x, z, '#ffd23f', r, r * 5 + 5, .8); break;
       case 'confettiEat': ['#ff4fd8', '#22e6ff', '#ffd23f', '#3dffa2', '#b26bff'].forEach(cc => emit(x, y, z, cc, 12, 15, .9)); break;
       case 'vortexEat': wave(x, z, '#7b3dff', r * 4 + 4, r * .4, .6); wave(x, z, '#ff4fd8', r * 3 + 2, r * .3, .45); emit(x, y, z, '#b26bff', 30, 5, .7); break;
       case 'popEat': ['#ff4fd8', '#22e6ff', '#ffd23f', '#3dffa2', '#b26bff'].forEach(cc => emit(x, y, z, cc, 6, 9, .5)); break;
@@ -1485,14 +1578,30 @@ body {
       case 'supernova': wave(x, z, '#ff4fd8', r, r * 6 + 6, .8); wave(x, z, '#22e6ff', r * .5, r * 4 + 3, .55); emit(x, y, z, '#ffffff', 70, 24, .9); break;
     }
   }
-  let trailT = 0, trailCache = null;
-  const trailDef = () => (trailCache && trailCache.id === save.fx.trail) ? trailCache : (trailCache = FX.find(f => f.id === save.fx.trail) || null);
+  let trailT = 0;
+  const fxById = id => FX.find(f => f.id === id) || null;
+  const nearView = (x, z) => Math.abs(x - focus.x) < 70 && Math.abs(z - focus.z) < 55;
+  // dressed bots: about half wear a skin, about a third carry each kind of effect
+  function dressBot(o) {
+    const base = { id: 'bot_' + o.name, color: o.baseColor };
+    const pick = list => list[(Math.random() * list.length) | 0];
+    const sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default')) : base;
+    o.fx = {};
+    for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot)).id;
+    o.trailDef = o.fx.trail ? fxById(o.fx.trail) : null;
+    o.free.forEach(v => { applySkin(v, sk); setAura(v, o.fx.aura, sk.color); });
+  }
   function trailFx(dt, now) {
-    if (!save.fx.trail) return;
     trailT += dt; if (trailT < 0.035) return; trailT = 0;
-    for (const c of player.cells) {
+    if (save.fx.trail) { if (!player.trailDef || player.trailDef.id !== save.fx.trail) player.trailDef = fxById(save.fx.trail); trailOwner(player, save.fx.trail, now); }
+    // bots emit at half rate and only near the camera, to keep particles cheap
+    for (const o of bots) if (o.fx && o.fx.trail && o.cells.length && Math.random() < .5) trailOwner(o, o.fx.trail, now);
+  }
+  function trailOwner(o, id, now) {
+    for (const c of o.cells) {
       const r = radius(c.mass), x = c.x - c.hx * r * 0.8, z = c.z - c.hz * r * 0.8;
-      switch (save.fx.trail) {
+      if (!o.isPlayer && !nearView(x, z)) continue;
+      switch (id) {
         case 'sparksTrail': emit(x, r * .5, z, cellColor(c), 2, 2.5, .5); break;
         case 'bubbleTrail': emit(x, r * .3, z, '#7fe8ff', 1, 1.2, 1.2); break;
         case 'starTrail': emit(x, r * .5, z, '#ffd23f', 2, 1.5, .8); break;
@@ -1507,7 +1616,7 @@ body {
         case 'plasmaTrail': emit(x, r * .5, z, Math.random() < .5 ? '#22e6ff' : '#ff4fd8', 4, 6, .3); break;
         case 'auroraTrail': emit(x, r * .6, z, tmpCol.setHSL(.3 + .45 * (.5 + .5 * Math.sin(now / 1200)), 1, .6).getHex(), 3, 1.2, 1.2); break;
         default: {
-          const f = trailDef(); if (!f || !f.colors) break;
+          const f = o.trailDef; if (!f || !f.colors) break;
           const col = f.colors[(Math.random() * f.colors.length) | 0];
           switch (f.style) {
             case 'bubbles': emit(x, r * .3, z, col, 1, 1, 1.3); break;
@@ -1525,11 +1634,11 @@ body {
     }
   }
   // auras live on every player part
-  function buildAura(type) {
+  function buildAura(type, color = skin().color) {
     if (!type) return null;
     const grp = new THREE.Group(); grp.userData.type = type;
     const add = (o, d) => { o.userData = d || {}; grp.add(o); return o; };
-    const sc = new THREE.Color(skin().color);
+    const sc = new THREE.Color(color);
     if (type === 'orbitAura') for (let i = 0; i < 3; i++) {
       const o = add(new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), new THREE.MeshBasicMaterial({ color: sc })), { a: i * Math.PI * 2 / 3 });
       o.add(glowSprite(sc, 0.9, .9));
@@ -1550,6 +1659,8 @@ body {
     if (type === 'hexAura') add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 1), new THREE.MeshBasicMaterial({ color: '#22e6ff', wireframe: true, transparent: true, opacity: .45, blending: THREE.AdditiveBlending, depthWrite: false })));
     if (type === 'flameAura') for (let i = 0; i < 12; i++) add(glowSprite(i % 2 ? '#ff6a00' : '#ffd23f', 0.6, 1), { a: i / 12 * Math.PI * 2 });
     if (type === 'cometAura') { const head = add(glowSprite('#ffffff', 0.7, 1)); head.add(glowSprite('#22e6ff', 1.6, .8)); }
+    if (type === 'prismAura') ['#ff4fd8', '#ff9a3d', '#ffd23f', '#3dffa2', '#22e6ff', '#7b3dff'].forEach((c, i) => add(glowSprite(c, .75, 1), { a: i / 6 * Math.PI * 2 }));
+    if (type === 'starAura') for (let i = 0; i < 12; i++) { const sp = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.star, color: i % 2 ? '#ffffff' : '#ffd23f', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), { a: (i >> 1) / 6 * Math.PI * 2, up: i % 2 }); sp.scale.setScalar(.5); }
     if (type === 'crownAura') for (let i = 0; i < 8; i++) { const sp = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.star, color: '#ffd23f', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), { a: i / 8 * Math.PI * 2 }); sp.scale.setScalar(.45); }
     if (type === 'moonAura') { const m = add(new THREE.Mesh(new THREE.SphereGeometry(.22, 14, 10), new THREE.MeshBasicMaterial({ color: '#e8ecff' }))); m.add(glowSprite('#c9d6ff', 1.4, .7)); }
     if (type === 'binaryAura') { const a1 = add(glowSprite('#ffd23f', .9, 1), { a: 0 }); a1.add(glowSprite('#ffd23f', 1.8, .5)); const a2 = add(glowSprite('#22e6ff', .9, 1), { a: Math.PI }); a2.add(glowSprite('#22e6ff', 1.8, .5)); }
@@ -1558,13 +1669,12 @@ body {
     if (type === 'galaxyAura') for (let i = 0; i < 22; i++) add(glowSprite(i % 3 ? '#b26bff' : '#ff4fd8', 0.35, .95), { a: Math.random() * Math.PI * 2, r: 1.35 + Math.random() * 0.8, w: 0.6 + Math.random() * 1.2 });
     return grp;
   }
-  function applyAura() {
-    for (const v of playerVis) {
-      if (v.aura) v.mesh.remove(v.aura);
-      v.aura = buildAura(save.fx.aura);
-      if (v.aura) v.mesh.add(v.aura);
-    }
+  function setAura(v, type, color) {
+    if (v.aura) v.mesh.remove(v.aura);
+    v.aura = buildAura(type, color);
+    if (v.aura) v.mesh.add(v.aura);
   }
+  function applyAura() { for (const v of playerVis) setAura(v, save.fx.aura); }
   const tmpV3 = new THREE.Vector3();
   function animateAura(v, now) {
     const g = v.aura; if (!g) return;
@@ -1581,6 +1691,8 @@ body {
       o.position.set(Math.cos(a) * 2.1, .4 + Math.sin(a * 1.5) * .3, Math.sin(a) * 2.1);
       if (Math.random() < .6) { o.getWorldPosition(tmpV3); emit(tmpV3.x, tmpV3.y, tmpV3.z, '#9fe8ff', 1, .6, .6); }
     }
+    if (type === 'prismAura') { g.rotation.x = .55; g.children.forEach(o => { const a = o.userData.a + t * 1.4; o.position.set(Math.cos(a) * 1.9, 0, Math.sin(a) * 1.9); }); }
+    if (type === 'starAura') g.children.forEach(o => { const d = o.userData, a = d.a + t * (d.up ? 1.1 : -.8), r = d.up ? 1.35 : 1.95; o.position.set(Math.cos(a) * r, (d.up ? .9 : -.1) + Math.sin(t * 2 + d.a) * .08, Math.sin(a) * r); });
     if (type === 'crownAura') g.children.forEach(o => { const a = o.userData.a + t * 1.2; o.position.set(Math.cos(a) * .75, 1.45 + Math.sin(t * 2 + o.userData.a) * .06, Math.sin(a) * .75); });
     if (type === 'moonAura') { const a = t * 1.1; g.children[0].position.set(Math.cos(a) * 2.1, .5, Math.sin(a) * 2.1); }
     if (type === 'binaryAura') g.children.forEach(o => { const a = o.userData.a + t * 2; o.position.set(Math.cos(a) * 1.9, .3 + Math.sin(a) * .2, Math.sin(a) * 1.9); });
@@ -1737,7 +1849,7 @@ body {
     ['Нейтрон', 'normal'], ['Туман', 'coward'], ['Спутник', 'aggressive'],
   ];
   const BOT_COLORS = ['#22e6ff', '#b26bff', '#3dffa2', '#ff6ad5', '#ff3d6e', '#ffd23f', '#c6ff3d', '#4d7cff', '#8f9bff', '#5ef2ff', '#e08cff', '#ff9a3d'];
-  const bots = BOT_DEFS.map(([n, p], i) => { const o = makeOwner(n, 'bot', p); o.free = Array.from({ length: BOT_PARTS }, () => makeVis(new THREE.Color(BOT_COLORS[i]))); return o; });
+  const bots = BOT_DEFS.map(([n, p], i) => { const o = makeOwner(n, 'bot', p); o.baseColor = BOT_COLORS[i]; o.free = Array.from({ length: BOT_PARTS }, () => makeVis(new THREE.Color(BOT_COLORS[i]))); return o; });
   bots[7].partner = bots[8]; bots[8].partner = bots[7];
   // bosses: up to two on the arena at once, never two of the same kind
   const BOSS_TYPES = {
@@ -1804,6 +1916,7 @@ body {
   }
   function spawnBot(o) {
     if (o.disabled) return;
+    if (!o.cells.length) dressBot(o);
     // bot size no longer follows the player (that fed an endless growth loop)
     const top = Math.min(120, Math.max(30, total(player) * 0.6));
     const [x, z] = safeSpot(running ? 22 : 14);
@@ -2512,7 +2625,7 @@ body {
         a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) buzz(60);
-        { const rb = radius(b.mass); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); }
+        { const rb = radius(b.mass); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
         removeCell(b);
         if (a.owner.isPlayer) {
           if (victim.kind === 'boss') {
@@ -2739,7 +2852,7 @@ body {
     if (s.pattern === 'zigzag') bg = `repeating-linear-gradient(45deg, ${s.color} 0 5px, ${s.accent} 5px 8px)`;
     if (s.pattern === 'rings') bg = `repeating-linear-gradient(180deg, ${s.color} 0 6px, ${s.accent} 6px 9px)`;
     if (s.pulse) bg = `radial-gradient(circle, #ffffff 0 10%, ${s.color} 45%, #1a0840 100%)`;
-    if (s.holo) bg = 'linear-gradient(135deg, #22e6ff, #ff4fd8, #22e6ff)';
+    if (s.holo) bg = s.holoBase ? `radial-gradient(circle, #ffffff 0 1px, transparent 1.5px) 0 0/9px 11px, linear-gradient(135deg, #ffd23f, #ff4fd8, #ffd23f)` : 'linear-gradient(135deg, #22e6ff, #ff4fd8, #22e6ff)';
     if (s.rainbow) bg = 'conic-gradient(#ff4fd8, #ffd23f, #3dffa2, #22e6ff, #7b3dff, #ff4fd8)';
     return `background:${bg};${s.glow ? `box-shadow:0 0 14px ${s.color};` : ''}`;
   }
@@ -2789,9 +2902,9 @@ body {
     rainbowTrail: RAINBOW, voidTrail: ['#7b3dff', '#3a0a8e'], snowTrail: ['#ffffff', '#bfefff'], sparkTrail: ['#ffffff', '#22e6ff'], heartTrail: ['#ff4f9a', '#ff9ec4'],
     leafTrail: ['#3dffa2', '#ffd23f', '#9be15d'], inkTrail: ['#7b3dff', '#ff4fd8'], goldTrail: ['#ffd23f', '#fff6a0'], plasmaTrail: ['#22e6ff', '#ff4fd8'], auroraTrail: ['#3dffa2', '#22e6ff', '#7b3dff'],
     heartEat: ['#ff4f9a', '#ff9ec4'], shockEat: null, boltEat: ['#ffd23f', '#ffffff'], starfall: ['#ffd23f', '#fff6a0'], supernova: ['#ff4fd8', '#22e6ff', '#ffffff'],
-    confettiEat: RAINBOW, vortexEat: ['#7b3dff', '#ff4fd8'], popEat: RAINBOW, iceEat: ['#ffffff', '#9fe8ff'], miniholeEat: ['#7b3dff', '#ff4fd8'], rainbowEat: RAINBOW };
-  const FX_ICONS2D = { heartTrail: 'heart', heartEat: 'heart', boltEat: 'bolt', starfall: 'star' };
-  const FX_RINGS = { shockEat: 1, supernova: 2, iceEat: 1, vortexEat: 2, miniholeEat: 2, rainbowEat: 2 };
+    prismEat: RAINBOW, goldEat: ['#ffd23f', '#fff6a0', '#ffffff'], confettiEat: RAINBOW, vortexEat: ['#7b3dff', '#ff4fd8'], popEat: RAINBOW, iceEat: ['#ffffff', '#9fe8ff'], miniholeEat: ['#7b3dff', '#ff4fd8'], rainbowEat: RAINBOW };
+  const FX_ICONS2D = { heartTrail: 'heart', heartEat: 'heart', boltEat: 'bolt', starfall: 'star', goldEat: 'star' };
+  const FX_RINGS = { shockEat: 1, supernova: 2, iceEat: 1, vortexEat: 2, miniholeEat: 2, rainbowEat: 2, prismEat: 3, goldEat: 1 };
   function draw2DIcon(x, kind, cx, cy, s, col) {
     x.save(); x.translate(cx, cy); x.scale(s / 32, s / 32); x.translate(-32, -32); x.fillStyle = col; x.beginPath();
     if (kind === 'heart') { x.moveTo(32, 54); x.bezierCurveTo(2, 32, 10, 4, 32, 20); x.bezierCurveTo(54, 4, 62, 32, 32, 54); }
@@ -2873,7 +2986,7 @@ body {
     if (mode === 'own') { if (sel) { label = 'Выбран'; cls += ' sel'; dis = 'disabled'; } else label = 'Выбрать'; }
     else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
-    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"><div class="sw ${s.crown ? 'crown' : ''}" style="${swatch(s)}"></div>
+    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
       <span class="name">${s.name}</span>${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
   function fxRow(f, mode) {
@@ -3095,7 +3208,7 @@ body {
     setTimeout(() => {
       const r = rollChest(opts), R2 = RARITY[r.rar];
       box.classList.remove('shake'); box.classList.add('open');
-      const pic = r.type === 'skin' ? `<div class="sw ${r.item.crown ? 'crown' : ''}" style="${swatch(r.item)}"></div>` : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
+      const pic = r.type === 'skin' ? `<div class="${swClass(r.item)}" style="${swatch(r.item)}">${headIcon(r.item)}</div>` : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
       const kind = r.type === 'skin' ? 'Скин' : r.type === 'pet' ? `Питомец · ${PET_BONUS[r.item.bonus].name}: ${PET_BONUS[r.item.bonus].text(r.item.lv)}` : 'Эффект · ' + FX_SLOTS.find(sl => sl[0] === r.item.slot)[1].toLowerCase();
       const el = $('reveal'); el.style.setProperty('--rc', R2.color);
       el.innerHTML = `<span class="rar">${R2.name}${opts.league ? ' · сундук лиги' : ''}</span>${pic}<b>${r.item.name}</b><small>${kind}${r.dup ? ' · уже есть, превращён в монеты' : r.type === 'pet' ? ' · теперь в «Питомцах»' : ' · теперь в гардеробе'}</small><span class="coin">+${r.coins} ◆</span>`;
@@ -3378,6 +3491,7 @@ body {
   }
   function draw(now) {
     decorateHoliday();
+    shineT.value = now / 1000;
     animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
     zoneLine.visible = zoneOut.visible = running && mode === 'royale';
     if (zoneLine.visible) { zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
@@ -3385,10 +3499,16 @@ body {
     for (const c of cells) {
       const r = radius(c.mass), v = c.vis;
       v.jig *= 0.93;
-      if (c.owner.isPlayer) animateAura(v, now);
-      if (c.owner.isPlayer && skin().pulse) { const k = .5 + .5 * Math.sin(now / 280); v.mesh.material.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }
-      if (c.owner.isPlayer && skin().holo) { const h = .5 + .17 * (1 + Math.sin(now / 900 + c.x * .05)); v.mesh.material.color.setHSL(h, 1, .62); v.mesh.material.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
-      if (c.owner.isPlayer && skin().rainbow) { const h = (now / 4000 + c.x * 0.01) % 1; v.mesh.material.color.setHSL(h, 1, .6); v.mesh.material.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
+      const lk = v.look;
+      if (lk) {
+        const crownMode = mode === 'crown' && running;
+        v.crown.visible = !!lk.crown && !crownMode;
+        if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');
+        animateAura(v, now); animateHead(v, now);
+        if (lk.pulse) { const k = .5 + .5 * Math.sin(now / 280); v.mesh.material.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }
+        if (lk.holo) { const h = ((lk.holoBase ?? .5) + (lk.holoSpan ?? .17) * (1 + Math.sin(now / 900 + c.x * .05))) % 1; v.mesh.material.color.setHSL(h, 1, .62); v.mesh.material.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
+        if (lk.rainbow) { const h = (now / 4000 + c.x * 0.01) % 1; v.mesh.material.color.setHSL(h, 1, .6); v.mesh.material.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
+      }
       const wobble = 1 + Math.sin(now / 260 + c.x) * 0.025 + Math.sin(now / 45) * 0.14 * v.jig;
       v.mesh.position.set(c.x, r * 0.92, c.z);
       v.mesh.scale.set(r * wobble, r * (2 - wobble) * 0.94, r * wobble);

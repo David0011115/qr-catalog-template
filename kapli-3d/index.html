@@ -2388,7 +2388,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     persist();
     const lvAfter = playerLevel();
 
-    const head = stats.endTitle ? stats.endTitle + (record && mode !== 'team' ? ' · рекорд!' : '') : ['race', 'giant', 'team'].includes(mode) ? 'Поражение' : record ? 'Новый рекорд!' : 'Раунд окончен';
+    const head = stats.endTitle ? stats.endTitle + (record && mode !== 'team' ? ' · рекорд!' : '') : ['race', 'giant', 'team', 'daily', 'raid'].includes(mode) ? 'Поражение' : record ? 'Новый рекорд!' : 'Раунд окончен';
     $('resTitle').textContent = `${head} · ${MODES[mode].name}`;
     const cellsHtml = [
       ['Время', fmtTime(stats.time)], ['Пик массы', best], ['Лучшее место', stats.bestRank > 50 ? '–' : stats.bestRank],
@@ -2721,10 +2721,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     if (mode === 'daily' && !stats.dailyDone && stats.maxMass >= DAILY_GOAL) {
       stats.dailyDone = true;
+      // reaching the goal ends the round as a win; the daily reward is paid once a day
       if (save.dailyDone !== today) {
-        save.dailyDone = today; save.coins += 100; save.xp += 150; save.totals.dailies++; persist();
-        toast('Испытание дня пройдено! +100 ◆');
-      } else toast('Испытание дня уже пройдено сегодня');
+        save.dailyDone = today; save.xp += 150; save.totals.dailies++; persist();
+        finishRound('Испытание дня пройдено!', 100, true);
+      } else finishRound('Цель достигнута (награда за сегодня уже получена)', 0, true);
+      return true;
     }
     return false;
   }
@@ -3899,7 +3901,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '10';
+const APP_VER = '11';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

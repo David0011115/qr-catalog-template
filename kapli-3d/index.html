@@ -285,6 +285,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .buy:disabled { background: var(--line); color: var(--muted); cursor: default; }
 .buy.sel { background: var(--prey); }
 .pane { display: flex; flex-direction: column; gap: 14px; }
+.info-card { gap: 10px; }
+.info-lead { margin: 0; color: var(--muted); font-size: .9rem; }
+.info-card details { background: var(--row); border-radius: 12px; padding: 0 14px; }
+.info-card summary { cursor: pointer; padding: 12px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.info-card summary::-webkit-details-marker { display: none; }
+.info-card summary::after { content: "+"; color: var(--muted); font-size: 1.2rem; line-height: 1; }
+.info-card details[open] summary::after { content: "−"; }
+.info-card summary:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; border-radius: 6px; }
+.info-card details > :last-child { margin-bottom: 14px; }
+.info-h { margin: 12px 0 6px; font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
+.info-list { margin: 0 0 4px; padding-left: 1.1em; display: grid; gap: 6px; font-size: .9rem; line-height: 1.5; }
+.info-note { margin: 8px 0 0; color: var(--muted); font-size: .82rem; }
 .keys { display: grid; grid-template-columns: minmax(0, 11em) 1fr; gap: 8px 14px; margin: 0; font-size: .9rem; }
 .keys dt { color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .keys dd { margin: 0; min-width: 0; line-height: 1.5; }
@@ -490,35 +502,6 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 <div class="overlay" id="overlay">
   <div class="card" id="menuCard">
     <h1>Капли 3D</h1>
-    <div class="tabs" role="tablist">
-      <button class="tab" id="mtabPlay" role="tab" aria-selected="true">Игра</button>
-      <button class="tab" id="mtabKeys" role="tab" aria-selected="false">Управление</button>
-    </div>
-    <div class="pane" id="paneKeys" hidden>
-      <h2 class="section-title">Компьютер</h2>
-      <dl class="keys">
-        <dt>Движение</dt><dd>курсор мыши или <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / стрелки</dd>
-        <dt>Рывок</dt><dd><kbd>Пробел</kbd></dd>
-        <dt>Деление</dt><dd><kbd>E</kbd></dd>
-        <dt>Выброс массы</dt><dd><kbd>Q</kbd></dd>
-        <dt>Пауза</dt><dd><kbd>P</kbd></dd>
-        <dt>Начать раунд</dt><dd><kbd>Enter</kbd></dd>
-        <dt>Закрыть магазин</dt><dd><kbd>Esc</kbd></dd>
-      </dl>
-      <h2 class="section-title">Телефон</h2>
-      <dl class="keys">
-        <dt>Движение</dt><dd>коснись экрана и веди пальцем: появится джойстик</dd>
-        <dt>Рывок, деление, выброс</dt><dd>круглые кнопки над мини-картой</dd>
-      </dl>
-      <h2 class="section-title">Подсказки</h2>
-      <dl class="keys">
-        <dt><i class="dot" style="background:var(--prey)"></i>Зелёное кольцо</dt><dd>каплю можно съесть</dd>
-        <dt><i class="dot" style="background:var(--threat)"></i>Красное кольцо</dt><dd>капля опасна, съест тебя</dd>
-        <dt><i class="dot" style="background:#6fa8ff"></i>Синее кольцо</dt><dd>союзник в «Командном бое»</dd>
-        <dt><i class="dot" style="background:var(--food)"></i>Голубое кольцо у тебя</dt><dd>части ещё не готовы слиться</dd>
-        <dt>Сгусток (выброс)</dt><dd>можно скормить своей части или приманить им бота</dd>
-      </dl>
-    </div>
     <div class="pane" id="panePlay">
     <p>Ешь крошки и капли меньше тебя, убегай от крупных. На арене бывают боссы: Громила, Шустрик, Матка роя и Делитель.</p>
     <div class="lvl">
@@ -542,6 +525,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <button class="btn ghost" id="chBtn">Испытания <span id="chCount">0/0</span></button>
       <button class="btn ghost" id="achBtn">Достижения <span id="achCount">0/0</span></button>
       <button class="btn ghost" id="profBtn">Профиль</button>
+      <button class="btn ghost" id="infoBtn">Информация</button>
       <button class="btn ghost" id="setBtn">Настройки</button>
     </div>
     </div>
@@ -629,6 +613,129 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <h2 class="section-title">Сезоны</h2>
     <ul class="quests" id="profSeasons"></ul>
     <button class="btn" id="profBack">Готово</button>
+  </div>
+
+  <div class="card info-card" id="infoCard" hidden>
+    <h1>Информация</h1>
+    <p class="info-lead">Всё об игре по разделам. Нажми на раздел, чтобы открыть его.</p>
+    <details open><summary>Как играть</summary>
+      <ul class="info-list">
+        <li>Ты — капля. Ешь крошки и капли, которые меньше тебя, и убегай от тех, кто больше.</li>
+        <li>Съесть каплю можно, если ты <b>хотя бы на 25% тяжелее</b> её. Улучшение «Плотная оболочка» поднимает эту планку для врагов.</li>
+        <li>Чем ты больше, тем <b>медленнее</b> двигаешься. Очень крупная капля понемногу теряет массу.</li>
+        <li><b>Деление</b> разрезает каплю пополам и бросает половину вперёд — так можно догнать добычу. Части сливаются обратно через 14 секунд. Базово можно иметь до 4 частей.</li>
+        <li><b>Рывок</b> на мгновение разгоняет каплю (в 3,2 раза быстрее стартовой скорости), забирая немного массы.</li>
+        <li><b>Выброс</b> отстреливает сгусток массы (нужно от 25 массы). Им можно накормить свою часть, приманить бота или накормить шип.</li>
+        <li>В начале раунда у тебя 3 секунды неуязвимости.</li>
+      </ul>
+    </details>
+    <details><summary>Управление</summary>
+      <h3 class="info-h">Компьютер</h3>
+      <dl class="keys">
+        <dt>Движение</dt><dd>курсор мыши или <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / стрелки</dd>
+        <dt>Рывок</dt><dd><kbd>Пробел</kbd></dd>
+        <dt>Деление</dt><dd><kbd>E</kbd></dd>
+        <dt>Выброс массы</dt><dd><kbd>Q</kbd></dd>
+        <dt>Пауза</dt><dd><kbd>P</kbd></dd>
+        <dt>Начать раунд</dt><dd><kbd>Enter</kbd></dd>
+        <dt>Закрыть магазин</dt><dd><kbd>Esc</kbd></dd>
+      </dl>
+      <h3 class="info-h">Телефон</h3>
+      <dl class="keys">
+        <dt>Движение</dt><dd>коснись экрана и веди пальцем: появится джойстик</dd>
+        <dt>Рывок, деление, выброс</dt><dd>круглые кнопки над мини-картой</dd>
+        <dt>Джойстик и мини-карта</dt><dd>размер и прозрачность меняются в «Настройках»</dd>
+      </dl>
+    </details>
+    <details><summary>Цвета колец</summary>
+      <dl class="keys">
+        <dt><i class="dot" style="background:var(--prey)"></i>Зелёное кольцо</dt><dd>каплю можно съесть</dd>
+        <dt><i class="dot" style="background:var(--threat)"></i>Красное кольцо</dt><dd>капля опасна, съест тебя</dd>
+        <dt><i class="dot" style="background:#8088c0"></i>Серое кольцо</dt><dd>примерно равны — никто никого не съест</dd>
+        <dt><i class="dot" style="background:#6fa8ff"></i>Синее кольцо</dt><dd>союзник в «Командном бое»</dd>
+        <dt><i class="dot" style="background:var(--food)"></i>Голубое кольцо у тебя</dt><dd>части ещё не готовы слиться</dd>
+      </dl>
+    </details>
+    <details><summary>Арена: шипы, бонусы, события</summary>
+      <h3 class="info-h">Шипы</h3>
+      <ul class="info-list">
+        <li>На арене 8 зелёных шипов (максимум 16).</li>
+        <li>Шип разрывает на части любую каплю тяжелее 130 — тебя, ботов и боссов. Маленькие капли могут прятаться за шипами.</li>
+        <li>Босс, которому некуда делиться, теряет 30% массы (она рассыпается едой) и ненадолго замедляется.</li>
+        <li>Лопнувший шип появляется снова через 10 секунд. Каждый 5-й выброс в шип выстреливает новым шипом.</li>
+      </ul>
+      <h3 class="info-h">Бонусы</h3>
+      <dl class="keys" id="infoBonus"></dl>
+      <p class="info-note">Одинаковые бонусы складываются по времени, до 30 секунд.</p>
+      <h3 class="info-h">События</h3>
+      <dl class="keys" id="infoEvents"></dl>
+      <p class="info-note">О событии предупреждают заранее — следи за плашкой «Скоро».</p>
+    </details>
+    <details><summary>Боссы</summary>
+      <dl class="keys" id="infoBosses"></dl>
+      <p class="info-note">Боссы носят корону. Награда — за последнюю съеденную часть босса. Боссов нет в «Командном бое», «Гонке массы», «Королевской битве», охоте на Колосса и рейде.</p>
+    </details>
+    <details><summary>Режимы</summary>
+      <dl class="keys" id="infoModes"></dl>
+    </details>
+    <details><summary>Боты</summary>
+      <dl class="keys" id="infoBots"></dl>
+      <p class="info-note">Около половины ботов носят скины и эффекты, у некоторых есть рамки. Наряд меняется при каждом появлении.</p>
+    </details>
+    <details><summary>Монеты, опыт и улучшения</summary>
+      <ul class="info-list">
+        <li>Монеты и опыт дают за массу, съеденные капли, боссов, время в игре и место. В «Хардкоре» монеты ×2.</li>
+        <li>Опыт повышает уровень. С уровнями открываются новые улучшения и скины в магазине.</li>
+        <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
+        <li><b>Достижения</b> дают монеты один раз. <b>Испытания</b> дают скины и эффекты плюс сундук.</li>
+        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги.</li>
+      </ul>
+    </details>
+    <details><summary>Лига и сезоны</summary>
+      <ul class="info-list">
+        <li>Сезон длится 14 дней. Очки лиги дают только раунды, начатые кнопкой «Играть в лиге» в окне «Лига».</li>
+        <li>В рейтинговом бою не действуют улучшения и бонусы питомцев — все на равных.</li>
+        <li>Режим лиги меняется каждый сезон. «Королевская битва» доступна только в лиге.</li>
+        <li>За переход в новую лигу — сундук лиги. В конце сезона — монеты, значок, рамка лиги, а за высокие лиги ещё скины, эффекты, питомцы и титулы.</li>
+      </ul>
+      <dl class="keys" id="infoLeagues"></dl>
+    </details>
+    <details><summary>Сундуки</summary>
+      <ul class="info-list">
+        <li><b>Ежедневный</b> — раз в сутки бесплатно.</li>
+        <li><b>За раунды</b> — случайно после игры (в лиге шанс выше). Если долго не везёт, сундук выпадет гарантированно.</li>
+        <li><b>Сундук лиги</b> — за переход в новую лигу, внутри эксклюзивные предметы лиги.</li>
+        <li><b>Сундук испытания</b> — за выполненное испытание, редкость зависит от сложности. Эпический сундук дают и за победу в рейде.</li>
+        <li>Внутри: скины, эффекты, питомцы, рамки и титулы.</li>
+        <li><b>Повтор скина</b> даёт звезду (до трёх): ★ искры вокруг капли, ★★ цветной блик, ★★★ сияющий ореол. Остальные повторы превращаются в монеты.</li>
+      </ul>
+      <dl class="keys" id="infoOdds"></dl>
+    </details>
+    <details><summary>Внешний вид</summary>
+      <ul class="info-list">
+        <li><b>Скины</b> — в магазине, сундуках, за испытания, сезоны, праздники и рейд. У эпических и легендарных есть блик и предмет над головой.</li>
+        <li><b>Эффекты</b>: след, аура и эффект поедания — можно надеть по одному каждого вида.</li>
+        <li><b>Украшения</b>: предметы над головой (за коллекции скинов), рамки и титулы — видны в таблице лидеров.</li>
+        <li><b>Арены</b>: темы арены покупаются в магазине и включаются в гардеробе.</li>
+        <li><b>Коллекции</b>: собери набор скинов или эффектов и получи предмет над головой или титул.</li>
+      </ul>
+    </details>
+    <details><summary>Питомцы</summary>
+      <ul class="info-list">
+        <li>Питомец летает рядом и даёт бонус. Взять можно одного.</li>
+        <li>Даются за лиги «Платина» и «Неон» в конце сезона, в праздники — праздничные, и выпадают из сундуков.</li>
+      </ul>
+      <dl class="keys" id="infoPets"></dl>
+    </details>
+    <details><summary>Босс-рейд</summary>
+      <ul class="info-list">
+        <li>Каждую неделю (с понедельника) новый босс с общим здоровьем 40 000.</li>
+        <li>3 попытки в день по 4 минуты. Урон копится между попытками и днями.</li>
+        <li>Подплывай к боссу — он делится. Урон — это масса его частей, которые съел именно ты.</li>
+        <li>За каждую попытку — монеты за урон. За победу — уникальный скин недели, 1500 монет и эпический сундук.</li>
+      </ul>
+    </details>
+    <button class="btn" id="infoBack">Готово</button>
   </div>
 
   <div class="card" id="settingsCard" hidden>
@@ -3024,7 +3131,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'infoCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -3039,13 +3146,23 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
   $('againBtn').addEventListener('click', startRound);
   $('menuBtn').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('startBtn').focus(); });
-  function menuTab(keys) {
-    $('paneKeys').hidden = !keys; $('panePlay').hidden = keys;
-    $('mtabKeys').setAttribute('aria-selected', keys); $('mtabPlay').setAttribute('aria-selected', !keys);
-    $('overlay').scrollTop = 0;
+  // ---- information: the dynamic lists are built from the game data so they stay correct ----
+  function renderInfo() {
+    const dl = rows => rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    const BONUS_TXT = { speed: '+45% к скорости', shield: 'тебя нельзя съесть', double: 'еда даёт вдвое больше массы', magnet: 'крошки сами летят к тебе' };
+    $('infoBonus').innerHTML = dl(Object.entries(BONUS).map(([k, b]) => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, `${BONUS_TXT[k] || ''}, ${b.dur} с`]));
+    $('infoEvents').innerHTML = dl(EVENTS.map(e => [`<i class="dot" style="background:${e.color}"></i>${e.name}`, e.desc]));
+    $('infoBosses').innerHTML = dl([...Object.values(BOSS_TYPES), BOSS_TYPES_EXTRA.colossus].map(b => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, `${b.about}. Награда: ${b.coins} ◆, ${b.xp} опыта`]));
+    $('infoModes').innerHTML = dl(Object.entries(MODES).map(([id, m]) => [m.name, m.desc + (id === leagueMode() ? ' <b>· сейчас режим лиги</b>' : '')]));
+    const BOT_TXT = { normal: 'ведёт себя по ситуации', coward: 'убегает, далеко замечает опасность, чаще обходит шипы', aggressive: 'гоняется за всеми, особенно за тобой, часто влетает в шипы', farmer: 'спокойно собирает крошки', hunter: 'охотится парой с напарником' };
+    $('infoBots').innerHTML = dl(Object.entries(PERSONA).filter(([k]) => k !== 'boss').map(([k, pp]) => [pp.tag || 'обычный', BOT_TXT[k] || '']));
+    $('infoLeagues').innerHTML = dl(LEAGUES.map(l => [`<i class="dot" style="background:${l.color}"></i>${l.name}`, `от ${l.pts} очков · ${l.coins} ◆ в конце сезона`]));
+    const tot = Object.values(RARITY).reduce((a, r) => a + r.w, 0);
+    $('infoOdds').innerHTML = dl(Object.values(RARITY).map(r => [`<i class="dot" style="background:${r.color}"></i>${r.name}`, `${Math.round(r.w / tot * 100)}% в обычном сундуке · повтор (кроме скинов) = ${r.dup} ◆`]));
+    $('infoPets').innerHTML = dl(Object.values(PET_BONUS).map(b => [b.name, b.text(1) + ' (сильнее у редких)']));
   }
-  $('mtabPlay').addEventListener('click', () => menuTab(false));
-  $('mtabKeys').addEventListener('click', () => menuTab(true));
+  $('infoBtn').addEventListener('click', () => { renderInfo(); showCard('infoCard'); $('infoBack').focus(); });
+  $('infoBack').addEventListener('click', () => { showCard('menuCard'); $('infoBtn').focus(); });
   $('achBtn').addEventListener('click', () => openView('goals', 'ach'));
   $('chBtn').addEventListener('click', () => openView('goals', 'ch'));
   $('modes').addEventListener('click', e => {
@@ -3916,7 +4033,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '13';
+const APP_VER = '14';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

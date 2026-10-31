@@ -102,6 +102,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .hat-ico.sm svg { width: 18px; height: 18px; }
 .col-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .col-sw { width: 26px; height: 26px; border-radius: 50%; }
+.col-sw.fx { border-radius: 8px; overflow: hidden; width: 30px; height: 30px; }
+.col-sw.fx img { width: 100%; height: 100%; display: block; }
+.col-names { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 4px; }
 .col-sw.off { opacity: .25; filter: grayscale(.7); }
 .col-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .arena-pv { display: block; width: 34px; height: 26px; border-radius: 10px; border: 2px solid var(--rm); box-shadow: 0 0 10px var(--rm);
@@ -1032,7 +1035,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'col_cyber',  name: 'Кибер',             skins: ['neon', 'cyber', 'plasma', 'matrix', 'hologram', 'c_circuit'],    hat: 'propeller', coins: 1500 },
     { id: 'col_royal',  name: 'Королевская семья', skins: ['king', 'emperor', 'champion', 'prism', 'titan'],                  hat: 'tophat',    coins: 2000 },
     { id: 'col_nature', name: 'Природа',           skins: ['mint', 'lime', 'toxic', 'tiger', 'zebra', 'c_mint'],              hat: 'sprout',    coins: 1000 },
+    // effect collections: reward is a unique title
+    { id: 'colfx_fire',  name: 'Огненный набор', fx: ['fireTrail', 'flameAura', 'raysAura', 'supernova'],                                   title: 'tt_col_fire',  coins: 1500 },
+    { id: 'colfx_ice',   name: 'Снег и лёд',     fx: ['snowTrail', 'snowglobeAura', 'iceEat'],                                             title: 'tt_col_ice',   coins: 1000 },
+    { id: 'colfx_star',  name: 'Звёздное небо',  fx: ['starTrail', 'galaxyTrail', 'starveilTrail', 'starAura', 'galaxyAura', 'starfall'], title: 'tt_col_star',  coins: 2000 },
+    { id: 'colfx_volt',  name: 'Электричество',  fx: ['sparkTrail', 'plasmaTrail', 'electricAura', 'boltEat', 'shockEat'],                  title: 'tt_col_volt',  coins: 1500 },
+    { id: 'colfx_party', name: 'Праздник',       fx: ['heartTrail', 'rainbowTrail', 'heartEat', 'confettiEat', 'popEat'],                   title: 'tt_col_party', coins: 1000 },
+    { id: 'colfx_void',  name: 'Бездна',         fx: ['voidTrail', 'inkTrail', 'quantumTrail', 'miniholeEat', 'vortexEat'],                 title: 'tt_col_void',  coins: 1500 },
   ];
+  const colItems = c => c.skins || c.fx;
+  const colOwned = c => colItems(c).filter(id => (c.skins ? save.skins : save.fxOwned).includes(id)).length;
   // ---- frames (around your name) and titles (after it): from chests and from the league ----
   const DECOR = [
     { id: 'fr_cyan',    kind: 'frame', name: 'Бирюзовая',  css: 'border:2px solid #22e6ff', chest: 'common' },
@@ -1060,6 +1072,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     DECOR.push({ id: 'fr_lg' + i, kind: 'frame', name: `Лига «${n}»`, css: `border:2px solid ${c};box-shadow:0 0 ${2 + i * 2}px ${c}`, league: i });
   });
   [[3, 'Платиновый игрок', '#7fe8ff'], [4, 'Алмазный ас', '#b26bff'], [5, 'Неоновая легенда', '#ff4fd8']].forEach(([i, n, c]) => DECOR.push({ id: 'tt_lg' + i, kind: 'title', name: n, color: c, league: i }));
+  [['fire', 'Повелитель огня', '#ff6a00'], ['ice', 'Снежный король', '#9fe8ff'], ['star', 'Звездочёт', '#ffd23f'], ['volt', 'Громовержец', '#22e6ff'], ['party', 'Душа вечеринки', '#ff4fd8'], ['void', 'Хранитель бездны', '#b26bff']]
+    .forEach(([k, n, c]) => DECOR.push({ id: 'tt_col_' + k, kind: 'title', name: n, color: c, col: true }));
   const decorById = id => DECOR.find(d => d.id === id) || null;
   const leagueDecor = li => DECOR.filter(d => d.league !== undefined && (d.kind === 'frame' ? d.league === li : d.league <= li));
   // ---- arena themes (shop) ----
@@ -3035,7 +3049,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('chCount').textContent = `${save.chDone.length}/${CHALLENGES.length}`;
     $('chestCountBtn').textContent = chestTotal() + (save.dailyChestDay !== today ? ' +1' : '');
     $('petCount').textContent = `${save.pets.length}/${PETS.length}`;
-    { const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && c.skins.every(id => save.skins.includes(id))).length;
+    { const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
       $('colCount').textContent = `${save.colDone.length}/${COLLECTIONS.length}` + (ready ? ` · забрать ${ready}` : ''); }
     { const L = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null); $('leagueBtn').innerHTML = `Лига · <b style="color:${L.color}">${L.name}</b> · ${save.season.pts} очков${curHoliday ? ` · ${HOLIDAYS[curHoliday].name}` : ''}`; }
   }
@@ -3262,19 +3276,24 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
                    : row(`<span class="hat-ico off">${hatIcon(h)}</span>`, HATS[h].name, `Награда за коллекцию «${col.name}».`, 'disabled', false, 'Нет'); }).join('');
       const decoRows = kind => { const own = DECOR.filter(d => d.kind === kind && save.decor.includes(d.id));
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
-          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.league !== undefined ? 'Награда лиги в конце сезона.' : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать'); }).join('')
-          : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки' : 'Титулы'} выпадают из сундуков и даются за лигу в конце сезона.</p>`; };
+          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать'); }).join('')
+          : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков и даются за лигу в конце сезона' : 'Титулы выпадают из сундуков, даются за лигу и за коллекции эффектов'}.</p>`; };
       $('shop').innerHTML = '<p class="empty-note">Рамка и титул видны рядом с твоим именем в таблице лидеров.</p><h3>Над головой</h3>' + hats + `<h3>Рамки · ${DECOR.filter(d => d.kind === 'frame' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'frame').length}</h3>` + decoRows('frame') +
         `<h3>Титулы · ${DECOR.filter(d => d.kind === 'title' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'title').length}</h3>` + decoRows('title');
     } else if (shopTab === 'wcol') {
-      $('shop').innerHTML = '<p class="empty-note">Собери все скины коллекции и получи предмет над головой, который надевается на любой скин.</p>' + COLLECTIONS.map(c => {
-        const have = c.skins.filter(id => save.skins.includes(id)).length, full = have === c.skins.length, got = save.colDone.includes(c.id);
-        const chips = c.skins.map(id => { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${save.skins.includes(id) ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }).join('');
-        return `<div class="chal ${got ? 'done' : ''}"><div class="chal-top"><b>${got ? '✓ ' : ''}${c.name}</b><span>${have} / ${c.skins.length}</span></div>` +
-          `<div class="col-row">${chips}</div><div class="track"><div class="fill" style="width:${(have / c.skins.length * 100).toFixed(0)}%"></div></div>` +
-          `<div class="col-foot"><span class="rw"><span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name} + ${c.coins} ◆</span>` +
+      const colCard = c => {
+        const items = colItems(c), have = colOwned(c), full = have === items.length, got = save.colDone.includes(c.id);
+        const chips = c.skins ? items.map(id => { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${save.skins.includes(id) ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }).join('')
+          : items.map(id => { const f = FX.find(x => x.id === id); return `<span class="col-sw fx ${save.fxOwned.includes(id) ? '' : 'off'}" title="${f.name}">${thumbImg('fx', id)}</span>`; }).join('');
+        const names = c.fx ? `<small class="col-names">${items.map(id => FX.find(x => x.id === id).name).join(' · ')}</small>` : '';
+        const reward = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : `титул ${titleTag(c.title)}`;
+        return `<div class="chal ${got ? 'done' : ''}"><div class="chal-top"><b>${got ? '✓ ' : ''}${c.name}</b><span>${have} / ${items.length}</span></div>` +
+          `<div class="col-row">${chips}</div>${names}<div class="track"><div class="fill" style="width:${(have / items.length * 100).toFixed(0)}%"></div></div>` +
+          `<div class="col-foot"><span class="rw">${reward} + ${c.coins} ◆</span>` +
           (got ? '<span class="rw" style="color:var(--prey)">получено</span>' : `<button class="buy" id="col-${c.id}" data-col="${c.id}" ${full ? '' : 'disabled'}>${full ? 'Забрать' : 'Не собрано'}</button>`) + '</div></div>';
-      }).join('');
+      };
+      $('shop').innerHTML = '<h3>Скины</h3><p class="empty-note">Собери все скины коллекции и получи предмет над головой, который надевается на любой скин.</p>' + COLLECTIONS.filter(c => c.skins).map(colCard).join('') +
+        '<h3>Эффекты</h3><p class="empty-note">Собери все эффекты набора и получи уникальный титул для таблицы лидеров.</p>' + COLLECTIONS.filter(c => c.fx).map(colCard).join('');
     } else if (shopTab === 'ch') {
       $('shop').innerHTML = CHALLENGES.map(ch => {
         const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
@@ -3344,9 +3363,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
     else if (b.dataset.col) {
       const c = COLLECTIONS.find(x => x.id === b.dataset.col);
-      if (save.colDone.includes(c.id) || !c.skins.every(id => save.skins.includes(id))) return;
-      save.colDone.push(c.id); if (!save.hats.includes(c.hat)) save.hats.push(c.hat); save.coins += c.coins;
-      toast(`Коллекция «${c.name}» собрана: ${HATS[c.hat].name} + ${c.coins} ◆`);
+      if (save.colDone.includes(c.id) || colOwned(c) < colItems(c).length) return;
+      save.colDone.push(c.id); save.coins += c.coins;
+      if (c.hat && !save.hats.includes(c.hat)) save.hats.push(c.hat);
+      if (c.title && !save.decor.includes(c.title)) save.decor.push(c.title);
+      toast(`Коллекция «${c.name}» собрана: ${c.hat ? HATS[c.hat].name : 'титул «' + decorById(c.title).name + '»'} + ${c.coins} ◆`);
     } else if (b.dataset.arena) {
       const a = ARENAS.find(x => x.id === b.dataset.arena);
       if (a.price && !save.arenas.includes(a.id)) { if (save.coins < a.price) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }

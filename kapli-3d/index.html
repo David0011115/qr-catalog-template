@@ -16,6 +16,7 @@
 :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
 img { max-width: 100%; }
+#appVer { margin: 8px 0 0; text-align: center; color: var(--muted); font-size: .78rem; }
 #iosHint { margin: 0; text-align: center; color: var(--muted); font-size: .85rem; }
 </style>
 <title>Капли 3D</title>
@@ -3892,7 +3893,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+const APP_VER = '9';
+if ('serviceWorker' in navigator) {
+  // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {}));
+}
+// version line at the bottom of Settings, so you can see which build is running
+{ const card = document.getElementById('settingsCard'); if (card) { const p = document.createElement('p'); p.id = 'appVer'; p.textContent = 'Версия приложения: ' + APP_VER; card.appendChild(p); } }
 (function () {
   const btn = document.getElementById('installBtn'), hint = document.getElementById('iosHint');
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;

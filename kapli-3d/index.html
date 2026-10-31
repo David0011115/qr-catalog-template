@@ -1868,7 +1868,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
 
   // ================= spikes (viruses) =================
-  const VIRUS_MASS = 100, VIRUS_COUNT = 14, VIRUS_MAX = 24, VIRUS_COLOR = '#3dff6e';
+  const VIRUS_MASS = 100, VIRUS_COUNT = 8, VIRUS_MAX = 16, VIRUS_COLOR = '#3dff6e';
   const virusCore = new THREE.SphereGeometry(1, 20, 14), virusSpike = new THREE.ConeGeometry(.2, .55, 6);
   const virusMat = new THREE.MeshStandardMaterial({ color: VIRUS_COLOR, emissive: VIRUS_COLOR, emissiveIntensity: .5, roughness: .3, transparent: true, opacity: .85 });
   const virusSpikeMat = new THREE.MeshBasicMaterial({ color: '#b6ffcb' });
@@ -1916,6 +1916,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       n.vx = Math.cos(a) * 40; n.vz = Math.sin(a) * 40; n.hx = Math.cos(a); n.hz = Math.sin(a); n.mergeT = mt; n.vis.jig = 1;
     }
     if (o.isPlayer) { toast('Шип разорвал тебя на части!'); buzz(80); }
+    else if (stats) { stats.botPops = (stats.botPops || 0) + 1; if (o.kind === 'bot' && nearView(c.x, c.z)) toast(`Шип разорвал ${o.name}!`); }
   }
   function updateViruses(dt) {
     const k = Math.exp(-2 * dt);
@@ -2574,9 +2575,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         if (score < preyScore) { prey = t; preyScore = score; }
       }
     }
-    if (c.mass > VIRUS_MASS * 1.3) for (const v of viruses) {
+    // bots don't always notice spikes: cowards are careful, aggressive bots blunder into them
+    const careful = o.kind === 'boss' ? 1 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
+    if (c.mass > VIRUS_MASS * 1.3 && Math.random() < careful) for (const v of viruses) {
       const d = Math.hypot(v.x - c.x, v.z - c.z);
-      if (d < radius(c.mass) + 10) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
+      if (d < radius(c.mass) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
     }
     if (fx || fz) { o.tx = c.x + fx * 20; o.tz = c.z + fz * 20; o.target = null; return; }
     // hunters share a target with their partner
@@ -3901,7 +3904,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '11';
+const APP_VER = '12';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

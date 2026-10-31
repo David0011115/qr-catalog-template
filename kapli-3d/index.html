@@ -755,7 +755,6 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'speed',    lvl: 1, name: 'Обтекаемость',     desc: '+3% к скорости за уровень. Бонус «Ускорение» даёт +45%. Рывок: ×3,2 от стартовой скорости при любой массе', cost: costs(40, 10), info: l => `скорость ${Math.round(100 * (1 + 0.03 * l))}% (+${3 * l}%)` },
     { id: 'dash',     lvl: 1, name: 'Реактивный рывок', desc: 'Рывок перезаряжается на 6% быстрее за уровень', cost: costs(35, 8), info: l => `перезарядка ${(4 * (1 - 0.06 * l)).toFixed(2)} с` },
     { id: 'greed',    lvl: 1, name: 'Жадность',         desc: '+8% монет за раунд за уровень', cost: costs(50, 10), info: l => `+${8 * l}% монет` },
-    { id: 'vision',   lvl: 2, name: 'Обзор',            desc: 'Камера на 8% выше за уровень', cost: costs(25, 5), info: l => `+${8 * l}% обзора` },
     { id: 'magnet',   lvl: 2, name: 'Магнит',           desc: 'Подбираешь крошки дальше на 0,5 за уровень', cost: costs(40, 8), info: l => `+${(0.5 * l).toFixed(1)} к радиусу` },
     { id: 'splitmax', lvl: 3, name: 'Больше частей',    desc: '+1 к максимуму частей за уровень (базово 4)', cost: costs(80, 6, 1.5), info: l => `${4 + l} частей` },
     { id: 'bonus',    lvl: 3, name: 'Удачливость',      desc: 'Бонусы действуют на 10% дольше за уровень', cost: costs(50, 8), info: l => `+${10 * l}% к длительности` },
@@ -771,7 +770,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     ['Движение', ['speed', 'dash', 'light']],
     ['Деление', ['splitmax', 'merge']],
     ['Защита', ['life', 'armor']],
-    ['Награды и обзор', ['greed', 'bonus', 'vision']],
+    ['Награды', ['greed', 'bonus']],
   ];
   // cosmetic effects: one per slot, bought or earned in challenges (ex: true = challenge only)
   const FX = [
@@ -1204,6 +1203,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s) save = { ...save, ...s, up: { ...save.up, ...s.up }, skins: s.skins || ['coral'], quests: s.quests || [] };
   } catch (e) {}
+  // the «Обзор» upgrade was removed (the camera is farther for everyone): refund what was spent on it
+  if (save.up.vision) { save.coins += costs(25, 5).slice(0, save.up.vision).reduce((a, b) => a + b, 0); }
+  delete save.up.vision;
   save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
   function fillQuests() {
     while (save.quests.length < 3) {
@@ -3824,7 +3826,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     } else if (!running) focus.m = 40;
     const spread = player.cells.length > 1 ? Math.max(...player.cells.map(c => Math.hypot(c.x - focus.x, c.z - focus.z))) : 0;
     const fr = radius(focus.m);
-    const h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * (1 + 0.08 * U.vision);   // giants get extra zoom-out
+    const h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 1.25;   // giants get extra zoom-out; 25% farther for everyone
     camLook.lerp(tmpV.set(focus.x, 0, focus.z), 0.16);
     camPos.lerp(tmpV.set(focus.x, h, focus.z + h * 0.62), 0.12);
     camera.position.copy(camPos); camera.lookAt(camLook);

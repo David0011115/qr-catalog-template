@@ -85,6 +85,7 @@ body {
 .board li em { font-style: normal; color: var(--muted); font-size: .7rem; }
 .board li.me { color: var(--me); font-weight: 600; }
 .fr { padding: 0 5px; border-radius: 6px; display: inline-block; line-height: 1.35; }
+.board .fr { padding: 0 3px; line-height: 1.1; border-width: 1px !important; vertical-align: baseline; }
 .fr-fire { animation: frFire 1.2s ease-in-out infinite; }
 @keyframes frFire { 50% { box-shadow: 0 0 9px #ff6a00, 0 0 3px #ffd23f inset; } }
 .fr-rainbow { animation: frHue 4s linear infinite; }
@@ -3826,7 +3827,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     } else if (!running) focus.m = 40;
     const spread = player.cells.length > 1 ? Math.max(...player.cells.map(c => Math.hypot(c.x - focus.x, c.z - focus.z))) : 0;
     const fr = radius(focus.m);
-    const h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 1.25;   // giants get extra zoom-out; 25% farther for everyone
+    const h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 1.25 * (camera.aspect < 1 ? 1 + Math.min(.6, (1 - camera.aspect) * 1.1) : 1);   // giants get extra zoom-out; 25% farther for everyone; narrow portrait screens (phones) up to 60% more
     camLook.lerp(tmpV.set(focus.x, 0, focus.z), 0.16);
     camPos.lerp(tmpV.set(focus.x, h, focus.z + h * 0.62), 0.12);
     camera.position.copy(camPos); camera.lookAt(camLook);

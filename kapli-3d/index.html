@@ -63,6 +63,7 @@ body {
 }
 .logo { font-family: var(--display); font-weight: 800; font-size: 1.05rem; letter-spacing: .02em; }
 .logo span { color: var(--me); }
+.test-badge { font-style: normal; font-family: var(--body); font-size: .7rem; font-weight: 600; color: #1a1030; background: var(--gold); border-radius: 6px; padding: 2px 6px; vertical-align: middle; letter-spacing: .08em; text-shadow: none; }
 .stats { display: flex; gap: 16px; }
 .stat { display: flex; flex-direction: column; align-items: flex-end; }
 .stat small { font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
@@ -117,19 +118,19 @@ body {
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px;
 }
-#minimap { display: block; width: 140px; height: 140px; }
+#minimap { display: block; width: var(--mini-d, 140px); height: var(--mini-d, 140px); }
 .mini-legend { display: flex; gap: 10px; margin-top: 6px; font-size: .68rem; color: var(--muted); }
 .mini-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 @media (max-width: 520px) {
   .board { width: 148px; font-size: .72rem; }
   .board li em { display: none; }
-  #minimap { width: 100px; height: 100px; }
+  #minimap { width: var(--mini-p, 100px); height: var(--mini-p, 100px); }
   .mini-legend { display: none; }
 }
 
 .joy {
-  position: fixed; z-index: 2; width: 128px; height: 128px; margin: -64px 0 0 -64px; border-radius: 50%;
-  border: 2px solid var(--line); background: rgba(24, 27, 56, .35); pointer-events: none;
+  position: fixed; z-index: 2; width: var(--joy, 128px); height: var(--joy, 128px); margin: calc(var(--joy, 128px) / -2) 0 0 calc(var(--joy, 128px) / -2); border-radius: 50%;
+  border: 2px solid var(--line); background: rgba(24, 27, 56, var(--joy-a, .35)); pointer-events: none;
 }
 .knob {
   position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
@@ -147,7 +148,7 @@ body {
   position: fixed; z-index: 2; display: flex; gap: 12px; align-items: flex-end;
   /* sits right above the minimap */
   left: max(16px, env(safe-area-inset-left, 0px));
-  bottom: calc(14px + 194px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(14px + var(--mini-d, 140px) + 54px + env(safe-area-inset-bottom, 0px));
 }
 .act {
   --ring: var(--me);
@@ -162,7 +163,7 @@ body {
 .act b { font-size: .78rem; font-weight: 600; }
 .act small { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 #split { --ring: var(--food); }
-@media (max-width: 520px) { .actions { bottom: calc(14px + 128px + env(safe-area-inset-bottom, 0px)); } }
+@media (max-width: 520px) { .actions { bottom: calc(14px + var(--mini-p, 100px) + 28px + env(safe-area-inset-bottom, 0px)); } }
 .act.off .in { opacity: .55; }
 @media (hover: hover) and (pointer: fine) { .act { width: 76px; height: 76px; cursor: default; } }
 
@@ -277,6 +278,86 @@ body {
 .chal .rw { color: var(--gold); font-size: .82rem; }
 .chal.done .rw { color: var(--prey); }
 .badge-ex { font-size: .66rem; color: var(--gold); text-transform: uppercase; letter-spacing: .1em; }
+.menu-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.menu-btns #startBtn, .menu-btns #installBtn, .menu-btns .hint, .menu-btns .league-btn { grid-column: 1 / -1; }
+.league-btn b { font-weight: 400; font-family: var(--display); }
+.pet-ico { box-shadow: 0 0 10px rgba(255,255,255,.25); }
+.fxrow .ico.thumb { width: 56px; height: 56px; padding: 0; overflow: hidden; border-radius: 12px; background: #160c36; box-shadow: 0 0 0 1px var(--line); }
+.thumb-img { width: 100%; height: 100%; display: block; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.badge-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--row); border: 1px solid transparent; border-radius: 12px; padding: 8px 4px; cursor: pointer; color: var(--fg); font-family: var(--body); min-width: 0; }
+.badge-tile[aria-pressed="true"] { border-color: var(--bc); box-shadow: 0 0 14px var(--bc); }
+.badge-tile.live { opacity: .6; border-style: dashed; border-color: var(--line); }
+.badge-tile svg { width: 64px; height: 64px; filter: drop-shadow(0 0 7px var(--bc)); }
+.badge-tile b { font-size: .72rem; font-weight: 600; line-height: 1.2; text-align: center; }
+.badge-tile small { font-size: .64rem; color: var(--bc); text-transform: uppercase; letter-spacing: .06em; }
+.badge-tile:focus-visible { outline: 3px solid var(--food); outline-offset: 2px; }
+.badge-info { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; background: var(--row); border-radius: 12px; padding: 12px; }
+.badge-info svg { width: 96px; height: 96px; filter: drop-shadow(0 0 12px var(--bc)); }
+.badge-info b { font-family: var(--display); font-weight: 400; font-size: 1.05rem; }
+.badge-info p { margin: 4px 0 0; text-align: left; font-size: .82rem; line-height: 1.45; color: var(--muted); }
+.badge-info p span { color: var(--bc); font-weight: 600; }
+.lg-table { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.lg-table li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; background: var(--row); border-radius: 10px; padding: 8px 12px; }
+.lg-table li.cur { box-shadow: 0 0 0 1px var(--lc), 0 0 14px var(--lc); }
+.lg-table b { font-family: var(--display); font-weight: 400; color: var(--lc); }
+.lg-table span { font-size: .8rem; color: var(--muted); text-align: right; }
+.lg-table small { grid-column: 1 / -1; font-size: .78rem; color: var(--fg); }
+.season-skin { display: flex; gap: 12px; align-items: center; background: var(--row); border-radius: 12px; padding: 10px 12px; }
+.season-skin .sw { flex: none; }
+.season-skin small { color: var(--muted); }
+.menu-btns .btn.ghost { font-size: .9rem; padding: 11px 8px; flex-wrap: wrap; }
+.league { display: flex; flex-direction: column; gap: 6px; background: var(--row); border-radius: 12px; padding: 10px 12px; }
+.league-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.league-top b { font-family: var(--display); font-weight: 400; letter-spacing: .02em; }
+.league small { color: var(--muted); font-size: .78rem; line-height: 1.4; }
+.league .notice { color: var(--prey); font-size: .82rem; }
+.chest-stage { display: grid; place-items: center; padding: 14px 0 4px; }
+.chest { position: relative; width: 120px; height: 86px; border-radius: 14px; background: linear-gradient(180deg, #7b3dff, #3a1580);
+  box-shadow: 0 0 26px rgba(178, 107, 255, .55), inset 0 -6px 0 rgba(0,0,0,.25); }
+.chest .lid { position: absolute; left: -6px; right: -6px; top: -16px; height: 34px; border-radius: 14px 14px 6px 6px; background: linear-gradient(180deg, #ff4fd8, #9b3dff); box-shadow: 0 0 18px rgba(255, 79, 216, .5); transform-origin: 50% 100%; transition: transform .35s; }
+.chest .lock { position: absolute; left: 50%; top: 10px; width: 20px; height: 24px; margin-left: -10px; border-radius: 5px; background: var(--gold); box-shadow: 0 0 12px rgba(255,210,63,.7); }
+.chest.empty { opacity: .35; filter: grayscale(.6); }
+.chest.shake { animation: shake .7s; }
+.chest.open .lid { transform: translateY(-22px) rotate(-14deg); }
+@keyframes shake { 0%,100% { transform: none; } 20% { transform: rotate(-6deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg) scale(1.05); } 80% { transform: rotate(4deg) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .chest.shake { animation: none; } .chest .lid { transition: none; } }
+.reveal { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border-radius: 14px; background: var(--row); border: 1px solid var(--rc, var(--line)); box-shadow: 0 0 22px var(--rc, transparent); }
+.reveal .rar { font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; color: var(--rc); font-weight: 600; }
+.reveal b { font-family: var(--display); font-weight: 400; font-size: 1.3rem; }
+.reveal small { color: var(--muted); }
+.reveal .sw { width: 64px; height: 64px; }
+.odds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; font-size: .8rem; }
+.odds li { display: flex; justify-content: space-between; color: var(--muted); }
+.odds li b { font-weight: 600; }
+.prof-head { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.prof-head div { background: var(--row); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.prof-head small { font-size: .66rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.prof-head b { font-family: var(--display); font-weight: 400; }
+#profChart { width: 100%; height: 130px; display: block; }
+.set { display: flex; flex-direction: column; gap: 8px; }
+.set.row { flex-direction: row; justify-content: space-between; align-items: center; cursor: pointer; }
+.set > span, .set > label { font-weight: 600; }
+.set small { color: var(--muted); font-size: .78rem; }
+.set input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--me); }
+.set input[type="range"] { width: 100%; accent-color: var(--food); touch-action: pan-x; }
+.seg { display: flex; gap: 6px; background: var(--row); padding: 4px; border-radius: 12px; }
+.seg button { flex: 1; border: 0; background: transparent; color: var(--muted); font: 600 .85rem var(--body); padding: 9px 4px; border-radius: 9px; cursor: pointer; }
+.seg button[aria-checked="true"] { background: var(--panel); color: var(--food); box-shadow: 0 0 12px var(--neon-c); }
+.seg button:focus-visible { outline: 3px solid var(--food); outline-offset: 2px; }
+.btn.danger { border-color: var(--threat); color: var(--threat); box-shadow: none; }
+.confirm { display: flex; flex-direction: column; gap: 8px; }
+.confirm p { margin: 0; color: var(--threat); text-align: left; }
+.badge-r { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+.empty-note { color: var(--muted); text-align: center; margin: 8px 0; line-height: 1.5; }
+.mini-wrap.off { display: none !important; }
+.ranked-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--row); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.ranked-row span { display: flex; flex-direction: column; gap: 2px; }
+.ranked-row small { color: var(--muted); font-size: .78rem; }
+.ranked-row input { width: 24px; height: 24px; accent-color: var(--gold); flex: none; }
+.ranked-row.on { box-shadow: 0 0 0 1px var(--gold), 0 0 14px rgba(255, 210, 63, .3); }
+.mode:disabled { opacity: .35; cursor: not-allowed; }
+.mode .lg-tag { color: var(--gold); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
 .modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .mode {
   text-align: left; background: var(--row); color: var(--fg); border: 1px solid transparent; border-radius: 12px;
@@ -330,7 +411,7 @@ body {
 <div id="stage"></div>
 
 <header class="hud">
-  <div class="logo">Капли<span>3D</span></div>
+  <div class="logo">Капли<span>3D</span> <em class="test-badge" id="testBadge" hidden>ТЕСТ</em></div>
   <div class="stats">
     <div class="stat"><small>Масса</small><b id="mass">0</b></div>
     <div class="stat"><small>Скорость</small><b id="speed">0</b><span class="buff" id="buff"></span></div>
@@ -396,13 +477,19 @@ body {
     <div class="modes" id="modes" role="radiogroup" aria-label="Режим игры"></div>
     <h2 class="section-title">Задания</h2>
     <ul class="quests" id="menuQuests"></ul>
-    <div class="btns">
+    <div class="btns menu-btns">
       <button class="btn" id="startBtn">Играть</button>
+      <button class="btn ghost league-btn" id="leagueBtn">Лига</button>
       <button class="btn ghost" id="shopBtn">Магазин <span class="coin" id="menuCoins">0 ◆</span></button>
+      <button class="btn ghost" id="wardBtn">Гардероб</button>
+      <button class="btn ghost" id="petBtn">Питомцы <span id="petCount">0</span></button>
+      <button class="btn ghost" id="chestBtn">Сундуки <span class="coin" id="chestCountBtn">0</span></button>
       <button class="btn ghost" id="installBtn" hidden>Установить на телефон</button>
       <p class="hint" id="iosHint" hidden>Чтобы установить: нажми «Поделиться», затем «На экран „Домой“».</p>
       <button class="btn ghost" id="chBtn">Испытания <span id="chCount">0/0</span></button>
       <button class="btn ghost" id="achBtn">Достижения <span id="achCount">0/0</span></button>
+      <button class="btn ghost" id="profBtn">Профиль</button>
+      <button class="btn ghost" id="setBtn">Настройки</button>
     </div>
     </div>
   </div>
@@ -424,37 +511,111 @@ body {
 
   <div class="card shop-card" id="shopCard" hidden>
     <div class="shop-head"><h1 id="shopTitle">Магазин</h1><b class="coin" id="shopCoins">0 ◆</b></div>
-    <div class="tabs" role="tablist">
-      <button class="tab" id="tabUp" role="tab" aria-selected="true">Улучшения</button>
-      <button class="tab" id="tabSkin" role="tab" aria-selected="false">Скины</button>
-      <button class="tab" id="tabFx" role="tab" aria-selected="false">Эффекты</button>
-      <button class="tab" id="tabCh" role="tab" aria-selected="false">Испытания</button>
-      <button class="tab" id="tabAch" role="tab" aria-selected="false">Достижения</button>
-    </div>
+    <div class="tabs" role="tablist" id="shopTabs"></div>
     <div class="shop" id="shop"></div>
     <button class="btn" id="backBtn">Готово</button>
+  </div>
+
+  <div class="card" id="chestCard" hidden>
+    <div class="shop-head"><h1>Сундуки</h1><b class="coin" id="chestCount">0</b></div>
+    <div class="chest-stage"><div class="chest" id="chestBox"><span class="lid"></span><span class="lock"></span></div></div>
+    <div class="reveal" id="reveal" hidden></div>
+    <p class="hint">Сундук выпадает после раунда: чем лучше раунд, тем выше шанс. Если 4 раунда подряд сундука не было, следующий раунд принесёт его наверняка. Внутри скины, эффекты и питомцы — чем реже, тем сильнее бонус у питомца. Повторный предмет превращается в монеты.</p>
+    <ul class="odds" id="odds"></ul>
+    <button class="btn" id="openChestBtn">Открыть сундук</button>
+    <button class="btn ghost" id="chestBack">Назад</button>
+  </div>
+
+  <div class="card" id="leagueCard" hidden>
+    <h1>Лига</h1>
+    <div class="league" id="leaguePanel"></div>
+    <button class="btn" id="leaguePlay">Играть в лиге</button>
+    <p class="hint" id="leaguePlayNote"></p>
+    <div class="season-skin" id="seasonSkin"></div>
+    <div class="badge-info" id="curBadge"></div>
+    <h2 class="section-title">Лиги и награды сезона</h2>
+    <ul class="lg-table" id="lgTable"></ul>
+    <h2 class="section-title">Следующие сезоны</h2>
+    <ul class="quests" id="seasonNext"></ul>
+    <h2 class="section-title">Как получать очки</h2>
+    <dl class="keys">
+      <dt>Масса</dt><dd>чем больше пик массы за раунд, тем больше очков</dd>
+      <dt>Съеденные капли</dt><dd>+3 за каждую</dd>
+      <dt>Боссы</dt><dd>+10 за каждого</dd>
+      <dt>Победа в режиме</dt><dd>+40</dd>
+      <dt>Место 1–3</dt><dd>+30 / +20 / +10 в «На время» и «Захвате короны»</dd>
+      <dt>Хардкор</dt><dd>все очки ×1,5</dd>
+      <dt>Где начисляются</dt><dd>только в рейтинговом бою — кнопка «Играть в лиге» в этом окне. У каждого сезона свой режим, они идут по кругу: «На время» → «Захват короны» → «Гонка массы» → «Хардкор» → «Королевская битва». Купленные улучшения и бонусы питомцев в рейтинговом бою не действуют</dd>
+      <dt>Королевская битва</dt><dd>место 1–13: чем дольше продержался, тем больше очков; победа +40</dd>
+    </dl>
+    <p class="hint">Сезон длится 14 дней. В праздничные сезоны (Новый год, День влюблённых, Хэллоуин) свои 6 лиг, и награда дается за каждую из них; каждый год праздничные предметы новые. В конце награда начисляется по лиге, которой вы достигли, и выдаётся значок сезона, если вы набрали хотя бы одно очко. Затем очки обнуляются. У каждого из 52 сезонов свой скин и эффект, а на Новый год, Хэллоуин и День влюблённых сезон становится праздничным.</p>
+    <button class="btn" id="leagueBack">Готово</button>
+  </div>
+
+  <div class="card" id="profileCard" hidden>
+    <h1>Профиль</h1>
+    <div class="prof-head" id="profHead"></div>
+    <h2 class="section-title">Статистика</h2>
+    <div class="res-grid" id="profStats"></div>
+    <h2 class="section-title">Рекорды режимов</h2>
+    <dl class="keys" id="profBests"></dl>
+    <h2 class="section-title">Последние раунды · пик массы</h2>
+    <canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas>
+    <h2 class="section-title" id="badgeTitle">Значки сезонов</h2>
+    <div class="badge-info" id="badgeInfo" hidden></div>
+    <div class="badges" id="profBadges"></div>
+    <h2 class="section-title">Сезоны</h2>
+    <ul class="quests" id="profSeasons"></ul>
+    <button class="btn" id="profBack">Готово</button>
+  </div>
+
+  <div class="card" id="settingsCard" hidden>
+    <h1>Настройки</h1>
+    <div class="set"><span>Качество графики</span>
+      <div class="seg" id="setQuality" role="radiogroup"><button data-v="high">Высокое</button><button data-v="medium">Среднее</button><button data-v="low">Низкое</button></div>
+      <small>Низкое: без частиц, ореолов и звёзд — для слабых телефонов</small></div>
+    <div class="set"><span>Размер мини-карты</span>
+      <div class="seg" id="setMiniSize" role="radiogroup"><button data-v="s">Маленькая</button><button data-v="m">Средняя</button><button data-v="l">Большая</button><button data-v="xl">Огромная</button></div></div>
+    <div class="set"><span>Размер джойстика</span>
+      <div class="seg" id="setJoy" role="radiogroup"><button data-v="s">Маленький</button><button data-v="m">Средний</button><button data-v="l">Большой</button></div></div>
+    <div class="set"><label for="setAlpha">Прозрачность джойстика</label><input type="range" id="setAlpha" min="0.1" max="0.8" step="0.05"></div>
+    <label class="set row" for="setVib"><span>Вибрация на телефоне</span><input type="checkbox" id="setVib"></label>
+    <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
+    <div class="set">
+      <button class="btn ghost danger" id="resetBtn">Сбросить весь прогресс</button>
+      <div id="resetConfirm" class="confirm" hidden>
+        <p>Пропадут монеты, уровень, улучшения, скины, эффекты и рекорды. Отменить это нельзя.</p>
+        <button class="btn" id="resetYes">Да, сбросить</button>
+        <button class="btn ghost" id="resetNo">Отмена</button>
+      </div>
+    </div>
+    <button class="btn" id="setBack">Готово</button>
   </div>
 </div>
 
 <script src="three.min.js"></script>
 <script>
 (function () {
+  // TEST MODE: everything unlocked, saved under a separate key so real progress is untouched.
+  const TEST_MODE = false;
+  const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';
   const R = 160, FOOD = 3750, START_MASS = 10, MAX_BONUS = 6;
-  const MAX_MASS = 2500;   // per-part cap (radius ~19) so nothing outgrows the arena
+  const MAX_MASS = 10000;   // per-part cap (radius ~38, about a quarter of the arena)
   const MODES = {
     classic:  { name: 'Классика',       desc: 'Обычный раунд до поражения' },
     timed:    { name: 'На время',       desc: '3 минуты, награда за место' },
     survival: { name: 'Выживание',      desc: 'Волна боссов каждые 15 с, каждая сильнее' },
     split:    { name: 'Только деление', desc: 'Без рывка, деление раз в 3 с, до 10 частей' },
     crown:    { name: 'Захват короны',  desc: 'Корона у самой крупной капли. Держи её дольше всех за 3 минуты' },
-    race:     { name: 'Гонка массы',    desc: 'Кто первым наберёт 1000. Рекорд — лучшее время' },
+    race:     { name: 'Гонка массы',    desc: 'Кто первым наберёт 4000. Рекорд — лучшее время' },
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
     hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Монеты ×2' },
     daily:    { name: 'Испытание дня',  desc: '' },
+    royale:   { name: 'Королевская битва', desc: 'Арена сужается, боты не возрождаются, побеждает последний. Только в лиге, в свой сезон' },
   };
   const TIMED_LEN = 180, PLACE_BONUS = [40, 25, 15];
-  const RACE_GOAL = 1000, TEAM_LEN = 240, DAILY_GOAL = 400, ALLY_COLOR = '#6fa8ff';
+  const RACE_GOAL = 4000, TEAM_LEN = 240, DAILY_GOAL = 3000, ALLY_COLOR = '#6fa8ff';
   const LOWER_BETTER = { race: true, giant: true };
   const DAILY = [
     { id: 'fog',      name: 'Туман',        desc: 'Видно только ближнее окружение' },
@@ -475,7 +636,12 @@ body {
     { id: 'minions20', name: 'Гроза роя',         desc: 'Съешь 20 прислужников за всё время',    coins: 40,  test: T => T.minions >= 20 },
     { id: 'mass500',   name: 'Тяжеловес',         desc: 'Набери массу 500 за раунд',             coins: 30,  test: (T, S) => S.maxMass >= 500 },
     { id: 'mass1500',  name: 'Гигант',            desc: 'Набери массу 1500 за раунд',            coins: 80,  test: (T, S) => S.maxMass >= 1500 },
-    { id: 'mass2500',  name: 'Предел',            desc: 'Дорасти одной частью до массы 2500',    coins: 150, test: (T, S) => S.maxPart >= 2500 },
+    { id: 'mass2500',  name: 'Исполин',           desc: 'Набери массу 2500 за раунд',            coins: 100, test: (T, S) => S.maxMass >= 2500 },
+    { id: 'mass5000',  name: 'Титан',             desc: 'Набери массу 5000 за раунд',            coins: 150, test: (T, S) => S.maxMass >= 5000 },
+    { id: 'mass8000',  name: 'Левиафан',          desc: 'Набери массу 8000 за раунд',            coins: 250, test: (T, S) => S.maxMass >= 8000 },
+    { id: 'part10k',   name: 'Предел',            desc: 'Дорасти одной частью до массы 10 000',  coins: 400, test: (T, S) => S.maxPart >= 10000 },
+    { id: 'bigPrey',   name: 'Крупная дичь',      desc: 'Съешь за раз каплю массой от 1000',     coins: 80,  test: (T, S) => S.biggestPrey >= 1000 },
+    { id: 'bossCrush', name: 'Сокрушитель',       desc: 'Съешь за раз часть босса массой от 3000', coins: 200, test: (T, S) => S.biggestBoss >= 3000 },
     { id: 'leader',    name: 'Король горы',       desc: 'Стань лидером арены',                   coins: 20,  test: (T, S) => S.leader },
     { id: 'timedWin',  name: 'Чемпион',           desc: 'Займи 1 место в режиме «На время»',     coins: 60,  test: (T, S) => S.timedWin },
     { id: 'survive5',  name: 'Несокрушимый',      desc: 'Продержись 5 минут в «Выживании»',      coins: 80,  test: (T, S) => S.mode === 'survival' && S.time >= 300 },
@@ -487,6 +653,29 @@ body {
     { id: 'raceWin',   name: 'Спринтер',          desc: 'Победи в «Гонке массы»',                coins: 60,  test: (T, S) => S.mode === 'race' && S.win },
     { id: 'teamWin',   name: 'Командный игрок',   desc: 'Выиграй «Командный бой»',               coins: 50,  test: (T, S) => S.mode === 'team' && S.win },
     { id: 'giantWin',  name: 'Победитель Колосса', desc: 'Съешь все части Колосса',              coins: 100, test: (T, S) => S.mode === 'giant' && S.win },
+    { id: 'ss1',  name: 'Первый значок',     desc: 'Заверши сезон и получи значок',          coins: 50,   test: () => save.seasonLog.length >= 1 },
+    { id: 'ss5',  name: 'Коллекция значков', desc: 'Собери 5 значков сезонов',               coins: 150,  test: () => save.seasonLog.length >= 5 },
+    { id: 'ss10', name: 'Ветеран лиги',      desc: 'Собери 10 значков сезонов',              coins: 300,  test: () => save.seasonLog.length >= 10 },
+    { id: 'ss26', name: 'Год в лиге',        desc: 'Собери 26 значков (целый год)',          coins: 800,  test: () => save.seasonLog.length >= 26 },
+    { id: 'ss52', name: 'Два года в лиге',   desc: 'Собери все 52 значка',                   coins: 2000, test: () => save.seasonLog.length >= 52 },
+    // holiday achievements carry the year: «Новый год 2027», «Хэллоуин 2027», «День влюблённых 2028»…
+    ...[['newyear', 'Новый год', 'ny', 'Новогоднем сезоне', ['Снежинка', 'Сосулька', 'Снеговик', 'Олень', 'Дед Мороз', 'Повелитель зимы']],
+        ['valentine', 'День влюблённых', 'vd', 'сезоне «День влюблённых', ['Улыбка', 'Симпатия', 'Влюблённость', 'Свидание', 'Купидон', 'Вечная любовь']],
+        ['halloween', 'Хэллоуин', 'hw', 'сезоне «Хэллоуин', ['Тыква', 'Призрак', 'Вампир', 'Ведьма', 'Оборотень', 'Король тьмы']]]
+      .flatMap(([k, title, pre, where, names]) => [2027, 2028, 2029].flatMap(y => {
+        const key = k + '_' + y, inSeason = k === 'newyear' ? `«${where} ${y}»` : `${where} ${y}»`;
+        return [
+          { id: `${pre}_${y}`, name: `${title} ${y}`, desc: `Набери очки в ${inSeason}`, coins: 100,
+            test: () => (save.totals.holLeagueY || {})[key] !== undefined },
+          ...[1, 2, 3, 4, 5].map(i => ({ id: `${pre}_${y}_${i}`, name: `${title} ${y}: ${names[i]}`, desc: `Дойди до лиги «${names[i]}» в ${inSeason}`,
+            coins: [0, 50, 100, 200, 400, 800][i], test: () => ((save.totals.holLeagueY || {})[key] ?? -1) >= i })),
+        ];
+      })),
+    { id: 'lg1', name: 'Серебряная лига',  desc: 'Дойди до лиги «Серебро» в любом сезоне',  coins: 50,  test: () => (save.totals.maxLeague || 0) >= 1 },
+    { id: 'lg2', name: 'Золотая лига',     desc: 'Дойди до лиги «Золото» в любом сезоне',   coins: 100, test: () => (save.totals.maxLeague || 0) >= 2 },
+    { id: 'lg3', name: 'Платиновая лига',  desc: 'Дойди до лиги «Платина» в любом сезоне',  coins: 200, test: () => (save.totals.maxLeague || 0) >= 3 },
+    { id: 'lg4', name: 'Алмазная лига',    desc: 'Дойди до лиги «Алмаз» в любом сезоне',    coins: 400, test: () => (save.totals.maxLeague || 0) >= 4 },
+    { id: 'lg5', name: 'Неоновая легенда', desc: 'Дойди до лиги «Неон» в любом сезоне',     coins: 800, test: () => (save.totals.maxLeague || 0) >= 5 },
     { id: 'rounds25',  name: 'Завсегдатай',       desc: 'Сыграй 25 раундов',                     coins: 40,  test: T => T.rounds >= 25 },
   ];
   const SPLIT_CD = 10, BOT_PARTS = 4, DASH_MULT = 3.2;   // dash = 3.2x the starting speed, whatever the mass
@@ -498,7 +687,8 @@ body {
   const fmtTime = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
   // ================= content =================
-  const costs = (base, n, g = 1.38) => Array.from({ length: n }, (_, i) => Math.round(base * Math.pow(g, i) / 5) * 5);
+  const PRICE_MULT = 2;   // all shop prices (upgrades, skins, effects)
+  const costs = (base, n, g = 1.38) => Array.from({ length: n }, (_, i) => Math.round(base * PRICE_MULT * Math.pow(g, i) / 5) * 5);
   const UPG = [
     { id: 'big',      lvl: 1, name: 'Крупный старт',    desc: '+3 к стартовой массе за уровень', cost: costs(30, 10), info: l => `старт ${10 + 3 * l} массы` },
     { id: 'speed',    lvl: 1, name: 'Обтекаемость',     desc: '+3% к скорости за уровень. Бонус «Ускорение» даёт +45%. Рывок: ×3,2 от стартовой скорости при любой массе', cost: costs(40, 10), info: l => `скорость ${Math.round(100 * (1 + 0.03 * l))}% (+${3 * l}%)` },
@@ -546,6 +736,7 @@ body {
     { id: 'heartTrail',   slot: 'trail', name: 'Сердечный след', desc: 'За каплей летят сердечки',          ex: true },
     { id: 'hexAura',      slot: 'aura',  name: 'Гексащит',       desc: 'Вращающаяся неоновая сетка-щит',    ex: true },
     { id: 'flameAura',    slot: 'aura',  name: 'Огненный пояс',  desc: 'Языки пламени по кругу',            ex: true },
+    { id: 'crownAura',    slot: 'aura',  name: 'Венец',          desc: 'Кольцо из золотых звёзд над каплей', ex: true },
     { id: 'cometAura',    slot: 'aura',  name: 'Комета',         desc: 'Комета с хвостом кружит рядом',     ex: true },
     { id: 'confettiEat',  slot: 'eat',   name: 'Конфетти',       desc: 'Разноцветный салют',                ex: true },
     { id: 'vortexEat',    slot: 'eat',   name: 'Воронка',        desc: 'Добычу затягивает фиолетовый вихрь', ex: true },
@@ -586,14 +777,232 @@ body {
     { id: 'zebra',    name: 'Зебра',       color: '#ffffff', accent: '#111111', pattern: 'stripes', ex: true },
     { id: 'pulsar',   name: 'Пульсар',     color: '#7b3dff', pulse: true, glow: true, ex: true },
     { id: 'prism',    name: 'Призма',      color: '#ff4fd8', accent: '#22e6ff', pattern: 'gradient', glow: true, crown: true, ex: true },
+    { id: 'titan',    name: 'Титан',       color: '#ffd23f', accent: '#ff4fd8', pattern: 'gradient', pulse: true, glow: true, crown: true, ex: true },
     { id: 'shade',    name: 'Тень',        color: '#1a1033', accent: '#7b3dff', pattern: 'rings', glow: true, ex: true },
     { id: 'blackhole', name: 'Чёрная дыра', color: '#000000', accent: '#ff4fd8', pattern: 'rings', glow: true, price: 2000, lvl: 14 },
   ];
+  [...SKINS, ...FX].forEach(x => { if (x.price) x.price *= PRICE_MULT; });
+  // rarities for chest loot; a duplicate turns into coins
+  const RARITY = {
+    common:    { name: 'Обычный',     color: '#b8b5d6', dup: 100,  w: 60 },
+    rare:      { name: 'Редкий',      color: '#4d7cff', dup: 250,  w: 28 },
+    epic:      { name: 'Эпический',   color: '#b26bff', dup: 600,  w: 10 },
+    legendary: { name: 'Легендарный', color: '#ffd23f', dup: 1500, w: 2 },
+  };
+  SKINS.push(
+    { id: 'c_mint',     name: 'Мятный лёд',    color: '#3dffa2', accent: '#22e6ff', pattern: 'gradient', chest: 'common' },
+    { id: 'c_caramel',  name: 'Карамель',      color: '#ff9a3d', accent: '#fff3d6', pattern: 'stripes', chest: 'common' },
+    { id: 'c_berry',    name: 'Ягодный',       color: '#c2185b', accent: '#ffd1e8', pattern: 'dots', chest: 'common' },
+    { id: 'c_peach',    name: 'Персик',        color: '#ffb38a', accent: '#ff6ad5', pattern: 'gradient', chest: 'common' },
+    { id: 'c_circuit',  name: 'Микросхема',    color: '#002b1f', accent: '#ffd23f', pattern: 'grid', glow: true, chest: 'rare' },
+    { id: 'c_nebula',   name: 'Туманность',    color: '#2a0a4a', accent: '#ff9ef2', pattern: 'stars', glow: true, chest: 'rare' },
+    { id: 'c_neontiger',name: 'Неон-тигр',     color: '#ff4fd8', accent: '#120020', pattern: 'zigzag', glow: true, chest: 'rare' },
+    { id: 'c_lavalamp', name: 'Лава-лампа',    color: '#ff3d6e', accent: '#7b3dff', pattern: 'gradient', pulse: true, glow: true, chest: 'epic' },
+    { id: 'c_chameleon',name: 'Хамелеон',      color: '#3dffa2', holo: true, glow: true, chest: 'epic' },
+    { id: 'c_solar',    name: 'Солнечная вспышка', color: '#fff6a0', accent: '#ff6a00', pattern: 'gradient', pulse: true, glow: true, chest: 'epic' },
+    { id: 'c_diamond',  name: 'Бриллиант',     color: '#e8fbff', accent: '#9fd8ff', pattern: 'grid', pulse: true, glow: true, crown: true, chest: 'legendary' },
+    { id: 'c_starborn', name: 'Звездорождённый', color: '#ff4fd8', rainbow: true, glow: true, crown: true, chest: 'legendary' },
+  );
+  FX.push(
+    { id: 'leafTrail',     slot: 'trail', name: 'Листопад',          desc: 'Зелёные и жёлтые листья', chest: 'common' },
+    { id: 'inkTrail',      slot: 'trail', name: 'Чернила',           desc: 'Тёмно-фиолетовые клубы с розовым', chest: 'common' },
+    { id: 'goldTrail',     slot: 'trail', name: 'Золотой след',      desc: 'Сверкающее золото', chest: 'rare' },
+    { id: 'plasmaTrail',   slot: 'trail', name: 'Плазменный след',   desc: 'Быстрые голубые и розовые искры', chest: 'epic' },
+    { id: 'auroraTrail',   slot: 'trail', name: 'Северное сияние',   desc: 'Медленно переливается зелёным и фиолетовым', chest: 'legendary' },
+    { id: 'moonAura',      slot: 'aura',  name: 'Луна',              desc: 'Одинокая луна на орбите', chest: 'common' },
+    { id: 'binaryAura',    slot: 'aura',  name: 'Двойная звезда',    desc: 'Две звезды кружат друг напротив друга', chest: 'rare' },
+    { id: 'snowglobeAura', slot: 'aura',  name: 'Снежный шар',       desc: 'Стеклянная сфера и снег внутри', chest: 'epic' },
+    { id: 'raysAura',      slot: 'aura',  name: 'Солнечная корона',  desc: 'Вращающиеся золотые лучи', chest: 'legendary' },
+    { id: 'popEat',        slot: 'eat',   name: 'Хлопушка',          desc: 'Маленький разноцветный хлопок', chest: 'common' },
+    { id: 'iceEat',        slot: 'eat',   name: 'Ледяной взрыв',     desc: 'Белые осколки и холодная волна', chest: 'rare' },
+    { id: 'miniholeEat',   slot: 'eat',   name: 'Мини-дыра',         desc: 'Добыча исчезает в тёмном вихре', chest: 'epic' },
+    { id: 'rainbowEat',    slot: 'eat',   name: 'Радужный взрыв',    desc: 'Радуга искр и две волны', chest: 'legendary' },
+  );
+  // seasons: 14 days each; every season has its own skin for Diamond and Neon leagues
+  const SEASON_LEN = 14 * 86400000, SEASON_EPOCH = new Date(2026, 10, 1).getTime();   // season 1 starts 1 Nov 2026 (local time)
+  const seasonStarted = Date.now() >= SEASON_EPOCH;
+  const seasonNow = Math.max(1, Math.floor((Date.now() - SEASON_EPOCH) / SEASON_LEN) + 1);
+  const seasonEnd = id => SEASON_EPOCH + id * SEASON_LEN;
+  const fmtDate = t => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  // 52 regular seasons (two years without repeats): each has its own skin (Diamond) and trail (Neon)
+  const SEASON_NAMES = ['Полярное сияние', 'Кибер-закат', 'Звёздный шторм', 'Неоновый дракон', 'Ледяная комета', 'Солнечный ветер',
+    'Глубокий космос', 'Розовая туманность', 'Квантовый скачок', 'Изумрудный пульс', 'Плазменный вихрь', 'Лунная пыль', 'Сверхновая',
+    'Кислотный дождь', 'Фиолетовый горизонт', 'Титановый блеск', 'Магнитная буря', 'Коралловый риф', 'Синтвейв', 'Ретро-аркада',
+    'Электрический лес', 'Огни мегаполиса', 'Вулканический пепел', 'Северный ветер', 'Янтарная волна', 'Мятный бриз', 'Ночной экспресс',
+    'Голографический сон', 'Пиксельный рассвет', 'Гравитон', 'Кристальная пещера', 'Лазерное шоу', 'Тропическая ночь', 'Червоточина',
+    'Хромовое сердце', 'Цифровой океан', 'Сумеречная зона', 'Космический джаз', 'Аметистовый шторм', 'Неоновый самурай', 'Гамма-всплеск',
+    'Лимонный свет', 'Туманный рассвет', 'Орбитальная станция', 'Огненный феникс', 'Морская бездна', 'Звёздная карта', 'Сапфировый лёд',
+    'Кибер-сакура', 'Ионный след', 'Последний рубеж', 'Легенда неона'];
+  const SEASON_PAL = [['#3dffa2', '#7b3dff'], ['#ff4fd8', '#ff9a3d'], ['#0a0630', '#22e6ff'], ['#3dffa2', '#0a2a1a'], ['#ffffff', '#4d7cff'],
+    ['#ffd23f', '#ff3d00'], ['#120830', '#b26bff'], ['#ff6ad5', '#2a0a4a'], ['#22e6ff', '#ffd23f'], ['#00c853', '#b9ff3d'],
+    ['#7b3dff', '#ff3d6e'], ['#c9d6ff', '#3a3f6e'], ['#fff6a0', '#ff4fd8']];
+  const SEASON_PAT = ['gradient', 'stripes', 'dots', 'stars', 'grid', 'zigzag', 'rings', 'gradient'];
+  // every season gets its own colour pair: hues spread by the golden angle so no two seasons look alike
+  const hslHex = (h, s2, l) => '#' + new THREE.Color().setHSL(((h % 360) + 360) % 360 / 360, s2, l).getHexString();
+  const seasonPalette = i => {
+    if (i < 6) return SEASON_PAL[i];
+    const h = (i * 137.508) % 360, light = [.6, .55, .32, .68][i % 4];
+    return [hslHex(h, .9, light), hslHex(h + 35 + (i % 6) * 28, .95, .55)];
+  };
+  // trails differ in shape too, not just colour
+  const TRAIL_STYLES = ['sparks', 'bubbles', 'stars', 'ribbon', 'rings', 'smoke', 'spiral'];
+  const TRAIL_STYLE_NAME = { sparks: 'Искры', bubbles: 'Пузыри', stars: 'Звёздочки', ribbon: 'Лента', rings: 'Кольца', smoke: 'Дымка', spiral: 'Спираль' };
+  const bright = c => { const hsl = {}; new THREE.Color(c).getHSL(hsl); return hsl.l > .3 ? c : '#ffffff'; };
+  const SEASONS = SEASON_NAMES.map((name, i) => {
+    const [c, a] = seasonPalette(i), style = TRAIL_STYLES[i % TRAIL_STYLES.length];
+    return {
+      name,
+      skin: { id: `s_${i + 1}`, name, color: c, accent: a, pattern: SEASON_PAT[i % SEASON_PAT.length], glow: i % 3 !== 1, pulse: i % 4 === 3, crown: i % 5 === 4, holo: i === 27, rainbow: i === 51 },
+      fx: { id: `sf_${i + 1}`, slot: 'trail', name: `След «${name}»`, desc: `${TRAIL_STYLE_NAME[style]} в цветах сезона ${i + 1}`, colors: [bright(c), bright(a)], style },
+    };
+  });
+  // holiday seasons replace the regular one whose dates include the holiday.
+  // They have their own six leagues, a reward for EVERY league, and new items every year.
+  const HOLIDAYS = {
+    halloween: { name: 'Хэллоуин', md: [9, 31], rim: '#ff7a00',
+      leagues: ['Тыква', 'Призрак', 'Вампир', 'Ведьма', 'Оборотень', 'Король тьмы'],
+      colors: ['#ff9a3d', '#c9d6ff', '#ff2d55', '#3dff6e', '#b26bff', '#ff7a00'],
+      editions: [
+        [['skin', 'Тыквенный фонарь', '#ff7a00', '#2a0a3a', 'stripes'], ['fx', 'Огоньки на болоте', ['#3dff6e', '#b9ff3d']], ['skin', 'Летучая мышь', '#2a0a3a', '#b26bff', 'zigzag'],
+         ['fx', 'Ведьмин дым', ['#b26bff', '#3dff6e']], ['fx', 'Призрачный след', ['#c9d6ff', '#b26bff']], ['skin', 'Тыквенный король', '#ff7a00', '#1a0a00', 'gradient', 'crown']],
+        [['skin', 'Чёрный кот', '#120820', '#ffd23f', 'dots'], ['fx', 'Паутина', ['#e8ecff', '#7b3dff']], ['skin', 'Скелет', '#e8ecff', '#120820', 'rings'],
+         ['fx', 'Тыквенные искры', ['#ff7a00', '#ffd23f']], ['fx', 'Кровавый туман', ['#ff2d55', '#7b0020']], ['skin', 'Граф Вампир', '#7b0020', '#ff2d55', 'gradient', 'crown']],
+      ] },
+    newyear: { name: 'Новогодний сезон', md: [0, 1], rim: '#9fe8ff',
+      leagues: ['Снежинка', 'Сосулька', 'Снеговик', 'Олень', 'Дед Мороз', 'Повелитель зимы'],
+      colors: ['#e8f6ff', '#9fe8ff', '#ffffff', '#c98a4b', '#ff2d55', '#4d7cff'],
+      editions: [
+        [['skin', 'Ёлочная игрушка', '#ff2d55', '#ffd23f', 'stars'], ['fx', 'Новогодние огни', ['#ff2d55', '#3dff6e', '#ffd23f']], ['skin', 'Снеговик', '#ffffff', '#9fe8ff', 'dots'],
+         ['fx', 'Снегопад', ['#ffffff', '#9fe8ff']], ['fx', 'Бенгальский огонь', ['#ffd23f', '#ffffff']], ['skin', 'Дед Мороз', '#ff2d55', '#ffffff', 'rings', 'crown']],
+        [['skin', 'Мандарин', '#ff9a3d', '#3dff6e', 'dots'], ['fx', 'Гирлянда', ['#ff2d55', '#ffd23f', '#22e6ff', '#3dff6e']], ['skin', 'Ледяной кристалл', '#9fe8ff', '#ffffff', 'grid'],
+         ['fx', 'Зимнее сияние', ['#3dffa2', '#9fe8ff']], ['fx', 'Фейерверк', ['#ff4fd8', '#ffd23f', '#22e6ff']], ['skin', 'Снежная королева', '#e8f6ff', '#4d7cff', 'gradient', 'crown']],
+      ] },
+    valentine: { name: 'День влюблённых', md: [1, 14], rim: '#ff4f9a',
+      leagues: ['Улыбка', 'Симпатия', 'Влюблённость', 'Свидание', 'Купидон', 'Вечная любовь'],
+      colors: ['#ffd1e8', '#ff9ec4', '#ff6ad5', '#ff4f9a', '#ff2d55', '#ffd23f'],
+      editions: [
+        [['skin', 'Сердцеед', '#ff4f9a', '#ff9ec4', 'gradient'], ['fx', 'Купидон', ['#ff4f9a', '#ff2d55']], ['skin', 'Розовый бутон', '#ff6ad5', '#3dff6e', 'dots'],
+         ['fx', 'Любовные письма', ['#ffffff', '#ff9ec4']], ['fx', 'Розовые лепестки', ['#ff9ec4', '#ff4fd8']], ['skin', 'Королева сердец', '#ff2d55', '#ffd23f', 'stripes', 'crown']],
+        [['skin', 'Шоколадное сердце', '#6b3a1e', '#ff9ec4', 'gradient'], ['fx', 'Стрела амура', ['#ffd23f', '#ff4f9a']], ['skin', 'Валентинка', '#ffd1e8', '#ff2d55', 'rings'],
+         ['fx', 'Конфетти любви', ['#ff4f9a', '#ffd23f', '#ffffff']], ['fx', 'Розовый туман', ['#ff9ec4', '#b26bff']], ['skin', 'Король романтики', '#ff4f9a', '#7b0020', 'zigzag', 'crown']],
+      ] },
+  };
+  // every year gets its own items: ids carry the year, looks rotate between two editions
+  const shiftHue = (c, turns) => turns ? '#' + new THREE.Color(c).offsetHSL(turns * .17, 0, 0).getHexString() : c;
+  function holidayItems(k, y) {
+    const h = HOLIDAYS[k], n = y - 2027, ed = h.editions[((n % 2) + 2) % 2], cyc = Math.max(0, Math.floor(n / 2));
+    return ed.map((d, i) => {
+      if (d[0] === 'skin') return { kind: 'skin', id: `h_${k}_${y}_${i}`, name: `${d[1]} ${y}`, color: shiftHue(d[2], cyc), accent: shiftHue(d[3], cyc), pattern: d[4], glow: true, crown: d[5] === 'crown', pulse: i === 5, season: true, holiday: k };
+      return { kind: 'fx', id: `hf_${k}_${y}_${i}`, slot: 'trail', name: `${d[1]} ${y}`, desc: `Праздничный след: ${h.name} ${y}`, colors: d[2].map(c => shiftHue(c, cyc)), style: TRAIL_STYLES[(i + n) % TRAIL_STYLES.length], season: true, holiday: k };
+    });
+  }
+  const holYearsAdded = new Set();
+  function ensureHolidayItems(k, y) {
+    const key = k + y; if (holYearsAdded.has(key)) return;
+    holYearsAdded.add(key);
+    holidayItems(k, y).forEach(it => { const { kind, ...rest } = it; (kind === 'skin' ? SKINS : FX).push(rest); });
+  }
+  function holidayOf(id) { const r = holidayInfo(id); return r ? r.k : null; }
+  function holidayInfo(id) {
+    const st = SEASON_EPOCH + (id - 1) * SEASON_LEN, en = st + SEASON_LEN, y0 = new Date(st).getFullYear();
+    for (const [k, h] of Object.entries(HOLIDAYS)) for (const y of [y0, y0 + 1]) {
+      const t = new Date(y, h.md[0], h.md[1], 12).getTime();
+      if (t >= st && t < en) return { k, y };
+    }
+    return null;
+  }
+  function seasonData(id) {
+    const hi = holidayInfo(id);
+    if (hi) {
+      ensureHolidayItems(hi.k, hi.y);
+      const h = HOLIDAYS[hi.k];
+      holidayPets(hi.k, hi.y).forEach(pt => addPet(pt));
+      return { name: `${h.name} ${hi.y}`, holiday: hi.k, year: hi.y, items: holidayItems(hi.k, hi.y), pets: holidayPets(hi.k, hi.y) };
+    }
+    const sd = SEASONS[(id - 1) % SEASONS.length];
+    return { name: sd.name, holiday: null, skin: sd.skin, fx: sd.fx, pets: seasonPets((id - 1) % SEASONS.length) };
+  }
+  // what a league gives at the end of a season (cumulative: higher leagues include lower rewards)
+  function seasonRewards(sd, li) {
+    const out = sd.holiday ? sd.items.slice(0, li + 1) : [];
+    if (!sd.holiday && li >= 4) out.push({ kind: 'skin', ...sd.skin });
+    if (!sd.holiday && li >= 5) out.push({ kind: 'fx', ...sd.fx });
+    if (li >= 3) out.push({ kind: 'pet', ...sd.pets[0] });
+    if (li >= 5) out.push({ kind: 'pet', ...sd.pets[1] });
+    return out;
+  }
+  function leagueRewardText(sd, i) {
+    const pet = i === 3 ? `питомец «${sd.pets[0].name}»` : i === 5 ? `питомец «${sd.pets[1].name}»` : '';
+    if (sd.holiday) { const it = sd.items[i]; return [`${it.kind === 'skin' ? 'скин' : 'эффект'} «${it.name}»`, pet].filter(Boolean).join(' + '); }
+    return [i >= 4 ? `скин «${sd.skin.name}»` : '', i >= 5 ? `эффект «${sd.fx.name}»` : '', pet].filter(Boolean).join(' + ');
+  }
+  // league names/colours depend on the season (holiday seasons rename them)
+  const lgView = (li, hk) => hk ? { ...LEAGUES[li], name: HOLIDAYS[hk].leagues[li], color: HOLIDAYS[hk].colors[li] } : LEAGUES[li];
+  SEASONS.forEach(x => { SKINS.push({ ...x.skin, season: true }); FX.push({ ...x.fx, season: true }); });
+  for (const y of [2027, 2028]) Object.keys(HOLIDAYS).forEach(k => ensureHolidayItems(k, y));
+
+  // ================= pets (league rewards: Platinum and Neon; holiday pets in holiday seasons) =================
+  const PET_SPECIES = { drop: 'Капелька', cat: 'Котик', cube: 'Кубик', pyramid: 'Пирамидка', jelly: 'Медуза', firefly: 'Светлячок', robot: 'Робот', ghost: 'Призрачок',
+    pumpkin: 'Тыковка', bat: 'Летучая мышка', snowman: 'Снеговичок', deer: 'Олешек', heart: 'Сердечко', cupid: 'Амурчик' };
+  const REG_SPECIES = ['drop', 'cat', 'cube', 'pyramid', 'jelly', 'firefly', 'robot', 'ghost'];
+  const PET_BONUS = {
+    magnet: { name: 'Сборщик', text: lv => `+${lv} к радиусу сбора крошек` },
+    coins:  { name: 'Копилка', text: lv => `+${5 * lv}% монет за раунд` },
+    speed:  { name: 'Ветерок', text: lv => `+${2 * lv}% к скорости` },
+    xp:     { name: 'Умник',   text: lv => `+${5 * lv}% опыта за раунд` },
+    shield: { name: 'Страж',   text: lv => `+${2 * lv} с неуязвимости в начале раунда` },
+    eater:  { name: 'Обжора',  text: lv => `сам подбирает крошки рядом с собой (радиус ${2 + lv})` },
+  };
+  const BONUS_KEYS = Object.keys(PET_BONUS);
+  const seasonPets = i0 => {
+    const sd = SEASONS[i0], c = bright(sd.skin.color), a = bright(sd.skin.accent);
+    return [
+      { id: `p_${i0 + 1}_pl`, tier: 'Платина', name: `${PET_SPECIES[REG_SPECIES[i0 % 8]]} «${sd.name}»`, species: REG_SPECIES[i0 % 8], color: c, accent: a, bonus: BONUS_KEYS[i0 % 6], lv: 1 },
+      { id: `p_${i0 + 1}_ne`, tier: 'Неон', name: `${PET_SPECIES[REG_SPECIES[(i0 + 3) % 8]]} «${sd.name}»`, species: REG_SPECIES[(i0 + 3) % 8], color: a, accent: c, bonus: BONUS_KEYS[(i0 + 2) % 6], lv: 2 },
+    ];
+  };
+  const HOL_PETS = { halloween: [['pumpkin', '#ff7a00', '#3dff6e', 'magnet'], ['bat', '#6a2a8a', '#b26bff', 'speed']],
+    newyear: [['snowman', '#ffffff', '#ff2d55', 'shield'], ['deer', '#c98a4b', '#ff2d55', 'coins']],
+    valentine: [['heart', '#ff4f9a', '#ffd1e8', 'xp'], ['cupid', '#ffd1e8', '#ffd23f', 'eater']] };
+  const holidayPets = (k, y) => HOL_PETS[k].map(([sp, c, a, bo], i) => { const n = y - 2027; return { id: `hp_${k}_${y}_${i ? 'ne' : 'pl'}`, tier: HOLIDAYS[k].leagues[i ? 5 : 3], holiday: k,
+    name: `${PET_SPECIES[sp]} ${y}`, species: sp, color: shiftHue(c, n), accent: shiftHue(a, n), bonus: BONUS_KEYS[(BONUS_KEYS.indexOf(bo) + n) % BONUS_KEYS.length], lv: i ? 2 : 1 }; });
+  const PETS = [], petMap = {};
+  const addPet = pt => { if (!petMap[pt.id]) { petMap[pt.id] = pt; PETS.push(pt); } };
+  SEASONS.forEach((_, i) => seasonPets(i).forEach(addPet));
+  for (const y of [2027, 2028]) Object.keys(HOL_PETS).forEach(k => holidayPets(k, y).forEach(addPet));
+  // chest pets: by rarity, a stronger bonus the rarer they are
+  [['c_p_mint', 'Мятная капелька', 'drop', '#3dffa2', '#22e6ff', 'magnet', 1, 'common'],
+   ['c_p_ginger', 'Рыжий котик', 'cat', '#ff9a3d', '#fff3d6', 'coins', 1, 'common'],
+   ['c_p_cube', 'Кубик-рубик', 'cube', '#4d7cff', '#ffd23f', 'xp', 1, 'common'],
+   ['c_p_lav', 'Лавандовая медуза', 'jelly', '#c38bff', '#ff9ec4', 'speed', 1, 'common'],
+   ['c_p_neonfly', 'Неоновый светлячок', 'firefly', '#22e6ff', '#ff4fd8', 'eater', 1, 'rare'],
+   ['c_p_rusty', 'Ржавый робот', 'robot', '#c98a4b', '#ffd23f', 'shield', 1, 'rare'],
+   ['c_p_ice', 'Ледяная пирамидка', 'pyramid', '#9fe8ff', '#ffffff', 'magnet', 2, 'rare'],
+   ['c_p_chameleon', 'Призрак-хамелеон', 'ghost', '#3dffa2', '#b26bff', 'speed', 2, 'epic'],
+   ['c_p_goldcat', 'Золотой котик', 'cat', '#ffd23f', '#ff9a3d', 'coins', 2, 'epic'],
+   ['c_p_plasma', 'Плазменная медуза', 'jelly', '#ff4fd8', '#22e6ff', 'eater', 2, 'epic'],
+   ['c_p_star', 'Звёздный робот', 'robot', '#e8fbff', '#ffd23f', 'xp', 3, 'legendary'],
+   ['c_p_rainbow', 'Радужный светлячок', 'firefly', '#ff4fd8', '#3dffa2', 'shield', 3, 'legendary'],
+  ].forEach(([id, name, species, color, accent, bonus, lv, chest]) => addPet({ id, name, species, color, accent, bonus, lv, chest, tier: RARITY[chest].name }));
+  function petById(id) {
+    if (!id) return null;
+    if (!petMap[id]) { const m = /^hp_(\w+?)_(\d{4})_/.exec(id); if (m && HOL_PETS[m[1]]) holidayPets(m[1], +m[2]).forEach(addPet); }
+    return petMap[id] || null;
+  }
+  const LEAGUES = [
+    { name: 'Бронза',  pts: 0,    color: '#cd7f32', coins: 50 },
+    { name: 'Серебро', pts: 300,  color: '#c0c8e0', coins: 150 },
+    { name: 'Золото',  pts: 800,  color: '#ffd23f', coins: 300 },
+    { name: 'Платина', pts: 1600, color: '#7fe8ff', coins: 600 },
+    { name: 'Алмаз',   pts: 3000, color: '#b26bff', coins: 1000, skin: true },
+    { name: 'Неон',    pts: 5000, color: '#ff4fd8', coins: 2000, skin: true, fx: true },
+  ];
+  const leagueOf = pts => LEAGUES.reduce((best, l, i) => pts >= l.pts ? i : best, 0);
   const QUESTS = [
     { id: 'kills3',  text: 'Съешь 3 капли за раунд',     stat: 'kills',   goal: 3,   coins: 20, xp: 40 },
     { id: 'kills6',  text: 'Съешь 6 капель за раунд',    stat: 'kills',   goal: 6,   coins: 45, xp: 80 },
-    { id: 'mass150', text: 'Набери массу 250',           stat: 'maxMass', goal: 250, coins: 20, xp: 40 },
-    { id: 'mass350', text: 'Набери массу 600',           stat: 'maxMass', goal: 600, coins: 50, xp: 90 },
+    { id: 'mass150', text: 'Набери массу 600',           stat: 'maxMass', goal: 600, coins: 25, xp: 50 },
+    { id: 'mass350', text: 'Набери массу 2000',          stat: 'maxMass', goal: 2000, coins: 60, xp: 110 },
     { id: 'bosses2', text: 'Съешь 2 боссов за раунд',    stat: 'bosses',  goal: 2,   coins: 90, xp: 180 },
     { id: 'minions5', text: 'Съешь 5 прислужников Матки', stat: 'minions', goal: 5,  coins: 25, xp: 50 },
     { id: 'leader',  text: 'Стань лидером арены',        stat: 'leader',  goal: 1,   coins: 30, xp: 60 },
@@ -622,7 +1031,7 @@ body {
   let save = { best: 0, coins: 0, xp: 0, up: {}, skin: 'coral', skins: ['coral'], quests: [] };
   UPG.forEach(u => save.up[u.id] = 0);
   try {
-    const s = JSON.parse(localStorage.getItem('blobs3d-save-v2'));
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s) save = { ...save, ...s, up: { ...save.up, ...s.up }, skins: s.skins || ['coral'], quests: s.quests || [] };
   } catch (e) {}
   save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
@@ -634,8 +1043,19 @@ body {
   }
   fillQuests();
   try { localStorage.removeItem('blobs3d-save'); } catch (e) {}
-  const persist = () => { try { localStorage.setItem('blobs3d-save-v2', JSON.stringify(save)); } catch (e) {} };
+  const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
   save.mode = MODES[save.mode] ? save.mode : 'classic';
+  // ranked (league) battles: only these modes, league points only here, purchased upgrades switched off
+  // each league season is played in one mode; they rotate season by season
+  const LEAGUE_ROT = ['timed', 'crown', 'race', 'hardcore', 'royale'];
+  const seasonMode = id => LEAGUE_ROT[(id - 1) % LEAGUE_ROT.length];
+  const leagueMode = () => seasonMode(save.season.id);
+  const nextSeasonOf = m => { for (let k = save.season.id; k < save.season.id + 6; k++) if (seasonMode(k) === m) return k; return '?'; };
+  save.ranked = false;   // league rounds start only from the League window
+  const ZERO_UP = Object.fromEntries(UPG.map(u => [u.id, 0]));
+  let U = save.up;
+  const fixModeForLeague = () => { if (save.mode === 'royale' && !TEST_MODE) save.mode = 'classic'; };   // test mode: royale open for testing
+  let pendingRanked = false;   // true when the round is started from «Играть в лиге»
   save.bests = { classic: save.best || 0, timed: 0, survival: 0, split: 0, crown: 0, race: 0, team: 0, giant: 0, hardcore: 0, daily: 0, ...(save.bests || {}) };
   save.ach = save.ach || [];
   save.totals = { kills: 0, bosses: 0, minions: 0, crumbs: 0, ejects: 0, rounds: 0, ...(save.totals || {}) };
@@ -643,6 +1063,43 @@ body {
   save.fx = { trail: null, aura: null, eat: null, ...(save.fx || {}) };
   save.fxOwned = save.fxOwned || [];
   save.chDone = save.chDone || [];
+  save.pets = save.pets || []; save.pet = save.pet || null;
+  save.chests = save.chests || 0; save.pity = save.pity || 0;
+  save.history = save.history || [];
+  save.totals.modeRounds = save.totals.modeRounds || {};
+  save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', ...(save.settings || {}) };
+  save.season = save.season || { id: seasonNow, pts: 0 };
+  [...(save.skins || []), ...(save.fxOwned || [])].forEach(id => { const m = /^hf?_(\w+?)_(\d{4})_\d$/.exec(id); if (m && HOLIDAYS[m[1]]) ensureHolidayItems(m[1], +m[2]); });
+  save.seasonLog = save.seasonLog || [];
+  let seasonNotice = '';
+  if (!seasonStarted) save.season = { id: 1, pts: 0 };   // nothing counts before the first season opens
+  if (save.season.id !== seasonNow) {
+    // a season ended while away: pay out by the league reached
+    const li = leagueOf(save.season.pts), sd = seasonData(save.season.id), L = lgView(li, sd.holiday);
+    if (save.season.pts > 0) {   // badge and rewards only for a season you actually played
+      save.coins += L.coins;
+      let extra = '';
+      for (const it of seasonRewards(sd, li)) {
+        const list = it.kind === 'skin' ? save.skins : it.kind === 'pet' ? save.pets : save.fxOwned;
+        if (!list.includes(it.id)) { list.push(it.id); extra += `, ${({ skin: 'скин', fx: 'эффект', pet: 'питомец' })[it.kind]} «${it.name}»`; }
+      }
+      save.seasonLog.push({ id: save.season.id, league: li, pts: save.season.pts, name: sd.name, holiday: sd.holiday, year: sd.year || null });
+      seasonNotice = `Сезон ${save.season.id} «${sd.name}» завершён: лига «${L.name}», получен значок. Награда: ${L.coins} ◆${extra}.`;
+      if (sd.holiday) { const ky = sd.holiday + '_' + sd.year; save.totals.holLeagueY = save.totals.holLeagueY || {}; save.totals.holLeagueY[ky] = Math.max(save.totals.holLeagueY[ky] ?? 0, li); }
+      if (sd.holiday) { save.totals.holLeague = save.totals.holLeague || {}; save.totals.holLeague[sd.holiday] = Math.max(save.totals.holLeague[sd.holiday] || 0, li); }
+    }
+    save.season = { id: seasonNow, pts: 0 };
+  }
+  if (TEST_MODE) {
+    // unlock all content for testing; achievements and challenges stay open so they can be tried
+    save.skins = SKINS.map(k => k.id);
+    save.fxOwned = FX.map(f => f.id);
+    save.pets = PETS.map(pt => pt.id);
+    UPG.forEach(u => save.up[u.id] = u.cost.length);
+    save.coins = Math.max(save.coins, 999999);
+    save.xp = Math.max(save.xp, 10450);          // level 20
+    save.chests = Math.max(save.chests, 25);
+  }
   save.totals.timedWins = save.totals.timedWins || 0;
   save.totals.splits = save.totals.splits || 0;
   for (const k of ['crownWins', 'raceWins', 'giantWins', 'dailies', 'bestWave', 'bestKills', 'time']) save.totals[k] = save.totals[k] || 0;
@@ -656,22 +1113,24 @@ body {
     { id: 'ch_giant3',    name: 'Колоссобой',         desc: 'Победи Колосса быстрее чем за 3 минуты',   goal: 1,    prog: () => save.bests.giant > 0 && save.bests.giant <= 180 ? 1 : 0, reward: ['fx', 'starfall'] },
     { id: 'ch_rounds50',  name: 'Марафонец',          desc: 'Сыграй 50 раундов',                        goal: 50,   prog: () => save.totals.rounds,    reward: ['fx', 'electricAura'] },
     { id: 'ch_split300',  name: 'Мастер деления',     desc: 'Разделись 300 раз за всё время',           goal: 300,  prog: () => save.totals.splits,    reward: ['skin', 'hologram'] },
-    { id: 'ch_hard1500',  name: 'Тёмная сторона',     desc: 'Набери массу 1500 в «Хардкоре»',           goal: 1500, prog: () => save.bests.hardcore || 0, reward: ['fx', 'voidTrail'] },
+    { id: 'ch_hard1500',  name: 'Тёмная сторона',     desc: 'Набери массу 5000 в «Хардкоре»',           goal: 5000, prog: () => save.bests.hardcore || 0, reward: ['fx', 'voidTrail'] },
     { id: 'ch_team10',    name: 'Капитан',            desc: 'Выиграй 10 «Командных боёв»',              goal: 10,   prog: () => save.bests.team || 0, reward: ['skin', 'abyss'] },
     { id: 'ch_round20',   name: 'Сердцеед',           desc: 'Съешь 20 капель за один раунд',            goal: 20,   prog: () => save.totals.bestKills, reward: ['fx', 'heartTrail'] },
     { id: 'ch_eject500',  name: 'Щедрая душа',        desc: 'Выброси 500 сгустков массы',               goal: 500,  prog: () => save.totals.ejects,    reward: ['fx', 'snowTrail'] },
-    { id: 'ch_race2',     name: 'Молния',             desc: 'Выиграй «Гонку массы» быстрее 2 минут',    goal: 1,    prog: () => save.bests.race > 0 && save.bests.race <= 120 ? 1 : 0, reward: ['fx', 'sparkTrail'] },
+    { id: 'ch_race2',     name: 'Молния',             desc: 'Выиграй «Гонку массы» быстрее 5 минут',    goal: 1,    prog: () => save.bests.race > 0 && save.bests.race <= 300 ? 1 : 0, reward: ['fx', 'sparkTrail'] },
     { id: 'ch_race3',     name: 'Полосатый рейс',     desc: 'Выиграй «Гонку массы» 3 раза',             goal: 3,    prog: () => save.totals.raceWins,  reward: ['skin', 'zebra'] },
     { id: 'ch_crown5',    name: 'Венценосный',        desc: 'Победи в «Захвате короны» 5 раз',          goal: 5,    prog: () => save.totals.crownWins, reward: ['skin', 'prism'] },
     { id: 'ch_wave15',    name: 'Стена',              desc: 'Дойди до 15-й волны в «Выживании»',        goal: 15,   prog: () => save.totals.bestWave,  reward: ['fx', 'flameAura'] },
     { id: 'ch_daily7',    name: 'Постоянство',        desc: 'Пройди 7 испытаний дня',                   goal: 7,    prog: () => save.totals.dailies,   reward: ['fx', 'cometAura'] },
     { id: 'ch_giant5',    name: 'Гроза гигантов',     desc: 'Победи Колосса 5 раз',                     goal: 5,    prog: () => save.totals.giantWins, reward: ['fx', 'vortexEat'] },
-    { id: 'ch_split1000', name: 'Рой разума',         desc: 'Набери массу 1000 в «Только деление»',     goal: 1000, prog: () => save.bests.split || 0, reward: ['skin', 'matrix'] },
+    { id: 'ch_split1000', name: 'Рой разума',         desc: 'Набери массу 4000 в «Только деление»',     goal: 4000, prog: () => save.bests.split || 0, reward: ['skin', 'matrix'] },
     { id: 'ch_crumbs20k', name: 'Ненасытный',         desc: 'Собери 20 000 крошек за всё время',        goal: 20000, prog: () => save.totals.crumbs,   reward: ['skin', 'magma'] },
     { id: 'ch_time2h',    name: 'Ледяное спокойствие', desc: 'Проведи на арене 2 часа суммарно',        goal: 7200, prog: () => save.totals.time, time: true, reward: ['skin', 'glacier'] },
     { id: 'ch_level15',   name: 'Ветеран',            desc: 'Достигни 15-го уровня',                    goal: 15,   prog: () => playerLevel(),         reward: ['skin', 'pulsar'] },
     { id: 'ch_skins10',   name: 'Модник',             desc: 'Собери 10 скинов',                         goal: 10,   prog: () => save.skins.length,     reward: ['fx', 'hexAura'] },
     { id: 'ch_ach12',     name: 'Коллекционер наград', desc: 'Получи 12 достижений',                    goal: 12,   prog: () => save.ach.length,       reward: ['fx', 'confettiEat'] },
+    { id: 'ch_mass10k',   name: 'Сверхгигант',        desc: 'Набери массу 10 000 в «Классике»',         goal: 10000, prog: () => save.bests.classic || 0, reward: ['skin', 'titan'] },
+    { id: 'ch_surv20',    name: 'Последний рубеж',    desc: 'Дойди до 20-й волны в «Выживании»',        goal: 20,   prog: () => save.totals.bestWave,  reward: ['fx', 'crownAura'] },
     { id: 'ch_kills500',  name: 'Легенда арены',      desc: 'Съешь 500 капель за всё время',            goal: 500,  prog: () => save.totals.kills,     reward: ['skin', 'shade'] },
   ];
   const rewardName = ([type, id]) => type === 'skin' ? `скин «${SKINS.find(k => k.id === id).name}»` : `эффект «${FX.find(f => f.id === id).name}»`;
@@ -689,6 +1148,7 @@ body {
   }
   // one-time reset of score stats after the runaway-growth bug
   if (!save.scoreReset1) { save.best = 0; save.bests.classic = 0; save.coins = 0; save.scoreReset1 = true; persist(); }
+  if (TEST_MODE) save.coins = Math.max(save.coins, 999999);
   function levelInfo(xp) {
     let level = 1, need = 100;
     while (xp >= need) { xp -= need; level++; need = 100 + 50 * (level - 1); }
@@ -700,6 +1160,7 @@ body {
   // ================= scene =================
   const stage = $('stage');
   const renderer = new THREE.WebGLRenderer({ antialias: true });
+  let QUALITY = 'high';
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = false;   // neon look relies on emissive light, not shadows
   stage.appendChild(renderer.domElement);
@@ -727,6 +1188,7 @@ body {
     return sp;
   };
 
+  const nebulae = [];
   // starfield all around: the arena floats in space
   {
     const n = 2200, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
@@ -739,12 +1201,12 @@ body {
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const stars = new THREE.Points(geo, new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: false, vertexColors: true, map: dotTex, transparent: true, depthWrite: false, fog: false }));
+    var stars = new THREE.Points(geo, new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: false, vertexColors: true, map: dotTex, transparent: true, depthWrite: false, fog: false }));
     scene.add(stars);
     // nebula clouds under and around the arena
     [['#ff4fd8', -260, -90, 120], ['#22e6ff', 240, -110, -160], ['#7b3dff', 40, -140, 260], ['#ff3d6e', -180, -120, -260]].forEach(([c, x, y, z]) => {
       const neb = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: c, transparent: true, opacity: .32, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-      neb.position.set(x, y, z); neb.scale.setScalar(520); scene.add(neb);
+      neb.position.set(x, y, z); neb.scale.setScalar(520); scene.add(neb); nebulae.push(neb);
     });
   }
 
@@ -812,6 +1274,7 @@ body {
     grp.position.y = .92;
     return grp;
   }
+  const allVis = [];
   function makeVis(color) {
     const mesh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .45, roughness: .22, metalness: .1, transparent: true, opacity: .9 }));
     const glow = glowSprite(color, 3.2, .85); mesh.add(glow);
@@ -828,7 +1291,9 @@ body {
     ring.rotation.x = -Math.PI / 2;
     mesh.visible = ring.visible = false;
     scene.add(mesh, ring);
-    return { mesh, ring, crown, shield, glow, jig: 0 };
+    const vis = { mesh, ring, crown, shield, glow, jig: 0 };
+    allVis.push(vis);
+    return vis;
   }
 
   const texCache = {};
@@ -882,6 +1347,8 @@ body {
   let pNext = 0;
   const tmpCol = new THREE.Color();
   function emit(x, y, z, color, n, speed, life) {
+    if (QUALITY === 'low') return;
+    if (QUALITY === 'medium') n = Math.ceil(n / 2);
     tmpCol.set(color);
     for (let i = 0; i < n; i++) {
       const d = pData[pNext], k = pNext * 3;
@@ -971,10 +1438,15 @@ body {
       case 'starfall': emitIcons(x, y, z, 'star', '#ffd23f', 12, 1.5 + r * 0.25); emit(x, y, z, '#ffd23f', 24, 12, .7); break;
       case 'confettiEat': ['#ff4fd8', '#22e6ff', '#ffd23f', '#3dffa2', '#b26bff'].forEach(cc => emit(x, y, z, cc, 12, 15, .9)); break;
       case 'vortexEat': wave(x, z, '#7b3dff', r * 4 + 4, r * .4, .6); wave(x, z, '#ff4fd8', r * 3 + 2, r * .3, .45); emit(x, y, z, '#b26bff', 30, 5, .7); break;
+      case 'popEat': ['#ff4fd8', '#22e6ff', '#ffd23f', '#3dffa2', '#b26bff'].forEach(cc => emit(x, y, z, cc, 6, 9, .5)); break;
+      case 'iceEat': emit(x, y, z, '#ffffff', 30, 14, .6); emit(x, y, z, '#9fe8ff', 20, 8, .9); wave(x, z, '#9fe8ff', r, r * 3.5 + 3, .6); break;
+      case 'miniholeEat': wave(x, z, '#7b3dff', r * 4 + 4, r * .3, .7); emit(x, y, z, '#3a0a8e', 25, 3, .8); emit(x, y, z, '#ff4fd8', 10, 2, .6); break;
+      case 'rainbowEat': for (let k = 0; k < 6; k++) emit(x, y, z, tmpCol.setHSL(k / 6, 1, .6).getHex(), 12, 16, .9); wave(x, z, '#ff4fd8', r, r * 5 + 5, .8); wave(x, z, '#22e6ff', r * .5, r * 4 + 3, .6); break;
       case 'supernova': wave(x, z, '#ff4fd8', r, r * 6 + 6, .8); wave(x, z, '#22e6ff', r * .5, r * 4 + 3, .55); emit(x, y, z, '#ffffff', 70, 24, .9); break;
     }
   }
-  let trailT = 0;
+  let trailT = 0, trailCache = null;
+  const trailDef = () => (trailCache && trailCache.id === save.fx.trail) ? trailCache : (trailCache = FX.find(f => f.id === save.fx.trail) || null);
   function trailFx(dt, now) {
     if (!save.fx.trail) return;
     trailT += dt; if (trailT < 0.035) return; trailT = 0;
@@ -989,6 +1461,25 @@ body {
         case 'snowTrail': emit(x, r * .6, z, Math.random() < .5 ? '#ffffff' : '#bfefff', 2, 1, 1.1); break;
         case 'sparkTrail': emit(x, r * .5, z, Math.random() < .5 ? '#ffffff' : '#22e6ff', 3, 6, .25); break;
         case 'heartTrail': if (Math.random() < .3) emitIcons(x, r * .6, z, 'heart', '#ff4f9a', 1, .9); emit(x, r * .5, z, '#ff4f9a', 1, 1.5, .5); break;
+        case 'leafTrail': emit(x, r * .5, z, ['#3dffa2', '#ffd23f', '#9be15d'][(Math.random() * 3) | 0], 2, 1.5, 1); break;
+        case 'inkTrail': emit(x, r * .4, z, Math.random() < .7 ? '#3a0a8e' : '#ff4fd8', 3, 1, 1.1); break;
+        case 'goldTrail': emit(x, r * .5, z, Math.random() < .5 ? '#ffd23f' : '#fff6a0', 3, 2, .7); break;
+        case 'plasmaTrail': emit(x, r * .5, z, Math.random() < .5 ? '#22e6ff' : '#ff4fd8', 4, 6, .3); break;
+        case 'auroraTrail': emit(x, r * .6, z, tmpCol.setHSL(.3 + .45 * (.5 + .5 * Math.sin(now / 1200)), 1, .6).getHex(), 3, 1.2, 1.2); break;
+        default: {
+          const f = trailDef(); if (!f || !f.colors) break;
+          const col = f.colors[(Math.random() * f.colors.length) | 0];
+          switch (f.style) {
+            case 'bubbles': emit(x, r * .3, z, col, 1, 1, 1.3); break;
+            case 'stars': if (Math.random() < .35) emitIcons(x, r * .6, z, 'star', col, 1, .9); else emit(x, r * .5, z, col, 1, 1.5, .6); break;
+            case 'ribbon': emit(x, r * .5, z, col, 4, .25, .9); break;
+            case 'rings': if (Math.random() < .2) wave(x, z, col, r * .6, r * 1.5, .5); emit(x, r * .4, z, col, 1, .6, .5); break;
+            case 'smoke': emit(x, r * .4, z, col, 2, .7, 1.5); break;
+            case 'spiral': { const a = performance.now() / 110; emit(x + Math.cos(a) * r * .7, r * .5, z + Math.sin(a) * r * .7, col, 2, .4, .9); break; }
+            default: emit(x, r * .5, z, col, 3, 2.2, .75);
+          }
+          break;
+        }
         case 'voidTrail': emit(x, r * .5, z, Math.random() < .5 ? '#7b3dff' : '#3a0a8e', 3, 1.5, 1); break;
       }
     }
@@ -1019,6 +1510,11 @@ body {
     if (type === 'hexAura') add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 1), new THREE.MeshBasicMaterial({ color: '#22e6ff', wireframe: true, transparent: true, opacity: .45, blending: THREE.AdditiveBlending, depthWrite: false })));
     if (type === 'flameAura') for (let i = 0; i < 12; i++) add(glowSprite(i % 2 ? '#ff6a00' : '#ffd23f', 0.6, 1), { a: i / 12 * Math.PI * 2 });
     if (type === 'cometAura') { const head = add(glowSprite('#ffffff', 0.7, 1)); head.add(glowSprite('#22e6ff', 1.6, .8)); }
+    if (type === 'crownAura') for (let i = 0; i < 8; i++) { const sp = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.star, color: '#ffd23f', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), { a: i / 8 * Math.PI * 2 }); sp.scale.setScalar(.45); }
+    if (type === 'moonAura') { const m = add(new THREE.Mesh(new THREE.SphereGeometry(.22, 14, 10), new THREE.MeshBasicMaterial({ color: '#e8ecff' }))); m.add(glowSprite('#c9d6ff', 1.4, .7)); }
+    if (type === 'binaryAura') { const a1 = add(glowSprite('#ffd23f', .9, 1), { a: 0 }); a1.add(glowSprite('#ffd23f', 1.8, .5)); const a2 = add(glowSprite('#22e6ff', .9, 1), { a: Math.PI }); a2.add(glowSprite('#22e6ff', 1.8, .5)); }
+    if (type === 'snowglobeAura') add(new THREE.Mesh(new THREE.SphereGeometry(1.3, 20, 14), new THREE.MeshBasicMaterial({ color: '#cfefff', wireframe: true, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false })));
+    if (type === 'raysAura') for (let i = 0; i < 12; i++) { const sp = add(glowSprite(i % 2 ? '#ffd23f' : '#ff9a3d', 1, .9), { a: i / 12 * Math.PI * 2 }); sp.scale.set(.22, 1.1, 1); }
     if (type === 'galaxyAura') for (let i = 0; i < 22; i++) add(glowSprite(i % 3 ? '#b26bff' : '#ff4fd8', 0.35, .95), { a: Math.random() * Math.PI * 2, r: 1.35 + Math.random() * 0.8, w: 0.6 + Math.random() * 1.2 });
     return grp;
   }
@@ -1045,7 +1541,143 @@ body {
       o.position.set(Math.cos(a) * 2.1, .4 + Math.sin(a * 1.5) * .3, Math.sin(a) * 2.1);
       if (Math.random() < .6) { o.getWorldPosition(tmpV3); emit(tmpV3.x, tmpV3.y, tmpV3.z, '#9fe8ff', 1, .6, .6); }
     }
+    if (type === 'crownAura') g.children.forEach(o => { const a = o.userData.a + t * 1.2; o.position.set(Math.cos(a) * .75, 1.45 + Math.sin(t * 2 + o.userData.a) * .06, Math.sin(a) * .75); });
+    if (type === 'moonAura') { const a = t * 1.1; g.children[0].position.set(Math.cos(a) * 2.1, .5, Math.sin(a) * 2.1); }
+    if (type === 'binaryAura') g.children.forEach(o => { const a = o.userData.a + t * 2; o.position.set(Math.cos(a) * 1.9, .3 + Math.sin(a) * .2, Math.sin(a) * 1.9); });
+    if (type === 'snowglobeAura') { g.position.y = .25; g.rotation.y = t * .3; if (Math.random() < .25) { g.children[0].getWorldPosition(tmpV3); const sc = v.mesh.scale.x; emit(tmpV3.x + (Math.random() - .5) * sc * 1.6, tmpV3.y + sc * .9, tmpV3.z + (Math.random() - .5) * sc * 1.6, '#ffffff', 1, .3, 1.4); } }
+    if (type === 'raysAura') g.children.forEach(o => { const a = o.userData.a + t * .8, pulse = 1.35 + Math.sin(t * 3 + o.userData.a * 2) * .12; o.position.set(Math.cos(a) * pulse, .1, Math.sin(a) * pulse); });
     if (type === 'galaxyAura') { g.rotation.x = .45; g.children.forEach(o => { const d = o.userData, a = d.a + t * d.w; o.position.set(Math.cos(a) * d.r, Math.sin(a * 3) * .05, Math.sin(a) * d.r); }); }
+  }
+
+  // ================= spikes (viruses) =================
+  const VIRUS_MASS = 100, VIRUS_COUNT = 14, VIRUS_MAX = 24, VIRUS_COLOR = '#3dff6e';
+  const virusCore = new THREE.SphereGeometry(1, 20, 14), virusSpike = new THREE.ConeGeometry(.2, .55, 6);
+  const virusMat = new THREE.MeshStandardMaterial({ color: VIRUS_COLOR, emissive: VIRUS_COLOR, emissiveIntensity: .5, roughness: .3, transparent: true, opacity: .85 });
+  const virusSpikeMat = new THREE.MeshBasicMaterial({ color: '#b6ffcb' });
+  let viruses = [];
+  function makeVirusMesh() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(virusCore, virusMat));
+    const n = 16;
+    for (let i = 0; i < n; i++) {   // spikes on a fibonacci sphere
+      const y = 1 - (i + .5) / n * 2, r = Math.sqrt(1 - y * y), a = i * 2.39996;
+      const dir = new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
+      const sp = new THREE.Mesh(virusSpike, virusSpikeMat);
+      sp.position.copy(dir).multiplyScalar(1.12);
+      sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      g.add(sp);
+    }
+    g.add(glowSprite(VIRUS_COLOR, 3, .5));
+    scene.add(g);
+    return g;
+  }
+  function spawnVirus(x, z, vx, vz) {
+    if (viruses.length >= VIRUS_MAX) return null;
+    if (x === undefined) {
+      for (let t = 0; t < 30; t++) { [x, z] = randInArena(12); if (cells.every(c => Math.hypot(c.x - x, c.z - z) > radius(c.mass) + 8)) break; }
+    }
+    const v = { x, z, vx: vx || 0, vz: vz || 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh() };
+    viruses.push(v);
+    return v;
+  }
+  function removeVirus(v) { scene.remove(v.mesh); viruses.splice(viruses.indexOf(v), 1); }
+  function resetViruses() { [...viruses].forEach(removeVirus); for (let i = 0; i < VIRUS_COUNT; i++) spawnVirus(); }
+  let virusRespawn = [];
+  function popCell(c, v) {
+    const o = c.owner;
+    const maxP = o.isPlayer ? playerMaxParts() : o.kind === 'bot' ? BOT_PARTS : 1;
+    c.mass += v.mass * 0.5;
+    const pieces = Math.min(8, maxP - o.cells.length + 1, o.free.length + 1);
+    emit(v.x, radius(v.mass), v.z, VIRUS_COLOR, 30, 16, .7);
+    if (pieces <= 1) return;
+    const each = c.mass / pieces, mt = o.isPlayer ? playerMergeTime() : 14;
+    c.mass = each; c.mergeT = mt; c.vis.jig = 1;
+    for (let i = 1; i < pieces; i++) {
+      const a = i / (pieces - 1) * Math.PI * 2 + Math.random() * .4, r = radius(each);
+      const n = addCell(o, c.x + Math.cos(a) * r * .5, c.z + Math.sin(a) * r * .5, each, o.free.pop());
+      n.vx = Math.cos(a) * 40; n.vz = Math.sin(a) * 40; n.hx = Math.cos(a); n.hz = Math.sin(a); n.mergeT = mt; n.vis.jig = 1;
+    }
+    if (o.isPlayer) { toast('Шип разорвал тебя на части!'); buzz(80); }
+  }
+  function updateViruses(dt) {
+    const k = Math.exp(-2 * dt);
+    for (const v of [...viruses]) {
+      if (v.vx || v.vz) {
+        v.x += v.vx * dt; v.z += v.vz * dt; v.vx *= k; v.vz *= k;
+        if (Math.abs(v.vx) + Math.abs(v.vz) < .2) v.vx = v.vz = 0;
+        const dc = Math.hypot(v.x, v.z); if (dc > R - 5) { v.x *= (R - 5) / dc; v.z *= (R - 5) / dc; v.vx = v.vz = 0; }
+      }
+      const rv = radius(v.mass);
+      for (const c of cells) {
+        if (c.gone || c.owner.kind === 'boss' || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes
+        if (Math.hypot(c.x - v.x, c.z - v.z) < radius(c.mass) - rv * .3) {
+          popCell(c, v); removeVirus(v); virusRespawn.push(10); rebuildCells(); break;
+        }
+      }
+    }
+    virusRespawn = virusRespawn.map(t => t - dt).filter(t => { if (t <= 0) { spawnVirus(); return false; } return true; });
+  }
+  // ejected blobs feed a spike; every 5th shot fires a new spike in that direction
+  function feedVirus(e) {
+    for (const v of viruses) {
+      if (Math.hypot(e.x - v.x, e.z - v.z) > radius(v.mass) + .5) continue;
+      v.feed++; v.mass += 6;
+      if (v.feed >= 5) {
+        v.feed = 0; v.mass = VIRUS_MASS;
+        const d = Math.hypot(e.vx, e.vz) || 1, dx = e.vx / d || 1, dz = e.vz / d;
+        spawnVirus(v.x + dx * radius(VIRUS_MASS) * 2.2, v.z + dz * radius(VIRUS_MASS) * 2.2, dx * 60, dz * 60);
+        emit(v.x, 3, v.z, VIRUS_COLOR, 16, 12, .5);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // ================= arena events =================
+  const EVENTS = [
+    { id: 'meteor',    name: 'Метеоритный дождь',     desc: 'в отмеченную зону падает много еды', color: '#ffd23f' },
+    { id: 'blackhole', name: 'Чёрная дыра',           desc: 'центр арены затягивает всех к себе', color: '#b26bff' },
+    { id: 'storm',     name: 'Гравитационный шторм',  desc: 'все капли на 40% быстрее',          color: '#22e6ff' },
+    { id: 'eclipse',   name: 'Затмение',              desc: 'темнота, видно только ближайших',   color: '#ff3d6e' },
+  ];
+  const ev = { timer: 45, active: null, warn: null, left: 0, x: 0, z: 0, tick: 0 };
+  const evInfo = id => EVENTS.find(e => e.id === id);
+  const meteorRing = new THREE.Mesh(new THREE.RingGeometry(.95, 1, 96), new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  meteorRing.rotation.x = -Math.PI / 2; meteorRing.position.y = .1; meteorRing.visible = false; scene.add(meteorRing);
+  const hole = new THREE.Group();
+  hole.add(new THREE.Mesh(new THREE.SphereGeometry(5, 24, 16), new THREE.MeshBasicMaterial({ color: '#000000' })));
+  const holeRing = new THREE.Mesh(new THREE.TorusGeometry(7.5, .5, 8, 64), new THREE.MeshBasicMaterial({ color: '#b26bff', transparent: true, blending: THREE.AdditiveBlending }));
+  holeRing.rotation.x = Math.PI / 2 - .3; hole.add(holeRing); hole.add(glowSprite('#7b3dff', 34, .7));
+  hole.position.y = 5; hole.visible = false; scene.add(hole);
+  function resetEvents() { ev.timer = 45; ev.active = ev.warn = null; meteorRing.visible = hole.visible = false; }
+  function updateEvent(dt) {
+    if (!ev.active) {
+      ev.timer -= dt;
+      if (ev.timer <= 5 && !ev.warn) {
+        ev.warn = EVENTS[Math.floor(Math.random() * EVENTS.length)].id;
+        toast(`Через 5 с: ${evInfo(ev.warn).name}`);
+        if (ev.warn === 'meteor') { [ev.x, ev.z] = randInArena(40); meteorRing.position.x = ev.x; meteorRing.position.z = ev.z; meteorRing.visible = true; }
+      }
+      if (ev.timer <= 0) {
+        ev.active = ev.warn; ev.warn = null; ev.left = 20; ev.tick = 0;
+        toast(`${evInfo(ev.active).name}: ${evInfo(ev.active).desc}`);
+        hole.visible = ev.active === 'blackhole';
+      }
+      return;
+    }
+    ev.left -= dt; ev.tick -= dt;
+    if (ev.active === 'meteor' && ev.tick <= 0) {
+      ev.tick = .4; burstFood(ev.x, ev.z, 22, 22);
+      for (let i = 0; i < 3; i++) emit(ev.x + (Math.random() - .5) * 40, 28, ev.z + (Math.random() - .5) * 40, '#ffd23f', 2, 3, 1);
+    }
+    if (ev.active === 'blackhole') {
+      for (const c of cells) {
+        const d = Math.hypot(c.x, c.z) || 1, pull = (2 + 10 * Math.max(0, 1 - d / (R * .9))) * dt;
+        c.x -= c.x / d * pull; c.z -= c.z / d * pull;
+      }
+      if (Math.random() < .6) { const a = Math.random() * 6.283, r = 10 + Math.random() * 20; emit(Math.cos(a) * r, 2, Math.sin(a) * r, '#b26bff', 1, 2, .8); }
+    }
+    if (ev.left <= 0) { ev.active = null; ev.timer = 60; meteorRing.visible = hole.visible = false; }
   }
 
   // ================= owners & cells =================
@@ -1140,7 +1772,7 @@ body {
     rebuildCells();
   }
   let lastBoss = null;
-  const SURV_BOSS_CAP = 6000;
+  const SURV_BOSS_CAP = 20000;
   function maxBosses() {
     if (dailyIs('bosses')) return 3;
     if (mode !== 'survival') return 2;
@@ -1196,7 +1828,7 @@ body {
   let running = false, paused = false, dying = false, lives = 0, dashCdBase = 4;
   let bossTimer = 20, bonusTimer = 0;
   let stats, history, doneQuests, effects, bonuses = [];
-  const effectDur = t => BONUS[t].dur * (1 + 0.1 * save.up.bonus);
+  const effectDur = t => BONUS[t].dur * (1 + 0.1 * U.bonus);
 
   function speedOf(c) {
     const o = c.owner;
@@ -1204,19 +1836,19 @@ body {
     if (o.isPlayer) {
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT;
-      v *= (1 + 0.03 * save.up.speed) * (effects.speed > 0 ? 1.45 : 1);
+      v *= (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed'));
     }
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1);
     else if (o.kind === 'minion') v *= 1.05;
     else v *= 0.92;
-    return v * (dailyIs('speedy') ? 1.3 : 1);
+    return v * (dailyIs('speedy') ? 1.3 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
-  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * save.up.armor : 1.25;
+  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.armor : 1.25;
   const canEat = (a, b) => !(b.owner.isPlayer && effects.shield > 0) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
-  const playerMaxParts = () => mode === 'split' ? 10 : Math.min(10, 4 + save.up.splitmax);
-  const playerMergeTime = () => (mode === 'split' ? 8 : 14) * (1 - 0.06 * save.up.merge);
+  const playerMaxParts = () => mode === 'split' ? 10 : Math.min(10, 4 + U.splitmax);
+  const playerMergeTime = () => (mode === 'split' ? 8 : 14) * (1 - 0.06 * U.merge);
   const playerSplitCd = () => mode === 'split' ? 3 : SPLIT_CD;
   const fmtBest = (m, v) => {
     if (!v) return LOWER_BETTER[m] ? '–' : m === 'team' ? '0 побед' : m === 'survival' || m === 'crown' ? '0:00' : '0';
@@ -1224,7 +1856,7 @@ body {
     return ['survival', 'crown', 'race', 'giant'].includes(m) ? fmtTime(v) : String(v);
   };
   const dailyIs = id => mode === 'daily' && dailyMod.id === id;
-  const bossesOn = () => !['team', 'giant', 'race'].includes(mode);
+  const bossesOn = () => !['team', 'giant', 'race', 'royale'].includes(mode);
 
   // ================= mass ejection =================
   const ejectGeo = new THREE.SphereGeometry(1, 16, 12);
@@ -1251,13 +1883,14 @@ body {
     const k = Math.exp(-4 * dt);
     for (let i = ejects.length - 1; i >= 0; i--) {
       const e = ejects[i];
+      if (feedVirus(e)) { scene.remove(e.mesh); ejects.splice(i, 1); continue; }
       e.x += e.vx * dt; e.z += e.vz * dt; e.vx *= k; e.vz *= k; e.age += dt;
       const dc = Math.hypot(e.x, e.z); if (dc > R - 1.5) { e.x *= (R - 1.5) / dc; e.z *= (R - 1.5) / dc; }
       for (const c of cells) {
         if (c.gone || (c.owner.isPlayer && e.age < 0.6)) continue;
         const r = radius(c.mass);
         if (r > 1.3 && Math.hypot(c.x - e.x, c.z - e.z) < r) {
-          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.06 * save.up.digest : 1);
+          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
           scene.remove(e.mesh); ejects.splice(i, 1);
           break;
         }
@@ -1288,24 +1921,31 @@ body {
   }
 
   function startRound() {
+    fixModeForLeague();
+    U = pendingRanked ? ZERO_UP : save.up;
     [...player.cells].forEach(removeCell);
     bots.forEach(o => [...o.cells].forEach(removeCell));
     [...bossOwners, colossus, ...minions].forEach(o => [...o.cells].forEach(removeCell));
     rebuildCells();
     effects = { speed: 0, shield: 3, double: 0, magnet: 0 };   // short spawn protection
-    addCell(player, 0, 0, START_MASS + 3 * save.up.big, freeVis.pop());
+    addCell(player, 0, 0, START_MASS + 3 * U.big, freeVis.pop());
     rebuildCells();
     player.dashCd = 0; player.dashT = 0;
     owners.forEach(o => o.splitCd = 0);
-    lives = mode === 'hardcore' ? 0 : save.up.life;
-    dashCdBase = dailyIs('dashonly') ? 1 : 4 * (1 - 0.06 * save.up.dash);
-    mode = save.mode;
+    lives = mode === 'hardcore' ? 0 : U.life;
+    dashCdBase = dailyIs('dashonly') ? 1 : 4 * (1 - 0.06 * U.dash);
+    mode = pendingRanked ? leagueMode() : save.mode;
+    const ranked = pendingRanked;
     player.ejectCd = 0;
-    stats = { mode, time: 0, maxMass: total(player), kills: 0, bosses: 0, minions: 0, bossCoins: 0, bossXp: 0, bonuses: 0, splits: 0, crumbs: 0, leader: 0, bestRank: 99, wave: 0,
+    stats = { mode, ranked, time: 0, maxMass: total(player), kills: 0, bosses: 0, minions: 0, bossCoins: 0, bossXp: 0, bonuses: 0, splits: 0, crumbs: 0, leader: 0, bestRank: 99, wave: 0,
               ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [] };
     clearEjects();
+    resetViruses(); virusRespawn = []; resetEvents();
     history = [Math.round(total(player))];
     doneQuests = new Set();
+    effects.shield += 2 * petLv('shield');
+    zoneR = R;
+    bots.forEach(o => o.disabled = false);
     bossTimer = mode === 'survival' ? 5 : dailyIs('bosses') ? 10 : 20; bonusTimer = 0;
     bonuses.forEach(b => scene.remove(b.mesh)); bonuses = [];
     running = true; paused = false; dying = false;
@@ -1316,7 +1956,7 @@ body {
     bots.forEach(spawnBot);
     if (mode === 'giant') {
       const [x, z] = safeSpot(45);
-      const c = addCell(colossus, x, z, 4000, colossus.free.pop());
+      const c = addCell(colossus, x, z, 12000, colossus.free.pop());
       c.mergeT = 1e9; colossus.think = 0; colossus.target = null; colossus.splitCd = 0;
       rebuildCells(); stats.giantSpawned = true;
       toast('Колосс на арене: подплывай ближе, чтобы он делился');
@@ -1336,8 +1976,10 @@ body {
     const lvBefore = playerLevel();
     const placeBonus = stats.modeBonus || 0;
     const surviveBonus = mode === 'survival' ? stats.time / 6 : 0;
-    let coins = Math.round((Math.sqrt(stats.maxMass) * 3 + stats.kills * 3 + stats.minions + stats.bossCoins + stats.time / 25 + placeBonus + surviveBonus) * (1 + 0.08 * save.up.greed) * (mode === 'hardcore' ? 2 : 1));
+    let coins = Math.round((Math.sqrt(stats.maxMass) * 3 + stats.kills * 3 + stats.minions + stats.bossCoins + stats.time / 25 + placeBonus + surviveBonus) * (1 + 0.08 * U.greed) * (mode === 'hardcore' ? 2 : 1));
+    coins = Math.round(coins * (1 + 0.05 * petLv('coins')));
     let xp = Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
+    xp = Math.round(xp * (1 + 0.05 * petLv('xp')));
     const questRows = save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => {
       const done = doneQuests.has(q.id);
       if (done) { coins += q.coins; xp += q.xp; }
@@ -1365,6 +2007,22 @@ body {
     const record = mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
     if (record) save.bests[mode] = score;
     const chNow = checkChallenges();
+    const chestChance = .3 + Math.min(.3, stats.maxMass / 5000) + (stats.win ? .2 : 0);
+    const gotChest = save.pity >= 4 || Math.random() < chestChance;
+    if (gotChest) { save.chests++; save.pity = 0; } else save.pity++;
+    let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
+    if (mode === 'hardcore') pts = Math.round(pts * 1.5);
+    if (mode === 'royale' && stats.finalRank) pts += (13 - stats.finalRank) * 4;
+    if (!stats.ranked) pts = 0;
+    const lgBefore = leagueOf(save.season.pts);
+    save.season.pts += pts;
+    const lgAfter = leagueOf(save.season.pts);
+    save.totals.maxLeague = Math.max(save.totals.maxLeague || 0, lgAfter);
+    { const hi = holidayInfo(save.season.id); if (seasonStarted && hi && pts > 0) { const ky = hi.k + '_' + hi.y; save.totals.holLeagueY = save.totals.holLeagueY || {}; save.totals.holLeagueY[ky] = Math.max(save.totals.holLeagueY[ky] ?? 0, lgAfter); } }
+    { const hk = holidayOf(save.season.id); if (seasonStarted && hk) { save.totals.holLeague = save.totals.holLeague || {}; save.totals.holLeague[hk] = Math.max(save.totals.holLeague[hk] || 0, lgAfter); } }
+    { const wr = running; running = false; achAll.push(...checkAch()); running = wr; }
+    save.totals.modeRounds[mode] = (save.totals.modeRounds[mode] || 0) + 1;
+    save.history.push({ m: Math.round(stats.maxMass), mode }); if (save.history.length > 30) save.history.shift();
     if (mode === 'classic') save.best = Math.max(save.best, best);
     save.quests = save.quests.filter(id => !doneQuests.has(id));
     fillQuests();
@@ -1386,9 +2044,11 @@ body {
     if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×2']);
     if (mode === 'daily') cellsHtml.push(['Испытание', stats.dailyDone ? 'пройдено' : `нужно ${DAILY_GOAL}`]);
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
-    $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>`;
+    $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">+${pts} рейтинга</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
-      chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)}</span></li>`).join('');
+      chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)}</span></li>`).join('') +
+      (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
+      (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name}</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
       const opened = [...UPG.filter(u => u.lvl > lvBefore && u.lvl <= lvAfter).map(u => u.name),
                       ...SKINS.filter(s => s.lvl > lvBefore && s.lvl <= lvAfter).map(s => 'скин ' + s.name)];
@@ -1413,6 +2073,7 @@ body {
         toast(`Второй шанс! Тебя съел ${eater.name}`);
         return;
       }
+      if (mode === 'royale') { stats.finalRank = bots.filter(b => b.cells.length).length + 1; stats.endTitle = `Место ${stats.finalRank} из 13`; }
       dying = true;
       setTimeout(endRound, 800);
     } else if (o.kind === 'boss') {
@@ -1421,6 +2082,7 @@ body {
       // minions don't come back on their own
     } else {
       o.respawn = 2 + Math.random() * 3;
+      if (mode === 'royale' && running) { o.disabled = true; toast(`${o.name} выбыл · осталось ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}`); }
     }
   }
 
@@ -1463,7 +2125,7 @@ body {
   addEventListener('keyup', e => { keys[e.code] = false; });
   const setPointer = e => pointer.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   // touch: a floating joystick appears wherever the finger lands; mouse: blob follows the cursor
-  const JOY_R = 60;
+  let JOY_R = 60;
   const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0 };
   function joyMove(e) {
     let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
@@ -1498,8 +2160,8 @@ body {
 
   function dash() {
     if (mode === 'split' || !running || !player.cells.length || player.dashCd > 0 || paused) return;
-    player.dashT = 0.35 + 0.05 * save.up.light; player.dashCd = dashCdBase;
-    const cost = 0.03 * (1 - 0.12 * save.up.light);
+    player.dashT = 0.35 + 0.05 * U.light; player.dashCd = dashCdBase;
+    const cost = 0.03 * (1 - 0.12 * U.light);
     player.cells.forEach(c => c.mass = Math.max(START_MASS * 0.5, c.mass * (1 - cost)));
   }
   function splitOwner(o, max, mergeTime) {
@@ -1523,13 +2185,14 @@ body {
   function split() {
     if (dailyIs('dashonly')) return;
     if (!running || paused || !player.cells.length || player.splitCd > 0) return;
-    if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; rebuildCells(); }
+    if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; rebuildCells(); buzz(20); }
   }
 
   // ================= bot brain =================
   function think(o) {
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p = mode === 'hardcore' && o.kind === 'bot' ? PERSONA.aggressive : PERSONA[o.persona];
     const r = radius(c.mass), sense = (14 + r * 3) * p.sense;
+    if (mode === 'royale' && running && Math.hypot(c.x, c.z) > zoneR * .8) { o.tx = c.x * .3; o.tz = c.z * .3; o.target = null; return; }   // run from the storm
     if (o.bossType === 'hunter' && player.cells.length) {
       let best = null, bd = Infinity;
       for (const t of player.cells) { const d = Math.hypot(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
@@ -1550,6 +2213,10 @@ body {
         const score = d * (p.likesPlayer && t.owner.isPlayer ? 0.6 : 1);
         if (score < preyScore) { prey = t; preyScore = score; }
       }
+    }
+    if (c.mass > VIRUS_MASS * 1.3) for (const v of viruses) {
+      const d = Math.hypot(v.x - c.x, v.z - c.z);
+      if (d < radius(c.mass) + 10) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
     }
     if (fx || fz) { o.tx = c.x + fx * 20; o.tz = c.z + fz * 20; o.target = null; return; }
     // hunters share a target with their partner
@@ -1614,10 +2281,24 @@ body {
     dying = true; setTimeout(endRound, 500);
   }
   const teamTotal = t => owners.filter(o => o.team === t).reduce((s, o) => s + total(o), 0);
-  let crownHolder = null;
+  let crownHolder = null, zoneR = R;
+  const royaleZone = t => t < 20 ? R : Math.max(18, R - (R - 18) * Math.min(1, (t - 20) / 200));
+  const zoneLine = new THREE.Mesh(new THREE.RingGeometry(.985, 1, 180), new THREE.MeshBasicMaterial({ color: '#ff3d6e', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  const zoneOut = new THREE.Mesh(new THREE.RingGeometry(1, 4, 180), new THREE.MeshBasicMaterial({ color: '#ff3d6e', transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide }));
+  [zoneLine, zoneOut].forEach(m => { m.rotation.x = -Math.PI / 2; m.position.y = .06; m.visible = false; scene.add(m); });
   function modeRules(dt) {
     if (dying) return false;
     const contenders = [player, ...bots].filter(o => o.cells.length);
+    if (mode === 'royale') {
+      zoneR = royaleZone(stats.time);
+      for (const c of [...cells]) {
+        if (c.gone || c.owner.kind === 'boss' || c.owner.kind === 'minion' || Math.hypot(c.x, c.z) <= zoneR) continue;
+        c.mass -= (c.mass * .06 + 2) * dt;          // the storm outside the zone eats mass
+        if (c.mass < 6) { const o = c.owner; removeCell(c); rebuildCells(); lostCell(o, 6, { name: 'Зона', cells: [] }); }
+      }
+      const aliveBots = bots.filter(o => o.cells.length).length;
+      if (player.cells.length && aliveBots === 0) { stats.finalRank = 1; finishRound('Победа в королевской битве!', 60, true); return true; }
+    }
     if (mode === 'timed' && stats.time >= TIMED_LEN) {
       const ranked = owners.filter(o => o.cells.length && o.kind !== 'minion').sort((a, b) => total(b) - total(a));
       const r = ranked.indexOf(player) + 1;
@@ -1749,8 +2430,8 @@ body {
     rebuildCells();
 
     // food + decay
-    const pMagnet = 0.5 * save.up.magnet + (effects.magnet > 0 ? 6 : 0);
-    const pGain = (1 + 0.06 * save.up.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
+    const pMagnet = 0.5 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
+    const pGain = (1 + 0.06 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const r = radius(c.mass) + (isP ? pMagnet : 0);
@@ -1764,7 +2445,7 @@ body {
         }
       }
       // decay grows with size, so mass can't snowball forever
-      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.sqrt(c.mass / 100) * (isP ? 1 - 0.1 * save.up.keep : 1) * dt;
+      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.1 * U.keep : 1) * dt;
     }
 
     // bonuses (player only)
@@ -1785,8 +2466,10 @@ body {
     for (const a of cells) for (const b of cells) {
       if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < radius(a.mass) - radius(b.mass) * 0.35) {
-        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * save.up.digest : 1);
+        if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); }
+        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
         const victim = b.owner, lastMass = b.mass;
+        if (victim.isPlayer) buzz(60);
         { const rb = radius(b.mass); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); }
         removeCell(b);
         if (a.owner.isPlayer) {
@@ -1808,6 +2491,8 @@ body {
 
     for (const c of cells) { const cap = c.owner.kind === 'boss' && (mode === 'survival' || mode === 'giant') ? SURV_BOSS_CAP : MAX_MASS; if (c.mass > cap) c.mass = cap; }
     updateEjects(dt);
+    updateViruses(dt);
+    updateEvent(dt);
     for (const c of player.cells) stats.maxPart = Math.max(stats.maxPart, c.mass);
     stats.maxParts = Math.max(stats.maxParts, player.cells.length);
     const tm = total(player);
@@ -1834,10 +2519,10 @@ body {
       sp.textContent = `${Math.round(v / m / BASE_SPEED * 100)}%`;
       sp.classList.toggle('boost', player.dashT > 0 || effects.speed > 0);
       const parts = [];
-      if (save.up.speed) parts.push(`+${3 * save.up.speed}% улучш.`);
+      if (U.speed) parts.push(`+${3 * U.speed}% улучш.`);
       if (effects.speed > 0) parts.push('+45% бонус');
       if (player.dashT > 0) parts.push('рывок ×3,2 от стартовой');
-      const mult = (1 + 0.03 * save.up.speed) * (effects.speed > 0 ? 1.45 : 1) * (player.dashT > 0 ? DASH_MULT / Math.pow(Math.max(1, m / player.cells.length) / START_MASS, -0.15) : 1);
+      const mult = (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (player.dashT > 0 ? DASH_MULT / Math.pow(Math.max(1, m / player.cells.length) / START_MASS, -0.15) : 1);
       setText('buff', mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : '');
       sp.title = parts.join(', ') || 'Без бафов';
     } else $('speed').textContent = '–';
@@ -1865,7 +2550,7 @@ body {
       const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
       return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : ''}"><span>${i + 1}. ${o.name}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
     }).join('') + (rank > 6 ? `<li class="me"><span>${rank}. Ты</span><span>${Math.round(total(player))}</span></li>` : '');
-    let modeChip = '';
+    let modeChip = running && mode === 'royale' ? `<div class="chip"><i style="background:#ff3d6e"></i>Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)} из 13</div>` : '';
     if (running && mode === 'timed') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
     if (running && mode === 'crown') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Корона: ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)} · осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
     if (running && mode === 'race') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Гонка ${Math.round(total(player))}/${RACE_GOAL} · ${fmtTime(stats.time)}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span></div>`;
@@ -1873,7 +2558,9 @@ body {
     if (running && mode === 'giant') modeChip = `<div class="chip"><i style="background:#e76f51"></i>Колосс: ${Math.round(total(colossus))} массы, частей ${colossus.cells.length} · ${fmtTime(stats.time)}</div>`;
     if (running && mode === 'daily') modeChip = `<div class="chip"><i style="background:var(--prey)"></i>${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}</div>`;
     if (running && mode === 'survival') modeChip = `<div class="chip"><i style="background:var(--boss)"></i>Волна ${stats.wave} · ${fmtTime(stats.time)}</div>`;
-    $('effects').innerHTML = modeChip + Object.keys(effects || {}).filter(k => effects[k] > 0)
+    if (running && ev.active) modeChip += `<div class="chip"><i style="background:${evInfo(ev.active).color}"></i>${evInfo(ev.active).name} ${Math.ceil(ev.left)} с</div>`;
+    else if (running && ev.warn) modeChip += `<div class="chip"><i style="background:${evInfo(ev.warn).color}"></i>Скоро: ${evInfo(ev.warn).name}</div>`;
+    $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:var(--gold)"></i>Рейтинговый бой · без улучшений</div>` : '') + modeChip + Object.keys(effects || {}).filter(k => effects[k] > 0)
       .map(k => `<div class="chip"><i style="background:${BONUS[k].color}"></i>${BONUS[k].name}${k === 'speed' ? ' +45%' : ''} ${Math.ceil(effects[k])} с</div>`).join('') +
       mergeChip();
     if (running) {
@@ -1905,6 +2592,8 @@ body {
     mctx.beginPath(); mctx.arc(size / 2, size / 2, R * s, 0, Math.PI * 2); mctx.fill();
     mctx.strokeStyle = tok('--line'); mctx.lineWidth = 1; mctx.stroke();
     const P = (x, z) => [size / 2 + x * s, size / 2 + z * s];
+    mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const [x, y] = P(v.x, v.z); mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
+    if (ev.active === 'meteor' || ev.warn === 'meteor') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 22 * s, 0, Math.PI * 2); mctx.stroke(); }
     for (const b of bonuses) { const [x, y] = P(b.x, b.z); mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }
     for (const c of cells) {
       if (c.owner.isPlayer) continue;
@@ -1949,19 +2638,20 @@ body {
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
   function closeShop() { showCard(shopReturn); if (shopReturn === 'resultCard') requestAnimationFrame(drawGraph); }
-  $('shopBtn').addEventListener('click', openShop);
-  $('shopBtn2').addEventListener('click', openShop);
+  function openView(view, tab) { shopView = view; shopTab = tab || SHOP_VIEWS[view].tabs[0][0]; openShop(); }
+  $('shopBtn').addEventListener('click', () => openView('shop'));
+  $('shopBtn2').addEventListener('click', () => openView('shop'));
+  $('wardBtn').addEventListener('click', () => openView('wardrobe'));
+  $('petBtn').addEventListener('click', () => openView('pets'));
   $('backBtn').addEventListener('click', closeShop);
-  $('startBtn').addEventListener('click', startRound);
+  $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
   $('againBtn').addEventListener('click', startRound);
   $('menuBtn').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('startBtn').focus(); });
-  $('tabUp').addEventListener('click', () => { shopTab = 'up'; renderShop(); });
-  $('tabSkin').addEventListener('click', () => { shopTab = 'skin'; renderShop(); });
   function menuTab(keys) {
     $('paneKeys').hidden = !keys; $('panePlay').hidden = keys;
     $('mtabKeys').setAttribute('aria-selected', keys); $('mtabPlay').setAttribute('aria-selected', !keys);
@@ -1969,11 +2659,8 @@ body {
   }
   $('mtabPlay').addEventListener('click', () => menuTab(false));
   $('mtabKeys').addEventListener('click', () => menuTab(true));
-  $('tabAch').addEventListener('click', () => { shopTab = 'ach'; renderShop(); });
-  $('achBtn').addEventListener('click', () => { shopTab = 'ach'; openShop(); });
-  $('chBtn').addEventListener('click', () => { shopTab = 'ch'; openShop(); });
-  $('tabFx').addEventListener('click', () => { shopTab = 'fx'; renderShop(); });
-  $('tabCh').addEventListener('click', () => { shopTab = 'ch'; renderShop(); });
+  $('achBtn').addEventListener('click', () => openView('goals', 'ach'));
+  $('chBtn').addEventListener('click', () => openView('goals', 'ch'));
   $('modes').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     save.mode = b.dataset.mode; mode = save.mode; persist(); renderAll();
@@ -1991,10 +2678,14 @@ body {
     $('coins').textContent = save.coins;
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
     $('modes').innerHTML = Object.entries(MODES).map(([id, m]) =>
-      `<button class="mode" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${save.mode === id}"><b>${m.name}</b><small>${m.desc}</small>` +
+      `<button class="mode" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${save.mode === id}" ${id === 'royale' && !TEST_MODE ? 'disabled' : ''}><b>${m.name}</b><small>${m.desc}</small>` +
+      (id === 'royale' ? `<span class="lg-tag">${TEST_MODE ? 'Открыта для теста' : 'Только в лиге'} · сезон ${nextSeasonOf('royale')}</span>` : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '') +
       `<small>Рекорд: ${fmtBest(id, save.bests[id] || 0)}</small></button>`).join('');
     $('achCount').textContent = `${save.ach.length}/${ACH.length}`;
     $('chCount').textContent = `${save.chDone.length}/${CHALLENGES.length}`;
+    $('chestCountBtn').textContent = save.chests;
+    $('petCount').textContent = `${save.pets.length}/${PETS.length}`;
+    { const L = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null); $('leagueBtn').innerHTML = `Лига · <b style="color:${L.color}">${L.name}</b> · ${save.season.pts} очков${curHoliday ? ` · ${HOLIDAYS[curHoliday].name}` : ''}`; }
   }
   function swatch(s) {
     let bg = s.color;
@@ -2010,37 +2701,203 @@ body {
     if (s.rainbow) bg = 'conic-gradient(#ff4fd8, #ffd23f, #3dffa2, #22e6ff, #7b3dff, #ff4fd8)';
     return `background:${bg};${s.glow ? `box-shadow:0 0 14px ${s.color};` : ''}`;
   }
+  // the shop sells what you don't own yet; the wardrobe holds everything you own
+  const SHOP_VIEWS = {
+    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['skin', 'Скины'], ['fx', 'Эффекты']] },
+    wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты']] },
+    pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
+    goals:    { title: 'Испытания и достижения', tabs: [['ch', 'Испытания'], ['ach', 'Достижения']] },
+  };
+  let shopView = 'shop';
+  const FX_ICON = { trail: '〰', aura: '◎', eat: '✦' };
+  // ---- previews: 3D thumbnails for pets and auras, drawn previews for trails and eat effects ----
+  let thumbR = null, thumbScene, thumbCam;
+  const thumbCache = {};
+  function thumbInit() {
+    thumbR = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    thumbR.setPixelRatio(1); thumbR.setSize(112, 112, false); thumbR.setClearColor('#160c36', 1);
+    thumbScene = new THREE.Scene();
+    thumbScene.add(new THREE.HemisphereLight(0xc8c0ff, 0x10082a, 1.1));
+    const d = new THREE.DirectionalLight(0xffffff, .8); d.position.set(2, 3, 4); thumbScene.add(d);
+    thumbCam = new THREE.PerspectiveCamera(35, 1, .1, 60);
+  }
+  function render3D(key, obj, dist, y) {
+    if (!thumbR) thumbInit();
+    thumbScene.add(obj);
+    thumbCam.position.set(0, y + dist * .3, dist); thumbCam.lookAt(0, y, 0);
+    thumbR.render(thumbScene, thumbCam);
+    thumbScene.remove(obj);
+    return (thumbCache[key] = thumbR.domElement.toDataURL());
+  }
+  function petThumb(pt) {
+    const key = 'pet_' + pt.id; if (thumbCache[key]) return thumbCache[key];
+    const g = buildPet(pt); scene.remove(g); g.visible = true; g.rotation.y = .45;
+    return render3D(key, g, 3.3, .05);
+  }
+  function auraThumb(f) {
+    const key = 'aura_' + f.id + '_' + save.skin; if (thumbCache[key]) return thumbCache[key];
+    const holder = new THREE.Group(), sc = new THREE.Color(skin().color);
+    const sph = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 18), new THREE.MeshStandardMaterial({ color: sc, emissive: sc, emissiveIntensity: .4, roughness: .3 }));
+    holder.add(sph); const aura = buildAura(f.id); sph.add(aura);
+    animateAura({ aura, mesh: sph }, 1700);
+    return render3D(key, holder, 6.2, .35);
+  }
+  const RAINBOW = ['#ff4fd8', '#ffd23f', '#3dffa2', '#22e6ff', '#7b3dff'];
+  const FX_COLS = { sparksTrail: null, bubbleTrail: ['#7fe8ff', '#ffffff'], starTrail: ['#ffd23f', '#fff6a0'], fireTrail: ['#ff3d00', '#ff9a3d', '#ffd23f'],
+    rainbowTrail: RAINBOW, voidTrail: ['#7b3dff', '#3a0a8e'], snowTrail: ['#ffffff', '#bfefff'], sparkTrail: ['#ffffff', '#22e6ff'], heartTrail: ['#ff4f9a', '#ff9ec4'],
+    leafTrail: ['#3dffa2', '#ffd23f', '#9be15d'], inkTrail: ['#7b3dff', '#ff4fd8'], goldTrail: ['#ffd23f', '#fff6a0'], plasmaTrail: ['#22e6ff', '#ff4fd8'], auroraTrail: ['#3dffa2', '#22e6ff', '#7b3dff'],
+    heartEat: ['#ff4f9a', '#ff9ec4'], shockEat: null, boltEat: ['#ffd23f', '#ffffff'], starfall: ['#ffd23f', '#fff6a0'], supernova: ['#ff4fd8', '#22e6ff', '#ffffff'],
+    confettiEat: RAINBOW, vortexEat: ['#7b3dff', '#ff4fd8'], popEat: RAINBOW, iceEat: ['#ffffff', '#9fe8ff'], miniholeEat: ['#7b3dff', '#ff4fd8'], rainbowEat: RAINBOW };
+  const FX_ICONS2D = { heartTrail: 'heart', heartEat: 'heart', boltEat: 'bolt', starfall: 'star' };
+  const FX_RINGS = { shockEat: 1, supernova: 2, iceEat: 1, vortexEat: 2, miniholeEat: 2, rainbowEat: 2 };
+  function draw2DIcon(x, kind, cx, cy, s, col) {
+    x.save(); x.translate(cx, cy); x.scale(s / 32, s / 32); x.translate(-32, -32); x.fillStyle = col; x.beginPath();
+    if (kind === 'heart') { x.moveTo(32, 54); x.bezierCurveTo(2, 32, 10, 4, 32, 20); x.bezierCurveTo(54, 4, 62, 32, 32, 54); }
+    if (kind === 'star') for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 11 : 26; x.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); }
+    if (kind === 'bolt') [[36, 4], [14, 36], [30, 36], [24, 60], [50, 26], [34, 26], [42, 4]].forEach(([a, b]) => x.lineTo(a, b));
+    x.fill(); x.restore();
+  }
+  function fxThumb2D(f) {
+    const key = 'fx_' + f.id + '_' + save.skin; if (thumbCache[key]) return thumbCache[key];
+    const cv = document.createElement('canvas'); cv.width = cv.height = 112;
+    const x = cv.getContext('2d'), sc = skin().color;
+    const cols = (FX_COLS[f.id] !== undefined ? FX_COLS[f.id] : f.colors) || [sc];
+    x.fillStyle = '#160c36'; x.fillRect(0, 0, 112, 112);
+    x.shadowBlur = 8;
+    const icon = FX_ICONS2D[f.id];
+    if (f.slot === 'trail') {
+      const st = f.style || 'sparks';
+      if (st === 'ribbon') {
+        cols.forEach((c, k) => { x.strokeStyle = c; x.shadowColor = c; x.lineWidth = 5 - k * 1.5; x.globalAlpha = .9; x.beginPath();
+          for (let i = 0; i <= 30; i++) { const t = i / 30, px = 8 + t * 66, py = 58 + k * 4 + Math.sin(t * 7) * 9 * (1 - t); i ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); });
+      } else for (let i = 0; i < 22; i++) {
+        const t = i / 21, amp = st === 'spiral' ? 16 : 8, px = 10 + t * 64, py = 60 + Math.sin(i * (st === 'spiral' ? 1.3 : .8)) * amp * (1 - t * .6);
+        const c = cols[i % cols.length]; x.globalAlpha = .25 + .75 * t; x.fillStyle = c; x.strokeStyle = c; x.shadowColor = c;
+        if ((icon && i % 4 === 1) || (st === 'stars' && i % 3 === 0)) draw2DIcon(x, icon || 'star', px, py, 7 + t * 5, c);
+        else if (st === 'bubbles') { x.lineWidth = 1.6; x.beginPath(); x.arc(px, py - t * 8, 2.5 + t * 4, 0, Math.PI * 2); x.stroke(); }
+        else if (st === 'rings' && i % 5 === 0) { x.lineWidth = 2; x.beginPath(); x.ellipse(px, py, 4 + t * 8, 2 + t * 4, 0, 0, Math.PI * 2); x.stroke(); }
+        else if (st === 'smoke') { x.globalAlpha = .12 + .3 * t; x.beginPath(); x.arc(px, py, 4 + t * 7, 0, Math.PI * 2); x.fill(); }
+        else { x.beginPath(); x.arc(px, py, 1.5 + t * 3.5, 0, Math.PI * 2); x.fill(); }
+      }
+      x.globalAlpha = 1;
+      const gr = x.createRadialGradient(80, 52, 3, 86, 58, 20); gr.addColorStop(0, '#ffffff'); gr.addColorStop(.25, sc); gr.addColorStop(1, sc);
+      x.fillStyle = gr; x.shadowColor = sc; x.shadowBlur = 14; x.beginPath(); x.arc(86, 58, 18, 0, Math.PI * 2); x.fill();
+      x.shadowBlur = 0; x.fillStyle = '#fff'; [[92, 53], [99, 56]].forEach(([a, b]) => { x.beginPath(); x.arc(a, b, 3.2, 0, Math.PI * 2); x.fill(); });
+      x.fillStyle = '#14102a'; [[93, 54], [100, 57]].forEach(([a, b]) => { x.beginPath(); x.arc(a, b, 1.6, 0, Math.PI * 2); x.fill(); });
+    } else {
+      const rings = FX_RINGS[f.id] || 0;
+      for (let k = 0; k < rings; k++) { x.strokeStyle = cols[k % cols.length]; x.shadowColor = x.strokeStyle; x.lineWidth = 3 - k; x.beginPath(); x.arc(56, 56, 40 - k * 13, 0, Math.PI * 2); x.stroke(); }
+      let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 34; i++) {
+        const a = rnd() * Math.PI * 2, r = 8 + rnd() * 38, c = cols[i % cols.length];
+        x.fillStyle = c; x.shadowColor = c; x.globalAlpha = .5 + rnd() * .5;
+        if (icon && i % 3 === 0) draw2DIcon(x, icon, 56 + Math.cos(a) * r, 56 + Math.sin(a) * r, 9 + rnd() * 6, c);
+        else { x.beginPath(); x.arc(56 + Math.cos(a) * r, 56 + Math.sin(a) * r, 1.5 + rnd() * 2.5, 0, Math.PI * 2); x.fill(); }
+      }
+      x.globalAlpha = 1; x.fillStyle = '#ffffff'; x.shadowColor = cols[0]; x.shadowBlur = 18; x.beginPath(); x.arc(56, 56, 6, 0, Math.PI * 2); x.fill();
+    }
+    return (thumbCache[key] = cv.toDataURL());
+  }
+  const fxThumb = f => f.slot === 'aura' ? auraThumb(f) : fxThumb2D(f);
+  // previews are filled in a few per frame so long lists open instantly
+  const thumbImg = (kind, id) => `<img class="thumb-img" data-th="${kind}:${id}" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">`;
+  function fillThumbs() {
+    const imgs = [...document.querySelectorAll('img[data-th]')];
+    let i = 0;
+    const step = () => {
+      const t0 = performance.now();
+      while (i < imgs.length && performance.now() - t0 < 12) {
+        const el = imgs[i++], [kind, id] = el.dataset.th.split(':');
+        if (!el.isConnected) continue;
+        el.src = kind === 'pet' ? petThumb(petById(id)) : fxThumb(FX.find(f => f.id === id));
+        el.removeAttribute('data-th');
+      }
+      if (i < imgs.length) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  const buyable = x => !x.ex && !x.chest && !x.season;
+  function sourceBadge(x) {
+    if (x.chest) return `<span class="badge-r" style="color:${RARITY[x.chest].color}">${RARITY[x.chest].name}</span>`;
+    if (x.ex) return '<span class="badge-ex">испытание</span>';
+    if (x.holiday) return `<span class="badge-ex">${HOLIDAYS[x.holiday].name}</span>`;
+    if (x.season) return '<span class="badge-ex">сезон</span>';
+    return '';
+  }
+  function skinTile(s, mode) {
+    const sel = save.skin === s.id, lv = playerLevel();
+    let label, cls = 'buy', dis = '';
+    if (mode === 'own') { if (sel) { label = 'Выбран'; cls += ' sel'; dis = 'disabled'; } else label = 'Выбрать'; }
+    else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
+    else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
+    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"><div class="sw ${s.crown ? 'crown' : ''}" style="${swatch(s)}"></div>
+      <span class="name">${s.name}</span>${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
+  }
+  function fxRow(f, mode) {
+    const sel = save.fx[f.slot] === f.id, lv = playerLevel();
+    let label, cls = 'buy', dis = '';
+    if (mode === 'own') { if (sel) { label = 'Снять'; cls += ' sel'; } else label = 'Выбрать'; }
+    else if (lv < f.lvl) { label = `С ур. ${f.lvl}`; dis = 'disabled'; }
+    else { label = `${f.price} ◆`; if (save.coins < f.price) dis = 'disabled'; }
+    return `<div class="fxrow ${f.ex || f.chest || f.season ? 'ex' : ''}"><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
+      `<span class="desc">${f.desc}.</span><button class="${cls}" id="fx-${f.id}" data-fx="${f.id}" ${dis}>${label}</button></div>`;
+  }
   function renderShop() {
     renderAll();
-    const lv = playerLevel();
-    $('tabUp').setAttribute('aria-selected', shopTab === 'up');
-    $('tabSkin').setAttribute('aria-selected', shopTab === 'skin');
-    $('tabAch').setAttribute('aria-selected', shopTab === 'ach');
-    $('shopTitle').textContent = shopTab === 'ach' ? 'Достижения' : 'Магазин';
-    $('tabFx').setAttribute('aria-selected', shopTab === 'fx');
-    $('tabCh').setAttribute('aria-selected', shopTab === 'ch');
-    if (shopTab === 'ch') $('shopTitle').textContent = 'Испытания';
-    if (shopTab === 'fx') {
-      const icon = { trail: '〰', aura: '◎', eat: '✦' };
-      $('shop').innerHTML = FX_SLOTS.map(([slot, title]) => `<h3>${title}</h3>` + FX.filter(f => f.slot === slot).map(f => {
-        const owned = save.fxOwned.includes(f.id), sel = save.fx[slot] === f.id, locked = !f.ex && lv < f.lvl;
-        let label, cls = 'buy', dis = '';
-        if (sel) { label = 'Снять'; cls += ' sel'; }
-        else if (owned) label = 'Выбрать';
-        else if (f.ex) { label = 'Испытание'; dis = 'disabled'; }
-        else if (locked) { label = `С ур. ${f.lvl}`; dis = 'disabled'; }
-        else { label = `${f.price} ◆`; if (save.coins < f.price) dis = 'disabled'; }
-        const how = f.ex && !owned ? ` Награда за испытание «${CHALLENGES.find(c => c.reward[1] === f.id).name}».` : '';
-        return `<div class="fxrow ${f.ex ? 'ex' : ''}"><span class="ico">${icon[slot]}</span><span class="name">${f.name}${f.ex ? ' <span class="badge-ex">эксклюзив</span>' : ''}</span>` +
-          `<span class="desc">${f.desc}.${how}</span><button class="${cls}" id="fx-${f.id}" data-fx="${f.id}" ${dis}>${label}</button></div>`;
-      }).join('')).join('');
+    const lv = playerLevel(), view = SHOP_VIEWS[shopView];
+    $('shopTitle').textContent = view.title;
+    $('shopTabs').innerHTML = view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
+    if (shopTab === 'skin') {
+      const list = SKINS.filter(k => buyable(k) && !save.skins.includes(k.id));
+      $('shop').innerHTML = list.length ? `<div class="skins">${list.map(k => skinTile(k, 'buy')).join('')}</div>`
+        : '<p class="empty-note">Все скины магазина уже твои. Остальные выпадают из сундуков и даются за испытания и сезоны.</p>';
+    } else if (shopTab === 'fx') {
+      const html = FX_SLOTS.map(([slot, title]) => {
+        const list = FX.filter(f => f.slot === slot && buyable(f) && !save.fxOwned.includes(f.id));
+        return list.length ? `<h3>${title}</h3>` + list.map(f => fxRow(f, 'buy')).join('') : '';
+      }).join('');
+      $('shop').innerHTML = html || '<p class="empty-note">Все эффекты магазина уже твои. Остальные — в сундуках и испытаниях.</p>';
+    } else if (shopTab === 'wskin') {
+      const own = SKINS.filter(k => save.skins.includes(k.id));
+      $('shop').innerHTML = `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Новые скины: магазин, сундуки, испытания и награды сезона.</p>` +
+        `<div class="skins">${own.map(k => skinTile(k, 'own')).join('')}</div>`;
+    } else if (shopTab === 'wfx') {
+      const ownAll = FX.filter(f => save.fxOwned.includes(f.id));
+      $('shop').innerHTML = `<p class="empty-note">Собрано ${ownAll.length} из ${FX.length}. В каждом слоте можно надеть один эффект.</p>` +
+        (ownAll.length ? FX_SLOTS.map(([slot, title]) => {
+          const list = ownAll.filter(f => f.slot === slot);
+          return list.length ? `<h3>${title}</h3>` + list.map(f => fxRow(f, 'own')).join('') : '';
+        }).join('') : '<p class="empty-note">Пока пусто: купи эффект в магазине или открой сундук.</p>');
+    } else if (shopTab === 'wpet') {
+      const own = save.pets.map(petById).filter(Boolean);
+      $('shop').innerHTML = `<p class="empty-note">Собрано ${own.length} из ${PETS.length}. Питомцы — награда лиги (за «Платину» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков. Бонус питомца не действует в рейтинговом бою.</p>` +
+        (own.length ? own.map(pt => { const sel = save.pet === pt.id;
+          return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex">${pt.tier}</span></span>` +
+            `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
+            `<button class="buy ${sel ? 'sel' : ''}" id="pet-${pt.id}" data-pet="${pt.id}">${sel ? 'Убрать' : 'Взять'}</button></div>`; }).join('')
+          : '<p class="empty-note">Пока пусто: дойди до лиги «Платина» в любом сезоне.</p>');
+    } else if (shopTab === 'pcat') {
+      const rows = [0, 1, 2, 3, 4, 5].map(k => save.season.id + k).map(id => {
+        const sd = seasonData(id), hk = sd.holiday;
+        return `<h3>Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''}</h3>` + sd.pets.map((pt, i) => {
+          const own = save.pets.includes(pt.id), lg = lgView(i ? 5 : 3, hk);
+          return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex" style="color:${lg.color}">${lg.name}</span></span>` +
+            `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
+            `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : `лига «${lg.name}»`}</span></div>`;
+        }).join('');
+      }).join('');
+      const chestRows = '<h3>Из сундуков</h3>' + PETS.filter(pt => pt.chest).map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest];
+        return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-r" style="color:${rc.color}">${rc.name}</span></span>` +
+          `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
+          `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : 'сундук'}</span></div>`; }).join('');
+      $('shop').innerHTML = '<p class="empty-note">Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги) и выпадают из сундуков.</p>' + rows + chestRows;
     } else if (shopTab === 'ch') {
       $('shop').innerHTML = CHALLENGES.map(ch => {
         const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
         const shown = ch.time ? `${fmtTime(v)} / ${fmtTime(ch.goal)}` : `${Math.floor(v)} / ${ch.goal}`;
         return `<div class="chal ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : ''}${ch.name}</b><span>${shown}</span></div>` +
           `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
-          `<span class="rw">Награда: ${rewardName(ch.reward)}${done ? ' — получено' : ''}</span></div>`;
+          `<span class="rw">Награда: ${rewardName(ch.reward)}${done ? ' — в гардеробе' : ''}</span></div>`;
       }).join('');
     } else if (shopTab === 'ach') {
       $('shop').innerHTML = ACH.map(a => {
@@ -2048,7 +2905,7 @@ body {
         return `<div class="ach ${got ? 'got' : ''}"><span class="ico">${got ? '🏆' : '?'}</span><span class="name">${a.name}</span>` +
           `<span class="desc">${a.desc}</span><span class="rw">${got ? 'Получено' : `+${a.coins} ◆`}</span></div>`;
       }).join('');
-    } else if (shopTab === 'up') {
+    } else {
       $('shop').innerHTML = CATS.map(([title, ids]) => `<h3>${title}</h3>` + ids.map(id => UPG.find(u => u.id === id)).map(u => {
         const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
         const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
@@ -2057,26 +2914,23 @@ body {
         return `<div class="up ${locked ? 'locked' : ''}"><span class="name">${u.name}</span><span class="desc">${u.desc}${u.info ? `<br><span class="now">Сейчас: ${u.info(l)}${l < max ? ` → дальше: ${u.info(l + 1)}` : ''}</span>` : ''}</span>
           <span class="pips">${pips}</span><button class="buy" id="buy-${u.id}" data-up="${u.id}" ${dis}>${label}</button></div>`;
       }).join('')).join('');
-    } else {
-      $('shop').innerHTML = `<div class="skins">` + SKINS.map(s => {
-        const owned = save.skins.includes(s.id), sel = save.skin === s.id, locked = !s.ex && lv < (s.lvl || 1);
-        let label, cls = 'buy', dis = '';
-        if (sel) { label = 'Выбран'; cls += ' sel'; dis = 'disabled'; }
-        else if (owned) label = 'Выбрать';
-        else if (s.ex) { label = 'Испытание'; dis = 'disabled'; }
-        else if (locked) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
-        else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
-        return `<div class="skin ${locked && !owned ? 'locked' : ''}"><div class="sw ${s.crown ? 'crown' : ''}" style="${swatch(s)}"></div>
-          <span class="name">${s.name}</span>${s.ex ? '<span class="badge-ex">эксклюзив</span>' : ''}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
-      }).join('') + `</div>`;
     }
   }
+  const _renderShop = renderShop;
+  renderShop = function () { _renderShop(); fillThumbs(); };
+  $('shopTabs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-tab]'); if (!b) return;
+    shopTab = b.dataset.tab; renderShop(); $('overlay').scrollTop = 0;
+    const again = document.querySelector(`#shopTabs [data-tab="${shopTab}"]`); if (again) again.focus();
+  });
   $('shop').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.fx) {
+    if (b.dataset.pet) {
+      save.pet = save.pet === b.dataset.pet ? null : b.dataset.pet; applyPet();
+    } else if (b.dataset.fx) {
       const f = FX.find(x => x.id === b.dataset.fx);
       if (!save.fxOwned.includes(f.id)) {
-        if (f.ex || save.coins < f.price || playerLevel() < f.lvl) return;
+        if (!buyable(f) || save.coins < f.price || playerLevel() < f.lvl) return;
         save.coins -= f.price; save.fxOwned.push(f.id);
       } else if (save.fx[f.slot] === f.id) { save.fx[f.slot] = null; persist(); applyAura(); renderShop(); const again = $(b.id); if (again) again.focus(); return; }
       save.fx[f.slot] = f.id; applyAura();
@@ -2085,20 +2939,230 @@ body {
       if (l < u.cost.length && save.coins >= price && playerLevel() >= u.lvl) { save.coins -= price; save.up[u.id]++; }
     } else if (b.dataset.skin) {
       const s = SKINS.find(x => x.id === b.dataset.skin);
-      if (!save.skins.includes(s.id)) { if (s.ex || save.coins < s.price || playerLevel() < s.lvl) return; save.coins -= s.price; save.skins.push(s.id); }
+      if (!save.skins.includes(s.id)) { if (!buyable(s) || save.coins < s.price || playerLevel() < s.lvl) return; save.coins -= s.price; save.skins.push(s.id); }
       save.skin = s.id; refreshSkin();
     }
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
     persist(); renderShop();
-    const again = $(b.id); if (again) again.focus();
+    const again = $(b.id); if (again) again.focus(); else { const t = document.querySelector('#shopTabs [aria-selected="true"]'); if (t) t.focus(); }
   });
+
+  // ================= chests =================
+  function rollChest() {
+    const tot = Object.values(RARITY).reduce((a, r) => a + r.w, 0);
+    let x = Math.random() * tot, rar = 'common';
+    for (const [k, r] of Object.entries(RARITY)) { if ((x -= r.w) < 0) { rar = k; break; } }
+    const pool = [...SKINS.filter(k => k.chest === rar).map(k => ['skin', k]), ...FX.filter(f => f.chest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.chest === rar).map(pt => ['pet', pt])];
+    const [type, item] = pool[Math.floor(Math.random() * pool.length)];
+    const list = type === 'skin' ? save.skins : type === 'pet' ? save.pets : save.fxOwned;
+    const owned = list.includes(item.id);
+    if (!owned) list.push(item.id);
+    const coins = 40 + Math.floor(Math.random() * 80) + (owned ? RARITY[rar].dup : 0);
+    save.coins += coins; save.chests--;
+    for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
+    persist();
+    return { type, item, rar, dup: owned, coins };
+  }
+  function renderChest() {
+    $('chestCount').textContent = save.chests;
+    $('chestBox').classList.toggle('empty', !save.chests);
+    $('openChestBtn').disabled = !save.chests;
+    $('openChestBtn').textContent = save.chests ? `Открыть сундук (${save.chests})` : 'Сундуков нет';
+    const tot = Object.values(RARITY).reduce((a, r) => a + r.w, 0);
+    $('odds').innerHTML = Object.values(RARITY).map(r => `<li><b style="color:${r.color}">${r.name}</b><span>${Math.round(r.w / tot * 100)}%</span></li>`).join('');
+  }
+  let chestBusy = false;
+  function openChest() {
+    if (chestBusy || !save.chests) return;
+    chestBusy = true;
+    const box = $('chestBox'); $('reveal').hidden = true;
+    box.classList.remove('open'); void box.offsetWidth; box.classList.add('shake');
+    buzz(40);
+    setTimeout(() => {
+      const r = rollChest(), R2 = RARITY[r.rar];
+      box.classList.remove('shake'); box.classList.add('open');
+      const pic = r.type === 'skin' ? `<div class="sw ${r.item.crown ? 'crown' : ''}" style="${swatch(r.item)}"></div>` : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
+      const kind = r.type === 'skin' ? 'Скин' : r.type === 'pet' ? `Питомец · ${PET_BONUS[r.item.bonus].name}: ${PET_BONUS[r.item.bonus].text(r.item.lv)}` : 'Эффект · ' + FX_SLOTS.find(sl => sl[0] === r.item.slot)[1].toLowerCase();
+      const el = $('reveal'); el.style.setProperty('--rc', R2.color);
+      el.innerHTML = `<span class="rar">${R2.name}</span>${pic}<b>${r.item.name}</b><small>${kind}${r.dup ? ' · уже есть, превращён в монеты' : ' · теперь в гардеробе'}</small><span class="coin">+${r.coins} ◆</span>`;
+      el.hidden = false;
+      renderChest(); renderAll(); chestBusy = false;
+    }, 750);
+  }
+  $('chestBtn').addEventListener('click', () => { showCard('chestCard'); $('reveal').hidden = true; $('chestBox').classList.remove('open'); renderChest(); $('openChestBtn').focus(); });
+  $('openChestBtn').addEventListener('click', openChest);
+  $('chestBack').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('chestBtn').focus(); });
+
+  // ================= settings =================
+  function buzz(ms) { if (save.settings.vibrate && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} }
+  function applySettings() {
+    const st = save.settings;
+    QUALITY = st.quality;
+    renderer.setPixelRatio(QUALITY === 'high' ? Math.min(devicePixelRatio, 2) : QUALITY === 'medium' ? Math.min(devicePixelRatio, 1.25) : 1);
+    resize();
+    allVis.forEach(v => v.glow.visible = QUALITY !== 'low');
+    stars.visible = QUALITY !== 'low'; nebulae.forEach(n => n.visible = QUALITY !== 'low');
+    const js = { s: 96, m: 128, l: 168 }[st.joySize] || 128;
+    document.documentElement.style.setProperty('--joy', js + 'px');
+    document.documentElement.style.setProperty('--joy-a', st.joyAlpha);
+    JOY_R = js * .47;
+    $('miniWrap').classList.toggle('off', !st.minimap);
+    const mz = { s: [110, 84], m: [140, 100], l: [190, 140], xl: [240, 180] }[st.miniSize] || [140, 100];
+    document.documentElement.style.setProperty('--mini-d', mz[0] + 'px'); document.documentElement.style.setProperty('--mini-p', mz[1] + 'px');
+  }
+  function renderSettings() {
+    const st = save.settings;
+    [['setQuality', st.quality], ['setJoy', st.joySize], ['setMiniSize', st.miniSize]].forEach(([id, v]) => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.v === v)));
+    $('setAlpha').value = st.joyAlpha; $('setVib').checked = st.vibrate; $('setMini').checked = st.minimap;
+    $('resetConfirm').hidden = true; $('resetBtn').hidden = false;
+  }
+  const saveSettings = () => { persist(); applySettings(); renderSettings(); };
+  $('setQuality').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.quality = b.dataset.v; saveSettings(); b.focus(); });
+  $('setMiniSize').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.miniSize = b.dataset.v; saveSettings(); b.focus(); });
+  $('setJoy').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.joySize = b.dataset.v; saveSettings(); b.focus(); });
+  $('setAlpha').addEventListener('input', e => { save.settings.joyAlpha = +e.target.value; persist(); applySettings(); });
+  $('setVib').addEventListener('change', e => { save.settings.vibrate = e.target.checked; saveSettings(); });
+  $('setMini').addEventListener('change', e => { save.settings.minimap = e.target.checked; saveSettings(); });
+  $('setBtn').addEventListener('click', () => { renderSettings(); showCard('settingsCard'); $('setBack').focus(); });
+  $('setBack').addEventListener('click', () => { showCard('menuCard'); $('setBtn').focus(); });
+  $('resetBtn').addEventListener('click', () => { $('resetConfirm').hidden = false; $('resetBtn').hidden = true; $('resetNo').focus(); });
+  $('resetNo').addEventListener('click', () => { $('resetConfirm').hidden = true; $('resetBtn').hidden = false; $('resetBtn').focus(); });
+  $('resetYes').addEventListener('click', () => { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} location.reload(); });
+
+  // ================= season badges (inline SVG) =================
+  let badgeUid = 0;
+  const BADGE_SHAPES = [
+    '<circle cx="50" cy="48" r="38"/>',                                                           // Bronze: medal
+    '<path d="M50 6 L88 19 L84 58 Q79 81 50 95 Q21 81 16 58 L12 19 Z"/>',                         // Silver: shield
+    '<polygon points="50,5 89,27 89,71 50,94 11,71 11,27"/>',                                     // Gold: hexagon
+    '<polygon points="32,6 68,6 94,32 94,68 68,94 32,94 6,68 6,32"/>',                            // Platinum: octagon
+    '<polygon points="50,3 95,50 50,97 5,50"/>',                                                  // Diamond: rhombus
+    '<polygon points="' + Array.from({ length: 24 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 12, r = i % 2 ? 34 : 47; return `${(50 + Math.cos(a) * r).toFixed(1)},${(50 + Math.sin(a) * r).toFixed(1)}`; }).join(' ') + '"/>', // Neon: starburst
+  ];
+  const BADGE_EMBLEM = {
+    star: '<path d="M50 14 L53.5 22 L62 22.5 L55.5 28 L57.5 36 L50 31.8 L42.5 36 L44.5 28 L38 22.5 L46.5 22 Z"/>',
+    newyear: '<g stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M50 13 V35 M40.5 18.5 L59.5 29.5 M59.5 18.5 L40.5 29.5"/><path d="M46.5 14.5 L50 18 L53.5 14.5 M46.5 33.5 L50 30 L53.5 33.5"/></g>',
+    valentine: '<path d="M50 36 C36 27 38 15 46 16 C48.5 16.3 50 18.5 50 20 C50 18.5 51.5 16.3 54 16 C62 15 64 27 50 36 Z"/>',
+    halloween: '<ellipse cx="50" cy="26" rx="11" ry="9"/><rect x="48.5" y="13" width="3" height="6" rx="1"/><path d="M45 24 l2.5 -3 l2.5 3 Z M50.5 24 l2.5 -3 l2.5 3 Z M44 29 Q50 33 56 29" fill="#1a0820"/>',
+  };
+  function badgeSVG(x) {
+    const L = lgView(x.league, x.holiday), id = 'bg' + (++badgeUid), col = L.color;
+    const pips = Array.from({ length: x.league + 1 }, (_, i) => `<circle cx="${50 + (i - x.league / 2) * 7}" cy="74" r="2.4"/>`).join('');
+    return `<svg viewBox="0 0 100 100" role="img" aria-label="Значок сезона ${x.id}, ${L.name}">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}"/><stop offset=".55" stop-color="${col}" stop-opacity=".55"/><stop offset="1" stop-color="#0b0624"/></linearGradient></defs>
+      <g fill="url(#${id})" stroke="${col}" stroke-width="2.5">${BADGE_SHAPES[x.league]}</g>
+      <g fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="1" transform="translate(50 50) scale(.8) translate(-50 -50)">${BADGE_SHAPES[x.league]}</g>
+      <g fill="#ffffff" stroke="#ffffff">${BADGE_EMBLEM[x.holiday || 'star']}</g>
+      <text x="50" y="62" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="${x.id >= 100 ? 20 : 25}" fill="#ffffff" style="paint-order:stroke" stroke="#0b0624" stroke-width="3">${x.id}</text>
+      <g fill="#ffffff">${pips}</g>
+    </svg>`;
+  }
+  function badgeDesc(x, live) {
+    const L = lgView(x.league, x.holiday), st = SEASON_EPOCH + (x.id - 1) * SEASON_LEN;
+    return `<div>${badgeSVG(x)}</div><div style="--bc:${L.color}"><b>Сезон ${x.id}${x.name ? ` «${x.name}»` : ''}</b>
+      <p>${fmtDate(st)} – ${fmtDate(st + SEASON_LEN)}<br>Лига: <span>${L.name}</span> · ${x.pts} очков${x.holiday ? `<br>Праздничный сезон: ${HOLIDAYS[x.holiday].name}` : ''}${live ? '<br>Сезон ещё идёт: значок улучшится, если поднимешься в лиге' : ''}</p></div>`;
+  }
+
+  // ================= league =================
+  function renderLeague() {
+    const sd = seasonData(save.season.id), hk = sd.holiday, li = leagueOf(save.season.pts), L = lgView(li, hk), next = li < 5 ? lgView(li + 1, hk) : null;
+    $('leaguePlay').textContent = `Играть в лиге · ${MODES[leagueMode()].name}`;
+    $('leaguePlayNote').textContent = seasonStarted
+      ? `Рейтинговый бой: только режим этого сезона, улучшения и бонусы питомцев отключены, начисляются очки лиги.`
+      : `Сезон начнётся ${fmtDate(SEASON_EPOCH)}. До старта можно потренироваться: раунд пройдёт по правилам лиги, но без очков.`;
+    const pct = next ? (save.season.pts - L.pts) / (next.pts - L.pts) * 100 : 100;
+    const when = seasonStarted
+      ? `Сезон ${save.season.id} «${sd.name}»${sd.holiday ? ' (праздничный)' : ''} · режим «${MODES[leagueMode()].name}» · до ${fmtDate(seasonEnd(save.season.id))} (осталось ${Math.ceil((seasonEnd(save.season.id) - Date.now()) / 86400000)} дн.)`
+      : `Сезон 1 (режим «${MODES[leagueMode()].name}») начнётся ${fmtDate(SEASON_EPOCH)}. До старта очки не начисляются`;
+    $('leaguePanel').innerHTML = `<div class="league-top"><b style="color:${L.color}">${L.name}</b><span class="hint">${save.season.pts} очков</span></div>` +
+      `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%;background:${L.color}"></div></div>` +
+      `<small>${when}. ${next ? `До лиги «${next.name}»: ${next.pts - save.season.pts} очков.` : 'Это высшая лига.'}</small>` +
+      (seasonNotice ? `<span class="notice">${seasonNotice}</span>` : '');
+    if (hk) {
+      const top = sd.items[5];
+      $('seasonSkin').innerHTML = `<div class="sw crown" style="${swatch(top)}"></div><div><b>Праздничный сезон: ${sd.name}</b><br><small>Свои 6 лиг, и за каждую — праздничный скин или эффект. Главная награда — «${top.name}» за лигу «${HOLIDAYS[hk].leagues[5]}».</small></div>`;
+    } else {
+      const sk = sd.skin;
+      $('seasonSkin').innerHTML = `<div class="sw ${sk.crown ? 'crown' : ''}" style="${swatch(sk)}"></div><div><b>Скин сезона: ${sk.name}</b><br><small>${save.skins.includes(sk.id) ? 'Уже в гардеробе.' : 'За лиги «Алмаз» и «Неон».'} Эффект «${sd.fx.name}» — за «Неон».</small></div>`;
+    }
+    { const cur = { id: save.season.id, league: li, pts: save.season.pts, name: sd.name, holiday: hk };
+      $('curBadge').style.setProperty('--bc', L.color);
+      $('curBadge').innerHTML = badgeDesc(cur, true).replace('<b>', '<b>Твой значок: '); }
+    const nextIds = [1, 2, 3].map(k => save.season.id + k);
+    $('seasonNext').innerHTML = nextIds.map(id => { const d = seasonData(id); return `<li><span>Сезон ${id}: ${d.name}${d.holiday ? ' · праздник, свои лиги' : ''} · «${MODES[seasonMode(id)].name}»</span><span class="rw">с ${fmtDate(SEASON_EPOCH + (id - 1) * SEASON_LEN)}</span></li>`; }).join('');
+    $('lgTable').innerHTML = LEAGUES.map((_, i) => { const l = lgView(i, hk), rw = leagueRewardText(sd, i);
+      return `<li class="${i === li ? 'cur' : ''}" style="--lc:${l.color}"><b>${l.name}</b><span>от ${l.pts} очков</span>` +
+      `<small>Награда: ${l.coins} ◆${rw ? ` + ${rw}` : ''} + значок сезона${i === li ? ' · вы здесь' : ''}</small></li>`; }).join('');
+  }
+  $('leagueBtn').addEventListener('click', () => { renderLeague(); showCard('leagueCard'); $('leagueBack').focus(); });
+  $('leaguePlay').addEventListener('click', () => { pendingRanked = true; startRound(); });
+  $('leagueBack').addEventListener('click', () => { showCard('menuCard'); $('leagueBtn').focus(); });
+
+  // ================= profile =================
+  function renderProfile() {
+    const T = save.totals, li = leagueOf(save.season.pts), L = lgView(li, seasonStarted ? holidayOf(save.season.id) : null), lvl = levelInfo(save.xp);
+    const mr = T.modeRounds || {}, fav = Object.keys(mr).sort((a, b) => mr[b] - mr[a])[0];
+    const hours = Math.floor(T.time / 3600), mins = Math.floor(T.time % 3600 / 60);
+    $('profHead').innerHTML = [
+      ['Уровень', `${lvl.level}`], ['Лига', `<span style="color:${L.color}">${L.name}</span>`],
+      ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
+      ['Достижения', `${save.ach.length} / ${ACH.length}`], ['Испытания', `${save.chDone.length} / ${CHALLENGES.length}`],
+    ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
+    $('profStats').innerHTML = [
+      ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
+      ['Съедено капель', T.kills], ['Боссов', T.bosses], ['Прислужников', T.minions],
+      ['Крошек', T.crumbs], ['Делений', T.splits], ['Выбросов', T.ejects],
+      ['Лучшая волна', T.bestWave], ['Капель за раунд', T.bestKills], ['Сундуков', save.chests],
+    ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
+    $('profBests').innerHTML = Object.entries(MODES).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
+    $('badgeTitle').textContent = `Значки сезонов · ${save.seasonLog.length} из 52`;
+    const liveSd = seasonData(save.season.id);
+    const live = seasonStarted ? { id: save.season.id, league: leagueOf(save.season.pts), pts: save.season.pts, name: liveSd.name, holiday: liveSd.holiday, live: true } : null;
+    const all = [...save.seasonLog.slice().reverse(), ...(live ? [live] : [])].sort((p, q) => q.id - p.id);
+    badgeList = all;
+    $('profBadges').innerHTML = all.length ? all.map((x, i) => { const L = lgView(x.league, x.holiday);
+      return `<button class="badge-tile ${x.live ? 'live' : ''}" data-b="${i}" aria-pressed="false" style="--bc:${L.color}">${badgeSVG(x)}<b>${x.name || 'Сезон ' + x.id}</b><small>${x.live ? 'идёт' : L.name}</small></button>`; }).join('')
+      : '<p class="empty-note" style="grid-column:1/-1">Значок выдаётся в конце каждого сезона, в котором ты набрал хотя бы одно очко. Форма значка зависит от лиги: медаль, щит, шестиугольник, восьмиугольник, ромб или звезда.</p>';
+    $('badgeInfo').hidden = true;
+    $('profSeasons').innerHTML = [`<li><span>Сезон ${save.season.id} (идёт)</span><span class="rw" style="color:${L.color}">${L.name} · ${save.season.pts}</span></li>`,
+      ...save.seasonLog.slice().reverse().map(x => `<li><span>Сезон ${x.id}${x.name ? ` «${x.name}»` : ''}</span><span class="rw" style="color:${lgView(x.league, x.holiday).color}">${lgView(x.league, x.holiday).name} · ${x.pts}</span></li>`)].join('');
+    requestAnimationFrame(drawProfChart);
+  }
+  let badgeList = [];
+  $('profBadges').addEventListener('click', e => {
+    const b = e.target.closest('.badge-tile'); if (!b) return;
+    const x = badgeList[+b.dataset.b], L = lgView(x.league, x.holiday);
+    document.querySelectorAll('#profBadges .badge-tile').forEach(t => t.setAttribute('aria-pressed', t === b));
+    const info = $('badgeInfo'); info.style.setProperty('--bc', L.color); info.innerHTML = badgeDesc(x, x.live); info.hidden = false;
+  });
+  function drawProfChart() {
+    const cv = $('profChart'), w = cv.clientWidth, h = cv.clientHeight, dpr = Math.min(devicePixelRatio, 2);
+    if (!w) return;
+    cv.width = w * dpr; cv.height = h * dpr;
+    const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
+    const data = save.history, padB = 16, padT = 16;
+    x.fillStyle = tok('--muted'); x.font = `600 11px ${tok('--body')}`;
+    if (!data.length) { x.textAlign = 'center'; x.fillText('Сыграй раунд, и здесь появится график', w / 2, h / 2); return; }
+    const max = Math.max(...data.map(d => d.m), 10), bw = (w - 4) / 30;
+    x.strokeStyle = tok('--line'); x.lineWidth = 1;
+    [0, .5, 1].forEach(f => { const y = padT + f * (h - padT - padB); x.beginPath(); x.moveTo(0, y); x.lineTo(w, y); x.stroke(); });
+    data.forEach((d, i) => {
+      const bh = d.m / max * (h - padT - padB), bx = 2 + i * bw;
+      x.fillStyle = d.m === max ? tok('--gold') : tok('--food');
+      x.globalAlpha = .85; x.fillRect(bx + 1, h - padB - bh, Math.max(2, bw - 3), bh); x.globalAlpha = 1;
+    });
+    x.fillStyle = tok('--muted'); x.textAlign = 'left'; x.fillText(`макс. ${max}`, 2, 11);
+    x.textAlign = 'right'; x.fillText(`${data.length} раунд(ов)`, w - 2, h - 3);
+  }
+  $('profBtn').addEventListener('click', () => { showCard('profileCard'); renderProfile(); $('profBack').focus(); });
+  $('profBack').addEventListener('click', () => { showCard('menuCard'); $('profBtn').focus(); });
 
   // menus scroll by script on touch screens: some app viewers swallow native vertical swipes
   (function menuScroll() {
     const ov = $('overlay');
     let y0 = null, s0 = 0, lastY = 0, lastT = 0, vel = 0, raf = 0;
     ov.addEventListener('touchstart', e => {
-      if (e.touches.length !== 1) return;
+      if (e.touches.length !== 1 || e.target.closest('input[type="range"]')) { y0 = null; return; }
       cancelAnimationFrame(raf);
       y0 = lastY = e.touches[0].clientY; s0 = ov.scrollTop; lastT = performance.now(); vel = 0;
     }, { passive: true });
@@ -2130,7 +3194,79 @@ body {
   }
   addEventListener('resize', resize); resize();
 
+  // ================= pet companion =================
+  function petLv(kind) { const pt = petById(save.pet); return pt && pt.bonus === kind && !(stats && stats.ranked) ? pt.lv : 0; }
+  let petObj = null, petT = 0;
+  function buildPet(pt) {
+    const g = new THREE.Group(), col = new THREE.Color(pt.color), acc = new THREE.Color(pt.accent);
+    const mat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .35, roughness: .3 });
+    const accMat = new THREE.MeshStandardMaterial({ color: acc, emissive: acc, emissiveIntensity: .5, roughness: .3 });
+    const M = (geo, m, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); g.add(o); return o; };
+    const eyes = (y, z, sp = .17) => [-sp, sp].forEach(x => { const e = M(new THREE.SphereGeometry(.09, 8, 6), eyeMat, x, y, z); const pp = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 5), pupilMat); pp.position.z = .05; e.add(pp); });
+    switch (pt.species) {
+      case 'cat': M(new THREE.SphereGeometry(.5, 18, 14), mat); [-.27, .27].forEach(x => { const ear = M(new THREE.ConeGeometry(.16, .3, 4), accMat, x, .48, 0); ear.rotation.z = -x * .8; }); eyes(.1, .45); break;
+      case 'cube': M(new THREE.BoxGeometry(.8, .8, .8), mat); eyes(.1, .42); break;
+      case 'pyramid': M(new THREE.ConeGeometry(.6, .95, 4), mat).rotation.y = Math.PI / 4; eyes(-.05, .3, .14); break;
+      case 'jelly': M(new THREE.SphereGeometry(.55, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; M(new THREE.CylinderGeometry(.04, .02, .6, 5), accMat, Math.cos(a) * .35, -.3, Math.sin(a) * .35); } eyes(.2, .45); break;
+      case 'firefly': M(new THREE.SphereGeometry(.28, 14, 10), mat); g.add(glowSprite(acc, 2.6, .9)); eyes(.06, .25, .1); break;
+      case 'robot': M(new THREE.BoxGeometry(.7, .65, .6), mat); M(new THREE.CylinderGeometry(.03, .03, .35, 5), accMat, 0, .5, 0); M(new THREE.SphereGeometry(.09, 8, 6), accMat, 0, .7, 0); eyes(.05, .31); break;
+      case 'ghost': { const gm = mat.clone(); gm.transparent = true; gm.opacity = .8; M(new THREE.SphereGeometry(.45, 16, 12), gm, 0, .1, 0); M(new THREE.ConeGeometry(.45, .6, 12, 1, true), gm, 0, -.35, 0).rotation.x = Math.PI; eyes(.15, .4); break; }
+      case 'pumpkin': M(new THREE.SphereGeometry(.5, 16, 12), mat).scale.set(1.1, .85, 1.1); M(new THREE.CylinderGeometry(.05, .07, .22, 6), accMat, 0, .5, 0); eyes(.08, .48); break;
+      case 'bat': M(new THREE.SphereGeometry(.38, 14, 10), mat); [-1, 1].forEach(sx => { const w = M(new THREE.ConeGeometry(.3, .7, 3), accMat, sx * .55, .05, 0); w.rotation.z = sx * Math.PI / 2; w.userData.wing = sx; }); eyes(.08, .35, .13); break;
+      case 'snowman': M(new THREE.SphereGeometry(.42, 14, 10), mat, 0, -.2, 0); M(new THREE.SphereGeometry(.3, 14, 10), mat, 0, .4, 0); M(new THREE.ConeGeometry(.06, .25, 6), accMat, 0, .38, .35).rotation.x = Math.PI / 2; eyes(.48, .26, .1); break;
+      case 'deer': M(new THREE.SphereGeometry(.45, 14, 10), mat); [-1, 1].forEach(sx => { const an = M(new THREE.CylinderGeometry(.03, .04, .45, 5), accMat, sx * .22, .55, 0); an.rotation.z = -sx * .5; }); M(new THREE.SphereGeometry(.08, 8, 6), accMat, 0, 0, .45); eyes(.15, .38); break;
+      case 'heart': { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.heart, color: col, transparent: true })); sp.scale.setScalar(1.4); g.add(sp); break; }
+      case 'cupid': M(new THREE.SphereGeometry(.38, 14, 10), mat); [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.25, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffffff' }), sx * .45, .15, -.1); w.scale.set(1, .5, .2); w.userData.wing = sx; }); M(new THREE.TorusGeometry(.22, .03, 6, 24), accMat, 0, .55, 0).rotation.x = Math.PI / 2; eyes(.08, .35, .13); break;
+      default: M(new THREE.SphereGeometry(.5, 18, 14), mat); eyes(.1, .45);
+    }
+    g.add(glowSprite(col, 2.2, .45));
+    g.visible = false; scene.add(g);
+    return g;
+  }
+  function applyPet() {
+    if (petObj) { scene.remove(petObj.g); petObj = null; }
+    const pt = petById(save.pet);
+    if (pt) petObj = { g: buildPet(pt), pt, x: 0, z: 0, y: 2 };
+  }
+  function animatePet(now, dt) {
+    if (!petObj) return;
+    const g = petObj.g;
+    if (!player.cells.length) { g.visible = false; return; }
+    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = radius(c.mass), a = now / 1300;
+    const tx = c.x + Math.cos(a) * (r + 2.2), tz = c.z + Math.sin(a) * (r + 2.2), ty = r * .9 + 1.3 + Math.sin(now / 280) * .3;
+    const k = Math.min(1, dt * 6), px = petObj.x, pz = petObj.z;
+    petObj.x += (tx - petObj.x) * k; petObj.z += (tz - petObj.z) * k; petObj.y += (ty - petObj.y) * k;
+    g.position.set(petObj.x, petObj.y, petObj.z); g.visible = true;
+    g.scale.setScalar(1 + Math.min(3, r * .12));
+    if (Math.abs(petObj.x - px) + Math.abs(petObj.z - pz) > .001) g.rotation.y = Math.atan2(petObj.x - px, petObj.z - pz);
+    g.children.forEach(o => { if (o.userData.wing) o.rotation.x = Math.sin(now / 90) * .5; });
+    // «Обжора» collects crumbs around itself
+    petT -= dt;
+    if (running && petT <= 0 && petObj.pt.bonus === 'eater' && petLv('eater')) {
+      petT = .5; const rr = 2 + petObj.pt.lv, rr2 = rr * rr;
+      for (let i = 0; i < FOOD; i++) { const f = foods[i]; if ((f.x - petObj.x) ** 2 + (f.z - petObj.z) ** 2 < rr2) { c.mass += 1; placeFood(i); } }
+    }
+  }
+
+  // holiday look for the running season (snow, embers, hearts and a recoloured rim)
+  let curHoliday = null;
+  function decorateHoliday() {
+    if (!curHoliday || Math.random() > .5) return;
+    const fx0 = focus.x + (Math.random() - .5) * 90, fz0 = focus.z + (Math.random() - .5) * 70;
+    if (curHoliday === 'newyear') emit(fx0, 26, fz0, '#ffffff', 1, .4, 3.5);
+    if (curHoliday === 'halloween') emit(fx0, .5, fz0, Math.random() < .5 ? '#ff7a00' : '#b26bff', 1, 1.5, 1.6);
+    if (curHoliday === 'valentine' && Math.random() < .12) emitIcons(fx0, 1, fz0, 'heart', '#ff4f9a', 1, 1.6);
+  }
+  function setHoliday(k) {
+    curHoliday = k;
+    const col = k ? HOLIDAYS[k].rim : '#ff4fd8';
+    rim.material.color.set(col); rimGlow.material.color.set(col); edgeGlow.material.color.set(col);
+  }
   function draw(now) {
+    decorateHoliday();
+    animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
+    zoneLine.visible = zoneOut.visible = running && mode === 'royale';
+    if (zoneLine.visible) { zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
     for (const c of cells) {
       const r = radius(c.mass), v = c.vis;
@@ -2156,6 +3292,9 @@ body {
       }
     }
     ejectMat.color.set(skin().color); ejectMat.emissive.set(skin().color);
+    for (const v of viruses) { const rv = radius(v.mass); v.mesh.position.set(v.x, rv * .9, v.z); v.mesh.scale.setScalar(rv); v.mesh.rotation.y = now / 2000 + v.x; }
+    if (meteorRing.visible) { meteorRing.scale.setScalar(22 + Math.sin(now / 200) * .8); meteorRing.material.opacity = ev.active ? .9 : .4 + .4 * Math.abs(Math.sin(now / 150)); }
+    if (hole.visible) { holeRing.rotation.z = now / 400; }
     for (const e of ejects) e.mesh.position.set(e.x, radius(EJECT_MASS) * 0.9, e.z);
     for (const b of bonuses) {
       b.mesh.position.y = 1.2 + Math.sin(now / 300 + b.x) * 0.25;
@@ -2169,7 +3308,8 @@ body {
       focus = { x: x / m, z: z / m, m };
     } else if (!running) focus.m = 40;
     const spread = player.cells.length > 1 ? Math.max(...player.cells.map(c => Math.hypot(c.x - focus.x, c.z - focus.z))) : 0;
-    const h = (16 + radius(focus.m) * 4 + spread * 0.8) * (1 + 0.08 * save.up.vision);
+    const fr = radius(focus.m);
+    const h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * (1 + 0.08 * U.vision);   // giants get extra zoom-out
     camLook.lerp(tmpV.set(focus.x, 0, focus.z), 0.16);
     camPos.lerp(tmpV.set(focus.x, h, focus.z + h * 0.62), 0.12);
     camera.position.copy(camPos); camera.lookAt(camLook);
@@ -2177,6 +3317,7 @@ body {
     const camDist = camPos.distanceTo(camLook);
     scene.fog.near = camDist * 1.3 + 20;
     scene.fog.far = camDist * 3.2 + 90;
+    if (ev.active === 'eclipse') { scene.fog.near = camDist * 0.75; scene.fog.far = camDist * 1.45; }
     if (dailyIs('fog')) { scene.fog.near = camDist * 0.9; scene.fog.far = camDist * 1.7; }
     { const fdt = Math.min(0.05, (now - (draw.last || now)) / 1000); updateParticles(fdt); updateFx(fdt); } draw.last = now;
     pMat.size = 0.7 + camDist * 0.015;
@@ -2217,7 +3358,14 @@ body {
   stats = { time: 0 }; history = [0];
   bots.forEach(spawnBot);
   rebuildCells();
+  if (TEST_MODE) { $('testBadge').hidden = false; document.querySelector('#menuCard h1').innerHTML += ' <em class="test-badge">ТЕСТ</em>'; }
+  fixModeForLeague(); mode = save.mode;
+  applyPet();
+  resetViruses();
+  setHoliday(seasonStarted ? holidayOf(seasonNow) : null);
+  applySettings();
   renderAll();
+  if (seasonNotice) { persist(); setTimeout(() => toast('Сезон завершён! Награда начислена'), 800); }
   setGameUi(false);
   requestAnimationFrame(frame);
 })();

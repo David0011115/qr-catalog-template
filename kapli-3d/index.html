@@ -1903,7 +1903,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   let virusRespawn = [];
   function popCell(c, v) {
     const o = c.owner;
-    const maxP = o.isPlayer ? playerMaxParts() : o.kind === 'bot' ? BOT_PARTS : 1;
+    // a boss that has no spare parts to split into loses 30% of its mass as food and is stunned for a moment
+    if (o.kind === 'boss' && !o.free.length) {
+      const lost = c.mass * .3; c.mass -= lost; c.vis.jig = 1; o.stunT = 2.5;
+      burstFood(c.x, c.z, radius(c.mass) + 8, Math.min(160, Math.round(lost / 4)));
+      emit(v.x, radius(v.mass), v.z, VIRUS_COLOR, 40, 18, .8);
+      if (stats) stats.bossPops = (stats.bossPops || 0) + 1;
+      if (nearView(c.x, c.z)) toast(`Шип ранил босса «${o.name}»!`);
+      return;
+    }
+    const maxP = o.isPlayer ? playerMaxParts() : o.kind === 'bot' ? BOT_PARTS : o.kind === 'boss' ? o.cells.length + o.free.length : 1;
     c.mass += v.mass * 0.5;
     const pieces = Math.min(8, maxP - o.cells.length + 1, o.free.length + 1);
     emit(v.x, radius(v.mass), v.z, VIRUS_COLOR, 30, 16, .7);
@@ -1916,7 +1925,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       n.vx = Math.cos(a) * 40; n.vz = Math.sin(a) * 40; n.hx = Math.cos(a); n.hz = Math.sin(a); n.mergeT = mt; n.vis.jig = 1;
     }
     if (o.isPlayer) { toast('Шип разорвал тебя на части!'); buzz(80); }
-    else if (stats) { stats.botPops = (stats.botPops || 0) + 1; if (o.kind === 'bot' && nearView(c.x, c.z)) toast(`Шип разорвал ${o.name}!`); }
+    else if (stats) {
+      if (o.kind === 'boss') { stats.bossPops = (stats.bossPops || 0) + 1; if (nearView(c.x, c.z)) toast(`Шип разорвал босса «${o.name}»!`); }
+      else { stats.botPops = (stats.botPops || 0) + 1; if (o.kind === 'bot' && nearView(c.x, c.z)) toast(`Шип разорвал ${o.name}!`); }
+    }
   }
   function updateViruses(dt) {
     const k = Math.exp(-2 * dt);
@@ -1928,7 +1940,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
       const rv = radius(v.mass);
       for (const c of cells) {
-        if (c.gone || c.owner.kind === 'boss' || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes
+        if (c.gone || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes; bosses get popped too
         if (Math.hypot(c.x - v.x, c.z - v.z) < radius(c.mass) - rv * .3) {
           popCell(c, v); removeVirus(v); virusRespawn.push(10); rebuildCells(); break;
         }
@@ -2158,7 +2170,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT;
       v *= (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed'));
     }
-    else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1);
+    else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;
     else v *= 0.92;
     return v * (dailyIs('speedy') ? 1.3 : 1) * (ev.active === 'storm' ? 1.4 : 1);
@@ -2576,7 +2588,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
     }
     // bots don't always notice spikes: cowards are careful, aggressive bots blunder into them
-    const careful = o.kind === 'boss' ? 1 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
+    const careful = o.kind === 'boss' ? .35 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
     if (c.mass > VIRUS_MASS * 1.3 && Math.random() < careful) for (const v of viruses) {
       const d = Math.hypot(v.x - c.x, v.z - c.z);
       if (d < radius(c.mass) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
@@ -2738,7 +2750,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     stats.time += dt;
     player.ejectCd = Math.max(0, (player.ejectCd || 0) - dt);
     if (modeRules(dt)) return;
-    for (const o of owners) { o.splitCd = Math.max(0, o.splitCd - dt); for (const c of o.cells) c.mergeT = Math.max(0, c.mergeT - dt); }
+    for (const o of owners) { o.splitCd = Math.max(0, o.splitCd - dt); if (o.stunT) o.stunT = Math.max(0, o.stunT - dt); for (const c of o.cells) c.mergeT = Math.max(0, c.mergeT - dt); }
     for (const k in effects) effects[k] = Math.max(0, effects[k] - dt);
     player.dashT -= dt; player.dashCd = Math.max(0, player.dashCd - dt);
     trailFx(dt, performance.now());
@@ -3904,7 +3916,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '12';
+const APP_VER = '13';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

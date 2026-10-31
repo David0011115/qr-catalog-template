@@ -313,9 +313,9 @@ body {
 .league small { color: var(--muted); font-size: .78rem; line-height: 1.4; }
 .league .notice { color: var(--prey); font-size: .82rem; }
 .chest-stage { display: grid; place-items: center; padding: 14px 0 4px; }
-.chest { position: relative; width: 120px; height: 86px; border-radius: 14px; background: linear-gradient(180deg, #7b3dff, #3a1580);
-  box-shadow: 0 0 26px rgba(178, 107, 255, .55), inset 0 -6px 0 rgba(0,0,0,.25); }
-.chest .lid { position: absolute; left: -6px; right: -6px; top: -16px; height: 34px; border-radius: 14px 14px 6px 6px; background: linear-gradient(180deg, #ff4fd8, #9b3dff); box-shadow: 0 0 18px rgba(255, 79, 216, .5); transform-origin: 50% 100%; transition: transform .35s; }
+.chest { position: relative; width: 120px; height: 86px; border-radius: 14px; background: linear-gradient(180deg, var(--cb1, #7b3dff), var(--cb2, #3a1580));
+  box-shadow: 0 0 26px var(--cg, rgba(178, 107, 255, .55)), inset 0 -6px 0 rgba(0,0,0,.25); }
+.chest .lid { position: absolute; left: -6px; right: -6px; top: -16px; height: 34px; border-radius: 14px 14px 6px 6px; background: linear-gradient(180deg, var(--cl1, #ff4fd8), var(--cl2, #9b3dff)); box-shadow: 0 0 18px var(--cg, rgba(255, 79, 216, .5)); transform-origin: 50% 100%; transition: transform .35s; }
 .chest .lock { position: absolute; left: 50%; top: 10px; width: 20px; height: 24px; margin-left: -10px; border-radius: 5px; background: var(--gold); box-shadow: 0 0 12px rgba(255,210,63,.7); }
 .chest.empty { opacity: .35; filter: grayscale(.6); }
 .chest.shake { animation: shake .7s; }
@@ -327,6 +327,16 @@ body {
 .reveal b { font-family: var(--display); font-weight: 400; font-size: 1.3rem; }
 .reveal small { color: var(--muted); }
 .reveal .sw { width: 64px; height: 64px; }
+.sortbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--row); border-radius: 12px; padding: 8px 12px; }
+.sortbar span { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.sortbar select { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font: 600 .9rem var(--body); min-width: 0; }
+.sortbar select:focus-visible { outline: 3px solid var(--food); outline-offset: 2px; }
+.chest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.chest-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 12px; align-items: center; background: var(--row); border-radius: 12px; padding: 10px 12px; }
+.chest-list .ci { grid-row: 1 / span 2; width: 30px; height: 24px; border-radius: 6px; background: linear-gradient(180deg, var(--cl1), var(--cb2)); box-shadow: 0 0 10px var(--cl1); }
+.chest-list b { font-weight: 600; }
+.chest-list small { grid-column: 2; color: var(--muted); font-size: .78rem; }
+.chest-list .buy { grid-column: 3; grid-row: 1 / span 2; }
 .odds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; font-size: .8rem; }
 .odds li { display: flex; justify-content: space-between; color: var(--muted); }
 .odds li b { font-weight: 600; }
@@ -520,9 +530,18 @@ body {
     <div class="shop-head"><h1>Сундуки</h1><b class="coin" id="chestCount">0</b></div>
     <div class="chest-stage"><div class="chest" id="chestBox"><span class="lid"></span><span class="lock"></span></div></div>
     <div class="reveal" id="reveal" hidden></div>
-    <p class="hint">Сундук выпадает после раунда: чем лучше раунд, тем выше шанс. Если 4 раунда подряд сундука не было, следующий раунд принесёт его наверняка. Внутри скины, эффекты и питомцы — чем реже, тем сильнее бонус у питомца. Повторный предмет превращается в монеты.</p>
+    <ul class="chest-list" id="chestList"></ul>
+    <h2 class="section-title">Как получить</h2>
+    <dl class="keys">
+      <dt>Раунд в лиге</dt><dd>30% + до 30% за массу + 20% за победу. Если 4 раунда подряд без сундука, 5-й — наверняка</dd>
+      <dt>Обычный раунд</dt><dd>15% + до 15% за массу + 10% за победу. Наверняка — после 7 раундов без сундука</dd>
+      <dt>Повышение лиги</dt><dd>сундук лиги: внутри эксклюзивные предметы, которых нет больше нигде. Чем выше лига, тем реже добыча</dd>
+      <dt>Испытание</dt><dd>сундук, редкость зависит от сложности испытания</dd>
+      <dt>Ежедневный</dt><dd>раз в сутки, редкость случайная</dd>
+    </dl>
+    <h2 class="section-title">Обычный и ежедневный сундук: шансы</h2>
     <ul class="odds" id="odds"></ul>
-    <button class="btn" id="openChestBtn">Открыть сундук</button>
+    <p class="hint">Внутри скины, эффекты и питомцы — чем реже, тем сильнее бонус у питомца. Повторный предмет превращается в монеты.</p>
     <button class="btn ghost" id="chestBack">Назад</button>
   </div>
 
@@ -780,6 +799,10 @@ body {
     { id: 'titan',    name: 'Титан',       color: '#ffd23f', accent: '#ff4fd8', pattern: 'gradient', pulse: true, glow: true, crown: true, ex: true },
     { id: 'shade',    name: 'Тень',        color: '#1a1033', accent: '#7b3dff', pattern: 'rings', glow: true, ex: true },
     { id: 'blackhole', name: 'Чёрная дыра', color: '#000000', accent: '#ff4fd8', pattern: 'rings', glow: true, price: 2000, lvl: 14 },
+    { id: 'lc_shield',  name: 'Лиговый щит',       color: '#c0c8e0', accent: '#4d7cff', pattern: 'stripes', glow: true, lchest: 'common' },
+    { id: 'lc_cup',     name: 'Чемпионский кубок', color: '#ffd23f', accent: '#ff9a3d', pattern: 'gradient', glow: true, crown: true, lchest: 'rare' },
+    { id: 'lc_diamond', name: 'Рейтинговый алмаз', color: '#b26bff', accent: '#e8fbff', pattern: 'grid', pulse: true, glow: true, lchest: 'epic' },
+    { id: 'lc_absolute', name: 'Абсолют',          color: '#ff4fd8', rainbow: true, glow: true, crown: true, lchest: 'legendary' },
   ];
   [...SKINS, ...FX].forEach(x => { if (x.price) x.price *= PRICE_MULT; });
   // rarities for chest loot; a duplicate turns into coins
@@ -816,6 +839,10 @@ body {
     { id: 'popEat',        slot: 'eat',   name: 'Хлопушка',          desc: 'Маленький разноцветный хлопок', chest: 'common' },
     { id: 'iceEat',        slot: 'eat',   name: 'Ледяной взрыв',     desc: 'Белые осколки и холодная волна', chest: 'rare' },
     { id: 'miniholeEat',   slot: 'eat',   name: 'Мини-дыра',         desc: 'Добыча исчезает в тёмном вихре', chest: 'epic' },
+    { id: 'lc_ribbon', slot: 'trail', name: 'Лента победителя', desc: 'Золотая лента за каплей', colors: ['#ffd23f', '#ffffff'], style: 'ribbon', lchest: 'common' },
+    { id: 'lc_stars',  slot: 'trail', name: 'Лиговые звёзды',   desc: 'Серебряные и синие звёздочки', colors: ['#c0c8e0', '#4d7cff'], style: 'stars', lchest: 'rare' },
+    { id: 'lc_spiral', slot: 'trail', name: 'Алмазная спираль', desc: 'Фиолетовая спираль с бликами', colors: ['#b26bff', '#e8fbff'], style: 'spiral', lchest: 'epic' },
+    { id: 'lc_halo',   slot: 'trail', name: 'Неоновый ореол',   desc: 'Расходящиеся неоновые кольца', colors: ['#ff4fd8', '#22e6ff', '#ffd23f'], style: 'rings', lchest: 'legendary' },
     { id: 'rainbowEat',    slot: 'eat',   name: 'Радужный взрыв',    desc: 'Радуга искр и две волны', chest: 'legendary' },
   );
   // seasons: 14 days each; every season has its own skin for Diamond and Neon leagues
@@ -984,6 +1011,12 @@ body {
    ['c_p_star', 'Звёздный робот', 'robot', '#e8fbff', '#ffd23f', 'xp', 3, 'legendary'],
    ['c_p_rainbow', 'Радужный светлячок', 'firefly', '#ff4fd8', '#3dffa2', 'shield', 3, 'legendary'],
   ].forEach(([id, name, species, color, accent, bonus, lv, chest]) => addPet({ id, name, species, color, accent, bonus, lv, chest, tier: RARITY[chest].name }));
+  // league-chest pets (exclusive)
+  [['lc_p_mascot', 'Лиговый талисман', 'cube', '#c0c8e0', '#4d7cff', 'coins', 1, 'common'],
+   ['lc_p_cupbot', 'Кубок-робот', 'robot', '#ffd23f', '#ff9a3d', 'xp', 2, 'rare'],
+   ['lc_p_jelly', 'Алмазная медуза', 'jelly', '#b26bff', '#e8fbff', 'magnet', 3, 'epic'],
+   ['lc_p_spirit', 'Неоновый дух', 'ghost', '#ff4fd8', '#22e6ff', 'speed', 3, 'legendary'],
+  ].forEach(([id, name, species, color, accent, bonus, lv, lchest]) => addPet({ id, name, species, color, accent, bonus, lv, lchest, tier: 'Сундук лиги' }));
   function petById(id) {
     if (!id) return null;
     if (!petMap[id]) { const m = /^hp_(\w+?)_(\d{4})_/.exec(id); if (m && HOL_PETS[m[1]]) holidayPets(m[1], +m[2]).forEach(addPet); }
@@ -1065,6 +1098,8 @@ body {
   save.chDone = save.chDone || [];
   save.pets = save.pets || []; save.pet = save.pet || null;
   save.chests = save.chests || 0; save.pity = save.pity || 0;
+  save.special = save.special || [];   // league / challenge chests: { kind, rar | league, title }
+  save.dailyChestDay = save.dailyChestDay || '';
   save.history = save.history || [];
   save.totals.modeRounds = save.totals.modeRounds || {};
   save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', ...(save.settings || {}) };
@@ -1134,6 +1169,10 @@ body {
     { id: 'ch_kills500',  name: 'Легенда арены',      desc: 'Съешь 500 капель за всё время',            goal: 500,  prog: () => save.totals.kills,     reward: ['skin', 'shade'] },
   ];
   const rewardName = ([type, id]) => type === 'skin' ? `скин «${SKINS.find(k => k.id === id).name}»` : `эффект «${FX.find(f => f.id === id).name}»`;
+  const CH_TIER = { ch_rounds50: 'common', ch_split300: 'common', ch_eject500: 'common', ch_daily7: 'common', ch_crumbs20k: 'common', ch_time2h: 'common', ch_skins10: 'common',
+    ch_boss10: 'rare', ch_kills150: 'rare', ch_minions60: 'rare', ch_team10: 'rare', ch_round20: 'rare', ch_race2: 'rare', ch_race3: 'rare', ch_split1000: 'rare', ch_level15: 'rare', ch_ach12: 'rare',
+    ch_surv8: 'epic', ch_timed5: 'epic', ch_giant3: 'epic', ch_hard1500: 'epic', ch_crown5: 'epic', ch_wave15: 'epic', ch_giant5: 'epic',
+    ch_mass10k: 'legendary', ch_surv20: 'legendary', ch_kills500: 'legendary' };
   function checkChallenges() {
     const got = [];
     for (const ch of CHALLENGES) {
@@ -1143,6 +1182,7 @@ body {
       if (type === 'skin' && !save.skins.includes(id)) save.skins.push(id);
       if (type === 'fx' && !save.fxOwned.includes(id)) save.fxOwned.push(id);
       got.push(ch);
+      save.special.push({ kind: 'challenge', rar: CH_TIER[ch.id] || 'rare', title: ch.name });
     }
     return got;
   }
@@ -2007,8 +2047,9 @@ body {
     const record = mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
     if (record) save.bests[mode] = score;
     const chNow = checkChallenges();
-    const chestChance = .3 + Math.min(.3, stats.maxMass / 5000) + (stats.win ? .2 : 0);
-    const gotChest = save.pity >= 4 || Math.random() < chestChance;
+    const chestChance = stats.ranked ? .3 + Math.min(.3, stats.maxMass / 5000) + (stats.win ? .2 : 0)
+                                     : .15 + Math.min(.15, stats.maxMass / 10000) + (stats.win ? .1 : 0);
+    const gotChest = save.pity >= (stats.ranked ? 4 : 7) || Math.random() < chestChance;
     if (gotChest) { save.chests++; save.pity = 0; } else save.pity++;
     let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
@@ -2018,6 +2059,7 @@ body {
     save.season.pts += pts;
     const lgAfter = leagueOf(save.season.pts);
     save.totals.maxLeague = Math.max(save.totals.maxLeague || 0, lgAfter);
+    for (let k = lgBefore + 1; k <= lgAfter; k++) save.special.push({ kind: 'league', league: k, title: lgView(k, holidayOf(save.season.id)).name });
     { const hi = holidayInfo(save.season.id); if (seasonStarted && hi && pts > 0) { const ky = hi.k + '_' + hi.y; save.totals.holLeagueY = save.totals.holLeagueY || {}; save.totals.holLeagueY[ky] = Math.max(save.totals.holLeagueY[ky] ?? 0, lgAfter); } }
     { const hk = holidayOf(save.season.id); if (seasonStarted && hk) { save.totals.holLeague = save.totals.holLeague || {}; save.totals.holLeague[hk] = Math.max(save.totals.holLeague[hk] || 0, lgAfter); } }
     { const wr = running; running = false; achAll.push(...checkAch()); running = wr; }
@@ -2046,9 +2088,9 @@ body {
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">+${pts} рейтинга</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
-      chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)}</span></li>`).join('') +
+      chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
       (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
-      (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name}</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
+      (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
       const opened = [...UPG.filter(u => u.lvl > lvBefore && u.lvl <= lvAfter).map(u => u.name),
                       ...SKINS.filter(s => s.lvl > lvBefore && s.lvl <= lvAfter).map(s => 'скин ' + s.name)];
@@ -2683,7 +2725,7 @@ body {
       `<small>Рекорд: ${fmtBest(id, save.bests[id] || 0)}</small></button>`).join('');
     $('achCount').textContent = `${save.ach.length}/${ACH.length}`;
     $('chCount').textContent = `${save.chDone.length}/${CHALLENGES.length}`;
-    $('chestCountBtn').textContent = save.chests;
+    $('chestCountBtn').textContent = chestTotal() + (save.dailyChestDay !== today ? ' +1' : '');
     $('petCount').textContent = `${save.pets.length}/${PETS.length}`;
     { const L = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null); $('leagueBtn').innerHTML = `Лига · <b style="color:${L.color}">${L.name}</b> · ${save.season.pts} очков${curHoliday ? ` · ${HOLIDAYS[curHoliday].name}` : ''}`; }
   }
@@ -2816,8 +2858,9 @@ body {
     };
     requestAnimationFrame(step);
   }
-  const buyable = x => !x.ex && !x.chest && !x.season;
+  const buyable = x => !x.ex && !x.chest && !x.season && !x.lchest;
   function sourceBadge(x) {
+    if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
     if (x.chest) return `<span class="badge-r" style="color:${RARITY[x.chest].color}">${RARITY[x.chest].name}</span>`;
     if (x.ex) return '<span class="badge-ex">испытание</span>';
     if (x.holiday) return `<span class="badge-ex">${HOLIDAYS[x.holiday].name}</span>`;
@@ -2858,19 +2901,19 @@ body {
       }).join('');
       $('shop').innerHTML = html || '<p class="empty-note">Все эффекты магазина уже твои. Остальные — в сундуках и испытаниях.</p>';
     } else if (shopTab === 'wskin') {
-      const own = SKINS.filter(k => save.skins.includes(k.id));
-      $('shop').innerHTML = `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Новые скины: магазин, сундуки, испытания и награды сезона.</p>` +
+      const own = sortOwned(SKINS.filter(k => save.skins.includes(k.id)), save.skins, 'wskin');
+      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Новые скины: магазин, сундуки, испытания и награды сезона.</p>` +
         `<div class="skins">${own.map(k => skinTile(k, 'own')).join('')}</div>`;
     } else if (shopTab === 'wfx') {
-      const ownAll = FX.filter(f => save.fxOwned.includes(f.id));
-      $('shop').innerHTML = `<p class="empty-note">Собрано ${ownAll.length} из ${FX.length}. В каждом слоте можно надеть один эффект.</p>` +
+      const ownAll = sortOwned(FX.filter(f => save.fxOwned.includes(f.id)), save.fxOwned, 'wfx');
+      $('shop').innerHTML = sortBar('wfx') + `<p class="empty-note">Собрано ${ownAll.length} из ${FX.length}. В каждом слоте можно надеть один эффект.</p>` +
         (ownAll.length ? FX_SLOTS.map(([slot, title]) => {
           const list = ownAll.filter(f => f.slot === slot);
           return list.length ? `<h3>${title}</h3>` + list.map(f => fxRow(f, 'own')).join('') : '';
         }).join('') : '<p class="empty-note">Пока пусто: купи эффект в магазине или открой сундук.</p>');
     } else if (shopTab === 'wpet') {
-      const own = save.pets.map(petById).filter(Boolean);
-      $('shop').innerHTML = `<p class="empty-note">Собрано ${own.length} из ${PETS.length}. Питомцы — награда лиги (за «Платину» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков. Бонус питомца не действует в рейтинговом бою.</p>` +
+      const own = sortOwned(save.pets.map(petById).filter(Boolean), save.pets, 'wpet');
+      $('shop').innerHTML = sortBar('wpet') + `<p class="empty-note">Собрано ${own.length} из ${PETS.length}. Питомцы — награда лиги (за «Платину» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков. Бонус питомца не действует в рейтинговом бою.</p>` +
         (own.length ? own.map(pt => { const sel = save.pet === pt.id;
           return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex">${pt.tier}</span></span>` +
             `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
@@ -2886,10 +2929,10 @@ body {
             `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : `лига «${lg.name}»`}</span></div>`;
         }).join('');
       }).join('');
-      const chestRows = '<h3>Из сундуков</h3>' + PETS.filter(pt => pt.chest).map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest];
+      const chestRows = '<h3>Из сундуков и сундуков лиги</h3>' + PETS.filter(pt => pt.chest || pt.lchest).map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest || pt.lchest];
         return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-r" style="color:${rc.color}">${rc.name}</span></span>` +
           `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
-          `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : 'сундук'}</span></div>`; }).join('');
+          `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join('');
       $('shop').innerHTML = '<p class="empty-note">Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги) и выпадают из сундуков.</p>' + rows + chestRows;
     } else if (shopTab === 'ch') {
       $('shop').innerHTML = CHALLENGES.map(ch => {
@@ -2918,6 +2961,37 @@ body {
   }
   const _renderShop = renderShop;
   renderShop = function () { _renderShop(); fillThumbs(); };
+  // ---- sorting for wardrobe and pets ----
+  const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
+  const SOURCE_ORDER = ['Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Сезон', 'Праздник'];
+  const sourceOf = x => x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
+  const rarityScore = x => {
+    const r = x.lchest || x.chest; if (r) return RAR_KEYS.indexOf(r) + 1 + (x.lchest ? .5 : 0);
+    if (x.holiday) return 3.9; if (x.season || x.tier) return x.tier === 'Неон' ? 3.8 : 3.7; if (x.ex) return 3.6;
+    return (x.price || 0) / 10000;
+  };
+  function sortOwned(list, order, tab) {
+    const mode = (save.settings.sort || {})[tab] || 'new', idx = id => order.indexOf(id), byName = (a, b) => a.name.localeCompare(b.name, 'ru');
+    const arr = list.slice();
+    if (mode === 'new') arr.sort((a, b) => idx(b.id) - idx(a.id));
+    if (mode === 'old') arr.sort((a, b) => idx(a.id) - idx(b.id));
+    if (mode === 'rarity') arr.sort((a, b) => rarityScore(b) - rarityScore(a) || byName(a, b));
+    if (mode === 'source') arr.sort((a, b) => SOURCE_ORDER.indexOf(sourceOf(a)) - SOURCE_ORDER.indexOf(sourceOf(b)) || byName(a, b));
+    if (mode === 'name') arr.sort(byName);
+    if (mode === 'bonus') arr.sort((a, b) => BONUS_KEYS.indexOf(a.bonus) - BONUS_KEYS.indexOf(b.bonus) || b.lv - a.lv || byName(a, b));
+    return arr;
+  }
+  function sortBar(tab) {
+    const cur = (save.settings.sort || {})[tab] || 'new';
+    const opts = Object.entries(SORTS).filter(([k]) => k !== 'bonus' || tab === 'wpet');
+    return `<label class="sortbar" for="sortSel"><span>Сортировка</span><select id="sortSel" data-tab="${tab}">${opts.map(([k, v]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`;
+  }
+  $('shop').addEventListener('change', e => {
+    if (e.target.id !== 'sortSel') return;
+    save.settings.sort = { ...(save.settings.sort || {}), [e.target.dataset.tab]: e.target.value };
+    persist(); renderShop(); const sel = $('sortSel'); if (sel) sel.focus();
+  });
   $('shopTabs').addEventListener('click', e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     shopTab = b.dataset.tab; renderShop(); $('overlay').scrollTop = 0;
@@ -2948,49 +3022,89 @@ body {
   });
 
   // ================= chests =================
-  function rollChest() {
-    const tot = Object.values(RARITY).reduce((a, r) => a + r.w, 0);
-    let x = Math.random() * tot, rar = 'common';
-    for (const [k, r] of Object.entries(RARITY)) { if ((x -= r.w) < 0) { rar = k; break; } }
-    const pool = [...SKINS.filter(k => k.chest === rar).map(k => ['skin', k]), ...FX.filter(f => f.chest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.chest === rar).map(pt => ['pet', pt])];
+  const LEAGUE_CHEST_W = { 1: [50, 40, 9, 1], 2: [30, 45, 20, 5], 3: [15, 40, 35, 10], 4: [0, 30, 50, 20], 5: [0, 10, 50, 40] };
+  const RAR_KEYS = Object.keys(RARITY);
+  const chestTotal = () => save.chests + save.special.length;
+  const pickRarity = w => { const tot = w.reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (let i = 0; i < w.length; i++) if ((x -= w[i]) < 0) return RAR_KEYS[i]; return RAR_KEYS[0]; };
+  const CHEST_LOOK = {
+    normal:    ['#7b3dff', '#3a1580', '#ff4fd8', '#9b3dff', 'rgba(178,107,255,.55)'],
+    daily:     ['#22b8ff', '#0a3a6e', '#22e6ff', '#4d7cff', 'rgba(34,230,255,.55)'],
+    league:    ['#ffb020', '#7a4a00', '#ffd23f', '#ff9a3d', 'rgba(255,210,63,.6)'],
+  };
+  function chestLook(kind, rar) {
+    const L = kind === 'challenge' ? [RARITY[rar].color, '#1a0a3a', RARITY[rar].color, '#3a1580', RARITY[rar].color] : CHEST_LOOK[kind] || CHEST_LOOK.normal;
+    return `--cb1:${L[0]};--cb2:${L[1]};--cl1:${L[2]};--cl2:${L[3]};--cg:${L[4]}`;
+  }
+  // opts: { rar } fixed rarity, or { league } for the exclusive league pool, else normal weights
+  function rollChest(opts) {
+    let rar, pool;
+    if (opts.league) {
+      rar = pickRarity(LEAGUE_CHEST_W[opts.league]);
+      pool = [...SKINS.filter(k => k.lchest === rar).map(k => ['skin', k]), ...FX.filter(f => f.lchest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.lchest === rar).map(pt => ['pet', pt])];
+    } else {
+      rar = opts.rar || pickRarity(Object.values(RARITY).map(r => r.w));
+      pool = [...SKINS.filter(k => k.chest === rar).map(k => ['skin', k]), ...FX.filter(f => f.chest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.chest === rar).map(pt => ['pet', pt])];
+    }
     const [type, item] = pool[Math.floor(Math.random() * pool.length)];
     const list = type === 'skin' ? save.skins : type === 'pet' ? save.pets : save.fxOwned;
     const owned = list.includes(item.id);
     if (!owned) list.push(item.id);
-    const coins = 40 + Math.floor(Math.random() * 80) + (owned ? RARITY[rar].dup : 0);
-    save.coins += coins; save.chests--;
+    const coins = (opts.league ? 100 + opts.league * 60 : 40) + Math.floor(Math.random() * 80) + (owned ? RARITY[rar].dup : 0);
+    save.coins += coins;
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
     persist();
     return { type, item, rar, dup: owned, coins };
   }
+  function chestRows() {
+    const rows = [];
+    const daily = save.dailyChestDay !== today;
+    const left = (() => { const t = new Date(); t.setHours(24, 0, 0, 0); const m = Math.ceil((t - Date.now()) / 60000); return `${Math.floor(m / 60)} ч ${m % 60} мин`; })();
+    rows.push({ key: 'daily', look: chestLook('daily'), title: 'Ежедневный сундук', sub: daily ? 'Случайная редкость, раз в сутки' : `Следующий через ${left}`, btn: daily ? 'Забрать' : 'Завтра', dis: !daily });
+    if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть' });
+    save.special.forEach((c, i) => rows.push(c.kind === 'league'
+      ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть' }
+      : { key: 'sp' + i, look: chestLook('challenge', c.rar), title: `Сундук испытания «${c.title}»`, sub: `Редкость: ${RARITY[c.rar].name}`, btn: 'Открыть' }));
+    return rows;
+  }
   function renderChest() {
-    $('chestCount').textContent = save.chests;
-    $('chestBox').classList.toggle('empty', !save.chests);
-    $('openChestBtn').disabled = !save.chests;
-    $('openChestBtn').textContent = save.chests ? `Открыть сундук (${save.chests})` : 'Сундуков нет';
+    $('chestCount').textContent = chestTotal();
+    const rows = chestRows();
+    $('chestList').innerHTML = rows.map(r => `<li style="${r.look}"><span class="ci"></span><b>${r.title}</b><small>${r.sub}</small>` +
+      `<button class="buy" id="ch-${r.key}" data-open="${r.key}" ${r.dis ? 'disabled' : ''}>${r.btn}</button></li>`).join('');
     const tot = Object.values(RARITY).reduce((a, r) => a + r.w, 0);
     $('odds').innerHTML = Object.values(RARITY).map(r => `<li><b style="color:${r.color}">${r.name}</b><span>${Math.round(r.w / tot * 100)}%</span></li>`).join('');
+    $('chestBox').classList.toggle('empty', !chestTotal() && save.dailyChestDay === today);
   }
   let chestBusy = false;
-  function openChest() {
-    if (chestBusy || !save.chests) return;
+  function openChest(key) {
+    if (chestBusy) return;
+    let opts, look;
+    if (key === 'daily') { if (save.dailyChestDay === today) return; save.dailyChestDay = today; opts = {}; look = chestLook('daily'); }
+    else if (key === 'normal') { if (!save.chests) return; save.chests--; opts = {}; look = chestLook('normal'); }
+    else {
+      const i = +key.slice(2), c = save.special[i]; if (!c) return;
+      save.special.splice(i, 1);
+      opts = c.kind === 'league' ? { league: c.league } : { rar: c.rar };
+      look = c.kind === 'league' ? chestLook('league') : chestLook('challenge', c.rar);
+    }
     chestBusy = true;
-    const box = $('chestBox'); $('reveal').hidden = true;
-    box.classList.remove('open'); void box.offsetWidth; box.classList.add('shake');
+    const box = $('chestBox'); $('reveal').hidden = true; box.setAttribute('style', look);
+    box.classList.remove('open', 'empty'); void box.offsetWidth; box.classList.add('shake');
     buzz(40);
+    $('overlay').scrollTop = 0;
     setTimeout(() => {
-      const r = rollChest(), R2 = RARITY[r.rar];
+      const r = rollChest(opts), R2 = RARITY[r.rar];
       box.classList.remove('shake'); box.classList.add('open');
       const pic = r.type === 'skin' ? `<div class="sw ${r.item.crown ? 'crown' : ''}" style="${swatch(r.item)}"></div>` : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
       const kind = r.type === 'skin' ? 'Скин' : r.type === 'pet' ? `Питомец · ${PET_BONUS[r.item.bonus].name}: ${PET_BONUS[r.item.bonus].text(r.item.lv)}` : 'Эффект · ' + FX_SLOTS.find(sl => sl[0] === r.item.slot)[1].toLowerCase();
       const el = $('reveal'); el.style.setProperty('--rc', R2.color);
-      el.innerHTML = `<span class="rar">${R2.name}</span>${pic}<b>${r.item.name}</b><small>${kind}${r.dup ? ' · уже есть, превращён в монеты' : ' · теперь в гардеробе'}</small><span class="coin">+${r.coins} ◆</span>`;
+      el.innerHTML = `<span class="rar">${R2.name}${opts.league ? ' · сундук лиги' : ''}</span>${pic}<b>${r.item.name}</b><small>${kind}${r.dup ? ' · уже есть, превращён в монеты' : r.type === 'pet' ? ' · теперь в «Питомцах»' : ' · теперь в гардеробе'}</small><span class="coin">+${r.coins} ◆</span>`;
       el.hidden = false;
       renderChest(); renderAll(); chestBusy = false;
     }, 750);
   }
-  $('chestBtn').addEventListener('click', () => { showCard('chestCard'); $('reveal').hidden = true; $('chestBox').classList.remove('open'); renderChest(); $('openChestBtn').focus(); });
-  $('openChestBtn').addEventListener('click', openChest);
+  $('chestList').addEventListener('click', e => { const b = e.target.closest('button[data-open]'); if (b && !b.disabled) openChest(b.dataset.open); });
+  $('chestBtn').addEventListener('click', () => { showCard('chestCard'); $('reveal').hidden = true; $('chestBox').classList.remove('open'); $('chestBox').setAttribute('style', chestLook('normal')); renderChest(); const f = document.querySelector('#chestList button:not([disabled])'); (f || $('chestBack')).focus(); });
   $('chestBack').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('chestBtn').focus(); });
 
   // ================= settings =================
@@ -3112,7 +3226,7 @@ body {
       ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
       ['Съедено капель', T.kills], ['Боссов', T.bosses], ['Прислужников', T.minions],
       ['Крошек', T.crumbs], ['Делений', T.splits], ['Выбросов', T.ejects],
-      ['Лучшая волна', T.bestWave], ['Капель за раунд', T.bestKills], ['Сундуков', save.chests],
+      ['Лучшая волна', T.bestWave], ['Капель за раунд', T.bestKills], ['Сундуков', chestTotal()],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('profBests').innerHTML = Object.entries(MODES).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
     $('badgeTitle').textContent = `Значки сезонов · ${save.seasonLog.length} из 52`;

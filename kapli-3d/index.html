@@ -84,6 +84,29 @@ body {
 .board li span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .board li em { font-style: normal; color: var(--muted); font-size: .7rem; }
 .board li.me { color: var(--me); font-weight: 600; }
+.fr { padding: 0 5px; border-radius: 6px; display: inline-block; line-height: 1.35; }
+.fr-fire { animation: frFire 1.2s ease-in-out infinite; }
+@keyframes frFire { 50% { box-shadow: 0 0 9px #ff6a00, 0 0 3px #ffd23f inset; } }
+.fr-rainbow { animation: frHue 4s linear infinite; }
+@keyframes frHue { to { filter: hue-rotate(360deg); } }
+em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
+.deco-pv { display: inline-grid; place-items: center; min-width: 56px; min-height: 40px; padding: 4px 6px; border-radius: 10px; background: rgba(70, 48, 150, .28); font-weight: 600; }
+.deco-pv em.ttl { font-size: .8rem; text-align: center; }
+.tt-ico { display: inline-grid; place-items: center; padding: 1px 6px; border: 1px solid; border-radius: 99px; font-size: .72rem; font-weight: 600; }
+.stars { color: var(--gold); font-size: .78rem; letter-spacing: .1em; }
+.sw.st3 { outline: 2px solid var(--gold); outline-offset: 3px; }
+.hat-ico { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(70, 48, 150, .28); }
+.hat-ico svg { width: 30px; height: 30px; }
+.hat-ico.off svg { opacity: .35; filter: grayscale(1); }
+.hat-ico.sm { width: 24px; height: 24px; border-radius: 6px; vertical-align: middle; }
+.hat-ico.sm svg { width: 18px; height: 18px; }
+.col-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.col-sw { width: 26px; height: 26px; border-radius: 50%; }
+.col-sw.off { opacity: .25; filter: grayscale(.7); }
+.col-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.arena-pv { display: block; width: 34px; height: 26px; border-radius: 10px; border: 2px solid var(--rm); box-shadow: 0 0 10px var(--rm);
+  background: linear-gradient(var(--gr) 1px, transparent 1px) 0 0/10px 10px, linear-gradient(90deg, var(--gr) 1px, transparent 1px) 0 0/10px 10px, var(--fl); }
+@media (prefers-reduced-motion: reduce) { .fr-fire, .fr-rainbow { animation: none; } }
 .board li.boss { color: var(--boss); font-weight: 600; }
 
 .effects {
@@ -507,6 +530,7 @@ body {
       <button class="btn ghost" id="shopBtn">Магазин <span class="coin" id="menuCoins">0 ◆</span></button>
       <button class="btn ghost" id="wardBtn">Гардероб</button>
       <button class="btn ghost" id="petBtn">Питомцы <span id="petCount">0</span></button>
+      <button class="btn ghost" id="colBtn">Коллекции <span id="colCount">0</span></button>
       <button class="btn ghost" id="chestBtn">Сундуки <span class="coin" id="chestCountBtn">0</span></button>
       <button class="btn ghost" id="installBtn" hidden>Установить на телефон</button>
       <p class="hint" id="iosHint" hidden>Чтобы установить: нажми «Поделиться», затем «На экран „Домой“».</p>
@@ -645,6 +669,7 @@ body {
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
     hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Монеты ×2' },
     daily:    { name: 'Испытание дня',  desc: '' },
+    raid:     { name: 'Босс-рейд',      desc: 'Босс недели: урон копится между попытками. 3 попытки в день, за победу — уникальный скин' },
     royale:   { name: 'Королевская битва', desc: 'Арена сужается, боты не возрождаются, побеждает последний. Только в лиге, в свой сезон' },
   };
   const TIMED_LEN = 180, PLACE_BONUS = [40, 25, 15];
@@ -991,6 +1016,81 @@ body {
   SEASONS.forEach(x => { SKINS.push({ ...x.skin, season: true }); FX.push({ ...x.fx, season: true }); });
   for (const y of [2027, 2028]) Object.keys(HOLIDAYS).forEach(k => ensureHolidayItems(k, y));
 
+  // ---- items above the head that go on any skin (rewards for skin collections) ----
+  const HATS = {
+    cherry:    { name: 'Вишенка',      svg: '<path d="M12 3 C12 8 8 10 7 14 M12 3 C13 8 16 10 17 14" stroke="#3dffa2" stroke-width="1.6" fill="none"/><circle cx="7" cy="16" r="4.5" fill="#ff2d55"/><circle cx="17" cy="16" r="4.5" fill="#ff2d55"/>' },
+    planet:    { name: 'Мини-планета', svg: '<circle cx="12" cy="12" r="6" fill="#b26bff"/><ellipse cx="12" cy="12" rx="11" ry="3.5" fill="none" stroke="#ffd23f" stroke-width="1.6"/>' },
+    snowflake: { name: 'Снежинка',     svg: '<path d="M12 2 V22 M3.3 7 L20.7 17 M3.3 17 L20.7 7" stroke="#9fe8ff" stroke-width="2.4" stroke-linecap="round"/>' },
+    propeller: { name: 'Пропеллер',    svg: '<path d="M2 9 Q12 4 22 9 Q12 11 2 9 Z" fill="#22e6ff"/><path d="M6 20 Q6 12 12 12 Q18 12 18 20 Z" fill="#ff4fd8"/><rect x="11" y="8" width="2" height="5" fill="#ffd23f"/>' },
+    tophat:    { name: 'Цилиндр',      svg: '<rect x="7" y="3" width="10" height="13" rx="1" fill="#1a1033" stroke="#b26bff"/><rect x="7" y="12" width="10" height="2.5" fill="#ff4fd8"/><rect x="3" y="16" width="18" height="3" rx="1.5" fill="#1a1033" stroke="#b26bff"/>' },
+    sprout:    { name: 'Росток',       svg: '<path d="M12 22 V10" stroke="#3dffa2" stroke-width="2"/><path d="M12 12 C6 12 3 8 3 4 C8 4 12 7 12 12 Z M12 10 C17 10 21 7 21 3 C16 3 12 6 12 10 Z" fill="#3dffa2"/>' },
+  };
+  const COLLECTIONS = [
+    { id: 'col_sweet',  name: 'Сладкоежка',        skins: ['melon', 'cherry', 'c_caramel', 'c_berry', 'c_peach'],             hat: 'cherry',    coins: 1000 },
+    { id: 'col_space',  name: 'Космос',            skins: ['galaxy', 'saturn', 'quasar', 'aurora', 'c_nebula', 'blackhole'], hat: 'planet',    coins: 1500 },
+    { id: 'col_elem',   name: 'Стихии',            skins: ['phoenix', 'magma', 'glacier', 'ocean', 'c_solar'],                hat: 'snowflake', coins: 1500 },
+    { id: 'col_cyber',  name: 'Кибер',             skins: ['neon', 'cyber', 'plasma', 'matrix', 'hologram', 'c_circuit'],    hat: 'propeller', coins: 1500 },
+    { id: 'col_royal',  name: 'Королевская семья', skins: ['king', 'emperor', 'champion', 'prism', 'titan'],                  hat: 'tophat',    coins: 2000 },
+    { id: 'col_nature', name: 'Природа',           skins: ['mint', 'lime', 'toxic', 'tiger', 'zebra', 'c_mint'],              hat: 'sprout',    coins: 1000 },
+  ];
+  // ---- frames (around your name) and titles (after it): from chests and from the league ----
+  const DECOR = [
+    { id: 'fr_cyan',    kind: 'frame', name: 'Бирюзовая',  css: 'border:2px solid #22e6ff', chest: 'common' },
+    { id: 'fr_pink',    kind: 'frame', name: 'Розовая',    css: 'border:2px solid #ff4fd8', chest: 'common' },
+    { id: 'fr_dash',    kind: 'frame', name: 'Пунктир',    css: 'border:2px dashed #ffd23f', chest: 'common' },
+    { id: 'fr_double',  kind: 'frame', name: 'Двойная',    css: 'border:4px double #4d7cff', chest: 'rare' },
+    { id: 'fr_glow',    kind: 'frame', name: 'Сияющая',    css: 'border:2px solid #3dffa2;box-shadow:0 0 8px #3dffa2', chest: 'rare' },
+    { id: 'fr_sunset',  kind: 'frame', name: 'Закатная',   css: 'border:2px solid;border-image:linear-gradient(90deg,#ff3d6e,#ffd23f) 1', chest: 'epic' },
+    { id: 'fr_fire',    kind: 'frame', name: 'Огненная',   css: 'border:2px solid #ff6a00', cls: 'fr-fire', chest: 'epic' },
+    { id: 'fr_rainbow', kind: 'frame', name: 'Радужная',   css: 'border:2px solid;border-image:linear-gradient(90deg,#ff4fd8,#ffd23f,#3dffa2,#22e6ff,#7b3dff) 1', cls: 'fr-rainbow', chest: 'legendary' },
+    { id: 'tt_glutton', kind: 'title', name: 'Обжора',           color: '#b8b5d6', chest: 'common' },
+    { id: 'tt_crumb',   kind: 'title', name: 'Крошкоед',         color: '#b8b5d6', chest: 'common' },
+    { id: 'tt_quick',   kind: 'title', name: 'Шустрик',          color: '#b8b5d6', chest: 'common' },
+    { id: 'tt_hunter',  kind: 'title', name: 'Охотник',          color: '#4d7cff', chest: 'rare' },
+    { id: 'tt_splitter',kind: 'title', name: 'Мастер деления',   color: '#4d7cff', chest: 'rare' },
+    { id: 'tt_tactic',  kind: 'title', name: 'Стратег',          color: '#4d7cff', chest: 'rare' },
+    { id: 'tt_storm',   kind: 'title', name: 'Гроза ботов',      color: '#b26bff', chest: 'epic' },
+    { id: 'tt_bosseat', kind: 'title', name: 'Пожиратель боссов',color: '#b26bff', chest: 'epic' },
+    { id: 'tt_lord',    kind: 'title', name: 'Повелитель арены', color: '#ffd23f', chest: 'legendary' },
+    { id: 'tt_legend',  kind: 'title', name: 'Легенда',          color: '#ffd23f', chest: 'legendary' },
+  ];
+  // league frames: one per league reached at the end of a season; titles from «Платина» up
+  ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон'].forEach((n, i) => {
+    const c = ['#cd7f32', '#c0c8e0', '#ffd23f', '#7fe8ff', '#b26bff', '#ff4fd8'][i];
+    DECOR.push({ id: 'fr_lg' + i, kind: 'frame', name: `Лига «${n}»`, css: `border:2px solid ${c};box-shadow:0 0 ${2 + i * 2}px ${c}`, league: i });
+  });
+  [[3, 'Платиновый игрок', '#7fe8ff'], [4, 'Алмазный ас', '#b26bff'], [5, 'Неоновая легенда', '#ff4fd8']].forEach(([i, n, c]) => DECOR.push({ id: 'tt_lg' + i, kind: 'title', name: n, color: c, league: i }));
+  const decorById = id => DECOR.find(d => d.id === id) || null;
+  const leagueDecor = li => DECOR.filter(d => d.league !== undefined && (d.kind === 'frame' ? d.league === li : d.league <= li));
+  // ---- arena themes (shop) ----
+  const ARENAS = [
+    { id: 'default', name: 'Неоновый космос', price: 0,     floor: '#0b0824', grid: 'rgba(140, 100, 255, .55)', dot: '#22e6ff', rim: '#ff4fd8', inner: '#22e6ff', neb: ['#ff4fd8', '#22e6ff', '#7b3dff', '#ff3d6e'], fx: null, desc: 'Стандартная арена' },
+    { id: 'lava',    name: 'Лава',            price: 20000, floor: '#1a0500', grid: 'rgba(255, 90, 0, .6)',     dot: '#ffd23f', rim: '#ff3d00', inner: '#ffd23f', neb: ['#ff3d00', '#ff9a3d', '#7b0020', '#ff2d55'], fx: 'embers', desc: 'Раскалённое дно, огненный край и искры' },
+    { id: 'ice',     name: 'Лёд',             price: 22000, floor: '#06142a', grid: 'rgba(160, 230, 255, .6)',  dot: '#ffffff', rim: '#9fe8ff', inner: '#ffffff', neb: ['#9fe8ff', '#4d7cff', '#ffffff', '#22e6ff'], fx: 'snow',   desc: 'Ледяная гладь и снегопад' },
+    { id: 'ocean',   name: 'Океан',           price: 25000, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
+    { id: 'jungle',  name: 'Джунгли',         price: 28000, floor: '#04170a', grid: 'rgba(61, 255, 120, .5)',   dot: '#ffd23f', rim: '#3dff6e', inner: '#ffd23f', neb: ['#3dff6e', '#c6ff3d', '#0b6e3e', '#ffd23f'], fx: 'fireflies', desc: 'Зелёная чаща и светлячки' },
+    { id: 'desert',  name: 'Пустыня',         price: 32000, floor: '#1f1405', grid: 'rgba(255, 200, 100, .5)',  dot: '#ff6a00', rim: '#ffb347', inner: '#ff6a00', neb: ['#ffb347', '#ff6a00', '#7a4a00', '#ffd23f'], fx: 'sand',   desc: 'Песчаные дюны и пылевые вихри' },
+    { id: 'cyber',   name: 'Киберград',       price: 40000, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
+  ];
+  const arenaDef = () => ARENAS.find(a => a.id === save.arena) || ARENAS[0];
+  // ---- weekly boss raid ----
+  const RAID_HP = 40000, RAID_TRIES = 3, RAID_LEN = 240;
+  const RAID_NAMES = ['Пожиратель', 'Тёмная медуза', 'Кристальный голем', 'Неоновый кракен', 'Звёздный червь', 'Ледяной титан', 'Магматический страж', 'Призрачный левиафан'];
+  const RAID_HEADS = ['horns', 'gem', 'flame', 'antenna', 'halo', 'star', 'wings'];
+  const raidWeek = () => Math.floor((Date.now() / 864e5 + 3) / 7);   // weeks start on Monday
+  const raidBoss = w => {
+    const h = (w * .618034) % 1, col = '#' + new THREE.Color().setHSL(h, .9, .55).getHexString(), acc = '#' + new THREE.Color().setHSL((h + .5) % 1, 1, .6).getHexString();
+    const mon = new Date((w * 7 - 3) * 864e5), dd = n => String(n).padStart(2, '0');
+    return { name: RAID_NAMES[w % RAID_NAMES.length], color: col, accent: acc, date: `${dd(mon.getUTCDate())}.${dd(mon.getUTCMonth() + 1)}.${String(mon.getUTCFullYear()).slice(2)}` };
+  };
+  function ensureRaidSkin(w) {
+    const id = 'raid_' + w; if (SKINS.some(k => k.id === id)) return;
+    const b = raidBoss(w);
+    SKINS.push({ id, name: `Трофей: ${b.name} · ${b.date}`, color: b.color, accent: b.accent, pattern: SEASON_PAT[w % SEASON_PAT.length], glow: true, pulse: w % 3 === 0,
+      head: RAID_HEADS[w % RAID_HEADS.length], shine: w % 2 ? 'bolt' : 'stripe', raid: true });
+  }
+  ensureRaidSkin(raidWeek());
+
   // ================= pets (league rewards: Platinum and Neon; holiday pets in holiday seasons) =================
   const PET_SPECIES = { drop: 'Капелька', cat: 'Котик', cube: 'Кубик', pyramid: 'Пирамидка', jelly: 'Медуза', firefly: 'Светлячок', robot: 'Робот', ghost: 'Призрачок',
     pumpkin: 'Тыковка', bat: 'Летучая мышка', snowman: 'Снеговичок', deer: 'Олешек', heart: 'Сердечко', cupid: 'Амурчик' };
@@ -1112,7 +1212,7 @@ body {
   let U = save.up;
   const fixModeForLeague = () => { if (save.mode === 'royale' && !TEST_MODE) save.mode = 'classic'; };   // test mode: royale open for testing
   let pendingRanked = false;   // true when the round is started from «Играть в лиге»
-  save.bests = { classic: save.best || 0, timed: 0, survival: 0, split: 0, crown: 0, race: 0, team: 0, giant: 0, hardcore: 0, daily: 0, ...(save.bests || {}) };
+  save.bests = { raid: 0, classic: save.best || 0, timed: 0, survival: 0, split: 0, crown: 0, race: 0, team: 0, giant: 0, hardcore: 0, daily: 0, ...(save.bests || {}) };
   save.ach = save.ach || [];
   save.totals = { kills: 0, bosses: 0, minions: 0, crumbs: 0, ejects: 0, rounds: 0, ...(save.totals || {}) };
   save.bossTypes = save.bossTypes || [];
@@ -1123,6 +1223,19 @@ body {
   save.chests = save.chests || 0; save.pity = save.pity || 0;
   save.special = save.special || [];   // league / challenge chests: { kind, rar | league, title }
   save.dailyChestDay = save.dailyChestDay || '';
+  save.stars = save.stars || {};                       // skin id -> 1..3 stars from chest duplicates
+  save.hats = save.hats || []; save.hat = save.hat || null;
+  save.decor = save.decor || []; save.frame = save.frame || null; save.title = save.title || null;
+  save.arenas = save.arenas || []; save.arena = save.arena || 'default';
+  save.colDone = save.colDone || [];
+  save.raid = save.raid || { week: 0, dmg: 0, done: false, day: '', tries: 0 };
+  (save.skins || []).forEach(id => { const m = /^raid_(\d+)$/.exec(id); if (m) ensureRaidSkin(+m[1]); });
+  function raidState() {
+    const r = save.raid, w = raidWeek();
+    if (r.week !== w) Object.assign(r, { week: w, dmg: 0, done: false });
+    if (r.day !== today) Object.assign(r, { day: today, tries: 0 });
+    return r;
+  }
   save.history = save.history || [];
   save.totals.modeRounds = save.totals.modeRounds || {};
   save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', ...(save.settings || {}) };
@@ -1141,6 +1254,7 @@ body {
         const list = it.kind === 'skin' ? save.skins : it.kind === 'pet' ? save.pets : save.fxOwned;
         if (!list.includes(it.id)) { list.push(it.id); extra += `, ${({ skin: 'скин', fx: 'эффект', pet: 'питомец' })[it.kind]} «${it.name}»`; }
       }
+      for (const d of leagueDecor(li)) if (!save.decor.includes(d.id)) { save.decor.push(d.id); extra += `, ${d.kind === 'frame' ? 'рамка' : 'титул'} «${d.name}»`; }
       save.seasonLog.push({ id: save.season.id, league: li, pts: save.season.pts, name: sd.name, holiday: sd.holiday, year: sd.year || null });
       seasonNotice = `Сезон ${save.season.id} «${sd.name}» завершён: лига «${L.name}», получен значок. Награда: ${L.coins} ◆${extra}.`;
       if (sd.holiday) { const ky = sd.holiday + '_' + sd.year; save.totals.holLeagueY = save.totals.holLeagueY || {}; save.totals.holLeagueY[ky] = Math.max(save.totals.holLeagueY[ky] ?? 0, li); }
@@ -1157,6 +1271,7 @@ body {
     save.coins = Math.max(save.coins, 999999);
     save.xp = Math.max(save.xp, 10450);          // level 20
     save.chests = Math.max(save.chests, 25);
+    save.hats = Object.keys(HATS); save.decor = DECOR.map(d => d.id); save.arenas = ARENAS.map(a => a.id);
   }
   save.totals.timedWins = save.totals.timedWins || 0;
   save.totals.splits = save.totals.splits || 0;
@@ -1293,6 +1408,16 @@ body {
   rimGlow.rotation.x = Math.PI / 2; rimGlow.position.y = 0.3; scene.add(rimGlow);
   const rimInner = new THREE.Mesh(new THREE.TorusGeometry(R - 2.2, 0.18, 8, 220), new THREE.MeshBasicMaterial({ color: '#22e6ff' }));
   rimInner.rotation.x = Math.PI / 2; rimInner.position.y = 0.15; scene.add(rimInner);
+  function applyArena() {
+    const A = arenaDef();
+    g.fillStyle = A.floor; g.fillRect(0, 0, 128, 128);
+    g.strokeStyle = A.grid; g.lineWidth = 2; g.strokeRect(0, 0, 128, 128);
+    g.fillStyle = A.dot; g.fillRect(0, 0, 4, 4);
+    gridTex.needsUpdate = true;
+    rim.material.color.set(A.rim); rimGlow.material.color.set(A.rim); edgeGlow.material.color.set(A.rim); rimInner.material.color.set(A.inner);
+    nebulae.forEach((n, i) => n.material.color.set(A.neb[i]));
+  }
+  applyArena();
 
   // food
   const foodPalette = ['#22e6ff', '#ffd23f', '#b26bff', '#3dffa2', '#ff4fd8'].map(c => new THREE.Color(c));
@@ -1385,7 +1510,7 @@ body {
     return (texCache[s.id] = new THREE.CanvasTexture(cv));
   }
   // a glint that sweeps over epic and legendary skins
-  const isShiny = k => ['epic', 'legendary'].includes(k.chest || k.lchest);
+  const isShiny = k => k.raid || ['epic', 'legendary'].includes(k.chest || k.lchest);
   const HEAD_SVG = {
     flame: '<path d="M12 2c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3-1-3 0-5 0-7z" fill="#ff9a3d"/><path d="M12 11c1 2 3 3 3 5a3 3 0 0 1-6 0c0-1 1-2 1.5-3 .5 1 1 1.5 1.5 1.5-.5-1.5 0-2.5 0-3.5z" fill="#ffd23f"/>',
     antenna: '<path d="M9 23 L6 7 M15 23 L18 7" stroke="#3dffa2" stroke-width="2" fill="none"/><circle cx="6" cy="5" r="3" fill="#b9ff3d"/><circle cx="18" cy="5" r="3" fill="#b9ff3d"/>',
@@ -1395,12 +1520,17 @@ body {
     horns: '<path d="M4 21 C3 13 5 7 9 3 C8 9 9 15 11 21 Z M20 21 C21 13 19 7 15 3 C16 9 15 15 13 21 Z" fill="#ff3d6e"/>',
     wings: '<path d="M12 15 C8 6 3 6 1 9 C4 10 6 14 12 17 Z M12 15 C16 6 21 6 23 9 C20 10 18 14 12 17 Z" fill="#ffffff"/>',
   };
-  const swClass = k => `sw ${k.crown ? 'crown' : ''} ${isShiny(k) ? 'shine' + ((k.chest || k.lchest) === 'legendary' ? ' leg' : '') + (k.shine === 'bolt' ? ' bolt' : '') : ''}`;
+  Object.entries(HATS).forEach(([k, h]) => HEAD_SVG[k] = h.svg);
+  const starsOf = k => (save.stars && save.stars[k.id]) || 0;
+  const swClass = k => { const st = starsOf(k); return `sw ${k.crown ? 'crown' : ''} ${isShiny(k) || st >= 2 ? 'shine' + ((k.chest || k.lchest) === 'legendary' ? ' leg' : '') + (k.shine === 'bolt' ? ' bolt' : '') : ''} ${st >= 3 ? 'st3' : ''}`; };
   const headIcon = k => k.head ? `<i class="hi" aria-hidden="true"><svg viewBox="0 0 24 24">${HEAD_SVG[k.head]}</svg></i>` : '';
+  const hatIcon = id => `<svg viewBox="0 0 24 24" aria-hidden="true">${HATS[id].svg}</svg>`;
+  const starRow = k => (k.chest || k.lchest) && save.skins.includes(k.id) ? `<span class="stars" title="Звёзды за повторы из сундуков">${'★'.repeat(starsOf(k))}${'☆'.repeat(3 - starsOf(k))}</span>` : '';
   const shineT = { value: 0 }, shineMats = {};
-  const shineMat = (leg, bolt) => shineMats[+leg + 2 * bolt] || (shineMats[+leg + 2 * bolt] = new THREE.ShaderMaterial({
+  // col: tinted glint for skins upgraded to 2 stars
+  const shineMat = (leg, bolt, col) => shineMats[+leg + 2 * bolt + (col || '')] || (shineMats[+leg + 2 * bolt + (col || '')] = new THREE.ShaderMaterial({
     uniforms: { uT: shineT, uMode: { value: bolt ? 1 : 0 },
-      uCol: { value: new THREE.Color(bolt ? (leg ? '#fff6c8' : '#bff6ff') : (leg ? '#fff2b0' : '#ffffff')) },
+      uCol: { value: new THREE.Color(col || (bolt ? (leg ? '#fff6c8' : '#bff6ff') : (leg ? '#fff2b0' : '#ffffff'))) },
       uSpeed: { value: bolt ? (leg ? 1.3 : 1) : (leg ? .75 : .45) }, uPow: { value: bolt ? (leg ? 2.8 : 2.2) : (leg ? 2.2 : 1.6) } },
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     vertexShader: 'varying vec3 vN; void main(){ vN = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
@@ -1412,8 +1542,9 @@ body {
       ' b *= mix(1., .4 + .6 * step(.3, fract(sin(floor(uT * 16.) * 12.9898) * 43758.5453)), uMode); gl_FragColor = vec4(uCol * b, b); }',
   }));
   const shineGeo = new THREE.SphereGeometry(1.025, 32, 24);
-  function applySkin(vis, s = skin()) {
+  function applySkin(vis, s = skin(), stars = starsOf(s), hat = save.hat) {
     const m = vis.mesh.material;
+    vis.stars = stars; vis.hatOn = !!hat;
     m.map = skinTex(s);
     m.emissiveMap = skinTex(s);
     m.color.set(s.pattern ? '#ffffff' : s.color);
@@ -1423,14 +1554,17 @@ body {
     vis.glow.material.opacity = s.glow ? 1 : .85;
     m.needsUpdate = true;
     vis.look = s;
-    vis.crown.visible = !!s.crown;
-    if (isShiny(s)) {
-      const mat = shineMat((s.chest || s.lchest) === 'legendary', s.shine === 'bolt');
+    vis.crown.visible = !!s.crown && !hat;
+    if (isShiny(s) || stars >= 2) {
+      const mat = shineMat((s.chest || s.lchest) === 'legendary', s.shine === 'bolt', !isShiny(s) ? '#' + new THREE.Color(s.accent || s.color).lerp(new THREE.Color('#ffffff'), .35).getHexString() : null);
       if (!vis.shine) { vis.shine = new THREE.Mesh(shineGeo, mat); vis.mesh.add(vis.shine); }
       vis.shine.material = mat; vis.shine.visible = true;
     } else if (vis.shine) vis.shine.visible = false;
     if (vis.head) { vis.mesh.remove(vis.head); vis.head = null; }
-    if (s.head) { vis.head = buildHead(s.head); vis.mesh.add(vis.head); }
+    if (hat || s.head) { vis.head = buildHead(hat || s.head); vis.mesh.add(vis.head); }
+    // 3 stars: a soft pulsing halo in the skin colour
+    if (stars >= 3) { if (!vis.starGlow) { vis.starGlow = glowSprite('#ffffff', 4.6, .5); vis.mesh.add(vis.starGlow); } vis.starGlow.material.color.set(s.accent || s.color); vis.starGlow.visible = true; }
+    else if (vis.starGlow) vis.starGlow.visible = false;
     vis.ring.material.color.set(0xffffff);
   }
   // items above the head for epic and legendary skins (the crown stays for the others)
@@ -1450,6 +1584,12 @@ body {
       case 'horns': [-1, 1].forEach(sx => { const h = M(new THREE.ConeGeometry(.12, .5, 12), new THREE.MeshStandardMaterial({ color: '#ff3d6e', emissive: '#7b0020', emissiveIntensity: .7, roughness: .3 }), sx * .38, 1.0, .1); h.rotation.z = -sx * .45; }); break;
       case 'wings': [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.6, 16, 10), new THREE.MeshBasicMaterial({ color: '#ffffff' }), sx * 1.05, .5, -.55);
         w.scale.set(1, .42, .14); w.rotation.z = sx * .5; w.userData.wing = sx; w.add(glowSprite('#ffb8f0', 2.2, .8)); }); break;
+      case 'cherry': { [-1, 1].forEach(sx => { const b = M(new THREE.SphereGeometry(.17, 14, 10), new THREE.MeshStandardMaterial({ color: '#ff2d55', emissive: '#a0001a', emissiveIntensity: .6, roughness: .25 }), sx * .17, 1.12, 0); b.add(glowSprite('#ff2d55', .8, .4)); const st = M(new THREE.CylinderGeometry(.02, .02, .4, 5), basic('#3dffa2'), sx * .09, 1.38, 0); st.rotation.z = sx * .4; }); break; }
+      case 'planet': { const pl = M(new THREE.SphereGeometry(.22, 16, 12), new THREE.MeshStandardMaterial({ color: '#b26bff', emissive: '#5a1fb0', emissiveIntensity: .7 }), 0, 1.45, 0); const ring = new THREE.Mesh(new THREE.TorusGeometry(.38, .03, 6, 40), basic('#ffd23f')); ring.rotation.x = 1.2; pl.add(ring); pl.add(glowSprite('#b26bff', 1.2, .5)); break; }
+      case 'snowflake': { const f = new THREE.Group(); f.position.y = 1.45; for (let i = 0; i < 3; i++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(.06, .6, .06), basic('#cfefff')); bar.rotation.z = i * Math.PI / 3; f.add(bar); } f.add(glowSprite('#9fe8ff', 1.3, .6)); g.add(f); break; }
+      case 'propeller': { M(new THREE.SphereGeometry(.3, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ff4fd8', emissive: '#7b0060', emissiveIntensity: .6 }), 0, .95, 0); M(new THREE.CylinderGeometry(.025, .025, .25, 6), basic('#ffd23f'), 0, 1.3, 0); const bl = M(new THREE.BoxGeometry(.9, .02, .12), basic('#22e6ff'), 0, 1.43, 0); bl.userData.spin = 1; break; }
+      case 'tophat': { const mat = new THREE.MeshStandardMaterial({ color: '#1a1033', emissive: '#2a1060', emissiveIntensity: .5, roughness: .4 }); M(new THREE.CylinderGeometry(.48, .48, .05, 24), mat, 0, 1, 0); M(new THREE.CylinderGeometry(.3, .3, .5, 24), mat, 0, 1.26, 0); M(new THREE.CylinderGeometry(.305, .305, .09, 24), basic('#ff4fd8'), 0, 1.08, 0); break; }
+      case 'sprout': { M(new THREE.CylinderGeometry(.03, .04, .4, 6), basic('#3dffa2'), 0, 1.15, 0); [-1, 1].forEach(sx => { const lf = M(new THREE.SphereGeometry(.2, 12, 8), new THREE.MeshStandardMaterial({ color: '#3dffa2', emissive: '#0b6e3e', emissiveIntensity: .7 }), sx * .2, 1.38 + (sx > 0 ? .05 : 0), 0); lf.scale.set(1, .35, .6); lf.rotation.z = sx * .5; lf.userData.leaf = sx; }); break; }
     }
     return g;
   }
@@ -1463,6 +1603,10 @@ body {
       case 'gem': g.children[0].rotation.y = t * 1.6; g.children[0].position.y = 1.5 + Math.sin(t * 2.4) * .08; break;
       case 'star': g.children[0].material.rotation = t * .8; g.children[0].position.y = 1.5 + Math.sin(t * 2) * .07; break;
       case 'wings': g.children.forEach(o => { if (o.userData.wing) o.rotation.z = o.userData.wing * (.5 + Math.sin(t * 7) * .25); }); break;
+      case 'planet': g.children[0].rotation.y = t * 1.2; g.children[0].position.y = 1.45 + Math.sin(t * 2) * .06; break;
+      case 'snowflake': g.children[0].rotation.y = t; g.children[0].rotation.z = t * .5; break;
+      case 'propeller': g.children.forEach(o => { if (o.userData.spin) o.rotation.y = t * 14; }); break;
+      case 'sprout': g.children.forEach(o => { if (o.userData.leaf) o.rotation.z = o.userData.leaf * (.5 + Math.sin(t * 2.5) * .12); }); break;
     }
   }
 
@@ -1589,7 +1733,9 @@ body {
     o.fx = {};
     for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot)).id;
     o.trailDef = o.fx.trail ? fxById(o.fx.trail) : null;
-    o.free.forEach(v => { applySkin(v, sk); setAura(v, o.fx.aura, sk.color); });
+    const st = sk === base || Math.random() < .5 ? 0 : 1 + ((Math.random() * 3) | 0);
+    o.frame = Math.random() < .3 ? DECOR.filter(d => d.kind === 'frame')[(Math.random() * 14) | 0].id : null;
+    o.free.forEach(v => { applySkin(v, sk, st, null); setAura(v, o.fx.aura, sk.color); });
   }
   function trailFx(dt, now) {
     trailT += dt; if (trailT < 0.035) return; trailT = 0;
@@ -2006,10 +2152,10 @@ body {
   const fmtBest = (m, v) => {
     if (!v) return LOWER_BETTER[m] ? '–' : m === 'team' ? '0 побед' : m === 'survival' || m === 'crown' ? '0:00' : '0';
     if (m === 'team') return `${v} побед`;
-    return ['survival', 'crown', 'race', 'giant'].includes(m) ? fmtTime(v) : String(v);
+    return ['survival', 'crown', 'race', 'giant'].includes(m) ? fmtTime(v) : m === 'raid' ? `${v} урона` : String(v);
   };
   const dailyIs = id => mode === 'daily' && dailyMod.id === id;
-  const bossesOn = () => !['team', 'giant', 'race', 'royale'].includes(mode);
+  const bossesOn = () => !['team', 'giant', 'race', 'royale', 'raid'].includes(mode);
 
   // ================= mass ejection =================
   const ejectGeo = new THREE.SphereGeometry(1, 16, 12);
@@ -2073,8 +2219,27 @@ body {
     return got;
   }
 
+  function setColossusLook(name, color) {
+    colossus.name = name;
+    for (const v of [...colossus.free, ...colossus.cells.map(c => c.vis)]) { v.mesh.material.color.set(color); v.mesh.material.emissive.set(color); v.glow.material.color.set(color); }
+  }
+  function spawnRaidChunk() {
+    const r = raidState(), left = RAID_HP - r.dmg - (stats.raidDmg || 0);
+    if (left <= 0) return false;
+    const [x, z] = safeSpot(45);
+    const c = addCell(colossus, x, z, Math.min(12000, left), colossus.free.pop());
+    c.mergeT = 1e9; colossus.think = 0; colossus.target = null; colossus.splitCd = 0;
+    rebuildCells(); stats.raidSpawned = true;
+    return true;
+  }
   function startRound() {
     fixModeForLeague();
+    if (!pendingRanked && save.mode === 'raid') {
+      const r = raidState();
+      if (r.done) { toast('Босс этой недели уже повержен. Новый — в понедельник'); return; }
+      if (r.tries >= RAID_TRIES) { toast('Попытки на сегодня закончились. Приходи завтра'); return; }
+      r.tries++; persist();
+    }
     U = pendingRanked ? ZERO_UP : save.up;
     [...player.cells].forEach(removeCell);
     bots.forEach(o => [...o.cells].forEach(removeCell));
@@ -2114,6 +2279,12 @@ body {
       rebuildCells(); stats.giantSpawned = true;
       toast('Колосс на арене: подплывай ближе, чтобы он делился');
     }
+    if (mode === 'giant') setColossusLook('Колосс', '#e76f51');
+    if (mode === 'raid') {
+      const b = raidBoss(raidWeek()); setColossusLook(b.name, b.color);
+      stats.raidDmg = 0; spawnRaidChunk();
+      toast(`Рейд: ${b.name}. Подплывай ближе — он делится. Ешь части, чтобы нанести урон`);
+    }
     spawnBonus(); spawnBonus();
     $('overlay').hidden = true;
     setGameUi(true);
@@ -2131,6 +2302,18 @@ body {
     const surviveBonus = mode === 'survival' ? stats.time / 6 : 0;
     let coins = Math.round((Math.sqrt(stats.maxMass) * 3 + stats.kills * 3 + stats.minions + stats.bossCoins + stats.time / 25 + placeBonus + surviveBonus) * (1 + 0.08 * U.greed) * (mode === 'hardcore' ? 2 : 1));
     coins = Math.round(coins * (1 + 0.05 * petLv('coins')));
+    let raidLine = '';
+    if (mode === 'raid') {
+      const rs = raidState(), dmg = stats.raidDmg || 0;
+      rs.dmg = Math.min(RAID_HP, rs.dmg + dmg); coins += Math.round(dmg / 25);
+      if (rs.dmg >= RAID_HP && !rs.done) {
+        rs.done = true; const id = 'raid_' + rs.week; ensureRaidSkin(rs.week);
+        if (!save.skins.includes(id)) save.skins.push(id);
+        coins += 1500; save.special.push({ kind: 'challenge', rar: 'epic', title: 'Рейд' });
+        raidLine = `<li class="done"><span>Босс недели повержен! Скин «${SKINS.find(k => k.id === id).name}»</span><span class="rw">+1500 ◆ + эпический сундук</span></li>`;
+      }
+      stats.raidLeft = RAID_HP - rs.dmg;
+    }
     let xp = Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
     xp = Math.round(xp * (1 + 0.05 * petLv('xp')));
     const questRows = save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => {
@@ -2155,6 +2338,7 @@ body {
     let score = best;
     if (mode === 'survival') score = Math.floor(stats.time);
     if (mode === 'crown') score = Math.floor(player.crownT);
+    if (mode === 'raid') score = stats.raidDmg || 0;
     if (LOWER_BETTER[mode]) score = stats.win ? Math.max(1, Math.floor(stats.time)) : 0;
     if (mode === 'team') score = prev + (stats.win ? 1 : 0);
     const record = mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
@@ -2196,13 +2380,14 @@ body {
     if (stats.ejects) cellsHtml.push(['Выбросов', stats.ejects]);
     if (placeBonus) cellsHtml.push(['Бонус режима', `+${placeBonus} ◆`]);
     if (mode === 'crown') cellsHtml.push(['С короной', fmtTime(player.crownT)]);
+    if (mode === 'raid') cellsHtml.push(['Урон боссу', stats.raidDmg || 0], ['Здоровье босса', `${Math.ceil(stats.raidLeft / RAID_HP * 100)}%`], ['Попыток сегодня', `${RAID_TRIES - raidState().tries} из ${RAID_TRIES}`]);
     if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×2']);
     if (mode === 'daily') cellsHtml.push(['Испытание', stats.dailyDone ? 'пройдено' : `нужно ${DAILY_GOAL}`]);
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">+${pts} рейтинга</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
-      (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
+      raidLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
       (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
       const opened = [...UPG.filter(u => u.lvl > lvBefore && u.lvl <= lvAfter).map(u => u.name),
@@ -2484,8 +2669,15 @@ body {
       finishRound(a >= b ? `Победа синих ${a} : ${b}` : `Победа красных ${b} : ${a}`, a >= b ? 50 : 0, a >= b);
       return true;
     }
-    if (mode === 'giant') {
-      if (stats.giantSpawned && !colossus.cells.length) {
+    if (mode === 'raid') {
+      if (stats.raidSpawned && !colossus.cells.length) {
+        if (spawnRaidChunk()) toast('Босс собирается снова!');
+        else { finishRound(`${colossus.name} повержен!`, 0, true); return true; }
+      }
+      if (stats.time >= RAID_LEN) { finishRound('Время рейда вышло', 0, false); return true; }
+    }
+    if (mode === 'giant' || mode === 'raid') {
+      if (mode === 'giant' && stats.giantSpawned && !colossus.cells.length) {
         finishRound(`Колосс повержен за ${fmtTime(stats.time)}`, 60 + Math.max(0, Math.round((300 - stats.time) / 5)), true);
         return true;
       }
@@ -2621,7 +2813,7 @@ body {
     for (const a of cells) for (const b of cells) {
       if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < radius(a.mass) - radius(b.mass) * 0.35) {
-        if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); }
+        if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
         a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) buzz(60);
@@ -2644,7 +2836,7 @@ body {
     }
     rebuildCells();
 
-    for (const c of cells) { const cap = c.owner.kind === 'boss' && (mode === 'survival' || mode === 'giant') ? SURV_BOSS_CAP : MAX_MASS; if (c.mass > cap) c.mass = cap; }
+    for (const c of cells) { const cap = c.owner.kind === 'boss' && (mode === 'survival' || mode === 'giant' || mode === 'raid') ? SURV_BOSS_CAP : MAX_MASS; if (c.mass > cap) c.mass = cap; }
     updateEjects(dt);
     updateViruses(dt);
     updateEvent(dt);
@@ -2703,13 +2895,15 @@ body {
     }
     $('leaders').innerHTML = ranked.slice(0, 6).map((o, i) => {
       const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
-      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : ''}"><span>${i + 1}. ${o.name}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
-    }).join('') + (rank > 6 ? `<li class="me"><span>${rank}. Ты</span><span>${Math.round(total(player))}</span></li>` : '');
+      const fr = o.isPlayer ? save.frame : o.frame;
+      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : ''}"><span>${i + 1}. <span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
+    }).join('') + (rank > 6 ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '');
     let modeChip = running && mode === 'royale' ? `<div class="chip"><i style="background:#ff3d6e"></i>Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)} из 13</div>` : '';
     if (running && mode === 'timed') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
     if (running && mode === 'crown') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Корона: ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)} · осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
     if (running && mode === 'race') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Гонка ${Math.round(total(player))}/${RACE_GOAL} · ${fmtTime(stats.time)}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span></div>`;
     if (running && mode === 'team') modeChip = `<div class="chip"><i style="background:${ALLY_COLOR}"></i>Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные · ${fmtTime(Math.max(0, TEAM_LEN - stats.time))}</div>`;
+    if (running && mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `<div class="chip"><i style="background:var(--boss)"></i>${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · твой урон ${stats.raidDmg || 0} · ${fmtTime(Math.max(0, RAID_LEN - stats.time))}<span class="bar wide"><span style="width:${(left / RAID_HP * 100).toFixed(0)}%;background:var(--boss)"></span></span></div>`; }
     if (running && mode === 'giant') modeChip = `<div class="chip"><i style="background:#e76f51"></i>Колосс: ${Math.round(total(colossus))} массы, частей ${colossus.cells.length} · ${fmtTime(stats.time)}</div>`;
     if (running && mode === 'daily') modeChip = `<div class="chip"><i style="background:var(--prey)"></i>${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}</div>`;
     if (running && mode === 'survival') modeChip = `<div class="chip"><i style="background:var(--boss)"></i>Волна ${stats.wave} · ${fmtTime(stats.time)}</div>`;
@@ -2803,6 +2997,7 @@ body {
   $('shopBtn2').addEventListener('click', () => openView('shop'));
   $('wardBtn').addEventListener('click', () => openView('wardrobe'));
   $('petBtn').addEventListener('click', () => openView('pets'));
+  $('colBtn').addEventListener('click', () => openView('collections'));
   $('backBtn').addEventListener('click', closeShop);
   $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
   $('againBtn').addEventListener('click', startRound);
@@ -2834,12 +3029,14 @@ body {
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
     $('modes').innerHTML = Object.entries(MODES).map(([id, m]) =>
       `<button class="mode" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${save.mode === id}" ${id === 'royale' && !TEST_MODE ? 'disabled' : ''}><b>${m.name}</b><small>${m.desc}</small>` +
-      (id === 'royale' ? `<span class="lg-tag">${TEST_MODE ? 'Открыта для теста' : 'Только в лиге'} · сезон ${nextSeasonOf('royale')}</span>` : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '') +
+      (id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })() : id === 'royale' ? `<span class="lg-tag">${TEST_MODE ? 'Открыта для теста' : 'Только в лиге'} · сезон ${nextSeasonOf('royale')}</span>` : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '') +
       `<small>Рекорд: ${fmtBest(id, save.bests[id] || 0)}</small></button>`).join('');
     $('achCount').textContent = `${save.ach.length}/${ACH.length}`;
     $('chCount').textContent = `${save.chDone.length}/${CHALLENGES.length}`;
     $('chestCountBtn').textContent = chestTotal() + (save.dailyChestDay !== today ? ' +1' : '');
     $('petCount').textContent = `${save.pets.length}/${PETS.length}`;
+    { const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && c.skins.every(id => save.skins.includes(id))).length;
+      $('colCount').textContent = `${save.colDone.length}/${COLLECTIONS.length}` + (ready ? ` · забрать ${ready}` : ''); }
     { const L = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null); $('leagueBtn').innerHTML = `Лига · <b style="color:${L.color}">${L.name}</b> · ${save.season.pts} очков${curHoliday ? ` · ${HOLIDAYS[curHoliday].name}` : ''}`; }
   }
   function swatch(s) {
@@ -2858,8 +3055,9 @@ body {
   }
   // the shop sells what you don't own yet; the wardrobe holds everything you own
   const SHOP_VIEWS = {
-    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['skin', 'Скины'], ['fx', 'Эффекты']] },
-    wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты']] },
+    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены']] },
+    wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
+    collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
     goals:    { title: 'Испытания и достижения', tabs: [['ch', 'Испытания'], ['ach', 'Достижения']] },
   };
@@ -2976,6 +3174,7 @@ body {
     if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
     if (x.chest) return `<span class="badge-r" style="color:${RARITY[x.chest].color}">${RARITY[x.chest].name}</span>`;
     if (x.ex) return '<span class="badge-ex">испытание</span>';
+    if (x.raid) return '<span class="badge-ex" style="color:var(--boss)">рейд</span>';
     if (x.holiday) return `<span class="badge-ex">${HOLIDAYS[x.holiday].name}</span>`;
     if (x.season) return '<span class="badge-ex">сезон</span>';
     return '';
@@ -2987,7 +3186,7 @@ body {
     else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
     return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
-      <span class="name">${s.name}</span>${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
+      <span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
   function fxRow(f, mode) {
     const sel = save.fx[f.slot] === f.id, lv = playerLevel();
@@ -3002,6 +3201,7 @@ body {
     renderAll();
     const lv = playerLevel(), view = SHOP_VIEWS[shopView];
     $('shopTitle').textContent = view.title;
+    $('shopTabs').hidden = view.tabs.length < 2;
     $('shopTabs').innerHTML = view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
     if (shopTab === 'skin') {
       const list = SKINS.filter(k => buyable(k) && !save.skins.includes(k.id));
@@ -3047,6 +3247,34 @@ body {
           `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
           `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join('');
       $('shop').innerHTML = '<p class="empty-note">Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги) и выпадают из сундуков.</p>' + rows + chestRows;
+    } else if (shopTab === 'arena' || shopTab === 'warena') {
+      const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.price && !save.arenas.includes(a.id) : !a.price || save.arenas.includes(a.id));
+      $('shop').innerHTML = `<p class="empty-note">${shop ? 'Тема меняет пол, сетку, края арены, туманности и частицы вокруг. Купленные темы — в гардеробе.' : 'Выбери тему арены. Новые темы — в магазине.'}</p>` +
+        (list.length ? list.map(a => {
+          const sel = save.arena === a.id, can = save.coins >= a.price;
+          const btn = shop ? `<button class="buy" id="arena-${a.id}" data-arena="${a.id}" ${can ? '' : 'disabled'}>${a.price} ◆</button>` : `<button class="buy ${sel ? 'sel' : ''}" id="arena-${a.id}" data-arena="${a.id}" ${sel ? 'disabled' : ''}>${sel ? 'Выбрана' : 'Выбрать'}</button>`;
+          return `<div class="fxrow"><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}</span><span class="desc">${a.desc}.</span>${btn}</div>`;
+        }).join('') : '<p class="empty-note">Все темы арены уже твои.</p>');
+    } else if (shopTab === 'wdeco') {
+      const row = (ico, name, desc, attr, on, label) => `<div class="fxrow"><span class="ico">${ico}</span><span class="name">${name}</span><span class="desc">${desc}</span><button class="buy ${on ? 'sel' : ''}" ${attr}>${label}</button></div>`;
+      const hats = Object.keys(HATS).map(h => { const own = save.hats.includes(h), col = COLLECTIONS.find(c => c.hat === h), on = save.hat === h;
+        return own ? row(`<span class="hat-ico">${hatIcon(h)}</span>`, HATS[h].name, 'Надевается на любой скин вместо его предмета или короны.', `id="hat-${h}" data-hat="${h}"`, on, on ? 'Снять' : 'Надеть')
+                   : row(`<span class="hat-ico off">${hatIcon(h)}</span>`, HATS[h].name, `Награда за коллекцию «${col.name}».`, 'disabled', false, 'Нет'); }).join('');
+      const decoRows = kind => { const own = DECOR.filter(d => d.kind === kind && save.decor.includes(d.id));
+        return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
+          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.league !== undefined ? 'Награда лиги в конце сезона.' : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать'); }).join('')
+          : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки' : 'Титулы'} выпадают из сундуков и даются за лигу в конце сезона.</p>`; };
+      $('shop').innerHTML = '<p class="empty-note">Рамка и титул видны рядом с твоим именем в таблице лидеров.</p><h3>Над головой</h3>' + hats + `<h3>Рамки · ${DECOR.filter(d => d.kind === 'frame' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'frame').length}</h3>` + decoRows('frame') +
+        `<h3>Титулы · ${DECOR.filter(d => d.kind === 'title' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'title').length}</h3>` + decoRows('title');
+    } else if (shopTab === 'wcol') {
+      $('shop').innerHTML = '<p class="empty-note">Собери все скины коллекции и получи предмет над головой, который надевается на любой скин.</p>' + COLLECTIONS.map(c => {
+        const have = c.skins.filter(id => save.skins.includes(id)).length, full = have === c.skins.length, got = save.colDone.includes(c.id);
+        const chips = c.skins.map(id => { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${save.skins.includes(id) ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }).join('');
+        return `<div class="chal ${got ? 'done' : ''}"><div class="chal-top"><b>${got ? '✓ ' : ''}${c.name}</b><span>${have} / ${c.skins.length}</span></div>` +
+          `<div class="col-row">${chips}</div><div class="track"><div class="fill" style="width:${(have / c.skins.length * 100).toFixed(0)}%"></div></div>` +
+          `<div class="col-foot"><span class="rw"><span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name} + ${c.coins} ◆</span>` +
+          (got ? '<span class="rw" style="color:var(--prey)">получено</span>' : `<button class="buy" id="col-${c.id}" data-col="${c.id}" ${full ? '' : 'disabled'}>${full ? 'Забрать' : 'Не собрано'}</button>`) + '</div></div>';
+      }).join('');
     } else if (shopTab === 'ch') {
       $('shop').innerHTML = CHALLENGES.map(ch => {
         const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
@@ -3076,12 +3304,12 @@ body {
   renderShop = function () { _renderShop(); fillThumbs(); };
   // ---- sorting for wardrobe and pets ----
   const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
-  const SOURCE_ORDER = ['Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Сезон', 'Праздник'];
-  const sourceOf = x => x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  const SOURCE_ORDER = ['Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник'];
+  const sourceOf = x => x.raid ? 'Рейд' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
   // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
   const rarityScore = x => {
     const r = x.lchest || x.chest; if (r) return RAR_KEYS.indexOf(r) + 1 + (x.lchest ? .5 : 0);
-    if (x.holiday) return 3.9; if (x.season || x.tier) return x.tier === 'Неон' ? 3.8 : 3.7; if (x.ex) return 3.6;
+    if (x.raid) return 3.85; if (x.holiday) return 3.9; if (x.season || x.tier) return x.tier === 'Неон' ? 3.8 : 3.7; if (x.ex) return 3.6;
     return (x.price || 0) / 10000;
   };
   function sortOwned(list, order, tab) {
@@ -3112,7 +3340,18 @@ body {
   });
   $('shop').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.pet) {
+    if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
+    else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
+    else if (b.dataset.col) {
+      const c = COLLECTIONS.find(x => x.id === b.dataset.col);
+      if (save.colDone.includes(c.id) || !c.skins.every(id => save.skins.includes(id))) return;
+      save.colDone.push(c.id); if (!save.hats.includes(c.hat)) save.hats.push(c.hat); save.coins += c.coins;
+      toast(`Коллекция «${c.name}» собрана: ${HATS[c.hat].name} + ${c.coins} ◆`);
+    } else if (b.dataset.arena) {
+      const a = ARENAS.find(x => x.id === b.dataset.arena);
+      if (a.price && !save.arenas.includes(a.id)) { if (save.coins < a.price) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
+      save.arena = a.id; applyArena(); setHoliday(curHoliday);
+    } else if (b.dataset.pet) {
       save.pet = save.pet === b.dataset.pet ? null : b.dataset.pet; applyPet();
     } else if (b.dataset.fx) {
       const f = FX.find(x => x.id === b.dataset.fx);
@@ -3153,21 +3392,28 @@ body {
     let rar, pool;
     if (opts.league) {
       rar = pickRarity(LEAGUE_CHEST_W[opts.league]);
-      pool = [...SKINS.filter(k => k.lchest === rar).map(k => ['skin', k]), ...FX.filter(f => f.lchest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.lchest === rar).map(pt => ['pet', pt])];
+      pool = [...SKINS.filter(k => k.lchest === rar).map(k => ['skin', k]), ...FX.filter(f => f.lchest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.lchest === rar).map(pt => ['pet', pt]), ...DECOR.filter(d => d.chest === rar).map(d => ['deco', d])];
     } else {
       rar = opts.rar || pickRarity(Object.values(RARITY).map(r => r.w));
-      pool = [...SKINS.filter(k => k.chest === rar).map(k => ['skin', k]), ...FX.filter(f => f.chest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.chest === rar).map(pt => ['pet', pt])];
+      pool = [...SKINS.filter(k => k.chest === rar).map(k => ['skin', k]), ...FX.filter(f => f.chest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.chest === rar).map(pt => ['pet', pt]), ...DECOR.filter(d => d.chest === rar).map(d => ['deco', d])];
     }
     const [type, item] = pool[Math.floor(Math.random() * pool.length)];
-    const list = type === 'skin' ? save.skins : type === 'pet' ? save.pets : save.fxOwned;
+    const list = type === 'skin' ? save.skins : type === 'pet' ? save.pets : type === 'deco' ? save.decor : save.fxOwned;
     const owned = list.includes(item.id);
     if (!owned) list.push(item.id);
-    const coins = (opts.league ? 100 + opts.league * 60 : 40) + Math.floor(Math.random() * 80) + (owned ? RARITY[rar].dup : 0);
+    // a duplicate skin adds a star (up to 3); after that duplicates pay coins again
+    let star = 0;
+    if (owned && type === 'skin' && (save.stars[item.id] || 0) < 3) { star = save.stars[item.id] = (save.stars[item.id] || 0) + 1; if (save.skin === item.id) refreshSkin(); }
+    const coins = (opts.league ? 100 + opts.league * 60 : 40) + Math.floor(Math.random() * 80) + (owned && !star ? RARITY[rar].dup : 0);
     save.coins += coins;
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
     persist();
-    return { type, item, rar, dup: owned, coins };
+    return { type, item, rar, dup: owned, star, coins };
   }
+  const STAR_TEXT = { 1: 'вокруг капли летят искры', 2: 'по капле бежит цветной блик', 3: 'капля сияет ореолом' };
+  const frameAttr = id => { const d = decorById(id); return d ? `class="fr ${d.cls || ''}" style="${d.css}"` : 'class="fr0"'; };
+  const titleTag = id => { const d = decorById(id); return d ? `<em class="ttl" style="color:${d.color}">${d.name}</em>` : ''; };
+  const decoPreview = d => d.kind === 'frame' ? `<span class="deco-pv"><span ${frameAttr(d.id)}>Ты</span></span>` : `<span class="deco-pv">${titleTag(d.id)}</span>`;
   function chestRows() {
     const rows = [];
     const daily = save.dailyChestDay !== today;
@@ -3208,10 +3454,10 @@ body {
     setTimeout(() => {
       const r = rollChest(opts), R2 = RARITY[r.rar];
       box.classList.remove('shake'); box.classList.add('open');
-      const pic = r.type === 'skin' ? `<div class="${swClass(r.item)}" style="${swatch(r.item)}">${headIcon(r.item)}</div>` : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
-      const kind = r.type === 'skin' ? 'Скин' : r.type === 'pet' ? `Питомец · ${PET_BONUS[r.item.bonus].name}: ${PET_BONUS[r.item.bonus].text(r.item.lv)}` : 'Эффект · ' + FX_SLOTS.find(sl => sl[0] === r.item.slot)[1].toLowerCase();
+      const pic = r.type === 'skin' ? `<div class="${swClass(r.item)}" style="${swatch(r.item)}">${headIcon(r.item)}</div>` : r.type === 'deco' ? decoPreview(r.item) : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
+      const kind = r.type === 'deco' ? (r.item.kind === 'frame' ? 'Рамка для имени' : 'Титул') : r.type === 'skin' ? 'Скин' : r.type === 'pet' ? `Питомец · ${PET_BONUS[r.item.bonus].name}: ${PET_BONUS[r.item.bonus].text(r.item.lv)}` : 'Эффект · ' + FX_SLOTS.find(sl => sl[0] === r.item.slot)[1].toLowerCase();
       const el = $('reveal'); el.style.setProperty('--rc', R2.color);
-      el.innerHTML = `<span class="rar">${R2.name}${opts.league ? ' · сундук лиги' : ''}</span>${pic}<b>${r.item.name}</b><small>${kind}${r.dup ? ' · уже есть, превращён в монеты' : r.type === 'pet' ? ' · теперь в «Питомцах»' : ' · теперь в гардеробе'}</small><span class="coin">+${r.coins} ◆</span>`;
+      el.innerHTML = `<span class="rar">${R2.name}${opts.league ? ' · сундук лиги' : ''}</span>${pic}<b>${r.item.name}</b><small>${kind}${r.star ? ` · повтор: звезда ${'★'.repeat(r.star)}${'☆'.repeat(3 - r.star)} — ${STAR_TEXT[r.star]}` : r.dup ? ' · уже есть, превращён в монеты' : r.type === 'pet' ? ' · теперь в «Питомцах»' : r.type === 'deco' ? ' · гардероб → «Украшения»' : ' · теперь в гардеробе'}</small><span class="coin">+${r.coins} ◆</span>`;
       el.hidden = false;
       renderChest(); renderAll(); chestBusy = false;
     }, 750);
@@ -3334,6 +3580,7 @@ body {
       ['Уровень', `${lvl.level}`], ['Лига', `<span style="color:${L.color}">${L.name}</span>`],
       ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
       ['Достижения', `${save.ach.length} / ${ACH.length}`], ['Испытания', `${save.chDone.length} / ${CHALLENGES.length}`],
+      ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('profStats').innerHTML = [
       ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
@@ -3477,7 +3724,18 @@ body {
 
   // holiday look for the running season (snow, embers, hearts and a recoloured rim)
   let curHoliday = null;
+  function decorateArena() {
+    const fx = arenaDef().fx; if (!fx || Math.random() > .6) return;
+    const x = focus.x + (Math.random() - .5) * 90, z = focus.z + (Math.random() - .5) * 70, pick = a => a[(Math.random() * a.length) | 0];
+    if (fx === 'embers') emit(x, .4, z, pick(['#ff3d00', '#ff9a3d', '#ffd23f']), 1, 3, 1.2);
+    if (fx === 'snow') emit(x, 22, z, '#ffffff', 1, .3, 3.2);
+    if (fx === 'bubbles') emit(x, .5, z, pick(['#7fe8ff', '#3dffa2']), 1, 2.5, 1.4);
+    if (fx === 'fireflies') emit(x, 1 + Math.random() * 3, z, pick(['#c6ff3d', '#ffd23f']), 1, .8, 1.5);
+    if (fx === 'sand') emit(x, .6, z, pick(['#ffb347', '#e8c27a']), 2, 4, .9);
+    if (fx === 'rain') emit(x, 18, z, pick(['#22e6ff', '#ff4fd8', '#3dffa2']), 1, .2, 2.4);
+  }
   function decorateHoliday() {
+    decorateArena();
     if (!curHoliday || Math.random() > .5) return;
     const fx0 = focus.x + (Math.random() - .5) * 90, fz0 = focus.z + (Math.random() - .5) * 70;
     if (curHoliday === 'newyear') emit(fx0, 26, fz0, '#ffffff', 1, .4, 3.5);
@@ -3486,7 +3744,7 @@ body {
   }
   function setHoliday(k) {
     curHoliday = k;
-    const col = k ? HOLIDAYS[k].rim : '#ff4fd8';
+    const col = k ? HOLIDAYS[k].rim : arenaDef().rim;
     rim.material.color.set(col); rimGlow.material.color.set(col); edgeGlow.material.color.set(col);
   }
   function draw(now) {
@@ -3502,7 +3760,9 @@ body {
       const lk = v.look;
       if (lk) {
         const crownMode = mode === 'crown' && running;
-        v.crown.visible = !!lk.crown && !crownMode;
+        v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
+        if (v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
+        if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
         if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');
         animateAura(v, now); animateHead(v, now);
         if (lk.pulse) { const k = .5 + .5 * Math.sin(now / 280); v.mesh.material.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }

@@ -4902,37 +4902,38 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       $('shop').innerHTML = html || '<p class="empty-note">Все эффекты магазина уже твои.</p>';
     } else if (shopTab === 'wskin') {
       const own = sortOwned(SKINS.filter(k => save.skins.includes(k.id)), save.skins, 'wskin');
-      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}.</p>` +
-        `<div class="skins">${own.map(k => skinTile(k, 'own')).join('')}</div>`;
+      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Нажми на группу, чтобы открыть.</p>` +
+        groupDrawers('ws_', own, sourceOf, ['Магазин', ...SOURCE_ORDER], part => `<div class="skins">${part.map(k => skinTile(k, 'own')).join('')}</div>`);
     } else if (shopTab === 'wfx') {
       const ownAll = sortOwned(FX.filter(f => save.fxOwned.includes(f.id)), save.fxOwned, 'wfx');
       $('shop').innerHTML = sortBar('wfx') + `<p class="empty-note">Собрано ${ownAll.length} из ${FX.length}.</p>` +
         (ownAll.length ? FX_SLOTS.map(([slot, title]) => {
           const list = ownAll.filter(f => f.slot === slot);
-          return list.length ? `<h3>${title}</h3>` + list.map(f => fxRow(f, 'own')).join('') : '';
+          return list.length ? drawer('wf_' + slot, `${title} <small class="cnt">${list.length}${save.fx[slot] ? ' · надет: ' + (FX.find(f => f.id === save.fx[slot]) || {}).name : ''}</small>`, list.map(f => fxRow(f, 'own')).join('')) : '';
         }).join('') : '<p class="empty-note">Пока пусто: купи эффект в магазине или открой сундук.</p>');
     } else if (shopTab === 'wpet') {
       const own = sortOwned(save.pets.map(petById).filter(Boolean), save.pets, 'wpet');
       $('shop').innerHTML = sortBar('wpet') + `<p class="empty-note">Собрано ${own.length} из ${PETS.length}.</p>` +
-        (own.length ? own.map(pt => { const sel = save.pet === pt.id;
+        (own.length ? groupDrawers('wp_', own, PET_SRC, PET_ORDER, part => part.map(pt => { const sel = save.pet === pt.id;
           return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex">${pt.tier}</span>${save.archived && save.archived.includes(pt.id) ? ' <span class="badge-ex" style="color:#9fd8ff">из архива</span>' : ''}</span>` +
             `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
-            `<button class="buy ${sel ? 'sel' : ''}" id="pet-${pt.id}" data-pet="${pt.id}">${sel ? 'Убрать' : 'Взять'}</button></div>`; }).join('')
+            `<button class="buy ${sel ? 'sel' : ''}" id="pet-${pt.id}" data-pet="${pt.id}">${sel ? 'Убрать' : 'Взять'}</button></div>`; }).join(''))
           : '<p class="empty-note">Пока пусто: дойди до лиги «Платина» в любом сезоне.</p>');
     } else if (shopTab === 'pcat') {
       const rows = [0, 1, 2, 3, 4, 5].map(k => save.season.id + k).map(id => {
         const sd = seasonData(id), hk = sd.holiday;
-        return `<h3>Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''}</h3>` + sd.pets.map((pt, i) => {
+        return drawer('pc_' + id, `Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''} <small class="cnt">${sd.pets.filter(pt => save.pets.includes(pt.id)).length}/${sd.pets.length}</small>`, sd.pets.map((pt, i) => {
           const own = save.pets.includes(pt.id), lg = lgView(i ? 5 : 3, hk);
           return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex" style="color:${lg.color}">${lg.name}</span></span>` +
             `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
             `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : `лига «${lg.name}»`}</span></div>`;
-        }).join('');
+        }).join(''));
       }).join('');
-      const chestRows = '<h3>Из сундуков и сундуков лиги</h3>' + PETS.filter(pt => pt.chest || pt.lchest).map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest || pt.lchest];
+      const cp = PETS.filter(pt => pt.chest || pt.lchest);
+      const chestRows = drawer('pc_chest', `Из сундуков и сундуков лиги <small class="cnt">${cp.filter(pt => save.pets.includes(pt.id)).length}/${cp.length}</small>`, cp.map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest || pt.lchest];
         return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-r" style="color:${rc.color}">${rc.name}</span></span>` +
           `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
-          `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join('');
+          `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join(''));
       $('shop').innerHTML = rows + chestRows;
     } else if (shopTab === 'arena' || shopTab === 'warena') {
       const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.price && !a.legend && !save.arenas.includes(a.id) : a.id === 'default' || save.arenas.includes(a.id)).sort((x, y) => (x.price || 0) - (y.price || 0));
@@ -4950,8 +4951,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
           return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, `${d.name} <span class="badge-r" style="color:${RARITY[decoRarity(d)].color}">${RARITY[decoRarity(d)].name}</span>`, decoSource(d), `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
           : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков, даются за лигу и мастерство режимов' : 'Титулы выпадают из сундуков, даются за лигу, коллекции эффектов и мастерство режимов'}.</p>`; };
-      $('shop').innerHTML = '<h3>Над головой</h3>' + hats + `<h3>Рамки · ${DECOR.filter(d => d.kind === 'frame' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'frame').length}</h3>` + decoRows('frame') +
-        `<h3>Титулы · ${DECOR.filter(d => d.kind === 'title' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'title').length}</h3>` + decoRows('title');
+      const cntOf = k => `${DECOR.filter(d => d.kind === k && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === k).length}`;
+      $('shop').innerHTML = drawer('wd_hat', `Над головой <small class="cnt">${save.hats.length}/${Object.keys(HATS).length}${save.hat ? ' · надет: ' + HATS[save.hat].name : ''}</small>`, hats) +
+        drawer('wd_frame', `Рамки <small class="cnt">${cntOf('frame')}${save.frame ? ' · выбрана: ' + decorById(save.frame).name : ''}</small>`, decoRows('frame')) +
+        drawer('wd_title', `Титулы <small class="cnt">${cntOf('title')}${save.title ? ' · выбран: ' + decorById(save.title).name : ''}</small>`, decoRows('title'));
     } else if (shopTab === 'wcol') {
       const colCard = c => {
         const items = colItems(c), have = colOwned(c), full = have === items.length, got = save.colDone.includes(c.id);
@@ -5065,6 +5068,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (TAB_INFO[shopTab]) $('shop').insertAdjacentHTML('afterbegin', `<button class="tab-info-btn" id="tabInfoBtn" data-tabinfo="${shopTab}">ⓘ Информация · ${tName}</button>`);
   }
   // ---- «Способности»: build editor + list (buy / upgrade); dash and split upgrade through their old upgrade branches ----
+  function groupDrawers(prefix, list, keyOf, order, render) {
+    const keys = [...new Set(list.map(keyOf))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+    return keys.map(k => { const part = list.filter(x => keyOf(x) === k); return drawer(prefix + k, `${k} <small class="cnt">${part.length}</small>`, render(part)); }).join('');
+  }
+  const PET_SRC = pt => pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
+  const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные'];
   function upRowHtml(u, lv) {
     const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
     const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
@@ -6302,7 +6311,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '51';
+const APP_VER = '52';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

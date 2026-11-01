@@ -110,6 +110,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .col-sw.fx { border-radius: 8px; overflow: hidden; width: 30px; height: 30px; }
 .col-sw.fx img { width: 100%; height: 100%; display: block; }
 .col-names { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 4px; }
+.col-sw.ab { display: grid; place-items: center; background: var(--panel); border: 1px solid var(--ac); color: var(--ac); font-size: .95rem; }
 .col-sw.off { opacity: .25; filter: grayscale(.7); }
 .col-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .arena-pv { display: block; width: 34px; height: 26px; border-radius: 10px; border: 2px solid var(--rm); box-shadow: 0 0 10px var(--rm);
@@ -215,6 +216,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .act b { font-size: .78rem; font-weight: 600; }
 .act small { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 #split { --ring: var(--food); }
+.act .ab-ico { font-style: normal; font-size: 1.15rem; line-height: 1; }
+.act.empty { opacity: .35; pointer-events: none; }
+.act.empty .in { background: transparent; border: 1px dashed var(--line); }
 @media (max-width: 520px) { .actions { bottom: calc(14px + var(--mini-p, 100px) + 28px + env(safe-area-inset-bottom, 0px)); } }
 .act.off .in { opacity: .55; }
 @media (hover: hover) and (pointer: fine) { .act { width: 76px; height: 76px; cursor: default; } }
@@ -487,6 +491,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .tut-box b { font-family: var(--display); font-weight: 400; font-size: 1.05rem; }
 .tut-box p { margin: 0; font-size: .86rem; line-height: 1.4; }
 .tut-box.done { border-color: var(--prey); box-shadow: 0 0 18px rgba(61, 255, 162, .45); }
+.b-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.b-slot { background: var(--row); border-radius: 12px; padding: 8px; display: grid; gap: 6px; justify-items: center; border: 1px solid var(--ac); min-width: 0; }
+.b-slot small { color: var(--muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .06em; text-align: center; }
+.b-ico { font-size: 1.6rem; color: var(--ac); line-height: 1; }
+.b-slot select { width: 100%; min-width: 0; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 4px; font: inherit; font-size: .78rem; }
+.b-slot .buy { font-size: .68rem; padding: 5px 6px; width: 100%; }
+.ab-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--row); border-radius: 12px; padding: 10px; border-left: 3px solid var(--ac); }
+.ab-row.own { box-shadow: inset 0 0 0 1px var(--ac); }
+.ab-big { font-size: 1.7rem; color: var(--ac); width: 34px; text-align: center; }
+.ab-txt { display: grid; gap: 3px; min-width: 0; } .ab-txt small { color: var(--muted); font-size: .76rem; } .ab-txt .now { color: var(--fg); opacity: .85; }
+.ab-row .pips { display: flex; gap: 3px; } .ab-row .pips i { width: 14px; height: 5px; border-radius: 3px; background: var(--line); } .ab-row .pips i.on { background: var(--ac); }
+@media (max-width: 420px) { .ab-row { grid-template-columns: auto minmax(0, 1fr); } .ab-row > .buy { grid-column: 1 / -1; } }
 .tab-info-btn { display: block; width: 100%; margin: 0 0 8px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(34, 230, 255, .35); background: rgba(34, 230, 255, .08); color: var(--food); font: inherit; font-size: .82rem; font-weight: 600; text-align: left; cursor: pointer; }
 .tab-info-btn:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
 .tut-reward { display: flex; gap: 12px; align-items: center; background: var(--row); border-radius: 12px; padding: 10px; margin-bottom: 10px; }
@@ -710,6 +726,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="league" id="leaguePanel"></div>
     <button class="btn" id="leaguePlay">Играть в лиге</button>
     <p class="hint" id="leaguePlayNote"></p>
+    <p class="hint">В рейтинге у всех рывок и деление: купленные способности и улучшения не действуют.</p>
     <div class="season-skin" id="seasonSkin"></div>
     <div class="badge-info" id="curBadge"></div>
     <h2 class="section-title">Лиги и награды сезона</h2>
@@ -868,6 +885,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Значок «Легенда Капель» — за все девять основных достижений (у ступенчатых хватит первой ступени).</li>
         <li>Эксклюзивный значок «Миллионер» — за 1 000 000 заработанных монет («Золотой магнат II»).</li>
         <li>Ещё четыре особых значка: «Великий коллекционер» — все коллекции, кроме праздничных; «Мастер режимов» — мастерство «Легенда» во всех режимах; «Чемпион Неона» — высшая лига в 10 сезонах; «Ветеран сезонов» — 26 значков сезонов. Все особые значки — в профиле.</li>
+      </ul>
+    </details>
+    <details><summary>Способности и билд</summary>
+      <ul class="info-list">
+        <li>Внизу экрана три слота способностей — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E и Q.</li>
+        <li>Рывок и деление есть у всех. Ещё 10 способностей продаются в «Магазине» → «Способности»: выброс массы, щит, магнитный импульс, скачок, замедляющая волна, маскировка, взрыв-толчок, сжатие, клон-приманка и ловушка-шип.</li>
+        <li>Каждую купленную способность можно улучшить до 5 уровней: меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения: «Реактивный рывок», «Лёгкий рывок», «Больше частей», «Быстрое слияние».</li>
+        <li>Билд — что стоит в слотах — меняется только в меню. Слот может быть пустым, одну способность нельзя поставить дважды.</li>
+        <li>В рейтинге и «Королевской битве» у всех одинаково: рывок и деление.</li>
+        <li>Все 12 способностей — коллекция «Арсенал».</li>
       </ul>
     </details>
     <details><summary>Монеты, опыт и улучшения</summary>
@@ -1032,6 +1059,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   MODES.daily.desc = `${dailyMod.name}: ${dailyMod.desc.toLowerCase()}. Цель: масса ${DAILY_GOAL}, награда раз в день`;
   const EJECT_COST = 10, EJECT_MASS = 8, EJECT_MIN = 25, MAX_EJECTS = 60;
   const ACH = [
+    { id: 'ab_first', abil: true, name: 'Первый билд',       desc: 'Купи любую способность',                  coins: 500,  test: () => save.abil.bought.length >= 1 },
+    { id: 'ab_max',   abil: true, name: 'Мастер улучшений',  desc: 'Улучши одну способность до 5 уровня',     coins: 2000, test: () => Object.values(save.abil.lv).some(l => l >= 5) },
+    { id: 'ab_three',             name: 'Три в одном',       desc: 'Выиграй раунд с тремя разными способностями в билде, применив каждую', coins: 1000, test: (T, s) => !!(s && s.threeInOne) },
+    { id: 'ab_all',   abil: true, name: 'Полный арсенал',    desc: 'Купи все 12 способностей',                coins: 3000, test: () => ABILITIES.every(a => save.abil.owned.includes(a.id)) },
     { id: 'first',     name: 'Первая добыча',     desc: 'Съешь первую каплю',                    coins: 10,  test: T => T.kills >= 1 },
     { id: 'kills50',   name: 'Гроза арены',       desc: 'Съешь 50 капель за всё время',          coins: 60,  test: T => T.kills >= 50 },
     { id: 'boss1',     name: 'Охотник на боссов', desc: 'Победи любого босса',                   coins: 30,  test: T => T.bosses >= 1 },
@@ -1087,7 +1118,30 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'lg5', name: 'Неоновая легенда', desc: 'Дойди до лиги «Неон» в любом сезоне',     coins: 800, test: () => (save.totals.maxLeague || 0) >= 5 },
     { id: 'rounds25',  name: 'Завсегдатай',       desc: 'Сыграй 25 раундов',                     coins: 40,  test: T => T.rounds >= 25 },
   ];
-  const SPLIT_CD = 10, BOT_PARTS = 4, DASH_MULT = 3.2;   // dash = 3.2x the starting speed, whatever the mass
+  const SPLIT_CD = 10, BOT_PARTS = 4, DASH_MULT = 3.2;
+  // ================= abilities: ALL tunable numbers live in this table =================
+  // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
+  // every level: cooldown −cdPerLv, power (duration / distance / radius / force) +powPerLv.
+  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .5, growth: 1.8, cdPerLv: .06, powPerLv: .1,
+    rankedBuild: ['dash', 'split', null], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
+    slotBtn: ['dash', 'split', 'eject'], slotKey: ['Space', 'KeyE', 'KeyQ'], slotKeyName: ['Пробел', 'E', 'Q'],
+    arsenalCoins: 5000, slowFactor: .5, shrinkSpeed: 1.25, maxTraps: 2, decoySpeed: .55 };
+  const ABILITIES = [
+    { id: 'dash',   name: 'Рывок',             sh: 'Рывок',   icon: '»', color: '#ff4fd8', price: 0,     branches: ['dash', 'light'], desc: 'Короткое ускорение ×3,2 от стартовой скорости: догнать или убежать. Забирает немного массы' },
+    { id: 'split',  name: 'Деление',           sh: 'Деление', icon: '◐', color: '#22e6ff', price: 0,     branches: ['splitmax', 'merge'], desc: 'Капля делится пополам и бросает часть вперёд. Части потом сливаются' },
+    { id: 'eject',  name: 'Выброс массы',      sh: 'Выброс',  icon: '•', color: '#3dffa2', price: 5000,  cd: .12, dist: 1, desc: 'Отдаёт кусочек массы вперёд: стать легче, покормить шип или союзника. Улучшение: выброс летит дальше' },
+    { id: 'shield', name: 'Щит',               sh: 'Щит',     icon: '⛨', color: '#9fe8ff', price: 15000, cd: 25, dur: 2,  desc: 'Тебя нельзя съесть. Шипы всё равно рвут крупную каплю' },
+    { id: 'pulse',  name: 'Магнитный импульс', sh: 'Магнит',  icon: '⊛', color: '#ffd23f', price: 12000, cd: 20, dur: 3,  desc: 'Притягивает крошки рядом, как бонус «Магнит»' },
+    { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 20, dist: 16, desc: 'Мгновенный короткий перенос вперёд. Сквозь край арены не проходит' },
+    { id: 'slow',   name: 'Замедляющая волна', sh: 'Волна',   icon: '≋', color: '#4d7cff', price: 25000, cd: 25, dur: 3, radius: 30, desc: 'Соперники рядом на время двигаются вдвое медленнее' },
+    { id: 'cloak',  name: 'Маскировка',        sh: 'Маскир.', icon: '◌', color: '#c9c2ff', price: 30000, cd: 30, dur: 4,  desc: 'Боты теряют тебя из виду и не гонятся за тобой' },
+    { id: 'push',   name: 'Взрыв-толчок',      sh: 'Толчок',  icon: '✸', color: '#ff9a3d', price: 22000, cd: 22, radius: 25, force: 55, desc: 'Отталкивает соперников рядом' },
+    { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 25, dur: 4, size: .3, desc: 'Капля на 30% меньше и на 25% быстрее, масса та же. В это время можно есть только еду' },
+    { id: 'decoy',  name: 'Клон-приманка',     sh: 'Клон',    icon: '◎', color: '#ff6ad5', price: 28000, cd: 30, dur: 5,  desc: 'Оставляет копию, за которой гонятся боты. Её нельзя съесть, очков она не даёт' },
+    { id: 'trap',   name: 'Ловушка-шип',       sh: 'Ловушка', icon: '✳', color: '#3dff6e', price: 35000, cd: 35, dur: 10, desc: 'Ставит временный шип: он рвёт крупные капли соперников, тебя и союзников не трогает. Не больше 2 сразу' },
+  ];
+  const abilById = id => ABILITIES.find(a => a.id === id);
+  const abUpCost = (a, lv) => Math.round(a.price * ABIL_CFG.firstLevel * Math.pow(ABIL_CFG.growth, lv) / 50) * 50;   // price of level lv+1   // dash = 3.2x the starting speed, whatever the mass
   const OLD_SPEED = 11, BASE_SPEED = OLD_SPEED * 3;   // everyone moves 3x faster than the first version (shown as 300%)   // split cooldown (s) for everyone, part limit for bots
   const css = getComputedStyle(document.documentElement);
   const tok = k => css.getPropertyValue(k).trim();
@@ -1116,10 +1170,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   UPG.forEach(u => { if (u.lvl > 1) u.lvl = 2 * u.lvl - 1; });
   // economy: the upper half of every upgrade's levels costs 50% more (the first levels stay cheap)
   UPG.forEach(u => { const h = Math.ceil(u.cost.length / 2); u.cost = u.cost.map((c, i) => i >= h ? Math.round(c * 1.5 / 5) * 5 : c); });
+  // dash and split upgrades moved to the «Способности» tab as branches of those abilities (same save.up levels)
   const CATS = [
     ['Рост', ['big', 'digest', 'magnet', 'keep']],
-    ['Движение', ['speed', 'dash', 'light']],
-    ['Деление', ['splitmax', 'merge']],
+    ['Движение', ['speed']],
     ['Защита', ['life', 'armor']],
     ['Награды', ['greed', 'bonus']],
   ];
@@ -1423,9 +1477,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // a collection lists its items as [type, id]; skin and effect sets use the short skins / fx form, the newer ones a function (seasons and holidays are built late)
   const colList = c => c.skins ? c.skins.map(id => ['skin', id]) : c.fx ? c.fx.map(id => ['fx', id]) : c.items();
   const colItems = c => colList(c).map(x => x[1]);
-  const ownedList = t => t === 'skin' ? save.skins : t === 'pet' ? save.pets : save.fxOwned;
+  const ownedList = t => t === 'skin' ? save.skins : t === 'pet' ? save.pets : t === 'abil' ? save.abil.owned : save.fxOwned;
   const colOwned = c => colList(c).filter(([t, id]) => ownedList(t).includes(id)).length;
-  const colRewardName = c => c.hat ? HATS[c.hat].name : `${c.frame ? 'рамка' : 'титул'} «${decorById(c.frame || c.title).name}»`;
+  const colRewardName = c => c.hat ? HATS[c.hat].name : [c.title && `титул «${decorById(c.title).name}»`, c.frame && `рамка «${decorById(c.frame).name}»`].filter(Boolean).join(' и ');
   // ---- frames (around your name) and titles (after it): from chests and from the league ----
   const DECOR = [
     { id: 'fr_cyan',    kind: 'frame', name: 'Бирюзовая',  css: 'border:2px solid #22e6ff', chest: 'common' },
@@ -1718,6 +1772,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         items: () => { const out = []; for (let id = q * 13 + 1; id <= q * 13 + 13; id++) { const sd = seasonData(id);
           if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else out.push(['skin', sd.skin.id], ['fx', sd.fx.id]); } return out; } });
     });
+    DECOR.push({ id: 'tt_arsenal', kind: 'title', name: 'Оружейник', color: '#ff9a3d', col: true },
+      { id: 'fr_arsenal', kind: 'frame', name: 'Оружейная', css: 'border:2px solid #ff9a3d;box-shadow:0 0 8px #ff9a3d, 0 0 2px #ffd23f inset', col: true });
+    COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', title: 'tt_arsenal', frame: 'fr_arsenal', coins: ABIL_CFG.arsenalCoins, items: () => ABILITIES.map(a => ['abil', a.id]) });
     const HOL_TITLE = { newyear: ['Дух Нового года', '#9fe8ff'], valentine: ['Романтик', '#ff4f9a'], halloween: ['Ночной кошмар', '#ff7a00'] }, seen = new Set();
     for (let id = 1; id <= seasonNow + 1; id++) { const hi = holidayInfo(id); if (!hi || seen.has(hi.k + hi.y)) continue; seen.add(hi.k + hi.y);
       ensureHolidayItems(hi.k, hi.y);
@@ -1822,6 +1879,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // the «Обзор» upgrade was removed (the camera is farther for everyone): refund what was spent on it
   if (save.up.vision) { save.coins += costs(25, 5).slice(0, save.up.vision).reduce((a, b) => a + b, 0); }
   delete save.up.vision;
+  // abilities (save schema 2): owned, levels, build. Old players keep the eject they always had, new players start with an empty 3rd slot
+  if (!save.abil) {
+    const old = !!(save.totals || save.xp);
+    save.abil = { owned: old ? ['dash', 'split', 'eject'] : ['dash', 'split'], bought: [], lv: {} };
+    save.build = old ? [...ABIL_CFG.oldBuild] : [...ABIL_CFG.newBuild];
+  }
+  save.abil.bought = save.abil.bought || []; save.abil.lv = save.abil.lv || {};
+  ['dash', 'split'].forEach(id => { if (!save.abil.owned.includes(id)) save.abil.owned.push(id); });
+  save.build = (save.build || ABIL_CFG.newBuild).slice(0, ABIL_CFG.slots).map(id => id && abilById(id) && save.abil.owned.includes(id) ? id : null);
+  save.build = save.build.map((id, i) => id && save.build.indexOf(id) !== i ? null : id);
+  while (save.build.length < ABIL_CFG.slots) save.build.push(null);
+  save.schema = 2;
   save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
   function fillQuests() {
     const lv = levelInfo(save.xp).level;
@@ -2129,6 +2198,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const ringGeo = new THREE.RingGeometry(1.08, 1.22, 48);
   const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd166, metalness: .3, roughness: .35, emissive: 0xc08a10, emissiveIntensity: .8, side: THREE.DoubleSide });
   const radius = m => 0.38 * Math.sqrt(m);
+  const cellR = c => 0.38 * Math.sqrt(c.mass) * (c.owner && c.owner.rs || 1);   // «Сжатие» shrinks the player's cells
   const PREY = C('--prey'), THREAT = C('--threat'), NEUTRAL = new THREE.Color(0x8088c0);
 
   function makeCrown() {
@@ -2460,7 +2530,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   function trailOwner(o, id, now) {
     for (const c of o.cells) {
-      const r = radius(c.mass), x = c.x - c.hx * r * 0.8, z = c.z - c.hz * r * 0.8;
+      const r = cellR(c), x = c.x - c.hx * r * 0.8, z = c.z - c.hz * r * 0.8;
       if (!o.isPlayer && !nearView(x, z)) continue;
       switch (id) {
         case 'sparksTrail': emit(x, r * .5, z, cellColor(c), 2, 2.5, .5); break;
@@ -2596,7 +2666,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function spawnVirus(x, z, vx, vz) {
     if (viruses.length >= VIRUS_MAX) return null;
     if (x === undefined) {
-      for (let t = 0; t < 30; t++) { [x, z] = randInArena(12); if (cells.every(c => Math.hypot(c.x - x, c.z - z) > radius(c.mass) + 8)) break; }
+      for (let t = 0; t < 30; t++) { [x, z] = randInArena(12); if (cells.every(c => Math.hypot(c.x - x, c.z - z) > cellR(c) + 8)) break; }
     }
     const v = { x, z, vx: vx || 0, vz: vz || 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh() };
     viruses.push(v);
@@ -2610,7 +2680,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     // a boss that has no spare parts to split into loses 30% of its mass as food and is stunned for a moment
     if (o.kind === 'boss' && !o.free.length) {
       const lost = c.mass * .3; c.mass -= lost; c.vis.jig = 1; o.stunT = 2.5; if (nearView(c.x, c.z)) Sound.play('spike');
-      burstFood(c.x, c.z, radius(c.mass) + 8, Math.min(160, Math.round(lost / 4)));
+      burstFood(c.x, c.z, cellR(c) + 8, Math.min(160, Math.round(lost / 4)));
       emit(v.x, radius(v.mass), v.z, VIRUS_COLOR, 40, 18, .8);
       if (stats) stats.bossPops = (stats.bossPops || 0) + 1;
       if (nearView(c.x, c.z)) toast(`Шип ранил босса «${o.name}»!`);
@@ -2638,6 +2708,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function updateViruses(dt) {
     const k = Math.exp(-2 * dt);
     for (const v of [...viruses]) {
+      if (v.trap) { v.trap.ttl -= dt; if (v.trap.ttl <= 0) { removeVirus(v); continue; } }
       if (v.vx || v.vz) {
         v.x += v.vx * dt; v.z += v.vz * dt; v.vx *= k; v.vz *= k;
         if (Math.abs(v.vx) + Math.abs(v.vz) < .2) v.vx = v.vz = 0;
@@ -2646,8 +2717,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const rv = radius(v.mass);
       for (const c of cells) {
         if (c.gone || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes; bosses get popped too
-        if (Math.hypot(c.x - v.x, c.z - v.z) < radius(c.mass) - rv * .3) {
-          popCell(c, v); removeVirus(v); virusRespawn.push(10); rebuildCells(); break;
+        if (v.trap && (c.owner === player || (player.team && c.owner.team === player.team))) continue;   // a trap spares its owner and allies
+        if (Math.hypot(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
+          popCell(c, v); removeVirus(v); if (!v.trap) virusRespawn.push(10); rebuildCells(); break;
         }
       }
     }
@@ -2813,7 +2885,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function safeSpot(minDist) {
     for (let t = 0; t < 50; t++) {
       const [x, z] = randInArena(6);
-      if (cells.every(c => Math.hypot(c.x - x, c.z - z) > minDist + radius(c.mass))) return [x, z];
+      if (cells.every(c => Math.hypot(c.x - x, c.z - z) > minDist + cellR(c))) return [x, z];
     }
     return randInArena(6);
   }
@@ -2864,7 +2936,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function spawnMinion(queen) {
     const m = minions.find(o => !o.cells.length);
     if (!m) return;
-    const q = queen.cells[0], a = Math.random() * Math.PI * 2, r = radius(q.mass) + 1.5;
+    const q = queen.cells[0], a = Math.random() * Math.PI * 2, r = cellR(q) + 1.5;
     const c = addCell(m, q.x + Math.cos(a) * r, q.z + Math.sin(a) * r, 8 + Math.random() * 6, m.free.pop());
     c.vx = Math.cos(a) * 25; c.vz = Math.sin(a) * 25;
     m.think = 0; m.target = null;
@@ -2893,15 +2965,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (o.isPlayer) {
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT;
-      v *= (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed'));
+      v *= (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
     }
+    else if (o.slowT > 0) v *= ABIL_CFG.slowFactor * (o.kind === 'boss' ? bossInfo(o).speed : 1);
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;
     else v *= o.star ? 1 : 0.92;
     return v * (dailyIs('speedy') ? 1.3 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
   const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.armor : 1.25;
-  const canEat = (a, b) => !(b.owner.isPlayer && effects.shield > 0) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
+  const canEat = (a, b) => !(a.owner.isPlayer && abOn('shrink')) && !(b.owner.isPlayer && effects.shield > 0) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
   const playerMaxParts = () => mode === 'split' ? 10 : Math.min(10, 4 + U.splitmax);
@@ -2926,14 +2999,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (c.mass < EJECT_MIN) continue;
       if (ejects.length >= MAX_EJECTS) { const old = ejects.shift(); scene.remove(old.mesh); }
       c.mass -= EJECT_COST;
-      const r = radius(c.mass) + 1.2;
+      const r = cellR(c) + 1.2;
       const mesh = new THREE.Mesh(ejectGeo, ejectMat);
       mesh.scale.setScalar(radius(EJECT_MASS)); mesh.add(glowSprite(skin().color, 3, .5));
       scene.add(mesh);
-      ejects.push({ x: c.x + c.hx * r, z: c.z + c.hz * r, vx: c.hx * 60 + c.vx, vz: c.hz * 60 + c.vz, mass: EJECT_MASS, age: 0, mesh });
+      const ev0 = 60 * abPow('eject');
+      ejects.push({ x: c.x + c.hx * r, z: c.z + c.hz * r, vx: c.hx * ev0 + c.vx, vz: c.hz * ev0 + c.vz, mass: EJECT_MASS, age: 0, mesh });
       did = true;
     }
-    if (did) { player.ejectCd = 0.12; stats.ejects++; Sound.play('eject'); }
+    if (did) { player.ejectCd = 0.12; stats.ejects++; abUsed('eject'); Sound.play('eject'); }
   }
   function clearEjects() { ejects.forEach(e => scene.remove(e.mesh)); ejects = []; }
   function updateEjects(dt) {
@@ -2945,7 +3019,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const dc = Math.hypot(e.x, e.z); if (dc > R - 1.5) { e.x *= (R - 1.5) / dc; e.z *= (R - 1.5) / dc; }
       for (const c of cells) {
         if (c.gone || (c.owner.isPlayer && e.age < 0.6)) continue;
-        const r = radius(c.mass);
+        const r = cellR(c);
         if (r > 1.3 && Math.hypot(c.x - e.x, c.z - e.z) < r) {
           c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
           scene.remove(e.mesh); ejects.splice(i, 1);
@@ -3000,6 +3074,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       r.tries++; persist();
     }
     const isTut = pendingTut; pendingTut = false; tut = null;
+    runBuild = isTut ? [...ABIL_CFG.oldBuild] : pendingRanked ? [...ABIL_CFG.rankedBuild] : [...save.build];
+    abReset();
     U = pendingRanked || isTut ? ZERO_UP : save.up;
     [...player.cells].forEach(removeCell);
     bots.forEach(o => [...o.cells].forEach(removeCell));
@@ -3017,7 +3093,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const ranked = pendingRanked;
     player.ejectCd = 0;
     stats = { mode, ranked, time: 0, maxMass: total(player), kills: 0, bosses: 0, minions: 0, bossCoins: 0, bossXp: 0, bonuses: 0, splits: 0, crumbs: 0, leader: 0, bestRank: 99, wave: 0,
-              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut };
+              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut, abUsed: {} };
     clearEjects();
     resetViruses(); virusRespawn = []; resetEvents();
     history = [Math.round(total(player))];
@@ -3055,12 +3131,112 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   function setGameUi(on) {
     $('board').hidden = $('miniWrap').hidden = $('effects').hidden = $('actions').hidden = $('pauseBtn').hidden = !on;
-    $('dash').hidden = mode === 'split';
-    $('split').hidden = dailyIs('dashonly');
+    if (on) renderSlots();
+  }
+  // ================= abilities: runtime =================
+  let runBuild = [...ABIL_CFG.oldBuild], decoy = null;
+  const abLv = id => stats && stats.ranked ? 0 : save.abil.lv[id] || 0;
+  const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id));
+  const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);
+  const abOn = id => !!(player.abT && player.abT[id] > 0);
+  const abUsed = id => { if (stats && stats.abUsed) stats.abUsed[id] = 1; };
+  // a slot is unusable in modes that forbid that action
+  const slotBlocked = id => (id === 'dash' && mode === 'split') || (id === 'split' && dailyIs('dashonly'));
+  function abReset() {
+    player.abCd = {}; player.abT = {}; player.rs = 1;
+    bots.concat(bossOwners).forEach(o => o.slowT = 0);
+    if (decoy) { scene.remove(decoy.mesh); decoy = null; }
+  }
+  function renderSlots() {
+    runBuild.forEach((id, i) => {
+      const b = $(ABIL_CFG.slotBtn[i]), a = id && abilById(id), hide = id && slotBlocked(id);
+      b.hidden = !!hide;
+      b.classList.toggle('empty', !a);
+      b.style.setProperty('--ring', a ? a.color : 'var(--line)');
+      b.setAttribute('aria-label', a ? a.name : 'Пустой слот');
+      b.querySelector('.in').innerHTML = a ? `<i class="ab-ico" style="color:${a.color}">${a.icon}</i><b>${a.sh}</b><small id="slotSub${i}"></small>` : '<b>Пусто</b><small>—</small>';
+    });
+  }
+  function useSlot(i) {
+    const id = runBuild[i];
+    if (!id || !running || paused || dying || slotBlocked(id)) return;
+    if (id === 'dash') dash(); else if (id === 'split') split(); else if (id === 'eject') eject(); else castAbility(id);
+  }
+  function pCenterXZ() { const m = total(player) || 1; return player.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); }
+  function castAbility(id) {
+    if (!player.cells.length || (player.abCd[id] || 0) > 0) return;
+    const a = abilById(id), pw = abPow(id), [px, pz] = pCenterXZ();
+    const near = (o, rad) => o.cells.some(c => player.cells.some(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rad + cellR(pc) + cellR(c)));
+    const foes = () => owners.filter(o => !o.isPlayer && o.cells.length && !(player.team && o.team === player.team));
+    if (id === 'shield') effects.shield = Math.max(effects.shield, a.dur * pw);
+    else if (id === 'pulse') effects.magnet = Math.max(effects.magnet, a.dur * pw);
+    else if (id === 'blink') {
+      const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y), d = a.dist * pw;
+      for (const c of player.cells) { emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); }
+    } else if (id === 'slow') { for (const o of foes()) if (near(o, a.radius * pw)) o.slowT = a.dur * pw; emit(px, 2, pz, a.color, 60, a.radius * pw, .9); }
+    else if (id === 'push') {
+      const rad = a.radius * pw;
+      for (const o of foes()) for (const c of o.cells) {
+        const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1, edge = d - cellR(c);
+        if (edge < rad + Math.sqrt(total(player)) * .4) { const f = a.force * pw * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; }
+      }
+      emit(px, 2, pz, a.color, 70, rad, .7);
+    } else if (id === 'shrink' || id === 'cloak') { player.abT[id] = a.dur * pw; if (id === 'cloak') owners.forEach(o => { if (o.target && o.target.owner === player) o.target = null; }); }
+    else if (id === 'decoy') {
+      if (decoy) scene.remove(decoy.mesh);
+      const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y), r = cellR(main);
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshStandardMaterial({ color: skin().color, emissive: skin().color, emissiveIntensity: .5, transparent: true, opacity: .55 }));
+      mesh.scale.setScalar(r); mesh.add(glowSprite(skin().color, 3, .5)); scene.add(mesh);
+      decoy = { x: main.x, z: main.z, hx: main.hx, hz: main.hz, r, ttl: a.dur * pw, gone: false, mesh, owner: { decoy: true } };
+      mesh.position.set(decoy.x, r, decoy.z);
+    } else if (id === 'trap') {
+      const mine = viruses.filter(v => v.trap);
+      if (mine.length >= ABIL_CFG.maxTraps) removeVirus(mine[0]);
+      const v = { x: px, z: pz, vx: 0, vz: 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh(), trap: { ttl: a.dur } };
+      v.mesh.add(glowSprite(a.color, 4, .7)); viruses.push(v);
+    }
+    player.abCd[id] = abCdOf(id); abUsed(id);
+    emit(px, 2, pz, a.color, 24, 6, .5); Sound.play('bonus'); buzz(15);
+  }
+  function abTick(dt) {
+    for (const k in player.abCd) player.abCd[k] = Math.max(0, player.abCd[k] - dt);
+    for (const k in player.abT) player.abT[k] = Math.max(0, player.abT[k] - dt);
+    for (const o of owners) if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
+    // «Сжатие»: the size eases back smoothly
+    const want = abOn('shrink') ? 1 - abilById('shrink').size : 1;
+    if (player.rs !== want) { player.rs += (want - player.rs) * Math.min(1, dt * 6); if (Math.abs(player.rs - want) < .005) player.rs = want; }
+    if (decoy) {
+      decoy.ttl -= dt;
+      if (decoy.ttl <= 0) { scene.remove(decoy.mesh); emit(decoy.x, decoy.r, decoy.z, '#ffffff', 20, 8, .5); decoy.gone = true; decoy = null; owners.forEach(o => { if (o.target && o.target.owner && o.target.owner.decoy) o.target = null; }); }
+      else {
+        const sp = BASE_SPEED * ABIL_CFG.decoySpeed;
+        decoy.x += decoy.hx * sp * dt; decoy.z += decoy.hz * sp * dt;
+        const dc = Math.hypot(decoy.x, decoy.z), rr = R - decoy.r; if (dc > rr) { decoy.x *= rr / dc; decoy.z *= rr / dc; decoy.hx = -decoy.hx; decoy.hz = -decoy.hz; }
+        decoy.mesh.position.set(decoy.x, decoy.r, decoy.z);
+      }
+    }
+  }
+  function abilChips() {
+    if (!running || !player.abT) return '';
+    return ['shrink', 'cloak'].filter(abOn).map(id => `<div class="chip"><i style="background:${abilById(id).color}"></i>${abilById(id).name} ${Math.ceil(player.abT[id])} с</div>`).join('') +
+      (decoy ? `<div class="chip"><i style="background:${abilById('decoy').color}"></i>Клон ${Math.ceil(decoy.ttl)} с</div>` : '') +
+      (viruses.some(v => v.trap) ? `<div class="chip"><i style="background:${abilById('trap').color}"></i>Ловушки: ${viruses.filter(v => v.trap).length}</div>` : '');
+  }
+  function slotView(id) {
+    if (id === 'dash') return { ready: 1 - player.dashCd / dashCdBase, sub: player.dashCd > 0 ? `${player.dashCd.toFixed(1)} с` : null, off: false };
+    if (id === 'eject') { const can = running && player.cells.some(c => c.mass >= EJECT_MIN); return { ready: can ? 1 : 0, sub: can ? null : `нужно ${EJECT_MIN}`, off: !can }; }
+    if (id === 'split') {
+      const maxParts = playerMaxParts(), n = player.cells.length, cd = player.splitCd, heavy = player.cells.some(c => c.mass >= 20), can = n > 0 && n < maxParts && heavy && cd <= 0;
+      return { ready: cd > 0 ? 1 - cd / playerSplitCd() : can ? 1 : 0, off: !can, sub: cd > 0 ? `${cd.toFixed(1)} с` : n >= maxParts ? `${n}/${maxParts} макс.` : !heavy ? 'нужно 20' : n > 1 ? `${n}/${maxParts}` : null };
+    }
+    const cd = player.abCd[id] || 0, act = player.abT[id] || 0;
+    return { ready: cd > 0 ? 1 - cd / abCdOf(id) : 1, off: false, sub: act > 0 ? `${act.toFixed(1)} с ✓` : cd > 0 ? `${cd.toFixed(1)} с` : null };
   }
 
   function endRound() {
     if (stats.tutorial) { tutExit(false); return; }
+    // «Три в одном»: a won round (not ranked) with 3 different abilities in the build, each used at least once
+    if (stats.win && !stats.ranked && runBuild.filter(Boolean).length === 3 && runBuild.every(id => stats.abUsed[id])) stats.threeInOne = true;
     running = false;
     const lvBefore = playerLevel();
     const placeBonus = stats.modeBonus || 0;
@@ -3288,11 +3464,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const onButton = document.activeElement && document.activeElement.tagName === 'BUTTON';
     if (e.code === 'Space') {
       e.preventDefault();
-      if (running && mode !== 'split') dash();
+      if (running) useSlot(0);
       else if (overlayOpen() && $('shopCard').hidden && !onButton) startRound();
     }
-    if (e.code === 'KeyE' && running) split();
-    if (e.code === 'KeyQ' && running) eject();
+    if (e.code === 'KeyE' && running) useSlot(1);
+    if (e.code === 'KeyQ' && running) useSlot(2);
     if (e.code === 'KeyP' && running && !dying) setPause(!paused);
     if (e.code === 'Enter' && !running && $('shopCard').hidden && !onButton) startRound();
     if (e.code === 'Escape' && !$('shopCard').hidden) closeShop();
@@ -3329,13 +3505,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   });
   stage.addEventListener('pointerup', joyEnd);
   stage.addEventListener('pointercancel', joyEnd);
-  $('dash').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); dash(); });
-  $('split').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); split(); });
-  $('eject').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); eject(); });
+  ABIL_CFG.slotBtn.forEach((bid, i) => $(bid).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSlot(i); }));
 
   function dash() {
     if (mode === 'split' || !running || !player.cells.length || player.dashCd > 0 || paused) return;
-    player.dashT = 0.35 + 0.05 * U.light; player.dashCd = dashCdBase; Sound.play('dash'); stats.dashes = (stats.dashes || 0) + 1;
+    player.dashT = 0.35 + 0.05 * U.light; player.dashCd = dashCdBase; Sound.play('dash'); stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     const cost = 0.03 * (1 - 0.12 * U.light);
     player.cells.forEach(c => c.mass = Math.max(START_MASS * 0.5, c.mass * (1 - cost)));
   }
@@ -3345,7 +3519,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (o.cells.length >= max || !o.free.length) break;
       if (c.mass < 20) continue;
       c.mass /= 2;
-      const r = radius(c.mass);
+      const r = cellR(c);
       const n = addCell(o, c.x + c.hx * r, c.z + c.hz * r, c.mass, o.free.pop());
       n.hx = c.hx; n.hz = c.hz;
       n.vx = c.hx * 75; n.vz = c.hz * 75;
@@ -3360,17 +3534,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function split() {
     if (dailyIs('dashonly')) return;
     if (!running || paused || !player.cells.length || player.splitCd > 0) return;
-    if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; rebuildCells(); buzz(20); Sound.play('split'); }
+    if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; abUsed('split'); rebuildCells(); buzz(20); Sound.play('split'); }
   }
 
   // ================= bot brain =================
   function think(o) {
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p = mode === 'hardcore' && o.kind === 'bot' ? PERSONA.aggressive : PERSONA[o.persona];
-    const r = radius(c.mass), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1);
+    const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1);
     if (mode === 'royale' && running && Math.hypot(c.x, c.z) > zoneR * .8) { o.tx = c.x * .3; o.tz = c.z * .3; o.target = null; return; }   // run from the storm
     if (o.bossType === 'hunter' && player.cells.length) {
       let best = null, bd = Infinity;
-      for (const t of player.cells) { const d = Math.hypot(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
+      if (!abOn('cloak')) for (const t of player.cells) { const d = Math.hypot(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
       if (best) {
         o.target = best; o.tx = best.x; o.tz = best.z;
         if (o.dashCd <= 0 && bd < 35) { o.dashT = 0.5; o.dashCd = 5; }
@@ -3378,8 +3552,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
     }
     let fx = 0, fz = 0, prey = null, preyScore = Infinity;
+    const cloaked = abOn('cloak');
     for (const t of cells) {
-      if (t.owner === o) continue;
+      if (t.owner === o || (cloaked && t.owner === player)) continue;
       const d = Math.hypot(t.x - c.x, t.z - c.z);
       if (d > sense) continue;
       if (p.flee > 0 && canEat(t, c) && d < sense * Math.min(1, p.flee)) {
@@ -3393,7 +3568,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const careful = o.kind === 'boss' ? .35 : o.star ? .85 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
     if (c.mass > VIRUS_MASS * 1.3 && Math.random() < careful) for (const v of viruses) {
       const d = Math.hypot(v.x - c.x, v.z - c.z);
-      if (d < radius(c.mass) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
+      if (d < cellR(c) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
     }
     if (fx || fz) { o.tx = c.x + fx * 20; o.tz = c.z + fz * 20; o.target = null; return; }
     // hunters share a target with their partner
@@ -3406,7 +3581,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       // bold bots split to snatch prey that is close and small enough for a half
       const isSplitter = o.bossType === 'splitter', maxParts = isSplitter ? 6 : BOT_PARTS;
       if (running && (o.kind === 'bot' || isSplitter) && p.chase >= .85 && o.splitCd <= 0 && o.cells.length < maxParts) {
-        const d = Math.hypot(prey.x - c.x, prey.z - c.z), rc = radius(c.mass);
+        const d = Math.hypot(prey.x - c.x, prey.z - c.z), rc = cellR(c);
         if (c.mass / 2 > prey.mass * eatRatio(prey) && d > rc * 0.8 && d < 6 + rc * 4) {
           o.cells.forEach(k => { k.hx = (prey.x - k.x) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); k.hz = (prey.z - k.z) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); });
           if (splitOwner(o, maxParts, isSplitter ? 10 : 14)) { if (isSplitter) o.splitCd = 6; rebuildCells(); }
@@ -3422,7 +3597,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     for (const e of ejects) {                     // ejected blobs are tasty bait
       const d = ((e.x - c.x) ** 2 + (e.z - c.z) ** 2) * 0.3;
-      if (d < bd && radius(c.mass) > 1.3) { bd = d; best = e; }
+      if (d < bd && cellR(c) > 1.3) { bd = d; best = e; }
     }
     if (best) { o.tx = best.x; o.tz = best.z; }
   }
@@ -3430,7 +3605,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ================= simulation =================
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
   function clampArena(c) {
-    const rr = R - radius(c.mass) * 0.6, dc = Math.hypot(c.x, c.z);
+    const rr = R - cellR(c) * 0.6, dc = Math.hypot(c.x, c.z);
     if (dc > rr) { c.x *= rr / dc; c.z *= rr / dc; }
   }
   function steer(c, tx, tz, dt) {
@@ -3522,8 +3697,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (colossus.cells.length && colossus.splitCd <= 0 && colossus.cells.length < 12) {
         for (const c of colossus.cells) {
           if (c.mass < 120) continue;
-          const rc = radius(c.mass);
-          const att = player.cells.find(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rc + radius(pc.mass) + 6);
+          const rc = cellR(c);
+          const att = player.cells.find(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rc + cellR(pc) + 6);
           if (!att) continue;
           const dx = c.x - att.x, dz = c.z - att.z, d = Math.hypot(dx, dz) || 1, side = Math.random() < .5 ? 1 : -1;
           c.mass /= 2;
@@ -3555,8 +3730,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     for (const o of owners) { o.splitCd = Math.max(0, o.splitCd - dt); if (o.stunT) o.stunT = Math.max(0, o.stunT - dt); for (const c of o.cells) c.mergeT = Math.max(0, c.mergeT - dt); }
     for (const k in effects) effects[k] = Math.max(0, effects[k] - dt);
     player.dashT -= dt; player.dashCd = Math.max(0, player.dashCd - dt);
+    abTick(dt);
     trailFx(dt, performance.now());
-    if (player.dashT > 0) for (const c of player.cells) { const r = radius(c.mass); emit(c.x - c.hx * r, r * .8, c.z - c.hz * r, cellColor(c), 4, 4, .45); }
+    if (player.dashT > 0) for (const c of player.cells) { const r = cellR(c); emit(c.x - c.hx * r, r * .8, c.z - c.hz * r, cellColor(c), 4, 4, .45); }
     if (!stats.tutorial) { bonusTimer -= dt; if (bonusTimer <= 0) { spawnBonus(); bonusTimer = 9; } }
     else if (tutTick(dt)) return;
     if (bossesOn()) bossTimer -= dt;
@@ -3574,11 +3750,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         if (o.tpT <= 0) {
           // blink to a random spot near your biggest part, never right on top of it
           const c = o.cells[0], t = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), ang = Math.random() * Math.PI * 2;
-          const d = radius(t.mass) + radius(c.mass) + 16;
-          emit(c.x, radius(c.mass), c.z, '#22e6ff', 40, 18, .7);
+          const d = cellR(t) + cellR(c) + 16;
+          emit(c.x, cellR(c), c.z, '#22e6ff', 40, 18, .7);
           let nx = t.x + Math.cos(ang) * d, nz = t.z + Math.sin(ang) * d; const dc = Math.hypot(nx, nz); if (dc > R - 4) { nx *= (R - 4) / dc; nz *= (R - 4) / dc; }
           c.x = nx; c.z = nz; c.vx = c.vz = 0; c.vis.jig = 1;
-          emit(c.x, radius(c.mass), c.z, '#ffffff', 40, 18, .7);
+          emit(c.x, cellR(c), c.z, '#ffffff', 40, 18, .7);
           if (nearView(c.x, c.z)) Sound.play('teleport');
           o.tpT = 6 + Math.random() * 3;
         }
@@ -3604,7 +3780,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     for (let i = 0; i < pc.length; i++) for (let j = i + 1; j < pc.length; j++) {
       const a = pc[i], b = pc[j];
       if (a.gone || b.gone) continue;
-      const ra = radius(a.mass), rb = radius(b.mass);
+      const ra = cellR(a), rb = cellR(b);
       let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 0.001;
       if (a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > MAX_MASS) {   // parts that would exceed the cap stay apart
         if (d < ra + rb) {
@@ -3624,7 +3800,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (o.isPlayer) continue;
       if (!o.cells.length) { if (o.kind === 'bot') { o.respawn -= dt; if (o.respawn <= 0) spawnBot(o); } continue; }
       o.think -= dt;
-      if (o.think <= 0) { think(o); o.think = 0.25 + Math.random() * 0.25; }
+      if (o.think <= 0) { think(o); o.think = 0.25 + Math.random() * 0.25; if (decoy && o.target && o.target.owner === player) o.target = decoy; }
       if (o.target && !o.target.gone) { o.tx = o.target.x; o.tz = o.target.z; }
       o.cells.forEach(k => steer(k, o.tx, o.tz, dt));
     }
@@ -3635,7 +3811,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const pGain = (1 + 0.06 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
-      const r = radius(c.mass) + (isP ? pMagnet : 0);
+      const r = cellR(c) + (isP ? pMagnet : 0);
       const gain = isP ? pGain : 1;
       for (let i = 0; i < FOOD; i++) {
         const f = foods[i];
@@ -3653,7 +3829,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     // bonuses (player only)
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const b = bonuses[i];
-      if (player.cells.some(c => Math.hypot(c.x - b.x, c.z - b.z) < radius(c.mass) + 1)) {
+      if (player.cells.some(c => Math.hypot(c.x - b.x, c.z - b.z) < cellR(c) + 1)) {
         // same bonus stacks its time, capped at 30 s
         const stacked = effects[b.type] > 0;
         effects[b.type] = Math.min(30, effects[b.type] + effectDur(b.type));
@@ -3667,12 +3843,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     // eating
     for (const a of cells) for (const b of cells) {
       if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
-      if (Math.hypot(a.x - b.x, a.z - b.z) < radius(a.mass) - radius(b.mass) * 0.35) {
+      if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
         a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
-        { const rb = radius(b.mass); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
+        { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
         removeCell(b);
         if (a.owner.isPlayer) {
           if (victim.kind === 'boss') {
@@ -3749,17 +3925,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       setText('buff', mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : '');
       sp.title = parts.join(', ') || 'Без бафов';
     } else $('speed').textContent = '–';
-    $('dash').style.setProperty('--ready', (1 - player.dashCd / dashCdBase).toFixed(3));
-    setText('dashSub', player.dashCd > 0 ? `${player.dashCd.toFixed(1)} с` : finePointer ? 'Пробел' : 'готов');
-    const maxParts = playerMaxParts(), n = player.cells.length;
-    const canEject = running && player.cells.some(c => c.mass >= EJECT_MIN);
-    $('eject').style.setProperty('--ready', canEject ? 1 : 0);
-    $('eject').classList.toggle('off', !canEject);
-    setText('ejectSub', canEject ? (finePointer ? 'Q' : 'готов') : `нужно ${EJECT_MIN}`);
-    const cd = player.splitCd, heavy = player.cells.some(c => c.mass >= 20), canSplit = n > 0 && n < maxParts && heavy && cd <= 0;
-    $('split').style.setProperty('--ready', cd > 0 ? (1 - cd / playerSplitCd()).toFixed(3) : canSplit ? 1 : 0);
-    $('split').classList.toggle('off', !canSplit);
-    setText('splitSub', cd > 0 ? `${cd.toFixed(1)} с` : n >= maxParts ? `${n}/${maxParts} макс.` : !heavy ? 'нужно 20' : n > 1 ? `${n}/${maxParts} · ${finePointer ? 'E' : 'ещё'}` : finePointer ? 'E' : 'готово');
+    if (player.abCd) runBuild.forEach((id, i) => {
+      if (!id) return;
+      const v = slotView(id), b = $(ABIL_CFG.slotBtn[i]);
+      b.style.setProperty('--ready', Math.max(0, Math.min(1, v.ready)).toFixed(3)); b.classList.toggle('off', v.off);
+      setText('slotSub' + i, v.sub || (finePointer ? ABIL_CFG.slotKeyName[i] : 'готов'));
+    });
     if (now - hudT < 250) return;
     hudT = now;
     const ranked = owners.filter(o => o.cells.length && o.kind !== 'minion').sort((a, b) => total(b) - total(a));
@@ -3794,7 +3965,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else if (running && ev.warn) modeChip += `<div class="chip"><i style="background:${evInfo(ev.warn).color}"></i>Скоро: ${evInfo(ev.warn).name}</div>`;
     $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:var(--gold)"></i>Рейтинговый бой · без улучшений · монеты ×1,5</div>` : '') + modeChip + Object.keys(effects || {}).filter(k => effects[k] > 0)
       .map(k => `<div class="chip"><i style="background:${BONUS[k].color}"></i>${BONUS[k].name}${k === 'speed' ? ' +45%' : ''} ${Math.ceil(effects[k])} с</div>`).join('') +
-      mergeChip();
+      mergeChip() + abilChips();
     if (running) {
       for (const id of save.quests) {
         const q = QUESTS.find(x => x.id === id);
@@ -3832,12 +4003,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const [x, y] = P(c.x, c.z);
       const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
       mctx.fillStyle = c.owner.kind === 'boss' ? bossInfo(c.owner).color : c.owner.kind === 'minion' ? MINION_COLOR : c.owner.team && c.owner.team === player.team ? ALLY_COLOR : danger ? tok('--threat') : food ? tok('--prey') : '#8088c0';
-      mctx.beginPath(); mctx.arc(x, y, Math.max(2, radius(c.mass) * s), 0, Math.PI * 2); mctx.fill();
+      mctx.beginPath(); mctx.arc(x, y, Math.max(2, cellR(c) * s), 0, Math.PI * 2); mctx.fill();
     }
     for (const c of player.cells) {
       const [x, y] = P(c.x, c.z);
       mctx.fillStyle = skin().color; mctx.strokeStyle = '#ffffff'; mctx.lineWidth = 1.5;
-      mctx.beginPath(); mctx.arc(x, y, Math.max(2.5, radius(c.mass) * s), 0, Math.PI * 2); mctx.fill(); mctx.stroke();
+      mctx.beginPath(); mctx.arc(x, y, Math.max(2.5, cellR(c) * s), 0, Math.PI * 2); mctx.fill(); mctx.stroke();
     }
   }
 
@@ -3905,7 +4076,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       init: t => { t.d0 = stats.dashes || 0; }, prog: t => (stats.dashes || 0) - t.d0 },
     { title: 'Деление', text: () => `Деление разбивает каплю на две и бросает половину вперёд — так ловят убегающих. Части потом сольются обратно. Нажми ${finePointer ? 'E' : 'кнопку «Деление»'}.`,
       init: t => { t.s0 = stats.splits; }, prog: t => stats.splits - t.s0 },
-    { title: 'Выброс массы', text: () => `Выброс отдаёт кусочек массы: так можно стать легче и быстрее или покормить союзника. Нажми ${finePointer ? 'Q' : 'кнопку «Выброс»'}.`,
+    { title: 'Выброс массы', text: () => `Выброс отдаёт кусочек массы: так можно стать легче или покормить союзника. Нажми ${finePointer ? 'Q' : 'кнопку «Выброс»'}. Выброс и другие способности покупаются в магазине и ставятся в билд.`,
       init: t => { t.e0 = stats.ejects; }, prog: t => stats.ejects - t.e0 },
     { title: 'Опасность!', text: t => `Красноватая на мини-карте капля больше тебя и охотится. Не дай себя съесть: убегай и используй рывок. Продержись ${Math.max(0, Math.ceil(15 - (t.surv || 0)))} с.`,
       init: t => { t.surv = 0; t.lives0 = lives; const m = Math.max(40, total(player) * 2.5); tutBot(3, m, 30, false); }, prog: t => (t.surv || 0) / 15,
@@ -3941,7 +4112,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (first) { save.tutDone = today; save.coins += TUT_COINS; save.legend.coins = (save.legend.coins || 0) + TUT_COINS; if (!save.skins.includes('tut_student')) save.skins.push('tut_student'); }
       const k = SKINS.find(x => x.id === 'tut_student');
       body = (first ? `<div class="tut-reward"><span class="${swClass(k)}" style="${swatch(k)};width:56px;height:56px">${headIcon(k)}</span><div><b>Награда: +${TUT_COINS} ◆ и скин «Ученик»</b><small>Скин уже в гардеробе.</small></div></div>` : '<p>Награда уже была получена раньше.</p>') +
-        '<ul><li>Монеты трать в «Магазине» на улучшения — они действуют во всех обычных боях.</li><li>Задания под кнопкой «Играть» и задания недели дают монеты и сундуки.</li><li>С «Лиги» начинаются рейтинговые бои и сезонные награды.</li><li>Всё об игре — в «Информации», а в каждой вкладке есть кнопка ⓘ.</li></ul>';
+        '<ul><li>Монеты трать в «Магазине» на улучшения и способности: щит, скачок, маскировку и другие. Выброс массы из обучения тоже покупается там.</li><li>Задания под кнопкой «Играть» и задания недели дают монеты и сундуки.</li><li>С «Лиги» начинаются рейтинговые бои и сезонные награды.</li><li>Всё об игре — в «Информации», а в каждой вкладке есть кнопка ⓘ.</li></ul>';
     } else { title = 'Обучение прервано'; body = '<p>Его можно пройти в любой момент: «Информация» → «Пройти обучение». За прохождение — монеты и скин «Ученик».</p>'; }
     persist(); renderAll();
     tutModal(title, body, [['tutOk', 'В меню', 'btn']]);
@@ -4063,7 +4234,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   // the shop sells what you don't own yet; the wardrobe holds everything you own
   const SHOP_VIEWS = {
-    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
+    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
@@ -4284,9 +4455,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         const items = colItems(c), have = colOwned(c), full = have === items.length, got = save.colDone.includes(c.id);
         const chips = colList(c).map(([t, id]) => { const own = ownedList(t).includes(id);
           if (t === 'skin') { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${own ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }
+          if (t === 'abil') { const a = abilById(id); return `<span class="col-sw ab ${own ? '' : 'off'}" title="${a.name}" style="--ac:${a.color}">${a.icon}</span>`; }
           const it = t === 'pet' ? petById(id) : FX.find(x => x.id === id); return `<span class="col-sw fx ${own ? '' : 'off'}" title="${it.name}">${thumbImg(t, id)}</span>`; }).join('');
         const names = c.fx ? `<small class="col-names">${items.map(id => FX.find(x => x.id === id).name).join(' · ')}</small>` : '';
-        const reward = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : c.frame ? `рамка <span ${frameAttr(c.frame)}>Ты</span>` : `титул ${titleTag(c.title)}`;
+        const reward = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : [c.title && `титул ${titleTag(c.title)}`, c.frame && `рамка <span ${frameAttr(c.frame)}>Ты</span>`].filter(Boolean).join(' + ');
         return `<div class="chal ${got ? 'done' : ''}"><div class="chal-top"><b>${got ? '✓ ' : ''}${c.name}</b><span>${have} / ${items.length}</span></div>` +
           `<div class="col-row">${chips}</div>${names}<div class="track"><div class="fill" style="width:${(have / items.length * 100).toFixed(0)}%"></div></div>` +
           `<div class="col-foot"><span class="rw">${reward} + ${c.coins} ◆</span>` +
@@ -4294,6 +4466,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       };
       $('shop').innerHTML = '<h3>Скины</h3>' + COLLECTIONS.filter(c => c.skins).map(colCard).join('') +
         '<h3>Эффекты</h3>' + COLLECTIONS.filter(c => c.fx).map(colCard).join('') +
+        '<h3>Способности</h3>' + COLLECTIONS.filter(c => c.group === 'abil').map(colCard).join('') +
         '<h3>Лига</h3>' + COLLECTIONS.filter(c => c.group === 'league').map(colCard).join('') +
         '<h3>Сезоны лиги</h3>' + COLLECTIONS.filter(c => c.group === 'seasons').map(colCard).join('') +
         '<h3>Праздники</h3>' + (COLLECTIONS.filter(c => c.group === 'holiday').map(colCard).join('') || '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
@@ -4370,6 +4543,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         return `<div class="ach ${got ? 'got' : ''}"><span class="ico">${got ? '🏆' : '?'}</span><span class="name">${a.name}</span>` +
           `<span class="desc">${a.desc}</span><span class="rw">${got ? 'Получено' : `+${a.coins} ◆`}</span></div>`;
       }).join('');
+    } else if (shopTab === 'abil') {
+      $('shop').innerHTML = abilShopHtml(lv);
     } else {
       $('shop').innerHTML = CATS.map(([title, ids]) => `<h3>${title}</h3>` + ids.map(id => UPG.find(u => u.id === id)).map(u => {
         const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
@@ -4383,8 +4558,62 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const tName = (view.tabs.find(t => t[0] === shopTab) || [, view.title])[1];
     if (TAB_INFO[shopTab]) $('shop').insertAdjacentHTML('afterbegin', `<button class="tab-info-btn" id="tabInfoBtn" data-tabinfo="${shopTab}">ⓘ Информация · ${tName}</button>`);
   }
+  // ---- «Способности»: build editor + list (buy / upgrade); dash and split upgrade through their old upgrade branches ----
+  function upRowHtml(u, lv) {
+    const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
+    const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
+    const label = locked ? `С ур. ${u.lvl}` : l >= max ? 'Макс.' : `${price} ◆`;
+    const dis = locked || l >= max || save.coins < price ? 'disabled' : '';
+    return `<div class="up ${locked ? 'locked' : ''}"><span class="name">${u.name}</span><span class="desc">${u.desc}${u.info ? `<br><span class="now">Сейчас: ${u.info(l)}${l < max ? ` → дальше: ${u.info(l + 1)}` : ''}</span>` : ''}</span>
+          <span class="pips">${pips}</span><button class="buy" id="buy-${u.id}" data-up="${u.id}" ${dis}>${label}</button></div>`;
+  }
+  function abStatLine(a, l) {
+    const k = 1 + ABIL_CFG.powPerLv * l, parts = [];
+    if (a.cd && a.cd > 1) parts.push(`перезарядка ${(a.cd * (1 - ABIL_CFG.cdPerLv * l)).toFixed(1).replace('.', ',')} с`);
+    if (a.dur) parts.push(`действует ${(a.dur * (a.id === 'trap' ? 1 : k)).toFixed(1).replace('.', ',')} с`);
+    if (a.radius) parts.push(`радиус ${Math.round(a.radius * k)}`);
+    if (a.id === 'blink') parts.push(`дальность ${Math.round(a.dist * k)}`);
+    if (a.id === 'eject') parts.push(`скорость выброса ×${k.toFixed(1).replace('.', ',')}`);
+    if (a.id === 'push') parts.push(`сила ${Math.round(a.force * k)}`);
+    return parts.join(' · ');
+  }
+  function abilShopHtml(lv) {
+    const own = save.abil.owned;
+    const slots = save.build.map((id, i) => {
+      const a = id && abilById(id);
+      const opts = ['<option value="">Пусто</option>', ...ABILITIES.filter(x => own.includes(x.id)).map(x => `<option value="${x.id}" ${x.id === id ? 'selected' : ''} ${x.id !== id && save.build.includes(x.id) ? 'disabled' : ''}>${x.name}</option>`)].join('');
+      return `<div class="b-slot" style="--ac:${a ? a.color : 'var(--line)'}"><small>Слот ${i + 1} · ${ABIL_CFG.slotKeyName[i]}</small><span class="b-ico">${a ? a.icon : '＋'}</span>` +
+        `<select data-slot="${i}" aria-label="Слот ${i + 1}">${opts}</select><button class="buy" data-slotclear="${i}" ${a ? '' : 'disabled'}>Очистить слот</button></div>`;
+    }).join('');
+    const rows = ABILITIES.map(a => {
+      const has = own.includes(a.id), l = save.abil.lv[a.id] || 0, inB = save.build.includes(a.id);
+      const head = `<div class="ab-row ${has ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${inB ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small>`;
+      if (a.branches) return head + `<small class="now">Бесплатно, есть у всех. Улучшения:</small></div></div>` + a.branches.map(id => upRowHtml(UPG.find(u => u.id === id), lv)).join('');
+      if (!has) return head + `<small class="now">${abStatLine(a, 0)}</small></div><button class="buy" id="abuy-${a.id}" data-abuy="${a.id}" ${save.coins >= a.price ? '' : 'disabled'}>${a.price.toLocaleString('ru-RU')} ◆</button></div>`;
+      const max = l >= ABIL_CFG.levels, cost = abUpCost(a, l);
+      const pips = Array.from({ length: ABIL_CFG.levels }, (_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
+      return head + `<small class="now">Сейчас: ${abStatLine(a, l)}${max ? '' : `<br>Дальше: ${abStatLine(a, l + 1)}`}</small><span class="pips">${pips}</span></div>` +
+        `<button class="buy" id="aup-${a.id}" data-aup="${a.id}" ${max || save.coins < cost ? 'disabled' : ''}>${max ? 'Макс.' : `Улучшить · ${cost.toLocaleString('ru-RU')} ◆`}</button></div>`;
+    }).join('');
+    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${slots}</div>` +
+      `<p class="empty-note">Билд меняется только в меню. В рейтинге и «Королевской битве» у всех рывок и деление.</p><h3>Все способности · ${own.length} из ${ABILITIES.length}</h3>` + rows;
+  }
+  function checkAbilAch() {
+    for (const a of ACH) {
+      if (!a.abil || save.ach.includes(a.id) || !a.test(null, null)) continue;
+      save.ach.push(a.id); save.coins += a.coins; toast(`Достижение: ${a.name} +${a.coins} ◆`);
+    }
+  }
+  $('shop').addEventListener('change', e => {
+    const sel = e.target.closest('select[data-slot]'); if (!sel) return;
+    const i = +sel.dataset.slot, id = sel.value || null;
+    if (id && save.build.some((x, j) => x === id && j !== i)) return;
+    save.build[i] = id; persist(); renderShop(); const again = document.querySelector(`select[data-slot="${i}"]`); if (again) again.focus();
+  });
   // per-tab help: what the tab is for and how its items are earned (opened by the ⓘ button at the top of each tab)
   const TAB_INFO = {
+    abil: () => ['Способности стоят в трёх слотах билда — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E, Q.', 'Рывок и деление есть у всех. Остальные покупаются за монеты и улучшаются до 5 уровней: меньше перезарядка, сильнее эффект.',
+      'Одну способность нельзя поставить в два слота. Слот может быть пустым. Билд меняется только в меню.', 'В рейтинге и «Королевской битве» у всех рывок и деление, купленное там не действует.'],
     up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.'],
     skin: () => ['Здесь скины, которые можно купить за монеты. Купленный скин появляется в гардеробе.', 'Остальные скины выпадают из сундуков, даются за испытания, достижения, лигу и сезоны.', 'Нажми на скин, чтобы посмотреть его подробнее.'],
     fx: () => ['Эффекты бывают трёх видов: след, аура и эффект поедания. В каждом слоте можно надеть один.', 'Здесь эффекты, которые продаются за монеты. Остальные — в сундуках, испытаниях и коллекциях.'],
@@ -4396,7 +4625,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     warena: () => ['Выбери тему арены из своих. Новые темы — в магазине, легендарные — за легендарные достижения.'],
     wcol: () => ['Скины: собери все скины коллекции и получи предмет над головой, который надевается на любой скин.', 'Эффекты: собери все эффекты набора и получи уникальный титул.',
       'Лига: все 12 эксклюзивов сундука лиги — предмет над головой «Кубок лиги».', 'Сезоны лиги: скины и эффекты 13 сезонов подряд (за «Алмаз» и «Неон» или из архива) — своя рамка.',
-      'Праздники: все скины и эффекты праздничного сезона года — праздничный титул. Каждый год новый набор.', 'Каждая коллекция даёт ещё и монеты. Награду нужно забрать кнопкой «Забрать».'],
+      'Праздники: все скины и эффекты праздничного сезона года — праздничный титул. Каждый год новый набор.', 'Способности: «Арсенал» — все 12 способностей (рывок и деление уже есть) — титул «Оружейник», рамка «Оружейная» и 5 000 ◆.', 'Каждая коллекция даёт ещё и монеты. Награду нужно забрать кнопкой «Забрать».'],
     wpet: () => ['Питомец летает рядом и даёт бонус: монеты, опыт, скорость, магнит и другие. Можно взять одного.', 'Питомцы — награда лиги («Платина» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков.', 'Бонус питомца не действует в рейтинговом бою.'],
     pcat: () => ['Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги).', 'Ещё питомцы выпадают из обычных сундуков и сундуков лиги: чем реже питомец, тем сильнее его бонус.', 'Пропущенных сезонных питомцев можно купить в архиве с 20-го уровня.'],
     week: () => ['Новые задания каждый понедельник: лёгкое, среднее и сложное.', 'Награды: лёгкое — редкий сундук, среднее — эпический, сложное — легендарный.', `За все три задания — ещё +${WEEK_BONUS} ◆.`],
@@ -4490,6 +4719,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         save.coins -= f.price; save.fxOwned.push(f.id);
       } else if (save.fx[f.slot] === f.id) { save.fx[f.slot] = null; persist(); applyAura(); renderShop(); const again = $(b.id); if (again) again.focus(); return; }
       save.fx[f.slot] = f.id; applyAura();
+    } else if (b.dataset.abuy) {
+      const a = abilById(b.dataset.abuy); if (save.abil.owned.includes(a.id) || save.coins < a.price) return;
+      save.coins -= a.price; save.abil.owned.push(a.id); save.abil.bought.push(a.id);
+      const free = save.build.indexOf(null); if (free >= 0) save.build[free] = a.id;
+      toast(`Способность «${a.name}» куплена${free >= 0 ? ' и поставлена в билд' : ''}`); checkAbilAch();
+    } else if (b.dataset.aup) {
+      const a = abilById(b.dataset.aup), l = save.abil.lv[a.id] || 0, cost = abUpCost(a, l);
+      if (!save.abil.owned.includes(a.id) || l >= ABIL_CFG.levels || save.coins < cost) return;
+      save.coins -= cost; save.abil.lv[a.id] = l + 1; toast(`«${a.name}»: уровень ${l + 1}`); checkAbilAch();
+    } else if (b.dataset.slotclear) {
+      save.build[+b.dataset.slotclear] = null;
     } else if (b.dataset.up) {
       const u = UPG.find(x => x.id === b.dataset.up), l = save.up[u.id], price = u.cost[l];
       if (l < u.cost.length && save.coins >= price && playerLevel() >= u.lvl) { save.coins -= price; save.up[u.id]++; }
@@ -5030,7 +5270,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       ['Уровень', `${lvl.level}`], ['Лига', `<span style="color:${L.color}">${L.name}</span>`],
       ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
       ['Достижения', `${save.ach.length} / ${ACH.length}`], ['Испытания', `${save.chDone.length} / ${CHALLENGES.length}`],
-      ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
+      ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Способности', `${save.abil.owned.length} / ${ABILITIES.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('profStats').innerHTML = [
       ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
@@ -5195,7 +5435,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (!petObj) return;
     const g = petObj.g;
     if (!player.cells.length) { g.visible = false; return; }
-    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = radius(c.mass), a = now / 1300;
+    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(c), a = now / 1300;
     const tx = c.x + Math.cos(a) * (r + 2.2), tz = c.z + Math.sin(a) * (r + 2.2), ty = r * .9 + 1.3 + Math.sin(now / 280) * .3;
     const k = Math.min(1, dt * 6), px = petObj.x, pz = petObj.z;
     petObj.x += (tx - petObj.x) * k; petObj.z += (tz - petObj.z) * k; petObj.y += (ty - petObj.y) * k;
@@ -5251,7 +5491,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (zoneLine.visible) { zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
     for (const c of cells) {
-      const r = radius(c.mass), v = c.vis;
+      const r = cellR(c), v = c.vis;
       v.jig *= 0.93;
       const lk = v.look;
       if (lk) {
@@ -5268,7 +5508,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
       if (c.owner.bossType === 'chameleon') {
         // invisible until you are close: fades in over the last 20 units
-        let dmin = Infinity; for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - radius(pc.mass) - r);
+        let dmin = Infinity; for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
         const al = !player.cells.length ? .9 : Math.max(.05, Math.min(.9, (30 - dmin) / 20));
         c.vis.mesh.material.opacity = al; c.vis.glow.material.opacity = al * .9; c.vis.crown.visible = al > .5; c.vis.ring.visible = al > .3; c.seen = al > .3;
       }
@@ -5325,7 +5565,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     // the crown in «Захват короны» floats over the holder's biggest part
     crownMesh.visible = running && mode === 'crown' && !!crownHolder && crownHolder.cells.length > 0;
     if (crownMesh.visible) {
-      const top = crownHolder.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = radius(top.mass);
+      const top = crownHolder.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(top);
       crownMesh.position.set(top.x, r * 2 + 0.6 + Math.sin(now / 300) * 0.3, top.z);
       crownMesh.scale.setScalar(Math.max(2, r * 1.1)); crownMesh.rotation.y = now / 800;
     }
@@ -5392,7 +5632,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '36';
+const APP_VER = '37';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

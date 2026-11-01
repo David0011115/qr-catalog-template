@@ -6412,7 +6412,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '58';
+const APP_VER = '59';
+// shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
+const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;
@@ -6424,7 +6426,7 @@ if ('serviceWorker' in navigator) {
   }).catch(() => {}));
 }
 // version line at the bottom of Settings, so you can see which build is running
-{ const card = document.getElementById('settingsCard'); if (card) { const p = document.createElement('p'); p.id = 'appVer'; p.textContent = 'Версия приложения: ' + APP_VER; card.appendChild(p); } }
+{ const card = document.getElementById('settingsCard'); if (card) { const p = document.createElement('p'); p.id = 'appVer'; p.textContent = 'Версия приложения: ' + APP_LABEL; card.appendChild(p); } }
 (function () {
   const btn = document.getElementById('installBtn'), hint = document.getElementById('iosHint');
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;

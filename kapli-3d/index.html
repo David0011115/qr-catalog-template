@@ -2859,8 +2859,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const f = w.life / w.max; w.m.scale.setScalar(w.r0 + (w.r1 - w.r0) * (1 - f)); w.m.material.opacity = f;
     }
   }
+  const emitP = (...a) => emit(...a), emitIconsP = (...a) => emitIcons(...a), waveP = (...a) => wave(...a);
+  // eat effects are drawn bigger and brighter: more particles, wider spread, longer life, bigger icons and waves
+  const EAT_FX_SCALE = { count: 1.8, spread: 1.45, life: 1.35, icons: 1.6, iconSize: 1.4, wave: 1.45 };
   function eatFx(x, z, r, color, id = save.fx.eat) {
-    const y = r * 0.9;
+    const K = EAT_FX_SCALE;
+    const emit = (a, b, c, col, n, sp, life) => emitP(a, b, c, col, Math.round(n * K.count), sp * K.spread, life * K.life);
+    const emitIcons = (a, b, c, ic, col, n, size) => emitIconsP(a, b, c, ic, col, Math.round(n * K.icons), size * K.iconSize);
+    const wave = (a, b, col, r0, r1, life) => waveP(a, b, col, r0, r1 * K.wave, life * K.life);
+    r = Math.max(r, 1);
+    const big = player.cells.length ? Math.max(...player.cells.map(c => cellR(c))) : r;
+    const y = Math.max(r * 0.9, big * 1.15 + 1.2);   // above the eater, so the burst is not hidden inside the big drop
     switch (id) {
       case 'heartEat': emitIcons(x, y, z, 'heart', '#ff4f9a', 9, 1.4 + r * 0.25); break;
       case 'shockEat': wave(x, z, color, r, r * 4 + 4, .6); break;
@@ -6441,7 +6450,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '60';
+const APP_VER = '61';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

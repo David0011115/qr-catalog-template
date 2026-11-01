@@ -4750,34 +4750,27 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
-    { id: 164, ver: '1.6.4', date: '1 ноября', title: 'Удобнее список обновлений', patch: true, items: [
-      'Каждое обновление теперь в своей шторке: свежее открыто сразу, прошлые — по нажатию.',
-    ] },
-    { id: 163, ver: '1.6.3', date: '1 ноября', title: 'Ребаланс прокачки', refund: true,
+    { id: 165, ver: '1.6.5', date: '1 ноября', title: 'Ребаланс прокачки и лента обновлений', refund: true, gift: 500, giftBefore: 162,
       lead: 'Мы перебалансировали улучшения и способности, чтобы прогресс был равномернее: сила растёт постепенно, без резких скачков, а новички не отстают от прокачанных игроков в разы.', items: [
       'Улучшения дают меньше: «Жадность» до +30% монет, «Пищеварение» до +25% массы, «Обтекаемость» до +20% скорости, «Защита» −4% потерь и +1,5% к защите за уровень.',
-      'Рывок, слияние и «Удачливость» тоже слабее за уровень: −4% перезарядки и слияния, +6% к длительности бонусов.',
-      'Уровни способностей: −4% перезарядки и +6,5% к силе за уровень (было −6% и +10%).',
-      'Улучшения и уровни способностей стали в 1,5 раза дороже.',
-      'Купленные уровни остаются у тебя, а 35% потраченных на них монет возвращены.',
-    ] },
-    { id: 162, ver: '1.6.2', date: '1 ноября', title: 'Честнее улучшения', gift: 500, items: [
-      '«Жадность»: +5% монет за уровень вместо +8% (на максимуме +50%).',
-      '«Пищеварение»: +4% массы за уровень вместо +6% (на максимуме +40%).',
-      '«Защита»: −6% потерь массы и +2% к защите за уровень (было −10% и +3%) — крупная капля больше не почти неуязвима.',
-      '«Второй шанс»: после спасения у тебя 40% массы вместо половины, улучшение стало дороже.',
-      '«Магнит» сильнее: +0,8 к радиусу за уровень вместо +0,5.',
-      '«Крупный старт» сильнее: +4 к стартовой массе за уровень вместо +3.',
-      'Новая кнопка «Обновления» в меню — здесь будут все изменения игры.',
+      '«Реактивный рывок», «Лёгкий рывок», «Быстрое слияние» и «Удачливость» тоже слабее за уровень.',
+      '«Второй шанс» возвращает в игру с 40% массы. «Магнит» (+0,8 к радиусу) и «Крупный старт» (+4 массы) — сильнее за уровень.',
+      'Уровни способностей: −4% перезарядки и +6,5% к силе за уровень.',
+      'Улучшения и уровни способностей стали в 1,5 раза дороже. Купленные уровни остаются, а 35% потраченных на них монет возвращены.',
+      'В меню кнопка «Обновления»: все изменения игры по шторкам, свежее — сверху.',
     ] },
   ];
   function newsHtml(list) {
-    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.patch ? '<i class="news-patch">патч</i>' : ''}${n.title}<small>${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}</details>`).join('');
+    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.patch ? '<i class="news-patch">патч</i>' : ''}${n.title}<small>${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${newsGift(n) ? `<p class="news-gift">Подарок за обновление: +${newsGift(n)} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}</details>`).join('');
   }
+  // gift: given once; giftBefore — only to players who had not seen that older announcement yet
+  const newsGift = n => ((save.newsGot || {})[n.id]) || (n.gift && n.id > (save.newsSeen || 0) && (!n.giftBefore || (save.newsSeen || 0) < n.giftBefore) ? n.gift : 0);
+  // 1.6.2–1.6.4 were merged into one entry: whoever already read them does not get it again
+  if (save.newsSeen >= 162 && save.newsSeen < 165) { save.newsSeen = 165; persist(); }
   function newsUnseen() { return NEWS.filter(n => n.id > (save.newsSeen || 0)); }
   function newsRefresh() { $('newsDot').hidden = !newsUnseen().length; }
   function newsMarkSeen() {
-    NEWS.forEach(n => { if (n.id > (save.newsSeen || 0) && n.gift && !n.giftGiven) save.coins += n.gift; });
+    NEWS.forEach(n => { const g = newsGift(n); if (g && !(save.newsGot || {})[n.id]) { save.coins += g; save.newsGot = { ...(save.newsGot || {}), [n.id]: g }; } });
     save.newsSeen = NEWS[0].id; persist(); newsRefresh(); if (typeof renderAll === 'function') renderAll();
   }
   function openNews(onlyNew) {
@@ -6522,7 +6515,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '64';
+const APP_VER = '65';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

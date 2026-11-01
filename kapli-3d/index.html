@@ -196,6 +196,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .pause-btn { position: fixed; z-index: 2; width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--fg);
   font-size: 1rem; letter-spacing: -.1em; cursor: pointer; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(6px); }
 .pause-btn:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
+
 .combo { position: fixed; z-index: 2; left: 50%; top: 26%; transform: translateX(-50%); pointer-events: none; font-family: var(--display); font-size: 2rem; color: var(--gold);
   text-shadow: 0 0 12px rgba(255, 210, 63, .8), 0 2px 0 #3a1580; opacity: 0; white-space: nowrap; text-align: center; }
 .combo small { display: block; font-family: var(--body); font-size: .9rem; color: var(--fg); text-shadow: 0 0 8px #000; }
@@ -658,6 +659,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .toast { font-weight: 400; text-shadow: 0 0 12px var(--neon-m), 0 0 30px var(--neon-m); }
 .joy { border-color: var(--neon-c); box-shadow: 0 0 20px rgba(34, 230, 255, .25); }
 .knob { box-shadow: 0 0 18px var(--neon-m); }
+/* landscape phones: ability buttons move to the bottom-right corner next to pause, so they never cover the chips on the left */
+@media (orientation: landscape) and (max-height: 560px) {
+  #actions.actions { left: auto; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 64px); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+  #actions .act { width: 70px; height: 70px; } #actions .act b { font-size: .72rem; } #actions .act small { font-size: .64rem; }
+}
 </style>
 </head>
 <body>
@@ -1032,11 +1038,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details><summary>Архив сезонов</summary>
       <ul class="info-list">
         <li>Магазин → «Архив», с 20-го уровня. Здесь можно получить награды прошедших сезонов, которые ты не успел взять в лиге.</li>
-        <li>Витрина недели — 4 предмета, обновляется по понедельникам. Сундук архива даёт случайный предмет из всех пропущенных, без повторов. Его цена — 80% от средней стоимости выпадения, но не больше 20 000 ◆.</li>
-        <li>Когда остаётся 4 предмета или меньше, все они на витрине, а сундук пропадает.</li>
-        <li>Шанс в сундуке зависит от редкости (по цене): обычный (до 15 000 ◆) — вес 40, редкий (20–25 тыс.) — 25, эпический (30 тыс.) — 15, легендарный (35–40 тыс.) — 8. Точные проценты по твоему архиву — под сундуком.</li>
-        <li>Цены: питомец «Платины» 15 000, скин сезона 25 000, питомец «Неона» 30 000, эффект сезона 35 000 ◆; праздничные предметы 10 000–40 000 ◆.</li>
-        <li>Купленное в архиве помечено «из архива». Значки, рамки и титулы лиги, трофеи рейда и легендарные награды в архив не попадают.</li>
+        <li>Витрина недели — 6 предметов, обновляется по понедельникам. Когда пропущенных наград осталось 6 или меньше, на витрине все.</li>
+        <li>У каждого предмета своя редкость, и цена зависит от неё: обычный — 12 000 ◆ (праздничные предметы за Бронзу и Серебро), редкий — 18 000 ◆ (питомцы «Платины», праздничные за Золото и Платину), эпический — 26 000 ◆ (скины «Алмаза», питомцы «Неона»), легендарный — 36 000 ◆ (эффекты «Неона», главный праздничный скин).</li>
+        <li>Сундука архива больше нет — каждую награду покупаешь сам, когда она на витрине.</li>
       </ul>
     </details>
     <button class="btn ghost" data-grpback>← Все разделы</button></div>
@@ -6391,7 +6395,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '55';
+const APP_VER = '56';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

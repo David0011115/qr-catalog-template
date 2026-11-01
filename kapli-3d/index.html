@@ -279,6 +279,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 #graph { width: 100%; height: 120px; display: block; }
 .rewards { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; font-weight: 600; }
 .rewards .xp { color: var(--food); }
+.rewards .hint { flex-basis: 100%; text-align: center; font-weight: 400; font-size: .8rem; color: var(--muted); }
 .coin-btn { background: none; border: 1px dashed rgba(255, 210, 63, .5); border-radius: 8px; padding: 2px 8px; font: inherit; color: var(--gold); cursor: pointer; }
 .coin-btn small { font-size: .7em; opacity: .8; }
 .coin-break li { font-size: .8rem; padding: 5px 10px; }
@@ -318,6 +319,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .buy.sel { background: var(--prey); }
 .pane { display: flex; flex-direction: column; gap: 14px; }
 .info-card { gap: 10px; }
+.res-drawer { background: var(--row); border-radius: 14px; padding: 0 12px; }
+.res-drawer > summary { cursor: pointer; list-style: none; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: 600; }
+.res-drawer > summary::-webkit-details-marker { display: none; }
+.res-drawer > summary::after { content: "▾"; color: var(--muted); transition: transform .2s; }
+.res-drawer[open] > summary::after { transform: rotate(180deg); }
+.res-drawer > summary:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; border-radius: 8px; }
+.res-drawer[open] { display: grid; gap: 12px; padding-bottom: 12px; }
+.res-drawer small.cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
+@media (prefers-reduced-motion: reduce) { .res-drawer > summary::after { transition: none; } }
 .lg-last { display: grid; gap: 2px; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(61, 255, 162, .08); border: 1px solid rgba(61, 255, 162, .3); }
 .lg-last.neg { background: rgba(255, 61, 110, .08); border-color: rgba(255, 61, 110, .35); }
 .lg-last b { font-size: .88rem; }
@@ -615,13 +625,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
   <div class="card" id="resultCard" hidden>
     <h1 id="resTitle">Раунд окончен</h1>
-    <div class="res-grid" id="resGrid"></div>
-    <h2 class="section-title">Рост массы</h2>
-    <canvas id="graph" aria-label="График массы за раунд"></canvas>
     <div class="rewards" id="rewards"></div>
     <ul class="quests coin-break" id="coinBreak" hidden></ul>
-    <ul class="quests" id="resQuests"></ul>
     <p class="unlock" id="unlock" hidden></p>
+    <details class="res-drawer" id="resDrawer">
+      <summary><span id="resDrawerTitle">Подробности боя</span></summary>
+      <div class="res-grid" id="resGrid"></div>
+      <h2 class="section-title">Рост массы</h2>
+      <canvas id="graph" aria-label="График массы за раунд"></canvas>
+      <ul class="quests" id="resQuests"></ul>
+    </details>
     <div class="btns">
       <button class="btn" id="againBtn">Ещё раунд</button>
       <button class="btn ghost" id="shopBtn2">Магазин <span class="coin" id="resCoins">0 ◆</span></button>
@@ -3124,6 +3137,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       $('unlock').textContent = `Уровень ${lvAfter}!` + (opened.length ? ` Открыто: ${opened.join(', ')}.` : '');
       $('unlock').hidden = false;
     } else $('unlock').hidden = true;
+    { const n = $('resQuests').querySelectorAll('li.done').length;
+      $('resDrawerTitle').innerHTML = `Подробности боя <small class="cnt">статистика, график${n ? `, наград: ${n}` : ''}</small>`; }
+    $('resDrawer').open = false;
     renderAll();
     Sound.play(stats.win ? 'win' : 'lose'); if (lvAfter > lvBefore) setTimeout(() => Sound.play('level'), 600);
     showCard('resultCard');
@@ -3778,6 +3794,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('backBtn').addEventListener('click', closeShop);
   $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
   $('againBtn').addEventListener('click', startRound);
+  $('resDrawer').addEventListener('toggle', () => { if ($('resDrawer').open) requestAnimationFrame(drawGraph); });
   $('rewards').addEventListener('click', e => { const b = e.target.closest('#coinBtn'); if (!b) return; const open = $('coinBreak').hidden; $('coinBreak').hidden = !open; b.setAttribute('aria-expanded', open); });
   $('menuBtn').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('startBtn').focus(); });
   // ---- information: the dynamic lists are built from the game data so they stay correct ----
@@ -5072,7 +5089,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '28';
+const APP_VER = '29';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

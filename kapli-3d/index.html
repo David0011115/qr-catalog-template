@@ -428,6 +428,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .menu-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .menu-btns #startBtn, .menu-btns #installBtn, .menu-btns .hint, .menu-btns .league-btn { grid-column: 1 / -1; }
 .league-btn b { font-weight: 400; font-family: var(--display); }
+.mode-btn { width: 100%; text-align: left; display: block; } .mode-btn b { font-family: var(--display); font-weight: 400; } .mode-btn small { color: var(--muted); font-weight: 400; }
 .chaos-btn { border-color: #ff4fd8 !important; box-shadow: 0 0 10px rgba(255, 79, 216, .35), 0 0 6px rgba(34, 230, 255, .25) inset; }
 .chaos-xa { display: grid; gap: 8px; }
 .pet-ico { box-shadow: 0 0 10px rgba(255,255,255,.25); }
@@ -667,8 +668,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <div class="lvl-top"><b id="lvlName">Уровень 1</b><span id="lvlXp">0 / 100 опыта</span></div>
       <div class="track"><div class="fill" id="lvlFill"></div></div>
     </div>
-    <h2 class="section-title">Режим</h2>
-    <div class="modes" id="modes" role="radiogroup" aria-label="Режим игры"></div>
+    <button class="btn ghost mode-btn" id="modeBtn">Режим</button>
     <h2 class="section-title">Задания</h2>
     <ul class="quests" id="menuQuests"></ul>
     <div class="btns menu-btns">
@@ -739,6 +739,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <h2 class="section-title">Сундук лиги: шансы</h2>
     <table class="lg-odds" id="lgOdds"></table>
     <button class="btn ghost" id="chestBack">Назад</button>
+  </div>
+
+  <div class="card" id="modesCard" hidden>
+    <h1>Режимы</h1>
+    <p class="info-lead">Выбери режим — он запустится кнопкой «Играть». Рейтинговые бои — в «Лиге» и «Хаос-лиге».</p>
+    <div class="modes" id="modes" role="radiogroup" aria-label="Режим игры"></div>
+    <button class="btn ghost" id="modesBack">Готово</button>
   </div>
 
   <div class="card" id="chaosCard" hidden>
@@ -883,7 +890,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     </details>
     <details><summary>Боссы</summary>
       <dl class="keys" id="infoBosses"></dl>
-      <p class="info-note">Боссы носят корону. Награда — за последнюю съеденную часть босса. Боссов нет в «Командном бое», «Гонке массы», «Королевской битве», охоте на Колосса и рейде.</p>
+      <p class="info-note">Боссы носят корону. Награда — за последнюю съеденную часть босса. Боссов нет в «Командном бое», «Гонке массы», «Королевской битве» и рейде.</p>
     </details>
     <details><summary>Режимы</summary>
       <dl class="keys" id="infoModes"></dl>
@@ -917,7 +924,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     </details>
     <details><summary>Мастерские достижения</summary>
       <ul class="info-list">
-        <li>13 испытаний на умение, а не на время: всё нужно сделать за один раунд. Например, победить Колосса за 60 секунд или дожить до 10-й волны без деления.</li>
+        <li>13 испытаний на умение, а не на время: всё нужно сделать за один раунд. Например, набрать массу 1000 быстрее чем за 60 секунд или дожить до 10-й волны без деления.</li>
         <li>Каждое даёт свой титул и 1 000–2 000 монет. За все — рамка «Мастер» и скин «Виртуоз».</li>
         <li>У каждого есть подсказка и твоя лучшая попытка. Смотри «Достижения» → «Мастерские».</li>
       </ul>
@@ -1095,9 +1102,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const TIMED_LEN = 180, PLACE_BONUS = [40, 25, 15];
   const RACE_GOAL = 4000, TEAM_LEN = 240, DAILY_GOAL = 3000, ALLY_COLOR = '#6fa8ff';
   const LOWER_BETTER = { race: true, giant: true };
+  // v46: «Только деление» and «Охота на Колосса» were removed: «Только деление» lives on as a daily modifier, the Colossus as the weekly raid boss
+  const REMOVED_MODES = ['split', 'giant'];
+  const MODE_IDS = Object.keys(MODES).filter(m => !REMOVED_MODES.includes(m));
   const DAILY = [
     { id: 'fog',      name: 'Туман',        desc: 'Видно только ближнее окружение' },
     { id: 'dashonly', name: 'Только рывок', desc: 'Деления нет, рывок раз в секунду' },
+    { id: 'splitonly', name: 'Только деление', desc: 'Рывка нет, деление раз в 3 секунды, до 10 частей' },
     { id: 'bosses',   name: 'Нашествие',    desc: 'Боссы каждые 20 секунд, до трёх сразу' },
     { id: 'feast',    name: 'Пир',          desc: 'Крошки дают вдвое больше массы' },
     { id: 'speedy',   name: 'Турбо',        desc: 'Все капли на 30% быстрее' },
@@ -1152,7 +1163,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'crownWin',  name: 'Венценосец',        desc: 'Победи в «Захвате короны»',             coins: 60,  test: (T, S) => S.mode === 'crown' && S.win },
     { id: 'raceWin',   name: 'Спринтер',          desc: 'Победи в «Гонке массы»',                coins: 60,  test: (T, S) => S.mode === 'race' && S.win },
     { id: 'teamWin',   name: 'Командный игрок',   desc: 'Выиграй «Командный бой»',               coins: 50,  test: (T, S) => S.mode === 'team' && S.win },
-    { id: 'giantWin',  name: 'Победитель Колосса', desc: 'Съешь все части Колосса',              coins: 100, test: (T, S) => S.mode === 'giant' && S.win },
+    { id: 'giantWin',  name: 'Победитель рейда', desc: 'Победи босса недели в «Босс-рейде»',      coins: 100, test: (T, S) => (save.raidWins || 0) >= 1 ||  S.mode === 'giant' && S.win },
     { id: 'ss1',  name: 'Первый значок',     desc: 'Заверши сезон и получи значок',          coins: 50,   test: () => save.seasonLog.length >= 1 },
     { id: 'ss5',  name: 'Коллекция значков', desc: 'Собери 5 значков сезонов',               coins: 150,  test: () => save.seasonLog.length >= 5 },
     { id: 'ss10', name: 'Ветеран лиги',      desc: 'Собери 10 значков сезонов',              coins: 300,  test: () => save.seasonLog.length >= 10 },
@@ -1696,8 +1707,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const SKILL = [
     { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, обходи шипы.', coins: 1500, title: ['Железный', '#c0c8e0'],
       test: S => S.mode === 'hardcore' && !S.splits && S.maxMass >= 5000, best: S => S.mode === 'hardcore' && !S.splits ? Math.round(S.maxMass) : null, unit: 'массы' },
-    { id: 'sk_giant60', name: 'Молниеносный', desc: 'Победи Колосса быстрее чем за 60 секунд', hint: 'Сразу плыви к Колоссу: каждая твоя атака отщепляет часть, ешь их не останавливаясь.', coins: 2000, title: ['Молния', '#ffd23f'],
-      test: S => S.mode === 'giant' && S.win && S.time <= 60, best: S => S.mode === 'giant' && S.win ? Math.floor(S.time) : null, lower: true, unit: 'с' },
+    { id: 'sk_giant60', name: 'Молниеносный', desc: 'Набери массу 1000 быстрее чем за 60 секунд', hint: 'Не отвлекайся на боссов: собирай крошки и ешь мелкие капли подряд, бонус «Двойная еда» очень помогает.', coins: 2000, title: ['Молния', '#ffd23f'],
+      test: S => S.t1000 !== undefined && S.t1000 <= 60, best: S => S.t1000 !== undefined ? Math.floor(S.t1000) : null, lower: true, unit: 'с' },
     { id: 'sk_pacifist', name: 'Пацифист', desc: 'Набери 3 000 массы, не съев ни одной капли — только крошки', hint: 'Подойдут бонусы «Двойная еда» и «Магнит», а также событие «Метеоритный дождь».', coins: 1000, title: ['Пацифист', '#3dffa2'],
       test: S => !S.eatenCells && S.maxMass >= 3000, best: S => !S.eatenCells ? Math.round(S.maxMass) : null, unit: 'массы' },
     { id: 'sk_nobonus', name: 'Чистая победа', desc: 'Займи 1-е место в режиме «На время», не подобрав ни одного бонуса', hint: 'Обходи светящиеся бонусы стороной — даже случайно.', coins: 1000, title: ['Честный игрок', '#9fd8ff'],
@@ -2090,7 +2101,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   fillQuests();
   try { localStorage.removeItem('blobs3d-save'); } catch (e) {}
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
-  save.mode = MODES[save.mode] ? save.mode : 'classic';
+  save.mode = MODES[save.mode] && !REMOVED_MODES.includes(save.mode) ? save.mode : 'classic';
   // ranked (league) battles: only these modes, league points only here, purchased upgrades switched off
   // each league season is played in one mode; they rotate season by season
   const LEAGUE_ROT = ['timed', 'crown', 'race', 'hardcore', 'royale'];
@@ -2224,7 +2235,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ch_surv8',     name: 'Неуловимый',         desc: 'Продержись 8 минут в «Выживании»',         goal: 480,  prog: () => save.bests.survival || 0, time: true, reward: ['fx', 'rainbowTrail'] },
     { id: 'ch_minions60', name: 'Повелитель роя',     desc: 'Съешь 60 прислужников Матки',              goal: 60,   prog: () => save.totals.minions,   reward: ['fx', 'galaxyAura'] },
     { id: 'ch_timed5',    name: 'Король турниров',    desc: 'Займи 1 место в «На время» 5 раз',          goal: 5,    prog: () => save.totals.timedWins, reward: ['skin', 'phoenix'] },
-    { id: 'ch_giant3',    name: 'Колоссобой',         desc: 'Победи Колосса быстрее чем за 3 минуты',   goal: 1,    prog: () => save.bests.giant > 0 && save.bests.giant <= 180 ? 1 : 0, reward: ['fx', 'starfall'] },
+    { id: 'ch_giant3',    name: 'Охотник за головами', desc: 'Съешь 3 боссов за один раунд',            goal: 3,    prog: () => Math.max(save.totals.bestBosses || 0, save.bests.giant > 0 && save.bests.giant <= 180 ? 3 : 0), reward: ['fx', 'starfall'] },
     { id: 'ch_rounds50',  name: 'Марафонец',          desc: 'Сыграй 50 раундов',                        goal: 50,   prog: () => save.totals.rounds,    reward: ['fx', 'electricAura'] },
     { id: 'ch_split300',  name: 'Мастер деления',     desc: 'Разделись 300 раз за всё время',           goal: 300,  prog: () => save.totals.splits,    reward: ['skin', 'hologram'] },
     { id: 'ch_hard1500',  name: 'Тёмная сторона',     desc: 'Набери массу 5000 в «Хардкоре»',           goal: 5000, prog: () => save.bests.hardcore || 0, reward: ['fx', 'voidTrail'] },
@@ -2236,8 +2247,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ch_crown5',    name: 'Венценосный',        desc: 'Победи в «Захвате короны» 5 раз',          goal: 5,    prog: () => save.totals.crownWins, reward: ['skin', 'prism'] },
     { id: 'ch_wave15',    name: 'Стена',              desc: 'Дойди до 15-й волны в «Выживании»',        goal: 15,   prog: () => save.totals.bestWave,  reward: ['fx', 'flameAura'] },
     { id: 'ch_daily7',    name: 'Постоянство',        desc: 'Пройди 7 испытаний дня',                   goal: 7,    prog: () => save.totals.dailies,   reward: ['fx', 'cometAura'] },
-    { id: 'ch_giant5',    name: 'Гроза гигантов',     desc: 'Победи Колосса 5 раз',                     goal: 5,    prog: () => save.totals.giantWins, reward: ['fx', 'vortexEat'] },
-    { id: 'ch_split1000', name: 'Рой разума',         desc: 'Набери массу 4000 в «Только деление»',     goal: 4000, prog: () => save.bests.split || 0, reward: ['skin', 'matrix'] },
+    { id: 'ch_giant5',    name: 'Гроза гигантов',     desc: 'Победи босса недели в «Босс-рейде» 2 раза', goal: 2,    prog: () => Math.max(save.raidWins || 0, Math.floor((save.totals.giantWins || 0) / 2.5)), reward: ['fx', 'vortexEat'] },
+    { id: 'ch_split1000', name: 'Рой разума',         desc: 'Разделись на 10 частей за один раунд',      goal: 10,   prog: () => Math.max(save.totals.bestParts || 0, (save.bests.split || 0) >= 4000 ? 10 : 0), reward: ['skin', 'matrix'] },
     { id: 'ch_crumbs20k', name: 'Ненасытный',         desc: 'Собери 20 000 крошек за всё время',        goal: 20000, prog: () => save.totals.crumbs,   reward: ['skin', 'magma'] },
     { id: 'ch_time2h',    name: 'Ледяное спокойствие', desc: 'Проведи на арене 2 часа суммарно',        goal: 7200, prog: () => save.totals.time, time: true, reward: ['skin', 'glacier'] },
     { id: 'ch_level15',   name: 'Ветеран',            desc: 'Достигни 25-го уровня',                    goal: 25,   prog: () => playerLevel(),         reward: ['skin', 'pulsar'] },
@@ -3194,9 +3205,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const canEat = (a, b) => !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
-  const playerMaxParts = () => mode === 'split' ? 10 : Math.min(10, 4 + U.splitmax);
-  const playerMergeTime = () => (mode === 'split' ? 8 : 14) * (1 - 0.06 * U.merge);
-  const playerSplitCd = () => mode === 'split' ? 3 : SPLIT_CD;
+  const splitRules = () => mode === 'split' || dailyIs('splitonly');
+  const playerMaxParts = () => splitRules() ? 10 : Math.min(10, 4 + U.splitmax);
+  const playerMergeTime = () => (splitRules() ? 8 : 14) * (1 - 0.06 * U.merge);
+  const playerSplitCd = () => splitRules() ? 3 : SPLIT_CD;
   const fmtBest = (m, v) => {
     if (!v) return LOWER_BETTER[m] ? '–' : m === 'team' ? '0 побед' : m === 'survival' || m === 'crown' ? '0:00' : '0';
     if (m === 'team') return `${v} побед`;
@@ -3361,7 +3373,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const abOn = (id, o = player) => !!(o && o.abT && o.abT[id] > 0);
   const abUsed = id => { if (stats && stats.abUsed) stats.abUsed[id] = 1; };
   // a slot is unusable in modes that forbid that action
-  const slotBlocked = id => (id === 'dash' && mode === 'split') || (id === 'split' && dailyIs('dashonly'));
+  const slotBlocked = id => (id === 'dash' && splitRules()) || (id === 'split' && dailyIs('dashonly'));
   // the player's look for an ability: only where abilities work (normal modes and the Chaos League), never in the main league
   function lookFor(id) {
     if (stats && stats.ranked && !stats.chaos) return null;
@@ -3666,6 +3678,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (stats.win && mode === 'crown') t.crownWins++;
     if (stats.win && mode === 'race') t.raceWins++;
     if (stats.win && mode === 'giant') t.giantWins++;
+    t.bestBosses = Math.max(t.bestBosses || 0, stats.bosses); t.bestParts = Math.max(t.bestParts || 0, stats.maxParts || 1);
     t.starKills = (t.starKills || 0) + (stats.starKills || 0); t.bestCombo = Math.max(t.bestCombo || 0, stats.bestCombo || 0);
     t.kills += stats.kills; t.bosses += stats.bosses; t.minions += stats.minions; t.crumbs += stats.crumbs; t.ejects += stats.ejects; t.rounds++;
     save.bossTypes = [...new Set([...save.bossTypes, ...stats.bossTypes])];
@@ -3895,7 +3908,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   ABIL_CFG.slotBtn.forEach((bid, i) => $(bid).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSlot(i); }));
 
   function dash() {
-    if (mode === 'split' || !running || !player.cells.length || player.dashCd > 0 || paused) return;
+    if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
     player.dashT = 0.35 + 0.05 * U.light; player.dashCd = dashCdBase; stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     { const [x, z] = pCenterXZ(); abFlash('dash', x, z, null, 'dash'); }
     const cost = 0.03 * (1 - 0.12 * U.light);
@@ -4280,7 +4293,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     for (const c of player.cells) stats.maxPart = Math.max(stats.maxPart, c.mass);
     stats.maxParts = Math.max(stats.maxParts, player.cells.length);
     const tm = total(player);
-    if (player.cells.length) stats.maxMass = Math.max(stats.maxMass, tm);
+    if (player.cells.length) { stats.maxMass = Math.max(stats.maxMass, tm); if (stats.t1000 === undefined && tm >= 1000) stats.t1000 = stats.time; }
     historyT += dt;
     if (historyT >= 1) { historyT = 0; history.push(Math.round(tm)); }
   }
@@ -4433,7 +4446,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'infoCard', 'pauseCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'infoCard', 'pauseCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -4538,7 +4551,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('infoBonus').innerHTML = dl(Object.entries(BONUS).map(([k, b]) => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, `${BONUS_TXT[k] || ''}, ${b.dur} с`]));
     $('infoEvents').innerHTML = dl(EVENTS.map(e => [`<i class="dot" style="background:${e.color}"></i>${e.name}`, e.desc]));
     $('infoBosses').innerHTML = dl([...Object.values(BOSS_TYPES), BOSS_TYPES_EXTRA.colossus].map(b => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, `${b.about}. Награда: ${b.coins} ◆, ${b.xp} опыта`]));
-    $('infoModes').innerHTML = dl(Object.entries(MODES).map(([id, m]) => [m.name, m.desc + (id === leagueMode() ? ' <b>· сейчас режим лиги</b>' : '')]));
+    $('infoModes').innerHTML = dl(MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => [m.name, m.desc + (id === leagueMode() ? ' <b>· сейчас режим лиги</b>' : '')]));
     const BOT_TXT = { normal: 'ведёт себя по ситуации', coward: 'убегает, далеко замечает опасность, чаще обходит шипы', aggressive: 'гоняется за всеми, особенно за тобой, часто влетает в шипы', farmer: 'спокойно собирает крошки', hunter: 'охотится парой с напарником' };
     $('infoBots').innerHTML = dl(Object.entries(PERSONA).filter(([k]) => k !== 'boss').map(([k, pp]) => [pp.tag || 'обычный', BOT_TXT[k] || '']));
     $('infoLeagues').innerHTML = dl(LEAGUES.map(l => [`<i class="dot" style="background:${l.color}"></i>${l.name}`, `от ${l.pts} очков · ${l.coins} ◆ в конце сезона`]));
@@ -4554,17 +4567,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('menuQuests').addEventListener('click', e => { if (e.target.closest('#weekLi')) openView('goals', 'week'); });
   $('menuQuests').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'weekLi') { e.preventDefault(); openView('goals', 'week'); } });
   $('modes').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
     save.mode = b.dataset.mode; mode = save.mode; persist(); renderAll();
-    $('mode-' + save.mode).focus();
+    showCard('menuCard'); $('startBtn').focus();
   });
+  $('modeBtn').addEventListener('click', () => { renderAll(); showCard('modesCard'); const cur = $('mode-' + save.mode); (cur || $('modesBack')).focus(); });
+  $('modesBack').addEventListener('click', () => { showCard('menuCard'); $('modeBtn').focus(); });
 
   // ---- special badges (besides «Легенда Капель» and «Миллионер») ----
   const SPECIAL = [
     { id: 'collector', name: 'Великий коллекционер', label: 'КОЛЛЕКЦИИ', c: '#3dffa2', c2: '#0b6e3e', glyph: '▦',
       prog: () => { const L = COLLECTIONS.filter(c => !c.holiday); return [L.filter(c => save.colDone.includes(c.id)).length, L.length]; }, how: n => `Собери все коллекции, кроме праздничных: ${n[0]} из ${n[1]}.` },
     { id: 'modes', name: 'Мастер режимов', label: 'МАСТЕР', c: '#22e6ff', c2: '#0a3a6e', glyph: '12',
-      prog: () => { const ids = Object.keys(MODES); return [ids.filter(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length).length, ids.length]; }, how: n => `Мастерство «Легенда» во всех режимах: ${n[0]} из ${n[1]}.` },
+      prog: () => { const ids = MODE_IDS; return [ids.filter(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length).length, ids.length]; }, how: n => `Мастерство «Легенда» во всех режимах: ${n[0]} из ${n[1]}.` },
     { id: 'neonchamp', name: 'Чемпион Неона', label: 'НЕОН ×10', c: '#ff4fd8', c2: '#5a0a4a', glyph: 'N',
       prog: () => [Math.min(10, save.seasonLog.filter(x => x.league >= 5).length), 10], how: n => `Закончи 10 сезонов в высшей лиге («Неон» или праздничная): ${n[0]} из 10.` },
     { id: 'firstneon', name: 'Первый Неон', label: 'НЕОН', c: '#ff4fd8', c2: '#3a0a40', glyph: '1',
@@ -4603,7 +4618,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
-    $('modes').innerHTML = Object.entries(MODES).map(([id, m]) =>
+    $('modeBtn').innerHTML = `Режим: <b>${MODES[save.mode].name}</b> <small>· рекорд ${fmtBest(save.mode, save.bests[save.mode] || 0)} · все режимы ▸</small>`;
+    $('modes').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) =>
       `<button class="mode" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${save.mode === id}" ${id === 'royale' && !TEST_MODE ? 'disabled' : ''}><b>${m.name}</b><small>${m.desc}</small>` +
       (id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })() : id === 'royale' ? `<span class="lg-tag">${TEST_MODE ? 'Открыта для теста' : 'Только в лиге'} · сезон ${nextSeasonOf('royale')}</span>` : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '') +
       `<small>Рекорд: ${fmtBest(id, save.bests[id] || 0)}</small></button>`).join('');
@@ -5810,17 +5826,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     renderProfChests();
     $('psStats').textContent = `· раундов: ${T.rounds}`;
     $('psChests').textContent = `· открыто ${save.chestStats.total}`;
-    $('psMastery').textContent = `· с уровнем ${Object.keys(MODES).filter(id => masteryLv(save.mastery[id] || 0)).length} из ${Object.keys(MODES).length}`;
+    $('psMastery').textContent = `· с уровнем ${MODE_IDS.filter(id => masteryLv(save.mastery[id] || 0)).length} из ${MODE_IDS.length}`;
     $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0) + SPECIAL.filter(b => save.badges && save.badges[b.id]).length} из ${2 + SPECIAL.length}`;
     $('psSeasons').textContent = `· ${save.seasonLog.length + (seasonStarted ? 1 : 0)}`;
     $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +200 ◆, Серебро +400 ◆, Золото — рамка, Платина +800 ◆, Легенда — титул.</p>' +
-      Object.entries(MODES).map(([id, m]) => {
+      MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
         const pts = save.mastery[id] || 0, lv = masteryLv(pts), prev = lv ? MASTERY_LV[lv - 1].pts : 0, nx = MASTERY_LV[lv];
         const pct = nx ? (pts - prev) / (nx.pts - prev) * 100 : 100;
         return `<div class="m-row"><div class="m-top"><b>${m.name}</b><span class="m-lv l${lv}">${lv ? MASTERY_LV[lv - 1].name : 'нет'}</span></div>` +
           `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%"></div></div><small>${nx ? `${pts} / ${nx.pts} до «${nx.name}» · ${nx.coins ? `+${nx.coins} ◆` : nx.frame ? 'рамка' : 'титул'}` : `${pts} очков · максимум`}</small></div>`;
       }).join('');
-    $('profBests').innerHTML = Object.entries(MODES).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
+    $('profBests').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
     $('profLegend').innerHTML = `${legendBadgeSVG(!!save.legendBadge)}<div><b>${save.legendBadge ? 'Легенда Капель' : 'Ещё не получен'}</b><small>${save.legendBadge ? `Получен ${new Date(save.legendBadge).toLocaleDateString('ru-RU')}` : `Легендарных достижений: ${LEGEND_BASE.filter(L => save.legendDone.includes(L.id)).length} из ${LEGEND_BASE.length}. Смотри «Достижения» → «Легендарные».`}</small></div>`;
     { const got = save.badges && save.badges.millionaire;
       $('profSpecial').innerHTML = SPECIAL.map(b => { const got = save.badges && save.badges[b.id], n = b.prog();
@@ -6165,7 +6181,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '45';
+const APP_VER = '46';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

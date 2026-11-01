@@ -5952,7 +5952,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       `<small>Награда: ${chaosRewardText(i)}${CHAOS_CFG.tierLevel[i] ? ` · с ${CHAOS_CFG.tierLevel[i]} ур.` : ''}${i === ti ? ' · вы здесь' : ''}</small></li>`).join('');
     $('chaosXa').innerHTML = XA_ABIL.map(a => `<div class="ab-row ${save.abil.xa.includes(a.id) ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.abil.xa.includes(a.id) ? ' <span class="badge-ex">получена</span>' : ''}</b><small>${a.desc}. Перезарядка ${a.cd} с.</small></div></div>`).join('');
   }
-  $('chaosBtn').addEventListener('click', () => { renderChaos(); showCard('chaosCard'); $('chaosBack').focus(); });
+  $('chaosBtn').addEventListener('click', () => {
+    renderChaos(); showCard('chaosCard'); $('chaosBack').focus();
+    // first visit after it opens: a short intro to the Chaos League
+    if (chaosOpen() && !save.chaosIntro) { save.chaosIntro = true; persist();
+      tutModal('Добро пожаловать в Хаос-лигу!', `<ul>
+        <li><b>Случайные способности.</b> В начале боя каждый получает 3 случайные способности из 24, одна — рывок или деление. Набор не меняется до конца боя.</li>
+        <li><b>Равные условия.</b> Купленные способности, улучшения и облики здесь не действуют — у всех одинаково.</li>
+        <li><b>Свои ступени:</b> Искра → Помеха → Сбой → Шторм → Разлом (с ${CHAOS_CFG.tierLevel[4]} ур.) → Сингулярность (с ${CHAOS_CFG.tierLevel[5]} ур.). Сезон — 7 дней, взнос — со «Сбоя».</li>
+        <li><b>Награды:</b> монеты, скин, рамка и титул сезона, а за «Сингулярность» — эксклюзивные способности, которые потом можно ставить в билд.</li>
+        <li>Что делает каждая способность — кнопка «ⓘ Все 24 способности» в этом окне.</li></ul>`, [['tutOk', 'Понятно', 'btn']]); }
+  });
   $('chaosPlay').addEventListener('click', () => { if (!chaosOpen()) return; pendingRanked = true; pendingChaos = true; startRound(); });
   $('chaosBack').addEventListener('click', () => { showCard('menuCard'); $('chaosBtn').focus(); });
   $('chaosInfoBtn').addEventListener('click', () => openTabInfo('chaos'));
@@ -6395,7 +6405,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '56';
+const APP_VER = '57';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

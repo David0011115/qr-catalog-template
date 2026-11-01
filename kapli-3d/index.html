@@ -790,6 +790,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details class="res-drawer"><summary>Рекорды режимов</summary><dl class="keys" id="profBests"></dl></details>
     <details class="res-drawer" id="chartDrawer"><summary>Последние раунды · пик массы</summary><canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas></details>
     <details class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><div class="legend-head" id="profLegend"></div><div class="legend-head" id="profMillion"></div><div class="prof-special" id="profSpecial"></div></details>
+    <details class="res-drawer"><summary><span id="chaosBadgeTitle">Значки Хаос-лиги</span></summary><div class="badges" id="profChaosBadges"></div></details>
     <details class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
     <details class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
     </div>
@@ -944,6 +945,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>В начале боя каждый получает 3 случайные способности из 24: 12 обычных и 12 эксклюзивных. Одна всегда рывок или деление. Купленные способности и улучшения здесь не действуют — у всех равные условия.</li>
         <li>Свои 6 ступеней: Искра → Помеха → Сбой → Шторм → Разлом → Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос со «Сбоя»: 120 / 240 / 360 / 480. «Разлом» и «Сингулярность» — только с 46 уровня.</li>
         <li>Награды сезона: монеты; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда все получены — облик способности. Способность можно ставить в билд в обычных режимах.</li>
+        <li>За каждый сезон с очками — значок Хаос-лиги: у каждой ступени своя форма, цвет и знак. Все значки — в профиле.</li>
         <li>12 эксклюзивных способностей — коллекция «Хаос-арсенал».</li>
       </ul>
     </details>
@@ -2895,8 +2897,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const rv = radius(v.mass);
       for (const c of cells) {
         if (c.gone || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes; bosses get popped too
-        if (v.trap && (c.owner === player || (player.team && c.owner.team === player.team))) continue;   // a trap spares its owner and allies
-        if (c.owner === player && abOn('x_ghost')) continue;   // «Призрак» passes through spikes
+        if (v.trap && (c.owner === v.trap.owner || (v.trap.owner.team && c.owner.team === v.trap.owner.team))) continue;   // a trap spares its owner and allies
+        if (abOn('x_ghost', c.owner)) continue;   // «Фантом» passes through spikes
         if (Math.hypot(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
           popCell(c, v); removeVirus(v); if (!v.trap) virusRespawn.push(10); rebuildCells(); break;
         }
@@ -3145,16 +3147,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT;
       v *= (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
+      v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
     }
     else if (o.freezeT > 0) v *= .05;
     else if (o.slowT > 0) v *= ABIL_CFG.slowFactor * (o.kind === 'boss' ? bossInfo(o).speed : 1);
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;
-    else v *= o.star ? 1 : 0.92;
+    else v *= (o.star ? 1 : 0.92) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
     return v * (dailyIs('speedy') ? 1.3 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
   const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.armor : 1.25;
-  const canEat = (a, b) => !(a.owner.isPlayer && (abOn('shrink') || abOn('x_ghost'))) && !(b.owner.isPlayer && (effects.shield > 0 || abOn('x_ghost'))) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
+  const canEat = (a, b) => !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
   const playerMaxParts = () => mode === 'split' ? 10 : Math.min(10, 4 + U.splitmax);
@@ -3257,6 +3260,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const isChaos = pendingChaos && pendingRanked; pendingChaos = false;
     runBuild = isTut ? [...ABIL_CFG.oldBuild] : isChaos ? chaosDraw() : pendingRanked ? [...ABIL_CFG.rankedBuild] : [...save.build];
     abReset();
+    bots.forEach(o => { o.build = isTut ? [] : botBuild(isChaos, pendingRanked && !isChaos); o.dashT = 0; });
     U = pendingRanked || isTut ? ZERO_UP : save.up;
     [...player.cells].forEach(removeCell);
     bots.forEach(o => [...o.cells].forEach(removeCell));
@@ -3320,7 +3324,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const abLv = id => stats && stats.ranked ? 0 : save.abil.lv[id] || 0;
   const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id));
   const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);
-  const abOn = id => !!(player.abT && player.abT[id] > 0);
+  const abOn = (id, o = player) => !!(o && o.abT && o.abT[id] > 0);
   const abUsed = id => { if (stats && stats.abUsed) stats.abUsed[id] = 1; };
   // a slot is unusable in modes that forbid that action
   const slotBlocked = id => (id === 'dash' && mode === 'split') || (id === 'split' && dailyIs('dashonly'));
@@ -3338,10 +3342,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     Sound.play(lk.sfx);
   }
   function abReset() {
-    player.abCd = {}; player.abT = {}; player.rs = 1; player.phase2 = 0;
+    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.abCd = o.isPlayer || o.kind === 'bot' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
-    owners.forEach(o => o.freezeT = 0);
-    bots.concat(bossOwners).forEach(o => o.slowT = 0);
+    botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
     if (decoy) { scene.remove(decoy.mesh); decoy = null; }
   }
   function renderSlots() {
@@ -3360,123 +3363,167 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (id === 'dash') dash(); else if (id === 'split') split(); else if (id === 'eject') eject(); else castAbility(id);
   }
   function pCenterXZ() { const m = total(player) || 1; return player.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); }
-  function castAbility(id) {
-    if (!player.cells.length || (player.abCd[id] || 0) > 0) return;
-    const a = abilById(id), pw = abPow(id), [px, pz] = pCenterXZ();
-    const near = (o, rad) => o.cells.some(c => player.cells.some(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rad + cellR(pc) + cellR(c)));
-    const foes = () => owners.filter(o => !o.isPlayer && o.cells.length && !(player.team && o.team === player.team));
-    if (id === 'shield') effects.shield = Math.max(effects.shield, a.dur * pw);
-    else if (id === 'pulse') effects.magnet = Math.max(effects.magnet, a.dur * pw);
-    else if (id === 'blink') {
-      const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y), d = a.dist * pw;
-      for (const c of player.cells) { emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); }
-    } else if (id === 'slow') { for (const o of foes()) if (near(o, a.radius * pw)) o.slowT = a.dur * pw; emit(px, 2, pz, a.color, 60, a.radius * pw, .9); }
+  // ===== abilities engine: the same code for the player and for bots (o = caster) =====
+  const mainOf = o => o.cells.reduce((x, y) => x.mass >= y.mass ? x : y);
+  const centerOf = o => { const m = total(o) || 1; return o.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); };
+  const foesOf = o => owners.filter(x => x !== o && x.cells.length && !(o.team && x.team === o.team));
+  const nearOf = (o, x, rad) => x.cells.some(c => o.cells.some(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rad + cellR(pc) + cellR(c)));
+  let botDecoys = [];
+  function makeDecoy(o, a, ttl) {
+    const main = mainOf(o), r = cellR(main), col = o === player ? skin().color : (o.cells[0].vis.mesh.material.color ? '#' + o.cells[0].vis.mesh.material.color.getHexString() : a.color);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .5, transparent: true, opacity: .55 }));
+    mesh.scale.setScalar(r); mesh.add(glowSprite(col, 3, .5)); scene.add(mesh); mesh.position.set(main.x, r, main.z);
+    return { src: o, x: main.x, z: main.z, hx: main.hx, hz: main.hz, r, ttl, gone: false, mesh, owner: { decoy: true } };
+  }
+  function castAbility(id, o = player) {
+    if (!o.cells.length || !o.abCd || (o.abCd[id] || 0) > 0) return false;
+    const me = o === player, a = abilById(id), pw = me ? abPow(id) : 1, [px, pz] = centerOf(o);
+    if (id === 'shield') { if (me) effects.shield = Math.max(effects.shield, a.dur * pw); else o.abT.shield = a.dur; }
+    else if (id === 'pulse') { if (me) effects.magnet = Math.max(effects.magnet, a.dur * pw); else o.abT.pulse = a.dur; }
+    else if (id === 'blink') blinkBy(o, a.dist * pw, a.color);
+    else if (id === 'slow') { for (const x of foesOf(o)) if (nearOf(o, x, a.radius * pw)) x.slowT = a.dur * pw; emit(px, 2, pz, a.color, 60, a.radius * pw, .9); }
     else if (id === 'push') {
       const rad = a.radius * pw;
-      for (const o of foes()) for (const c of o.cells) {
+      for (const x of foesOf(o)) for (const c of x.cells) {
         const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1, edge = d - cellR(c);
-        if (edge < rad + Math.sqrt(total(player)) * .4) { const f = a.force * pw * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; }
+        if (edge < rad + Math.sqrt(total(o)) * .4) { const f = a.force * pw * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; }
       }
       emit(px, 2, pz, a.color, 70, rad, .7);
-    } else if (id === 'shrink' || id === 'cloak') { player.abT[id] = a.dur * pw; if (id === 'cloak') owners.forEach(o => { if (o.target && o.target.owner === player) o.target = null; }); }
+    } else if (id === 'shrink' || id === 'cloak') { o.abT[id] = a.dur * pw; if (id === 'cloak') owners.forEach(x => { if (x.target && x.target.owner === o) x.target = null; }); }
     else if (id === 'decoy') {
-      if (decoy) scene.remove(decoy.mesh);
-      const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y), r = cellR(main);
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshStandardMaterial({ color: skin().color, emissive: skin().color, emissiveIntensity: .5, transparent: true, opacity: .55 }));
-      mesh.scale.setScalar(r); mesh.add(glowSprite(skin().color, 3, .5)); scene.add(mesh);
-      decoy = { x: main.x, z: main.z, hx: main.hx, hz: main.hz, r, ttl: a.dur * pw, gone: false, mesh, owner: { decoy: true } };
-      mesh.position.set(decoy.x, r, decoy.z);
-    } else if (a.xa) { if (!castXa(id, a, px, pz)) return; if (id === 'x_phase') { abUsed(id); return; } }
+      if (me) { if (decoy) scene.remove(decoy.mesh); decoy = makeDecoy(o, a, a.dur * pw); }
+      else { botDecoys.filter(d => d.src === o).forEach(d => { scene.remove(d.mesh); d.gone = true; }); botDecoys = botDecoys.filter(d => !d.gone); botDecoys.push(makeDecoy(o, a, a.dur)); }
+    } else if (a.xa) { if (!castXa(id, a, px, pz, o)) return false; if (id === 'x_phase') { if (me) abUsed(id); return true; } }
     else if (id === 'trap') {
-      const mine = viruses.filter(v => v.trap);
+      const mine = viruses.filter(v => v.trap && v.trap.owner === o);
       if (mine.length >= ABIL_CFG.maxTraps) removeVirus(mine[0]);
-      const v = { x: px, z: pz, vx: 0, vz: 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh(), trap: { ttl: a.dur } };
+      const v = { x: px, z: pz, vx: 0, vz: 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh(), trap: { ttl: a.dur, owner: o } };
       v.mesh.add(glowSprite(a.color, 4, .7)); viruses.push(v);
-    }
-    player.abCd[id] = abCdOf(id); abUsed(id);
-    abFlash(id, px, pz, a.color, 'bonus'); buzz(15);
+    } else return false;
+    o.abCd[id] = me ? abCdOf(id) : a.cd;
+    if (me) { abUsed(id); abFlash(id, px, pz, a.color, 'bonus'); buzz(15); }
+    else if (nearView(px, pz)) emit(px, 2, pz, a.color, 20, 6, .5);
+    return true;
   }
   // ---- Chaos League exclusives ----
-  let xfx = [];   // timed world effects: hole, meteor, anchor, twin
-  function blinkBy(d, color) {
-    const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y);
-    for (const c of player.cells) { emit(c.x, cellR(c), c.z, color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, color, 18, 10, .5); }
+  let xfx = [];   // timed world effects: hole, meteor, anchor, twin (each remembers its caster)
+  function blinkBy(o, d, color) {
+    const main = mainOf(o);
+    for (const c of o.cells) { emit(c.x, cellR(c), c.z, color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, color, 18, 10, .5); }
   }
-  function castXa(id, a, px, pz) {
-    const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y);
+  function castXa(id, a, px, pz, o) {
+    const me = o === player, main = mainOf(o);
     const ahead = d => { let x = px + main.hx * d, z = pz + main.hz * d; const dc = Math.hypot(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; } return [x, z]; };
-    const foes = () => owners.filter(o => !o.isPlayer && o.cells.length && !(player.team && o.team === player.team));
-    if (['x_over', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].includes(id)) { player.abT[id] = a.dur; return true; }
-    if (id === 'x_ice') { for (const o of foes()) if (o.cells.some(c => Math.hypot(c.x - px, c.z - pz) < a.radius + cellR(c))) o.freezeT = a.dur; emit(px, 2, pz, a.color, 70, a.radius, .9); return true; }
+    if (['x_over', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].includes(id)) { o.abT[id] = a.dur; return true; }
+    if (id === 'x_ice') { for (const x of foesOf(o)) if (x.cells.some(c => Math.hypot(c.x - px, c.z - pz) < a.radius + cellR(c))) x.freezeT = a.dur; emit(px, 2, pz, a.color, 70, a.radius, .9); return true; }
     if (id === 'x_hole' || id === 'x_meteor' || id === 'x_anchor') {
       const [x, z] = id === 'x_anchor' ? [px, pz] : ahead(a.dist);
       const mesh = id === 'x_anchor' ? new THREE.Mesh(new THREE.TorusGeometry(a.radius, .25, 8, 48), new THREE.MeshBasicMaterial({ color: a.color, transparent: true, opacity: .7 }))
         : new THREE.Mesh(new THREE.SphereGeometry(id === 'x_hole' ? 1.6 : 1.1, 16, 12), new THREE.MeshBasicMaterial({ color: id === 'x_hole' ? '#05010f' : a.color }));
       if (id === 'x_anchor') mesh.rotation.x = Math.PI / 2;
       mesh.position.set(x, id === 'x_anchor' ? .4 : 1.6, z); mesh.add(glowSprite(a.color, id === 'x_hole' ? 6 : 3, .7)); scene.add(mesh);
-      xfx.push({ id, x, z, t: id === 'x_meteor' ? 1 : a.dur, a, mesh }); return true;
+      xfx.push({ id, x, z, t: id === 'x_meteor' ? 1 : a.dur, a, mesh, o }); return true;
     }
     if (id === 'x_twin') {
-      if (player.cells.length >= playerMaxParts() || main.mass < 20) { toast('Двойник: нужна масса 20 и место для ещё одной части'); return false; }
-      const n0 = player.cells.length;
-      if (!splitOwner(player, n0 + 1, a.dur)) return false;
-      const nb = player.cells[player.cells.length - 1]; rebuildCells();
-      xfx.push({ id, t: a.dur, ca: main, cb: nb, a }); return true;
+      const maxP = me ? playerMaxParts() : BOT_PARTS;
+      if (o.cells.length >= maxP || main.mass < 20) { if (me) toast('Двойник: нужна масса 20 и место для ещё одной части'); return false; }
+      if (!splitOwner(o, o.cells.length + 1, a.dur)) return false;
+      const nb = o.cells[o.cells.length - 1]; rebuildCells();
+      xfx.push({ id, t: a.dur, ca: main, cb: nb, a, o }); return true;
     }
     if (id === 'x_hunt') {
       let best = null, bd = a.radius;
-      for (const o of foes()) for (const c of o.cells) { const d = Math.hypot(c.x - main.x, c.z - main.z); if (d < bd && canEat(main, c)) { bd = d; best = c; } }
-      if (!best) { toast('Охотничий рывок: рядом нет добычи меньше тебя'); return false; }
-      for (const c of player.cells) { const dx = best.x - c.x, dz = best.z - c.z, d = Math.hypot(dx, dz) || 1; c.vx += dx / d * a.force; c.vz += dz / d * a.force; c.hx = dx / d; c.hz = dz / d; }
-      player.dashT = Math.max(player.dashT, .3); return true;
+      for (const x of foesOf(o)) for (const c of x.cells) { const d = Math.hypot(c.x - main.x, c.z - main.z); if (d < bd && canEat(main, c)) { bd = d; best = c; } }
+      if (!best) { if (me) toast('Охотничий рывок: рядом нет добычи меньше тебя'); return false; }
+      for (const c of o.cells) { const dx = best.x - c.x, dz = best.z - c.z, d = Math.hypot(dx, dz) || 1; c.vx += dx / d * a.force; c.vz += dz / d * a.force; c.hx = dx / d; c.hz = dz / d; }
+      o.dashT = Math.max(o.dashT || 0, .3); return true;
     }
     if (id === 'x_phase') {
-      blinkBy(a.dist, a.color);
-      if (player.phase2 > 0) { player.phase2 = 0; player.abCd[id] = abCdOf(id); }   // second jump: now the cooldown starts
-      else player.phase2 = CHAOS_CFG.phase2Sec;
-      Sound.play('dash'); return true;
+      blinkBy(o, a.dist, a.color);
+      if (o.phase2 > 0) { o.phase2 = 0; o.abCd[id] = me ? abCdOf(id) : a.cd; }   // second jump: now the cooldown starts
+      else o.phase2 = CHAOS_CFG.phase2Sec;
+      if (me) Sound.play('dash'); return true;
     }
     return false;
   }
   function xaTick(dt) {
-    const over = abOn('x_over');
-    if (over) { for (const k in player.abCd) if (k !== 'x_over') player.abCd[k] = Math.max(0, player.abCd[k] - dt); player.dashCd = Math.max(0, player.dashCd - dt); player.splitCd = Math.max(0, player.splitCd - dt); }
-    if (player.phase2 > 0) { player.phase2 -= dt; if (player.phase2 <= 0) { player.phase2 = 0; player.abCd.x_phase = abCdOf('x_phase'); } }
-    for (const o of owners) if (o.freezeT) o.freezeT = Math.max(0, o.freezeT - dt);
-    const [px, pz] = pCenterXZ(), main = player.cells.length ? player.cells.reduce((x, y) => x.mass >= y.mass ? x : y) : null;
-    const foes = owners.filter(o => !o.isPlayer && o.cells.length && !(player.team && o.team === player.team));
-    if (abOn('x_refl') && main) for (const o of foes) for (const c of o.cells) for (const pc of player.cells) {
-      const dx = c.x - pc.x, dz = c.z - pc.z, d = Math.hypot(dx, dz) || 1;
-      if (d < cellR(c) + cellR(pc) + .5) { const f = abilById('x_refl').force; c.vx = dx / d * f; c.vz = dz / d * f; c.x = pc.x + dx / d * (cellR(c) + cellR(pc) + .6); c.z = pc.z + dz / d * (cellR(c) + cellR(pc) + .6); clampArena(c); }
-    }
-    if (abOn('x_typhoon') && main) {
-      const a = abilById('x_typhoon'), rad = a.radius + cellR(main);
-      for (const e of ejects) { const dx = e.x - px, dz = e.z - pz, d = Math.hypot(dx, dz) || 1; if (d < rad) { e.vx += dx / d * 120 * dt; e.vz += dz / d * 120 * dt; } }
-      for (const o of foes) for (const c of o.cells) { const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1;
-        if (d < rad + cellR(c) && c.mass < main.mass * .6) { c.vx += dx / d * 90 * dt; c.vz += dz / d * 90 * dt; c.hx = dx / d; c.hz = dz / d; if (o.kind === 'bot') { o.target = null; o.tx = c.x + dx / d * 30; o.tz = c.z + dz / d * 30; o.think = .6; } } }
-      if (Math.random() < .5) { const ang = Math.random() * Math.PI * 2; emit(px + Math.cos(ang) * rad, 1, pz + Math.sin(ang) * rad, a.color, 2, 3, .4); }
-    }
     let foodMoved = false;
+    const pullFood = (x, z, rad, sp) => { for (let i = 0; i < FOOD; i++) { const fd = foods[i], dx = x - fd.x, dz = z - fd.z, d = Math.hypot(dx, dz);
+      if (d < rad && d > .3) { const st = Math.min(d, sp * dt); fd.x += dx / d * st; fd.z += dz / d * st; dummy.position.set(fd.x, .35, fd.z); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix); foodMoved = true; } } };
+    for (const o of owners) {
+      if (o.freezeT) o.freezeT = Math.max(0, o.freezeT - dt);
+      if (!o.abT || !o.cells.length) continue;
+      if (abOn('x_over', o)) { for (const k in o.abCd) if (k !== 'x_over') o.abCd[k] = Math.max(0, o.abCd[k] - dt); if (o === player) { player.dashCd = Math.max(0, player.dashCd - dt); player.splitCd = Math.max(0, player.splitCd - dt); } }
+      if (o.phase2 > 0) { o.phase2 -= dt; if (o.phase2 <= 0) { o.phase2 = 0; o.abCd.x_phase = o === player ? abCdOf('x_phase') : abilById('x_phase').cd; } }
+      const refl = abOn('x_refl', o), typh = abOn('x_typhoon', o), pul = o !== player && abOn('pulse', o);
+      if (!refl && !typh && !pul) continue;
+      const [px, pz] = centerOf(o), main = mainOf(o), foes = foesOf(o);
+      if (pul) pullFood(main.x, main.z, 8 + cellR(main), 18);
+      if (refl) for (const x of foes) for (const c of x.cells) for (const pc of o.cells) {
+        const dx = c.x - pc.x, dz = c.z - pc.z, d = Math.hypot(dx, dz) || 1;
+        if (d < cellR(c) + cellR(pc) + .5) { const f = abilById('x_refl').force; c.vx = dx / d * f; c.vz = dz / d * f; c.x = pc.x + dx / d * (cellR(c) + cellR(pc) + .6); c.z = pc.z + dz / d * (cellR(c) + cellR(pc) + .6); clampArena(c); }
+      }
+      if (typh) {
+        const a = abilById('x_typhoon'), rad = a.radius + cellR(main);
+        for (const e of ejects) { const dx = e.x - px, dz = e.z - pz, d = Math.hypot(dx, dz) || 1; if (d < rad) { e.vx += dx / d * 120 * dt; e.vz += dz / d * 120 * dt; } }
+        for (const x of foes) for (const c of x.cells) { const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1;
+          if (d < rad + cellR(c) && c.mass < main.mass * .6) { c.vx += dx / d * 90 * dt; c.vz += dz / d * 90 * dt; c.hx = dx / d; c.hz = dz / d; if (x.kind === 'bot') { x.target = null; x.tx = c.x + dx / d * 30; x.tz = c.z + dz / d * 30; x.think = .6; } } }
+        if (Math.random() < .5 && nearView(px, pz)) { const ang = Math.random() * Math.PI * 2; emit(px + Math.cos(ang) * rad, 1, pz + Math.sin(ang) * rad, a.color, 2, 3, .4); }
+      }
+    }
     for (const f of [...xfx]) {
       f.t -= dt;
+      const foes = foesOf(f.o), main = f.o.cells.length ? mainOf(f.o) : null;
       if (f.id === 'x_hole') {
-        const rad = f.a.radius;
-        for (let i = 0; i < FOOD; i++) { const fd = foods[i], dx = f.x - fd.x, dz = f.z - fd.z, d = Math.hypot(dx, dz);
-          if (d < rad && d > .3) { const st = Math.min(d, 22 * dt); fd.x += dx / d * st; fd.z += dz / d * st; dummy.position.set(fd.x, .35, fd.z); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix); foodMoved = true; } }
-        for (const o of foes) for (const c of o.cells) { if (main && c.mass >= main.mass * .5) continue; const dx = f.x - c.x, dz = f.z - c.z, d = Math.hypot(dx, dz) || 1; if (d < rad * 1.4) { c.vx += dx / d * 60 * dt; c.vz += dz / d * 60 * dt; } }
+        pullFood(f.x, f.z, f.a.radius, 22);
+        for (const x of foes) for (const c of x.cells) { if (main && c.mass >= main.mass * .5) continue; const dx = f.x - c.x, dz = f.z - c.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius * 1.4) { c.vx += dx / d * 60 * dt; c.vz += dz / d * 60 * dt; } }
         f.mesh.rotation.y += dt * 4;
-      } else if (f.id === 'x_anchor') { for (const o of foes) if (o.cells.some(c => Math.hypot(c.x - f.x, c.z - f.z) < f.a.radius)) o.slowT = Math.max(o.slowT || 0, .2); }
+      } else if (f.id === 'x_anchor') { for (const x of foes) if (x.cells.some(c => Math.hypot(c.x - f.x, c.z - f.z) < f.a.radius)) x.slowT = Math.max(x.slowT || 0, .2); }
       else if (f.id === 'x_meteor') { f.mesh.position.y = .5 + f.t * 12; }
       if (f.t > 0) continue;
       if (f.id === 'x_meteor') {
-        for (const o of foes) { let hit = false; for (const c of o.cells) { const dx = c.x - f.x, dz = c.z - f.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius + cellR(c)) { c.vx += dx / d * f.a.force; c.vz += dz / d * f.a.force; hit = true; } } if (hit) o.freezeT = 1; }
-        emit(f.x, 1, f.z, f.a.color, 80, f.a.radius, .9); Sound.play('spike');
+        for (const x of foes) { let hit = false; for (const c of x.cells) { const dx = c.x - f.x, dz = c.z - f.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius + cellR(c)) { c.vx += dx / d * f.a.force; c.vz += dz / d * f.a.force; hit = true; } } if (hit) x.freezeT = 1; }
+        emit(f.x, 1, f.z, f.a.color, 80, f.a.radius, .9); if (nearView(f.x, f.z)) Sound.play('spike');
       }
-      if (f.id === 'x_twin') { if (!f.ca.gone && !f.cb.gone && f.ca.owner === player && f.cb.owner === player) { f.ca.mass += f.cb.mass; emit(f.cb.x, cellR(f.cb), f.cb.z, f.a.color, 20, 8, .5); removeCell(f.cb); f.ca.mergeT = 0; rebuildCells(); } }
+      if (f.id === 'x_twin') { if (!f.ca.gone && !f.cb.gone && f.ca.owner === f.o && f.cb.owner === f.o) { f.ca.mass += f.cb.mass; emit(f.cb.x, cellR(f.cb), f.cb.z, f.a.color, 20, 8, .5); removeCell(f.cb); f.ca.mergeT = 0; rebuildCells(); } }
       if (f.mesh) scene.remove(f.mesh);
       xfx.splice(xfx.indexOf(f), 1);
     }
     if (foodMoved) foodMesh.instanceMatrix.needsUpdate = true;
+  }
+  // ===== bots: builds and when to use them, by character =====
+  // normal modes: 3 random classic abilities; main league: dash, split, eject (like the player); Chaos League: 3 random of all (like the player)
+  function botBuild(chaos, mainRanked) {
+    if (chaos) return chaosDraw();
+    if (mainRanked) return [...ABIL_CFG.rankedBuild];
+    const pool = BASE_ABIL.map(a => a.id), out = [];
+    while (out.length < 3) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    return out;
+  }
+  function botEject(o) {
+    const c = mainOf(o); if (c.mass < EJECT_MIN || ejects.length >= MAX_EJECTS) return;
+    c.mass -= EJECT_COST; const r = cellR(c) + 1.2, mesh = new THREE.Mesh(ejectGeo, ejectMat);
+    mesh.scale.setScalar(radius(EJECT_MASS)); scene.add(mesh);
+    ejects.push({ x: c.x - c.hx * r, z: c.z - c.hz * r, vx: -c.hx * 60 + c.vx, vz: -c.hz * 60 + c.vz, mass: EJECT_MASS, age: 0, mesh });
+  }
+  const BOT_DEF = ['shield', 'x_ghost', 'cloak', 'decoy', 'x_refl', 'push', 'x_phase', 'blink', 'shrink', 'x_typhoon', 'x_ice', 'slow', 'trap', 'dash', 'eject'];
+  const BOT_OFF = ['x_hunt', 'x_ice', 'slow', 'x_meteor', 'x_anchor', 'x_vamp', 'dash', 'blink', 'x_twin'];
+  const BOT_FARM = ['pulse', 'x_hole', 'x_over'];
+  function botAI(o) {
+    if (!running || o.kind !== 'bot' || !o.build || !o.cells.length || Math.random() > .35) return;
+    const c = mainOf(o), p = PERSONA[o.persona] || PERSONA.normal;
+    let threat = null, td = Infinity;
+    for (const t of cells) { if (t.owner === o || (o.team && t.owner.team === o.team) || !canEat(t, c)) continue; const d = Math.hypot(t.x - c.x, t.z - c.z) - cellR(t); if (d < td) { td = d; threat = t; } }
+    const prey = o.target && o.target.owner && !o.target.owner.decoy && !o.target.gone ? o.target : null, pd = prey ? Math.hypot(prey.x - c.x, prey.z - c.z) : Infinity;
+    const def = threat && td < 12 + cellR(c) * 2, off = prey && pd < 30;
+    const list = def && (p.flee >= 1 || !off) ? BOT_DEF : off ? BOT_OFF : def ? BOT_DEF : BOT_FARM;
+    const pick = list.find(id => o.build.includes(id) && !((o.abCd[id] || 0) > 0));
+    if (!pick || (pick === 'x_over' && !o.build.some(id => (o.abCd[id] || 0) > 0))) return;
+    const aim = def ? { x: c.x * 2 - threat.x, z: c.z * 2 - threat.z } : off ? prey : null;   // run away from danger, face the prey
+    if (aim) for (const k of o.cells) { const dx = aim.x - k.x, dz = aim.z - k.z, d = Math.hypot(dx, dz) || 1; k.hx = dx / d; k.hz = dz / d; }
+    if (pick === 'dash') { o.dashT = .45; o.abCd.dash = 4; if (nearView(c.x, c.z)) emit(c.x, cellR(c), c.z, abilById('dash').color, 10, 5, .4); }
+    else if (pick === 'eject') { botEject(o); o.abCd.eject = 1.5; }
+    else castAbility(pick, o);
   }
   function chaosDraw() {
     const first = Math.random() < .5 ? 'dash' : 'split', pool = ABILITIES.map(a => a.id).filter(id => id !== first), out = [first];
@@ -3490,12 +3537,23 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   function abTick(dt) {
     xaTick(dt);
-    for (const k in player.abCd) player.abCd[k] = Math.max(0, player.abCd[k] - dt);
-    for (const k in player.abT) player.abT[k] = Math.max(0, player.abT[k] - dt);
-    for (const o of owners) if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
-    // «Сжатие»: the size eases back smoothly
-    const want = abOn('shrink') ? 1 - abilById('shrink').size : 1;
-    if (player.rs !== want) { player.rs += (want - player.rs) * Math.min(1, dt * 6); if (Math.abs(player.rs - want) < .005) player.rs = want; }
+    for (const o of owners) {
+      if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
+      if (!o.abCd) continue;
+      for (const k in o.abCd) o.abCd[k] = Math.max(0, o.abCd[k] - dt);
+      for (const k in o.abT) o.abT[k] = Math.max(0, o.abT[k] - dt);
+      // «Сжатие»: the size eases back smoothly
+      const want = abOn('shrink', o) ? 1 - abilById('shrink').size : 1;
+      if ((o.rs || 1) !== want) { o.rs = (o.rs || 1) + (want - (o.rs || 1)) * Math.min(1, dt * 6); if (Math.abs(o.rs - want) < .005) o.rs = want; }
+    }
+    for (const d of botDecoys) {
+      d.ttl -= dt;
+      if (d.ttl <= 0 || !d.src.cells.length) { scene.remove(d.mesh); d.gone = true; continue; }
+      const sp = BASE_SPEED * ABIL_CFG.decoySpeed; d.x += d.hx * sp * dt; d.z += d.hz * sp * dt;
+      const dc = Math.hypot(d.x, d.z), rr = R - d.r; if (dc > rr) { d.x *= rr / dc; d.z *= rr / dc; d.hx = -d.hx; d.hz = -d.hz; }
+      d.mesh.position.set(d.x, d.r, d.z);
+    }
+    if (botDecoys.some(d => d.gone)) { botDecoys = botDecoys.filter(d => !d.gone); owners.forEach(o => { if (o.target && o.target.owner && o.target.owner.decoy && o.target.gone) o.target = null; }); }
     if (decoy) {
       decoy.ttl -= dt;
       if (decoy.ttl <= 0) { scene.remove(decoy.mesh); emit(decoy.x, decoy.r, decoy.z, '#ffffff', 20, 8, .5); decoy.gone = true; decoy = null; owners.forEach(o => { if (o.target && o.target.owner && o.target.owner.decoy) o.target = null; }); }
@@ -3509,9 +3567,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   function abilChips() {
     if (!running || !player.abT) return '';
-    return ['shrink', 'cloak', 'x_over', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].filter(abOn).map(id => `<div class="chip"><i style="background:${abilById(id).color}"></i>${abilById(id).name} ${Math.ceil(player.abT[id])} с</div>`).join('') +
+    return ['shrink', 'cloak', 'x_over', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].filter(id => abOn(id)).map(id => `<div class="chip"><i style="background:${abilById(id).color}"></i>${abilById(id).name} ${Math.ceil(player.abT[id])} с</div>`).join('') +
       (decoy ? `<div class="chip"><i style="background:${abilById('decoy').color}"></i>Клон ${Math.ceil(decoy.ttl)} с</div>` : '') +
-      (viruses.some(v => v.trap) ? `<div class="chip"><i style="background:${abilById('trap').color}"></i>Ловушки: ${viruses.filter(v => v.trap).length}</div>` : '');
+      (viruses.some(v => v.trap && v.trap.owner === player) ? `<div class="chip"><i style="background:${abilById('trap').color}"></i>Ловушки: ${viruses.filter(v => v.trap && v.trap.owner === player).length}</div>` : '');
   }
   function slotView(id) {
     if (id === 'dash') return { ready: 1 - player.dashCd / dashCdBase, sub: player.dashCd > 0 ? `${player.dashCd.toFixed(1)} с` : null, off: false };
@@ -3848,9 +3906,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
     }
     let fx = 0, fz = 0, prey = null, preyScore = Infinity;
-    const cloaked = abOn('cloak');
     for (const t of cells) {
-      if (t.owner === o || (cloaked && t.owner === player)) continue;
+      if (t.owner === o || abOn('cloak', t.owner)) continue;
       const d = Math.hypot(t.x - c.x, t.z - c.z);
       if (d > sense) continue;
       if (p.flee > 0 && canEat(t, c) && d < sense * Math.min(1, p.flee)) {
@@ -3876,7 +3933,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       o.target = prey; o.tx = prey.x; o.tz = prey.z;
       // bold bots split to snatch prey that is close and small enough for a half
       const isSplitter = o.bossType === 'splitter', maxParts = isSplitter ? 6 : BOT_PARTS;
-      if (running && (o.kind === 'bot' || isSplitter) && p.chase >= .85 && o.splitCd <= 0 && o.cells.length < maxParts) {
+      if (running && ((o.kind === 'bot' && (!o.build || o.build.includes('split'))) || isSplitter) && p.chase >= .85 && o.splitCd <= 0 && o.cells.length < maxParts) {
         const d = Math.hypot(prey.x - c.x, prey.z - c.z), rc = cellR(c);
         if (c.mass / 2 > prey.mass * eatRatio(prey) && d > rc * 0.8 && d < 6 + rc * 4) {
           o.cells.forEach(k => { k.hx = (prey.x - k.x) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); k.hz = (prey.z - k.z) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); });
@@ -3956,7 +4013,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     if (mode === 'crown') {
       crownHolder = contenders.reduce((best, o) => !best || total(o) > total(best) ? o : best, null);
-      if (crownHolder && !(crownHolder === player && abOn('x_ghost'))) crownHolder.crownT += dt;   // no crown time while a ghost
+      if (crownHolder && !abOn('x_ghost', crownHolder)) crownHolder.crownT += dt;   // no crown time while a ghost
       if (stats.time >= TIMED_LEN) {
         const r = [player, ...bots].sort((a, b) => b.crownT - a.crownT).indexOf(player) + 1;
         stats.finalRank = r;
@@ -4096,7 +4153,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (o.isPlayer) continue;
       if (!o.cells.length) { if (o.kind === 'bot') { o.respawn -= dt; if (o.respawn <= 0) spawnBot(o); } continue; }
       o.think -= dt;
-      if (o.think <= 0) { think(o); o.think = 0.25 + Math.random() * 0.25; if (decoy && o.target && o.target.owner === player) o.target = decoy; }
+      if (o.kind === 'bot' && o.dashT) o.dashT = Math.max(0, o.dashT - dt);
+      if (o.think <= 0) {
+        think(o); o.think = 0.25 + Math.random() * 0.25;
+        if (o.target && o.target.owner) { const dc = o.target.owner === player ? decoy : botDecoys.find(d => d.src === o.target.owner); if (dc) o.target = dc; }
+        botAI(o);
+      }
       if (o.target && !o.target.gone) { o.tx = o.target.x; o.tz = o.target.z; }
       o.cells.forEach(k => steer(k, o.tx, o.tz, dt));
     }
@@ -4141,7 +4203,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
-        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1) * (a.owner.isPlayer && abOn('x_vamp') ? 1.2 : 1);
+        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1) * (abOn('x_vamp', a.owner) ? 1.2 : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
@@ -5533,6 +5595,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <text x="50" y="96" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="11" fill="#ffd23f">ЛЕГЕНДА</text>
     </svg>`;
   }
+  // Chaos League season badge: the tier's own shape, colour and icon, with a glitch stripe
+  function chaosBadgeSVG(x) {
+    const T = CHAOS_TIERS[x.tier], id = 'cbg' + (++badgeUid), col = T.color;
+    return `<svg viewBox="0 0 100 100" role="img" aria-label="Значок Хаос-сезона ${x.id}, ${T.name}">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${col}"/><stop offset=".6" stop-color="#1a0630"/><stop offset="1" stop-color="${col}" stop-opacity=".7"/></linearGradient></defs>
+      <g fill="url(#${id})" stroke="${col}" stroke-width="2.5" stroke-dasharray="${x.tier >= 3 ? '0' : '6 3'}">${BADGE_SHAPES[x.tier]}</g>
+      <rect x="14" y="${40 + (x.id % 4) * 4}" width="72" height="4" fill="#22e6ff" opacity=".55"/><rect x="20" y="${50 + (x.id % 3) * 5}" width="60" height="3" fill="#ff4fd8" opacity=".55"/>
+      <text x="50" y="44" text-anchor="middle" font-size="22" fill="#ffffff" style="paint-order:stroke" stroke="#1a0630" stroke-width="3">${T.icon}</text>
+      <text x="50" y="72" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="${x.id >= 100 ? 16 : 20}" fill="#ffffff" style="paint-order:stroke" stroke="#1a0630" stroke-width="3">${x.id}</text>
+    </svg>`;
+  }
   function badgeSVG(x) {
     const L = lgView(x.league, x.holiday), id = 'bg' + (++badgeUid), col = L.color;
     const pips = Array.from({ length: x.league + 1 }, (_, i) => `<circle cx="${50 + (i - x.league / 2) * 7}" cy="74" r="2.4"/>`).join('');
@@ -5595,6 +5668,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         return `<div class="lg-last"><b>Сезонов в «Сингулярности»: ${top}</b><small>Следующая третья награда: ${nx ? (nx.kind === 'abil' ? `способность «${nx.a.name}»` : `облик «${nx.l.name}»`) : 'всё получено'}.</small>` +
           `<small>Вехи: ${CHAOS_VET.map(v => `${v.n} — ${v.what}${top >= v.n ? ' ✓' : ''}`).join(' · ')}${nv ? ` · до следующей: ${nv.n - top}` : ''}</small></div>`; })() +
       (chaosNotice ? `<span class="notice">${chaosNotice}</span>` : '');
+    if (chaosStarted) $('chaosPanel').insertAdjacentHTML('beforeend', `<div class="season-skin"><div style="width:64px;flex:none">${chaosBadgeSVG({ id: C.id, tier: ti })}</div><div><b>Значок сезона: ${L.icon} ${L.name}</b><br><small>В конце сезона значок останется в профиле. Форма и цвет зависят от ступени — поднимись выше, чтобы он стал ярче.</small></div></div>`);
     $('chaosPlay').disabled = !open;
     $('chaosPlay').textContent = open ? `Играть · ${MODES[seasonMode(C.id)].name}` : `Откроется на ${CHAOS_CFG.entryLevel} уровне`;
     $('chaosNote').textContent = open ? `3 случайные способности на бой (одна — рывок или деление), у всех равные условия. Купленные способности и улучшения не действуют.${CHAOS_CFG.fee[ti] ? ` Взнос за бой: ${CHAOS_CFG.fee[ti]} очков.` : ''}` : `Сейчас у тебя ${lv}-й уровень.`;
@@ -5682,6 +5756,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         return `<div class="legend-head">${specialBadgeSVG(b, !!got)}<div><b>${got ? b.name : `Значок «${b.name}»`}</b><small>${got ? `Получен ${new Date(got).toLocaleDateString('ru-RU')}` : b.how(n)}</small></div></div>`; }).join('');
       $('profMillion').innerHTML = `${millionBadgeSVG(!!got)}<div><b>${got ? 'Миллионер' : 'Значок «Миллионер»'}</b><small>${got ? `Получен ${new Date(got).toLocaleDateString('ru-RU')}` : `Заработай 1 000 000 монет: ${Math.min(save.legend.coins || 0, 1e6).toLocaleString('ru-RU')} / 1 000 000.`}</small></div>`; }
     $('badgeTitle').textContent = `Значки сезонов · ${save.seasonLog.length} из 52`;
+    { const live = chaosStarted ? [{ id: save.chaos.id, tier: chaosOf(save.chaos.pts), live: true }] : [], all = [...live, ...save.chaosLog.slice().reverse()];
+      $('chaosBadgeTitle').textContent = `Значки Хаос-лиги · ${save.chaosLog.length}`;
+      $('profChaosBadges').innerHTML = all.length ? all.map(x => `<div class="badge-tile ${x.live ? 'live' : ''}" style="--bc:${CHAOS_TIERS[x.tier].color}" title="Хаос-сезон ${x.id}: ${CHAOS_TIERS[x.tier].name}">${chaosBadgeSVG(x)}<b>Хаос-сезон ${x.id}</b><small>${x.live ? 'идёт' : CHAOS_TIERS[x.tier].name}</small></div>`).join('')
+        : '<p class="empty-note" style="grid-column:1/-1">Значок выдаётся в конце каждого Хаос-сезона, в котором ты набрал хотя бы одно очко. Форма, цвет и знак — по ступени: Искра, Помеха, Сбой, Шторм, Разлом, Сингулярность.</p>'; }
     const liveSd = seasonData(save.season.id);
     const live = seasonStarted ? { id: save.season.id, league: leagueOf(save.season.pts), pts: save.season.pts, name: liveSd.name, holiday: liveSd.holiday, live: true } : null;
     const all = [...save.seasonLog.slice().reverse(), ...(live ? [live] : [])].sort((p, q) => q.id - p.id);
@@ -6016,7 +6094,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '40';
+const APP_VER = '41';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

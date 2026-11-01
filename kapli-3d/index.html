@@ -783,7 +783,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details><summary>Архив сезонов</summary>
       <ul class="info-list">
         <li>Магазин → «Архив», с 20-го уровня. Здесь можно получить награды прошедших сезонов, которые ты не успел взять в лиге.</li>
-        <li>Витрина недели — 4 предмета, обновляется по понедельникам. Сундук архива за 20 000 ◆ даёт случайный предмет из всех пропущенных, без повторов.</li>
+        <li>Витрина недели — 4 предмета, обновляется по понедельникам. Сундук архива даёт случайный предмет из всех пропущенных, без повторов. Его цена — 80% от средней стоимости выпадения, но не больше 20 000 ◆.</li>
+        <li>Когда остаётся 4 предмета или меньше, все они на витрине, а сундук пропадает.</li>
         <li>Шанс в сундуке зависит от редкости (по цене): обычный (до 15 000 ◆) — вес 40, редкий (20–25 тыс.) — 25, эпический (30 тыс.) — 15, легендарный (35–40 тыс.) — 8. Точные проценты по твоему архиву — под сундуком.</li>
         <li>Цены: питомец «Платины» 15 000, скин сезона 25 000, питомец «Неона» 30 000, эффект сезона 35 000 ◆; праздничные предметы 10 000–40 000 ◆.</li>
         <li>Купленное в архиве помечено «из архива». Значки, рамки и титулы лиги, трофеи рейда и легендарные награды в архив не попадают.</li>
@@ -826,6 +827,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details><summary>Лига и сезоны</summary>
       <ul class="info-list">
         <li>Сезон длится 14 дней. Очки лиги дают только раунды, начатые кнопкой «Играть в лиге» в окне «Лига».</li>
+        <li>С «Золота» за каждую рейтинговую игру берётся взнос: Золото 40, Платина 80, Алмаз 120, Неон 160 очков. Слабая игра может уменьшить счёт, но ниже порога своей лиги не опустишься.</li>
         <li>В рейтинговом бою не действуют улучшения и бонусы питомцев — все на равных.</li>
         <li>Режим лиги меняется каждый сезон. «Королевская битва» доступна только в лиге.</li>
         <li>За переход в новую лигу — сундук лиги. В конце сезона — монеты, значок, рамка лиги, а за высокие лиги ещё скины, эффекты, питомцы и титулы.</li>
@@ -1429,7 +1431,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       save.archive = { week: w, ids: pool.slice(0, ARCHIVE_SLOTS).map(o => o.id) };
     }
     const byId = {}; for (let id = 1; id < seasonNow; id++) for (const o of seasonOffers(id)) byId[o.id] = byId[o.id] || o;
-    return save.archive.ids.map(id => byId[id]).filter(Boolean);
+    // when only a few are left, all of them are on the showcase
+    if (all.length <= ARCHIVE_SLOTS) for (const o of all) if (!save.archive.ids.includes(o.id)) save.archive.ids.push(o.id);
+    return save.archive.ids.map(id => byId[id]).filter(o => o && (all.some(a => a.id === o.id) || save.archive.ids.includes(o.id)));
   }
   function grantArchive(o) {
     const list = ownList(o.kind); if (!list.includes(o.id)) list.push(o.id);
@@ -1447,6 +1451,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     let x = Math.random() * all.reduce((t, o) => t + ARCH_W[archRarity(o)], 0);
     for (const o of all) if ((x -= ARCH_W[archRarity(o)]) < 0) return o;
     return all[all.length - 1];
+  }
+  // the chest costs 80% of what it gives on average (never more than 20 000); with ≤ 4 items left it is not needed
+  function archiveChestPrice(all) {
+    const tot = all.reduce((t, o) => t + ARCH_W[archRarity(o)], 0), ev = all.reduce((t, o) => t + o.price * ARCH_W[archRarity(o)], 0) / (tot || 1);
+    return { price: Math.min(ARCHIVE_CHEST, Math.round(ev * .8 / 500) * 500), ev: Math.round(ev / 500) * 500 };
   }
   const offerName = o => o.kind === 'pet' ? petById(o.id).name : (o.kind === 'skin' ? SKINS : FX).find(x => x.id === o.id).name;
   const offerKind = o => ({ skin: 'скин', fx: 'эффект', pet: 'питомец' })[o.kind];
@@ -1651,13 +1660,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return petMap[id] || null;
   }
   const LEAGUES = [
-    { name: 'Бронза',  pts: 0,    color: '#cd7f32', coins: 100 },
-    { name: 'Серебро', pts: 300,  color: '#c0c8e0', coins: 300 },
-    { name: 'Золото',  pts: 800,  color: '#ffd23f', coins: 600 },
-    { name: 'Платина', pts: 1600, color: '#7fe8ff', coins: 1200 },
-    { name: 'Алмаз',   pts: 3000, color: '#b26bff', coins: 2000, skin: true },
-    { name: 'Неон',    pts: 5000, color: '#ff4fd8', coins: 4000, skin: true, fx: true },
+    { name: 'Бронза',  pts: 0,     color: '#cd7f32', coins: 200 },
+    { name: 'Серебро', pts: 1500,  color: '#c0c8e0', coins: 600 },
+    { name: 'Золото',  pts: 4000,  color: '#ffd23f', coins: 1200 },
+    { name: 'Платина', pts: 8000,  color: '#7fe8ff', coins: 2400 },
+    { name: 'Алмаз',   pts: 15000, color: '#b26bff', coins: 4000, skin: true },
+    { name: 'Неон',    pts: 25000, color: '#ff4fd8', coins: 8000, skin: true, fx: true },
   ];
+  const LEAGUE_FEE = [0, 0, 40, 80, 120, 160];   // points paid per ranked game from «Золото» up
   const leagueOf = pts => LEAGUES.reduce((best, l, i) => pts >= l.pts ? i : best, 0);
   const QUESTS = [
     { id: 'kills3',  text: 'Съешь 3 капли за раунд',     stat: 'kills',   goal: 3,   coins: 20, xp: 40 },
@@ -3035,8 +3045,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
     if (mode === 'royale' && stats.finalRank) pts += (13 - stats.finalRank) * 4;
     if (!stats.ranked) pts = 0;
-    const lgBefore = leagueOf(save.season.pts);
-    save.season.pts += pts;
+    const lgBefore = leagueOf(save.season.pts), gain = pts, fee = stats.ranked ? LEAGUE_FEE[lgBefore] : 0;
+    pts = gain - fee;
+    save.season.pts = Math.max(LEAGUES[lgBefore].pts, save.season.pts + pts);
     const lgAfter = leagueOf(save.season.pts);
     save.totals.maxLeague = Math.max(save.totals.maxLeague || 0, lgAfter);
     for (let k = lgBefore + 1; k <= lgAfter; k++) save.special.push({ kind: 'league', league: k, title: lgView(k, holidayOf(save.season.id)).name });
@@ -3069,7 +3080,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×2']);
     if (mode === 'daily') cellsHtml.push(['Испытание', stats.dailyDone ? 'пройдено' : `нужно ${DAILY_GOAL}`]);
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
-    $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">+${pts} рейтинга</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
+    $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
       weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
@@ -4067,10 +4078,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
             (own ? '<button class="buy sel" disabled>Куплено</button>' : `<button class="buy" id="arch-${o.id}" data-arch="${o.id}" ${can ? '' : 'disabled'}>${o.price} ◆</button>`) + '</div>'; };
         $('shop').innerHTML = all.length
           ? `<p class="empty-note">Награды прошедших сезонов, которых у тебя нет: ${all.length}. Витрина обновится через ${days} дн.</p><h3>Витрина недели</h3>` + show.map(card).join('') +
-            `<h3>Сундук архива</h3><div class="fxrow"><span class="ico" style="font-size:1.6rem">🗃️</span><span class="name">Случайный предмет архива</span><span class="desc">Любая из ${all.length} наград, без повторов. Чем дороже предмет, тем реже он выпадает</span>` +
-            `<button class="buy" id="arch-chest" data-archchest="1" ${save.coins >= ARCHIVE_CHEST ? '' : 'disabled'}>${ARCHIVE_CHEST} ◆</button></div>` +
+            (all.length <= ARCHIVE_SLOTS ? `<h3>Сундук архива</h3><p class="empty-note">Осталось ${all.length} — все они на витрине, сундук больше не нужен.</p>` : (() => { const cp = archiveChestPrice(all);
+            return `<h3>Сундук архива</h3><div class="fxrow"><span class="ico" style="font-size:1.6rem">🗃️</span><span class="name">Случайный предмет архива</span><span class="desc">Любая из ${all.length} наград, без повторов. В среднем выпадает на ${cp.ev} ◆ — выгода ~${Math.round((1 - cp.price / cp.ev) * 100)}%</span>` +
+            `<button class="buy" id="arch-chest" data-archchest="1" ${save.coins >= cp.price ? '' : 'disabled'}>${cp.price} ◆</button></div>` +
             (() => { const od = archOdds(all), PR = { common: 'до 15 000 ◆', rare: '20 000–25 000 ◆', epic: '30 000 ◆', legendary: '35 000–40 000 ◆' };
-              return '<ul class="quests arch-odds">' + ['common', 'rare', 'epic', 'legendary'].filter(r => od[r]).map(r => `<li><span><b style="color:${RARITY[r].color}">${RARITY[r].name}</b> · ${PR[r]} · в архиве ${od[r].n}</span><span class="rw">${(od[r].p * 100).toFixed(1)}%</span></li>`).join('') + '</ul>'; })()
+              return '<ul class="quests arch-odds">' + ['common', 'rare', 'epic', 'legendary'].filter(r => od[r]).map(r => `<li><span><b style="color:${RARITY[r].color}">${RARITY[r].name}</b> · ${PR[r]} · в архиве ${od[r].n}</span><span class="rw">${(od[r].p * 100).toFixed(1)}%</span></li>`).join('') + '</ul>'; })(); })())
           : `<p class="empty-note">🎉 Ты собрал весь архив: у тебя есть все награды прошедших сезонов.</p>` + preview;
       }
     } else if (shopTab === 'week') {
@@ -4169,8 +4181,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price) return;
       save.coins -= o.price; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
     } else if (b.dataset.archchest) {
-      const all = archiveOffers(); if (!all.length || save.coins < ARCHIVE_CHEST) return;
-      const o = pickArchive(all); save.coins -= ARCHIVE_CHEST; grantArchive(o);
+      const all = archiveOffers(), cp = archiveChestPrice(all); if (all.length <= ARCHIVE_SLOTS || save.coins < cp.price) return;
+      const o = pickArchive(all); save.coins -= cp.price; grantArchive(o);
       toast(`Сундук архива (${RARITY[archRarity(o)].name.toLowerCase()}): ${offerKind(o)} «${offerName(o)}» из сезона «${o.from}»`); Sound.play('chest');
     } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
@@ -4654,7 +4666,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const sd = seasonData(save.season.id), hk = sd.holiday, li = leagueOf(save.season.pts), L = lgView(li, hk), next = li < 5 ? lgView(li + 1, hk) : null;
     $('leaguePlay').textContent = `Играть в лиге · ${MODES[leagueMode()].name}`;
     $('leaguePlayNote').textContent = seasonStarted
-      ? `Рейтинговый бой: только режим этого сезона, улучшения и бонусы питомцев отключены, начисляются очки лиги.`
+      ? `Рейтинговый бой: только режим этого сезона, улучшения и бонусы питомцев отключены, начисляются очки лиги.${LEAGUE_FEE[leagueOf(save.season.pts)] ? ` Взнос за игру в твоей лиге: ${LEAGUE_FEE[leagueOf(save.season.pts)]} очков — слабая игра может уменьшить счёт, но из лиги не вылетишь.` : ''}`
       : `Сезон начнётся ${fmtDate(SEASON_EPOCH)}. До старта можно потренироваться: раунд пройдёт по правилам лиги, но без очков.`;
     const pct = next ? (save.season.pts - L.pts) / (next.pts - L.pts) * 100 : 100;
     const when = seasonStarted
@@ -5026,7 +5038,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '25';
+const APP_VER = '26';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

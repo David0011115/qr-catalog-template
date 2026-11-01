@@ -1544,6 +1544,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // league names/colours depend on the season (holiday seasons rename them)
   const lgView = li => LEAGUES[li];   // v48: holiday seasons keep the usual leagues (Бронза…Неон); only their rewards are festive
   SEASONS.forEach(x => { SKINS.push({ ...x.skin, season: true }); FX.push({ ...x.fx, season: true }); });
+  // v49: the shop sells only basic looks; the dearer ones moved into chests (owned items stay owned)
+  const SHOP_TO_CHEST = { cyber: 'common', tiger: 'common', toxic: 'common', lime: 'common', plasma: 'rare', king: 'rare', ghost: 'rare', saturn: 'rare',
+    galaxy: 'epic', quasar: 'epic', aurora: 'epic', rainbow: 'epic', emperor: 'legendary', blackhole: 'legendary',
+    haloAura: 'rare', cometTrail: 'rare', galaxyTrail: 'epic', prismAura: 'epic', quantumTrail: 'legendary', prismEat: 'legendary', starveilTrail: 'legendary', starAura: 'legendary', goldEat: 'legendary' };
+  [...SKINS, ...FX].forEach(x => { if (SHOP_TO_CHEST[x.id] && !x.chest) x.chest = SHOP_TO_CHEST[x.id]; });
   for (const y of [2027, 2028]) Object.keys(HOLIDAYS).forEach(k => ensureHolidayItems(k, y));
 
   // ---- items above the head that go on any skin (rewards for skin collections) ----
@@ -1651,16 +1656,20 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'tt_lv50', kind: 'title', name: 'Великий', color: '#ffd23f', level: 50 });
   const decorById = id => DECOR.find(d => d.id === id) || null;
   // season archive: rewards of seasons that are already over for this player, sold for coins
-  const ARCHIVE_LVL = 20, ARCHIVE_CHEST = 20000, ARCHIVE_SLOTS = 4;
-  const HOLIDAY_PRICES = [10000, 15000, 20000, 25000, 30000, 40000];
+  // v49: every archive item has an explicit rarity (by the league it was earned in) and its price comes from the rarity;
+  // the archive chest was removed — instead the weekly showcase is bigger
+  const ARCHIVE_LVL = 20, ARCHIVE_SLOTS = 6;
+  const ARCH_PRICE = { common: 12000, rare: 18000, epic: 26000, legendary: 36000 };
+  const HOLIDAY_RAR = ['common', 'common', 'rare', 'rare', 'epic', 'legendary'];   // holiday item for Бронза … Неон
+  const offer = (kind, id, rar, from) => ({ kind, id, rar, price: ARCH_PRICE[rar], from });
   function seasonOffers(id) {
     const sd = seasonData(id), out = [];
     if (sd.holiday) {
-      sd.items.forEach((it, i) => out.push({ kind: it.kind, id: it.id, price: HOLIDAY_PRICES[i] || 40000, from: sd.name }));
-      sd.pets.forEach(pt => out.push({ kind: 'pet', id: pt.id, price: 30000, from: sd.name }));
+      sd.items.forEach((it, i) => out.push(offer(it.kind, it.id, HOLIDAY_RAR[i] || 'legendary', sd.name)));
+      sd.pets.forEach((pt, i) => out.push(offer('pet', pt.id, i ? 'epic' : 'rare', sd.name)));
     } else {
-      out.push({ kind: 'pet', id: sd.pets[0].id, price: 15000, from: sd.name }, { kind: 'skin', id: sd.skin.id, price: 25000, from: sd.name },
-               { kind: 'pet', id: sd.pets[1].id, price: 30000, from: sd.name }, { kind: 'fx', id: sd.fx.id, price: 35000, from: sd.name });
+      out.push(offer('pet', sd.pets[0].id, 'rare', sd.name), offer('skin', sd.skin.id, 'epic', sd.name),
+               offer('pet', sd.pets[1].id, 'epic', sd.name), offer('fx', sd.fx.id, 'legendary', sd.name));
     }
     return out;
   }
@@ -1689,24 +1698,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const list = ownList(o.kind); if (!list.includes(o.id)) list.push(o.id);
     save.archived = save.archived || []; if (!save.archived.includes(o.id)) save.archived.push(o.id);
   }
-  // archive chest odds follow the item's rarity, set by its price: the dearer, the rarer
-  const archRarity = o => o.price <= 15000 ? 'common' : o.price <= 25000 ? 'rare' : o.price <= 30000 ? 'epic' : 'legendary';
-  const ARCH_W = { common: 40, rare: 25, epic: 15, legendary: 8 };
-  function archOdds(all) {
-    const tot = all.reduce((t, o) => t + ARCH_W[archRarity(o)], 0), by = {};
-    for (const o of all) { const r = archRarity(o); by[r] = by[r] || { n: 0, p: 0 }; by[r].n++; by[r].p += ARCH_W[r] / tot; }
-    return by;
-  }
-  function pickArchive(all) {
-    let x = Math.random() * all.reduce((t, o) => t + ARCH_W[archRarity(o)], 0);
-    for (const o of all) if ((x -= ARCH_W[archRarity(o)]) < 0) return o;
-    return all[all.length - 1];
-  }
-  // the chest costs 80% of what it gives on average (never more than 20 000); with ≤ 4 items left it is not needed
-  function archiveChestPrice(all) {
-    const tot = all.reduce((t, o) => t + ARCH_W[archRarity(o)], 0), ev = all.reduce((t, o) => t + o.price * ARCH_W[archRarity(o)], 0) / (tot || 1);
-    return { price: Math.min(ARCHIVE_CHEST, Math.round(ev * .8 / 500) * 500), ev: Math.round(ev / 500) * 500 };
-  }
+  const archRarity = o => o.rar;
   const offerName = o => o.kind === 'pet' ? petById(o.id).name : (o.kind === 'skin' ? SKINS : FX).find(x => x.id === o.id).name;
   const offerKind = o => ({ skin: 'скин', fx: 'эффект', pet: 'питомец' })[o.kind];
 
@@ -4970,11 +4962,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
             (own ? '<button class="buy sel" disabled>Куплено</button>' : `<button class="buy" id="arch-${o.id}" data-arch="${o.id}" ${can ? '' : 'disabled'}>${o.price} ◆</button>`) + '</div>'; };
         $('shop').innerHTML = all.length
           ? `<p class="empty-note">Награды прошедших сезонов, которых у тебя нет: ${all.length}. Витрина обновится через ${days} дн.</p><h3>Витрина недели</h3>` + show.map(card).join('') +
-            (all.length <= ARCHIVE_SLOTS ? `<h3>Сундук архива</h3><p class="empty-note">Осталось ${all.length} — все они на витрине, сундук больше не нужен.</p>` : (() => { const cp = archiveChestPrice(all);
-            return `<h3>Сундук архива</h3><div class="fxrow"><span class="ico" style="font-size:1.6rem">🗃️</span><span class="name">Случайный предмет архива</span><span class="desc">Любая из ${all.length} наград, без повторов. В среднем выпадает на ${cp.ev} ◆ — выгода ~${Math.round((1 - cp.price / cp.ev) * 100)}%</span>` +
-            `<button class="buy" id="arch-chest" data-archchest="1" ${save.coins >= cp.price ? '' : 'disabled'}>${cp.price} ◆</button></div>` +
-            (() => { const od = archOdds(all), PR = { common: 'до 15 000 ◆', rare: '20 000–25 000 ◆', epic: '30 000 ◆', legendary: '35 000–40 000 ◆' };
-              return '<ul class="quests arch-odds">' + ['common', 'rare', 'epic', 'legendary'].filter(r => od[r]).map(r => `<li><span><b style="color:${RARITY[r].color}">${RARITY[r].name}</b> · ${PR[r]} · в архиве ${od[r].n}</span><span class="rw">${(od[r].p * 100).toFixed(1)}%</span></li>`).join('') + '</ul>'; })(); })())
+            '<h3>Цены по редкости</h3><ul class="quests arch-odds">' + ['common', 'rare', 'epic', 'legendary'].map(r => `<li><span><b style="color:${RARITY[r].color}">${RARITY[r].name}</b> · ${({ common: 'праздничные предметы низших лиг', rare: 'питомцы «Платины», праздничные «Золото»/«Платина»', epic: 'скины «Алмаза», питомцы «Неона»', legendary: 'эффекты «Неона», главный праздничный скин' })[r]}</span><span class="rw">${ARCH_PRICE[r].toLocaleString('ru-RU')} ◆</span></li>`).join('') + '</ul>'
           : `<p class="empty-note">🎉 Ты собрал весь архив: у тебя есть все награды прошедших сезонов.</p>` + preview;
       }
     } else if (shopTab === 'week') {
@@ -5102,7 +5090,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     skin: () => ['Здесь скины, которые можно купить за монеты. Купленный скин появляется в гардеробе.', 'Остальные скины выпадают из сундуков, даются за испытания, достижения, лигу и сезоны.', 'Нажми на скин, чтобы посмотреть его подробнее.'],
     fx: () => ['Эффекты бывают трёх видов: след, аура и эффект поедания. В каждом слоте можно надеть один.', 'Здесь эффекты, которые продаются за монеты. Остальные — в сундуках, испытаниях и коллекциях.'],
     arena: () => ['Тема арены меняет пол, сетку, края арены, туманности и частицы вокруг.', 'Темы открываются с определённого уровня игрока, эксклюзивные — с 30-го. Купленные темы — в гардеробе.'],
-    archive: () => [`Архив открывается на ${ARCHIVE_LVL}-м уровне. В нём за монеты можно получить награды прошедших сезонов, которые ты пропустил в лиге.`, `Витрина: ${ARCHIVE_SLOTS} предмета, обновляется каждый понедельник.`, 'Сундук архива даёт случайный предмет из всего архива без повторов. Шанс зависит от редкости: чем дороже предмет, тем реже он выпадает.'],
+    archive: () => [`Архив открывается на ${ARCHIVE_LVL}-м уровне. В нём за монеты можно получить награды прошедших сезонов, которые ты пропустил в лиге.`, `Витрина: ${ARCHIVE_SLOTS} предметов, обновляется каждый понедельник; когда осталось мало — на витрине все.`, `У каждого предмета своя редкость, и цена зависит от неё: обычный ${ARCH_PRICE.common.toLocaleString('ru-RU')} ◆, редкий ${ARCH_PRICE.rare.toLocaleString('ru-RU')} ◆, эпический ${ARCH_PRICE.epic.toLocaleString('ru-RU')} ◆, легендарный ${ARCH_PRICE.legendary.toLocaleString('ru-RU')} ◆.`],
     wskin: () => ['Все твои скины. Нажми на скин, чтобы посмотреть подробности и надеть его.', 'Скин из сундука получает звезду за каждый повтор (до трёх): искры, цветной блик, сияющий ореол.'],
     wfx: () => ['Твои эффекты по слотам: след, аура, поедание. В каждом слоте можно надеть один эффект.', 'Нажми на эффект, чтобы посмотреть его подробнее.'],
     wdeco: () => ['Предмет над головой надевается на любой скин вместо его предмета или короны. Их дают за коллекции скинов.', 'Рамка и титул видны рядом с твоим именем в таблице лидеров.', 'Рамки выпадают из сундуков, даются за уровни, лигу и мастерство режимов. Титулы — из сундуков, за лигу, коллекции эффектов, мастерство и мастерские достижения.'],
@@ -5178,10 +5166,6 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (b.dataset.arch) {
       const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price) return;
       save.coins -= o.price; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
-    } else if (b.dataset.archchest) {
-      const all = archiveOffers(), cp = archiveChestPrice(all); if (all.length <= ARCHIVE_SLOTS || save.coins < cp.price) return;
-      const o = pickArchive(all); save.coins -= cp.price; grantArchive(o); logChest('archive', archRarity(o));
-      toast(`Сундук архива (${RARITY[archRarity(o)].name.toLowerCase()}): ${offerKind(o)} «${offerName(o)}» из сезона «${o.from}»`); Sound.play('chest');
     } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
     else if (b.dataset.col) {
@@ -6232,7 +6216,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '48';
+const APP_VER = '49';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

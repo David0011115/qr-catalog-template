@@ -1071,7 +1071,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>За каждый уровень — 50 × уровень монет, за каждый 5-й — сундук, за 10/20/30/40/50 — титул или рамка уровня. Задания в меню с уровнем становятся сложнее и щедрее.</li>
         <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
         <li><b>Достижения</b> дают монеты один раз. <b>Испытания</b> дают скины и эффекты плюс сундук.</li>
-        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги. Каждое даёт небольшой прирост за уровень: монеты («Жадность» до +50%), масса («Пищеварение» до +40%, «Крупный старт»), защита («Защита», «Второй шанс»), скорость, бонусы и сбор крошек.</li>
+        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги. Каждое даёт небольшой прирост за уровень: монеты («Жадность» до +30%), масса («Пищеварение» до +25%, «Крупный старт»), защита («Защита», «Второй шанс»), скорость, бонусы и сбор крошек.</li>
         <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 3 уровня: Бронза +600 ◆, Золото — рамка режима и +800 ◆, Легенда — титул режима. Прогресс — в «Профиле».</li>
       </ul>
     </details>
@@ -1079,7 +1079,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <ul class="info-list">
         <li>Внизу экрана три слота способностей — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E и Q.</li>
         <li>Рывок и деление есть у всех. Ещё 10 способностей продаются в «Магазине» → «Способности»: выброс массы, щит, магнитный импульс, скачок, замедляющая волна, маскировка, взрыв-толчок, сжатие, клон-приманка и ловушка-шип.</li>
-        <li>Каждую купленную способность можно улучшить до 5 уровней: меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения: «Реактивный рывок», «Лёгкий рывок», «Больше частей», «Быстрое слияние».</li>
+        <li>Каждую купленную способность можно улучшить до 5 уровней: за уровень перезарядка −4% и эффект +6,5%. У рывка и деления свои улучшения: «Реактивный рывок», «Лёгкий рывок», «Больше частей», «Быстрое слияние».</li>
         <li>Билд — что стоит в слотах — меняется только в меню. Слот может быть пустым, одну способность нельзя поставить дважды.</li>
         <li>В рейтинге основной лиги и «Королевской битве» у всех одинаково — и у игрока, и у ботов: рывок, деление и выброс.</li>
         <li>Все 12 способностей — коллекция «Арсенал».</li>
@@ -1324,7 +1324,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ================= abilities: ALL tunable numbers live in this table =================
   // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
   // every level: cooldown −cdPerLv, power (duration / distance / radius / force) +powPerLv.
-  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .5, growth: 1.5, cdPerLv: .06, powPerLv: .1,
+  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .75, growth: 1.5, cdPerLv: .04, powPerLv: .065,
     rankedBuild: ['dash', 'split', 'eject'], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
     slotBtn: ['dash', 'split', 'eject'], slotKey: ['Space', 'KeyE', 'KeyQ'], slotKeyName: ['Пробел', 'E', 'Q'],
     arsenalCoins: 5000, slowFactor: .5, shrinkSpeed: 1.25, maxTraps: 2, decoySpeed: .55 };
@@ -1370,23 +1370,25 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const costs = (base, n, g = 1.38) => Array.from({ length: n }, (_, i) => Math.round(base * PRICE_MULT * Math.pow(g, i) / 5) * 5);
   const UPG = [
     { id: 'big',      lvl: 1, name: 'Крупный старт',    desc: '+4 к стартовой массе за уровень', cost: costs(30, 10), info: l => `старт ${10 + 4 * l} массы` },
-    { id: 'speed',    lvl: 1, name: 'Обтекаемость',     desc: '+3% к скорости за уровень. Бонус «Ускорение» даёт +45%. Рывок: ×3,2 от стартовой скорости при любой массе', cost: costs(40, 10), info: l => `скорость ${Math.round(100 * (1 + 0.03 * l))}% (+${3 * l}%)` },
-    { id: 'dash',     lvl: 1, name: 'Реактивный рывок', desc: 'Рывок перезаряжается на 6% быстрее за уровень', cost: costs(35, 8), info: l => `перезарядка ${(4 * (1 - 0.06 * l)).toFixed(2)} с` },
-    { id: 'greed',    lvl: 1, name: 'Жадность',         desc: '+5% монет за раунд за уровень', cost: costs(50, 10), info: l => `+${5 * l}% монет` },
+    { id: 'speed',    lvl: 1, name: 'Обтекаемость',     desc: '+2% к скорости за уровень. Бонус «Ускорение» даёт +45%. Рывок: ×3,2 от стартовой скорости при любой массе', cost: costs(40, 10), info: l => `скорость ${Math.round(100 * (1 + 0.02 * l))}% (+${2 * l}%)` },
+    { id: 'dash',     lvl: 1, name: 'Реактивный рывок', desc: 'Рывок перезаряжается на 4% быстрее за уровень', cost: costs(35, 8), info: l => `перезарядка ${(4 * (1 - 0.04 * l)).toFixed(2)} с` },
+    { id: 'greed',    lvl: 1, name: 'Жадность',         desc: '+3% монет за раунд за уровень', cost: costs(50, 10), info: l => `+${3 * l}% монет` },
     { id: 'magnet',   lvl: 2, name: 'Магнит',           desc: 'Подбираешь крошки дальше на 0,8 за уровень', cost: costs(40, 8), info: l => `+${(0.8 * l).toFixed(1)} к радиусу` },
     { id: 'splitmax', lvl: 3, name: 'Больше частей',    desc: '+1 к максимуму частей за уровень (базово 4)', cost: costs(80, 6, 1.5), info: l => `${4 + l} частей` },
-    { id: 'bonus',    lvl: 3, name: 'Удачливость',      desc: 'Бонусы действуют на 10% дольше за уровень', cost: costs(50, 8), info: l => `+${10 * l}% к длительности` },
-    { id: 'digest',   lvl: 4, name: 'Пищеварение',      desc: '+4% массы от еды и капель за уровень', cost: costs(60, 10), info: l => `+${4 * l}% массы` },
-    { id: 'merge',    lvl: 4, name: 'Быстрое слияние',  desc: 'Части сливаются на 6% быстрее за уровень', cost: costs(50, 8), info: l => `слияние ${(14 * (1 - 0.06 * l)).toFixed(1)} с` },
+    { id: 'bonus',    lvl: 3, name: 'Удачливость',      desc: 'Бонусы действуют на 6% дольше за уровень', cost: costs(50, 8), info: l => `+${6 * l}% к длительности` },
+    { id: 'digest',   lvl: 4, name: 'Пищеварение',      desc: '+2,5% массы от еды и капель за уровень', cost: costs(60, 10), info: l => `+${(2.5 * l).toString().replace('.', ',')}% массы` },
+    { id: 'merge',    lvl: 4, name: 'Быстрое слияние',  desc: 'Части сливаются на 4% быстрее за уровень', cost: costs(50, 8), info: l => `слияние ${(14 * (1 - 0.04 * l)).toFixed(1)} с` },
     { id: 'life',     lvl: 5, name: 'Второй шанс',      desc: '+1 спасение за раунд: возрождаешься с 40% массы. В «Хардкоре» не действует', cost: costs(300, 3, 2.5), info: l => `спасений: ${l}` },
-    { id: 'light',    lvl: 5, name: 'Лёгкий рывок',     desc: 'Рывок длиннее, а массы забирает на 12% меньше за уровень', cost: costs(40, 6), info: l => `рывок ${(0.35 + 0.05 * l).toFixed(2)} с (×${((0.35 + 0.05 * l) / 0.35).toFixed(2)} длины), −${(3 * (1 - 0.12 * l)).toFixed(1)}% массы` },
-    { id: 'guard',    lvl: 6, name: 'Защита',           desc: 'Крупная капля теряет массу на 6% медленнее, а врагу нужно быть на 2% крупнее, чтобы съесть тебя — за каждый уровень', cost: costs(80, 8), info: l => `−${6 * l}% потерь, +${2 * l}% к защите` },
+    { id: 'light',    lvl: 5, name: 'Лёгкий рывок',     desc: 'Рывок длиннее, а массы забирает на 8% меньше за уровень', cost: costs(40, 6), info: l => `рывок ${(0.35 + 0.035 * l).toFixed(2)} с (×${((0.35 + 0.035 * l) / 0.35).toFixed(2)} длины), −${(3 * (1 - 0.08 * l)).toFixed(1)}% массы` },
+    { id: 'guard',    lvl: 6, name: 'Защита',           desc: 'Крупная капля теряет массу на 4% медленнее, а врагу нужно быть на 1,5% крупнее, чтобы съесть тебя — за каждый уровень', cost: costs(80, 8), info: l => `−${4 * l}% потерь, +${(1.5 * l).toString().replace('.', ',')}% к защите` },
     { id: 'keep',     hidden: true, lvl: 6, name: 'Сохранность',      desc: 'Крупная капля теряет массу на 10% медленнее за уровень', cost: costs(50, 8), info: l => `−${10 * l}% потерь` },
     { id: 'armor',    hidden: true, lvl: 7, name: 'Плотная оболочка', desc: 'Врагу нужно быть на 3% крупнее за уровень, чтобы съесть тебя', cost: costs(80, 8), info: l => `+${3 * l}% к защите` },
   ];
   UPG.forEach(u => { if (u.lvl > 1) u.lvl = 2 * u.lvl - 1; });
   // economy: the upper half of every upgrade's levels costs 50% more (the first levels stay cheap)
   UPG.forEach(u => { const h = Math.ceil(u.cost.length / 2); u.cost = u.cost.map((c, i) => i >= h ? Math.round(c * 1.5 / 5) * 5 : c); });
+  // 1.6.3: upgrades cost 50% more
+  UPG.forEach(u => { u.oldCost = u.cost; u.cost = u.cost.map(c => Math.round(c * 1.5 / 5) * 5); });
   // dash and split upgrades moved to the «Способности» tab as branches of those abilities (same save.up levels)
   const CATS = [
     ['Рост', ['big', 'digest', 'magnet']],
@@ -2240,9 +2242,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     // v45: upgrade levels got cheaper (×1,8 → ×1,5 per level): pay back what was overpaid
     let back = 0;
     for (const [id, lv] of Object.entries(save.abil.lv)) { const a = abilById(id); if (!a || !a.price) continue;
-      for (let l = 0; l < lv; l++) back += Math.round(a.price * ABIL_CFG.firstLevel * Math.pow(1.8, l) / 50) * 50 - abUpCost(a, l); }
+      for (let l = 0; l < lv; l++) back += Math.round(a.price * .5 * Math.pow(1.8, l) / 50) * 50 - Math.round(a.price * .5 * Math.pow(1.5, l) / 50) * 50; }
     if (back > 0) { save.coins += back; save.abilRefund = back; }
     save.abilGrowth = ABIL_CFG.growth;
+  }
+  if (!save.bal163) {
+    // 1.6.3: upgrades and ability levels became weaker: keep the levels, return 35% of what was spent on them
+    let spent = 0;
+    UPG.forEach(u => { for (let l = 0; l < Math.min(save.up[u.id] || 0, u.oldCost.length); l++) spent += u.oldCost[l]; });
+    for (const [id, lv] of Object.entries((save.abil && save.abil.lv) || {})) { const a = abilById(id); if (!a || !a.price) continue; for (let l = 0; l < lv; l++) spent += Math.round(a.price * .5 * Math.pow(1.5, l) / 50) * 50; }
+    const back = Math.round(spent * .35 / 5) * 5;
+    if (back > 0) { save.coins += back; save.bal163Refund = back; }
+    save.bal163 = true;
   }
   save.schema = 2;
   save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
@@ -3350,7 +3361,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   let running = false, paused = false, dying = false, lives = 0, dashCdBase = 4;
   let bossTimer = 20, bonusTimer = 0;
   let stats, history, doneQuests, effects, bonuses = [];
-  const effectDur = t => BONUS[t].dur * (1 + 0.1 * U.bonus) * (arenaIs('sakura') ? 1.25 : 1) * (1 + starBonus('bonus') / 100);
+  const effectDur = t => BONUS[t].dur * (1 + 0.06 * U.bonus) * (arenaIs('sakura') ? 1.25 : 1) * (1 + starBonus('bonus') / 100);
 
   function speedOf(c) {
     const o = c.owner;
@@ -3358,7 +3369,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (o.isPlayer) {
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT;
-      v *= (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
+      v *= (1 + 0.02 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
       v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
     }
     else if (o.freezeT > 0) v *= .05;
@@ -3368,13 +3379,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else v *= (o.star ? 1 : 0.92) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
     return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
-  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.02 * U.guard : 1.25;
+  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.015 * U.guard : 1.25;
   const canEat = (a, b) => !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
   const splitRules = () => dailyIs('splitonly');
   const playerMaxParts = () => splitRules() ? 10 : Math.min(10, 4 + U.splitmax);
-  const playerMergeTime = () => (splitRules() ? 8 : 14) * (1 - 0.06 * U.merge);
+  const playerMergeTime = () => (splitRules() ? 8 : 14) * (1 - 0.04 * U.merge);
   const playerSplitCd = () => splitRules() ? 3 : SPLIT_CD;
   const fmtBest = (m, v) => {
     if (!v) return LOWER_BETTER[m] ? '–' : m === 'team' ? '0 побед' : m === 'survival' || m === 'crown' ? '0:00' : '0';
@@ -3417,7 +3428,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         if (c.gone || (c.owner.isPlayer && e.age < 0.6)) continue;
         const r = cellR(c);
         if (r > 1.3 && Math.hypot(c.x - e.x, c.z - e.z) < r) {
-          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.04 * U.digest : 1);
+          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.025 * U.digest : 1);
           scene.remove(e.mesh); ejects.splice(i, 1);
           break;
         }
@@ -3495,7 +3506,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     player.dashCd = 0; player.dashT = 0;
     owners.forEach(o => o.splitCd = 0);
     lives = mode === 'hardcore' ? 0 : U.life;
-    dashCdBase = dailyIs('dashonly') ? 1 : 4 * (1 - 0.06 * U.dash);
+    dashCdBase = dailyIs('dashonly') ? 1 : 4 * (1 - 0.04 * U.dash);
     mode = isTut ? 'classic' : isChaos ? seasonMode(save.chaos.id) : pendingRanked ? leagueMode() : save.mode;
     if (isTut) lives = 99;
     const ranked = pendingRanked;
@@ -3812,7 +3823,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const cParts = [['Масса', Math.sqrt(stats.maxMass) * 2.6], ['Съеденные капли', stats.kills * 5], ['Прислужники', stats.minions], ['Боссы и звёзды', stats.bossCoins],
                     ['Комбо', stats.comboCoins || 0], ['Время в игре', stats.time / 10], ['Бонус режима', placeBonus], ['Выживание', surviveBonus]].map(([k, v]) => [k, Math.round(v)]).filter(([, v]) => v > 0);
     const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
-    if (U.greed) cMul.push([`«Жадность» +${5 * U.greed}%`, 1 + .05 * U.greed]);
+    if (U.greed) cMul.push([`«Жадность» +${3 * U.greed}%`, 1 + .03 * U.greed]);
     if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);
     if (arenaIs('olympus')) cMul.push(['Арена «Олимп»', 1.05]);
     // П8: every star of the skin you wear gives +1% coins (normal modes only)
@@ -4084,9 +4095,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
   function dash() {
     if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
-    player.dashT = 0.35 + 0.05 * U.light; player.dashCd = dashCdBase; stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
+    player.dashT = 0.35 + 0.035 * U.light; player.dashCd = dashCdBase; stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     { const [x, z] = pCenterXZ(); abFlash('dash', x, z, null, 'dash'); }
-    const cost = 0.03 * (1 - 0.12 * U.light);
+    const cost = 0.03 * (1 - 0.08 * U.light);
     player.cells.forEach(c => c.mass = Math.max(START_MASS * 0.5, c.mass * (1 - cost)));
   }
   function splitOwner(o, max, mergeTime) {
@@ -4384,7 +4395,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
     // food + decay
     const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
-    const pGain = (1 + 0.04 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * (arenaIs('jungle') ? 1.15 : 1);
+    const pGain = (1 + 0.025 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * (arenaIs('jungle') ? 1.15 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const r = cellR(c) + (isP ? pMagnet : 0);
@@ -4399,7 +4410,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         }
       }
       // decay grows with size, so mass can't snowball forever
-      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.06 * U.guard : 1) * dt;
+      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.04 * U.guard : 1) * dt;
     }
 
     // bonuses (player only)
@@ -4423,7 +4434,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
-        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.04 * U.digest : 1) * (abOn('x_vamp', a.owner) ? 1.2 : 1);
+        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.025 * U.digest : 1) * (abOn('x_vamp', a.owner) ? 1.2 : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
@@ -4496,10 +4507,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       sp.textContent = `${Math.round(v / m / BASE_SPEED * 100)}%`;
       sp.classList.toggle('boost', player.dashT > 0 || effects.speed > 0);
       const parts = [];
-      if (U.speed) parts.push(`+${3 * U.speed}% улучш.`);
+      if (U.speed) parts.push(`+${2 * U.speed}% улучш.`);
       if (effects.speed > 0) parts.push('+45% бонус');
       if (player.dashT > 0) parts.push('рывок ×3,2 от стартовой');
-      const mult = (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (player.dashT > 0 ? DASH_MULT / Math.pow(Math.max(1, m / player.cells.length) / START_MASS, -0.15) : 1);
+      const mult = (1 + 0.02 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (player.dashT > 0 ? DASH_MULT / Math.pow(Math.max(1, m / player.cells.length) / START_MASS, -0.15) : 1);
       setText('buff', mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : '');
       sp.title = parts.join(', ') || 'Без бафов';
     } else $('speed').textContent = '–';
@@ -4733,6 +4744,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 163, ver: '1.6.3', date: '1 ноября', title: 'Ребаланс прокачки', refund: true,
+      lead: 'Мы перебалансировали улучшения и способности, чтобы прогресс был равномернее: сила растёт постепенно, без резких скачков, а новички не отстают от прокачанных игроков в разы.', items: [
+      'Улучшения дают меньше: «Жадность» до +30% монет, «Пищеварение» до +25% массы, «Обтекаемость» до +20% скорости, «Защита» −4% потерь и +1,5% к защите за уровень.',
+      'Рывок, слияние и «Удачливость» тоже слабее за уровень: −4% перезарядки и слияния, +6% к длительности бонусов.',
+      'Уровни способностей: −4% перезарядки и +6,5% к силе за уровень (было −6% и +10%).',
+      'Улучшения и уровни способностей стали в 1,5 раза дороже.',
+      'Купленные уровни остаются у тебя, а 35% потраченных на них монет возвращены.',
+    ] },
     { id: 162, ver: '1.6.2', date: '1 ноября', title: 'Честнее улучшения', gift: 500, items: [
       '«Жадность»: +5% монет за уровень вместо +8% (на максимуме +50%).',
       '«Пищеварение»: +4% массы за уровень вместо +6% (на максимуме +40%).',
@@ -4744,7 +4763,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     ] },
   ];
   function newsHtml(list) {
-    return list.map(n => `<div class="news-item"><h3>${n.title}<small>${n.ver} · ${n.date}</small></h3><ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}</div>`).join('');
+    return list.map(n => `<div class="news-item"><h3>${n.title}<small>${n.ver} · ${n.date}</small></h3>${n.lead ? `<p>${n.lead}</p>` : ''}<ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}</div>`).join('');
   }
   function newsUnseen() { return NEWS.filter(n => n.id > (save.newsSeen || 0)); }
   function newsRefresh() { $('newsDot').hidden = !newsUnseen().length; }
@@ -5328,9 +5347,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       `«Разлом» открывается с ${CHAOS_CFG.tierLevel[4]} уровня, «Сингулярность» — с ${CHAOS_CFG.tierLevel[5]}-го. Награды: монеты всем; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда получены все — облик способности. За 5, 10, 25 и 50 сезонов в «Сингулярности» — особые награды.`,
       'Полученные эксклюзивные способности можно ставить в билд в обычных режимах (без улучшений). В рейтинге основной лиги и в Хаос-лиге их выбрать нельзя.'],
     mab: () => ['Здесь билд — три слота способностей (Пробел, E, Q) — и все способности, которые у тебя есть.', 'Улучшаемые — купленные в магазине, а также рывок и деление (они есть у всех). Улучшения — в «Магазине» → «Способности».', 'Без улучшений — эксклюзивы Хаос-лиги: даются за «Сингулярность».', 'Облик способности выбирается под слотом, если он у тебя есть. Облики меняют только вид и работают в обычных режимах и в Хаос-лиге.'],
-    abil: () => ['Здесь покупаются новые способности и улучшаются купленные. Улучшения каждой способности — в своей шторке: до 5 уровней, меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения.',
+    abil: () => ['Здесь покупаются новые способности и улучшаются купленные. Улучшения каждой способности — в своей шторке: до 5 уровней, за уровень перезарядка −4% и эффект +6,5%. У рывка и деления свои улучшения.',
       'Билд (что стоит в трёх слотах), купленные и полученные способности и облики — в «Коллекция» → «Способности».', 'В рейтинге и «Королевской битве» у всех рывок, деление и выброс, купленное там не действует. Эксклюзивы Хаос-лиги не улучшаются.'],
-    up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.', 'Баланс 1.6.2: «Жадность» +5% монет за уровень (до +50%), «Пищеварение» +4% массы (до +40%), «Защита» −6% потерь и +2% к защите за уровень, «Второй шанс» — 40% массы, «Магнит» +0,8 и «Крупный старт» +4 за уровень.'],
+    up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.', 'Улучшения дают небольшой прирост — так прогресс равномернее: прокачанный игрок сильнее, но не в разы, и всё решает умение. Например, «Жадность» на максимуме +30% монет, «Пищеварение» +25% массы, «Обтекаемость» +20% скорости.'],
     skin: () => ['Здесь скины, которые можно купить за монеты. Купленный скин появляется в гардеробе.', 'Остальные скины выпадают из сундуков, даются за испытания, достижения, лигу и сезоны.', 'Нажми на скин, чтобы посмотреть его подробнее.'],
     fx: () => ['Эффекты бывают трёх видов: след, аура и эффект поедания. В каждом слоте можно надеть один.', 'Здесь эффекты, которые продаются за монеты. Остальные — в сундуках, испытаниях и коллекциях.'],
     arena: () => ['Тема арены меняет пол, сетку, края арены, туманности и частицы вокруг.', 'Темы открываются с определённого уровня игрока, эксклюзивные — с 30-го. Купленные темы — в гардеробе.'],
@@ -6494,7 +6513,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '62';
+const APP_VER = '63';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

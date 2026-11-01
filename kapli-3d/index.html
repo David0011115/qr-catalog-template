@@ -2164,6 +2164,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // quest rewards grow with your level (×2 at level 31)
   const questMul = () => 1 + (levelInfo(save.xp).level - 1) / 30;
   const qCoins = q => Math.round(q.coins * questMul()), qXp = q => Math.round(q.xp * questMul());
+  const BONUS_HINT = { speed: 'ты на 45% быстрее', shield: 'тебя нельзя съесть', double: 'еда даёт вдвое больше массы', magnet: 'крошки притягиваются издалека' };
   const BONUS = {
     speed:  { name: 'Ускорение',    color: '#ffd166', dur: 7 },
     shield: { name: 'Неуязвимость', color: '#5ce1e6', dur: 5 },
@@ -3950,6 +3951,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('resDrawer').open = false;
     renderAll();
     Sound.play(stats.win ? 'win' : 'lose'); if (lvAfter > lvBefore) setTimeout(() => Sound.play('level'), 600);
+    if (record && mode !== 'team' && !stats.tutorial) setTimeout(() => Sound.play('record'), 1100);
+    if ((stats.ranked && !stats.chaos && lgAfter > lgBefore) || (chaosR && chaosOf(save.chaos.pts) > chaosOf(save.chaos.pts - chaosR.net))) setTimeout(() => Sound.play('rankup'), 1600);
     showCard('resultCard');
     $('overlay').hidden = false;
     setGameUi(false);
@@ -4379,7 +4382,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         effects[b.type] = Math.min(30, effects[b.type] + effectDur(b.type));
         emit(b.x, 1.2, b.z, BONUS[b.type].color, 36, 16, .7);
         stats.bonuses++;
-        toast(`${BONUS[b.type].name}${stacked ? ` ×стак: ${Math.ceil(effects[b.type])} с` : '!'}`); Sound.play('bonus');
+        save.bonusHint = save.bonusHint || {}; const hint = (save.bonusHint[b.type] || 0) < 3;
+        if (hint) save.bonusHint[b.type] = (save.bonusHint[b.type] || 0) + 1;
+        toast(`${BONUS[b.type].name}${stacked ? ` ×стак: ${Math.ceil(effects[b.type])} с` : '!'}${hint ? ` — ${BONUS_HINT[b.type]}` : ''}`); Sound.play('bonus');
         scene.remove(b.mesh); bonuses.splice(i, 1);
       }
     }
@@ -5425,6 +5430,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       win: () => arp([523, 659, 784, 1047, 1319], .1, { type: 'triangle', vol: .14, dur: .4 }),
       lose: () => arp([392, 330, 262, 196], .13, { type: 'triangle', vol: .12, dur: .4 }),
       chest: () => { noise(.3, { vol: .12, f: 5000, type: 'highpass' }); arp([784, 988, 1175, 1568], .07, { vol: .09, dur: .3, at: .2 }); },
+      record: () => arp([784, 988, 1175, 1568, 1976], .07, { type: 'triangle', vol: .13, dur: .22 }),
+      rankup: () => { arp([523, 784, 1047, 1568], .09, { type: 'square', vol: .09, dur: .25 }); setTimeout(() => arp([1568, 2093], .1, { type: 'triangle', vol: .1, dur: .35 }), 380); },
       level: () => arp([659, 784, 988, 1319], .07, { type: 'square', vol: .06, dur: .25, lp: 3000 }),
       lookA: () => arp([660, 990, 1320], .05, { type: 'triangle', vol: .1, dur: .14 }),
       lookB: () => arp([1175, 880, 1568], .05, { type: 'square', vol: .06, dur: .12 }),
@@ -6405,7 +6412,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '57';
+const APP_VER = '58';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

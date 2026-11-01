@@ -123,7 +123,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .board li.boss { color: var(--boss); font-weight: 600; }
 .quests li.legend { color: var(--gold); }
 .quests li.week-li { cursor: pointer; outline: 1px dashed var(--line); }
-.quests li.week-li:hover, .quests li.week-li:focus-visible { outline: 1px solid var(--food); }
+.quests li.goal-sep { background: transparent; padding-top: 8px; color: var(--muted); font-size: .78rem; }
+.quests li.done { opacity: .6; } .quests li small { color: var(--muted); font-size: .72rem; }
 .quests li.skill { color: var(--food); }
 .chip.boss-chip.soon { color: var(--boss); border-color: var(--boss); animation: bossSoon .8s ease-in-out infinite; }
 @keyframes bossSoon { 50% { box-shadow: 0 0 12px rgba(255, 45, 117, .6); } }
@@ -366,7 +367,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .m-row small { color: var(--muted); font-size: .75rem; }
 .m-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .9rem; }
 .m-lv { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.m-lv.l1 { color: #cd7f32; } .m-lv.l2 { color: #c0c8e0; } .m-lv.l3 { color: #ffd23f; } .m-lv.l4 { color: #7fe8ff; } .m-lv.l5 { color: #ff4fd8; text-shadow: 0 0 6px #ff4fd8; }
+.m-lv.l1 { color: #cd7f32; } .m-lv.l2 { color: #ffd23f; } .m-lv.l3 { color: #ff4fd8; text-shadow: 0 0 6px #ff4fd8; } .m-lv.l4 { color: #7fe8ff; } .m-lv.l5 { color: #ff4fd8; text-shadow: 0 0 6px #ff4fd8; }
 .modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(5, 4, 15, .72);
   padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); touch-action: pan-y; }
@@ -428,6 +429,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .menu-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .menu-btns #startBtn, .menu-btns #installBtn, .menu-btns .hint, .menu-btns .league-btn { grid-column: 1 / -1; }
 .league-btn b { font-weight: 400; font-family: var(--display); }
+.hub-btn { text-align: left; } .hub-btn small { display: block; color: var(--muted); font-weight: 400; font-size: .72rem; margin-top: 2px; }
+.hub-list { display: grid; gap: 10px; grid-template-columns: 1fr; }
+.menu-icons { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.icon-btn { flex: 1; max-width: 110px; display: grid; justify-items: center; gap: 2px; background: var(--row); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; color: var(--fg); font: inherit; font-size: 1.15rem; cursor: pointer; }
+.icon-btn small { font-size: .66rem; color: var(--muted); }
+.icon-btn:focus-visible, .hub-btn:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
 .mode-btn { width: 100%; text-align: left; display: block; } .mode-btn b { font-family: var(--display); font-weight: 400; } .mode-btn small { color: var(--muted); font-weight: 400; }
 .chaos-btn { border-color: #ff4fd8 !important; box-shadow: 0 0 10px rgba(255, 79, 216, .35), 0 0 6px rgba(34, 230, 255, .25) inset; }
 .chaos-xa { display: grid; gap: 8px; }
@@ -669,24 +676,21 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <div class="track"><div class="fill" id="lvlFill"></div></div>
     </div>
     <button class="btn ghost mode-btn" id="modeBtn">Режим</button>
-    <h2 class="section-title">Задания</h2>
+    <h2 class="section-title">Цели</h2>
     <ul class="quests" id="menuQuests"></ul>
     <div class="btns menu-btns">
       <button class="btn" id="startBtn">Играть</button>
-      <button class="btn ghost league-btn" id="leagueBtn">Лига</button>
-      <button class="btn ghost league-btn chaos-btn" id="chaosBtn">Хаос-лига</button>
-      <button class="btn ghost" id="shopBtn">Магазин <span class="coin" id="menuCoins">0 ◆</span></button>
-      <button class="btn ghost" id="wardBtn">Гардероб</button>
-      <button class="btn ghost" id="petBtn">Питомцы <span id="petCount">0</span></button>
-      <button class="btn ghost" id="colBtn">Коллекции <span id="colCount">0</span></button>
-      <button class="btn ghost" id="chestBtn">Сундуки <span class="coin" id="chestCountBtn">0</span></button>
       <button class="btn ghost" id="installBtn" hidden>Установить на телефон</button>
       <p class="hint" id="iosHint" hidden>Чтобы установить: нажми «Поделиться», затем «На экран „Домой“».</p>
-      <button class="btn ghost" id="chBtn">Испытания <span id="chCount">0/0</span></button>
-      <button class="btn ghost" id="achBtn">Достижения <span id="achCount">0/0</span></button>
-      <button class="btn ghost" id="profBtn">Профиль</button>
-      <button class="btn ghost" id="infoBtn">Информация</button>
-      <button class="btn ghost" id="setBtn">Настройки</button>
+      <button class="btn ghost hub-btn" id="hubLeagueBtn" data-hub="hubLeague">🏆 Лиги <small id="hubLeagueSub"></small></button>
+      <button class="btn ghost hub-btn" id="hubColBtn" data-hub="hubCol">🎨 Коллекция <small id="hubColSub"></small></button>
+      <button class="btn ghost hub-btn" id="hubRewBtn" data-hub="hubRew">🎁 Награды <small id="hubRewSub"></small></button>
+      <button class="btn ghost hub-btn" id="shopBtn">🛒 Магазин <span class="coin" id="menuCoins">0 ◆</span></button>
+    </div>
+    <div class="menu-icons">
+      <button class="icon-btn" id="profBtn" aria-label="Профиль">👤<small>Профиль</small></button>
+      <button class="icon-btn" id="infoBtn" aria-label="Информация">ⓘ<small>Информация</small></button>
+      <button class="icon-btn" id="setBtn" aria-label="Настройки">⚙<small>Настройки</small></button>
     </div>
     </div>
   </div>
@@ -739,6 +743,32 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <h2 class="section-title">Сундук лиги: шансы</h2>
     <table class="lg-odds" id="lgOdds"></table>
     <button class="btn ghost" id="chestBack">Назад</button>
+  </div>
+
+  <div class="card" id="hubLeague" hidden>
+    <h1>Лиги</h1>
+    <div class="btns hub-list">
+      <button class="btn ghost league-btn" id="leagueBtn">Лига</button>
+      <button class="btn ghost league-btn chaos-btn" id="chaosBtn">Хаос-лига</button>
+    </div>
+    <button class="btn ghost" data-hubback>Назад</button>
+  </div>
+  <div class="card" id="hubCol" hidden>
+    <h1>Коллекция</h1>
+    <div class="btns hub-list">
+      <button class="btn ghost" id="wardBtn">Гардероб</button>
+      <button class="btn ghost" id="petBtn">Питомцы <span id="petCount">0</span></button>
+      <button class="btn ghost" id="colBtn">Коллекции <span id="colCount">0</span></button>
+    </div>
+    <button class="btn ghost" data-hubback>Назад</button>
+  </div>
+  <div class="card" id="hubRew" hidden>
+    <h1>Награды</h1>
+    <div class="btns hub-list">
+      <button class="btn ghost" id="chestBtn">Сундуки <span class="coin" id="chestCountBtn">0</span></button>
+      <button class="btn ghost" id="achBtn">Достижения <span id="achCount">0/0</span></button>
+    </div>
+    <button class="btn ghost" data-hubback>Назад</button>
   </div>
 
   <div class="card" id="modesCard" hidden>
@@ -957,7 +987,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
         <li><b>Достижения</b> дают монеты один раз. <b>Испытания</b> дают скины и эффекты плюс сундук.</li>
         <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги.</li>
-        <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 5 уровней: Бронза +200 ◆, Серебро +400 ◆, Золото — рамка режима, Платина +800 ◆, Легенда — титул режима. Прогресс — в «Профиле».</li>
+        <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 3 уровня: Бронза +600 ◆, Золото — рамка режима и +800 ◆, Легенда — титул режима. Прогресс — в «Профиле».</li>
       </ul>
     </details>
     <details><summary>Хаос-лига</summary>
@@ -1249,17 +1279,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'merge',    lvl: 4, name: 'Быстрое слияние',  desc: 'Части сливаются на 6% быстрее за уровень', cost: costs(50, 8), info: l => `слияние ${(14 * (1 - 0.06 * l)).toFixed(1)} с` },
     { id: 'life',     lvl: 5, name: 'Второй шанс',      desc: '+1 спасение за раунд: выживаешь с половиной массы', cost: costs(200, 3, 2.5), info: l => `спасений: ${l}` },
     { id: 'light',    lvl: 5, name: 'Лёгкий рывок',     desc: 'Рывок длиннее, а массы забирает на 12% меньше за уровень', cost: costs(40, 6), info: l => `рывок ${(0.35 + 0.05 * l).toFixed(2)} с (×${((0.35 + 0.05 * l) / 0.35).toFixed(2)} длины), −${(3 * (1 - 0.12 * l)).toFixed(1)}% массы` },
-    { id: 'keep',     lvl: 6, name: 'Сохранность',      desc: 'Крупная капля теряет массу на 10% медленнее за уровень', cost: costs(50, 8), info: l => `−${10 * l}% потерь` },
-    { id: 'armor',    lvl: 7, name: 'Плотная оболочка', desc: 'Врагу нужно быть на 3% крупнее за уровень, чтобы съесть тебя', cost: costs(80, 8), info: l => `+${3 * l}% к защите` },
+    { id: 'guard',    lvl: 6, name: 'Защита',           desc: 'Крупная капля теряет массу на 10% медленнее, а врагу нужно быть на 3% крупнее, чтобы съесть тебя — за каждый уровень', cost: costs(80, 8), info: l => `−${10 * l}% потерь, +${3 * l}% к защите` },
+    { id: 'keep',     hidden: true, lvl: 6, name: 'Сохранность',      desc: 'Крупная капля теряет массу на 10% медленнее за уровень', cost: costs(50, 8), info: l => `−${10 * l}% потерь` },
+    { id: 'armor',    hidden: true, lvl: 7, name: 'Плотная оболочка', desc: 'Врагу нужно быть на 3% крупнее за уровень, чтобы съесть тебя', cost: costs(80, 8), info: l => `+${3 * l}% к защите` },
   ];
   UPG.forEach(u => { if (u.lvl > 1) u.lvl = 2 * u.lvl - 1; });
   // economy: the upper half of every upgrade's levels costs 50% more (the first levels stay cheap)
   UPG.forEach(u => { const h = Math.ceil(u.cost.length / 2); u.cost = u.cost.map((c, i) => i >= h ? Math.round(c * 1.5 / 5) * 5 : c); });
   // dash and split upgrades moved to the «Способности» tab as branches of those abilities (same save.up levels)
   const CATS = [
-    ['Рост', ['big', 'digest', 'magnet', 'keep']],
+    ['Рост', ['big', 'digest', 'magnet']],
     ['Движение', ['speed']],
-    ['Защита', ['life', 'armor']],
+    ['Защита', ['life', 'guard']],
     ['Награды', ['greed', 'bonus']],
   ];
   // cosmetic effects: one per slot, bought or earned in challenges (ex: true = challenge only)
@@ -1595,7 +1626,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   [['fire', 'Повелитель огня', '#ff6a00'], ['ice', 'Снежный король', '#9fe8ff'], ['star', 'Звездочёт', '#ffd23f'], ['volt', 'Громовержец', '#22e6ff'], ['party', 'Душа вечеринки', '#ff4fd8'], ['void', 'Хранитель бездны', '#b26bff']]
     .forEach(([k, n, c]) => DECOR.push({ id: 'tt_col_' + k, kind: 'title', name: n, color: c, col: true }));
   // mastery of each mode: 5 levels; level 3 gives a frame, level 5 a title
-  const MASTERY_LV = [{ name: 'Бронза', pts: 100, coins: 200 }, { name: 'Серебро', pts: 300, coins: 400 }, { name: 'Золото', pts: 700, frame: true }, { name: 'Платина', pts: 1500, coins: 800 }, { name: 'Легенда', pts: 3000, title: true }];
+  const MASTERY_LV = [{ name: 'Бронза', pts: 300, coins: 600 }, { name: 'Золото', pts: 1000, frame: true, coins: 800 }, { name: 'Легенда', pts: 3000, title: true }];
   const MASTERY_TITLE = { classic: 'Классик', timed: 'Повелитель времени', survival: 'Бессмертный', split: 'Виртуоз деления', crown: 'Коронованный', race: 'Король гонки', team: 'Капитан команды',
     giant: 'Гроза колоссов', hardcore: 'Хардкорщик', daily: 'Герой дня', raid: 'Рейдер', royale: 'Последний выживший' };
   Object.keys(MODES).forEach((m, i) => {
@@ -2078,6 +2109,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   save.build = (save.build || ABIL_CFG.newBuild).slice(0, ABIL_CFG.slots).map(id => id && abilById(id) && save.abil.owned.includes(id) ? id : null);
   save.build = save.build.map((id, i) => id && save.build.indexOf(id) !== i ? null : id);
   while (save.build.length < ABIL_CFG.slots) save.build.push(null);
+  if (save.up.keep || save.up.armor) {
+    // v47: the two merged into «Защита» — keep the higher level, pay back what the other one cost
+    const K = UPG.find(u => u.id === 'keep'), A = UPG.find(u => u.id === 'armor'), lk = save.up.keep || 0, la = save.up.armor || 0;
+    const spent = (u, l) => u.cost.slice(0, l).reduce((x, y) => x + y, 0);
+    save.up.guard = Math.max(save.up.guard || 0, lk, la);
+    const back = lk >= la ? spent(A, la) : spent(K, lk);
+    if (back) save.coins += back;
+    save.up.keep = save.up.armor = 0;
+  }
   if (!save.abilGrowth) {
     // v45: upgrade levels got cheaper (×1,8 → ×1,5 per level): pay back what was overpaid
     let back = 0;
@@ -3201,7 +3241,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else v *= (o.star ? 1 : 0.92) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
     return v * (dailyIs('speedy') ? 1.3 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
-  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.armor : 1.25;
+  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.guard : 1.25;
   const canEat = (a, b) => !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
@@ -4228,7 +4268,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         }
       }
       // decay grows with size, so mass can't snowball forever
-      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.1 * U.keep : 1) * dt;
+      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.1 * U.guard : 1) * dt;
     }
 
     // bonuses (player only)
@@ -4446,7 +4486,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'infoCard', 'pauseCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -4562,10 +4602,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('infoBtn').addEventListener('click', () => { renderInfo(); showCard('infoCard'); $('infoBack').focus(); });
   $('infoBack').addEventListener('click', () => { showCard('menuCard'); $('infoBtn').focus(); });
   $('achBtn').addEventListener('click', () => openView('goals', 'ach'));
-  $('chBtn').addEventListener('click', () => openView('goals', 'ch'));
+
   // the weekly line in the menu opens the «Неделя» tab
-  $('menuQuests').addEventListener('click', e => { if (e.target.closest('#weekLi')) openView('goals', 'week'); });
-  $('menuQuests').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'weekLi') { e.preventDefault(); openView('goals', 'week'); } });
+  // menu groups: each opens its own small window; ← back returns to the menu
+  document.querySelectorAll('[data-hub]').forEach(b => b.addEventListener('click', () => { showCard(b.dataset.hub); const f = $(b.dataset.hub).querySelector('.hub-list button'); if (f) f.focus(); }));
+  document.querySelectorAll('[data-hubback]').forEach(b => b.addEventListener('click', () => { showCard('menuCard'); $('startBtn').focus(); }));
   $('modes').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     save.mode = b.dataset.mode; mode = save.mode; persist(); renderAll();
@@ -4614,7 +4655,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('lvlFill').style.width = (li.into / li.need * 100) + '%';
     $('menuQuests').innerHTML = save.quests.map(id => QUESTS.find(q => q.id === id))
       .map(q => `<li><span>${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`).join('') +
-      (() => { const W = weeklyState(); return `<li class="week-li" id="weekLi" role="button" tabindex="0" aria-label="Открыть задания недели"><span>📅 Задания недели: ${W.done.length} из 3</span><span class="rw">открыть ›</span></li>`; })();
+      (() => { const W = weeklyState(), days = Math.max(1, Math.ceil(((W.week + 1) * 7 - 3) - Date.now() / 864e5));
+        return `<li class="goal-sep"><span>📅 На неделю · ещё ${days} дн.</span><span class="rw">${W.done.length}/3${W.bonus ? ' · +' + WEEK_BONUS + ' ◆ получено' : ` · за все +${WEEK_BONUS} ◆`}</span></li>` +
+          weeklyTasks(W.week).map(t => { const v = Math.min(t.n, W.prog[t.id] || 0), ok = W.done.includes(t.id), R = RARITY[WEEK_RAR[t.tier]];
+            return `<li class="${ok ? 'done' : ''}"><span>${ok ? '✓ ' : ''}${t.text(t.n)} <small>${v.toLocaleString('ru-RU')}/${t.n.toLocaleString('ru-RU')}</small></span><span class="rw" style="color:${R.color}">сундук «${R.name}»</span></li>`; }).join(''); })();
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
@@ -4623,8 +4667,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       `<button class="mode" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${save.mode === id}" ${id === 'royale' && !TEST_MODE ? 'disabled' : ''}><b>${m.name}</b><small>${m.desc}</small>` +
       (id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })() : id === 'royale' ? `<span class="lg-tag">${TEST_MODE ? 'Открыта для теста' : 'Только в лиге'} · сезон ${nextSeasonOf('royale')}</span>` : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '') +
       `<small>Рекорд: ${fmtBest(id, save.bests[id] || 0)}</small></button>`).join('');
-    $('achCount').textContent = `${save.ach.length}/${ACH.length}`;
-    $('chCount').textContent = `${save.chDone.length}/${CHALLENGES.length}`;
+    $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;
+    { const lg = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null), ct = CHAOS_TIERS[chaosOf(save.chaos.pts)];
+      $('hubLeagueSub').innerHTML = `<span style="color:${lg.color}">${lg.name}</span>${chaosOpen() ? ` · Хаос: <span style="color:${ct.color}">${ct.name}</span>` : ''}`;
+      const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
+      $('hubColSub').textContent = ready ? `можно забрать: ${ready}` : `коллекций ${save.colDone.length}/${COLLECTIONS.length}`;
+      const ch = chestTotal() + (save.dailyChestDay !== today ? 1 : 0);
+      $('hubRewSub').textContent = ch ? `сундуков: ${ch}` : `достижений ${save.ach.length}/${ACH.length}`; }
     $('chestCountBtn').textContent = chestTotal() + (save.dailyChestDay !== today ? ' +1' : '');
     $('petCount').textContent = `${save.pets.length}/${PETS.length}`;
     { const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
@@ -4654,7 +4703,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
-    goals:    { title: 'Испытания и достижения', tabs: [['week', 'Неделя'], ['ch', 'Испытания'], ['ach', 'Достижения'], ['skill', 'Мастерские'], ['legend', 'Легендарные']] },
+    goals:    { title: 'Достижения', tabs: [['ach', 'Достижения'], ['ch', 'Испытания'], ['skill', 'Мастерские'], ['legend', 'Легендарные']] },
   };
   let shopView = 'shop';
   const FX_ICON = { trail: '〰', aura: '◎', eat: '✦' };
@@ -5829,7 +5878,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('psMastery').textContent = `· с уровнем ${MODE_IDS.filter(id => masteryLv(save.mastery[id] || 0)).length} из ${MODE_IDS.length}`;
     $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0) + SPECIAL.filter(b => save.badges && save.badges[b.id]).length} из ${2 + SPECIAL.length}`;
     $('psSeasons').textContent = `· ${save.seasonLog.length + (seasonStarted ? 1 : 0)}`;
-    $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +200 ◆, Серебро +400 ◆, Золото — рамка, Платина +800 ◆, Легенда — титул.</p>' +
+    $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +600 ◆, Золото — рамка и +800 ◆, Легенда — титул.</p>' +
       MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
         const pts = save.mastery[id] || 0, lv = masteryLv(pts), prev = lv ? MASTERY_LV[lv - 1].pts : 0, nx = MASTERY_LV[lv];
         const pct = nx ? (pts - prev) / (nx.pts - prev) * 100 : 100;
@@ -6181,7 +6230,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '46';
+const APP_VER = '47';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

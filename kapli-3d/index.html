@@ -296,6 +296,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .unlock { text-align: center; color: var(--prey); font-size: .9rem; }
 
 .shop-card { max-width: 540px; }
+.g-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
+.g-tiles .hub-btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.g-tiles .hub-btn { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; text-align: left; min-height: 64px; padding: 10px 12px; }
+.g-tiles .hub-btn small { display: block; margin: 0; line-height: 1.25; }
+.g-tiles[hidden], .g-group[hidden], .g-hide[hidden] { display: none !important; }
+.g-group { display: grid; gap: 8px; margin-bottom: 10px; } .g-title { margin: 0 0 4px; font-size: 1rem; }
+.info-card .g-group details { background: var(--row); border-radius: 12px; padding: 0 12px; }
+.prof-id { display: flex; gap: 12px; align-items: center; background: var(--row); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+.prof-id-txt { display: grid; gap: 4px; min-width: 0; flex: 1; } .prof-id-txt small { color: var(--muted); font-size: .78rem; }
+.shop-drawer { margin-bottom: 8px; } .shop-drawer .drawer-body { display: grid; gap: 8px; } .shop-drawer summary .cnt { font-weight: 400; }
 .shop-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .shop-head h1 { font-size: 1.3rem; text-align: left; }
 .shop-head b { font-family: var(--display); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
@@ -760,6 +770,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <button class="btn ghost" id="wardBtn">Гардероб</button>
       <button class="btn ghost" id="petBtn">Питомцы <span id="petCount">0</span></button>
       <button class="btn ghost" id="colBtn">Коллекции <span id="colCount">0</span></button>
+      <button class="btn ghost" id="myAbilBtn">Способности <span id="abilCount">0</span></button>
     </div>
     <button class="btn ghost" data-hubback>Назад</button>
   </div>
@@ -827,25 +838,38 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <h1>Профиль</h1>
     <button class="tab-info-btn" data-infotpl="tplProfile" data-infotitle="Профиль">ⓘ Информация · Профиль</button>
     <template id="tplProfile"><ul class="ti-list">
-      <li>Вверху — уровень, лига, собранные скины, эффекты, питомцы, достижения, испытания, коллекции, способности и ступень Хаос-лиги.</li>
-      <li>Ниже разделы-шторки: нажми на заголовок, чтобы открыть. В заголовке — короткий итог.</li>
+      <li>Вверху — твоё имя с рамкой и титулом, уровень, лига и ступень Хаос-лиги; ниже — сколько собрано скинов, эффектов, питомцев, способностей, коллекций и достижений и ступень Хаос-лиги.</li>
+      <li>Ниже четыре раздела: Статистика, Мастерство и рекорды, Значки, Сезоны. Нажми, чтобы открыть; «← Профиль» возвращает назад.</li>
       <li><b>Статистика</b> — всё за всю игру. <b>Сундуки</b> — сколько открыто, каких и сколько выпадает в час за 7 дней.</li>
       <li><b>Мастерство режимов</b> — очки за раунды в каждом режиме: монеты, рамка и титул. <b>Рекорды</b> и <b>график</b> — лучшие результаты и пик массы последних раундов.</li>
       <li><b>Особые значки</b> — редкие значки за большие цели. <b>Значки Хаос-лиги</b> и <b>значки сезонов</b> — по одному за каждый сезон с очками; форма и цвет зависят от ступени.</li>
       <li>Рамка и титул выбираются в «Гардеробе» → «Украшения».</li></ul></template>
-    <div class="prof-head" id="profHead"></div>
-    <div class="prof-secs">
-    <details class="res-drawer"><summary>Статистика <small class="cnt" id="psStats"></small></summary><div class="res-grid" id="profStats"></div></details>
-    <details class="res-drawer"><summary>Сундуки <small class="cnt" id="psChests"></small></summary><div class="res-grid" id="profChests"></div>
-      <details class="res-drawer inner" id="chestDrawer"><summary>Каких сколько открыто <small class="cnt" id="chestDrawerCnt"></small></summary><div id="chestDrawerBody"></div></details></details>
-    <details class="res-drawer"><summary>Мастерство режимов <small class="cnt" id="psMastery"></small></summary><div class="mastery" id="profMastery"></div></details>
-    <details class="res-drawer"><summary>Рекорды режимов</summary><dl class="keys" id="profBests"></dl></details>
-    <details class="res-drawer" id="chartDrawer"><summary>Последние раунды · пик массы</summary><canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas></details>
-    <details class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><p class="info-note" style="margin:0">Витрина статусов. Значки не нужно собирать отдельно — они приходят сами за лиги, Хаос-лигу, мастерство и коллекции, а «Легенда Капель» и «Миллионер» — награды легендарных достижений.</p><div class="badges badge-wall" id="profSpecial"></div></details>
-    <details class="res-drawer"><summary><span id="chaosBadgeTitle">Значки Хаос-лиги</span></summary><div class="badges" id="profChaosBadges"></div></details>
-    <details class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
-    <details class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
+    <div class="prof-id g-hide" id="profId"></div>
+    <div class="prof-head g-hide" id="profHead"></div>
+    <div class="g-tiles">
+      <button class="btn ghost hub-btn" data-grp="pStats">📊 Статистика<small id="ptStats"></small></button>
+      <button class="btn ghost hub-btn" data-grp="pMastery">🏅 Мастерство и рекорды<small id="ptMastery"></small></button>
+      <button class="btn ghost hub-btn" data-grp="pBadges">🎖 Значки<small id="ptBadges"></small></button>
+      <button class="btn ghost hub-btn" data-grp="pSeasons">📅 Сезоны<small id="ptSeasons"></small></button>
     </div>
+    <div class="g-group prof-secs" data-grpid="pStats" hidden><h2 class="g-title">📊 Статистика</h2>
+    <details open class="res-drawer"><summary>Статистика <small class="cnt" id="psStats"></small></summary><div class="res-grid" id="profStats"></div></details>
+    <details open class="res-drawer"><summary>Сундуки <small class="cnt" id="psChests"></small></summary><div class="res-grid" id="profChests"></div>
+      <details class="res-drawer inner" id="chestDrawer"><summary>Каких сколько открыто <small class="cnt" id="chestDrawerCnt"></small></summary><div id="chestDrawerBody"></div></details></details>
+    <details open class="res-drawer" id="chartDrawer"><summary>Последние раунды · пик массы</summary><canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas></details>
+    <button class="btn ghost" data-grpback>← Профиль</button></div>
+    <div class="g-group prof-secs" data-grpid="pMastery" hidden><h2 class="g-title">🏅 Мастерство и рекорды</h2>
+    <details open class="res-drawer"><summary>Мастерство режимов <small class="cnt" id="psMastery"></small></summary><div class="mastery" id="profMastery"></div></details>
+    <details open class="res-drawer"><summary>Рекорды режимов</summary><dl class="keys" id="profBests"></dl></details>
+    <button class="btn ghost" data-grpback>← Профиль</button></div>
+    <div class="g-group prof-secs" data-grpid="pBadges" hidden><h2 class="g-title">🎖 Значки</h2>
+    <details open class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><p class="info-note" style="margin:0">Витрина статусов. Значки не нужно собирать отдельно — они приходят сами за лиги, Хаос-лигу, мастерство и коллекции, а «Легенда Капель» и «Миллионер» — награды легендарных достижений.</p><div class="badges badge-wall" id="profSpecial"></div></details>
+    <details open class="res-drawer"><summary><span id="chaosBadgeTitle">Значки Хаос-лиги</span></summary><div class="badges" id="profChaosBadges"></div></details>
+    <details open class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
+    <button class="btn ghost" data-grpback>← Профиль</button></div>
+    <div class="g-group prof-secs" data-grpid="pSeasons" hidden><h2 class="g-title">📅 Сезоны</h2>
+    <details open class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
+    <button class="btn ghost" data-grpback>← Профиль</button></div>
     <button class="btn" id="profBack">Готово</button>
   </div>
 
@@ -860,9 +884,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
   <div class="card info-card" id="infoCard" hidden>
     <h1>Информация</h1>
-    <p class="info-lead">Всё об игре по разделам. Нажми на раздел, чтобы открыть его.</p>
-    <button class="btn" id="tutStartBtn">🎓 Пройти обучение</button>
-    <details open><summary>Как играть</summary>
+    <p class="info-lead g-hide">Всё об игре по темам. Выбери тему, внутри — разделы.</p>
+    <button class="btn g-hide" id="tutStartBtn">🎓 Пройти обучение</button>
+    <div class="g-tiles">
+      <button class="btn ghost hub-btn" data-grp="iPlay">🎮 Как играть<small>управление, кольца, арена</small></button>
+      <button class="btn ghost hub-btn" data-grp="iModes">⚔ Режимы и боссы<small>режимы, боссы, боты, рейд</small></button>
+      <button class="btn ghost hub-btn" data-grp="iLeague">🏆 Лиги<small>лига, Хаос-лига, архив</small></button>
+      <button class="btn ghost hub-btn" data-grp="iProg">⭐ Прогресс и награды<small>монеты, способности, сундуки, достижения</small></button>
+      <button class="btn ghost hub-btn" data-grp="iLook">🎨 Внешний вид<small>скины, эффекты, питомцы</small></button>
+    </div>
+    <div class="g-group" data-grpid="iPlay" hidden><h2 class="g-title">🎮 Как играть</h2>
+    <details><summary>Как играть</summary>
       <ul class="info-list">
         <li>Ты — капля. Ешь крошки и капли, которые меньше тебя, и убегай от тех, кто больше.</li>
         <li>Съесть каплю можно, если ты <b>хотя бы на 25% тяжелее</b> её. Улучшение «Плотная оболочка» поднимает эту планку для врагов.</li>
@@ -919,12 +951,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <dl class="keys" id="infoEvents"></dl>
       <p class="info-note">О событии предупреждают заранее — следи за плашкой «Скоро».</p>
     </details>
+    <button class="btn ghost" data-grpback>← Все разделы</button></div>
+    <div class="g-group" data-grpid="iModes" hidden><h2 class="g-title">⚔ Режимы и боссы</h2>
+    <details><summary>Режимы</summary>
+      <dl class="keys" id="infoModes"></dl>
+    </details>
     <details><summary>Боссы</summary>
       <dl class="keys" id="infoBosses"></dl>
       <p class="info-note">Боссы носят корону. Награда — за последнюю съеденную часть босса. Боссов нет в «Командном бое», «Гонке массы», «Королевской битве» и рейде.</p>
-    </details>
-    <details><summary>Режимы</summary>
-      <dl class="keys" id="infoModes"></dl>
     </details>
     <details><summary>Боты</summary>
       <dl class="keys" id="infoBots"></dl>
@@ -936,6 +970,38 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Съешь её целиком — +50 монет и +40 опыта. За это есть достижения.</li>
       </ul>
     </details>
+    <details><summary>Босс-рейд</summary>
+      <ul class="info-list">
+        <li>Каждую неделю (с понедельника) новый босс с общим здоровьем 40 000.</li>
+        <li>3 попытки в день по 4 минуты. Урон копится между попытками и днями.</li>
+        <li>Подплывай к боссу — он делится. Урон — это масса его частей, которые съел именно ты.</li>
+        <li>За каждую попытку — монеты за урон. За победу — уникальный скин недели, 1500 монет и эпический сундук.</li>
+        <li>Особые награды за победы над боссом недели: 1-я — аура «Аура рейдера», 3-я — «Шлем рейдера», 5-я — «Знамя рейда».</li>
+      </ul>
+    </details>
+    <button class="btn ghost" data-grpback>← Все разделы</button></div>
+    <div class="g-group" data-grpid="iLeague" hidden><h2 class="g-title">🏆 Лиги</h2>
+    <details><summary>Лига и сезоны</summary>
+      <ul class="info-list">
+        <li>Сезон длится 14 дней. Очки лиги дают только раунды, начатые кнопкой «Играть в лиге» в окне «Лига».</li>
+        <li>С «Золота» за каждую рейтинговую игру берётся взнос: Золото 80, Платина 160, Алмаз 240, Неон 320 очков. Слабая игра может уменьшить счёт, но ниже порога своей лиги не опустишься.</li>
+        <li>В рейтинговом бою не действуют улучшения и бонусы питомцев — все на равных. Взамен монеты за рейтинговый бой ×1,5.</li>
+        <li>Режим лиги меняется каждый сезон. «Королевская битва» доступна только в лиге.</li>
+        <li>За переход в новую лигу — сундук лиги. В конце сезона — монеты, значок, рамка лиги, а за высокие лиги ещё скины, эффекты, питомцы и титулы.</li>
+        <li>За «Алмаз» — предмет над головой «Алмазная россыпь», за «Неон» — аура «Неоновые кольца».</li>
+      </ul>
+      <dl class="keys" id="infoLeagues"></dl>
+    </details>
+    <details><summary>Хаос-лига</summary>
+      <ul class="info-list">
+        <li>Отдельная рейтинговая лига с 25 уровня. Сезон — 7 дней, режим боя меняется по кругу.</li>
+        <li>В начале боя каждый получает 3 случайные способности из 24: 12 обычных и 12 эксклюзивных. Одна всегда рывок или деление. Купленные способности и улучшения здесь не действуют — у всех равные условия.</li>
+        <li>Свои 6 ступеней: Искра → Помеха → Сбой → Шторм → Разлом → Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос со «Сбоя»: 120 / 240 / 360 / 480. «Разлом» — с 40 уровня, «Сингулярность» — с 46-го.</li>
+        <li>Награды сезона: монеты; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда все получены — облик способности. Способность можно ставить в билд в обычных режимах.</li>
+        <li>За каждый сезон с очками — значок Хаос-лиги: у каждой ступени своя форма, цвет и знак. Все значки — в профиле.</li>
+        <li>12 эксклюзивных способностей — коллекция «Хаос-арсенал».</li>
+      </ul>
+    </details>
     <details><summary>Архив сезонов</summary>
       <ul class="info-list">
         <li>Магазин → «Архив», с 20-го уровня. Здесь можно получить награды прошедших сезонов, которые ты не успел взять в лиге.</li>
@@ -945,6 +1011,40 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Цены: питомец «Платины» 15 000, скин сезона 25 000, питомец «Неона» 30 000, эффект сезона 35 000 ◆; праздничные предметы 10 000–40 000 ◆.</li>
         <li>Купленное в архиве помечено «из архива». Значки, рамки и титулы лиги, трофеи рейда и легендарные награды в архив не попадают.</li>
       </ul>
+    </details>
+    <button class="btn ghost" data-grpback>← Все разделы</button></div>
+    <div class="g-group" data-grpid="iProg" hidden><h2 class="g-title">⭐ Прогресс и награды</h2>
+    <details><summary>Монеты, опыт и улучшения</summary>
+      <ul class="info-list">
+        <li>Монеты дают за массу, съеденные капли (5 ◆ каждая), боссов, звёзд, комбо, время в игре и место. В «Хардкоре» монеты ×1,6. Нажми на «+N ◆» в итогах раунда — увидишь, из чего они сложились.</li>
+        <li>Опыт повышает уровень, максимум — 50. С уровнями открываются улучшения, скины, эффекты и арены в магазине (до 30-го уровня).</li>
+        <li>За каждый уровень — 50 × уровень монет, за каждый 5-й — сундук, за 10/20/30/40/50 — титул или рамка уровня. Задания в меню с уровнем становятся сложнее и щедрее.</li>
+        <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
+        <li><b>Достижения</b> дают монеты один раз. <b>Испытания</b> дают скины и эффекты плюс сундук.</li>
+        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги.</li>
+        <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 3 уровня: Бронза +600 ◆, Золото — рамка режима и +800 ◆, Легенда — титул режима. Прогресс — в «Профиле».</li>
+      </ul>
+    </details>
+    <details><summary>Способности и билд</summary>
+      <ul class="info-list">
+        <li>Внизу экрана три слота способностей — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E и Q.</li>
+        <li>Рывок и деление есть у всех. Ещё 10 способностей продаются в «Магазине» → «Способности»: выброс массы, щит, магнитный импульс, скачок, замедляющая волна, маскировка, взрыв-толчок, сжатие, клон-приманка и ловушка-шип.</li>
+        <li>Каждую купленную способность можно улучшить до 5 уровней: меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения: «Реактивный рывок», «Лёгкий рывок», «Больше частей», «Быстрое слияние».</li>
+        <li>Билд — что стоит в слотах — меняется только в меню. Слот может быть пустым, одну способность нельзя поставить дважды.</li>
+        <li>В рейтинге основной лиги и «Королевской битве» у всех одинаково — и у игрока, и у ботов: рывок, деление и выброс.</li>
+        <li>Все 12 способностей — коллекция «Арсенал».</li>
+      </ul>
+    </details>
+    <details><summary>Сундуки</summary>
+      <ul class="info-list">
+        <li><b>Ежедневный</b> — раз в сутки бесплатно.</li>
+        <li><b>За раунды</b> — случайно после игры (в лиге шанс выше). Если долго не везёт, сундук выпадет гарантированно.</li>
+        <li><b>Сундук лиги</b> — за переход в новую лигу, внутри эксклюзивные предметы лиги.</li>
+        <li><b>Сундук испытания</b> — за выполненное испытание, редкость зависит от сложности. Эпический сундук дают и за победу в рейде.</li>
+        <li>Внутри: скины, эффекты, питомцы, рамки и титулы.</li>
+        <li><b>Повтор скина</b> даёт звезду (до трёх): ★ искры вокруг капли, ★★ цветной блик, ★★★ сияющий ореол. Остальные повторы превращаются в монеты.</li>
+      </ul>
+      <dl class="keys" id="infoOdds"></dl>
     </details>
     <details><summary>Задания недели</summary>
       <ul class="info-list">
@@ -970,59 +1070,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Другие особые значки: «Великий коллекционер» — все коллекции, кроме праздничных; «Мастер режимов» — мастерство «Легенда» во всех режимах; «Первый Неон», «Чемпион Неона» и «Легенда лиги» — 1, 10 и 25 сезонов в высшей лиге; «Покоритель лиг» — высшая ступень в обеих лигах; «Сердце хаоса» — 50 сезонов в «Сингулярности»; «Ветеран сезонов» — 26 значков сезонов. Все особые значки — в профиле.</li>
       </ul>
     </details>
-    <details><summary>Способности и билд</summary>
-      <ul class="info-list">
-        <li>Внизу экрана три слота способностей — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E и Q.</li>
-        <li>Рывок и деление есть у всех. Ещё 10 способностей продаются в «Магазине» → «Способности»: выброс массы, щит, магнитный импульс, скачок, замедляющая волна, маскировка, взрыв-толчок, сжатие, клон-приманка и ловушка-шип.</li>
-        <li>Каждую купленную способность можно улучшить до 5 уровней: меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения: «Реактивный рывок», «Лёгкий рывок», «Больше частей», «Быстрое слияние».</li>
-        <li>Билд — что стоит в слотах — меняется только в меню. Слот может быть пустым, одну способность нельзя поставить дважды.</li>
-        <li>В рейтинге основной лиги и «Королевской битве» у всех одинаково — и у игрока, и у ботов: рывок, деление и выброс.</li>
-        <li>Все 12 способностей — коллекция «Арсенал».</li>
-      </ul>
-    </details>
-    <details><summary>Монеты, опыт и улучшения</summary>
-      <ul class="info-list">
-        <li>Монеты дают за массу, съеденные капли (5 ◆ каждая), боссов, звёзд, комбо, время в игре и место. В «Хардкоре» монеты ×1,6. Нажми на «+N ◆» в итогах раунда — увидишь, из чего они сложились.</li>
-        <li>Опыт повышает уровень, максимум — 50. С уровнями открываются улучшения, скины, эффекты и арены в магазине (до 30-го уровня).</li>
-        <li>За каждый уровень — 50 × уровень монет, за каждый 5-й — сундук, за 10/20/30/40/50 — титул или рамка уровня. Задания в меню с уровнем становятся сложнее и щедрее.</li>
-        <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
-        <li><b>Достижения</b> дают монеты один раз. <b>Испытания</b> дают скины и эффекты плюс сундук.</li>
-        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги.</li>
-        <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 3 уровня: Бронза +600 ◆, Золото — рамка режима и +800 ◆, Легенда — титул режима. Прогресс — в «Профиле».</li>
-      </ul>
-    </details>
-    <details><summary>Хаос-лига</summary>
-      <ul class="info-list">
-        <li>Отдельная рейтинговая лига с 25 уровня. Сезон — 7 дней, режим боя меняется по кругу.</li>
-        <li>В начале боя каждый получает 3 случайные способности из 24: 12 обычных и 12 эксклюзивных. Одна всегда рывок или деление. Купленные способности и улучшения здесь не действуют — у всех равные условия.</li>
-        <li>Свои 6 ступеней: Искра → Помеха → Сбой → Шторм → Разлом → Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос со «Сбоя»: 120 / 240 / 360 / 480. «Разлом» — с 40 уровня, «Сингулярность» — с 46-го.</li>
-        <li>Награды сезона: монеты; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда все получены — облик способности. Способность можно ставить в билд в обычных режимах.</li>
-        <li>За каждый сезон с очками — значок Хаос-лиги: у каждой ступени своя форма, цвет и знак. Все значки — в профиле.</li>
-        <li>12 эксклюзивных способностей — коллекция «Хаос-арсенал».</li>
-      </ul>
-    </details>
-    <details><summary>Лига и сезоны</summary>
-      <ul class="info-list">
-        <li>Сезон длится 14 дней. Очки лиги дают только раунды, начатые кнопкой «Играть в лиге» в окне «Лига».</li>
-        <li>С «Золота» за каждую рейтинговую игру берётся взнос: Золото 80, Платина 160, Алмаз 240, Неон 320 очков. Слабая игра может уменьшить счёт, но ниже порога своей лиги не опустишься.</li>
-        <li>В рейтинговом бою не действуют улучшения и бонусы питомцев — все на равных. Взамен монеты за рейтинговый бой ×1,5.</li>
-        <li>Режим лиги меняется каждый сезон. «Королевская битва» доступна только в лиге.</li>
-        <li>За переход в новую лигу — сундук лиги. В конце сезона — монеты, значок, рамка лиги, а за высокие лиги ещё скины, эффекты, питомцы и титулы.</li>
-        <li>За «Алмаз» — предмет над головой «Алмазная россыпь», за «Неон» — аура «Неоновые кольца».</li>
-      </ul>
-      <dl class="keys" id="infoLeagues"></dl>
-    </details>
-    <details><summary>Сундуки</summary>
-      <ul class="info-list">
-        <li><b>Ежедневный</b> — раз в сутки бесплатно.</li>
-        <li><b>За раунды</b> — случайно после игры (в лиге шанс выше). Если долго не везёт, сундук выпадет гарантированно.</li>
-        <li><b>Сундук лиги</b> — за переход в новую лигу, внутри эксклюзивные предметы лиги.</li>
-        <li><b>Сундук испытания</b> — за выполненное испытание, редкость зависит от сложности. Эпический сундук дают и за победу в рейде.</li>
-        <li>Внутри: скины, эффекты, питомцы, рамки и титулы.</li>
-        <li><b>Повтор скина</b> даёт звезду (до трёх): ★ искры вокруг капли, ★★ цветной блик, ★★★ сияющий ореол. Остальные повторы превращаются в монеты.</li>
-      </ul>
-      <dl class="keys" id="infoOdds"></dl>
-    </details>
+    <button class="btn ghost" data-grpback>← Все разделы</button></div>
+    <div class="g-group" data-grpid="iLook" hidden><h2 class="g-title">🎨 Внешний вид</h2>
     <details><summary>Внешний вид</summary>
       <ul class="info-list">
         <li><b>Скины</b> — в магазине, сундуках, за испытания, сезоны, праздники и рейд. У эпических и легендарных есть блик и предмет над головой.</li>
@@ -1039,15 +1088,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       </ul>
       <dl class="keys" id="infoPets"></dl>
     </details>
-    <details><summary>Босс-рейд</summary>
-      <ul class="info-list">
-        <li>Каждую неделю (с понедельника) новый босс с общим здоровьем 40 000.</li>
-        <li>3 попытки в день по 4 минуты. Урон копится между попытками и днями.</li>
-        <li>Подплывай к боссу — он делится. Урон — это масса его частей, которые съел именно ты.</li>
-        <li>За каждую попытку — монеты за урон. За победу — уникальный скин недели, 1500 монет и эпический сундук.</li>
-        <li>Особые награды за победы над боссом недели: 1-я — аура «Аура рейдера», 3-я — «Шлем рейдера», 5-я — «Знамя рейда».</li>
-      </ul>
-    </details>
+    <button class="btn ghost" data-grpback>← Все разделы</button></div>
     <button class="btn" id="infoBack">Готово</button>
   </div>
 
@@ -4490,6 +4531,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('wardBtn').addEventListener('click', () => openView('wardrobe'));
   $('petBtn').addEventListener('click', () => openView('pets'));
   $('colBtn').addEventListener('click', () => openView('collections'));
+  $('myAbilBtn').addEventListener('click', () => openView('abilities'));
   $('backBtn').addEventListener('click', closeShop);
   $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
   // ================= tutorial for new players =================
@@ -4592,7 +4634,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('infoOdds').innerHTML = dl(Object.values(RARITY).map(r => [`<i class="dot" style="background:${r.color}"></i>${r.name}`, `${Math.round(r.w / tot * 100)}% в обычном сундуке · повтор (кроме скинов) = ${r.dup} ◆`]));
     $('infoPets').innerHTML = dl(Object.values(PET_BONUS).map(b => [b.name, b.text(1) + ' (сильнее у редких)']));
   }
-  $('infoBtn').addEventListener('click', () => { renderInfo(); showCard('infoCard'); $('infoBack').focus(); });
+  $('infoBtn').addEventListener('click', () => { renderInfo(); resetGroups($('infoCard')); showCard('infoCard'); $('infoBack').focus(); });
   $('infoBack').addEventListener('click', () => { showCard('menuCard'); $('infoBtn').focus(); });
   $('achBtn').addEventListener('click', () => openView('goals', 'ach'));
 
@@ -4660,6 +4702,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       `<button class="mode" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${save.mode === id}" ${id === 'royale' && !TEST_MODE ? 'disabled' : ''}><b>${m.name}</b><small>${m.desc}</small>` +
       (id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })() : id === 'royale' ? `<span class="lg-tag">${TEST_MODE ? 'Открыта для теста' : 'Только в лиге'} · сезон ${nextSeasonOf('royale')}</span>` : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '') +
       `<small>Рекорд: ${fmtBest(id, save.bests[id] || 0)}</small></button>`).join('');
+    $('abilCount').textContent = `${save.abil.owned.length}/${ABILITIES.length}`;
     $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;
     { const lg = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null), ct = CHAOS_TIERS[chaosOf(save.chaos.pts)];
       $('hubLeagueSub').innerHTML = `<span style="color:${lg.color}">${lg.name}</span>${chaosOpen() ? ` · Хаос: <span style="color:${ct.color}">${ct.name}</span>` : ''}`;
@@ -4695,6 +4738,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
+    abilities: { title: 'Способности', tabs: [['mab', 'Мои способности']] },
     pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
     goals:    { title: 'Достижения', tabs: [['ach', 'Достижения'], ['ch', 'Испытания'], ['skill', 'Мастерские'], ['legend', 'Легендарные']] },
   };
@@ -5005,15 +5049,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }).join('');
     } else if (shopTab === 'abil') {
       $('shop').innerHTML = abilShopHtml(lv);
+    } else if (shopTab === 'mab') {
+      $('shop').innerHTML = myAbilHtml();
     } else {
-      $('shop').innerHTML = CATS.map(([title, ids]) => `<h3>${title}</h3>` + ids.map(id => UPG.find(u => u.id === id)).map(u => {
+      $('shop').innerHTML = CATS.map(([title, ids]) => drawer('up_' + title, `${title} <small class="cnt">${ids.map(id => `${save.up[id]}/${UPG.find(u => u.id === id).cost.length}`).join(' · ')}</small>`, ids.map(id => UPG.find(u => u.id === id)).map(u => {
         const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
         const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
         const label = locked ? `С ур. ${u.lvl}` : l >= max ? 'Макс.' : `${price} ◆`;
         const dis = locked || l >= max || save.coins < price ? 'disabled' : '';
         return `<div class="up ${locked ? 'locked' : ''}"><span class="name">${u.name}</span><span class="desc">${u.desc}${u.info ? `<br><span class="now">Сейчас: ${u.info(l)}${l < max ? ` → дальше: ${u.info(l + 1)}` : ''}</span>` : ''}</span>
           <span class="pips">${pips}</span><button class="buy" id="buy-${u.id}" data-up="${u.id}" ${dis}>${label}</button></div>`;
-      }).join('')).join('');
+      }).join(''))).join('');
     }
     const tName = (view.tabs.find(t => t[0] === shopTab) || [, view.title])[1];
     if (TAB_INFO[shopTab]) $('shop').insertAdjacentHTML('afterbegin', `<button class="tab-info-btn" id="tabInfoBtn" data-tabinfo="${shopTab}">ⓘ Информация · ${tName}</button>`);
@@ -5037,9 +5083,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (a.id === 'push') parts.push(`сила ${Math.round(a.force * k)}`);
     return parts.join(' · ');
   }
-  function abilShopHtml(lv) {
+  // drawers in the shop remember which ones are open between re-renders
+  const openDrawers = new Set();
+  const drawer = (key, summary, body) => `<details class="res-drawer shop-drawer" data-dk="${key}" ${openDrawers.has(key) ? 'open' : ''}><summary>${summary}</summary><div class="drawer-body">${body}</div></details>`;
+  function buildSlotsHtml() {
     const own = save.abil.owned;
-    const slots = save.build.map((id, i) => {
+    return save.build.map((id, i) => {
       const a = id && abilById(id);
       const opts = ['<option value="">Пусто</option>', ...ABILITIES.filter(x => own.includes(x.id)).map(x => `<option value="${x.id}" ${x.id === id ? 'selected' : ''} ${x.id !== id && save.build.includes(x.id) ? 'disabled' : ''}>${x.name}</option>`)].join('');
       return `<div class="b-slot" style="--ac:${a ? a.color : 'var(--line)'}"><small>Слот ${i + 1} · ${ABIL_CFG.slotKeyName[i]}</small><span class="b-ico">${a ? a.icon : '＋'}</span>` +
@@ -5047,20 +5096,38 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         (a && [0, 1, 2].some(k => save.abil.looks.includes(lookOf(a, k).id)) ? `<select data-look="${a.id}" aria-label="Облик: ${a.name}"><option value="">Стандартный облик</option>${[0, 1, 2].map(k => lookOf(a, k)).filter(l => save.abil.looks.includes(l.id)).map(l => `<option value="${l.id}" ${save.abil.lookOn[a.id] === l.id ? 'selected' : ''}>${l.name.split(': ')[1]}</option>`).join('')}</select>` : '') +
         `<button class="buy" data-slotclear="${i}" ${a ? '' : 'disabled'}>Очистить слот</button></div>`;
     }).join('');
-    const rows = BASE_ABIL.map(a => {
-      const has = own.includes(a.id), l = save.abil.lv[a.id] || 0, inB = save.build.includes(a.id);
-      const head = `<div class="ab-row ${has ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${inB ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small>`;
-      if (a.branches) return head + `<small class="now">Бесплатно, есть у всех. Улучшения:</small></div></div>` + a.branches.map(id => upRowHtml(UPG.find(u => u.id === id), lv)).join('');
-      if (!has) return head + `<small class="now">${abStatLine(a, 0)}</small></div><button class="buy" id="abuy-${a.id}" data-abuy="${a.id}" ${save.coins >= a.price ? '' : 'disabled'}>${a.price.toLocaleString('ru-RU')} ◆</button></div>`;
-      const max = l >= ABIL_CFG.levels, cost = abUpCost(a, l);
-      const pips = Array.from({ length: ABIL_CFG.levels }, (_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
-      return head + `<small class="now">Сейчас: ${abStatLine(a, l)}${max ? '' : `<br>Дальше: ${abStatLine(a, l + 1)}`}</small><span class="pips">${pips}</span></div>` +
-        `<button class="buy" id="aup-${a.id}" data-aup="${a.id}" ${max || save.coins < cost ? 'disabled' : ''}>${max ? 'Макс.' : `Улучшить · ${cost.toLocaleString('ru-RU')} ◆`}</button></div>`;
+  }
+  const abLevelText = a => a.branches ? 'улучшения: ' + a.branches.map(id => { const u = UPG.find(x => x.id === id); return `«${u.name}» ${save.up[id]}/${u.cost.length}`; }).join(', ') : `уровень ${save.abil.lv[a.id] || 0}/${ABIL_CFG.levels}`;
+  const abLooksText = a => { const n = [0, 1, 2].filter(k => save.abil.looks.includes(lookOf(a, k).id)).length; return n ? ` · обликов ${n}/3` : ''; };
+  // «Коллекция → Способности»: the build + what you own, split into upgradable and not upgradable
+  function myAbilHtml() {
+    const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small><small class="now">${extra}</small></div></div>`;
+    const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id));
+    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +
+      `<p class="empty-note">Билд меняется только здесь, между боями. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p>` +
+      `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') +
+      `<p class="empty-note">Улучшать — в «Магазине» → «Способности». Новые способности тоже там.</p>` +
+      `<h3>Без улучшений · ${fixed.length} из ${XA_ABIL.length}</h3>` + (fixed.length ? fixed.map(a => row(a, `эксклюзив Хаос-лиги · перезарядка ${a.cd} с${abLooksText(a)}`)).join('')
+        : '<p class="empty-note">Эксклюзивные способности даёт «Сингулярность» в Хаос-лиге — по одной за сезон.</p>');
+  }
+  // «Магазин → Способности»: buy new ones; upgrades of owned ones in drawers
+  function abilShopHtml(lv) {
+    const own = save.abil.owned;
+    const toBuy = BASE_ABIL.filter(a => !own.includes(a.id)).map(a => `<div class="ab-row" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}</b><small>${a.desc}.</small><small class="now">${abStatLine(a, 0)}</small></div>` +
+      `<button class="buy" id="abuy-${a.id}" data-abuy="${a.id}" ${save.coins >= a.price ? '' : 'disabled'}>${a.price.toLocaleString('ru-RU')} ◆</button></div>`).join('');
+    const ups = BASE_ABIL.filter(a => own.includes(a.id)).map(a => {
+      let body;
+      if (a.branches) body = a.branches.map(id => upRowHtml(UPG.find(u => u.id === id), lv)).join('');
+      else {
+        const l = save.abil.lv[a.id] || 0, max = l >= ABIL_CFG.levels, cost = abUpCost(a, l);
+        const pips = Array.from({ length: ABIL_CFG.levels }, (_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
+        body = `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><small class="now">Сейчас: ${abStatLine(a, l)}${max ? '' : `<br>Дальше: ${abStatLine(a, l + 1)}`}</small><span class="pips">${pips}</span></div>` +
+          `<button class="buy" id="aup-${a.id}" data-aup="${a.id}" ${max || save.coins < cost ? 'disabled' : ''}>${max ? 'Макс.' : `Улучшить · ${cost.toLocaleString('ru-RU')} ◆`}</button></div>`;
+      }
+      return drawer('ab_' + a.id, `<span style="color:${a.color}">${a.icon}</span> ${a.name} <small class="cnt">${abLevelText(a)}</small>`, body);
     }).join('');
-    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${slots}</div>` +
-      `<p class="empty-note">Билд меняется только в меню. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p><h3>Все способности · ${own.filter(id => !abilById(id).xa).length} из ${BASE_ABIL.length}</h3>` + rows +
-      `<h3>Эксклюзивы Хаос-лиги · ${save.abil.xa.length} из ${XA_ABIL.length}</h3>` + XA_ABIL.map(a => { const has = save.abil.xa.includes(a.id);
-        return `<div class="ab-row ${has ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}</b><small>${a.desc}.</small><small class="now">${has ? `Получена · перезарядка ${a.cd} с · без улучшений` : 'Награда за «Неон» в Хаос-лиге'}</small></div></div>`; }).join('');
+    return (toBuy ? `<h3>Купить · куплено ${BASE_ABIL.length - BASE_ABIL.filter(a => !own.includes(a.id)).length} из ${BASE_ABIL.length}</h3>` + toBuy : '<p class="empty-note">Все способности куплены.</p>') +
+      `<h3>Улучшения</h3>` + ups + `<p class="empty-note">Билд, купленные и полученные способности — в «Коллекция» → «Способности». Эксклюзивы Хаос-лиги не улучшаются.</p>`;
   }
   function checkAbilAch() {
     for (const a of ACH) {
@@ -5068,6 +5135,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       save.ach.push(a.id); save.coins += a.coins; toast(`Достижение: ${a.name} +${a.coins} ◆`);
     }
   }
+  $('shop').addEventListener('toggle', e => { const d = e.target; if (d.matches && d.matches('details[data-dk]')) { if (d.open) openDrawers.add(d.dataset.dk); else openDrawers.delete(d.dataset.dk); } }, true);
   $('shop').addEventListener('change', e => {
     const lsel = e.target.closest('select[data-look]');
     if (lsel) { const id = lsel.dataset.look; if (lsel.value) save.abil.lookOn[id] = lsel.value; else delete save.abil.lookOn[id]; persist(); renderShop(); const again = document.querySelector(`select[data-look="${id}"]`); if (again) again.focus(); return; }
@@ -5084,8 +5152,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       `Свои ступени: Искра, Помеха, Сбой, Шторм, Разлом, Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос за бой со «Сбоя»: ${CHAOS_CFG.fee.slice(2).join(' / ')}. Ниже порога своей ступени не опустишься. Монеты за бой — как в рейтинге (×1,5).`,
       `«Разлом» открывается с ${CHAOS_CFG.tierLevel[4]} уровня, «Сингулярность» — с ${CHAOS_CFG.tierLevel[5]}-го. Награды: монеты всем; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда получены все — облик способности. За 5, 10, 25 и 50 сезонов в «Сингулярности» — особые награды.`,
       'Полученные эксклюзивные способности можно ставить в билд в обычных режимах (без улучшений). В рейтинге основной лиги и в Хаос-лиге их выбрать нельзя.'],
-    abil: () => ['Способности стоят в трёх слотах билда — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E, Q.', 'Рывок и деление есть у всех. Остальные покупаются за монеты и улучшаются до 5 уровней: меньше перезарядка, сильнее эффект.',
-      'Одну способность нельзя поставить в два слота. Слот может быть пустым. Билд меняется только в меню.', 'Облики способностей (награда Хаос-лиги) выбираются под слотом. Они меняют только вид — цвет и форму вспышки, след и звук — и работают в обычных режимах и в Хаос-лиге, но не в основной лиге.', 'В рейтинге и «Королевской битве» у всех рывок, деление и выброс, купленное там не действует.'],
+    mab: () => ['Здесь билд — три слота способностей (Пробел, E, Q) — и все способности, которые у тебя есть.', 'Улучшаемые — купленные в магазине, а также рывок и деление (они есть у всех). Улучшения — в «Магазине» → «Способности».', 'Без улучшений — эксклюзивы Хаос-лиги: даются за «Сингулярность».', 'Облик способности выбирается под слотом, если он у тебя есть. Облики меняют только вид и работают в обычных режимах и в Хаос-лиге.'],
+    abil: () => ['Здесь покупаются новые способности и улучшаются купленные. Улучшения каждой способности — в своей шторке: до 5 уровней, меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения.',
+      'Билд (что стоит в трёх слотах), купленные и полученные способности и облики — в «Коллекция» → «Способности».', 'В рейтинге и «Королевской битве» у всех рывок, деление и выброс, купленное там не действует. Эксклюзивы Хаос-лиги не улучшаются.'],
     up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.'],
     skin: () => ['Здесь скины, которые можно купить за монеты. Купленный скин появляется в гардеробе.', 'Остальные скины выпадают из сундуков, даются за испытания, достижения, лигу и сезоны.', 'Нажми на скин, чтобы посмотреть его подробнее.'],
     fx: () => ['Эффекты бывают трёх видов: след, аура и эффект поедания. В каждом слоте можно надеть один.', 'Здесь эффекты, которые продаются за монеты. Остальные — в сундуках, испытаниях и коллекциях.'],
@@ -5844,12 +5913,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const T = save.totals, li = leagueOf(save.season.pts), L = lgView(li, seasonStarted ? holidayOf(save.season.id) : null), lvl = levelInfo(save.xp);
     const mr = T.modeRounds || {}, fav = Object.keys(mr).sort((a, b) => mr[b] - mr[a])[0];
     const hours = Math.floor(T.time / 3600), mins = Math.floor(T.time % 3600 / 60);
+    { const k = skin();
+      $('profId').innerHTML = `<span class="${swClass(k)}" style="${swatch(k)};width:58px;height:58px;flex:none">${headIcon(k)}</span><div class="prof-id-txt">` +
+        `<b><span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</b><small>Уровень ${lvl.level}${lvl.max ? ' · максимум' : ` · ${lvl.into} / ${lvl.need} опыта`}</small>` +
+        `<div class="track"><div class="fill" style="width:${lvl.max ? 100 : (lvl.into / lvl.need * 100).toFixed(0)}%"></div></div>` +
+        `<small>Лига: <span style="color:${L.color}">${L.name}</span>${chaosOpen() ? ` · Хаос: ${ctTag(chaosOf(save.chaos.pts))}` : ''}</small></div>`; }
     $('profHead').innerHTML = [
-      ['Уровень', `${lvl.level}`], ['Лига', `<span style="color:${L.color}">${L.name}</span>`],
       ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
-      ['Достижения', `${save.ach.length} / ${ACH.length}`], ['Испытания', `${save.chDone.length} / ${CHALLENGES.length}`],
-      ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Способности', `${save.abil.owned.filter(id => !abilById(id).xa).length} / ${BASE_ABIL.length}`],
-      ['Хаос-лига', `${ctTag(chaosOf(save.chaos.pts))} · эксклюзивов ${save.abil.xa.length}/${XA_ABIL.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
+      ['Способности', `${save.abil.owned.length} / ${ABILITIES.length}`], ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Достижения', `${save.ach.length + save.chDone.length} / ${ACH.length + CHALLENGES.length}`],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('profStats').innerHTML = [
       ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
@@ -5893,6 +5964,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('profSeasons').innerHTML = [`<li><span>Сезон ${save.season.id} (идёт)</span><span class="rw" style="color:${L.color}">${L.name} · ${save.season.pts}</span></li>`,
       ...save.seasonLog.slice().reverse().map(x => `<li><span>Сезон ${x.id}${x.name ? ` «${x.name}»` : ''}</span><span class="rw" style="color:${lgView(x.league, x.holiday).color}">${lgView(x.league, x.holiday).name} · ${x.pts}</span></li>`)].join('');
     requestAnimationFrame(drawProfChart);
+    $('ptStats').textContent = `${hours} ч в игре · раундов ${T.rounds}`;
+    $('ptMastery').textContent = $('psMastery').textContent.replace(/^· /, '');
+    $('ptBadges').textContent = `особых ${$('psSpecial').textContent.replace(/^· /, '')} · сезонов ${save.seasonLog.length + save.chaosLog.length}`;
+    $('ptSeasons').textContent = `лига: ${save.seasonLog.length} · Хаос: ${save.chaosLog.length}`;
   }
   function renderProfChests() {
     const S = save.chestStats, sum = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
@@ -5941,7 +6016,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     x.fillStyle = tok('--muted'); x.textAlign = 'left'; x.fillText(`макс. ${max}`, 2, 11);
     x.textAlign = 'right'; x.fillText(`${data.length} раунд(ов)`, w - 2, h - 3);
   }
-  $('profBtn').addEventListener('click', () => { showCard('profileCard'); renderProfile(); $('profBack').focus(); });
+  // grouped cards (Profile, Information): tiles open a group; «←» returns to the tiles
+  function resetGroups(card) { card.querySelectorAll('.g-tiles, .g-hide').forEach(x => x.hidden = false); card.querySelectorAll('[data-grpid]').forEach(g => g.hidden = true); }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-grp]');
+    if (t) { const card = t.closest('.card'); card.querySelectorAll('.g-tiles, .g-hide').forEach(x => x.hidden = true);
+      card.querySelectorAll('[data-grpid]').forEach(g => g.hidden = g.dataset.grpid !== t.dataset.grp);
+      $('overlay').scrollTop = 0; if (t.dataset.grp === 'pStats') requestAnimationFrame(drawProfChart);
+      const f = card.querySelector(`[data-grpid="${t.dataset.grp}"] summary`); if (f) f.focus(); return; }
+    const bk = e.target.closest('[data-grpback]');
+    if (bk) { const card = bk.closest('.card'), from = bk.closest('[data-grpid]').dataset.grpid; resetGroups(card); $('overlay').scrollTop = 0; const tl = card.querySelector(`[data-grp="${from}"]`); if (tl) tl.focus(); }
+  });
+  $('profBtn').addEventListener('click', () => { resetGroups($('profileCard')); showCard('profileCard'); renderProfile(); $('profBack').focus(); });
   $('profBack').addEventListener('click', () => { showCard('menuCard'); $('profBtn').focus(); });
 
   // menus scroll by script on touch screens: some app viewers swallow native vertical swipes
@@ -6216,7 +6302,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '50';
+const APP_VER = '51';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

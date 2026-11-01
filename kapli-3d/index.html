@@ -90,11 +90,14 @@ body {
 .fr-fire { animation: frFire 1.2s ease-in-out infinite; }
 @keyframes frFire { 50% { box-shadow: 0 0 9px #ff6a00, 0 0 3px #ffd23f inset; } }
 .fr-rainbow { animation: frHue 4s linear infinite; }
+.fr-legend { animation: frLegend 1.6s ease-in-out infinite; }
+@keyframes frLegend { 50% { box-shadow: 0 0 16px #ffd23f, 0 0 6px #ff4fd8 inset; border-color: #fff6a0; } }
 @keyframes frHue { to { filter: hue-rotate(360deg); } }
 em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .deco-pv { display: inline-grid; place-items: center; min-width: 56px; min-height: 40px; padding: 4px 6px; border-radius: 10px; background: rgba(70, 48, 150, .28); font-weight: 600; }
 .deco-pv em.ttl { font-size: .8rem; text-align: center; }
 .tt-ico { display: inline-grid; place-items: center; padding: 1px 6px; border: 1px solid; border-radius: 99px; font-size: .72rem; font-weight: 600; }
+.badge-legend { color: var(--gold) !important; text-shadow: 0 0 6px rgba(255, 210, 63, .7); }
 .stars { color: var(--gold); font-size: .78rem; letter-spacing: .1em; }
 .sw.st3 { outline: 2px solid var(--gold); outline-offset: 3px; }
 .hat-ico { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(70, 48, 150, .28); }
@@ -111,8 +114,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .col-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .arena-pv { display: block; width: 34px; height: 26px; border-radius: 10px; border: 2px solid var(--rm); box-shadow: 0 0 10px var(--rm);
   background: linear-gradient(var(--gr) 1px, transparent 1px) 0 0/10px 10px, linear-gradient(90deg, var(--gr) 1px, transparent 1px) 0 0/10px 10px, var(--fl); }
-@media (prefers-reduced-motion: reduce) { .fr-fire, .fr-rainbow { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fr-fire, .fr-rainbow, .fr-legend { animation: none; } }
 .board li.boss { color: var(--boss); font-weight: 600; }
+.quests li.legend { color: var(--gold); }
+.quests li.skill { color: var(--food); }
+.chip.boss-chip.soon { color: var(--boss); border-color: var(--boss); animation: bossSoon .8s ease-in-out infinite; }
+@keyframes bossSoon { 50% { box-shadow: 0 0 12px rgba(255, 45, 117, .6); } }
+@media (prefers-reduced-motion: reduce) { .chip.boss-chip.soon { animation: none; } }
 .board li.star { color: var(--gold); font-weight: 600; }
 .star-tag { color: var(--gold); text-shadow: 0 0 6px var(--gold); margin-right: 2px; }
 
@@ -297,6 +305,21 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .buy.sel { background: var(--prey); }
 .pane { display: flex; flex-direction: column; gap: 14px; }
 .info-card { gap: 10px; }
+.legend-head { display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255, 210, 63, .14), rgba(255, 79, 216, .12)); border: 1px solid rgba(255, 210, 63, .35); }
+.legend-head > div { display: grid; gap: 4px; min-width: 0; }
+.legend-head small { color: var(--muted); font-size: .78rem; }
+.legend-badge { width: 72px; height: 72px; flex: none; filter: drop-shadow(0 0 10px rgba(255, 210, 63, .6)); }
+.legend-badge.off { filter: grayscale(1) brightness(.6); opacity: .5; }
+.skill-head { background: linear-gradient(135deg, rgba(34, 230, 255, .14), rgba(255, 79, 216, .1)); border-color: rgba(34, 230, 255, .35); }
+.skill-card { border-color: rgba(34, 230, 255, .3) !important; }
+.skill-hint { color: var(--muted); font-size: .76rem; font-style: italic; }
+.legend-card { border-color: rgba(255, 210, 63, .35) !important; }
+.legend-card .fill { background: linear-gradient(90deg, #ffd23f, #ff4fd8) !important; }
+.legend-pics { display: flex; gap: 6px; align-items: center; }
+.legend-pic { display: inline-grid; place-items: center; min-width: 44px; height: 44px; }
+.legend-pic .sw { width: 36px; height: 36px; }
+.legend-pic img { width: 40px; height: 40px; border-radius: 8px; }
+.legend-pic .arena-pv { display: block; width: 44px; height: 32px; }
 .mastery { display: grid; gap: 10px; }
 .m-row { display: grid; gap: 4px; }
 .m-row small { color: var(--muted); font-size: .75rem; }
@@ -649,6 +672,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <dl class="keys" id="profBests"></dl>
     <h2 class="section-title">Последние раунды · пик массы</h2>
     <canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas>
+    <h2 class="section-title">Легендарный значок</h2>
+    <div class="legend-head" id="profLegend"></div>
     <h2 class="section-title" id="badgeTitle">Значки сезонов</h2>
     <div class="badge-info" id="badgeInfo" hidden></div>
     <div class="badges" id="profBadges"></div>
@@ -740,6 +765,21 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>В каждом раунде один бот — звезда: отмечен <b style="color:var(--gold)">★</b> в таблице лидеров, носит легендарный скин с тремя звёздами и радужной рамкой.</li>
         <li>Звезда крупнее, быстрее, дальше видит и редко влетает в шипы.</li>
         <li>Съешь её целиком — +50 монет и +40 опыта. За это есть достижения.</li>
+      </ul>
+    </details>
+    <details><summary>Мастерские достижения</summary>
+      <ul class="info-list">
+        <li>13 испытаний на умение, а не на время: всё нужно сделать за один раунд. Например, победить Колосса за 60 секунд или дожить до 10-й волны без деления.</li>
+        <li>Каждое даёт свой титул и 1 000–2 000 монет. За все — рамка «Мастер» и скин «Виртуоз».</li>
+        <li>У каждого есть подсказка и твоя лучшая попытка. Смотри «Достижения» → «Мастерские».</li>
+      </ul>
+    </details>
+    <details><summary>Легендарные достижения</summary>
+      <ul class="info-list">
+        <li>Очень сложные достижения, прогресс считается с дня их появления. Смотри «Достижения» → «Легендарные».</li>
+        <li>У «Грозы звёзд» (боты-звёзды) и «Непобедимого» (победы) по три ступени: 1 000, 5 000 и 10 000 — за каждую своя награда.</li>
+        <li>Награды эксклюзивные — их нет в магазине и сундуках: скины, эффекты, рамки, титулы, питомцы и две арены.</li>
+        <li>Значок «Легенда Капель» — за все девять основных достижений (у ступенчатых хватит первой ступени).</li>
       </ul>
     </details>
     <details><summary>Монеты, опыт и улучшения</summary>
@@ -1120,7 +1160,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const [c, a] = seasonPalette(i), style = TRAIL_STYLES[i % TRAIL_STYLES.length];
     return {
       name,
-      skin: { id: `s_${i + 1}`, name, color: c, accent: a, pattern: SEASON_PAT[i % SEASON_PAT.length], glow: i % 3 !== 1, pulse: i % 4 === 3, crown: i % 5 === 4, holo: i === 27, rainbow: i === 51 },
+      skin: { id: `s_${i + 1}`, name, color: c, accent: a, pattern: SEASON_PAT[i % SEASON_PAT.length], glow: i % 3 !== 1, pulse: i % 4 === 3, crown: i % 5 === 4, holo: i === 27, holoBase: i === 27 ? .8 : undefined, holoSpan: i === 27 ? .1 : undefined, rainbow: i === 51 },
       fx: { id: `sf_${i + 1}`, slot: 'trail', name: `След «${name}»`, desc: `${TRAIL_STYLE_NAME[style]} в цветах сезона ${i + 1}`, colors: [bright(c), bright(a)], style },
     };
   });
@@ -1221,6 +1261,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     crystals:  { name: 'Алмазная россыпь', src: 'лига «Алмаз» в конце сезона', svg: '<path d="M6 10 L9 6 L12 10 L9 15 Z" fill="#9fe8ff"/><path d="M12 7 L15.5 2 L19 7 L15.5 13 Z" fill="#b26bff"/><path d="M14 15 L17 11.5 L20 15 L17 20 Z" fill="#e8fbff"/>' },
     sprout:    { name: 'Росток',       svg: '<path d="M12 22 V10" stroke="#3dffa2" stroke-width="2"/><path d="M12 12 C6 12 3 8 3 4 C8 4 12 7 12 12 Z M12 10 C17 10 21 7 21 3 C16 3 12 6 12 10 Z" fill="#3dffa2"/>' },
   };
+  // exclusive rewards for the legendary achievements
+  SKINS.push(
+    { id: 'lg_worlds', name: 'Пожиратель миров', color: '#14002a', accent: '#ff2d55', pattern: 'stars', glow: true, pulse: true, head: 'moons', shine: 'bolt', legend: 'kills' },
+    { id: 'lg_tycoon', name: 'Золотой магнат',   color: '#ffd23f', accent: '#fff6a0', pattern: 'grid', glow: true, head: 'coins', shine: 'stripe', legend: 'coins' },
+    { id: 'lg_supernova', name: 'Звёздный взрыв', color: '#ffffff', accent: '#ff4fd8', pattern: 'stars', holo: true, holoBase: .78, holoSpan: .08, glow: true, pulse: true, head: 'nova', shine: 'bolt', legend: 'stars2' },
+    { id: 'lg_eternal', name: 'Вечный чемпион',  color: '#fff6a0', accent: '#ffd23f', pattern: 'stars', holo: true, holoBase: .1, holoSpan: .04, glow: true, head: 'laurel', shine: 'stripe', legend: 'wins3' },
+  );
+  FX.push(
+    { id: 'lg_titanTrail', slot: 'trail', name: 'Тропа титанов',   desc: 'Золотые и алые кольца остаются за каплей', colors: ['#ffd23f', '#ff2d55', '#ffffff'], style: 'rings', legend: 'bosses' },
+    { id: 'lg_crownAura',  slot: 'aura',  name: 'Звёздная корона', desc: 'Два кольца золотых и розовых звёзд вращаются навстречу', legend: 'stars3' },
+    { id: 'lg_burstEat',   slot: 'eat',   name: 'Взрыв легенды',   desc: 'Золотая волна, звёзды и радужные искры', legend: 'combo' },
+  );
   FX.push(
     { id: 'raidAura', slot: 'aura', name: 'Аура рейдера',     desc: 'Красные осколки кружат вокруг капли', special: 'raid' },
     { id: 'neonAura', slot: 'aura', name: 'Неоновые кольца',  desc: 'Три неоновых кольца пульсируют вокруг капли', special: 'league' },
@@ -1281,7 +1333,91 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     DECOR.push({ id: 'tt_m_' + m, kind: 'title', name: MASTERY_TITLE[m] || `Легенда: ${MODES[m].name}`, color: c, mastery: m });
   });
   const masteryLv = pts => MASTERY_LV.filter(l => pts >= l.pts).length;
+  DECOR.push({ id: 'fr_legend', kind: 'frame', name: 'Легендарная', css: 'border:2px solid #ffd23f;box-shadow:0 0 10px #ffd23f, 0 0 3px #ff4fd8 inset', cls: 'fr-legend', legend: 'wins1' },
+    { id: 'fr_star', kind: 'frame', name: 'Звёздная', css: 'border:2px dotted #ffd23f;box-shadow:0 0 8px #ff4fd8', cls: 'fr-legend', legend: 'stars1' },
+    { id: 'tt_starcatcher', kind: 'title', name: 'Ловец звёзд', color: '#ffd23f', legend: 'stars1' },
+    { id: 'tt_starstorm', kind: 'title', name: 'Гроза звёзд', color: '#ff4fd8', legend: 'stars3' },
+    { id: 'tt_invincible', kind: 'title', name: 'Непобедимый', color: '#ffd23f', legend: 'wins2' });
   const decorById = id => DECOR.find(d => d.id === id) || null;
+  // skill achievements: one round, done right. Each gives its own title and coins; all of them — a frame and a skin
+  const SKILL = [
+    { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, обходи шипы.', coins: 1500, title: ['Железный', '#c0c8e0'],
+      test: S => S.mode === 'hardcore' && !S.splits && S.maxMass >= 5000, best: S => S.mode === 'hardcore' && !S.splits ? Math.round(S.maxMass) : null, unit: 'массы' },
+    { id: 'sk_giant60', name: 'Молниеносный', desc: 'Победи Колосса быстрее чем за 60 секунд', hint: 'Сразу плыви к Колоссу: каждая твоя атака отщепляет часть, ешь их не останавливаясь.', coins: 2000, title: ['Молния', '#ffd23f'],
+      test: S => S.mode === 'giant' && S.win && S.time <= 60, best: S => S.mode === 'giant' && S.win ? Math.floor(S.time) : null, lower: true, unit: 'с' },
+    { id: 'sk_pacifist', name: 'Пацифист', desc: 'Набери 3 000 массы, не съев ни одной капли — только крошки', hint: 'Подойдут бонусы «Двойная еда» и «Магнит», а также событие «Метеоритный дождь».', coins: 1000, title: ['Пацифист', '#3dffa2'],
+      test: S => !S.eatenCells && S.maxMass >= 3000, best: S => !S.eatenCells ? Math.round(S.maxMass) : null, unit: 'массы' },
+    { id: 'sk_nobonus', name: 'Чистая победа', desc: 'Займи 1-е место в режиме «На время», не подобрав ни одного бонуса', hint: 'Обходи светящиеся бонусы стороной — даже случайно.', coins: 1000, title: ['Честный игрок', '#9fd8ff'],
+      test: S => S.mode === 'timed' && S.win && !S.bonuses },
+    { id: 'sk_race', name: 'Стремительный', desc: 'Выиграй «Гонку массы» быстрее чем за 2 минуты', hint: 'Рывок + деление на крупную добычу ускоряют набор массы.', coins: 1500, title: ['Стрела', '#ff9a3d'],
+      test: S => S.mode === 'race' && S.win && S.time <= 120, best: S => S.mode === 'race' && S.win ? Math.floor(S.time) : null, lower: true, unit: 'с' },
+    { id: 'sk_crown', name: 'Король арены', desc: 'В «Захвате короны» продержи корону 2 минуты из 3', hint: 'Корона у самой крупной капли: держи массу и не дели её без нужды.', coins: 1500, title: ['Монарх', '#ffd23f'],
+      test: S => S.mode === 'crown' && S.crownT >= 120, best: S => S.mode === 'crown' ? Math.floor(S.crownT || 0) : null, unit: 'с' },
+    { id: 'sk_royale', name: 'Тихий охотник', desc: 'Победи в «Королевской битве», ни разу не сделав рывок', hint: 'Без рывка важнее позиция: держись ближе к центру безопасной зоны.', coins: 2000, title: ['Тень', '#b26bff'],
+      test: S => S.mode === 'royale' && S.win && !S.dashes },
+    { id: 'sk_survival', name: 'Скала', desc: 'Доживи до 10-й волны «Выживания», ни разу не разделившись', hint: 'Боссов можно обходить — главное выжить. Шипы — твоё укрытие от крупных.', coins: 2000, title: ['Скала', '#7fe8ff'],
+      test: S => S.mode === 'survival' && !S.splits && S.wave >= 10, best: S => S.mode === 'survival' && !S.splits ? S.wave || 0 : null, unit: 'волна' },
+    { id: 'sk_untouched', name: 'Без единой царапины', desc: 'Продержись 5 минут, не потеряв ни одной своей части', hint: 'Любой режим. Части, съеденные врагами или шипами, обнуляют попытку.', coins: 1500, title: ['Невредимый', '#22e6ff'],
+      test: S => S.time >= 300 && !S.partsLost, best: S => !S.partsLost ? Math.floor(S.time) : null, unit: 'с' },
+    { id: 'sk_starsprint', name: 'Метеор', desc: 'Съешь бота-звезду в первые 60 секунд раунда', hint: 'Звезда отмечена ★ в таблице лидеров. Ищи её сразу после старта.', coins: 1000, title: ['Метеор', '#ff4fd8'],
+      test: S => S.firstStarT !== undefined && S.firstStarT <= 60, best: S => S.firstStarT !== undefined ? Math.floor(S.firstStarT) : null, lower: true, unit: 'с' },
+    { id: 'sk_raid', name: 'Удар титана', desc: 'Нанеси боссу рейда 15 000 урона за одну попытку', hint: 'Урон — масса частей босса, которые съел именно ты. Не давай ботам их перехватывать.', coins: 1500, title: ['Титаноборец', '#ff2d55'],
+      test: S => S.mode === 'raid' && (S.raidDmg || 0) >= 15000, best: S => S.mode === 'raid' ? S.raidDmg || 0 : null, unit: 'урона' },
+    { id: 'sk_team', name: 'Разгром', desc: 'Победи в «Командном бое» со счётом вдвое больше соперников', hint: 'Помогай союзникам: бери под защиту самых маленьких и ешь крупных врагов.', coins: 1000, title: ['Полководец', '#6fa8ff'],
+      test: S => S.mode === 'team' && S.win && S.teamA >= S.teamB * 2 },
+    { id: 'sk_david', name: 'Давид и Голиаф', desc: 'Съешь последнюю часть босса, когда твоя масса меньше 400', hint: 'Не расти до первого босса (таймер «Босс через…» вверху): пока ты мал, Шустрик весит всего 90. Подрасти одной частью до 120–200, загони его на шип и добей.', coins: 1500, title: ['Давид', '#fff6a0'],
+      test: S => !!S.smallBoss },
+  ];
+  SKILL.forEach(k => DECOR.push({ id: 'tt_' + k.id, kind: 'title', name: k.title[0], color: k.title[1], skill: k.id }));
+  DECOR.push({ id: 'fr_master', kind: 'frame', name: 'Мастер', css: 'border:2px solid #22e6ff;box-shadow:0 0 8px #22e6ff, 0 0 4px #ff4fd8 inset', cls: 'fr-legend', skill: 'all' });
+  SKINS.push({ id: 'sk_virtuoso', name: 'Виртуоз', color: '#22e6ff', accent: '#ff4fd8', pattern: 'zigzag', glow: true, pulse: true, head: 'prism', shine: 'bolt', skill: 'all' });
+  function checkSkill(S) {
+    const out = [];
+    for (const k of SKILL) {
+      if (k.best) { const v = k.best(S); if (v !== null && v !== undefined) { const old = save.skillBest[k.id]; if (old === undefined || (k.lower ? v < old : v > old)) save.skillBest[k.id] = v; } }
+      if (save.skillDone.includes(k.id) || !k.test(S)) continue;
+      save.skillDone.push(k.id); save.coins += k.coins; save.legend.coins = (save.legend.coins || 0) + k.coins;
+      if (!save.decor.includes('tt_' + k.id)) save.decor.push('tt_' + k.id);
+      out.push(k);
+    }
+    if (save.skillDone.length === SKILL.length && !save.decor.includes('fr_master')) { save.decor.push('fr_master'); if (!save.skins.includes('sk_virtuoso')) save.skins.push('sk_virtuoso'); out.push({ all: true }); }
+    return out;
+  }
+
+  // legendary achievements: counted from the day they appeared, each gives an exclusive item
+  const LEGEND = [
+    { id: 'kills',  name: 'Пожиратель миров',   desc: 'Съешь 100 000 капель',                 goal: 100000,  reward: ['skin', 'lg_worlds'] },
+    { id: 'coins',  name: 'Золотой магнат',     desc: 'Заработай 100 000 монет',              goal: 100000,  reward: ['skin', 'lg_tycoon'] },
+    { id: 'bosses', name: 'Истребитель титанов', desc: 'Победи 10 000 боссов',                goal: 10000,   reward: ['fx', 'lg_titanTrail'] },
+    { id: 'stars1', key: 'stars', name: 'Гроза звёзд I',   desc: 'Съешь 1 000 ботов-звёзд',              goal: 1000,  reward: [['deco', 'fr_star'], ['deco', 'tt_starcatcher']] },
+    { id: 'stars2', key: 'stars', name: 'Гроза звёзд II',  desc: 'Съешь 5 000 ботов-звёзд',              goal: 5000,  reward: [['skin', 'lg_supernova'], ['pet', 'lg_starpet']], extra: true },
+    { id: 'stars3', key: 'stars', name: 'Гроза звёзд III', desc: 'Съешь 10 000 ботов-звёзд',             goal: 10000, reward: [['fx', 'lg_crownAura'], ['deco', 'tt_starstorm']], extra: true },
+    { id: 'wins1',  key: 'wins',  name: 'Непобедимый I',   desc: 'Одержи 1 000 побед в любых режимах',   goal: 1000,  reward: ['deco', 'fr_legend'] },
+    { id: 'wins2',  key: 'wins',  name: 'Непобедимый II',  desc: 'Одержи 5 000 побед в любых режимах',   goal: 5000,  reward: ['deco', 'tt_invincible'], extra: true },
+    { id: 'wins3',  key: 'wins',  name: 'Непобедимый III', desc: 'Одержи 10 000 побед в любых режимах',  goal: 10000, reward: ['skin', 'lg_eternal'], extra: true },
+    { id: 'time',   name: 'Вечный игрок',       desc: 'Проведи в игре 100 часов',             goal: 360000,  reward: ['pet', 'lg_pet'], time: true },
+    { id: 'crumbs', name: 'Космический пылесос', desc: 'Собери 1 000 000 крошек',             goal: 1000000, reward: ['arena', 'galaxy'] },
+    { id: 'lwins',  name: 'Олимпиец',           desc: 'Одержи 500 побед в рейтинговом бою лиги', goal: 500,  reward: ['arena', 'olympus'] },
+    { id: 'combo',  name: 'Цепная реакция',     desc: 'Сделай комбо ×25',                     goal: 25,      reward: ['fx', 'lg_burstEat'] },
+  ];
+  const LEGEND_BASE = LEGEND.filter(L => !L.extra);   // what the badge needs: first tiers only
+  const rewardsOf = L => Array.isArray(L.reward[0]) ? L.reward : [L.reward];
+  const legendNames = L => rewardsOf(L).map(legendName).join(' + ');
+  const legendName = ([t, id]) => t === 'deco' && decorById(id).kind === 'title' ? `титул «${decorById(id).name}»` : t === 'skin' ? `скин «${SKINS.find(k => k.id === id).name}»` : t === 'fx' ? `эффект «${FX.find(f => f.id === id).name}»` : t === 'deco' ? `рамка «${decorById(id).name}»`
+    : t === 'pet' ? `питомец «${petById(id).name}»` : `арена «${ARENAS.find(a => a.id === id).name}»`;
+  function grantLegend(L) {
+    for (const [t, id] of rewardsOf(L)) {
+      const list = t === 'skin' ? save.skins : t === 'fx' ? save.fxOwned : t === 'deco' ? save.decor : t === 'pet' ? save.pets : save.arenas;
+      if (!list.includes(id)) list.push(id);
+    }
+  }
+  const legendVal = L => save.legend[L.key || L.id] || 0;
+  function checkLegend() {
+    const out = [];
+    for (const L of LEGEND) if (!save.legendDone.includes(L.id) && legendVal(L) >= L.goal) { save.legendDone.push(L.id); grantLegend(L); out.push(L); }
+    if (LEGEND_BASE.every(L => save.legendDone.includes(L.id)) && !save.legendBadge) { save.legendBadge = today; out.push({ badge: true }); }
+    return out;
+  }
   const leagueDecor = li => DECOR.filter(d => d.league !== undefined && (d.kind === 'frame' ? d.league === li : d.league <= li));
   // ---- arena themes (shop) ----
   const ARENAS = [
@@ -1291,6 +1427,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ocean',   name: 'Океан',           price: 25000, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
     { id: 'jungle',  name: 'Джунгли',         price: 28000, floor: '#04170a', grid: 'rgba(61, 255, 120, .5)',   dot: '#ffd23f', rim: '#3dff6e', inner: '#ffd23f', neb: ['#3dff6e', '#c6ff3d', '#0b6e3e', '#ffd23f'], fx: 'fireflies', desc: 'Зелёная чаща и светлячки' },
     { id: 'desert',  name: 'Пустыня',         price: 32000, floor: '#1f1405', grid: 'rgba(255, 200, 100, .5)',  dot: '#ff6a00', rim: '#ffb347', inner: '#ff6a00', neb: ['#ffb347', '#ff6a00', '#7a4a00', '#ffd23f'], fx: 'sand',   desc: 'Песчаные дюны и пылевые вихри' },
+    { id: 'galaxy',  name: 'Галактика',       price: 0, legend: 'crumbs', floor: '#07021a', grid: 'rgba(178, 107, 255, .55)', dot: '#ffffff', rim: '#b26bff', inner: '#ff4fd8', neb: ['#7b3dff', '#ff4fd8', '#22e6ff', '#3a0a8e'], fx: 'cosmos', desc: 'Пол из звёздного неба, мерцающие звёзды вокруг' },
+    { id: 'olympus', name: 'Олимп',           price: 0, legend: 'lwins',  floor: '#1a1405', grid: 'rgba(255, 210, 63, .6)',   dot: '#ffffff', rim: '#ffd23f', inner: '#ffffff', neb: ['#ffd23f', '#ff9a3d', '#fff6a0', '#ff4fd8'], fx: 'gold', desc: 'Золотая арена чемпионов и сияющие искры' },
     { id: 'cyber',   name: 'Киберград',       price: 40000, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
   ];
   const arenaDef = () => ARENAS.find(a => a.id === save.arena) || ARENAS[0];
@@ -1361,6 +1499,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
    ['lc_p_jelly', 'Алмазная медуза', 'jelly', '#b26bff', '#e8fbff', 'magnet', 3, 'epic'],
    ['lc_p_spirit', 'Неоновый дух', 'ghost', '#ff4fd8', '#22e6ff', 'speed', 3, 'legendary'],
   ].forEach(([id, name, species, color, accent, bonus, lv, lchest]) => addPet({ id, name, species, color, accent, bonus, lv, lchest, tier: 'Сундук лиги' }));
+  addPet({ id: 'lg_starpet', name: 'Звёздный страж', species: 'robot', color: '#fff6a0', accent: '#ff4fd8', bonus: 'shield', lv: 3, tier: 'Легенда', legend: 'stars2' });
+  addPet({ id: 'lg_pet', name: 'Хранитель вечности', species: 'ghost', color: '#ffd23f', accent: '#ff4fd8', bonus: 'coins', lv: 3, tier: 'Легенда', legend: 'time' });
   function petById(id) {
     if (!id) return null;
     if (!petMap[id]) { const m = /^hp_(\w+?)_(\d{4})_/.exec(id); if (m && HOL_PETS[m[1]]) holidayPets(m[1], +m[2]).forEach(addPet); }
@@ -1453,6 +1593,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   save.arenas = save.arenas || []; save.arena = save.arena || 'default';
   save.colDone = save.colDone || [];
   save.mastery = save.mastery || {};
+  save.legend = save.legend || { since: today };   // counters start the day the legendary achievements appeared
+  save.skillDone = save.skillDone || []; save.skillBest = save.skillBest || {};
+  save.legendDone = (save.legendDone || []).filter(id => !['stars', 'wins'].includes(id));
   save.raid = save.raid || { week: 0, dmg: 0, done: false, day: '', tries: 0 };
   (save.skins || []).forEach(id => { const m = /^raid_(\d+)$/.exec(id); if (m) ensureRaidSkin(+m[1]); });
   function raidState() {
@@ -1506,7 +1649,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // long challenges with exclusive rewards; progress comes from lifetime totals and records
   const CHALLENGES = [
     { id: 'ch_boss10',    name: 'Истребитель боссов', desc: 'Победи 10 боссов',                         goal: 10,   prog: () => save.totals.bosses,    reward: ['skin', 'champion'] },
-    { id: 'ch_kills150',  name: 'Гроза арены',        desc: 'Съешь 150 капель за всё время',            goal: 150,  prog: () => save.totals.kills,     reward: ['fx', 'supernova'] },
+    { id: 'ch_kills150',  name: 'Ужас арены',        desc: 'Съешь 150 капель за всё время',            goal: 150,  prog: () => save.totals.kills,     reward: ['fx', 'supernova'] },
     { id: 'ch_surv8',     name: 'Неуловимый',         desc: 'Продержись 8 минут в «Выживании»',         goal: 480,  prog: () => save.bests.survival || 0, time: true, reward: ['fx', 'rainbowTrail'] },
     { id: 'ch_minions60', name: 'Повелитель роя',     desc: 'Съешь 60 прислужников Матки',              goal: 60,   prog: () => save.totals.minions,   reward: ['fx', 'galaxyAura'] },
     { id: 'ch_timed5',    name: 'Король турниров',    desc: 'Займи 1 место в «На время» 5 раз',          goal: 5,    prog: () => save.totals.timedWins, reward: ['skin', 'phoenix'] },
@@ -1739,7 +1882,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return (texCache[s.id] = new THREE.CanvasTexture(cv));
   }
   // a glint that sweeps over epic and legendary skins
-  const isShiny = k => k.raid || ['epic', 'legendary'].includes(k.chest || k.lchest);
+  const isShiny = k => k.raid || k.legend || ['epic', 'legendary'].includes(k.chest || k.lchest);
   const HEAD_SVG = {
     flame: '<path d="M12 2c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3-1-3 0-5 0-7z" fill="#ff9a3d"/><path d="M12 11c1 2 3 3 3 5a3 3 0 0 1-6 0c0-1 1-2 1.5-3 .5 1 1 1.5 1.5 1.5-.5-1.5 0-2.5 0-3.5z" fill="#ffd23f"/>',
     antenna: '<path d="M9 23 L6 7 M15 23 L18 7" stroke="#3dffa2" stroke-width="2" fill="none"/><circle cx="6" cy="5" r="3" fill="#b9ff3d"/><circle cx="18" cy="5" r="3" fill="#b9ff3d"/>',
@@ -1747,6 +1890,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     gem: '<path d="M12 2 L20 10 L12 22 L4 10 Z" fill="#b26bff" stroke="#e8fbff" stroke-width="1.2"/><path d="M4 10 L20 10 M12 2 L9 10 L12 22 L15 10 Z" fill="none" stroke="#e8fbff" stroke-width=".8"/>',
     star: '<path d="M12 2 l3 7 7.4.6-5.6 4.8 1.8 7.4L12 17.8l-6.6 4 1.8-7.4L1.6 9.6 9 9z" fill="#ffd23f"/>',
     horns: '<path d="M4 21 C3 13 5 7 9 3 C8 9 9 15 11 21 Z M20 21 C21 13 19 7 15 3 C16 9 15 15 13 21 Z" fill="#ff3d6e"/>',
+    moons: '<circle cx="12" cy="12" r="3" fill="#ff2d55"/><circle cx="4" cy="9" r="2.5" fill="#3a2a5a" stroke="#ff2d55"/><circle cx="20" cy="9" r="2.5" fill="#3a2a5a" stroke="#ff2d55"/><circle cx="12" cy="3.5" r="2.5" fill="#3a2a5a" stroke="#ff2d55"/>',
+    coins: '<ellipse cx="12" cy="18" rx="8" ry="3" fill="#b07a00"/><ellipse cx="12" cy="14" rx="8" ry="3" fill="#ffd23f" stroke="#b07a00"/><ellipse cx="12" cy="10" rx="8" ry="3" fill="#ffd23f" stroke="#b07a00"/><ellipse cx="12" cy="6" rx="8" ry="3" fill="#fff6a0" stroke="#b07a00"/>',
+    nova: '<path d="M12 1 L13.6 9 L22 6 L15 12 L22 18 L13.6 15 L12 23 L10.4 15 L2 18 L9 12 L2 6 L10.4 9 Z" fill="#ff4fd8"/><circle cx="12" cy="12" r="3" fill="#fff"/>',
+    laurel: '<path d="M12 20 C5 18 3 12 4 6 M12 20 C19 18 21 12 20 6" stroke="#ffd23f" stroke-width="1.6" fill="none"/><g fill="#ffd23f"><ellipse cx="4.5" cy="9" rx="1.6" ry="2.6"/><ellipse cx="5.5" cy="14" rx="1.6" ry="2.6"/><ellipse cx="19.5" cy="9" rx="1.6" ry="2.6"/><ellipse cx="18.5" cy="14" rx="1.6" ry="2.6"/></g>',
+    prism: '<path d="M12 2 L21 19 L3 19 Z" fill="#22e6ff" opacity=".85"/><path d="M12 2 L12 19 L3 19 Z" fill="#ff4fd8" opacity=".7"/>',
     wings: '<path d="M12 15 C8 6 3 6 1 9 C4 10 6 14 12 17 Z M12 15 C16 6 21 6 23 9 C20 10 18 14 12 17 Z" fill="#ffffff"/>',
   };
   Object.entries(HATS).forEach(([k, h]) => HEAD_SVG[k] = h.svg);
@@ -1785,7 +1933,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     vis.look = s;
     vis.crown.visible = !!s.crown && !hat;
     if (isShiny(s) || stars >= 2) {
-      const mat = shineMat((s.chest || s.lchest) === 'legendary', s.shine === 'bolt', !isShiny(s) ? '#' + new THREE.Color(s.accent || s.color).lerp(new THREE.Color('#ffffff'), .35).getHexString() : null);
+      const mat = shineMat((s.chest || s.lchest) === 'legendary' || !!s.legend, s.shine === 'bolt', !isShiny(s) ? '#' + new THREE.Color(s.accent || s.color).lerp(new THREE.Color('#ffffff'), .35).getHexString() : null);
       if (!vis.shine) { vis.shine = new THREE.Mesh(shineGeo, mat); vis.mesh.add(vis.shine); }
       vis.shine.material = mat; vis.shine.visible = true;
     } else if (vis.shine) vis.shine.visible = false;
@@ -1819,6 +1967,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       case 'snowflake': { const f = new THREE.Group(); f.position.y = 1.45; for (let i = 0; i < 3; i++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(.06, .6, .06), basic('#cfefff')); bar.rotation.z = i * Math.PI / 3; f.add(bar); } f.add(glowSprite('#9fe8ff', 1.3, .6)); g.add(f); break; }
       case 'propeller': { M(new THREE.SphereGeometry(.3, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ff4fd8', emissive: '#7b0060', emissiveIntensity: .6 }), 0, .95, 0); M(new THREE.CylinderGeometry(.025, .025, .25, 6), basic('#ffd23f'), 0, 1.3, 0); const bl = M(new THREE.BoxGeometry(.9, .02, .12), basic('#22e6ff'), 0, 1.43, 0); bl.userData.spin = 1; break; }
       case 'tophat': { const mat = new THREE.MeshStandardMaterial({ color: '#1a1033', emissive: '#2a1060', emissiveIntensity: .5, roughness: .4 }); M(new THREE.CylinderGeometry(.48, .48, .05, 24), mat, 0, 1, 0); M(new THREE.CylinderGeometry(.3, .3, .5, 24), mat, 0, 1.26, 0); M(new THREE.CylinderGeometry(.305, .305, .09, 24), basic('#ff4fd8'), 0, 1.08, 0); break; }
+      case 'moons': { const core = M(new THREE.SphereGeometry(.12, 12, 8), basic('#ff2d55'), 0, 1.45, 0); core.add(glowSprite('#ff2d55', 1, .7));
+        for (let i = 0; i < 3; i++) { const mo = M(new THREE.SphereGeometry(.13, 12, 8), new THREE.MeshStandardMaterial({ color: '#3a2a5a', emissive: '#ff2d55', emissiveIntensity: .35 }), 0, 1.45, 0); mo.userData.orb = i * 2.09; } break; }
+      case 'coins': for (let i = 0; i < 4; i++) { const cn = M(new THREE.CylinderGeometry(.24, .24, .06, 20), new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#b07a00', emissiveIntensity: .6, metalness: .5, roughness: .25 }), (i % 2) * .04, 1.05 + i * .08, 0); cn.userData.coin = i; } break;
+      case 'nova': { const n = new THREE.Group(); n.position.y = 1.5; for (let i = 0; i < 8; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(.06, .42, 6), basic(i % 2 ? '#ff4fd8' : '#ffffff')); sp.rotation.z = i / 8 * Math.PI * 2; sp.position.set(-Math.sin(sp.rotation.z) * .22, Math.cos(sp.rotation.z) * .22, 0); n.add(sp); }
+        n.add(glowSprite('#ff4fd8', 1.6, .8)); n.userData.nova = 1; g.add(n); break; }
+      case 'laurel': [-1, 1].forEach(sx => { for (let i = 0; i < 5; i++) { const a = .3 + i * .28, lf = M(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#b07a00', emissiveIntensity: .7, metalness: .4 }), sx * Math.sin(a) * .45, 1.0 + Math.cos(a) * .3, 0); lf.scale.set(.6, 1.4, .6); lf.rotation.z = -sx * a; } }); break;
+      case 'prism': { const pr = M(new THREE.TetrahedronGeometry(.3), new THREE.MeshStandardMaterial({ color: '#22e6ff', emissive: '#ff4fd8', emissiveIntensity: .5, roughness: .1, metalness: .3, transparent: true, opacity: .9 }), 0, 1.5, 0); pr.userData.prism = 1; pr.add(glowSprite('#22e6ff', 1.3, .6)); break; }
       case 'helm': { const mat = new THREE.MeshStandardMaterial({ color: '#3a2a5a', emissive: '#1a0a30', emissiveIntensity: .6, metalness: .5, roughness: .3 });
         M(new THREE.SphereGeometry(.55, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat, 0, .78, 0); M(new THREE.TorusGeometry(.55, .05, 6, 30), basic('#ff2d55'), 0, .8, 0).rotation.x = Math.PI / 2;
         const crest = M(new THREE.BoxGeometry(.08, .32, .6), basic('#ff2d55'), 0, 1.38, 0); crest.add(glowSprite('#ff2d55', 1, .5)); break; }
@@ -1842,6 +1997,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       case 'planet': g.children[0].rotation.y = t * 1.2; g.children[0].position.y = 1.45 + Math.sin(t * 2) * .06; break;
       case 'snowflake': g.children[0].rotation.y = t; g.children[0].rotation.z = t * .5; break;
       case 'propeller': g.children.forEach(o => { if (o.userData.spin) o.rotation.y = t * 14; }); break;
+      case 'moons': g.children.forEach(o => { if (o.userData.orb !== undefined) { const a = o.userData.orb + t * 1.8; o.position.set(Math.cos(a) * .45, 1.45 + Math.sin(a * 2) * .06, Math.sin(a) * .45); } }); break;
+      case 'coins': g.children.forEach(o => { o.rotation.y = t * (1 + o.userData.coin * .3); }); g.position.y = -.1 + Math.sin(t * 2) * .03; break;
+      case 'nova': g.children[0].rotation.z = t * 1.5; g.children[0].scale.setScalar(1 + Math.sin(t * 4) * .08); break;
+      case 'laurel': g.rotation.y = Math.sin(t * 1.2) * .25; break;
+      case 'prism': g.children[0].rotation.set(t * .9, t * 1.4, 0); g.children[0].position.y = 1.5 + Math.sin(t * 2.2) * .07; break;
       case 'banner': g.children.forEach(o => { if (o.userData.flag) { o.rotation.y = Math.sin(t * 4) * .35; o.scale.x = 1 + Math.sin(t * 6) * .05; } }); break;
       case 'crystals': g.children.forEach(o => { const a = o.userData.orb + t * 1.4; o.position.set(Math.cos(a) * .32, 1.45 + Math.sin(t * 2 + o.userData.orb) * .08, Math.sin(a) * .32); o.rotation.y = t * 2; }); break;
       case 'sprout': g.children.forEach(o => { if (o.userData.leaf) o.rotation.z = o.userData.leaf * (.5 + Math.sin(t * 2.5) * .12); }); break;
@@ -1957,6 +2117,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       case 'iceEat': emit(x, y, z, '#ffffff', 30, 14, .6); emit(x, y, z, '#9fe8ff', 20, 8, .9); wave(x, z, '#9fe8ff', r, r * 3.5 + 3, .6); break;
       case 'miniholeEat': wave(x, z, '#7b3dff', r * 4 + 4, r * .3, .7); emit(x, y, z, '#3a0a8e', 25, 3, .8); emit(x, y, z, '#ff4fd8', 10, 2, .6); break;
       case 'rainbowEat': for (let k = 0; k < 6; k++) emit(x, y, z, tmpCol.setHSL(k / 6, 1, .6).getHex(), 12, 16, .9); wave(x, z, '#ff4fd8', r, r * 5 + 5, .8); wave(x, z, '#22e6ff', r * .5, r * 4 + 3, .6); break;
+      case 'lg_burstEat': wave(x, z, '#ffd23f', r, r * 6 + 6, .9); wave(x, z, '#ff4fd8', r * .6, r * 4 + 4, .7); emitIcons(x, y, z, 'star', '#ffd23f', 12, 1.7 + r * .25); for (let k = 0; k < 6; k++) emit(x, y, z, tmpCol.setHSL(k / 6, 1, .6).getHex(), 12, 20, .9); break;
       case 'supernova': wave(x, z, '#ff4fd8', r, r * 6 + 6, .8); wave(x, z, '#22e6ff', r * .5, r * 4 + 3, .55); emit(x, y, z, '#ffffff', 70, 24, .9); break;
     }
   }
@@ -1967,9 +2128,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function dressBot(o) {
     const base = { id: 'bot_' + o.name, color: o.baseColor };
     const pick = list => list[(Math.random() * list.length) | 0];
-    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default')) : base;
+    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill)) : base;
     o.fx = {};
-    for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot)).id;
+    for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot && !f.legend)).id;
     if (o.star) { sk = SKINS.find(k => k.id === o.star.skin) || sk; o.fx = { aura: o.star.aura, trail: o.star.trail, eat: 'goldEat' }; }
     o.trailDef = o.fx.trail ? fxById(o.fx.trail) : null;
     const st = o.star ? 3 : sk === base || Math.random() < .5 ? 0 : 1 + ((Math.random() * 3) | 0);
@@ -2051,6 +2212,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (type === 'binaryAura') { const a1 = add(glowSprite('#ffd23f', .9, 1), { a: 0 }); a1.add(glowSprite('#ffd23f', 1.8, .5)); const a2 = add(glowSprite('#22e6ff', .9, 1), { a: Math.PI }); a2.add(glowSprite('#22e6ff', 1.8, .5)); }
     if (type === 'snowglobeAura') add(new THREE.Mesh(new THREE.SphereGeometry(1.3, 20, 14), new THREE.MeshBasicMaterial({ color: '#cfefff', wireframe: true, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false })));
     if (type === 'raysAura') for (let i = 0; i < 12; i++) { const sp = add(glowSprite(i % 2 ? '#ffd23f' : '#ff9a3d', 1, .9), { a: i / 12 * Math.PI * 2 }); sp.scale.set(.22, 1.1, 1); }
+    if (type === 'lg_crownAura') for (let i = 0; i < 16; i++) { const sp = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.star, color: i % 2 ? '#ff4fd8' : '#ffd23f', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), { a: (i >> 1) / 8 * Math.PI * 2, up: i % 2 }); sp.scale.setScalar(.55); }
+    if (type === 'lg_crownAura') add(glowSprite('#ffd23f', 5, .35));
     if (type === 'raidAura') for (let i = 0; i < 9; i++) { const sh = add(new THREE.Mesh(new THREE.OctahedronGeometry(.16), new THREE.MeshBasicMaterial({ color: i % 3 ? '#ff2d55' : '#ffd23f' })), { a: i / 9 * Math.PI * 2 }); sh.scale.set(.7, 1.6, .7); sh.add(glowSprite('#ff2d55', .9, .6)); }
     if (type === 'neonAura') ['#ff4fd8', '#22e6ff', '#b26bff'].forEach((c, i) => { const t = add(new THREE.Mesh(new THREE.TorusGeometry(1.45 + i * .18, .035, 6, 64), new THREE.MeshBasicMaterial({ color: c, transparent: true, blending: THREE.AdditiveBlending })), { i }); t.rotation.x = Math.PI / 2 + (i - 1) * .5; });
     if (type === 'galaxyAura') for (let i = 0; i < 22; i++) add(glowSprite(i % 3 ? '#b26bff' : '#ff4fd8', 0.35, .95), { a: Math.random() * Math.PI * 2, r: 1.35 + Math.random() * 0.8, w: 0.6 + Math.random() * 1.2 });
@@ -2085,6 +2248,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (type === 'binaryAura') g.children.forEach(o => { const a = o.userData.a + t * 2; o.position.set(Math.cos(a) * 1.9, .3 + Math.sin(a) * .2, Math.sin(a) * 1.9); });
     if (type === 'snowglobeAura') { g.position.y = .25; g.rotation.y = t * .3; if (Math.random() < .25) { g.children[0].getWorldPosition(tmpV3); const sc = v.mesh.scale.x; emit(tmpV3.x + (Math.random() - .5) * sc * 1.6, tmpV3.y + sc * .9, tmpV3.z + (Math.random() - .5) * sc * 1.6, '#ffffff', 1, .3, 1.4); } }
     if (type === 'raysAura') g.children.forEach(o => { const a = o.userData.a + t * .8, pulse = 1.35 + Math.sin(t * 3 + o.userData.a * 2) * .12; o.position.set(Math.cos(a) * pulse, .1, Math.sin(a) * pulse); });
+    if (type === 'lg_crownAura') g.children.forEach(o => { if (o.userData.a === undefined) return; const d = o.userData, a = d.a + t * (d.up ? 1.3 : -1.3), r = d.up ? 1.5 : 2.1; o.position.set(Math.cos(a) * r, (d.up ? 1 : .2) + Math.sin(t * 3 + d.a) * .1, Math.sin(a) * r); o.material.rotation = t * 2; });
     if (type === 'raidAura') { g.rotation.x = .3; g.children.forEach(o => { const a = o.userData.a + t * 1.6; o.position.set(Math.cos(a) * 1.7, Math.sin(a * 2 + t) * .2, Math.sin(a) * 1.7); o.rotation.y = t * 3; }); }
     if (type === 'neonAura') g.children.forEach(o => { const i = o.userData.i; o.rotation.z = t * (.6 + i * .3) * (i % 2 ? -1 : 1); const k = 1 + Math.sin(t * 3 + i * 2) * .06; o.scale.setScalar(k); o.material.opacity = .55 + .45 * Math.sin(t * 3 + i * 2); });
     if (type === 'galaxyAura') { g.rotation.x = .45; g.children.forEach(o => { const d = o.userData, a = d.a + t * d.w; o.position.set(Math.cos(a) * d.r, Math.sin(a * 3) * .05, Math.sin(a) * d.r); }); }
@@ -2629,6 +2793,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (mode === 'team') score = prev + (stats.win ? 1 : 0);
     const record = mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
     if (record) save.bests[mode] = score;
+    stats.crownT = player.crownT;
+    const skillLine = checkSkill(stats).map(k => k.all ? '<li class="done skill"><span>🎯 Все мастерские достижения! Рамка «Мастер» и скин «Виртуоз»</span><span class="rw">в гардеробе</span></li>'
+      : `<li class="done skill"><span>🎯 Мастерское достижение «${k.name}»</span><span class="rw">титул «${k.title[0]}» + ${k.coins} ◆</span></li>`).join('');
+    // legendary achievements
+    { const G = save.legend; const add = (k, v) => G[k] = (G[k] || 0) + v;
+      add('kills', stats.kills); add('coins', coins); add('bosses', stats.bosses); add('stars', stats.starKills || 0); add('wins', stats.win ? 1 : 0);
+      add('time', Math.round(stats.time)); add('crumbs', stats.crumbs); add('lwins', stats.ranked && stats.win ? 1 : 0); G.combo = Math.max(G.combo || 0, stats.bestCombo || 0); }
+    const legendLine = checkLegend().map(L => L.badge ? '<li class="done legend"><span>👑 Все легендарные достижения! Значок «Легенда Капель»</span><span class="rw">в профиле</span></li>'
+      : `<li class="done legend"><span>👑 Легендарное достижение «${L.name}»</span><span class="rw">${legendNames(L)}</span></li>`).join('');
     // mode mastery
     const mBefore = save.mastery[mode] || 0, mGain = 10 + (stats.win ? 25 : 0) + (record ? 15 : 0) + Math.min(20, Math.floor(stats.time / 30));
     save.mastery[mode] = mBefore + mGain;
@@ -2688,7 +2861,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">+${pts} рейтинга</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
-      raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
+      skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
       (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
       const opened = [...UPG.filter(u => u.lvl > lvBefore && u.lvl <= lvAfter).map(u => u.name),
@@ -2802,7 +2975,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
   function dash() {
     if (mode === 'split' || !running || !player.cells.length || player.dashCd > 0 || paused) return;
-    player.dashT = 0.35 + 0.05 * U.light; player.dashCd = dashCdBase; Sound.play('dash');
+    player.dashT = 0.35 + 0.05 * U.light; player.dashCd = dashCdBase; Sound.play('dash'); stats.dashes = (stats.dashes || 0) + 1;
     const cost = 0.03 * (1 - 0.12 * U.light);
     player.cells.forEach(c => c.mass = Math.max(START_MASS * 0.5, c.mass * (1 - cost)));
   }
@@ -2969,7 +3142,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
     }
     if (mode === 'team' && stats.time >= TEAM_LEN) {
-      const a = Math.round(teamTotal('A')), b = Math.round(teamTotal('B'));
+      const a = Math.round(teamTotal('A')), b = Math.round(teamTotal('B')); stats.teamA = a; stats.teamB = b;
       finishRound(a >= b ? `Победа синих ${a} : ${b}` : `Победа красных ${b} : ${a}`, a >= b ? 50 : 0, a >= b);
       return true;
     }
@@ -3137,7 +3310,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
         a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
         const victim = b.owner, lastMass = b.mass;
-        if (victim.isPlayer) { buzz(60); Sound.play('eaten'); } else if (a.owner.isPlayer) Sound.play('eat');
+        if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = radius(b.mass); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
         removeCell(b);
         if (a.owner.isPlayer) {
@@ -3148,12 +3321,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
               stats.bosses++; stats.bossCoins += Math.round(bt.coins * wb); stats.bossXp += Math.round(bt.xp * wb);
               if (!stats.bossTypes.includes(victim.bossType)) stats.bossTypes.push(victim.bossType);
               toast(`${bt.name} повержен! +${bt.coins} ◆`); Sound.play('bossDown');
+              if (total(player) - lastMass * .8 < 400) stats.smallBoss = true;   // your mass before this bite
             }
           } else if (victim.kind === 'minion') { if (!victim.cells.length) stats.minions++; }
           else if (!victim.cells.length) {
             stats.kills++;
             if (victim.star) {   // a star bot: bonus coins and experience
-              stats.starKills = (stats.starKills || 0) + 1; stats.bossCoins += STAR_COINS; stats.bossXp += 40;
+              stats.starKills = (stats.starKills || 0) + 1; stats.bossCoins += STAR_COINS; stats.bossXp += 40; if (stats.firstStarT === undefined) stats.firstStarT = stats.time;
               toast(`Звезда «${victim.name}» повержена! +${STAR_COINS} ◆`); Sound.play('star');
             } else toast(`Съедено: ${victim.name}`);
           }
@@ -3248,6 +3422,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (running && mode === 'giant') modeChip = `<div class="chip"><i style="background:#e76f51"></i>Колосс: ${Math.round(total(colossus))} массы, частей ${colossus.cells.length} · ${fmtTime(stats.time)}</div>`;
     if (running && mode === 'daily') modeChip = `<div class="chip"><i style="background:var(--prey)"></i>${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}</div>`;
     if (running && mode === 'survival') modeChip = `<div class="chip"><i style="background:var(--boss)"></i>Волна ${stats.wave} · ${fmtTime(stats.time)}</div>`;
+    // countdown to the next boss (or the next survival wave)
+    if (running && bossesOn() && player.cells.length) {
+      const left = Math.max(0, Math.ceil(bossTimer)), soon = left <= 5 ? ' soon' : '';
+      if (mode === 'survival') modeChip += `<div class="chip boss-chip${soon}"><i style="background:var(--boss)"></i>Волна ${stats.wave + 1} через ${left} с</div>`;
+      else if (bossOwners.filter(o => o.cells.length).length < maxBosses()) modeChip += `<div class="chip boss-chip${soon}"><i style="background:var(--boss)"></i>Босс через ${fmtTime(left)}</div>`;
+      else modeChip += `<div class="chip boss-chip"><i style="background:var(--boss)"></i>Боссов на арене: максимум</div>`;
+    }
     if (running && ev.active) modeChip += `<div class="chip"><i style="background:${evInfo(ev.active).color}"></i>${evInfo(ev.active).name} ${Math.ceil(ev.left)} с</div>`;
     else if (running && ev.warn) modeChip += `<div class="chip"><i style="background:${evInfo(ev.warn).color}"></i>Скоро: ${evInfo(ev.warn).name}</div>`;
     $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:var(--gold)"></i>Рейтинговый бой · без улучшений</div>` : '') + modeChip + Object.keys(effects || {}).filter(k => effects[k] > 0)
@@ -3400,8 +3581,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (s.pattern === 'zigzag') bg = `repeating-linear-gradient(45deg, ${s.color} 0 5px, ${s.accent} 5px 8px)`;
     if (s.pattern === 'rings') bg = `repeating-linear-gradient(180deg, ${s.color} 0 6px, ${s.accent} 6px 9px)`;
     if (s.pulse) bg = `radial-gradient(circle, #ffffff 0 10%, ${s.color} 45%, #1a0840 100%)`;
+    const over = s.pattern === 'stars' || s.pattern === 'dots' ? `radial-gradient(circle, #ffffff 0 1.5px, transparent 2px) 0 0/10px 10px, ` : s.pattern ? `repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 3px, transparent 3px 10px), ` : '';
     if (s.holo) bg = s.holoBase ? `radial-gradient(circle, #ffffff 0 1px, transparent 1.5px) 0 0/9px 11px, linear-gradient(135deg, #ffd23f, #ff4fd8, #ffd23f)` : 'linear-gradient(135deg, #22e6ff, #ff4fd8, #22e6ff)';
-    if (s.rainbow) bg = 'conic-gradient(#ff4fd8, #ffd23f, #3dffa2, #22e6ff, #7b3dff, #ff4fd8)';
+    if (s.holo && s.holoBase) { const h1 = Math.round(s.holoBase * 360), h2 = Math.round((s.holoBase + 2 * (s.holoSpan ?? .17)) * 360);   // the swatch shows the skin's own colour range
+      bg = over + `linear-gradient(135deg, hsl(${h1} 100% 62%), hsl(${h2} 100% 62%), hsl(${h1} 100% 62%))`; }
+    if (s.rainbow) bg = (s.pattern ? over : '') + 'conic-gradient(#ff4fd8, #ffd23f, #3dffa2, #22e6ff, #7b3dff, #ff4fd8)';
     return `background:${bg};${s.glow ? `box-shadow:0 0 14px ${s.color};` : ''}`;
   }
   // the shop sells what you don't own yet; the wardrobe holds everything you own
@@ -3410,7 +3594,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
-    goals:    { title: 'Испытания и достижения', tabs: [['ch', 'Испытания'], ['ach', 'Достижения']] },
+    goals:    { title: 'Испытания и достижения', tabs: [['ch', 'Испытания'], ['ach', 'Достижения'], ['skill', 'Мастерские'], ['legend', 'Легендарные']] },
   };
   let shopView = 'shop';
   const FX_ICON = { trail: '〰', aura: '◎', eat: '✦' };
@@ -3520,11 +3704,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     };
     requestAnimationFrame(step);
   }
-  const buyable = x => !x.ex && !x.chest && !x.season && !x.lchest && !x.special;
+  const buyable = x => !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
   function sourceBadge(x) {
     if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
     if (x.chest) return `<span class="badge-r" style="color:${RARITY[x.chest].color}">${RARITY[x.chest].name}</span>`;
     if (x.ex) return '<span class="badge-ex">испытание</span>';
+    if (x.legend) return '<span class="badge-ex badge-legend">легенда</span>';
+    if (x.skill) return '<span class="badge-ex" style="color:var(--food)">мастерство</span>';
     if (x.raid || x.special === 'raid') return '<span class="badge-ex" style="color:var(--boss)">рейд</span>';
     if (x.special === 'league') return '<span class="badge-ex">лига</span>';
     if (x.holiday) return `<span class="badge-ex">${HOLIDAYS[x.holiday].name}</span>`;
@@ -3602,7 +3788,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join('');
       $('shop').innerHTML = '<p class="empty-note">Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги) и выпадают из сундуков.</p>' + rows + chestRows;
     } else if (shopTab === 'arena' || shopTab === 'warena') {
-      const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.price && !save.arenas.includes(a.id) : !a.price || save.arenas.includes(a.id));
+      const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.price && !a.legend && !save.arenas.includes(a.id) : a.id === 'default' || save.arenas.includes(a.id));
       $('shop').innerHTML = `<p class="empty-note">${shop ? 'Тема меняет пол, сетку, края арены, туманности и частицы вокруг. Купленные темы — в гардеробе.' : 'Выбери тему арены. Новые темы — в магазине.'}</p>` +
         (list.length ? list.map(a => {
           const sel = save.arena === a.id, can = save.coins >= a.price;
@@ -3616,7 +3802,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
                    : row(`<span class="hat-ico off">${hatIcon(h)}</span>`, HATS[h].name, col ? `Награда за коллекцию «${col.name}».` : `Награда: ${HATS[h].src}.`, 'disabled', false, 'Нет', 'hat:' + h); }).join('');
       const decoRows = kind => { const own = DECOR.filter(d => d.kind === kind && save.decor.includes(d.id));
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
-          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : d.mastery ? `Мастерство режима «${MODES[d.mastery].name}».` : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
+          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.skill ? 'Мастерское достижение.' : d.legend ? 'Легендарное достижение.' : d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : d.mastery ? `Мастерство режима «${MODES[d.mastery].name}».` : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
           : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков, даются за лигу и мастерство режимов' : 'Титулы выпадают из сундуков, даются за лигу, коллекции эффектов и мастерство режимов'}.</p>`; };
       $('shop').innerHTML = '<p class="empty-note">Рамка и титул видны рядом с твоим именем в таблице лидеров.</p><h3>Над головой</h3>' + hats + `<h3>Рамки · ${DECOR.filter(d => d.kind === 'frame' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'frame').length}</h3>` + decoRows('frame') +
         `<h3>Титулы · ${DECOR.filter(d => d.kind === 'title' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'title').length}</h3>` + decoRows('title');
@@ -3642,6 +3828,29 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
           `<span class="rw">Награда: ${rewardName(ch.reward)}${done ? ' — в гардеробе' : ''}</span></div>`;
       }).join('');
+    } else if (shopTab === 'skill') {
+      const vir = SKINS.find(k => k.id === 'sk_virtuoso'), done = save.skillDone.length;
+      const fmtB = k => { const v = save.skillBest[k.id]; return v === undefined ? '' : `Лучшее: ${k.unit === 'с' ? fmtTime(v) : `${v.toLocaleString('ru-RU')} ${k.unit}`}`; };
+      $('shop').innerHTML = `<div class="legend-head skill-head"><span class="legend-pics"><span class="legend-pic"><span class="${swClass(vir)}" style="${swatch(vir)}"></span></span><span class="legend-pic"><span ${frameAttr('fr_master')}>Ты</span></span></span>` +
+        `<div><b>Мастерские · ${done} из ${SKILL.length}</b><small>Проверяют умение, а не время: всё нужно сделать за один раунд. Каждое даёт свой титул и монеты.</small>` +
+        `<small>За все — рамка «Мастер» и скин «Виртуоз»${save.decor.includes('fr_master') ? ' (получены)' : ''}.</small></div></div>` +
+        SKILL.map(k => { const ok = save.skillDone.includes(k.id), b = fmtB(k);
+          return `<div class="chal skill-card ${ok ? 'done' : ''}"><div class="chal-top"><b>${ok ? '✓ ' : '🎯 '}${k.name}</b><span>${ok ? 'выполнено' : b}</span></div><small>${k.desc}</small>` +
+            `<small class="skill-hint">Подсказка: ${k.hint}</small>` +
+            `<div class="col-foot"><span class="rw">${titleTag('tt_' + k.id)} + ${k.coins} ◆</span>${ok && b ? `<span class="rw" style="color:var(--muted)">${b}</span>` : ''}</div></div>`; }).join('');
+    } else if (shopTab === 'legend') {
+      const fmt = (L, v) => L.time ? `${Math.floor(v / 3600)} / ${L.goal / 3600} ч` : `${Math.min(v, L.goal).toLocaleString('ru-RU')} / ${L.goal.toLocaleString('ru-RU')}`;
+      $('shop').innerHTML = `<div class="legend-head">${legendBadgeSVG(!!save.legendBadge)}<div><b>${save.legendBadge ? 'Ты — Легенда Капель!' : 'Значок «Легенда Капель»'}</b>` +
+        `<small>${save.legendBadge ? 'Все легендарные достижения выполнены.' : `Выполни ${LEGEND_BASE.length} легендарных достижений (у «Грозы звёзд» и «Непобедимого» хватит первой ступени). Готово: ${LEGEND_BASE.filter(L => save.legendDone.includes(L.id)).length} из ${LEGEND_BASE.length}.`}</small>` +
+        `<small>Прогресс считается с ${new Date(save.legend.since).toLocaleDateString('ru-RU')}. Каждое достижение даёт эксклюзивную награду, которую больше нигде не получить.</small></div></div>` +
+        LEGEND.map(L => {
+          const v = legendVal(L), done = save.legendDone.includes(L.id);
+          const pics = rewardsOf(L).map(([t, id]) => t === 'deco' && decorById(id).kind === 'title' ? titleTag(id) : t === 'skin' ? `<span class="${swClass(SKINS.find(k => k.id === id))}" style="${swatch(SKINS.find(k => k.id === id))}"></span>` : t === 'fx' ? thumbImg('fx', id) : t === 'pet' ? thumbImg('pet', id)
+            : t === 'deco' ? `<span ${frameAttr(id)}>Ты</span>` : (a => `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`)(ARENAS.find(a => a.id === id))).map(x => `<span class="legend-pic">${x}</span>`).join('');
+          return `<div class="chal legend-card ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : '👑 '}${L.name}</b><span>${fmt(L, v)}</span></div><small>${L.desc}</small>` +
+            `<div class="track"><div class="fill" style="width:${Math.min(100, v / L.goal * 100).toFixed(1)}%"></div></div>` +
+            `<div class="col-foot"><span class="legend-pics">${pics}</span><span class="rw">${legendNames(L)}${done ? ' — получено' : ''}</span></div></div>`;
+        }).join('');
     } else if (shopTab === 'ach') {
       $('shop').innerHTML = ACH.map(a => {
         const got = save.ach.includes(a.id);
@@ -3663,10 +3872,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   renderShop = function () { _renderShop(); fillThumbs(); };
   // ---- sorting for wardrobe and pets ----
   const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
-  const SOURCE_ORDER = ['Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник'];
-  const sourceOf = x => x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  const SOURCE_ORDER = ['Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда'];
+  const sourceOf = x => x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
   // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
   const rarityScore = x => {
+    if (x.legend) return 5;
+    if (x.skill) return 4.6;
     if (x.special) return 3.85;
     const r = x.lchest || x.chest; if (r) return RAR_KEYS.indexOf(r) + 1 + (x.lchest ? .5 : 0);
     if (x.raid) return 3.85; if (x.holiday) return 3.9; if (x.season || x.tier) return x.tier === 'Неон' ? 3.8 : 3.7; if (x.ex) return 3.6;
@@ -3861,9 +4072,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return v;
   }
   const SLOT_NAME = { trail: 'След за каплей', aura: 'Аура вокруг капли', eat: 'Эффект при поедании' };
-  const HEAD_NAME = { flame: 'пламя', antenna: 'антенны', halo: 'нимб', gem: 'парящий кристалл', star: 'звезда', horns: 'рожки', wings: 'крылья' };
+  const HEAD_NAME = { flame: 'пламя', antenna: 'антенны', halo: 'нимб', gem: 'парящий кристалл', star: 'звезда', horns: 'рожки', wings: 'крылья', moons: 'три луны', coins: 'стопка монет', nova: 'звёздный взрыв', laurel: 'лавровый венок', prism: 'вращающаяся призма' };
   const PATTERN_NAME = { stripes: 'полоски', dots: 'горошек', gradient: 'градиент', grid: 'сетка', zigzag: 'зигзаг', rings: 'кольца', stars: 'звёзды' };
   function sourceText(x) {
+    if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
+    if (x.skill) return 'все мастерские достижения';
     if (x.raid) return 'трофей босс-рейда';
     if (x.special === 'raid') return 'первая победа в босс-рейде';
     if (x.special === 'league') return 'лига «Неон» в конце сезона';
@@ -3907,7 +4120,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       name = pt.name; tag = rarTag(pt.chest || pt.lchest) + (pt.tier ? `<span class="badge-ex">${pt.tier}</span>` : '');
       const g = buildPet(pt); scene.remove(g); g.visible = true; g.position.set(0, 0, 0); imObj = g;
       rows.push(['Вид', PET_SPECIES[pt.species]], ['Бонус', `${B.name}: ${B.text(pt.lv)}`], ['Сила', `уровень ${pt.lv} из 3`],
-        ['Откуда', pt.lchest ? 'сундук лиги' : pt.chest ? 'сундук' : pt.holiday ? 'праздничная лига' : `лига «${pt.tier}» в конце сезона`], ['В лиге', 'бонус не действует в рейтинговом бою']);
+        ['Откуда', pt.legend ? `легендарное достижение «${LEGEND.find(l => l.id === pt.legend).name}»` : pt.lchest ? 'сундук лиги' : pt.chest ? 'сундук' : pt.holiday ? 'праздничная лига' : `лига «${pt.tier}» в конце сезона`], ['В лиге', 'бонус не действует в рейтинговом бою']);
       act = own ? `<button class="btn ${on ? 'ghost' : ''}" data-act="pet-${id}">${on ? 'Убрать' : 'Взять'}</button>` : '<button class="btn ghost" disabled>Ещё не получен</button>';
     } else if (kind === 'hat') {
       const own = save.hats.includes(id), on = save.hat === id, col = COLLECTIONS.find(c => c.hat === id);
@@ -3920,13 +4133,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       name = d.name; tag = (d.chest ? rarTag(d.chest) : '') + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
       flat = decoPreview(d);
       rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
-        ['Откуда', d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
+        ['Откуда', d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
       act = `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>`;
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
       name = a.name; tag = '<span class="badge-ex">тема арены</span>';
       flat = `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`;
-      rows.push(['Что меняет', a.desc], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь' })[a.fx] || 'нет'], ['Цена', a.price ? `${a.price} ◆` : 'бесплатно']);
+      rows.push(['Что меняет', a.desc], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь', cosmos: 'мерцающие звёзды', gold: 'золотые искры' })[a.fx] || 'нет'],
+        ['Откуда', a.legend ? `легендарное достижение «${LEGEND.find(l => l.id === a.legend).name}»` : a.price ? `магазин · ${a.price} ◆` : 'есть с самого начала']);
       act = on ? '<button class="btn ghost" disabled>Выбрана</button>' : `<button class="btn" data-act="arena-${id}">Выбрать</button>`;
     }
     $('imName').textContent = name; $('imTag').innerHTML = tag;
@@ -4012,7 +4226,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     let star = 0;
     if (owned && type === 'skin' && (save.stars[item.id] || 0) < 3) { star = save.stars[item.id] = (save.stars[item.id] || 0) + 1; if (save.skin === item.id) refreshSkin(); }
     const coins = (opts.league ? 100 + opts.league * 60 : 40) + Math.floor(Math.random() * 80) + (owned && !star ? RARITY[rar].dup : 0);
-    save.coins += coins;
+    save.coins += coins; save.legend.coins = (save.legend.coins || 0) + coins;
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
     persist();
     return { type, item, rar, dup: owned, star, coins };
@@ -4127,6 +4341,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     valentine: '<path d="M50 36 C36 27 38 15 46 16 C48.5 16.3 50 18.5 50 20 C50 18.5 51.5 16.3 54 16 C62 15 64 27 50 36 Z"/>',
     halloween: '<ellipse cx="50" cy="26" rx="11" ry="9"/><rect x="48.5" y="13" width="3" height="6" rx="1"/><path d="M45 24 l2.5 -3 l2.5 3 Z M50.5 24 l2.5 -3 l2.5 3 Z M44 29 Q50 33 56 29" fill="#1a0820"/>',
   };
+  function legendBadgeSVG(got) {
+    return `<svg class="legend-badge ${got ? '' : 'off'}" viewBox="0 0 100 100" role="img" aria-label="Значок «Легенда Капель»${got ? '' : ', ещё не получен'}">
+      <defs><linearGradient id="lgb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6a0"/><stop offset=".5" stop-color="#ffd23f"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs>
+      <path d="M50 4 L61 30 L90 32 L68 51 L75 80 L50 64 L25 80 L32 51 L10 32 L39 30 Z" fill="url(#lgb)" stroke="#fff6a0" stroke-width="2"/>
+      <circle cx="50" cy="45" r="14" fill="#14002a" stroke="#ffd23f" stroke-width="2"/>
+      <path d="M41 49 L44 39 L50 45 L56 39 L59 49 Z" fill="#ffd23f"/>
+      <text x="50" y="96" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="11" fill="#ffd23f">ЛЕГЕНДА</text>
+    </svg>`;
+  }
   function badgeSVG(x) {
     const L = lgView(x.league, x.holiday), id = 'bg' + (++badgeUid), col = L.color;
     const pips = Array.from({ length: x.league + 1 }, (_, i) => `<circle cx="${50 + (i - x.league / 2) * 7}" cy="74" r="2.4"/>`).join('');
@@ -4205,6 +4428,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%"></div></div><small>${nx ? `${pts} / ${nx.pts} до «${nx.name}» · ${nx.coins ? `+${nx.coins} ◆` : nx.frame ? 'рамка' : 'титул'}` : `${pts} очков · максимум`}</small></div>`;
       }).join('');
     $('profBests').innerHTML = Object.entries(MODES).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
+    $('profLegend').innerHTML = `${legendBadgeSVG(!!save.legendBadge)}<div><b>${save.legendBadge ? 'Легенда Капель' : 'Ещё не получен'}</b><small>${save.legendBadge ? `Получен ${new Date(save.legendBadge).toLocaleDateString('ru-RU')}` : `Легендарных достижений: ${LEGEND_BASE.filter(L => save.legendDone.includes(L.id)).length} из ${LEGEND_BASE.length}. Смотри «Достижения» → «Легендарные».`}</small></div>`;
     $('badgeTitle').textContent = `Значки сезонов · ${save.seasonLog.length} из 52`;
     const liveSd = seasonData(save.season.id);
     const live = seasonStarted ? { id: save.season.id, league: leagueOf(save.season.pts), pts: save.season.pts, name: liveSd.name, holiday: liveSd.holiday, live: true } : null;
@@ -4349,6 +4573,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (fx === 'fireflies') emit(x, 1 + Math.random() * 3, z, pick(['#c6ff3d', '#ffd23f']), 1, .8, 1.5);
     if (fx === 'sand') emit(x, .6, z, pick(['#ffb347', '#e8c27a']), 2, 4, .9);
     if (fx === 'rain') emit(x, 18, z, pick(['#22e6ff', '#ff4fd8', '#3dffa2']), 1, .2, 2.4);
+    if (fx === 'cosmos') emit(x, 2 + Math.random() * 10, z, pick(['#ffffff', '#b26bff', '#ff4fd8', '#9fd8ff']), 1, .1, 2.2);
+    if (fx === 'gold') emit(x, .6 + Math.random() * 4, z, pick(['#ffd23f', '#fff6a0', '#ffffff']), 1, .6, 1.6);
   }
   function decorateHoliday() {
     decorateArena();
@@ -4495,7 +4721,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '16';
+const APP_VER = '17';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

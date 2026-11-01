@@ -479,8 +479,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .odds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; font-size: .8rem; }
 .odds li { display: flex; justify-content: space-between; color: var(--muted); }
 .odds li b { font-weight: 600; }
+.tut-box { position: fixed; z-index: 3; left: 50%; top: 68px; transform: translateX(-50%); width: min(calc(100% - 24px), 440px); box-sizing: border-box;
+  background: rgba(20, 12, 50, .9); border: 1px solid var(--food); border-radius: 14px; padding: 10px 14px; box-shadow: 0 0 18px rgba(34, 230, 255, .35); display: grid; gap: 4px; }
+.tut-box[hidden] { display: none; }
+.tut-top { display: flex; justify-content: space-between; align-items: center; font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--food); }
+.tut-skip { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 3px 8px; font: inherit; font-size: .68rem; cursor: pointer; }
+.tut-box b { font-family: var(--display); font-weight: 400; font-size: 1.05rem; }
+.tut-box p { margin: 0; font-size: .86rem; line-height: 1.4; }
+.tut-box.done { border-color: var(--prey); box-shadow: 0 0 18px rgba(61, 255, 162, .45); }
 .tab-info-btn { display: block; width: 100%; margin: 0 0 8px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(34, 230, 255, .35); background: rgba(34, 230, 255, .08); color: var(--food); font: inherit; font-size: .82rem; font-weight: 600; text-align: left; cursor: pointer; }
 .tab-info-btn:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
+.tut-reward { display: flex; gap: 12px; align-items: center; background: var(--row); border-radius: 12px; padding: 10px; margin-bottom: 10px; }
+.tut-reward div { display: grid; gap: 2px; } .tut-reward small { color: var(--muted); }
+#tutMBody p { margin: 0 0 8px; } #tutMBody ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .ti-body { margin: 10px 0 14px; padding-left: 18px; display: grid; gap: 8px; line-height: 1.5; text-align: left; }
 #tiName { padding-right: 34px; text-align: left; }
 .lg-odds { width: 100%; border-collapse: collapse; font-size: .8rem; font-variant-numeric: tabular-nums; }
@@ -608,6 +619,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 </div>
 <button class="pause-btn" id="pauseBtn" aria-label="Пауза" hidden><span aria-hidden="true">❚❚</span></button>
 <div class="combo" id="combo" aria-live="polite"></div>
+<div class="tut-box" id="tutBox" hidden aria-live="polite">
+  <div class="tut-top"><span id="tutStep"></span><button class="tut-skip" id="tutSkip">Пропустить</button></div>
+  <b id="tutTitle"></b><p id="tutText"></p>
+  <div class="track"><div class="fill" id="tutFill"></div></div>
+</div>
 
 <div class="overlay" id="overlay">
   <div class="card" id="menuCard">
@@ -745,6 +761,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   <div class="card info-card" id="infoCard" hidden>
     <h1>Информация</h1>
     <p class="info-lead">Всё об игре по разделам. Нажми на раздел, чтобы открыть его.</p>
+    <button class="btn" id="tutStartBtn">🎓 Пройти обучение</button>
     <details open><summary>Как играть</summary>
       <ul class="info-list">
         <li>Ты — капля. Ешь крошки и капли, которые меньше тебя, и убегай от тех, кто больше.</li>
@@ -951,6 +968,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="im-tag" id="imTag"></div>
     <dl class="keys im-info" id="imInfo"></dl>
     <div class="im-actions" id="imActions"></div>
+  </div>
+</div>
+
+<div class="modal" id="tutModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tutMName">
+    <h2 id="tutMName"></h2>
+    <div class="ti-body" id="tutMBody"></div>
+    <div class="im-actions" id="tutMActs"></div>
   </div>
 </div>
 
@@ -1570,6 +1595,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   ];
   SKILL.forEach(k => DECOR.push({ id: 'tt_' + k.id, kind: 'title', name: k.title[0], color: k.title[1], skill: k.id }));
   DECOR.push({ id: 'fr_master', kind: 'frame', name: 'Мастер', css: 'border:2px solid #22e6ff;box-shadow:0 0 8px #22e6ff, 0 0 4px #ff4fd8 inset', cls: 'fr-legend', skill: 'all' });
+  SKINS.push({ id: 'tut_student', name: 'Ученик', color: '#9fe8ff', accent: '#ffd23f', pattern: 'dots', glow: true, head: 'star', tut: true });
   SKINS.push({ id: 'sk_virtuoso', name: 'Виртуоз', color: '#22e6ff', accent: '#ff4fd8', pattern: 'zigzag', glow: true, pulse: true, head: 'prism', shine: 'bolt', skill: 'all' });
   function checkSkill(S) {
     const out = [];
@@ -1822,6 +1848,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   let U = save.up;
   const fixModeForLeague = () => { if (save.mode === 'royale' && !TEST_MODE) save.mode = 'classic'; };   // test mode: royale open for testing
   let pendingRanked = false;   // true when the round is started from «Играть в лиге»
+  let pendingTut = false, tut = null;   // tutorial round: a quiet classic arena with step-by-step hints
   save.bests = { raid: 0, classic: save.best || 0, timed: 0, survival: 0, split: 0, crown: 0, race: 0, team: 0, giant: 0, hardcore: 0, daily: 0, ...(save.bests || {}) };
   save.ach = save.ach || [];
   save.totals = { kills: 0, bosses: 0, minions: 0, crumbs: 0, ejects: 0, rounds: 0, ...(save.totals || {}) };
@@ -2414,7 +2441,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function dressBot(o) {
     const base = { id: 'bot_' + o.name, color: o.baseColor };
     const pick = list => list[(Math.random() * list.length) | 0];
-    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill)) : base;
+    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut)) : base;
     o.fx = {};
     for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot && !f.legend)).id;
     if (o.star) { sk = SKINS.find(k => k.id === o.star.skin) || sk; o.fx = { aura: o.star.aura, trail: o.star.trail, eat: 'goldEat' }; }
@@ -2886,7 +2913,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return ['survival', 'crown', 'race', 'giant'].includes(m) ? fmtTime(v) : m === 'raid' ? `${v} урона` : String(v);
   };
   const dailyIs = id => mode === 'daily' && dailyMod.id === id;
-  const bossesOn = () => !['team', 'giant', 'race', 'royale', 'raid'].includes(mode);
+  const bossesOn = () => !(stats && stats.tutorial) && !['team', 'giant', 'race', 'royale', 'raid'].includes(mode);
 
   // ================= mass ejection =================
   const ejectGeo = new THREE.SphereGeometry(1, 16, 12);
@@ -2966,13 +2993,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   function startRound() {
     fixModeForLeague();
-    if (!pendingRanked && save.mode === 'raid') {
+    if (!pendingRanked && !pendingTut && save.mode === 'raid') {
       const r = raidState();
       if (r.done) { toast('Босс этой недели уже повержен. Новый — в понедельник'); return; }
       if (r.tries >= RAID_TRIES) { toast('Попытки на сегодня закончились. Приходи завтра'); return; }
       r.tries++; persist();
     }
-    U = pendingRanked ? ZERO_UP : save.up;
+    const isTut = pendingTut; pendingTut = false; tut = null;
+    U = pendingRanked || isTut ? ZERO_UP : save.up;
     [...player.cells].forEach(removeCell);
     bots.forEach(o => [...o.cells].forEach(removeCell));
     [...bossOwners, colossus, ...minions].forEach(o => [...o.cells].forEach(removeCell));
@@ -2984,11 +3012,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     owners.forEach(o => o.splitCd = 0);
     lives = mode === 'hardcore' ? 0 : U.life;
     dashCdBase = dailyIs('dashonly') ? 1 : 4 * (1 - 0.06 * U.dash);
-    mode = pendingRanked ? leagueMode() : save.mode;
+    mode = isTut ? 'classic' : pendingRanked ? leagueMode() : save.mode;
+    if (isTut) lives = 99;
     const ranked = pendingRanked;
     player.ejectCd = 0;
     stats = { mode, ranked, time: 0, maxMass: total(player), kills: 0, bosses: 0, minions: 0, bossCoins: 0, bossXp: 0, bonuses: 0, splits: 0, crumbs: 0, leader: 0, bestRank: 99, wave: 0,
-              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [] };
+              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut };
     clearEjects();
     resetViruses(); virusRespawn = []; resetEvents();
     history = [Math.round(total(player))];
@@ -3001,7 +3030,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     running = true; paused = false; dying = false;
     // teams: you + 5 allies (blue) vs 6 rivals (red); the 12th bot sits out
     player.team = mode === 'team' ? 'A' : null;
-    bots.forEach((o, i) => { o.team = mode === 'team' ? (i < 5 ? 'A' : 'B') : null; o.disabled = mode === 'team' && i === 11; o.crownT = 0; });
+    bots.forEach((o, i) => { o.team = mode === 'team' ? (i < 5 ? 'A' : 'B') : null; o.disabled = (mode === 'team' && i === 11) || isTut; o.crownT = 0; });
     player.crownT = 0;
     pickStarBot();
     bots.forEach(spawnBot);
@@ -3019,9 +3048,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       stats.raidDmg = 0; spawnRaidChunk();
       toast(`Рейд: ${b.name}. Подплывай ближе — он делится. Ешь части, чтобы нанести урон`);
     }
-    spawnBonus(); spawnBonus();
+    if (!isTut) { spawnBonus(); spawnBonus(); }
     $('overlay').hidden = true;
     setGameUi(true);
+    if (isTut) tutBegin();
   }
   function setGameUi(on) {
     $('board').hidden = $('miniWrap').hidden = $('effects').hidden = $('actions').hidden = $('pauseBtn').hidden = !on;
@@ -3030,6 +3060,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
 
   function endRound() {
+    if (stats.tutorial) { tutExit(false); return; }
     running = false;
     const lvBefore = playerLevel();
     const placeBonus = stats.modeBonus || 0;
@@ -3526,7 +3557,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     player.dashT -= dt; player.dashCd = Math.max(0, player.dashCd - dt);
     trailFx(dt, performance.now());
     if (player.dashT > 0) for (const c of player.cells) { const r = radius(c.mass); emit(c.x - c.hx * r, r * .8, c.z - c.hz * r, cellColor(c), 4, 4, .45); }
-    bonusTimer -= dt; if (bonusTimer <= 0) { spawnBonus(); bonusTimer = 9; }
+    if (!stats.tutorial) { bonusTimer -= dt; if (bonusTimer <= 0) { spawnBonus(); bonusTimer = 9; } }
+    else if (tutTick(dt)) return;
     if (bossesOn()) bossTimer -= dt;
     if (bossTimer <= 0) {
       // survival: a new wave every 15 s, even if the arena is full of bosses
@@ -3851,6 +3883,87 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('colBtn').addEventListener('click', () => openView('collections'));
   $('backBtn').addEventListener('click', closeShop);
   $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
+  // ================= tutorial for new players =================
+  const TUT_COINS = 500;
+  const pCenter = () => { const m = total(player) || 1; return player.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); };
+  function tutBot(i, mass, dist, still) {
+    const o = bots[i]; if (!o) return null;
+    [...o.cells].forEach(removeCell); dressBot(o);
+    const [px, pz] = pCenter(), a = Math.random() * Math.PI * 2;
+    addCell(o, px + Math.cos(a) * dist, pz + Math.sin(a) * dist, mass, o.free.pop());
+    o.tx = o.cells[0].x; o.tz = o.cells[0].z; o.target = null; o.think = still ? 1e9 : 0;
+    rebuildCells(); return o;
+  }
+  const TUT_STEPS = [
+    { title: 'Движение', text: () => finePointer ? 'Веди мышью — капля плывёт за курсором. Можно и клавишами WASD или стрелками. Проплыви немного.' : 'Коснись экрана и веди пальцем — появится джойстик. Проплыви немного.',
+      init: t => { t.p0 = pCenter(); }, prog: t => { const [x, z] = pCenter(); return Math.hypot(x - t.p0[0], z - t.p0[1]) / 25; } },
+    { title: 'Крошки', text: () => 'Светящиеся точки на полу — крошки. Каждая делает тебя чуть тяжелее. Съешь 15 крошек.',
+      init: t => { t.c0 = stats.crumbs; }, prog: t => (stats.crumbs - t.c0) / 15 },
+    { title: 'Съешь каплю', text: () => 'Рядом появились маленькие капли. Съесть можно того, кто хотя бы на 25% легче тебя: подплыви и накрой её.',
+      init: t => { t.k0 = stats.kills; const m = Math.max(3, total(player) * .45); tutBot(0, m, 12, true); tutBot(1, m, 16, true); tutBot(2, m, 20, true); }, prog: t => stats.kills - t.k0 },
+    { title: 'Рывок', text: () => `Рывок даёт короткое ускорение — чтобы догнать или убежать. Нажми ${finePointer ? 'Пробел' : 'кнопку «Рывок»'}.`,
+      init: t => { t.d0 = stats.dashes || 0; }, prog: t => (stats.dashes || 0) - t.d0 },
+    { title: 'Деление', text: () => `Деление разбивает каплю на две и бросает половину вперёд — так ловят убегающих. Части потом сольются обратно. Нажми ${finePointer ? 'E' : 'кнопку «Деление»'}.`,
+      init: t => { t.s0 = stats.splits; }, prog: t => stats.splits - t.s0 },
+    { title: 'Выброс массы', text: () => `Выброс отдаёт кусочек массы: так можно стать легче и быстрее или покормить союзника. Нажми ${finePointer ? 'Q' : 'кнопку «Выброс»'}.`,
+      init: t => { t.e0 = stats.ejects; }, prog: t => stats.ejects - t.e0 },
+    { title: 'Опасность!', text: t => `Красноватая на мини-карте капля больше тебя и охотится. Не дай себя съесть: убегай и используй рывок. Продержись ${Math.max(0, Math.ceil(15 - (t.surv || 0)))} с.`,
+      init: t => { t.surv = 0; t.lives0 = lives; const m = Math.max(40, total(player) * 2.5); tutBot(3, m, 30, false); }, prog: t => (t.surv || 0) / 15,
+      tick: (t, dt) => { t.surv += dt; if (lives < t.lives0) { t.lives0 = lives; t.surv = 0; toast('Тебя съели! Крупных капель нужно избегать. Ещё раз'); } } },
+  ];
+  function tutShow() {
+    const st = TUT_STEPS[tut.i];
+    $('tutStep').textContent = `Обучение · шаг ${tut.i + 1} из ${TUT_STEPS.length}`;
+    $('tutTitle').textContent = st.title; $('tutText').textContent = st.text(tut);
+    $('tutFill').style.width = Math.min(100, Math.max(0, st.prog(tut)) * 100).toFixed(0) + '%';
+  }
+  function tutBegin() {
+    tut = { i: 0, wait: 0 }; TUT_STEPS[0].init(tut);
+    $('tutBox').hidden = false; $('tutBox').classList.remove('done'); $('board').hidden = true; tutShow();
+  }
+  function tutTick(dt) {
+    if (!tut) return false;
+    if (tut.wait > 0) { tut.wait -= dt; if (tut.wait <= 0) { tut.i++; if (tut.i >= TUT_STEPS.length) { tutExit(true); return true; } $('tutBox').classList.remove('done'); TUT_STEPS[tut.i].init(tut); } else return false; }
+    const st = TUT_STEPS[tut.i]; if (st.tick) st.tick(tut, dt);
+    tutShow();
+    if (st.prog(tut) >= 1) { tut.wait = 1.2; $('tutBox').classList.add('done'); $('tutText').textContent = 'Отлично! ✓'; Sound.play('level'); }
+    return false;
+  }
+  function tutExit(done) {
+    running = false; dying = false; tut = null; $('tutBox').hidden = true;
+    [...player.cells].forEach(removeCell); bots.forEach(o => { [...o.cells].forEach(removeCell); o.disabled = false; }); rebuildCells();
+    setGameUi(false); $('overlay').hidden = false; showCard('menuCard');
+    save.tutSeen = true;
+    let body = '', title;
+    if (done) {
+      title = 'Обучение пройдено!';
+      const first = !save.tutDone;
+      if (first) { save.tutDone = today; save.coins += TUT_COINS; save.legend.coins = (save.legend.coins || 0) + TUT_COINS; if (!save.skins.includes('tut_student')) save.skins.push('tut_student'); }
+      const k = SKINS.find(x => x.id === 'tut_student');
+      body = (first ? `<div class="tut-reward"><span class="${swClass(k)}" style="${swatch(k)};width:56px;height:56px">${headIcon(k)}</span><div><b>Награда: +${TUT_COINS} ◆ и скин «Ученик»</b><small>Скин уже в гардеробе.</small></div></div>` : '<p>Награда уже была получена раньше.</p>') +
+        '<ul><li>Монеты трать в «Магазине» на улучшения — они действуют во всех обычных боях.</li><li>Задания под кнопкой «Играть» и задания недели дают монеты и сундуки.</li><li>С «Лиги» начинаются рейтинговые бои и сезонные награды.</li><li>Всё об игре — в «Информации», а в каждой вкладке есть кнопка ⓘ.</li></ul>';
+    } else { title = 'Обучение прервано'; body = '<p>Его можно пройти в любой момент: «Информация» → «Пройти обучение». За прохождение — монеты и скин «Ученик».</p>'; }
+    persist(); renderAll();
+    tutModal(title, body, [['tutOk', 'В меню', 'btn']]);
+  }
+  function tutModal(title, body, btns) {
+    $('tutMName').textContent = title; $('tutMBody').innerHTML = body;
+    $('tutMActs').innerHTML = btns.map(([id, t, cls]) => `<button class="${cls}" id="${id}">${t}</button>`).join('');
+    $('tutModal').hidden = false; $(btns[0][0]).focus();
+  }
+  function startTutorial() { $('tutModal').hidden = true; pendingRanked = false; pendingTut = true; startRound(); }
+  $('tutModal').addEventListener('click', e => {
+    const id = e.target.id;
+    if (id === 'tutGo') startTutorial();
+    else if (id === 'tutOk') { $('tutModal').hidden = true; $('startBtn').focus(); }
+    else if (id === 'tutNo') { save.tutSeen = true; persist(); $('tutModal').hidden = true; $('startBtn').focus(); }
+  });
+  $('tutStartBtn').addEventListener('click', () => { showCard('menuCard'); startTutorial(); });
+  $('tutSkip').addEventListener('click', () => { if (running && stats.tutorial) tutExit(false); });
+  // first launch: offer the tutorial to a new player
+  if (!save.tutSeen && !save.totals.rounds) setTimeout(() => tutModal('Добро пожаловать в «Капли 3D»!',
+    `<p>Ты — неоновая капля. Ешь тех, кто меньше, и убегай от тех, кто больше. Короткое обучение покажет всё за пару минут.</p><p>За прохождение: <b>+${TUT_COINS} ◆ и скин «Ученик»</b>.</p>`,
+    [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   $('againBtn').addEventListener('click', startRound);
   $('resDrawer').addEventListener('toggle', () => { if ($('resDrawer').open) requestAnimationFrame(drawGraph); });
   $('rewards').addEventListener('click', e => { const b = e.target.closest('#coinBtn'); if (!b) return; const open = $('coinBreak').hidden; $('coinBreak').hidden = !open; b.setAttribute('aria-expanded', open); });
@@ -4064,7 +4177,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     };
     requestAnimationFrame(step);
   }
-  const buyable = x => !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
+  const buyable = x => !x.tut && !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
   function sourceBadge(x) {
     if (save.archived && save.archived.includes(x.id)) return '<span class="badge-ex" style="color:#9fd8ff">из архива</span>';
     if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
@@ -4309,7 +4422,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ---- sorting for wardrobe and pets ----
   const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
   const SOURCE_ORDER = ['Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда'];
-  const sourceOf = x => x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  const sourceOf = x => x.tut ? 'Обучение' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
   // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
   const rarityScore = x => {
     if (x.legend) return 5;
@@ -4522,6 +4635,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (save.archived && save.archived.includes(x.id)) return 'куплен в архиве сезонов';
     if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
     if (x.skill) return 'все мастерские достижения';
+    if (x.tut) return 'награда за обучение';
     if (x.raid) return 'трофей босс-рейда';
     if (x.special === 'raid') return 'первая победа в босс-рейде';
     if (x.special === 'league') return 'лига «Неон» в конце сезона';
@@ -5278,7 +5392,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '35';
+const APP_VER = '36';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

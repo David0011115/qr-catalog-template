@@ -687,7 +687,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <dt>Победа в режиме</dt><dd>+40</dd>
       <dt>Место 1–3</dt><dd>+30 / +20 / +10 в «На время» и «Захвате короны»</dd>
       <dt>Хардкор</dt><dd>все очки ×1,5</dd>
-      <dt>Взнос лиги</dt><dd>с «Золота» за каждую игру: Золото −40, Платина −80, Алмаз −120, Неон −160. Ниже порога своей лиги счёт не опускается</dd>
+      <dt>Взнос лиги</dt><dd>с «Золота» за каждую игру: Золото −80, Платина −160, Алмаз −240, Неон −320. Ниже порога своей лиги счёт не опускается</dd>
       <dt>Где начисляются</dt><dd>только в рейтинговом бою — кнопка «Играть в лиге» в этом окне. У каждого сезона свой режим, они идут по кругу: «На время» → «Захват короны» → «Гонка массы» → «Хардкор» → «Королевская битва». Купленные улучшения и бонусы питомцев в рейтинговом бою не действуют</dd>
       <dt>Королевская битва</dt><dd>место 1–13: чем дольше продержался, тем больше очков; победа +40</dd>
     </dl>
@@ -850,7 +850,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details><summary>Лига и сезоны</summary>
       <ul class="info-list">
         <li>Сезон длится 14 дней. Очки лиги дают только раунды, начатые кнопкой «Играть в лиге» в окне «Лига».</li>
-        <li>С «Золота» за каждую рейтинговую игру берётся взнос: Золото 40, Платина 80, Алмаз 120, Неон 160 очков. Слабая игра может уменьшить счёт, но ниже порога своей лиги не опустишься.</li>
+        <li>С «Золота» за каждую рейтинговую игру берётся взнос: Золото 80, Платина 160, Алмаз 240, Неон 320 очков. Слабая игра может уменьшить счёт, но ниже порога своей лиги не опустишься.</li>
         <li>В рейтинговом бою не действуют улучшения и бонусы питомцев — все на равных.</li>
         <li>Режим лиги меняется каждый сезон. «Королевская битва» доступна только в лиге.</li>
         <li>За переход в новую лигу — сундук лиги. В конце сезона — монеты, значок, рамка лиги, а за высокие лиги ещё скины, эффекты, питомцы и титулы.</li>
@@ -1690,7 +1690,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { name: 'Алмаз',   pts: 15000, color: '#b26bff', coins: 4000, skin: true },
     { name: 'Неон',    pts: 25000, color: '#ff4fd8', coins: 8000, skin: true, fx: true },
   ];
-  const LEAGUE_FEE = [0, 0, 40, 80, 120, 160];   // points paid per ranked game from «Золото» up
+  const LEAGUE_FEE = [0, 0, 80, 160, 240, 320];   // points paid per ranked game from «Золото» up
   const leagueOf = pts => LEAGUES.reduce((best, l, i) => pts >= l.pts ? i : best, 0);
   const QUESTS = [
     { id: 'kills3',  text: 'Съешь 3 капли за раунд',     stat: 'kills',   goal: 3,   coins: 20, xp: 40 },
@@ -5089,7 +5089,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '29';
+const APP_VER = '30';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

@@ -1182,7 +1182,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ================= abilities: ALL tunable numbers live in this table =================
   // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
   // every level: cooldown −cdPerLv, power (duration / distance / radius / force) +powPerLv.
-  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .5, growth: 1.8, cdPerLv: .06, powPerLv: .1,
+  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .5, growth: 1.5, cdPerLv: .06, powPerLv: .1,
     rankedBuild: ['dash', 'split', 'eject'], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
     slotBtn: ['dash', 'split', 'eject'], slotKey: ['Space', 'KeyE', 'KeyQ'], slotKeyName: ['Пробел', 'E', 'Q'],
     arsenalCoins: 5000, slowFactor: .5, shrinkSpeed: 1.25, maxTraps: 2, decoySpeed: .55 };
@@ -2067,6 +2067,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   save.build = (save.build || ABIL_CFG.newBuild).slice(0, ABIL_CFG.slots).map(id => id && abilById(id) && save.abil.owned.includes(id) ? id : null);
   save.build = save.build.map((id, i) => id && save.build.indexOf(id) !== i ? null : id);
   while (save.build.length < ABIL_CFG.slots) save.build.push(null);
+  if (!save.abilGrowth) {
+    // v45: upgrade levels got cheaper (×1,8 → ×1,5 per level): pay back what was overpaid
+    let back = 0;
+    for (const [id, lv] of Object.entries(save.abil.lv)) { const a = abilById(id); if (!a || !a.price) continue;
+      for (let l = 0; l < lv; l++) back += Math.round(a.price * ABIL_CFG.firstLevel * Math.pow(1.8, l) / 50) * 50 - abUpCost(a, l); }
+    if (back > 0) { save.coins += back; save.abilRefund = back; }
+    save.abilGrowth = ABIL_CFG.growth;
+  }
   save.schema = 2;
   save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
   function fillQuests() {
@@ -4836,9 +4844,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const hats = Object.keys(HATS).map(h => { const own = save.hats.includes(h), col = COLLECTIONS.find(c => c.hat === h), on = save.hat === h;
         return own ? row(`<span class="hat-ico">${hatIcon(h)}</span>`, HATS[h].name, 'Надевается на любой скин вместо его предмета или короны.', `id="hat-${h}" data-hat="${h}"`, on, on ? 'Снять' : 'Надеть', 'hat:' + h)
                    : row(`<span class="hat-ico off">${hatIcon(h)}</span>`, HATS[h].name, col ? `Награда за коллекцию «${col.name}».` : `Награда: ${HATS[h].src}.`, 'disabled', false, 'Нет', 'hat:' + h); }).join('');
-      const decoRows = kind => { const own = DECOR.filter(d => d.kind === kind && save.decor.includes(d.id));
+      const decoRows = kind => { const own = DECOR.filter(d => d.kind === kind && save.decor.includes(d.id)).sort((x, y) => RAR_ORDER[decoRarity(x)] - RAR_ORDER[decoRarity(y)] || x.name.localeCompare(y.name, 'ru'));
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
-          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.level ? `Награда за ${d.level}-й уровень.` : d.skill ? 'Мастерское достижение.' : d.legend ? 'Легендарное достижение.' : d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : d.mastery ? `Мастерство режима «${MODES[d.mastery].name}».` : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
+          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, `${d.name} <span class="badge-r" style="color:${RARITY[decoRarity(d)].color}">${RARITY[decoRarity(d)].name}</span>`, decoSource(d), `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
           : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков, даются за лигу и мастерство режимов' : 'Титулы выпадают из сундуков, даются за лигу, коллекции эффектов и мастерство режимов'}.</p>`; };
       $('shop').innerHTML = '<h3>Над головой</h3>' + hats + `<h3>Рамки · ${DECOR.filter(d => d.kind === 'frame' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'frame').length}</h3>` + decoRows('frame') +
         `<h3>Титулы · ${DECOR.filter(d => d.kind === 'title' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'title').length}</h3>` + decoRows('title');
@@ -5346,10 +5354,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       act = own ? `<button class="btn ${on ? 'ghost' : ''}" data-act="hat-${id}">${on ? 'Снять' : 'Надеть'}</button>` : `<button class="btn ghost" disabled>${col ? 'Собери коллекцию' : 'Ещё не получен'}</button>`;
     } else if (kind === 'deco') {
       const d = decorById(id), on = (d.kind === 'frame' ? save.frame : save.title) === id;
-      name = d.name; tag = (d.chest ? rarTag(d.chest) : '') + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
+      name = d.name; tag = rarTag(decoRarity(d)) + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
       flat = decoPreview(d);
       rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
-        ['Откуда', d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
+        ['Откуда', d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
       act = `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>`;
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
@@ -5480,6 +5488,32 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return { type, item, rar, dup: owned, star, coins };
   }
   const STAR_TEXT = { 1: 'вокруг капли летят искры', 2: 'по капле бежит цветной блик', 3: 'капля сияет ореолом' };
+  // rarity of a frame or title, by where it comes from
+  function decoRarity(d) {
+    if (d.chest) return d.chest;
+    if (d.level) return d.level >= 50 ? 'legendary' : d.level >= 30 ? 'epic' : 'rare';
+    if (d.league !== undefined) return d.league >= 4 ? 'legendary' : d.league === 3 ? 'epic' : d.league === 2 ? 'rare' : 'common';
+    if (/^tt_lg/.test(d.id)) return d.id === 'tt_lg3' ? 'epic' : 'legendary';
+    if (d.legend || d.chaos === 'vet' || d.skill === 'all') return 'legendary';
+    if (d.mastery) return d.kind === 'title' ? 'legendary' : 'epic';
+    if (typeof d.chaos === 'number') return d.kind === 'title' ? 'legendary' : 'epic';
+    if (d.skill || d.col || d.chaos) return 'epic';
+    return 'rare';
+  }
+  const RAR_ORDER = { legendary: 0, epic: 1, rare: 2, common: 3 };
+  function decoSource(d) {
+    if (d.level) return `Награда за ${d.level}-й уровень.`;
+    if (d.skill) return d.skill === 'all' ? 'Все мастерские достижения.' : 'Мастерское достижение.';
+    if (d.legend) return 'Легендарное достижение.';
+    if (d.league !== undefined || /^tt_lg/.test(d.id)) return 'Награда лиги в конце сезона.';
+    if (d.chaos === 'vet') return 'Веха Хаос-лиги: сезоны в «Сингулярности».';
+    if (typeof d.chaos === 'number') return `Хаос-лига, сезон ${d.chaos}.`;
+    if (d.chaos) return 'Хаос-лига.';
+    if (d.col) return 'Награда за коллекцию.';
+    if (d.mastery) return `Мастерство режима «${MODES[d.mastery].name}».`;
+    if (d.chest) return `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`;
+    return 'Особая награда.';
+  }
   const frameAttr = id => { const d = decorById(id); return d ? `class="fr ${d.cls || ''}" style="${d.css}"` : 'class="fr0"'; };
   const titleTag = id => { const d = decorById(id); return d ? `<em class="ttl" style="color:${d.color}">${d.name}</em>` : ''; };
   const decoPreview = d => d.kind === 'frame' ? `<span class="deco-pv"><span ${frameAttr(d.id)}>Ты</span></span>` : `<span class="deco-pv">${titleTag(d.id)}</span>`;
@@ -6131,7 +6165,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '44';
+const APP_VER = '45';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

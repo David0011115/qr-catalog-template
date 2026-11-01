@@ -286,6 +286,27 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .buy.sel { background: var(--prey); }
 .pane { display: flex; flex-direction: column; gap: 14px; }
 .info-card { gap: 10px; }
+.modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(5, 4, 15, .72);
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); touch-action: pan-y; }
+.modal-card { position: relative; width: 100%; max-width: 400px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 10px; backdrop-filter: blur(10px); }
+.modal-x { position: absolute; top: 8px; right: 10px; z-index: 1; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--row); color: var(--fg); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.modal-x:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
+.im-view { display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, rgba(123, 61, 255, .3), transparent 70%), #160c36; border-radius: 14px; aspect-ratio: 1; max-height: 42vh; margin-inline: auto; width: 100%; max-width: 300px; }
+.im-view canvas { width: 100%; height: 100%; display: block; }
+#imFlat { display: grid; place-items: center; width: 100%; height: 100%; }
+#imFlat img { width: 70%; image-rendering: auto; border-radius: 12px; }
+#imFlat .deco-pv { transform: scale(1.8); }
+#imFlat .arena-pv { width: 70%; height: 50%; }
+#imName { margin: 0; font-size: 1.25rem; text-align: center; }
+.im-tag { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; font-size: .8rem; }
+.im-info { font-size: .88rem; }
+.im-actions { display: flex; gap: 8px; }
+.im-actions .btn { flex: 1; }
+[data-info] { cursor: pointer; }
+[data-info]:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
+.more-hint { font-size: .7rem; color: var(--muted); }
 .info-lead { margin: 0; color: var(--muted); font-size: .9rem; }
 .info-card details { background: var(--row); border-radius: 12px; padding: 0 14px; }
 .info-card summary { cursor: pointer; padding: 12px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -759,6 +780,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       </div>
     </div>
     <button class="btn" id="setBack">Готово</button>
+  </div>
+</div>
+
+<div class="modal" id="itemModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="imName">
+    <button class="modal-x" id="imClose" aria-label="Закрыть">×</button>
+    <div class="im-view"><canvas id="imCanvas" width="480" height="480"></canvas><div id="imFlat" hidden></div></div>
+    <h2 id="imName"></h2>
+    <div class="im-tag" id="imTag"></div>
+    <dl class="keys im-info" id="imInfo"></dl>
+    <div class="im-actions" id="imActions"></div>
   </div>
 </div>
 
@@ -3339,7 +3371,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (mode === 'own') { if (sel) { label = 'Выбран'; cls += ' sel'; dis = 'disabled'; } else label = 'Выбрать'; }
     else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
-    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
+    const inf = mode === 'own' ? ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Подробнее: ${s.name}"` : '';
+    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
       <span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
   function fxRow(f, mode) {
@@ -3348,7 +3381,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (mode === 'own') { if (sel) { label = 'Снять'; cls += ' sel'; } else label = 'Выбрать'; }
     else if (lv < f.lvl) { label = `С ур. ${f.lvl}`; dis = 'disabled'; }
     else { label = `${f.price} ◆`; if (save.coins < f.price) dis = 'disabled'; }
-    return `<div class="fxrow ${f.ex || f.chest || f.season ? 'ex' : ''}"><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
+    const inf = mode === 'own' ? ` data-info="fx:${f.id}" tabindex="0" role="button" aria-label="Подробнее: ${f.name}"` : '';
+    return `<div class="fxrow ${f.ex || f.chest || f.season ? 'ex' : ''}"${inf}><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
       `<span class="desc">${f.desc}.</span><button class="${cls}" id="fx-${f.id}" data-fx="${f.id}" ${dis}>${label}</button></div>`;
   }
   function renderShop() {
@@ -3369,11 +3403,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       $('shop').innerHTML = html || '<p class="empty-note">Все эффекты магазина уже твои. Остальные — в сундуках и испытаниях.</p>';
     } else if (shopTab === 'wskin') {
       const own = sortOwned(SKINS.filter(k => save.skins.includes(k.id)), save.skins, 'wskin');
-      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Новые скины: магазин, сундуки, испытания и награды сезона.</p>` +
+      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Нажми на скин, чтобы посмотреть подробности.</p>` +
         `<div class="skins">${own.map(k => skinTile(k, 'own')).join('')}</div>`;
     } else if (shopTab === 'wfx') {
       const ownAll = sortOwned(FX.filter(f => save.fxOwned.includes(f.id)), save.fxOwned, 'wfx');
-      $('shop').innerHTML = sortBar('wfx') + `<p class="empty-note">Собрано ${ownAll.length} из ${FX.length}. В каждом слоте можно надеть один эффект.</p>` +
+      $('shop').innerHTML = sortBar('wfx') + `<p class="empty-note">Собрано ${ownAll.length} из ${FX.length}. В каждом слоте можно надеть один эффект. Нажми на эффект, чтобы посмотреть подробности.</p>` +
         (ownAll.length ? FX_SLOTS.map(([slot, title]) => {
           const list = ownAll.filter(f => f.slot === slot);
           return list.length ? `<h3>${title}</h3>` + list.map(f => fxRow(f, 'own')).join('') : '';
@@ -3382,7 +3416,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const own = sortOwned(save.pets.map(petById).filter(Boolean), save.pets, 'wpet');
       $('shop').innerHTML = sortBar('wpet') + `<p class="empty-note">Собрано ${own.length} из ${PETS.length}. Питомцы — награда лиги (за «Платину» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков. Бонус питомца не действует в рейтинговом бою.</p>` +
         (own.length ? own.map(pt => { const sel = save.pet === pt.id;
-          return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex">${pt.tier}</span></span>` +
+          return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex">${pt.tier}</span></span>` +
             `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
             `<button class="buy ${sel ? 'sel' : ''}" id="pet-${pt.id}" data-pet="${pt.id}">${sel ? 'Убрать' : 'Взять'}</button></div>`; }).join('')
           : '<p class="empty-note">Пока пусто: дойди до лиги «Платина» в любом сезоне.</p>');
@@ -3391,13 +3425,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         const sd = seasonData(id), hk = sd.holiday;
         return `<h3>Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''}</h3>` + sd.pets.map((pt, i) => {
           const own = save.pets.includes(pt.id), lg = lgView(i ? 5 : 3, hk);
-          return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex" style="color:${lg.color}">${lg.name}</span></span>` +
+          return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex" style="color:${lg.color}">${lg.name}</span></span>` +
             `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
             `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : `лига «${lg.name}»`}</span></div>`;
         }).join('');
       }).join('');
       const chestRows = '<h3>Из сундуков и сундуков лиги</h3>' + PETS.filter(pt => pt.chest || pt.lchest).map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest || pt.lchest];
-        return `<div class="fxrow ex"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-r" style="color:${rc.color}">${rc.name}</span></span>` +
+        return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-r" style="color:${rc.color}">${rc.name}</span></span>` +
           `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
           `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join('');
       $('shop').innerHTML = '<p class="empty-note">Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги) и выпадают из сундуков.</p>' + rows + chestRows;
@@ -3407,16 +3441,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         (list.length ? list.map(a => {
           const sel = save.arena === a.id, can = save.coins >= a.price;
           const btn = shop ? `<button class="buy" id="arena-${a.id}" data-arena="${a.id}" ${can ? '' : 'disabled'}>${a.price} ◆</button>` : `<button class="buy ${sel ? 'sel' : ''}" id="arena-${a.id}" data-arena="${a.id}" ${sel ? 'disabled' : ''}>${sel ? 'Выбрана' : 'Выбрать'}</button>`;
-          return `<div class="fxrow"><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}</span><span class="desc">${a.desc}.</span>${btn}</div>`;
+          return `<div class="fxrow"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}</span><span class="desc">${a.desc}.</span>${btn}</div>`;
         }).join('') : '<p class="empty-note">Все темы арены уже твои.</p>');
     } else if (shopTab === 'wdeco') {
-      const row = (ico, name, desc, attr, on, label) => `<div class="fxrow"><span class="ico">${ico}</span><span class="name">${name}</span><span class="desc">${desc}</span><button class="buy ${on ? 'sel' : ''}" ${attr}>${label}</button></div>`;
+      const row = (ico, name, desc, attr, on, label, info) => `<div class="fxrow"${info ? ` data-info="${info}" tabindex="0" role="button" aria-label="Подробнее: ${name}"` : ''}><span class="ico">${ico}</span><span class="name">${name}</span><span class="desc">${desc}</span><button class="buy ${on ? 'sel' : ''}" ${attr}>${label}</button></div>`;
       const hats = Object.keys(HATS).map(h => { const own = save.hats.includes(h), col = COLLECTIONS.find(c => c.hat === h), on = save.hat === h;
-        return own ? row(`<span class="hat-ico">${hatIcon(h)}</span>`, HATS[h].name, 'Надевается на любой скин вместо его предмета или короны.', `id="hat-${h}" data-hat="${h}"`, on, on ? 'Снять' : 'Надеть')
-                   : row(`<span class="hat-ico off">${hatIcon(h)}</span>`, HATS[h].name, `Награда за коллекцию «${col.name}».`, 'disabled', false, 'Нет'); }).join('');
+        return own ? row(`<span class="hat-ico">${hatIcon(h)}</span>`, HATS[h].name, 'Надевается на любой скин вместо его предмета или короны.', `id="hat-${h}" data-hat="${h}"`, on, on ? 'Снять' : 'Надеть', 'hat:' + h)
+                   : row(`<span class="hat-ico off">${hatIcon(h)}</span>`, HATS[h].name, `Награда за коллекцию «${col.name}».`, 'disabled', false, 'Нет', 'hat:' + h); }).join('');
       const decoRows = kind => { const own = DECOR.filter(d => d.kind === kind && save.decor.includes(d.id));
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
-          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать'); }).join('')
+          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
           : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков и даются за лигу в конце сезона' : 'Титулы выпадают из сундуков, даются за лигу и за коллекции эффектов'}.</p>`; };
       $('shop').innerHTML = '<p class="empty-note">Рамка и титул видны рядом с твоим именем в таблице лидеров.</p><h3>Над головой</h3>' + hats + `<h3>Рамки · ${DECOR.filter(d => d.kind === 'frame' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'frame').length}</h3>` + decoRows('frame') +
         `<h3>Титулы · ${DECOR.filter(d => d.kind === 'title' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'title').length}</h3>` + decoRows('title');
@@ -3532,6 +3566,145 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
     persist(); renderShop();
     const again = $(b.id); if (again) again.focus(); else { const t = document.querySelector('#shopTabs [aria-selected="true"]'); if (t) t.focus(); }
+  });
+
+  // ================= item details (wardrobe and pets) =================
+  let imR = null, imScene, imCam, imObj = null, imVis = null, imKind = '', imId = '', imAnim = 0, imReturn = null;
+  function imInit() {
+    imR = new THREE.WebGLRenderer({ canvas: $('imCanvas'), antialias: true, alpha: true });
+    imR.setPixelRatio(1); imR.setSize(480, 480, false); imR.setClearColor(0x000000, 0);
+    imScene = new THREE.Scene();
+    imScene.add(new THREE.HemisphereLight(0xc8c0ff, 0x10082a, 1.1));
+    const d = new THREE.DirectionalLight(0xffffff, .8); d.position.set(2, 3, 4); imScene.add(d);
+    imCam = new THREE.PerspectiveCamera(35, 1, .1, 80);
+  }
+  // a blob like the in-game one, built for the preview only
+  function previewBlob(s, stars, hat) {
+    const col = new THREE.Color(s.color);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .45, roughness: .22, metalness: .1 }));
+    const glow = glowSprite(s.color, 3.2, .85); mesh.add(glow);
+    [-0.35, 0.35].forEach(x => { const e = new THREE.Mesh(eyeGeo, eyeMat); e.position.set(x, 0.35, 0.86); const pu = new THREE.Mesh(pupilGeo, pupilMat); pu.position.set(0, 0, .09); e.add(pu); mesh.add(e); });
+    const crown = makeCrown(); crown.visible = false; mesh.add(crown);
+    const v = { mesh, glow, crown, ring: { material: new THREE.MeshBasicMaterial() }, jig: 0 };
+    applySkin(v, s, stars, hat);
+    return v;
+  }
+  const SLOT_NAME = { trail: 'След за каплей', aura: 'Аура вокруг капли', eat: 'Эффект при поедании' };
+  const HEAD_NAME = { flame: 'пламя', antenna: 'антенны', halo: 'нимб', gem: 'парящий кристалл', star: 'звезда', horns: 'рожки', wings: 'крылья' };
+  const PATTERN_NAME = { stripes: 'полоски', dots: 'горошек', gradient: 'градиент', grid: 'сетка', zigzag: 'зигзаг', rings: 'кольца', stars: 'звёзды' };
+  function sourceText(x) {
+    if (x.raid) return 'трофей босс-рейда';
+    if (x.lchest) return `сундук лиги · ${RARITY[x.lchest].name.toLowerCase()}`;
+    if (x.chest) return `сундук · ${RARITY[x.chest].name.toLowerCase()}`;
+    if (x.ex) { const ch = CHALLENGES.find(c => c.reward[1] === x.id); return ch ? `испытание «${ch.name}»` : 'испытание'; }
+    if (x.holiday) return `праздник «${HOLIDAYS[x.holiday].name}»`;
+    if (x.season) return 'награда сезона лиги';
+    return x.price ? `магазин · ${x.price} ◆${x.lvl > 1 ? `, с ${x.lvl} уровня` : ''}` : 'есть с самого начала';
+  }
+  const colsWith = id => COLLECTIONS.filter(c => colItems(c).includes(id)).map(c => `«${c.name}» ${colOwned(c)}/${colItems(c).length}${save.colDone.includes(c.id) ? ' ✓' : ''}`).join(', ');
+  function openItem(ref) {
+    const [kind, ...rest] = ref.split(':'), id = rest.join(':');
+    imKind = kind; imId = id; imReturn = document.activeElement;
+    if (!imR) imInit();
+    if (imObj) { imScene.remove(imObj); imObj = null; } imVis = null;
+    let name = '', tag = '', rows = [], flat = '', act = '';
+    const rarTag = r => r ? `<span class="badge-r" style="color:${RARITY[r].color}">${RARITY[r].name}</span>` : '';
+    if (kind === 'skin') {
+      const k = SKINS.find(x => x.id === id), st = starsOf(k);
+      name = k.name; tag = rarTag(k.chest || k.lchest) + sourceBadge(k).replace(/badge-r[^>]*>[^<]*<\/span>/, '');
+      imVis = previewBlob(k, st, null); imObj = imVis.mesh; imVis.look = k;
+      const look = [k.pattern ? `узор «${PATTERN_NAME[k.pattern] || k.pattern}»` : 'однотонный', k.glow && 'свечение', k.pulse && 'пульсация', k.holo && 'голограмма (переливается)', k.rainbow && 'радужный перелив', k.crown && 'корона'].filter(Boolean).join(', ');
+      rows.push(['Откуда', sourceText(k)], ['Вид', look]);
+      if (k.head) rows.push(['Над головой', HEAD_NAME[k.head] || k.head]);
+      if (isShiny(k)) rows.push(['Блик', k.shine === 'bolt' ? 'молния' : 'полоса']);
+      if (k.chest || k.lchest) rows.push(['Звёзды', `${'★'.repeat(st)}${'☆'.repeat(3 - st)} — ${st ? STAR_TEXT[st] : 'пока нет'}${st < 3 ? `. Следующая за повтор из сундука: ${STAR_TEXT[st + 1]}` : ''}`]);
+      const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
+      if (save.hat) rows.push(['Сейчас надето', `${HATS[save.hat].name} вместо предмета скина`]);
+      act = save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
+    } else if (kind === 'fx') {
+      const f = FX.find(x => x.id === id), on = save.fx[f.slot] === id;
+      name = f.name; tag = rarTag(f.chest || f.lchest) + `<span class="badge-ex">${SLOT_NAME[f.slot]}</span>`;
+      rows.push(['Что делает', f.desc], ['Откуда', sourceText(f)]);
+      const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
+      if (f.slot === 'aura') { const sc = skin().color; imVis = previewBlob(skin(), 0, save.hat); imObj = imVis.mesh; imVis.look = skin(); setAura(imVis, id, sc); }
+      else flat = `<img alt="" src="${fxThumb(f)}">`;
+      act = `<button class="btn ${on ? 'ghost' : ''}" data-act="fx-${id}">${on ? 'Снять' : 'Надеть'}</button>`;
+    } else if (kind === 'pet') {
+      const pt = petById(id), own = save.pets.includes(id), on = save.pet === id, B = PET_BONUS[pt.bonus];
+      name = pt.name; tag = rarTag(pt.chest || pt.lchest) + (pt.tier ? `<span class="badge-ex">${pt.tier}</span>` : '');
+      const g = buildPet(pt); scene.remove(g); g.visible = true; g.position.set(0, 0, 0); imObj = g;
+      rows.push(['Вид', PET_SPECIES[pt.species]], ['Бонус', `${B.name}: ${B.text(pt.lv)}`], ['Сила', `уровень ${pt.lv} из 3`],
+        ['Откуда', pt.lchest ? 'сундук лиги' : pt.chest ? 'сундук' : pt.holiday ? 'праздничная лига' : `лига «${pt.tier}» в конце сезона`], ['В лиге', 'бонус не действует в рейтинговом бою']);
+      act = own ? `<button class="btn ${on ? 'ghost' : ''}" data-act="pet-${id}">${on ? 'Убрать' : 'Взять'}</button>` : '<button class="btn ghost" disabled>Ещё не получен</button>';
+    } else if (kind === 'hat') {
+      const own = save.hats.includes(id), on = save.hat === id, col = COLLECTIONS.find(c => c.hat === id);
+      name = HATS[id].name; tag = '<span class="badge-ex">предмет над головой</span>';
+      imVis = previewBlob(skin(), 0, id); imObj = imVis.mesh; imVis.look = skin();
+      rows.push(['Откуда', `коллекция «${col.name}» (${colOwned(col)}/${colItems(col).length})`], ['Как носить', 'на любом скине, вместо его короны или предмета']);
+      act = own ? `<button class="btn ${on ? 'ghost' : ''}" data-act="hat-${id}">${on ? 'Снять' : 'Надеть'}</button>` : '<button class="btn ghost" disabled>Собери коллекцию</button>';
+    } else if (kind === 'deco') {
+      const d = decorById(id), on = (d.kind === 'frame' ? save.frame : save.title) === id;
+      name = d.name; tag = (d.chest ? rarTag(d.chest) : '') + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
+      flat = decoPreview(d);
+      rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
+        ['Откуда', d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
+      act = `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>`;
+    } else if (kind === 'arena') {
+      const a = ARENAS.find(x => x.id === id), on = save.arena === id;
+      name = a.name; tag = '<span class="badge-ex">тема арены</span>';
+      flat = `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`;
+      rows.push(['Что меняет', a.desc], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь' })[a.fx] || 'нет'], ['Цена', a.price ? `${a.price} ◆` : 'бесплатно']);
+      act = on ? '<button class="btn ghost" disabled>Выбрана</button>' : `<button class="btn" data-act="arena-${id}">Выбрать</button>`;
+    }
+    $('imName').textContent = name; $('imTag').innerHTML = tag;
+    $('imInfo').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    $('imActions').innerHTML = act + '<button class="btn ghost" id="imOk">Закрыть</button>';
+    $('imFlat').innerHTML = flat; $('imFlat').hidden = !flat; $('imCanvas').hidden = !!flat;
+    if (imObj) imScene.add(imObj);
+    const big = kind === 'pet' ? 3.6 : imVis && imVis.aura ? 7.4 : 6.4, y = kind === 'pet' ? 0 : .6;
+    imCam.position.set(0, y + big * .28, big); imCam.lookAt(0, y, 0);
+    $('itemModal').hidden = false; $('imClose').focus();
+    cancelAnimationFrame(imAnim);
+    const t0 = performance.now();
+    const loop = now => {
+      if ($('itemModal').hidden) return;
+      if (imObj) {
+        imObj.rotation.y = .5 + Math.sin((now - t0) / 1600) * .6;
+        if (imVis) {
+          const lk = imVis.look, v = imVis, m = v.mesh.material;
+          animateHead(v, now); if (v.aura) animateAura(v, now);
+          if (lk.pulse) { const k = .5 + .5 * Math.sin(now / 280); m.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }
+          if (lk.holo) { const h = ((lk.holoBase ?? .5) + (lk.holoSpan ?? .17) * (1 + Math.sin(now / 900))) % 1; m.color.setHSL(h, 1, .62); m.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
+          if (lk.rainbow) { const h = (now / 4000) % 1; m.color.setHSL(h, 1, .6); m.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
+          if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320);
+        } else if (imKind === 'pet') imObj.position.y = Math.sin(now / 400) * .08;
+        shineT.value = now / 1000;
+        imR.render(imScene, imCam);
+      }
+      imAnim = requestAnimationFrame(loop);
+    };
+    imAnim = requestAnimationFrame(loop);
+  }
+  function closeItem() {
+    $('itemModal').hidden = true; cancelAnimationFrame(imAnim);
+    if (imReturn && imReturn.isConnected) imReturn.focus();
+  }
+  $('imClose').addEventListener('click', closeItem);
+  $('itemModal').addEventListener('click', e => {
+    if (e.target === $('itemModal') || e.target.id === 'imOk') { closeItem(); return; }
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const orig = $(b.dataset.act);
+    if (orig && !orig.disabled) orig.click();
+    else if (b.dataset.act.startsWith('pet-')) { save.pet = save.pet === imId ? null : imId; applyPet(); persist(); renderShop(); }
+    openItem(imKind + ':' + imId);   // refresh the window after the change
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('itemModal').hidden) { e.stopPropagation(); closeItem(); } }, true);
+  $('shop').addEventListener('click', e => {
+    const t = e.target.closest('[data-info]');
+    if (t && !e.target.closest('button, select, label')) openItem(t.dataset.info);
+  });
+  $('shop').addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-info]')) { e.preventDefault(); openItem(e.target.dataset.info); }
   });
 
   // ================= chests =================
@@ -4033,7 +4206,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '14';
+const APP_VER = '15';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

@@ -195,6 +195,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 .pause-btn { position: fixed; z-index: 2; width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--fg);
   font-size: 1rem; letter-spacing: -.1em; cursor: pointer; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(6px); }
+.boss-tag { color: var(--boss); margin-right: 3px; }
+.eb-row { display: flex; flex-wrap: wrap; gap: 6px; max-width: 230px; }
+.eb { width: 40px; height: 40px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: conic-gradient(var(--c) calc(var(--f) * 360deg), rgba(255, 255, 255, .12) 0); }
+.eb-in { width: 100%; height: 100%; border-radius: 50%; background: var(--panel); display: grid; place-items: center; align-content: center; line-height: 1; }
+.eb-in b { font-size: .82rem; color: var(--c); font-weight: 700; } .eb-in small { font-size: .6rem; color: var(--fg); font-variant-numeric: tabular-nums; margin-top: 1px; }
+.mode-timer { position: fixed; z-index: 2; left: 50%; transform: translateX(-50%); top: calc(62px + env(safe-area-inset-top, 0px)); padding: 4px 14px; border-radius: 99px;
+  background: var(--panel); border: 1px solid var(--line); font-family: var(--display); font-size: 1.05rem; font-variant-numeric: tabular-nums; pointer-events: none; }
+.mode-timer[hidden] { display: none; }
+@media (orientation: landscape) and (max-height: 560px) { .mode-timer { top: calc(8px + env(safe-area-inset-top, 0px)); } }
 .pause-btn:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
 
 .combo { position: fixed; z-index: 2; left: 50%; top: 26%; transform: translateX(-50%); pointer-events: none; font-family: var(--display); font-size: 2rem; color: var(--gold);
@@ -684,6 +693,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <aside class="board" id="board"><h2>Лидеры</h2><ol id="leaders"></ol></aside>
 <div class="effects" id="effects"></div>
+<div class="mode-timer" id="modeTimer" hidden aria-live="off"></div>
 <div class="mini-wrap" id="miniWrap">
   <canvas id="minimap" width="140" height="140" aria-label="Мини-карта"></canvas>
   <div class="mini-legend"><span><i style="background:var(--prey)"></i>еда</span><span><i style="background:var(--threat)"></i>опасно</span></div>
@@ -3161,7 +3171,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const playerVis = Array.from({ length: 10 }, () => makeVis(C('--me')));
   player.free = playerVis.slice();
   const freeVis = player.free;
-  const refreshSkin = () => { playerVis.forEach(applySkin); if (typeof applyAura === 'function') applyAura(); };
+  const refreshSkin = () => { playerVis.forEach(v => applySkin(v)); if (typeof applyAura === 'function') applyAura(); };   // forEach would pass the index as the skin
   refreshSkin();
 
   const BOT_DEFS = [
@@ -3502,9 +3512,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     setGameUi(true);
     if (isTut) tutBegin();
     if (isChaos) chaosBanner();
+    if (stats.arena && stats.arena !== 'default') setTimeout(() => { if (running) toast(`Арена «${arenaDef().name}»: ${ARENA_FX[stats.arena]}`); }, 2600);
   }
   function setGameUi(on) {
-    $('board').hidden = $('miniWrap').hidden = $('effects').hidden = $('actions').hidden = $('pauseBtn').hidden = !on;
+    $('board').hidden = $('miniWrap').hidden = $('effects').hidden = $('actions').hidden = $('pauseBtn').hidden = !on; if (!on) $('modeTimer').hidden = true;
     if (on) renderSlots();
   }
   // ================= abilities: runtime =================
@@ -4492,28 +4503,44 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('leaders').innerHTML = ranked.slice(0, 6).map((o, i) => {
       const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
       const fr = o.isPlayer ? save.frame : o.frame, lvl = o.isPlayer ? playerLevel() : o.lvl;
-      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
+      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
     }).join('') + (rank > 6 ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '');
-    let modeChip = running && mode === 'royale' ? `<div class="chip"><i style="background:#ff3d6e"></i>Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)} из 13</div>` : '';
-    if (running && mode === 'timed') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
-    if (running && mode === 'crown') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Корона: ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)} · осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
-    if (running && mode === 'race') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Гонка ${Math.round(total(player))}/${RACE_GOAL} · ${fmtTime(stats.time)}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span></div>`;
-    if (running && mode === 'team') modeChip = `<div class="chip"><i style="background:${ALLY_COLOR}"></i>Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные · ${fmtTime(Math.max(0, TEAM_LEN - stats.time))}</div>`;
-    if (running && mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `<div class="chip"><i style="background:var(--boss)"></i>${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · твой урон ${stats.raidDmg || 0} · ${fmtTime(Math.max(0, RAID_LEN - stats.time))}<span class="bar wide"><span style="width:${(left / RAID_HP * 100).toFixed(0)}%;background:var(--boss)"></span></span></div>`; }
-    if (running && mode === 'daily') modeChip = `<div class="chip"><i style="background:var(--prey)"></i>${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}</div>`;
-    if (running && mode === 'survival') modeChip = `<div class="chip"><i style="background:var(--boss)"></i>Волна ${stats.wave} · ${fmtTime(stats.time)}</div>`;
-    // countdown to the next boss (or the next survival wave)
-    if (running && bossesOn() && player.cells.length) {
-      const left = Math.max(0, Math.ceil(bossTimer)), soon = left <= 5 ? ' soon' : '';
-      if (mode === 'survival') modeChip += `<div class="chip boss-chip${soon}"><i style="background:var(--boss)"></i>Волна ${stats.wave + 1} через ${left} с</div>`;
-      else if (bossOwners.filter(o => o.cells.length).length < maxBosses()) modeChip += `<div class="chip boss-chip${soon}"><i style="background:var(--boss)"></i>Босс через ${fmtTime(left)}</div>`;
-      else modeChip += `<div class="chip boss-chip"><i style="background:var(--boss)"></i>Боссов на арене: максимум</div>`;
+    // ---- in-battle HUD: one short mode line, a separate mode timer with a clock, and round icon badges with a countdown ring ----
+    let modeChip = '', timer = '';
+    const T = (left, total) => ({ left: Math.max(0, left), total });
+    if (running) {
+      const lim = { timed: TIMED_LEN, crown: TIMED_LEN, team: TEAM_LEN, raid: RAID_LEN }[mode];
+      if (lim) timer = `⏱ ${fmtTime(Math.max(0, lim - stats.time))}`;
+      else if (['race', 'survival', 'classic', 'hardcore', 'daily', 'royale'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
+      if (mode === 'royale') modeChip = `Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
+      if (mode === 'crown') modeChip = `♛ ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)}`;
+      if (mode === 'race') modeChip = `Гонка ${Math.round(total(player))}/${RACE_GOAL}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span>`;
+      if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
+      if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · твой урон ${Math.round(stats.raidDmg || 0)}`; }
+      if (mode === 'daily') modeChip = `${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}`;
+      if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
     }
-    if (running && ev.active) modeChip += `<div class="chip"><i style="background:${evInfo(ev.active).color}"></i>${evInfo(ev.active).name} ${Math.ceil(ev.left)} с</div>`;
-    else if (running && ev.warn) modeChip += `<div class="chip"><i style="background:${evInfo(ev.warn).color}"></i>Скоро: ${evInfo(ev.warn).name}</div>`;
-    $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:${stats.chaos ? '#ff4fd8' : 'var(--gold)'}"></i>${stats.chaos ? 'Хаос-лига · случайные способности' : 'Рейтинговый бой · без улучшений'} · монеты ×1,5</div>` : '') + modeChip + (running && stats.arena && stats.arena !== 'default' ? `<div class="chip"><i style="background:${arenaDef().dot || 'var(--food)'}"></i>Арена: ${ARENA_FX[stats.arena]}</div>` : '') + Object.keys(effects || {}).filter(k => effects[k] > 0)
-      .map(k => `<div class="chip"><i style="background:${BONUS[k].color}"></i>${BONUS[k].name}${k === 'speed' ? ' +45%' : ''} ${Math.ceil(effects[k])} с</div>`).join('') +
-      mergeChip() + abilChips();
+    const badges = [];
+    const badge = (icon, color, left, total, title) => badges.push(`<div class="eb" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${icon}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);
+    if (running) {
+      const BICON = { speed: '⚡', shield: '🛡', double: '×2', magnet: '🧲' };
+      for (const k of Object.keys(effects || {})) if (effects[k] > 0) badge(BICON[k] || '•', BONUS[k].color, effects[k], k === 'shield' && stats.time < 6 ? 5 : effectDur(k), `${BONUS[k].name} ${Math.ceil(effects[k])} с`);
+      for (const id of ['shrink', 'cloak', 'x_over', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon']) if (abOn(id)) { const a = abilById(id); badge(a.icon, a.color, player.abT[id], a.dur * (id.startsWith('x_') ? 1 : abPow(id)), `${a.name} ${Math.ceil(player.abT[id])} с`); }
+      if (decoy) badge(abilById('decoy').icon, abilById('decoy').color, decoy.ttl, abilById('decoy').dur * abPow('decoy'), `Клон ${Math.ceil(decoy.ttl)} с`);
+      const traps = viruses.filter(v => v.trap && v.trap.owner === player); if (traps.length) badge(abilById('trap').icon, abilById('trap').color, Math.max(...traps.map(v => v.trap.ttl)), abilById('trap').dur, `Ловушки: ${traps.length}`);
+      if (player.cells.length > 1) { const full = playerMergeTime(), left = Math.max(...player.cells.map(c => c.mergeT)); if (left > 0) badge('⧉', skin().color, left, full, `Слияние через ${Math.ceil(left)} с`); }
+      if (bossesOn() && player.cells.length) {
+        const left = Math.max(0, bossTimer);
+        if (mode === 'survival') badge('☠', 'var(--boss)', left, 15, `Волна ${stats.wave + 1} через ${Math.ceil(left)} с`);
+        else if (bossOwners.filter(o => o.cells.length).length < maxBosses()) badge('☠', 'var(--boss)', left, dailyIs('bosses') ? 20 : 40, `Босс через ${Math.ceil(left)} с`);
+      }
+      if (ev.active) badge('✦', evInfo(ev.active).color, ev.left, 20, `${evInfo(ev.active).name} ${Math.ceil(ev.left)} с`);
+      else if (ev.warn) badge('!', evInfo(ev.warn).color, null, 0, `Скоро: ${evInfo(ev.warn).name}`);
+    }
+    $('modeTimer').hidden = !timer; if (timer) $('modeTimer').textContent = timer;
+    $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:${stats.chaos ? '#ff4fd8' : 'var(--gold)'}"></i>${stats.chaos ? 'Хаос-лига' : 'Рейтинг'} · монеты ×1,5</div>` : '') +
+      (modeChip ? `<div class="chip"><i style="background:var(--gold)"></i>${modeChip}</div>` : '') +
+      (badges.length ? `<div class="eb-row">${badges.join('')}</div>` : '');
     if (running) {
       for (const id of save.quests) {
         const q = QUESTS.find(x => x.id === id);
@@ -4552,6 +4579,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
       mctx.fillStyle = c.owner.kind === 'boss' ? bossInfo(c.owner).color : c.owner.kind === 'minion' ? MINION_COLOR : c.owner.team && c.owner.team === player.team ? ALLY_COLOR : danger ? tok('--threat') : food ? tok('--prey') : '#8088c0';
       mctx.beginPath(); mctx.arc(x, y, Math.max(2, cellR(c) * s), 0, Math.PI * 2); mctx.fill();
+      if (c.owner.kind === 'boss') { const rr = Math.max(5, cellR(c) * s); mctx.strokeStyle = '#ffffff'; mctx.lineWidth = 1.2; mctx.stroke();
+        mctx.fillStyle = '#ffffff'; mctx.font = `${Math.round(rr * 1.3)}px sans-serif`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText('☠', x, y + .5); }
     }
     for (const c of player.cells) {
       const [x, y] = P(c.x, c.z);
@@ -6412,7 +6441,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '59';
+const APP_VER = '60';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

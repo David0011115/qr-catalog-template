@@ -1105,6 +1105,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li><b>Эффекты</b>: след, аура и эффект поедания — можно надеть по одному каждого вида.</li>
         <li><b>Украшения</b>: предметы над головой (за коллекции скинов, рейд и лигу), рамки и титулы (сундуки, лига, коллекции, мастерство) — видны в таблице лидеров.</li>
         <li><b>Арены</b>: темы арены покупаются в магазине (30 000–60 000 ◆, эксклюзивные — 120 000 ◆) и включаются в гардеробе.</li>
+        <li><b>Особенности арен</b> (только в обычных режимах, в лигах правила у всех одинаковые): Лава — +3 шипа, Лёд — скользко, Подводный мир — бонусы чаще, Джунгли — крошки сытнее, Пустыня — боссы реже, Киберград — все быстрее, Сад сакуры — бонусы дольше, Пекло — шипов вдвое больше, Полярная ночь — туман, Ретро-волна — монеты за комбо ×2, Млечный путь — +10% опыта, Олимп — +5% монет.</li>
+        <li><b>Звёзды скина</b>: повтор скина из сундука даёт звезду (до трёх). Звёзды видны на плитке скина и рядом с именем, а пока скин надет, они дают небольшой бонус по редкости скина: обычный — +1% монет за звезду, редкий — +2% опыта, эпический — крошки собираются дальше, легендарный — бонусы действуют на 5% дольше (не в лигах).</li>
         <li><b>Коллекции</b>: собери набор скинов или эффектов и получи предмет над головой или титул.</li>
       </ul>
     </details>
@@ -1904,6 +1906,23 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'cyber',   name: 'Киберград',       price: 60000, lvl: 24, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
   ];
   const arenaDef = () => ARENAS.find(a => a.id === save.arena) || ARENAS[0];
+  // every arena has its own small rule — only in normal modes, never in the leagues (there everyone plays standard rules)
+  const ARENA_FX = {
+    default: 'без особенностей — стандартные правила',
+    lava:    '+3 шипа на арене',
+    ice:     'скользко: капли поворачивают медленнее',
+    ocean:   'бонусы появляются на 40% чаще',
+    jungle:  'крошки дают на 15% больше массы',
+    desert:  'боссы приходят на 30% реже',
+    cyber:   'все капли на 10% быстрее',
+    galaxy:  '+10% опыта за раунд',
+    olympus: '+5% монет за раунд',
+    sakura:  'бонусы действуют на 25% дольше',
+    inferno: 'шипов вдвое больше',
+    aurora:  'туман: видно только ближнее окружение',
+    retro:   'монеты за комбо ×2',
+  };
+  const arenaIs = id => !!(stats && stats.arena === id);
   // ---- weekly boss raid ----
   const RAID_HP = 40000, RAID_TRIES = 3, RAID_LEN = 240;
   const RAID_NAMES = ['Пожиратель', 'Тёмная медуза', 'Кристальный голем', 'Неоновый кракен', 'Звёздный червь', 'Ледяной титан', 'Магматический страж', 'Призрачный левиафан'];
@@ -3013,7 +3032,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return v;
   }
   function removeVirus(v) { scene.remove(v.mesh); viruses.splice(viruses.indexOf(v), 1); }
-  function resetViruses() { [...viruses].forEach(removeVirus); for (let i = 0; i < VIRUS_COUNT; i++) spawnVirus(); }
+  function resetViruses() { [...viruses].forEach(removeVirus); const n = arenaIs('inferno') ? VIRUS_COUNT * 2 : arenaIs('lava') ? VIRUS_COUNT + 3 : VIRUS_COUNT; for (let i = 0; i < n; i++) spawnVirus(); }
   let virusRespawn = [];
   function popCell(c, v) {
     const o = c.owner;
@@ -3298,7 +3317,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   let running = false, paused = false, dying = false, lives = 0, dashCdBase = 4;
   let bossTimer = 20, bonusTimer = 0;
   let stats, history, doneQuests, effects, bonuses = [];
-  const effectDur = t => BONUS[t].dur * (1 + 0.1 * U.bonus);
+  const effectDur = t => BONUS[t].dur * (1 + 0.1 * U.bonus) * (arenaIs('sakura') ? 1.25 : 1) * (1 + starBonus('bonus') / 100);
 
   function speedOf(c) {
     const o = c.owner;
@@ -3314,23 +3333,23 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;
     else v *= (o.star ? 1 : 0.92) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
-    return v * (dailyIs('speedy') ? 1.3 : 1) * (ev.active === 'storm' ? 1.4 : 1);
+    return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
   const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.guard : 1.25;
   const canEat = (a, b) => !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
-  const splitRules = () => mode === 'split' || dailyIs('splitonly');
+  const splitRules = () => dailyIs('splitonly');
   const playerMaxParts = () => splitRules() ? 10 : Math.min(10, 4 + U.splitmax);
   const playerMergeTime = () => (splitRules() ? 8 : 14) * (1 - 0.06 * U.merge);
   const playerSplitCd = () => splitRules() ? 3 : SPLIT_CD;
   const fmtBest = (m, v) => {
     if (!v) return LOWER_BETTER[m] ? '–' : m === 'team' ? '0 побед' : m === 'survival' || m === 'crown' ? '0:00' : '0';
     if (m === 'team') return `${v} побед`;
-    return ['survival', 'crown', 'race', 'giant'].includes(m) ? fmtTime(v) : m === 'raid' ? `${v} урона` : String(v);
+    return ['survival', 'crown', 'race'].includes(m) ? fmtTime(v) : m === 'raid' ? `${v} урона` : String(v);
   };
   const dailyIs = id => mode === 'daily' && dailyMod.id === id;
-  const bossesOn = () => !(stats && stats.tutorial) && !['team', 'giant', 'race', 'royale', 'raid'].includes(mode);
+  const bossesOn = () => !(stats && stats.tutorial) && !['team', 'race', 'royale', 'raid'].includes(mode);
 
   // ================= mass ejection =================
   const ejectGeo = new THREE.SphereGeometry(1, 16, 12);
@@ -3451,6 +3470,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     stats = { mode, ranked, time: 0, maxMass: total(player), kills: 0, bosses: 0, minions: 0, bossCoins: 0, bossXp: 0, bonuses: 0, splits: 0, crumbs: 0, leader: 0, bestRank: 99, wave: 0,
               ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut, abUsed: {}, chaos: isChaos, lvStart: playerLevel() };
     clearEjects();
+    stats.arena = ranked || isTut ? null : save.arena;
     resetViruses(); virusRespawn = []; resetEvents();
     history = [Math.round(total(player))];
     doneQuests = new Set();
@@ -3467,14 +3487,6 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     pickStarBot();
     bots.forEach(spawnBot);
     { const sb = bots.find(o => o.star && o.cells.length); if (sb) setTimeout(() => { if (running) toast(`На арене звезда «${sb.name}»: съешь её за +${STAR_COINS} ◆`); }, 1500); }
-    if (mode === 'giant') {
-      const [x, z] = safeSpot(45);
-      const c = addCell(colossus, x, z, 12000, colossus.free.pop());
-      c.mergeT = 1e9; colossus.think = 0; colossus.target = null; colossus.splitCd = 0;
-      rebuildCells(); stats.giantSpawned = true;
-      toast('Колосс на арене: подплывай ближе, чтобы он делился');
-    }
-    if (mode === 'giant') setColossusLook('Колосс', '#e76f51');
     if (mode === 'raid') {
       const b = raidBoss(raidWeek()); setColossusLook(b.name, b.color);
       stats.raidDmg = 0; spawnRaidChunk();
@@ -3768,6 +3780,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
     if (U.greed) cMul.push([`«Жадность» +${8 * U.greed}%`, 1 + .08 * U.greed]);
     if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);
+    if (arenaIs('olympus')) cMul.push(['Арена «Олимп»', 1.05]);
+    // П8: every star of the skin you wear gives +1% coins (normal modes only)
+    if (starBonus('coins')) cMul.push([`Звёзды скина ${'★'.repeat(starsOf(skin()))}`, 1 + starBonus('coins') / 100]);
     if (stats.ranked) cMul.push(['Рейтинговый бой', 1.5]);
     if (petLv('coins')) cMul.push([`Питомец +${5 * petLv('coins')}%`, 1 + .05 * petLv('coins')]);
     let coins = Math.round(cMul.reduce((t, [, m]) => t * m, cBase));
@@ -3789,8 +3804,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
       stats.raidLeft = RAID_HP - rs.dmg;
     }
-    let xp = Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
-    xp = Math.round(xp * (1 + 0.05 * petLv('xp')));
+    let xp = (arenaIs('galaxy') ? 1.1 : 1) * Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
+    xp = Math.round(xp * (1 + 0.05 * petLv('xp')) * (1 + starBonus('xp') / 100));
     const questRows = save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => {
       const done = doneQuests.has(q.id);
       if (done) { coins += qCoins(q); xp += qXp(q); cExtra.push([`Задание: ${q.text}`, qCoins(q)]); }
@@ -3802,7 +3817,6 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     t.time += stats.time; t.bestKills = Math.max(t.bestKills, stats.kills); t.bestWave = Math.max(t.bestWave, stats.wave || 0);
     if (stats.win && mode === 'crown') t.crownWins++;
     if (stats.win && mode === 'race') t.raceWins++;
-    if (stats.win && mode === 'giant') t.giantWins++;
     t.bestBosses = Math.max(t.bestBosses || 0, stats.bosses); t.bestParts = Math.max(t.bestParts || 0, stats.maxParts || 1);
     t.starKills = (t.starKills || 0) + (stats.starKills || 0); t.bestCombo = Math.max(t.bestCombo || 0, stats.bestCombo || 0);
     t.kills += stats.kills; t.bosses += stats.bosses; t.minions += stats.minions; t.crumbs += stats.crumbs; t.ejects += stats.ejects; t.rounds++;
@@ -3888,7 +3902,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     persist();
     const lvAfter = playerLevel();
 
-    const head = stats.endTitle ? stats.endTitle + (record && mode !== 'team' ? ' · рекорд!' : '') : ['race', 'giant', 'team', 'daily', 'raid'].includes(mode) ? 'Поражение' : record ? 'Новый рекорд!' : 'Раунд окончен';
+    const head = stats.endTitle ? stats.endTitle + (record && mode !== 'team' ? ' · рекорд!' : '') : ['race', 'team', 'daily', 'raid'].includes(mode) ? 'Поражение' : record ? 'Новый рекорд!' : 'Раунд окончен';
     $('resTitle').textContent = `${head} · ${MODES[mode].name}`;
     const cellsHtml = [
       ['Время', fmtTime(stats.time)], ['Пик массы', best], ['Лучшее место', stats.bestRank > 50 ? '–' : stats.bestRank],
@@ -4138,7 +4152,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const d = Math.hypot(dx, dz);
     if (d > 0.05) {
       dx /= d; dz /= d;
-      const k = Math.min(1, dt * 8);
+      const k = Math.min(1, dt * (arenaIs('ice') ? 3 : 8));
       c.hx += (dx - c.hx) * k; c.hz += (dz - c.hz) * k;
       const hl = Math.hypot(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl;
       const v = speedOf(c) * Math.min(1, d / 1.5 + (c.owner.isPlayer ? 0.35 : 1));
@@ -4213,11 +4227,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       }
       if (stats.time >= RAID_LEN) { finishRound('Время рейда вышло', 0, false); return true; }
     }
-    if (mode === 'giant' || mode === 'raid') {
-      if (mode === 'giant' && stats.giantSpawned && !colossus.cells.length) {
-        finishRound(`Колосс повержен за ${fmtTime(stats.time)}`, 60 + Math.max(0, Math.round((300 - stats.time) / 5)), true);
-        return true;
-      }
+    if (mode === 'raid') {
       // the colossus splits a part off whenever the player swims close
       if (colossus.cells.length && colossus.splitCd <= 0 && colossus.cells.length < 12) {
         for (const c of colossus.cells) {
@@ -4258,13 +4268,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     abTick(dt);
     trailFx(dt, performance.now());
     if (player.dashT > 0) { const lk = lookFor('dash'); for (const c of player.cells) { const r = cellR(c); emit(c.x - c.hx * r, r * .8, c.z - c.hz * r, lk ? lk.c : cellColor(c), 4, 4, .45); } }
-    if (!stats.tutorial) { bonusTimer -= dt; if (bonusTimer <= 0) { spawnBonus(); bonusTimer = 9; } }
+    if (!stats.tutorial) { bonusTimer -= dt; if (bonusTimer <= 0) { spawnBonus(); bonusTimer = arenaIs('ocean') ? 5.4 : 9; } }
     else if (tutTick(dt)) return;
     if (bossesOn()) bossTimer -= dt;
     if (bossTimer <= 0) {
       // survival: a new wave every 15 s, even if the arena is full of bosses
       if (mode === 'survival') { stats.wave++; spawnBoss(); bossTimer = 15; }
-      else bossTimer = spawnBoss() ? (dailyIs('bosses') ? 20 : 40) : 5;
+      else bossTimer = (spawnBoss() ? (dailyIs('bosses') ? 20 : 40) : 5) * (arenaIs('desert') ? 1.3 : 1);
     }
     for (const o of bossOwners) {
       if (!o.cells.length) continue;
@@ -4337,8 +4347,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     rebuildCells();
 
     // food + decay
-    const pMagnet = 0.5 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
-    const pGain = (1 + 0.06 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
+    const pMagnet = starBonus('magnet') + 0.5 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
+    const pGain = (1 + 0.06 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * (arenaIs('jungle') ? 1.15 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const r = cellR(c) + (isP ? pMagnet : 0);
@@ -4402,7 +4412,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           stats.combo = stats.time - (stats.comboT ?? -9) < 3 ? (stats.combo || 1) + 1 : 1; stats.comboT = stats.time;
           if (stats.combo >= 2) {
             const bonus = 2 * (stats.combo - 1);
-            stats.comboCoins = (stats.comboCoins || 0) + bonus; stats.bestCombo = Math.max(stats.bestCombo || 0, stats.combo);
+            stats.comboCoins = (stats.comboCoins || 0) + bonus * (arenaIs('retro') ? 2 : 1); stats.bestCombo = Math.max(stats.bestCombo || 0, stats.combo);
             showCombo(stats.combo, bonus); Sound.play('combo', stats.combo);
           }
         }
@@ -4411,7 +4421,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     rebuildCells();
 
-    for (const c of cells) { const cap = c.owner.kind === 'boss' && (mode === 'survival' || mode === 'giant' || mode === 'raid') ? SURV_BOSS_CAP : MAX_MASS; if (c.mass > cap) c.mass = cap; }
+    for (const c of cells) { const cap = c.owner.kind === 'boss' && (mode === 'survival' || mode === 'raid') ? SURV_BOSS_CAP : MAX_MASS; if (c.mass > cap) c.mass = cap; }
     updateEjects(dt);
     updateViruses(dt);
     updateEvent(dt);
@@ -4481,7 +4491,6 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (running && mode === 'race') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Гонка ${Math.round(total(player))}/${RACE_GOAL} · ${fmtTime(stats.time)}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span></div>`;
     if (running && mode === 'team') modeChip = `<div class="chip"><i style="background:${ALLY_COLOR}"></i>Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные · ${fmtTime(Math.max(0, TEAM_LEN - stats.time))}</div>`;
     if (running && mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `<div class="chip"><i style="background:var(--boss)"></i>${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · твой урон ${stats.raidDmg || 0} · ${fmtTime(Math.max(0, RAID_LEN - stats.time))}<span class="bar wide"><span style="width:${(left / RAID_HP * 100).toFixed(0)}%;background:var(--boss)"></span></span></div>`; }
-    if (running && mode === 'giant') modeChip = `<div class="chip"><i style="background:#e76f51"></i>Колосс: ${Math.round(total(colossus))} массы, частей ${colossus.cells.length} · ${fmtTime(stats.time)}</div>`;
     if (running && mode === 'daily') modeChip = `<div class="chip"><i style="background:var(--prey)"></i>${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}</div>`;
     if (running && mode === 'survival') modeChip = `<div class="chip"><i style="background:var(--boss)"></i>Волна ${stats.wave} · ${fmtTime(stats.time)}</div>`;
     // countdown to the next boss (or the next survival wave)
@@ -4493,7 +4502,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     if (running && ev.active) modeChip += `<div class="chip"><i style="background:${evInfo(ev.active).color}"></i>${evInfo(ev.active).name} ${Math.ceil(ev.left)} с</div>`;
     else if (running && ev.warn) modeChip += `<div class="chip"><i style="background:${evInfo(ev.warn).color}"></i>Скоро: ${evInfo(ev.warn).name}</div>`;
-    $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:${stats.chaos ? '#ff4fd8' : 'var(--gold)'}"></i>${stats.chaos ? 'Хаос-лига · случайные способности' : 'Рейтинговый бой · без улучшений'} · монеты ×1,5</div>` : '') + modeChip + Object.keys(effects || {}).filter(k => effects[k] > 0)
+    $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:${stats.chaos ? '#ff4fd8' : 'var(--gold)'}"></i>${stats.chaos ? 'Хаос-лига · случайные способности' : 'Рейтинговый бой · без улучшений'} · монеты ×1,5</div>` : '') + modeChip + (running && stats.arena && stats.arena !== 'default' ? `<div class="chip"><i style="background:${arenaDef().dot || 'var(--food)'}"></i>Арена: ${ARENA_FX[stats.arena]}</div>` : '') + Object.keys(effects || {}).filter(k => effects[k] > 0)
       .map(k => `<div class="chip"><i style="background:${BONUS[k].color}"></i>${BONUS[k].name}${k === 'speed' ? ' +45%' : ''} ${Math.ceil(effects[k])} с</div>`).join('') +
       mergeChip() + abilChips();
     if (running) {
@@ -4930,7 +4939,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
     const inf = mode === 'own' ? ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Подробнее: ${s.name}"` : '';
     return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
-      ${starsOf(s) ? `<span class="stars-on" title="Звёзды скина: ${STAR_TEXT[starsOf(s)]}">${'★'.repeat(starsOf(s))}</span>` : ''}<span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
+      ${starsOf(s) ? `<span class="stars-on" title="Звёзды скина: ${STAR_TEXT[starsOf(s)]}; ${starBonusOf(s) ? starBonusOf(s).text(starsOf(s)) : ''}">${'★'.repeat(starsOf(s))}</span>` : ''}<span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
   function fxRow(f, mode) {
     const sel = save.fx[f.slot] === f.id, lv = playerLevel();
@@ -5003,7 +5012,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       $('shop').innerHTML = (list.length ? list.map(a => {
           const sel = save.arena === a.id, lvOk = playerLevel() >= (a.lvl || 1), can = save.coins >= a.price && lvOk;
           const btn = shop ? `<button class="buy" id="arena-${a.id}" data-arena="${a.id}" ${can ? '' : 'disabled'}>${lvOk ? `${a.price} ◆` : `С ур. ${a.lvl}`}</button>` : `<button class="buy ${sel ? 'sel' : ''}" id="arena-${a.id}" data-arena="${a.id}" ${sel ? 'disabled' : ''}>${sel ? 'Выбрана' : 'Выбрать'}</button>`;
-          return `<div class="fxrow${a.exclusive ? ' ex' : ''}"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}${a.exclusive ? ' <span class="badge-ex badge-legend">эксклюзив</span>' : ''}</span><span class="desc">${a.desc}.</span>${btn}</div>`;
+          return `<div class="fxrow${a.exclusive ? ' ex' : ''}"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}${a.exclusive ? ' <span class="badge-ex badge-legend">эксклюзив</span>' : ''}</span><span class="desc">${a.desc}.<br><span class="now">Особенность: ${ARENA_FX[a.id] || '—'}</span></span>${btn}</div>`;
         }).join('') : '<p class="empty-note">Все темы арены уже твои.</p>');
     } else if (shopTab === 'wdeco') {
       const row = (ico, name, desc, attr, on, label, info) => `<div class="fxrow"${info ? ` data-info="${info}" tabindex="0" role="button" aria-label="Подробнее: ${name}"` : ''}><span class="ico">${ico}</span><span class="name">${name}</span><span class="desc">${desc}</span><button class="buy ${on ? 'sel' : ''}" ${attr}>${label}</button></div>`;
@@ -5521,7 +5530,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       rows.push(['Откуда', sourceText(k)], ['Вид', look]);
       if (k.head) rows.push(['Над головой', HEAD_NAME[k.head] || k.head]);
       if (isShiny(k)) rows.push(['Блик', k.shine === 'bolt' ? 'молния' : 'полоса']);
-      if (k.chest || k.lchest) rows.push(['Звёзды', `${'★'.repeat(st)}${'☆'.repeat(3 - st)} — ${st ? STAR_TEXT[st] : 'пока нет'}${st < 3 ? `. Следующая за повтор из сундука: ${STAR_TEXT[st + 1]}` : ''}`]);
+      if (k.chest || k.lchest) rows.push(['Звёзды', `${'★'.repeat(st)}${'☆'.repeat(3 - st)} — ${st ? STAR_TEXT[st] + `; бонус, пока скин надет: ${starBonusOf(k).text(st)}` : `пока нет; звёзды этого скина дадут: ${STAR_BONUS[k.chest || k.lchest].text(1)} за каждую`}${st < 3 ? `. Следующая за повтор из сундука: ${STAR_TEXT[st + 1]}` : ''}`]);
       const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
       if (save.hat) rows.push(['Сейчас надето', `${HATS[save.hat].name} вместо предмета скина`]);
       act = save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
@@ -5557,7 +5566,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
       name = a.name; tag = '<span class="badge-ex">тема арены</span>' + (a.exclusive ? '<span class="badge-ex badge-legend">эксклюзив</span>' : '');
       flat = `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`;
-      rows.push(['Что меняет', a.desc], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь', cosmos: 'мерцающие звёзды', gold: 'золотые искры', petals: 'лепестки сакуры', ash: 'пепел и искры', aurora: 'переливы сияния в небе', retro: 'неоновые искры и солнце на горизонте' })[a.fx] || 'нет'],
+      rows.push(['Что меняет', a.desc], ['Особенность', `${ARENA_FX[a.id] || '—'} (только в обычных режимах)`], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь', cosmos: 'мерцающие звёзды', gold: 'золотые искры', petals: 'лепестки сакуры', ash: 'пепел и искры', aurora: 'переливы сияния в небе', retro: 'неоновые искры и солнце на горизонте' })[a.fx] || 'нет'],
         ['Откуда', a.legend ? `легендарное достижение «${LEGEND.find(l => l.id === a.legend).name}»` : a.price ? `магазин · ${a.price} ◆` : 'есть с самого начала']);
       act = on ? '<button class="btn ghost" disabled>Выбрана</button>' : `<button class="btn" data-act="arena-${id}">Выбрать</button>`;
     }
@@ -5682,6 +5691,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return { type, item, rar, dup: owned, star, coins };
   }
   const STAR_TEXT = { 1: 'вокруг капли летят искры', 2: 'по капле бежит цветной блик', 3: 'капля сияет ореолом' };
+  // П8: stars also give a small bonus while the skin is worn — its kind depends on the skin's rarity (normal modes only)
+  const STAR_BONUS = { common: { k: 'coins', per: 1, text: n => `+${n}% монет за раунд` }, rare: { k: 'xp', per: 2, text: n => `+${2 * n}% опыта за раунд` },
+    epic: { k: 'magnet', per: .2, text: n => `крошки собираются дальше на ${(.2 * n).toFixed(1).replace('.', ',')}` }, legendary: { k: 'bonus', per: 5, text: n => `бонусы действуют на ${5 * n}% дольше` } };
+  const starBonusOf = k => { const r = k && (k.chest || k.lchest), n = k ? starsOf(k) : 0; return r && n ? { ...STAR_BONUS[r], n } : null; };
+  const starBonus = kind => { if (!stats || stats.ranked) return 0; const b = starBonusOf(skin()); return b && b.k === kind ? b.per * b.n : 0; };
   // rarity of a frame or title, by where it comes from
   function decoRarity(d) {
     if (d.chest) return d.chest;
@@ -6228,7 +6242,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     rim.material.color.set(col); rimGlow.material.color.set(col); edgeGlow.material.color.set(col);
   }
   function draw(now) {
-    if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode === 'giant' || mode === 'raid' || bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu'); }
+    if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode === 'raid' || bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu'); }
     decorateHoliday();
     shineT.value = now / 1000;
     animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
@@ -6304,7 +6318,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     scene.fog.near = camDist * 1.3 + 20;
     scene.fog.far = camDist * 3.2 + 90;
     if (ev.active === 'eclipse') { scene.fog.near = camDist * 0.75; scene.fog.far = camDist * 1.45; }
-    if (dailyIs('fog')) { scene.fog.near = camDist * 0.9; scene.fog.far = camDist * 1.7; }
+    if (dailyIs('fog') || (running && arenaIs('aurora'))) { scene.fog.near = camDist * 0.9; scene.fog.far = camDist * 1.7; }
     { const fdt = Math.min(0.05, (now - (draw.last || now)) / 1000); updateParticles(fdt); updateFx(fdt); } draw.last = now;
     pMat.size = 0.7 + camDist * 0.015;
     // the crown in «Захват короны» floats over the holder's biggest part
@@ -6377,7 +6391,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '54';
+const APP_VER = '55';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

@@ -124,6 +124,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .fps { position: fixed; z-index: 2; left: max(16px, env(safe-area-inset-left, 0px)); top: calc(40px + env(safe-area-inset-top, 0px)); font: 600 .72rem var(--body); color: var(--prey); background: rgba(14, 10, 38, .55); padding: 2px 7px; border-radius: 6px; font-variant-numeric: tabular-nums; pointer-events: none; }
 .fps.slow { color: var(--threat); }
 .board li.star { color: var(--gold); font-weight: 600; }
+.lv-tag { display: inline-block; min-width: 1.5em; margin-right: 3px; padding: 0 3px; border-radius: 5px; background: rgba(70, 48, 150, .5); color: var(--muted); font-size: .64rem; text-align: center; font-weight: 600; }
 .star-tag { color: var(--gold); text-shadow: 0 0 6px var(--gold); margin-right: 2px; }
 
 .effects {
@@ -803,7 +804,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details><summary>Монеты, опыт и улучшения</summary>
       <ul class="info-list">
         <li>Монеты и опыт дают за массу, съеденные капли, боссов, время в игре и место. В «Хардкоре» монеты ×2.</li>
-        <li>Опыт повышает уровень. С уровнями открываются новые улучшения и скины в магазине.</li>
+        <li>Опыт повышает уровень, максимум — 50. С уровнями открываются улучшения, скины, эффекты и арены в магазине (до 30-го уровня).</li>
+        <li>За каждый уровень — 50 × уровень монет, за каждый 5-й — сундук, за 10/20/30/40/50 — титул или рамка уровня. Задания в меню с уровнем становятся сложнее и щедрее.</li>
         <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
         <li><b>Достижения</b> дают монеты один раз. <b>Испытания</b> дают скины и эффекты плюс сундук.</li>
         <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги.</li>
@@ -877,7 +879,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <label class="set row" for="setFps"><span>Показывать FPS</span><input type="checkbox" id="setFps"></label>
     <div class="set">
       <button class="btn ghost danger" id="resetBtn">Сбросить весь прогресс</button>
-      <small class="reset-note">Удалится всё: монеты, уровень, улучшения, скины, эффекты, питомцы, украшения, арены, сундуки, достижения, испытания, коллекции, мастерство, рекорды, значки и лига. Сезоны лиги начнутся заново — с 1-го сезона в день сброса. Настройки (звук, графика, управление) останутся.</small>
+      <small class="reset-note">Удалится всё: монеты, уровень, улучшения, скины, эффекты, питомцы, украшения, арены, сундуки, достижения, испытания, коллекции, мастерство, рекорды, значки и лига. Сезоны лиги начнутся заново: текущий сезон по календарю станет для тебя 1-м (его даты и праздники не меняются). Настройки (звук, графика, управление) останутся.</small>
       <div id="resetConfirm" class="confirm" hidden>
         <p><b>Точно сбросить?</b> Отменить это нельзя.</p>
         <button class="btn" id="resetYes">Да, сбросить</button>
@@ -932,6 +934,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'speedy',   name: 'Турбо',        desc: 'Все капли на 30% быстрее' },
   ];
   const today = new Date().toISOString().slice(0, 10);
+  const MAX_LEVEL = 50, LEVEL_STEP = 75;   // level L → L+1 needs 100 + 75·(L−1) XP; 50 is the top
+  function levelInfo(xp) {
+    let level = 1, need = 100;
+    while (xp >= need && level < MAX_LEVEL) { xp -= need; level++; need = 100 + LEVEL_STEP * (level - 1); }
+    return { level, into: level >= MAX_LEVEL ? need : xp, need, max: level >= MAX_LEVEL };
+  }
+  const xpForLevel = L => { let t = 0; for (let k = 1; k < L; k++) t += 100 + LEVEL_STEP * (k - 1); return t; };
   const dailyMod = DAILY[[...today].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % DAILY.length];
   MODES.daily.desc = `${dailyMod.name}: ${dailyMod.desc.toLowerCase()}. Цель: масса ${DAILY_GOAL}, награда раз в день`;
   const EJECT_COST = 10, EJECT_MASS = 8, EJECT_MIN = 25, MAX_EJECTS = 60;
@@ -1017,6 +1026,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'keep',     lvl: 6, name: 'Сохранность',      desc: 'Крупная капля теряет массу на 10% медленнее за уровень', cost: costs(50, 8), info: l => `−${10 * l}% потерь` },
     { id: 'armor',    lvl: 7, name: 'Плотная оболочка', desc: 'Врагу нужно быть на 3% крупнее за уровень, чтобы съесть тебя', cost: costs(80, 8), info: l => `+${3 * l}% к защите` },
   ];
+  UPG.forEach(u => { if (u.lvl > 1) u.lvl = 2 * u.lvl - 1; });
   // economy: the upper half of every upgrade's levels costs 50% more (the first levels stay cheap)
   UPG.forEach(u => { const h = Math.ceil(u.cost.length / 2); u.cost = u.cost.map((c, i) => i >= h ? Math.round(c * 1.5 / 5) * 5 : c); });
   const CATS = [
@@ -1109,6 +1119,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   ];
   const COSMETIC_MULT = 3;   // skins and effects cost 3x more on top of the general shop multiplier
   [...SKINS, ...FX].forEach(x => { if (x.price) x.price *= PRICE_MULT * COSMETIC_MULT; });
+  // unlock levels spread over the longer curve: old level L → 2L − 1 (1 → 1, 15 → 29)
+  [...SKINS, ...FX].forEach(x => { if (x.lvl > 1) x.lvl = 2 * x.lvl - 1; });
   // rarities for chest loot; a duplicate turns into coins
   const RARITY = {
     common:    { name: 'Обычный',     color: '#b8b5d6', dup: 100,  w: 60 },
@@ -1368,6 +1380,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'tt_invincible', kind: 'title', name: 'Непобедимый', color: '#ffd23f', legend: 'wins2' },
     { id: 'fr_platinum', kind: 'frame', name: 'Платиновая', css: 'border:3px double #e8fbff;box-shadow:0 0 10px #c0c8e0, 0 0 4px #ffd23f inset', cls: 'fr-legend', legend: 'coins2' },
     { id: 'tt_millionaire', kind: 'title', name: 'Миллионер', color: '#ffd23f', legend: 'coins2' });
+  DECOR.push(
+    { id: 'tt_lv10', kind: 'title', name: 'Опытный', color: '#9fd8ff', level: 10 },
+    { id: 'fr_lv20', kind: 'frame', name: 'Ветеранская', css: 'border:2px solid #c0c8e0;box-shadow:0 0 6px #9fd8ff', level: 20 },
+    { id: 'tt_lv30', kind: 'title', name: 'Мастер арены', color: '#b26bff', level: 30 },
+    { id: 'fr_lv40', kind: 'frame', name: 'Звёздный путь', css: 'border:2px solid #ffd23f;box-shadow:0 0 8px #b26bff, 0 0 3px #ffd23f inset', level: 40 },
+    { id: 'tt_lv50', kind: 'title', name: 'Великий', color: '#ffd23f', level: 50 });
   const decorById = id => DECOR.find(d => d.id === id) || null;
   // weekly tasks: three a week (easy / medium / hard), each pays a chest; all three — a coin bonus
   const WEEKLY = {
@@ -1479,19 +1497,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ---- arena themes (shop) ----
   const ARENAS = [
     { id: 'default', name: 'Неоновый космос', price: 0,     floor: '#0b0824', grid: 'rgba(140, 100, 255, .55)', dot: '#22e6ff', rim: '#ff4fd8', inner: '#22e6ff', neb: ['#ff4fd8', '#22e6ff', '#7b3dff', '#ff3d6e'], fx: null, desc: 'Стандартная арена' },
-    { id: 'lava',    name: 'Лава',            price: 30000, floor: '#1a0500', grid: 'rgba(255, 90, 0, .6)',     dot: '#ffd23f', rim: '#ff3d00', inner: '#ffd23f', neb: ['#ff3d00', '#ff9a3d', '#7b0020', '#ff2d55'], fx: 'embers', desc: 'Раскалённое дно, огненный край и искры' },
-    { id: 'ice',     name: 'Лёд',             price: 33000, floor: '#06142a', grid: 'rgba(160, 230, 255, .6)',  dot: '#ffffff', rim: '#9fe8ff', inner: '#ffffff', neb: ['#9fe8ff', '#4d7cff', '#ffffff', '#22e6ff'], fx: 'snow',   desc: 'Ледяная гладь и снегопад' },
-    { id: 'ocean',   name: 'Подводный мир',   price: 38000, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
-    { id: 'jungle',  name: 'Джунгли',         price: 42000, floor: '#04170a', grid: 'rgba(61, 255, 120, .5)',   dot: '#ffd23f', rim: '#3dff6e', inner: '#ffd23f', neb: ['#3dff6e', '#c6ff3d', '#0b6e3e', '#ffd23f'], fx: 'fireflies', desc: 'Зелёная чаща и светлячки' },
-    { id: 'desert',  name: 'Пустыня',         price: 48000, floor: '#1f1405', grid: 'rgba(255, 200, 100, .5)',  dot: '#ff6a00', rim: '#ffb347', inner: '#ff6a00', neb: ['#ffb347', '#ff6a00', '#7a4a00', '#ffd23f'], fx: 'sand',   desc: 'Песчаные дюны и пылевые вихри' },
+    { id: 'lava',    name: 'Лава',            price: 30000, lvl: 12, floor: '#1a0500', grid: 'rgba(255, 90, 0, .6)',     dot: '#ffd23f', rim: '#ff3d00', inner: '#ffd23f', neb: ['#ff3d00', '#ff9a3d', '#7b0020', '#ff2d55'], fx: 'embers', desc: 'Раскалённое дно, огненный край и искры' },
+    { id: 'ice',     name: 'Лёд',             price: 33000, lvl: 14, floor: '#06142a', grid: 'rgba(160, 230, 255, .6)',  dot: '#ffffff', rim: '#9fe8ff', inner: '#ffffff', neb: ['#9fe8ff', '#4d7cff', '#ffffff', '#22e6ff'], fx: 'snow',   desc: 'Ледяная гладь и снегопад' },
+    { id: 'ocean',   name: 'Подводный мир',   price: 38000, lvl: 16, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
+    { id: 'jungle',  name: 'Джунгли',         price: 42000, lvl: 18, floor: '#04170a', grid: 'rgba(61, 255, 120, .5)',   dot: '#ffd23f', rim: '#3dff6e', inner: '#ffd23f', neb: ['#3dff6e', '#c6ff3d', '#0b6e3e', '#ffd23f'], fx: 'fireflies', desc: 'Зелёная чаща и светлячки' },
+    { id: 'desert',  name: 'Пустыня',         price: 48000, lvl: 20, floor: '#1f1405', grid: 'rgba(255, 200, 100, .5)',  dot: '#ff6a00', rim: '#ffb347', inner: '#ff6a00', neb: ['#ffb347', '#ff6a00', '#7a4a00', '#ffd23f'], fx: 'sand',   desc: 'Песчаные дюны и пылевые вихри' },
     { id: 'galaxy',  name: 'Млечный путь',    price: 0, legend: 'crumbs', floor: '#07021a', grid: 'rgba(178, 107, 255, .55)', dot: '#ffffff', rim: '#b26bff', inner: '#ff4fd8', neb: ['#7b3dff', '#ff4fd8', '#22e6ff', '#3a0a8e'], fx: 'cosmos', desc: 'Пол из звёздного неба, мерцающие звёзды вокруг' },
     { id: 'olympus', name: 'Олимп',           price: 0, legend: 'lwins',  floor: '#1a1405', grid: 'rgba(255, 210, 63, .6)',   dot: '#ffffff', rim: '#ffd23f', inner: '#ffffff', neb: ['#ffd23f', '#ff9a3d', '#fff6a0', '#ff4fd8'], fx: 'gold', desc: 'Золотая арена чемпионов и сияющие искры' },
     // exclusive themes: twice the price of the most expensive regular one
-    { id: 'sakura',  name: 'Сад сакуры',      price: 120000, exclusive: true, floor: '#1f0a17', grid: 'rgba(255, 158, 196, .55)', dot: '#ffffff', rim: '#ff9ec4', inner: '#ffd1e8', neb: ['#ff9ec4', '#ff4fd8', '#ffd1e8', '#b26bff'], fx: 'petals', desc: 'Розовый сад: падают лепестки сакуры' },
-    { id: 'inferno', name: 'Пекло',           price: 120000, exclusive: true, floor: '#140000', grid: 'rgba(255, 45, 0, .65)',    dot: '#ffd23f', rim: '#ff2d00', inner: '#ff9a3d', neb: ['#7b0000', '#ff2d00', '#ff9a3d', '#2a0000'], fx: 'ash', desc: 'Алое-чёрная арена: летит пепел и вспыхивают искры' },
-    { id: 'aurora',  name: 'Полярная ночь',   price: 120000, exclusive: true, floor: '#020f14', grid: 'rgba(61, 255, 162, .45)',  dot: '#b26bff', rim: '#3dffa2', inner: '#b26bff', neb: ['#3dffa2', '#b26bff', '#22e6ff', '#3dffa2'], fx: 'aurora', desc: 'Небо переливается зелёным и фиолетовым сиянием' },
-    { id: 'retro',   name: 'Ретро-волна',     price: 120000, exclusive: true, floor: '#12001f', grid: 'rgba(255, 79, 216, .8)',   dot: '#22e6ff', rim: '#ff4fd8', inner: '#ffd23f', neb: ['#ff4fd8', '#ff9a3d', '#7b3dff', '#22e6ff'], fx: 'retro', desc: 'Синтвейв-сетка и закатное солнце на горизонте' },
-    { id: 'cyber',   name: 'Киберград',       price: 60000, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
+    { id: 'sakura',  name: 'Сад сакуры',      price: 120000, lvl: 30, exclusive: true, floor: '#1f0a17', grid: 'rgba(255, 158, 196, .55)', dot: '#ffffff', rim: '#ff9ec4', inner: '#ffd1e8', neb: ['#ff9ec4', '#ff4fd8', '#ffd1e8', '#b26bff'], fx: 'petals', desc: 'Розовый сад: падают лепестки сакуры' },
+    { id: 'inferno', name: 'Пекло',           price: 120000, lvl: 30, exclusive: true, floor: '#140000', grid: 'rgba(255, 45, 0, .65)',    dot: '#ffd23f', rim: '#ff2d00', inner: '#ff9a3d', neb: ['#7b0000', '#ff2d00', '#ff9a3d', '#2a0000'], fx: 'ash', desc: 'Алое-чёрная арена: летит пепел и вспыхивают искры' },
+    { id: 'aurora',  name: 'Полярная ночь',   price: 120000, lvl: 30, exclusive: true, floor: '#020f14', grid: 'rgba(61, 255, 162, .45)',  dot: '#b26bff', rim: '#3dffa2', inner: '#b26bff', neb: ['#3dffa2', '#b26bff', '#22e6ff', '#3dffa2'], fx: 'aurora', desc: 'Небо переливается зелёным и фиолетовым сиянием' },
+    { id: 'retro',   name: 'Ретро-волна',     price: 120000, lvl: 30, exclusive: true, floor: '#12001f', grid: 'rgba(255, 79, 216, .8)',   dot: '#22e6ff', rim: '#ff4fd8', inner: '#ffd23f', neb: ['#ff4fd8', '#ff9a3d', '#7b3dff', '#22e6ff'], fx: 'retro', desc: 'Синтвейв-сетка и закатное солнце на горизонте' },
+    { id: 'cyber',   name: 'Киберград',       price: 60000, lvl: 24, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
   ];
   const arenaDef = () => ARENAS.find(a => a.id === save.arena) || ARENAS[0];
   // ---- weekly boss raid ----
@@ -1590,7 +1608,22 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'survive', text: 'Продержись 3 минуты',        stat: 'time',    goal: 180, coins: 30, xp: 60 },
     { id: 'split5',  text: 'Разделись 5 раз за раунд',   stat: 'splits',  goal: 5,   coins: 15, xp: 30 },
     { id: 'crumbs',  text: 'Собери 150 крошек за раунд', stat: 'crumbs',  goal: 150, coins: 20, xp: 40 },
+    // from level 10
+    { id: 'kills10', text: 'Съешь 10 капель за раунд',   stat: 'kills',   goal: 10,  coins: 70, xp: 140, lvl: 10 },
+    { id: 'mass4k',  text: 'Набери массу 4000',          stat: 'maxMass', goal: 4000, coins: 80, xp: 160, lvl: 10 },
+    { id: 'combo3',  text: 'Сделай комбо ×3',            stat: 'bestCombo', goal: 3, coins: 50, xp: 100, lvl: 10 },
+    { id: 'star1',   text: 'Съешь бота-звезду',          stat: 'starKills', goal: 1, coins: 70, xp: 140, lvl: 10 },
+    { id: 'survive5', text: 'Продержись 5 минут',        stat: 'time',    goal: 300, coins: 60, xp: 120, lvl: 10 },
+    // from level 25
+    { id: 'kills20', text: 'Съешь 20 капель за раунд',   stat: 'kills',   goal: 20,  coins: 130, xp: 260, lvl: 25 },
+    { id: 'mass8k',  text: 'Набери массу 8000',          stat: 'maxMass', goal: 8000, coins: 150, xp: 300, lvl: 25 },
+    { id: 'bosses3', text: 'Съешь 3 боссов за раунд',    stat: 'bosses',  goal: 3,   coins: 160, xp: 320, lvl: 25 },
+    { id: 'combo6',  text: 'Сделай комбо ×6',            stat: 'bestCombo', goal: 6, coins: 120, xp: 240, lvl: 25 },
+    { id: 'crumbs600', text: 'Собери 600 крошек за раунд', stat: 'crumbs', goal: 600, coins: 90, xp: 180, lvl: 25 },
   ];
+  // quest rewards grow with your level (×2 at level 31)
+  const questMul = () => 1 + (levelInfo(save.xp).level - 1) / 30;
+  const qCoins = q => Math.round(q.coins * questMul()), qXp = q => Math.round(q.xp * questMul());
   const BONUS = {
     speed:  { name: 'Ускорение',    color: '#ffd166', dur: 7 },
     shield: { name: 'Неуязвимость', color: '#5ce1e6', dur: 5 },
@@ -1618,8 +1651,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   delete save.up.vision;
   save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
   function fillQuests() {
+    const lv = levelInfo(save.xp).level;
+    save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
     while (save.quests.length < 3) {
-      const pool = QUESTS.filter(q => !save.quests.includes(q.id));
+      // higher levels mostly get the harder tier they have unlocked
+      const open = QUESTS.filter(q => !save.quests.includes(q.id) && (q.lvl || 1) <= lv), top = Math.max(...open.map(q => q.lvl || 1));
+      const pool = top > 1 && Math.random() < .6 ? open.filter(q => (q.lvl || 1) === top) : open;
       save.quests.push(pool[Math.floor(Math.random() * pool.length)].id);
     }
   }
@@ -1655,6 +1692,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   save.arenas = save.arenas || []; save.arena = save.arena || 'default';
   save.colDone = save.colDone || [];
   save.mastery = save.mastery || {};
+  if (!save.lvlCurve) {
+    let xp = save.xp || 0, L = 1, need = 100;
+    while (xp >= need) { xp -= need; L++; need = 100 + 50 * (L - 1); }
+    L = Math.min(L, 50);
+    save.xp = xpForLevel(L) + Math.round(xp / need * (100 + LEVEL_STEP * (L - 1)));
+    save.lvlCurve = 2; save.lvlPaid = L;   // rewards start from the next level
+  }
   save.legend = save.legend || { since: today };   // counters start the day the legendary achievements appeared
   function weeklyState() {
     const w = raidWeek();
@@ -1736,7 +1780,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ch_split1000', name: 'Рой разума',         desc: 'Набери массу 4000 в «Только деление»',     goal: 4000, prog: () => save.bests.split || 0, reward: ['skin', 'matrix'] },
     { id: 'ch_crumbs20k', name: 'Ненасытный',         desc: 'Собери 20 000 крошек за всё время',        goal: 20000, prog: () => save.totals.crumbs,   reward: ['skin', 'magma'] },
     { id: 'ch_time2h',    name: 'Ледяное спокойствие', desc: 'Проведи на арене 2 часа суммарно',        goal: 7200, prog: () => save.totals.time, time: true, reward: ['skin', 'glacier'] },
-    { id: 'ch_level15',   name: 'Ветеран',            desc: 'Достигни 15-го уровня',                    goal: 15,   prog: () => playerLevel(),         reward: ['skin', 'pulsar'] },
+    { id: 'ch_level15',   name: 'Ветеран',            desc: 'Достигни 25-го уровня',                    goal: 25,   prog: () => playerLevel(),         reward: ['skin', 'pulsar'] },
     { id: 'ch_skins10',   name: 'Модник',             desc: 'Собери 10 скинов',                         goal: 10,   prog: () => save.skins.length,     reward: ['fx', 'hexAura'] },
     { id: 'ch_ach12',     name: 'Коллекционер наград', desc: 'Получи 12 достижений',                    goal: 12,   prog: () => save.ach.length,       reward: ['fx', 'confettiEat'] },
     { id: 'ch_mass10k',   name: 'Сверхгигант',        desc: 'Набери массу 10 000 в «Классике»',         goal: 10000, prog: () => save.bests.classic || 0, reward: ['skin', 'titan'] },
@@ -1764,10 +1808,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // one-time reset of score stats after the runaway-growth bug
   if (!save.scoreReset1) { save.best = 0; save.bests.classic = 0; save.coins = 0; save.scoreReset1 = true; persist(); }
   if (TEST_MODE) save.coins = Math.max(save.coins, 999999);
-  function levelInfo(xp) {
-    let level = 1, need = 100;
-    while (xp >= need) { xp -= need; level++; need = 100 + 50 * (level - 1); }
-    return { level, into: xp, need };
+  // every level pays 50 × level coins; every 5th a chest; 10/20/30/40/50 a frame or a title
+  const LEVEL_DECOR = { 10: 'tt_lv10', 20: 'fr_lv20', 30: 'tt_lv30', 40: 'fr_lv40', 50: 'tt_lv50' };
+  const levelChest = L => L % 5 ? null : L <= 10 ? 'rare' : L <= 30 ? 'epic' : 'legendary';
+  function payLevels(to) {
+    const out = [];
+    for (let L = (save.lvlPaid || 1) + 1; L <= to; L++) {
+      const c = 50 * L; save.coins += c; const parts = [`+${c} ◆`];
+      const ch = levelChest(L); if (ch) { save.special.push({ kind: 'challenge', rar: ch, title: `Уровень ${L}` }); parts.push(`сундук «${RARITY[ch].name}»`); }
+      const d = LEVEL_DECOR[L]; if (d && !save.decor.includes(d)) { save.decor.push(d); parts.push(`${decorById(d).kind === 'frame' ? 'рамка' : 'титул'} «${decorById(d).name}»`); }
+      out.push(`<li class="done"><span>⬆ Уровень ${L}</span><span class="rw">${parts.join(' + ')}</span></li>`);
+    }
+    save.lvlPaid = Math.max(save.lvlPaid || 1, to);
+    return out.join('');
   }
   const playerLevel = () => levelInfo(save.xp).level;
   const skin = () => SKINS.find(s => s.id === save.skin) || SKINS[0];
@@ -2213,6 +2266,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (o.star) { sk = SKINS.find(k => k.id === o.star.skin) || sk; o.fx = { aura: o.star.aura, trail: o.star.trail, eat: 'goldEat' }; }
     o.trailDef = o.fx.trail ? fxById(o.fx.trail) : null;
     const st = o.star ? 3 : sk === base || Math.random() < .5 ? 0 : 1 + ((Math.random() * 3) | 0);
+    o.lvl = o.star ? 40 + ((Math.random() * 11) | 0) : 1 + ((Math.random() * Math.min(45, playerLevel() + 10)) | 0);
     o.frame = o.star ? 'fr_rainbow' : Math.random() < .3 ? DECOR.filter(d => d.kind === 'frame')[(Math.random() * 14) | 0].id : null;
     o.free.forEach(v => { applySkin(v, sk, st, null); setAura(v, o.fx.aura, sk.color); });
   }
@@ -2849,8 +2903,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     xp = Math.round(xp * (1 + 0.05 * petLv('xp')));
     const questRows = save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => {
       const done = doneQuests.has(q.id);
-      if (done) { coins += q.coins; xp += q.xp; }
-      return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${q.coins} ◆ · +${q.xp} оп.</span></li>`;
+      if (done) { coins += qCoins(q); xp += qXp(q); }
+      return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
     save.coins += coins; save.xp += xp;
     const t = save.totals;
@@ -2957,8 +3011,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
       (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
+      $('resQuests').innerHTML += payLevels(lvAfter); persist();
       const opened = [...UPG.filter(u => u.lvl > lvBefore && u.lvl <= lvAfter).map(u => u.name),
-                      ...SKINS.filter(s => s.lvl > lvBefore && s.lvl <= lvAfter).map(s => 'скин ' + s.name)];
+                      ...SKINS.filter(s => s.lvl > lvBefore && s.lvl <= lvAfter).map(s => 'скин ' + s.name),
+                      ...FX.filter(f => f.lvl > lvBefore && f.lvl <= lvAfter).map(f => 'эффект ' + f.name),
+                      ...ARENAS.filter(a => a.lvl > lvBefore && a.lvl <= lvAfter).map(a => 'арена ' + a.name)];
       $('unlock').textContent = `Уровень ${lvAfter}!` + (opened.length ? ` Открыто: ${opened.join(', ')}.` : '');
       $('unlock').hidden = false;
     } else $('unlock').hidden = true;
@@ -3503,8 +3560,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     $('leaders').innerHTML = ranked.slice(0, 6).map((o, i) => {
       const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
-      const fr = o.isPlayer ? save.frame : o.frame;
-      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.star ? '<b class="star-tag">★</b>' : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
+      const fr = o.isPlayer ? save.frame : o.frame, lvl = o.isPlayer ? playerLevel() : o.lvl;
+      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
     }).join('') + (rank > 6 ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '');
     let modeChip = running && mode === 'royale' ? `<div class="chip"><i style="background:#ff3d6e"></i>Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)} из 13</div>` : '';
     if (running && mode === 'timed') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
@@ -3530,7 +3587,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (running) {
       for (const id of save.quests) {
         const q = QUESTS.find(x => x.id === id);
-        if (!doneQuests.has(id) && stats[q.stat] >= q.goal) { doneQuests.add(id); toast(`Задание выполнено: ${q.text}`); }
+        if (!doneQuests.has(id) && (stats[q.stat] || 0) >= q.goal) { doneQuests.add(id); toast(`Задание выполнено: ${q.text}`); }
       }
       stats.achGot.push(...checkAch());
     }
@@ -3644,11 +3701,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
   function renderAll() {
     const li = levelInfo(save.xp);
-    $('lvlName').textContent = `Уровень ${li.level}`;
-    $('lvlXp').textContent = `${li.into} / ${li.need} опыта`;
+    $('lvlName').textContent = `Уровень ${li.level}${li.max ? '' : ` из ${MAX_LEVEL}`}`;
+    $('lvlXp').textContent = li.max ? 'максимальный уровень' : `${li.into} / ${li.need} опыта`;
     $('lvlFill').style.width = (li.into / li.need * 100) + '%';
     $('menuQuests').innerHTML = save.quests.map(id => QUESTS.find(q => q.id === id))
-      .map(q => `<li><span>${q.text}</span><span class="rw">+${q.coins} ◆ · +${q.xp} оп.</span></li>`).join('') +
+      .map(q => `<li><span>${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`).join('') +
       (() => { const W = weeklyState(); return `<li class="week-li"><span>📅 Задания недели: ${W.done.length} из 3</span><span class="rw">«Испытания» → «Неделя»</span></li>`; })();
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
@@ -3885,8 +3942,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.price && !a.legend && !save.arenas.includes(a.id) : a.id === 'default' || save.arenas.includes(a.id)).sort((x, y) => (x.price || 0) - (y.price || 0));
       $('shop').innerHTML = `<p class="empty-note">${shop ? 'Тема меняет пол, сетку, края арены, туманности и частицы вокруг. Купленные темы — в гардеробе.' : 'Выбери тему арены. Новые темы — в магазине.'}</p>` +
         (list.length ? list.map(a => {
-          const sel = save.arena === a.id, can = save.coins >= a.price;
-          const btn = shop ? `<button class="buy" id="arena-${a.id}" data-arena="${a.id}" ${can ? '' : 'disabled'}>${a.price} ◆</button>` : `<button class="buy ${sel ? 'sel' : ''}" id="arena-${a.id}" data-arena="${a.id}" ${sel ? 'disabled' : ''}>${sel ? 'Выбрана' : 'Выбрать'}</button>`;
+          const sel = save.arena === a.id, lvOk = playerLevel() >= (a.lvl || 1), can = save.coins >= a.price && lvOk;
+          const btn = shop ? `<button class="buy" id="arena-${a.id}" data-arena="${a.id}" ${can ? '' : 'disabled'}>${lvOk ? `${a.price} ◆` : `С ур. ${a.lvl}`}</button>` : `<button class="buy ${sel ? 'sel' : ''}" id="arena-${a.id}" data-arena="${a.id}" ${sel ? 'disabled' : ''}>${sel ? 'Выбрана' : 'Выбрать'}</button>`;
           return `<div class="fxrow${a.exclusive ? ' ex' : ''}"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}${a.exclusive ? ' <span class="badge-ex badge-legend">эксклюзив</span>' : ''}</span><span class="desc">${a.desc}.</span>${btn}</div>`;
         }).join('') : '<p class="empty-note">Все темы арены уже твои.</p>');
     } else if (shopTab === 'wdeco') {
@@ -3896,7 +3953,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
                    : row(`<span class="hat-ico off">${hatIcon(h)}</span>`, HATS[h].name, col ? `Награда за коллекцию «${col.name}».` : `Награда: ${HATS[h].src}.`, 'disabled', false, 'Нет', 'hat:' + h); }).join('');
       const decoRows = kind => { const own = DECOR.filter(d => d.kind === kind && save.decor.includes(d.id));
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
-          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.skill ? 'Мастерское достижение.' : d.legend ? 'Легендарное достижение.' : d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : d.mastery ? `Мастерство режима «${MODES[d.mastery].name}».` : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
+          return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, d.name, d.level ? `Награда за ${d.level}-й уровень.` : d.skill ? 'Мастерское достижение.' : d.legend ? 'Легендарное достижение.' : d.league !== undefined ? 'Награда лиги в конце сезона.' : d.col ? 'Награда за коллекцию эффектов.' : d.mastery ? `Мастерство режима «${MODES[d.mastery].name}».` : `Из сундука · ${RARITY[d.chest].name.toLowerCase()}.`, `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
           : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков, даются за лигу и мастерство режимов' : 'Титулы выпадают из сундуков, даются за лигу, коллекции эффектов и мастерство режимов'}.</p>`; };
       $('shop').innerHTML = '<p class="empty-note">Рамка и титул видны рядом с твоим именем в таблице лидеров.</p><h3>Над головой</h3>' + hats + `<h3>Рамки · ${DECOR.filter(d => d.kind === 'frame' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'frame').length}</h3>` + decoRows('frame') +
         `<h3>Титулы · ${DECOR.filter(d => d.kind === 'title' && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === 'title').length}</h3>` + decoRows('title');
@@ -4025,7 +4082,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       toast(`Коллекция «${c.name}» собрана: ${c.hat ? HATS[c.hat].name : 'титул «' + decorById(c.title).name + '»'} + ${c.coins} ◆`);
     } else if (b.dataset.arena) {
       const a = ARENAS.find(x => x.id === b.dataset.arena);
-      if (a.price && !save.arenas.includes(a.id)) { if (save.coins < a.price) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
+      if (a.price && !save.arenas.includes(a.id)) { if (save.coins < a.price || playerLevel() < (a.lvl || 1)) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
       save.arena = a.id; applyArena(); setHoliday(curHoliday);
     } else if (b.dataset.pet) {
       save.pet = save.pet === b.dataset.pet ? null : b.dataset.pet; applyPet();
@@ -4236,7 +4293,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       name = d.name; tag = (d.chest ? rarTag(d.chest) : '') + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
       flat = decoPreview(d);
       rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
-        ['Откуда', d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
+        ['Откуда', d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
       act = `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>`;
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
@@ -4431,8 +4488,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('resetNo').addEventListener('click', () => { $('resetConfirm').hidden = true; $('resetBtn').hidden = false; $('resetBtn').focus(); });
   $('resetYes').addEventListener('click', () => {
     // a clean save that keeps only the settings; league seasons restart from season 1 today
-    const d = new Date(); d.setHours(0, 0, 0, 0);
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: save.settings, seasonEpoch: d.getTime() })); } catch (e) {}
+    // season 1 = the season running now on the shared calendar, so holidays and season dates stay the same for everyone
+    const base = new Date(2026, 10, 1).getTime(), k = Math.max(0, Math.floor((Date.now() - base) / SEASON_LEN));
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: save.settings, seasonEpoch: base + k * SEASON_LEN })); } catch (e) {}
     location.reload();
   });
 
@@ -4866,7 +4924,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '22';
+const APP_VER = '23';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

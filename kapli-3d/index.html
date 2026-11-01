@@ -386,6 +386,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .info-h { margin: 12px 0 6px; font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
 .info-list { margin: 0 0 4px; padding-left: 1.1em; display: grid; gap: 6px; font-size: .9rem; line-height: 1.5; }
 .info-note { margin: 8px 0 0; color: var(--muted); font-size: .82rem; }
+#profChests { grid-template-columns: repeat(2, 1fr); }
+#chestDrawerBody { display: grid; gap: 8px; min-width: 0; }
+.ch-tab { font-size: .74rem; table-layout: fixed; }
+.ch-tab th, .ch-tab td { padding: 4px 3px; }
+.ch-tab th:first-child, .ch-tab td:first-child { width: 36%; }
 .keys { display: grid; grid-template-columns: minmax(0, 11em) 1fr; gap: 8px 14px; margin: 0; font-size: .9rem; }
 .keys dt { color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .keys dd { margin: 0; min-width: 0; line-height: 1.5; }
@@ -711,6 +716,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="prof-head" id="profHead"></div>
     <h2 class="section-title">Статистика</h2>
     <div class="res-grid" id="profStats"></div>
+    <h2 class="section-title">Сундуки</h2>
+    <div class="res-grid" id="profChests"></div>
+    <details class="res-drawer" id="chestDrawer"><summary>Каких сколько открыто <small class="cnt" id="chestDrawerCnt"></small></summary><div id="chestDrawerBody"></div></details>
     <h2 class="section-title">Мастерство режимов</h2>
     <div class="mastery" id="profMastery"></div>
     <h2 class="section-title">Рекорды режимов</h2>
@@ -1801,6 +1809,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   save.chDone = save.chDone || [];
   save.pets = save.pets || []; save.pet = save.pet || null;
   save.chests = save.chests || 0; save.pity = save.pity || 0; save.legPity = save.legPity || 0;
+  // chest stats for the profile: opened chests by source and rarity (counted from v33), and round chests per hour over the last 7 days
+  save.chestStats = save.chestStats || { since: Date.now(), total: 0, src: {} };
+  save.chestDays = save.chestDays || [];
   save.special = save.special || [];   // league / challenge chests: { kind, rar | league, title }
   save.dailyChestDay = save.dailyChestDay || '';
   save.stars = save.stars || {};                       // skin id -> 1..3 stars from chest duplicates
@@ -3091,6 +3102,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const chestChance = roundChestChance(stats.time / 60, stats.maxMass, stats.win, stats.ranked);
     const gotChest = save.pity >= CHEST_RULE[stats.ranked ? 'ranked' : 'normal'].pity - 1 || Math.random() < chestChance;
     if (gotChest) { save.chests++; save.pity = 0; } else save.pity++;
+    logRoundChest(stats.ranked, stats.time, gotChest);
     let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
     if (mode === 'royale' && stats.finalRank) pts += (13 - stats.finalRank) * 4;
@@ -4283,7 +4295,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       save.coins -= o.price; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
     } else if (b.dataset.archchest) {
       const all = archiveOffers(), cp = archiveChestPrice(all); if (all.length <= ARCHIVE_SLOTS || save.coins < cp.price) return;
-      const o = pickArchive(all); save.coins -= cp.price; grantArchive(o);
+      const o = pickArchive(all); save.coins -= cp.price; grantArchive(o); logChest('archive', archRarity(o));
       toast(`Сундук архива (${RARITY[archRarity(o)].name.toLowerCase()}): ${offerKind(o)} «${offerName(o)}» из сезона «${o.from}»`); Sound.play('chest');
     } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
@@ -4577,7 +4589,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const R = CHEST_RULE[ranked ? 'ranked' : 'normal'];
     return Math.min(R.cap, minutes * R.rate * (1 + Math.min(.25, mass / 80000) + (win ? .1 : 0)));
   }
-  const LEG_PITY = 60;   // round + daily chests: after 60 in a row without a legendary, the next one is legendary
+  const LEG_PITY = 60;
+  const CHEST_SRC = { normal: 'За раунды', daily: 'Ежедневные', league: 'Сундуки лиги', level: 'За уровни', week: 'Задания недели', raid: 'Рейд', challenge: 'Испытания', archive: 'Сундук архива' };
+  function logChest(src, rar) {
+    const S = save.chestStats; S.total++;
+    const o = S.src[src] = S.src[src] || {}; o[rar] = (o[rar] || 0) + 1;
+  }
+  function logRoundChest(ranked, sec, got) {
+    let d = save.chestDays.find(x => x.d === today);
+    if (!d) { d = { d: today, n: [0, 0, 0], r: [0, 0, 0] }; save.chestDays.push(d); }   // [seconds, rounds, chests]
+    const a = ranked ? d.r : d.n; a[0] += Math.round(sec); a[1]++; a[2] += got ? 1 : 0;
+    const cut = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+    save.chestDays = save.chestDays.filter(x => x.d > cut);
+  }   // round + daily chests: after 60 in a row without a legendary, the next one is legendary
   const leagueExcl = () => [...SKINS.filter(k => k.lchest).map(k => ['skin', k]), ...FX.filter(f => f.lchest).map(f => ['fx', f]), ...PETS.filter(pt => pt.lchest).map(pt => ['pet', pt])];
   const ownsTI = ([type, item]) => (type === 'skin' ? save.skins : type === 'pet' ? save.pets : type === 'deco' ? save.decor : save.fxOwned).includes(item.id);
   const RAR_KEYS = Object.keys(RARITY);
@@ -4663,6 +4687,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const i = +key.slice(2), c = save.special[i]; if (!c) return;
       save.special.splice(i, 1);
       opts = c.kind === 'league' ? { league: c.league } : { rar: c.rar };
+      opts.src = c.kind === 'league' ? 'league' : /^Уровень /.test(c.title) ? 'level' : c.title === 'Неделя' ? 'week' : c.title === 'Рейд' ? 'raid' : 'challenge';
       look = c.kind === 'league' ? chestLook('league') : chestLook('challenge', c.rar);
     }
     chestBusy = true;
@@ -4672,6 +4697,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('overlay').scrollTop = 0;
     setTimeout(() => {
       const r = rollChest(opts), R2 = RARITY[r.rar];
+      logChest(opts.src || key, r.rar); persist();
       box.classList.remove('shake'); box.classList.add('open');
       const pic = r.type === 'skin' ? `<div class="${swClass(r.item)}" style="${swatch(r.item)}">${headIcon(r.item)}</div>` : r.type === 'deco' ? decoPreview(r.item) : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
       const kind = r.type === 'deco' ? (r.item.kind === 'frame' ? 'Рамка для имени' : 'Титул') : r.type === 'skin' ? 'Скин' : r.type === 'pet' ? `Питомец · ${PET_BONUS[r.item.bonus].name}: ${PET_BONUS[r.item.bonus].text(r.item.lv)}` : 'Эффект · ' + FX_SLOTS.find(sl => sl[0] === r.item.slot)[1].toLowerCase();
@@ -4838,8 +4864,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
       ['Съедено капель', T.kills], ['Боссов', T.bosses], ['Прислужников', T.minions],
       ['Крошек', T.crumbs], ['Делений', T.splits], ['Выбросов', T.ejects],
-      ['Лучшая волна', T.bestWave], ['Капель за раунд', T.bestKills], ['Сундуков', chestTotal()],
+      ['Лучшая волна', T.bestWave], ['Капель за раунд', T.bestKills], ['Не открыто сундуков', chestTotal()],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
+    renderProfChests();
     $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +200 ◆, Серебро +400 ◆, Золото — рамка, Платина +800 ◆, Легенда — титул.</p>' +
       Object.entries(MODES).map(([id, m]) => {
         const pts = save.mastery[id] || 0, lv = masteryLv(pts), prev = lv ? MASTERY_LV[lv - 1].pts : 0, nx = MASTERY_LV[lv];
@@ -4863,6 +4890,26 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('profSeasons').innerHTML = [`<li><span>Сезон ${save.season.id} (идёт)</span><span class="rw" style="color:${L.color}">${L.name} · ${save.season.pts}</span></li>`,
       ...save.seasonLog.slice().reverse().map(x => `<li><span>Сезон ${x.id}${x.name ? ` «${x.name}»` : ''}</span><span class="rw" style="color:${lgView(x.league, x.holiday).color}">${lgView(x.league, x.holiday).name} · ${x.pts}</span></li>`)].join('');
     requestAnimationFrame(drawProfChart);
+  }
+  function renderProfChests() {
+    const S = save.chestStats, sum = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
+    const wk = k => save.chestDays.reduce((a, d) => a.map((v, i) => v + d[k][i]), [0, 0, 0]);
+    const n = wk('n'), r = wk('r');
+    const perH = a => a[0] >= 60 ? (a[2] / (a[0] / 3600)).toFixed(1).replace('.', ',') : '–';
+    const hrs = a => a[0] < 3600 ? `${Math.round(a[0] / 60)} мин` : `${(a[0] / 3600).toFixed(1).replace('.', ',')} ч`;
+    $('profChests').innerHTML = [
+      ['Открыто всего', S.total], ['Не открыто', chestTotal()],
+      ['В час · обычные бои', perH(n)], ['В час · рейтинг', perH(r)],
+    ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('') +
+      `<p class="info-note" style="grid-column:1/-1;margin:0">Сундуки за раунды за последние 7 дней: обычные бои — ${n[2]} за ${hrs(n)} (раундов: ${n[1]}), рейтинг — ${r[2]} за ${hrs(r)} (боёв: ${r[1]}). Ожидается около 3 в час в обычных боях и около 4,3 в рейтинге.</p>`;
+    $('chestDrawerCnt').textContent = `· с ${new Date(S.since).toLocaleDateString('ru-RU')}`;
+    const rarCell = (o, k) => `<span style="color:${RARITY[k].color}">${o[k] || 0}</span>`;
+    const tot = {}; Object.values(S.src).forEach(o => Object.entries(o).forEach(([k, v]) => tot[k] = (tot[k] || 0) + v));
+    $('chestDrawerBody').innerHTML = !S.total ? '<p class="empty-note">Пока не открыто ни одного сундука. Счёт идёт с обновления 33.</p>' :
+      '<table class="lg-odds ch-tab"><tr><th>Откуда</th><th>Всего</th>' + RAR_KEYS.map(k => `<th style="color:${RARITY[k].color}" title="${RARITY[k].name}">${{ common: 'Об.', rare: 'Ред.', epic: 'Эп.', legendary: 'Лег.' }[k]}</th>`).join('') + '</tr>' +
+      Object.keys(CHEST_SRC).filter(k => sum(S.src[k])).map(k => `<tr><td>${CHEST_SRC[k]}</td><td>${sum(S.src[k])}</td>${RAR_KEYS.map(rk => `<td>${rarCell(S.src[k], rk)}</td>`).join('')}</tr>`).join('') +
+      `<tr><td><b>Итого</b></td><td><b>${S.total}</b></td>${RAR_KEYS.map(rk => `<td><b>${rarCell(tot, rk)}</b></td>`).join('')}</tr></table>` +
+      `<p class="info-note" style="margin:0">Гарантия легендарного: подряд без легендарного ${save.legPity || 0} из ${LEG_PITY}.</p>`;
   }
   let badgeList = [];
   $('profBadges').addEventListener('click', e => {
@@ -5165,7 +5212,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '32';
+const APP_VER = '33';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

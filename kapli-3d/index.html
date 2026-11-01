@@ -216,6 +216,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 .overlay {
   position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; overflow-y: auto;
+  grid-template-columns: minmax(0, 1fr);   /* cards never grow wider than the screen */
   padding-block: 70px 24px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -248,8 +249,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   display: flex; justify-content: space-between; gap: 10px; align-items: center;
   background: var(--row); border-radius: 10px; padding: 8px 10px; font-size: .85rem;
 }
-.quests li span:first-child { min-width: 0; }
-.quests li .rw { color: var(--gold); white-space: nowrap; font-variant-numeric: tabular-nums; font-size: .8rem; }
+.quests li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+/* long rewards wrap inside the row instead of stretching the whole card */
+.quests li .rw { color: var(--gold); font-variant-numeric: tabular-nums; font-size: .8rem; text-align: right; flex: 0 1 auto; max-width: 55%; overflow-wrap: anywhere; }
+.card { min-width: 0; box-sizing: border-box; }   /* padding counts inside the width, so the card fits the phone screen */
+.card > * { min-width: 0; max-width: 100%; }
 .quests li.done { outline: 1px solid var(--prey); }
 .quests li.done .rw { color: var(--prey); }
 
@@ -4763,7 +4767,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '19';
+const APP_VER = '20';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

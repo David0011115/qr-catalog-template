@@ -784,6 +784,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <ul class="info-list">
         <li>Магазин → «Архив», с 20-го уровня. Здесь можно получить награды прошедших сезонов, которые ты не успел взять в лиге.</li>
         <li>Витрина недели — 4 предмета, обновляется по понедельникам. Сундук архива за 20 000 ◆ даёт случайный предмет из всех пропущенных, без повторов.</li>
+        <li>Шанс в сундуке зависит от редкости (по цене): обычный (до 15 000 ◆) — вес 40, редкий (20–25 тыс.) — 25, эпический (30 тыс.) — 15, легендарный (35–40 тыс.) — 8. Точные проценты по твоему архиву — под сундуком.</li>
         <li>Цены: питомец «Платины» 15 000, скин сезона 25 000, питомец «Неона» 30 000, эффект сезона 35 000 ◆; праздничные предметы 10 000–40 000 ◆.</li>
         <li>Купленное в архиве помечено «из архива». Значки, рамки и титулы лиги, трофеи рейда и легендарные награды в архив не попадают.</li>
       </ul>
@@ -1433,6 +1434,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   function grantArchive(o) {
     const list = ownList(o.kind); if (!list.includes(o.id)) list.push(o.id);
     save.archived = save.archived || []; if (!save.archived.includes(o.id)) save.archived.push(o.id);
+  }
+  // archive chest odds follow the item's rarity, set by its price: the dearer, the rarer
+  const archRarity = o => o.price <= 15000 ? 'common' : o.price <= 25000 ? 'rare' : o.price <= 30000 ? 'epic' : 'legendary';
+  const ARCH_W = { common: 40, rare: 25, epic: 15, legendary: 8 };
+  function archOdds(all) {
+    const tot = all.reduce((t, o) => t + ARCH_W[archRarity(o)], 0), by = {};
+    for (const o of all) { const r = archRarity(o); by[r] = by[r] || { n: 0, p: 0 }; by[r].n++; by[r].p += ARCH_W[r] / tot; }
+    return by;
+  }
+  function pickArchive(all) {
+    let x = Math.random() * all.reduce((t, o) => t + ARCH_W[archRarity(o)], 0);
+    for (const o of all) if ((x -= ARCH_W[archRarity(o)]) < 0) return o;
+    return all[all.length - 1];
   }
   const offerName = o => o.kind === 'pet' ? petById(o.id).name : (o.kind === 'skin' ? SKINS : FX).find(x => x.id === o.id).name;
   const offerKind = o => ({ skin: 'скин', fx: 'эффект', pet: 'питомец' })[o.kind];
@@ -4049,12 +4063,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       } else {
         const all = archiveOffers(), show = archiveShowcase(), days = Math.max(1, Math.ceil(((raidWeek() + 1) * 7 - 3) - Date.now() / 864e5));
         const card = o => { const own = ownsOffer(o), can = save.coins >= o.price;
-          return `<div class="fxrow ex"><span class="ico thumb">${icon(o)}</span><span class="name">${offerName(o)} <span class="badge-ex">${offerKind(o)}</span></span><span class="desc">из сезона «${o.from}»</span>` +
+          return `<div class="fxrow ex"><span class="ico thumb">${icon(o)}</span><span class="name">${offerName(o)} <span class="badge-ex">${offerKind(o)}</span> <span class="badge-r" style="color:${RARITY[archRarity(o)].color}">${RARITY[archRarity(o)].name}</span></span><span class="desc">из сезона «${o.from}»</span>` +
             (own ? '<button class="buy sel" disabled>Куплено</button>' : `<button class="buy" id="arch-${o.id}" data-arch="${o.id}" ${can ? '' : 'disabled'}>${o.price} ◆</button>`) + '</div>'; };
         $('shop').innerHTML = all.length
           ? `<p class="empty-note">Награды прошедших сезонов, которых у тебя нет: ${all.length}. Витрина обновится через ${days} дн.</p><h3>Витрина недели</h3>` + show.map(card).join('') +
-            `<h3>Сундук архива</h3><div class="fxrow"><span class="ico" style="font-size:1.6rem">🗃️</span><span class="name">Случайный предмет архива</span><span class="desc">Любая из ${all.length} наград, без повторов</span>` +
-            `<button class="buy" id="arch-chest" data-archchest="1" ${save.coins >= ARCHIVE_CHEST ? '' : 'disabled'}>${ARCHIVE_CHEST} ◆</button></div>`
+            `<h3>Сундук архива</h3><div class="fxrow"><span class="ico" style="font-size:1.6rem">🗃️</span><span class="name">Случайный предмет архива</span><span class="desc">Любая из ${all.length} наград, без повторов. Чем дороже предмет, тем реже он выпадает</span>` +
+            `<button class="buy" id="arch-chest" data-archchest="1" ${save.coins >= ARCHIVE_CHEST ? '' : 'disabled'}>${ARCHIVE_CHEST} ◆</button></div>` +
+            (() => { const od = archOdds(all), PR = { common: 'до 15 000 ◆', rare: '20 000–25 000 ◆', epic: '30 000 ◆', legendary: '35 000–40 000 ◆' };
+              return '<ul class="quests arch-odds">' + ['common', 'rare', 'epic', 'legendary'].filter(r => od[r]).map(r => `<li><span><b style="color:${RARITY[r].color}">${RARITY[r].name}</b> · ${PR[r]} · в архиве ${od[r].n}</span><span class="rw">${(od[r].p * 100).toFixed(1)}%</span></li>`).join('') + '</ul>'; })()
           : `<p class="empty-note">🎉 Ты собрал весь архив: у тебя есть все награды прошедших сезонов.</p>` + preview;
       }
     } else if (shopTab === 'week') {
@@ -4154,8 +4170,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       save.coins -= o.price; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
     } else if (b.dataset.archchest) {
       const all = archiveOffers(); if (!all.length || save.coins < ARCHIVE_CHEST) return;
-      const o = all[(Math.random() * all.length) | 0]; save.coins -= ARCHIVE_CHEST; grantArchive(o);
-      toast(`Сундук архива: ${offerKind(o)} «${offerName(o)}» из сезона «${o.from}»`); Sound.play('chest');
+      const o = pickArchive(all); save.coins -= ARCHIVE_CHEST; grantArchive(o);
+      toast(`Сундук архива (${RARITY[archRarity(o)].name.toLowerCase()}): ${offerKind(o)} «${offerName(o)}» из сезона «${o.from}»`); Sound.play('chest');
     } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
     else if (b.dataset.col) {
@@ -5010,7 +5026,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '24';
+const APP_VER = '25';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

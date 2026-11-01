@@ -305,7 +305,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .info-card .g-group details { background: var(--row); border-radius: 12px; padding: 0 12px; }
 .prof-id { display: flex; gap: 12px; align-items: center; background: var(--row); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
 .prof-id-txt { display: grid; gap: 4px; min-width: 0; flex: 1; } .prof-id-txt small { color: var(--muted); font-size: .78rem; }
-.shop-drawer { margin-bottom: 8px; } .shop-drawer .drawer-body { display: grid; gap: 8px; } .shop-drawer summary .cnt { font-weight: 400; }
+.shop-drawer { margin-bottom: 8px; }
+.set-drawer { margin-bottom: 8px; } .set-drawer .drawer-body { display: grid; gap: 12px; padding-bottom: 6px; }
+.tab-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+.tab-sub { display: flex; gap: 6px; width: 100%; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+.tab-sub .tab { font-size: .8rem; padding: 6px 12px; }
+.ach.part .ico { filter: none; } .ach small { color: var(--muted); font-weight: 400; }
+.skin .stars-on { position: absolute; top: 6px; right: 6px; color: var(--gold); font-size: .78rem; text-shadow: 0 0 6px rgba(255, 210, 63, .8); letter-spacing: .05em; }
+.skin { position: relative; } .shop-drawer .drawer-body { display: grid; gap: 8px; } .shop-drawer summary .cnt { font-weight: 400; }
 .shop-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .shop-head h1 { font-size: 1.3rem; text-align: left; }
 .shop-head b { font-family: var(--display); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
@@ -1114,29 +1121,37 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
   <div class="card" id="settingsCard" hidden>
     <h1>Настройки</h1>
-    <div class="set"><span>Качество графики</span>
-      <div class="seg" id="setQuality" role="radiogroup"><button data-v="high">Высокое</button><button data-v="medium">Среднее</button><button data-v="low">Низкое</button></div>
-      <small>Низкое: без частиц, ореолов, звёзд и украшений у ботов — для слабых телефонов</small></div>
-    <div class="set"><span>Размер мини-карты</span>
-      <div class="seg" id="setMiniSize" role="radiogroup"><button data-v="s">Маленькая</button><button data-v="m">Средняя</button><button data-v="l">Большая</button><button data-v="xl">Огромная</button></div></div>
-    <div class="set"><span>Размер джойстика</span>
-      <div class="seg" id="setJoy" role="radiogroup"><button data-v="s">Маленький</button><button data-v="m">Средний</button><button data-v="l">Большой</button></div></div>
-    <div class="set"><label for="setAlpha">Прозрачность джойстика</label><input type="range" id="setAlpha" min="0.1" max="0.8" step="0.05"></div>
-    <div class="set"><label for="setSfx">Громкость звуков</label><input type="range" id="setSfx" min="0" max="1" step="0.05"></div>
-    <div class="set"><label for="setMus">Громкость музыки</label><input type="range" id="setMus" min="0" max="1" step="0.05"></div>
-    <label class="set row" for="setVib"><span>Вибрация на телефоне</span><input type="checkbox" id="setVib"></label>
-    <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
+    <details class="res-drawer set-drawer" open><summary>🖥 Графика</summary><div class="drawer-body">
+      <div class="set"><span>Качество графики</span>
+        <div class="seg" id="setQuality" role="radiogroup"><button data-v="high">Высокое</button><button data-v="medium">Среднее</button><button data-v="low">Низкое</button></div>
+        <small>Низкое: без частиц, ореолов, звёзд и украшений у ботов — для слабых телефонов</small></div>
     <label class="set row" for="setAutoQ"><span>Авто-качество<small class="reset-note" style="margin:2px 0 0">снижает графику, если игра идёт медленнее 40 кадров в секунду</small></span><input type="checkbox" id="setAutoQ"></label>
     <label class="set row" for="setFps"><span>Показывать FPS</span><input type="checkbox" id="setFps"></label>
-    <div class="set">
-      <button class="btn ghost danger" id="resetBtn">Сбросить весь прогресс</button>
-      <small class="reset-note">Удалится всё: монеты, уровень, улучшения, скины, эффекты, питомцы, украшения, арены, сундуки, достижения, испытания, коллекции, мастерство, рекорды, значки и лига. Сезоны лиги начнутся заново: текущий сезон по календарю станет для тебя 1-м (его даты и праздники не меняются). Настройки (звук, графика, управление) останутся.</small>
-      <div id="resetConfirm" class="confirm" hidden>
-        <p><b>Точно сбросить?</b> Отменить это нельзя.</p>
-        <button class="btn" id="resetYes">Да, сбросить</button>
-        <button class="btn ghost" id="resetNo">Отмена</button>
+    <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
+    <div class="set"><span>Размер мини-карты</span>
+        <div class="seg" id="setMiniSize" role="radiogroup"><button data-v="s">Маленькая</button><button data-v="m">Средняя</button><button data-v="l">Большая</button><button data-v="xl">Огромная</button></div></div>
+    </div></details>
+    <details class="res-drawer set-drawer"><summary>🔊 Звук</summary><div class="drawer-body">
+      <div class="set"><label for="setSfx">Громкость звуков</label><input type="range" id="setSfx" min="0" max="1" step="0.05"></div>
+    <div class="set"><label for="setMus">Громкость музыки</label><input type="range" id="setMus" min="0" max="1" step="0.05"></div>
+    </div></details>
+    <details class="res-drawer set-drawer"><summary>🎮 Управление</summary><div class="drawer-body">
+      <div class="set"><span>Размер джойстика</span>
+        <div class="seg" id="setJoy" role="radiogroup"><button data-v="s">Маленький</button><button data-v="m">Средний</button><button data-v="l">Большой</button></div></div>
+    <div class="set"><label for="setAlpha">Прозрачность джойстика</label><input type="range" id="setAlpha" min="0.1" max="0.8" step="0.05"></div>
+    <label class="set row" for="setVib"><span>Вибрация на телефоне</span><input type="checkbox" id="setVib"></label>
+    </div></details>
+    <details class="res-drawer set-drawer"><summary>💾 Прогресс</summary><div class="drawer-body">
+      <div class="set">
+        <button class="btn ghost danger" id="resetBtn">Сбросить весь прогресс</button>
+        <small class="reset-note">Удалится всё: монеты, уровень, улучшения, скины, эффекты, питомцы, украшения, арены, сундуки, достижения, испытания, коллекции, мастерство, рекорды, значки и лига. Сезоны лиги начнутся заново: текущий сезон по календарю станет для тебя 1-м (его даты и праздники не меняются). Настройки (звук, графика, управление) останутся.</small>
+        <div id="resetConfirm" class="confirm" hidden>
+          <p><b>Точно сбросить?</b> Отменить это нельзя.</p>
+          <button class="btn" id="resetYes">Да, сбросить</button>
+          <button class="btn ghost" id="resetNo">Отмена</button>
+        </div>
       </div>
-    </div>
+    </div></details>
     <button class="btn" id="setBack">Готово</button>
   </div>
 </div>
@@ -1265,14 +1280,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     ...[['newyear', 'Новый год', 'ny', 'Новогоднем сезоне', ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон']],
         ['valentine', 'День влюблённых', 'vd', 'сезоне «День влюблённых', ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон']],
         ['halloween', 'Хэллоуин', 'hw', 'сезоне «Хэллоуин', ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон']]]
-      .flatMap(([k, title, pre, where, names]) => [2027, 2028, 2029].flatMap(y => {
+      .flatMap(([k, title, pre, where, names]) => [2027, 2028, 2029].map(y => {
         const key = k + '_' + y, inSeason = k === 'newyear' ? `«${where} ${y}»` : `${where} ${y}»`;
-        return [
-          { id: `${pre}_${y}`, name: `${title} ${y}`, desc: `Набери очки в ${inSeason}`, coins: 100,
-            test: () => (save.totals.holLeagueY || {})[key] !== undefined },
-          ...[1, 2, 3, 4, 5].map(i => ({ id: `${pre}_${y}_${i}`, name: `${title} ${y}: ${names[i]}`, desc: `Дойди до лиги «${names[i]}» в ${inSeason}`,
-            coins: [0, 50, 100, 200, 400, 800][i], test: () => ((save.totals.holLeagueY || {})[key] ?? -1) >= i })),
-        ];
+        // one achievement with 6 steps: points in the season, then Серебро … Неон; each step pays once
+        const steps = ['очки в сезоне', ...names.slice(1)], pay = [100, 50, 100, 200, 400, 800];
+        return { id: `${pre}_${y}_all`, name: `${title} ${y}`, desc: `Набери очки в ${inSeason} и поднимайся по лигам`, coins: pay.reduce((a, b) => a + b, 0), steps, pay, hol: true,
+          stepOf: () => { const v = (save.totals.holLeagueY || {})[key]; return v === undefined ? 0 : 1 + Math.max(0, v); },
+          test: function () { return this.stepOf() >= 6; } };
       })),
     { id: 'lg1', name: 'Серебряная лига',  desc: 'Дойди до лиги «Серебро» в любом сезоне',  coins: 50,  test: () => (save.totals.maxLeague || 0) >= 1 },
     { id: 'lg2', name: 'Золотая лига',     desc: 'Дойди до лиги «Золото» в любом сезоне',   coins: 100, test: () => (save.totals.maxLeague || 0) >= 2 },
@@ -2163,6 +2177,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   save.build = (save.build || ABIL_CFG.newBuild).slice(0, ABIL_CFG.slots).map(id => id && abilById(id) && save.abil.owned.includes(id) ? id : null);
   save.build = save.build.map((id, i) => id && save.build.indexOf(id) !== i ? null : id);
   while (save.build.length < ABIL_CFG.slots) save.build.push(null);
+  { // v54: the 6 separate holiday achievements of each holiday-year became one stepped achievement
+    save.achT = save.achT || {}; save.ach = save.ach || [];
+    for (const [pre] of [['ny'], ['vd'], ['hw']]) for (const y of [2027, 2028, 2029]) {
+      const old = [`${pre}_${y}`, ...[1, 2, 3, 4, 5].map(i => `${pre}_${y}_${i}`)]; let n = 0;
+      while (n < 6 && save.ach.includes(old[n])) n++;
+      if (save.ach.some(id => old.includes(id))) { save.achT[`${pre}_${y}_all`] = Math.max(save.achT[`${pre}_${y}_all`] || 0, n); save.ach = save.ach.filter(id => !old.includes(id)); if (n >= 6) save.ach.push(`${pre}_${y}_all`); }
+    } }
   if (save.up.keep || save.up.armor) {
     // v47: the two merged into «Защита» — keep the higher level, pay back what the other one cost
     const K = UPG.find(u => u.id === 'keep'), A = UPG.find(u => u.id === 'armor'), lk = save.up.keep || 0, la = save.up.armor || 0;
@@ -3363,10 +3384,20 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       bossTypes: [...new Set([...save.bossTypes, ...(running ? stats.bossTypes : [])])],
     };
   }
+  // stepped achievements pay every step they reach; the achievement counts as done at the last step
+  function checkSteps() {
+    save.achT = save.achT || {}; const got = [];
+    for (const a of ACH) { if (!a.steps || save.ach.includes(a.id)) continue;
+      const reach = Math.min(a.steps.length, a.stepOf()); let cur = save.achT[a.id] || 0;
+      while (cur < reach) { save.coins += a.pay[cur]; toast(`${a.name}: ${a.steps[cur]} +${a.pay[cur]} ◆`); cur++; }
+      save.achT[a.id] = cur; if (cur >= a.steps.length) { save.ach.push(a.id); got.push({ ...a, coins: 0 }); } }
+    return got;
+  }
   function checkAch() {
     if (!stats || stats.maxParts === undefined) return [];
-    const T = achTotals(), got = [];
+    const T = achTotals(), got = checkSteps();
     for (const a of ACH) {
+      if (a.steps) continue;
       if (save.ach.includes(a.id) || !a.test(T, stats)) continue;
       save.ach.push(a.id); save.coins += a.coins; got.push(a);
       toast(`Достижение: ${a.name} +${a.coins} ◆`);
@@ -4442,7 +4473,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('leaders').innerHTML = ranked.slice(0, 6).map((o, i) => {
       const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
       const fr = o.isPlayer ? save.frame : o.frame, lvl = o.isPlayer ? playerLevel() : o.lvl;
-      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
+      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
     }).join('') + (rank > 6 ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '');
     let modeChip = running && mode === 'royale' ? `<div class="chip"><i style="background:#ff3d6e"></i>Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)} из 13</div>` : '';
     if (running && mode === 'timed') modeChip = `<div class="chip"><i style="background:var(--gold)"></i>Осталось ${fmtTime(Math.max(0, TIMED_LEN - stats.time))}</div>`;
@@ -4762,7 +4793,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   // the shop sells what you don't own yet; the wardrobe holds everything you own
   const SHOP_VIEWS = {
-    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
+    shop:     { title: 'Магазин', groups: [['Для боя', ['up', 'abil']], ['Внешний вид', ['skin', 'fx', 'arena']], ['Архив', ['archive']]], tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     abilities: { title: 'Способности', tabs: [['mab', 'Мои способности']] },
@@ -4899,7 +4930,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
     const inf = mode === 'own' ? ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Подробнее: ${s.name}"` : '';
     return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
-      <span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
+      ${starsOf(s) ? `<span class="stars-on" title="Звёзды скина: ${STAR_TEXT[starsOf(s)]}">${'★'.repeat(starsOf(s))}</span>` : ''}<span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
   function fxRow(f, mode) {
     const sel = save.fx[f.slot] === f.id, lv = playerLevel();
@@ -4916,6 +4947,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const lv = playerLevel(), view = SHOP_VIEWS[shopView];
     $('shopTitle').textContent = view.title;
     $('shopTabs').hidden = view.tabs.length < 2;
+    if (view.groups) {
+      const g = view.groups.find(([, ids]) => ids.includes(shopTab)) || view.groups[0];
+      $('shopTabs').innerHTML = `<div class="tab-groups">${view.groups.map(([name, ids]) => `<button class="tab tab-g" role="tab" data-tab="${ids[0]}" aria-selected="${ids.includes(shopTab)}">${name}</button>`).join('')}</div>` +
+        (g[1].length > 1 ? `<div class="tab-sub">${g[1].map(id => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${view.tabs.find(t => t[0] === id)[1]}</button>`).join('')}</div>` : '');
+    } else
     $('shopTabs').innerHTML = view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
     if (shopTab === 'skin') {
       const list = SKINS.filter(k => buyable(k) && !save.skins.includes(k.id));
@@ -5074,6 +5110,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     } else if (shopTab === 'ach') {
       $('shop').innerHTML = ACH.map(a => {
         const got = save.ach.includes(a.id);
+        if (a.steps && !got) { const t = (save.achT || {})[a.id] || 0;
+          return `<div class="ach ${t ? 'part' : ''}"><span class="ico">${t ? '🏅' : '?'}</span><span class="name">${a.name} <small>· ступень ${t}/${a.steps.length}</small></span>` +
+            `<span class="desc">${a.desc}. Дальше: ${a.steps[t]}</span><span class="rw">+${a.pay[t]} ◆</span></div>`; }
         return `<div class="ach ${got ? 'got' : ''}"><span class="ico">${got ? '🏆' : '?'}</span><span class="name">${a.name}</span>` +
           `<span class="desc">${a.desc}</span><span class="rw">${got ? 'Получено' : `+${a.coins} ◆`}</span></div>`;
       }).join('');
@@ -6338,7 +6377,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '53';
+const APP_VER = '54';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

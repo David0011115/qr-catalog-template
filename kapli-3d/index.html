@@ -1839,13 +1839,16 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     name: `${PET_SPECIES[sp]} ${y}`, species: sp, color: shiftHue(c, n), accent: shiftHue(a, n), bonus: BONUS_KEYS[(BONUS_KEYS.indexOf(bo) + n) % BONUS_KEYS.length], lv: i ? 2 : 1 }; });
   // ---- extra collections: league set, league seasons by quarter (1–13, 14–26, 27–39, 40–52), holiday sets ----
   function addExtraCollections() {
+    DECOR.push({ id: 'tt_zoo', kind: 'title', name: 'Укротитель', color: '#3dffa2', col: true });
+    COLLECTIONS.push({ id: 'col_zoo', group: 'pets', name: 'Зверинец', title: 'tt_zoo', coins: 0, items: () => PETS.filter(pt => pt.chest).map(pt => ['pet', pt.id]) });
     COLLECTIONS.push({ id: 'col_league', group: 'league', name: 'Лиговый набор', hat: 'cup', coins: 3000,
       items: () => [...SKINS.filter(k => k.lchest).map(k => ['skin', k.id]), ...FX.filter(f => f.lchest).map(f => ['fx', f.id]), ...PETS.filter(pt => pt.lchest).map(pt => ['pet', pt.id])] });
     [['Первая', '#3dffa2'], ['Вторая', '#22e6ff'], ['Третья', '#ff9a3d'], ['Четвёртая', '#ff4fd8']].forEach(([n, c], q) => {
       DECOR.push({ id: 'fr_q' + (q + 1), kind: 'frame', name: `${n} четверть`, css: `border:2px solid ${c};box-shadow:0 0 8px ${c}, 0 0 2px #ffffff inset`, col: true });
       COLLECTIONS.push({ id: 'col_q' + (q + 1), group: 'seasons', name: `${n} четверть · сезоны ${q * 13 + 1}–${q * 13 + 13}`, frame: 'fr_q' + (q + 1), coins: 5000,
         items: () => { const out = []; for (let id = q * 13 + 1; id <= q * 13 + 13; id++) { const sd = seasonData(id);
-          if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else out.push(['skin', sd.skin.id], ['fx', sd.fx.id]); } return out; } });
+          if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else out.push(['skin', sd.skin.id], ['fx', sd.fx.id]);
+          sd.pets.forEach(pt => out.push(['pet', pt.id])); } return out; } });   // the season's pets («Платина» and «Неон») count too
     });
     DECOR.push({ id: 'fr_chaos', kind: 'frame', name: 'Трещина', css: 'border:2px dashed #ff4fd8;box-shadow:0 0 8px #22e6ff, 0 0 3px #ff4fd8 inset', chaos: true },
       { id: 'tt_chaos', kind: 'title', name: 'Повелитель хаоса', color: '#ff4fd8', chaos: true },
@@ -1872,7 +1875,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       ensureHolidayItems(hi.k, hi.y);
       DECOR.push({ id: `tt_hol_${hi.k}_${hi.y}`, kind: 'title', name: `${HOL_TITLE[hi.k][0]} ${hi.y}`, color: HOL_TITLE[hi.k][1], col: true });
       COLLECTIONS.push({ id: `col_hol_${hi.k}_${hi.y}`, group: 'holiday', holiday: true, name: `${HOLIDAYS[hi.k].name} ${hi.y}`, title: `tt_hol_${hi.k}_${hi.y}`, coins: 2000,
-        items: () => holidayItems(hi.k, hi.y).map(it => [it.kind, it.id]) });
+        items: () => [...holidayItems(hi.k, hi.y).map(it => [it.kind, it.id]), ...holidayPets(hi.k, hi.y).map(pt => ['pet', pt.id])] });
     }
   }
   const PETS = [], petMap = {};
@@ -4859,6 +4862,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       };
       $('shop').innerHTML = '<h3>Скины</h3>' + COLLECTIONS.filter(c => c.skins).map(colCard).join('') +
         '<h3>Эффекты</h3>' + COLLECTIONS.filter(c => c.fx).map(colCard).join('') +
+        '<h3>Питомцы</h3>' + COLLECTIONS.filter(c => c.group === 'pets').map(colCard).join('') +
         '<h3>Способности</h3>' + COLLECTIONS.filter(c => c.group === 'abil').map(colCard).join('') +
         '<h3>Хаос-лига</h3>' + COLLECTIONS.filter(c => c.group === 'chaos').map(colCard).join('') +
         '<h3>Лига</h3>' + COLLECTIONS.filter(c => c.group === 'league').map(colCard).join('') +
@@ -5030,8 +5034,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     wdeco: () => ['Предмет над головой надевается на любой скин вместо его предмета или короны. Их дают за коллекции скинов.', 'Рамка и титул видны рядом с твоим именем в таблице лидеров.', 'Рамки выпадают из сундуков, даются за уровни, лигу и мастерство режимов. Титулы — из сундуков, за лигу, коллекции эффектов, мастерство и мастерские достижения.'],
     warena: () => ['Выбери тему арены из своих. Новые темы — в магазине, легендарные — за легендарные достижения.'],
     wcol: () => ['Скины: собери все скины коллекции и получи предмет над головой, который надевается на любой скин.', 'Эффекты: собери все эффекты набора и получи уникальный титул.',
-      'Лига: все 12 эксклюзивов сундука лиги — предмет над головой «Кубок лиги».', 'Сезоны лиги: скины и эффекты 13 сезонов подряд (за «Алмаз» и «Неон» или из архива) — своя рамка.',
-      'Праздники: все скины и эффекты праздничного сезона года — праздничный титул. Каждый год новый набор.', 'Способности: «Арсенал» — все 12 способностей (рывок и деление уже есть) — титул «Оружейник», рамка «Оружейная» и 5 000 ◆.',
+      'Лига: все 12 эксклюзивов сундука лиги — предмет над головой «Кубок лиги».', 'Сезоны лиги: скины, эффекты и питомцы 13 сезонов подряд (за «Платину», «Алмаз» и «Неон» или из архива) — своя рамка.',
+      'Праздники: все скины, эффекты и питомцы праздничного сезона года — праздничный титул. Каждый год новый набор.', 'Способности: «Арсенал» — все 12 способностей (рывок и деление уже есть) — титул «Оружейник», рамка «Оружейная» и 5 000 ◆.',
+      'Питомцы: «Зверинец» — все 12 питомцев из сундуков, титул «Укротитель». Питомцы сезонов входят в «Сезоны лиги» по четвертям, праздничные — в праздничные наборы года.',
       'Хаос-лига: «Хаос-арсенал» (эксклюзивные способности), «Облики способностей» (по 3 на каждую способность), «Сезоны Хаоса» по четвертям (скин, рамка и титул каждого сезона) и «Ветераны Хаоса» (награды за 5, 10, 25 и 50 сезонов в «Сингулярности»). За каждую — титул или рамка, без монет.', 'Каждая коллекция даёт ещё и монеты. Награду нужно забрать кнопкой «Забрать».'],
     wpet: () => ['Питомец летает рядом и даёт бонус: монеты, опыт, скорость, магнит и другие. Можно взять одного.', 'Питомцы — награда лиги («Платина» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков.', 'Бонус питомца не действует в рейтинговом бою.'],
     pcat: () => ['Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги).', 'Ещё питомцы выпадают из обычных сундуков и сундуков лиги: чем реже питомец, тем сильнее его бонус.', 'Пропущенных сезонных питомцев можно купить в архиве с 20-го уровня.'],
@@ -6126,7 +6131,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '43';
+const APP_VER = '44';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

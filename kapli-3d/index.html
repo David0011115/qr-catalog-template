@@ -326,6 +326,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .res-drawer[open] > summary::after { transform: rotate(180deg); }
 .res-drawer > summary:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; border-radius: 8px; }
 .res-drawer[open] { display: grid; gap: 12px; padding-bottom: 12px; }
+.prof-secs { display: grid; gap: 8px; }
+.prof-secs .res-drawer > summary small.cnt { margin-right: auto; }
+.res-drawer.inner { background: rgba(255, 255, 255, .04); }
 .res-drawer small.cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
 @media (prefers-reduced-motion: reduce) { .res-drawer > summary::after { transition: none; } }
 .lg-last { display: grid; gap: 2px; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(61, 255, 162, .08); border: 1px solid rgba(61, 255, 162, .3); }
@@ -714,25 +717,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   <div class="card" id="profileCard" hidden>
     <h1>Профиль</h1>
     <div class="prof-head" id="profHead"></div>
-    <h2 class="section-title">Статистика</h2>
-    <div class="res-grid" id="profStats"></div>
-    <h2 class="section-title">Сундуки</h2>
-    <div class="res-grid" id="profChests"></div>
-    <details class="res-drawer" id="chestDrawer"><summary>Каких сколько открыто <small class="cnt" id="chestDrawerCnt"></small></summary><div id="chestDrawerBody"></div></details>
-    <h2 class="section-title">Мастерство режимов</h2>
-    <div class="mastery" id="profMastery"></div>
-    <h2 class="section-title">Рекорды режимов</h2>
-    <dl class="keys" id="profBests"></dl>
-    <h2 class="section-title">Последние раунды · пик массы</h2>
-    <canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas>
-    <h2 class="section-title">Особые значки</h2>
-    <div class="legend-head" id="profLegend"></div>
-    <div class="legend-head" id="profMillion"></div>
-    <h2 class="section-title" id="badgeTitle">Значки сезонов</h2>
-    <div class="badge-info" id="badgeInfo" hidden></div>
-    <div class="badges" id="profBadges"></div>
-    <h2 class="section-title">Сезоны</h2>
-    <ul class="quests" id="profSeasons"></ul>
+    <div class="prof-secs">
+    <details class="res-drawer"><summary>Статистика <small class="cnt" id="psStats"></small></summary><div class="res-grid" id="profStats"></div></details>
+    <details class="res-drawer"><summary>Сундуки <small class="cnt" id="psChests"></small></summary><div class="res-grid" id="profChests"></div>
+      <details class="res-drawer inner" id="chestDrawer"><summary>Каких сколько открыто <small class="cnt" id="chestDrawerCnt"></small></summary><div id="chestDrawerBody"></div></details></details>
+    <details class="res-drawer"><summary>Мастерство режимов <small class="cnt" id="psMastery"></small></summary><div class="mastery" id="profMastery"></div></details>
+    <details class="res-drawer"><summary>Рекорды режимов</summary><dl class="keys" id="profBests"></dl></details>
+    <details class="res-drawer" id="chartDrawer"><summary>Последние раунды · пик массы</summary><canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas></details>
+    <details class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><div class="legend-head" id="profLegend"></div><div class="legend-head" id="profMillion"></div></details>
+    <details class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
+    <details class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
+    </div>
     <button class="btn" id="profBack">Готово</button>
   </div>
 
@@ -4867,6 +4862,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       ['Лучшая волна', T.bestWave], ['Капель за раунд', T.bestKills], ['Не открыто сундуков', chestTotal()],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     renderProfChests();
+    $('psStats').textContent = `· раундов: ${T.rounds}`;
+    $('psChests').textContent = `· открыто ${save.chestStats.total}`;
+    $('psMastery').textContent = `· с уровнем ${Object.keys(MODES).filter(id => masteryLv(save.mastery[id] || 0)).length} из ${Object.keys(MODES).length}`;
+    $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0)} из 2`;
+    $('psSeasons').textContent = `· ${save.seasonLog.length + (seasonStarted ? 1 : 0)}`;
     $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +200 ◆, Серебро +400 ◆, Золото — рамка, Платина +800 ◆, Легенда — титул.</p>' +
       Object.entries(MODES).map(([id, m]) => {
         const pts = save.mastery[id] || 0, lv = masteryLv(pts), prev = lv ? MASTERY_LV[lv - 1].pts : 0, nx = MASTERY_LV[lv];
@@ -4911,6 +4911,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       `<tr><td><b>Итого</b></td><td><b>${S.total}</b></td>${RAR_KEYS.map(rk => `<td><b>${rarCell(tot, rk)}</b></td>`).join('')}</tr></table>` +
       `<p class="info-note" style="margin:0">Гарантия легендарного: подряд без легендарного ${save.legPity || 0} из ${LEG_PITY}.</p>`;
   }
+  $('chartDrawer').addEventListener('toggle', () => { if ($('chartDrawer').open) requestAnimationFrame(drawProfChart); });
   let badgeList = [];
   $('profBadges').addEventListener('click', e => {
     const b = e.target.closest('.badge-tile'); if (!b) return;
@@ -5212,7 +5213,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '33';
+const APP_VER = '34';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

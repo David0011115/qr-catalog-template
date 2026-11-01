@@ -818,7 +818,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li><b>Скины</b> — в магазине, сундуках, за испытания, сезоны, праздники и рейд. У эпических и легендарных есть блик и предмет над головой.</li>
         <li><b>Эффекты</b>: след, аура и эффект поедания — можно надеть по одному каждого вида.</li>
         <li><b>Украшения</b>: предметы над головой (за коллекции скинов, рейд и лигу), рамки и титулы (сундуки, лига, коллекции, мастерство) — видны в таблице лидеров.</li>
-        <li><b>Арены</b>: темы арены покупаются в магазине и включаются в гардеробе.</li>
+        <li><b>Арены</b>: темы арены покупаются в магазине (30 000–60 000 ◆, эксклюзивные — 120 000 ◆) и включаются в гардеробе.</li>
         <li><b>Коллекции</b>: собери набор скинов или эффектов и получи предмет над головой или титул.</li>
       </ul>
     </details>
@@ -1422,14 +1422,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ---- arena themes (shop) ----
   const ARENAS = [
     { id: 'default', name: 'Неоновый космос', price: 0,     floor: '#0b0824', grid: 'rgba(140, 100, 255, .55)', dot: '#22e6ff', rim: '#ff4fd8', inner: '#22e6ff', neb: ['#ff4fd8', '#22e6ff', '#7b3dff', '#ff3d6e'], fx: null, desc: 'Стандартная арена' },
-    { id: 'lava',    name: 'Лава',            price: 20000, floor: '#1a0500', grid: 'rgba(255, 90, 0, .6)',     dot: '#ffd23f', rim: '#ff3d00', inner: '#ffd23f', neb: ['#ff3d00', '#ff9a3d', '#7b0020', '#ff2d55'], fx: 'embers', desc: 'Раскалённое дно, огненный край и искры' },
-    { id: 'ice',     name: 'Лёд',             price: 22000, floor: '#06142a', grid: 'rgba(160, 230, 255, .6)',  dot: '#ffffff', rim: '#9fe8ff', inner: '#ffffff', neb: ['#9fe8ff', '#4d7cff', '#ffffff', '#22e6ff'], fx: 'snow',   desc: 'Ледяная гладь и снегопад' },
-    { id: 'ocean',   name: 'Океан',           price: 25000, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
-    { id: 'jungle',  name: 'Джунгли',         price: 28000, floor: '#04170a', grid: 'rgba(61, 255, 120, .5)',   dot: '#ffd23f', rim: '#3dff6e', inner: '#ffd23f', neb: ['#3dff6e', '#c6ff3d', '#0b6e3e', '#ffd23f'], fx: 'fireflies', desc: 'Зелёная чаща и светлячки' },
-    { id: 'desert',  name: 'Пустыня',         price: 32000, floor: '#1f1405', grid: 'rgba(255, 200, 100, .5)',  dot: '#ff6a00', rim: '#ffb347', inner: '#ff6a00', neb: ['#ffb347', '#ff6a00', '#7a4a00', '#ffd23f'], fx: 'sand',   desc: 'Песчаные дюны и пылевые вихри' },
+    { id: 'lava',    name: 'Лава',            price: 30000, floor: '#1a0500', grid: 'rgba(255, 90, 0, .6)',     dot: '#ffd23f', rim: '#ff3d00', inner: '#ffd23f', neb: ['#ff3d00', '#ff9a3d', '#7b0020', '#ff2d55'], fx: 'embers', desc: 'Раскалённое дно, огненный край и искры' },
+    { id: 'ice',     name: 'Лёд',             price: 33000, floor: '#06142a', grid: 'rgba(160, 230, 255, .6)',  dot: '#ffffff', rim: '#9fe8ff', inner: '#ffffff', neb: ['#9fe8ff', '#4d7cff', '#ffffff', '#22e6ff'], fx: 'snow',   desc: 'Ледяная гладь и снегопад' },
+    { id: 'ocean',   name: 'Океан',           price: 38000, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
+    { id: 'jungle',  name: 'Джунгли',         price: 42000, floor: '#04170a', grid: 'rgba(61, 255, 120, .5)',   dot: '#ffd23f', rim: '#3dff6e', inner: '#ffd23f', neb: ['#3dff6e', '#c6ff3d', '#0b6e3e', '#ffd23f'], fx: 'fireflies', desc: 'Зелёная чаща и светлячки' },
+    { id: 'desert',  name: 'Пустыня',         price: 48000, floor: '#1f1405', grid: 'rgba(255, 200, 100, .5)',  dot: '#ff6a00', rim: '#ffb347', inner: '#ff6a00', neb: ['#ffb347', '#ff6a00', '#7a4a00', '#ffd23f'], fx: 'sand',   desc: 'Песчаные дюны и пылевые вихри' },
     { id: 'galaxy',  name: 'Галактика',       price: 0, legend: 'crumbs', floor: '#07021a', grid: 'rgba(178, 107, 255, .55)', dot: '#ffffff', rim: '#b26bff', inner: '#ff4fd8', neb: ['#7b3dff', '#ff4fd8', '#22e6ff', '#3a0a8e'], fx: 'cosmos', desc: 'Пол из звёздного неба, мерцающие звёзды вокруг' },
     { id: 'olympus', name: 'Олимп',           price: 0, legend: 'lwins',  floor: '#1a1405', grid: 'rgba(255, 210, 63, .6)',   dot: '#ffffff', rim: '#ffd23f', inner: '#ffffff', neb: ['#ffd23f', '#ff9a3d', '#fff6a0', '#ff4fd8'], fx: 'gold', desc: 'Золотая арена чемпионов и сияющие искры' },
-    { id: 'cyber',   name: 'Киберград',       price: 40000, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
+    // exclusive themes: twice the price of the most expensive regular one
+    { id: 'sakura',  name: 'Сад сакуры',      price: 120000, exclusive: true, floor: '#1f0a17', grid: 'rgba(255, 158, 196, .55)', dot: '#ffffff', rim: '#ff9ec4', inner: '#ffd1e8', neb: ['#ff9ec4', '#ff4fd8', '#ffd1e8', '#b26bff'], fx: 'petals', desc: 'Розовый сад: падают лепестки сакуры' },
+    { id: 'inferno', name: 'Пекло',           price: 120000, exclusive: true, floor: '#140000', grid: 'rgba(255, 45, 0, .65)',    dot: '#ffd23f', rim: '#ff2d00', inner: '#ff9a3d', neb: ['#7b0000', '#ff2d00', '#ff9a3d', '#2a0000'], fx: 'ash', desc: 'Алое-чёрная арена: летит пепел и вспыхивают искры' },
+    { id: 'aurora',  name: 'Северное сияние', price: 120000, exclusive: true, floor: '#020f14', grid: 'rgba(61, 255, 162, .45)',  dot: '#b26bff', rim: '#3dffa2', inner: '#b26bff', neb: ['#3dffa2', '#b26bff', '#22e6ff', '#3dffa2'], fx: 'aurora', desc: 'Небо переливается зелёным и фиолетовым сиянием' },
+    { id: 'retro',   name: 'Ретро-волна',     price: 120000, exclusive: true, floor: '#12001f', grid: 'rgba(255, 79, 216, .8)',   dot: '#22e6ff', rim: '#ff4fd8', inner: '#ffd23f', neb: ['#ff4fd8', '#ff9a3d', '#7b3dff', '#22e6ff'], fx: 'retro', desc: 'Синтвейв-сетка и закатное солнце на горизонте' },
+    { id: 'cyber',   name: 'Киберград',       price: 60000, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
   ];
   const arenaDef = () => ARENAS.find(a => a.id === save.arena) || ARENAS[0];
   // ---- weekly boss raid ----
@@ -1780,8 +1785,20 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   rimGlow.rotation.x = Math.PI / 2; rimGlow.position.y = 0.3; scene.add(rimGlow);
   const rimInner = new THREE.Mesh(new THREE.TorusGeometry(R - 2.2, 0.18, 8, 220), new THREE.MeshBasicMaterial({ color: '#22e6ff' }));
   rimInner.rotation.x = Math.PI / 2; rimInner.position.y = 0.15; scene.add(rimInner);
+  // synthwave sun for «Ретро-волна»: a striped gradient disc far behind the arena
+  const retroSun = (() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 256; const x = cv.getContext('2d');
+    const gr = x.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#ffd23f'); gr.addColorStop(.55, '#ff6a3d'); gr.addColorStop(1, '#ff2d95');
+    x.fillStyle = gr; x.beginPath(); x.arc(128, 128, 120, 0, Math.PI * 2); x.fill();
+    x.globalCompositeOperation = 'destination-out'; for (let i = 0; i < 7; i++) x.fillRect(0, 150 + i * 15, 256, 3 + i * 1.3);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false, fog: false }));
+    sp.position.set(0, 45, -R - 140); sp.scale.setScalar(170); sp.visible = false; scene.add(sp);
+    const halo = glowSprite('#ff4fd8', 420, .35); halo.material.fog = false; halo.position.copy(sp.position); halo.visible = false; scene.add(halo);
+    return { sp, halo };
+  })();
   function applyArena() {
     const A = arenaDef();
+    retroSun.sp.visible = retroSun.halo.visible = A.fx === 'retro';
     g.fillStyle = A.floor; g.fillRect(0, 0, 128, 128);
     g.strokeStyle = A.grid; g.lineWidth = 2; g.strokeRect(0, 0, 128, 128);
     g.fillStyle = A.dot; g.fillRect(0, 0, 4, 4);
@@ -3788,12 +3805,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join('');
       $('shop').innerHTML = '<p class="empty-note">Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги) и выпадают из сундуков.</p>' + rows + chestRows;
     } else if (shopTab === 'arena' || shopTab === 'warena') {
-      const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.price && !a.legend && !save.arenas.includes(a.id) : a.id === 'default' || save.arenas.includes(a.id));
+      const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.price && !a.legend && !save.arenas.includes(a.id) : a.id === 'default' || save.arenas.includes(a.id)).sort((x, y) => (x.price || 0) - (y.price || 0));
       $('shop').innerHTML = `<p class="empty-note">${shop ? 'Тема меняет пол, сетку, края арены, туманности и частицы вокруг. Купленные темы — в гардеробе.' : 'Выбери тему арены. Новые темы — в магазине.'}</p>` +
         (list.length ? list.map(a => {
           const sel = save.arena === a.id, can = save.coins >= a.price;
           const btn = shop ? `<button class="buy" id="arena-${a.id}" data-arena="${a.id}" ${can ? '' : 'disabled'}>${a.price} ◆</button>` : `<button class="buy ${sel ? 'sel' : ''}" id="arena-${a.id}" data-arena="${a.id}" ${sel ? 'disabled' : ''}>${sel ? 'Выбрана' : 'Выбрать'}</button>`;
-          return `<div class="fxrow"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}</span><span class="desc">${a.desc}.</span>${btn}</div>`;
+          return `<div class="fxrow${a.exclusive ? ' ex' : ''}"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}${a.exclusive ? ' <span class="badge-ex badge-legend">эксклюзив</span>' : ''}</span><span class="desc">${a.desc}.</span>${btn}</div>`;
         }).join('') : '<p class="empty-note">Все темы арены уже твои.</p>');
     } else if (shopTab === 'wdeco') {
       const row = (ico, name, desc, attr, on, label, info) => `<div class="fxrow"${info ? ` data-info="${info}" tabindex="0" role="button" aria-label="Подробнее: ${name}"` : ''}><span class="ico">${ico}</span><span class="name">${name}</span><span class="desc">${desc}</span><button class="buy ${on ? 'sel' : ''}" ${attr}>${label}</button></div>`;
@@ -4137,9 +4154,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       act = `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>`;
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
-      name = a.name; tag = '<span class="badge-ex">тема арены</span>';
+      name = a.name; tag = '<span class="badge-ex">тема арены</span>' + (a.exclusive ? '<span class="badge-ex badge-legend">эксклюзив</span>' : '');
       flat = `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`;
-      rows.push(['Что меняет', a.desc], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь', cosmos: 'мерцающие звёзды', gold: 'золотые искры' })[a.fx] || 'нет'],
+      rows.push(['Что меняет', a.desc], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь', cosmos: 'мерцающие звёзды', gold: 'золотые искры', petals: 'лепестки сакуры', ash: 'пепел и искры', aurora: 'переливы сияния в небе', retro: 'неоновые искры и солнце на горизонте' })[a.fx] || 'нет'],
         ['Откуда', a.legend ? `легендарное достижение «${LEGEND.find(l => l.id === a.legend).name}»` : a.price ? `магазин · ${a.price} ◆` : 'есть с самого начала']);
       act = on ? '<button class="btn ghost" disabled>Выбрана</button>' : `<button class="btn" data-act="arena-${id}">Выбрать</button>`;
     }
@@ -4573,6 +4590,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (fx === 'fireflies') emit(x, 1 + Math.random() * 3, z, pick(['#c6ff3d', '#ffd23f']), 1, .8, 1.5);
     if (fx === 'sand') emit(x, .6, z, pick(['#ffb347', '#e8c27a']), 2, 4, .9);
     if (fx === 'rain') emit(x, 18, z, pick(['#22e6ff', '#ff4fd8', '#3dffa2']), 1, .2, 2.4);
+    if (fx === 'petals') emit(x, 10 + Math.random() * 10, z, pick(['#ff9ec4', '#ffd1e8', '#ffffff']), 1, .5, 3);
+    if (fx === 'ash') { emit(x, 14, z, pick(['#5a4a4a', '#8a7a7a']), 1, .3, 3); if (Math.random() < .5) emit(x, .4, z, pick(['#ff2d00', '#ff9a3d']), 1, 3.5, 1); }
+    if (fx === 'aurora') { const t = performance.now() / 4000; nebulae.forEach((n, i) => n.material.color.setHSL((.38 + .4 * (.5 + .5 * Math.sin(t + i * 1.7))) % 1, 1, .5)); emit(x, 16 + Math.random() * 6, z, pick(['#3dffa2', '#b26bff', '#22e6ff']), 1, .2, 2); }
+    if (fx === 'retro') emit(x, .5, z, pick(['#ff4fd8', '#22e6ff', '#ffd23f']), 1, 1.5, 1.4);
     if (fx === 'cosmos') emit(x, 2 + Math.random() * 10, z, pick(['#ffffff', '#b26bff', '#ff4fd8', '#9fd8ff']), 1, .1, 2.2);
     if (fx === 'gold') emit(x, .6 + Math.random() * 4, z, pick(['#ffd23f', '#fff6a0', '#ffffff']), 1, .6, 1.6);
   }
@@ -4721,7 +4742,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '17';
+const APP_VER = '18';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

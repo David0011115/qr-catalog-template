@@ -117,6 +117,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .fr-fire, .fr-rainbow, .fr-legend { animation: none; } }
 .board li.boss { color: var(--boss); font-weight: 600; }
 .quests li.legend { color: var(--gold); }
+.quests li.week-li { cursor: pointer; outline: 1px dashed var(--line); }
+.quests li.week-li:hover, .quests li.week-li:focus-visible { outline: 1px solid var(--food); }
 .quests li.skill { color: var(--food); }
 .chip.boss-chip.soon { color: var(--boss); border-color: var(--boss); animation: bossSoon .8s ease-in-out infinite; }
 @keyframes bossSoon { 50% { box-shadow: 0 0 12px rgba(255, 45, 117, .6); } }
@@ -778,6 +780,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Съешь её целиком — +50 монет и +40 опыта. За это есть достижения.</li>
       </ul>
     </details>
+    <details><summary>Архив сезонов</summary>
+      <ul class="info-list">
+        <li>Магазин → «Архив», с 20-го уровня. Здесь можно получить награды прошедших сезонов, которые ты не успел взять в лиге.</li>
+        <li>Витрина недели — 4 предмета, обновляется по понедельникам. Сундук архива за 20 000 ◆ даёт случайный предмет из всех пропущенных, без повторов.</li>
+        <li>Цены: питомец «Платины» 15 000, скин сезона 25 000, питомец «Неона» 30 000, эффект сезона 35 000 ◆; праздничные предметы 10 000–40 000 ◆.</li>
+        <li>Купленное в архиве помечено «из архива». Значки, рамки и титулы лиги, трофеи рейда и легендарные награды в архив не попадают.</li>
+      </ul>
+    </details>
     <details><summary>Задания недели</summary>
       <ul class="info-list">
         <li>Каждый понедельник — 3 новых задания: лёгкое, среднее и сложное. Прогресс копится по всем раундам недели.</li>
@@ -1387,6 +1397,46 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'fr_lv40', kind: 'frame', name: 'Звёздный путь', css: 'border:2px solid #ffd23f;box-shadow:0 0 8px #b26bff, 0 0 3px #ffd23f inset', level: 40 },
     { id: 'tt_lv50', kind: 'title', name: 'Великий', color: '#ffd23f', level: 50 });
   const decorById = id => DECOR.find(d => d.id === id) || null;
+  // season archive: rewards of seasons that are already over for this player, sold for coins
+  const ARCHIVE_LVL = 20, ARCHIVE_CHEST = 20000, ARCHIVE_SLOTS = 4;
+  const HOLIDAY_PRICES = [10000, 15000, 20000, 25000, 30000, 40000];
+  function seasonOffers(id) {
+    const sd = seasonData(id), out = [];
+    if (sd.holiday) {
+      sd.items.forEach((it, i) => out.push({ kind: it.kind, id: it.id, price: HOLIDAY_PRICES[i] || 40000, from: sd.name }));
+      sd.pets.forEach(pt => out.push({ kind: 'pet', id: pt.id, price: 30000, from: sd.name }));
+    } else {
+      out.push({ kind: 'pet', id: sd.pets[0].id, price: 15000, from: sd.name }, { kind: 'skin', id: sd.skin.id, price: 25000, from: sd.name },
+               { kind: 'pet', id: sd.pets[1].id, price: 30000, from: sd.name }, { kind: 'fx', id: sd.fx.id, price: 35000, from: sd.name });
+    }
+    return out;
+  }
+  const ownList = kind => kind === 'skin' ? save.skins : kind === 'pet' ? save.pets : save.fxOwned;
+  const ownsOffer = o => ownList(o.kind).includes(o.id);
+  function archiveOffers() {
+    if (!seasonStarted) return [];
+    const seen = new Set(), out = [];
+    for (let id = 1; id < seasonNow; id++) for (const o of seasonOffers(id)) if (!seen.has(o.id)) { seen.add(o.id); if (!ownsOffer(o)) out.push(o); }
+    return out;
+  }
+  // the weekly showcase: up to 4 offers picked on Monday; bought ones stay marked until next week
+  function archiveShowcase() {
+    const w = raidWeek(), all = archiveOffers();
+    if (!save.archive || save.archive.week !== w) {
+      let seed = w * 9301 + 49297; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      const pool = all.slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+      save.archive = { week: w, ids: pool.slice(0, ARCHIVE_SLOTS).map(o => o.id) };
+    }
+    const byId = {}; for (let id = 1; id < seasonNow; id++) for (const o of seasonOffers(id)) byId[o.id] = byId[o.id] || o;
+    return save.archive.ids.map(id => byId[id]).filter(Boolean);
+  }
+  function grantArchive(o) {
+    const list = ownList(o.kind); if (!list.includes(o.id)) list.push(o.id);
+    save.archived = save.archived || []; if (!save.archived.includes(o.id)) save.archived.push(o.id);
+  }
+  const offerName = o => o.kind === 'pet' ? petById(o.id).name : (o.kind === 'skin' ? SKINS : FX).find(x => x.id === o.id).name;
+  const offerKind = o => ({ skin: 'скин', fx: 'эффект', pet: 'питомец' })[o.kind];
+
   // weekly tasks: three a week (easy / medium / hard), each pays a chest; all three — a coin bonus
   const WEEKLY = {
     easy: [
@@ -3693,6 +3743,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('infoBack').addEventListener('click', () => { showCard('menuCard'); $('infoBtn').focus(); });
   $('achBtn').addEventListener('click', () => openView('goals', 'ach'));
   $('chBtn').addEventListener('click', () => openView('goals', 'ch'));
+  // the weekly line in the menu opens the «Неделя» tab
+  $('menuQuests').addEventListener('click', e => { if (e.target.closest('#weekLi')) openView('goals', 'week'); });
+  $('menuQuests').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'weekLi') { e.preventDefault(); openView('goals', 'week'); } });
   $('modes').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     save.mode = b.dataset.mode; mode = save.mode; persist(); renderAll();
@@ -3706,7 +3759,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('lvlFill').style.width = (li.into / li.need * 100) + '%';
     $('menuQuests').innerHTML = save.quests.map(id => QUESTS.find(q => q.id === id))
       .map(q => `<li><span>${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`).join('') +
-      (() => { const W = weeklyState(); return `<li class="week-li"><span>📅 Задания недели: ${W.done.length} из 3</span><span class="rw">«Испытания» → «Неделя»</span></li>`; })();
+      (() => { const W = weeklyState(); return `<li class="week-li" id="weekLi" role="button" tabindex="0" aria-label="Открыть задания недели"><span>📅 Задания недели: ${W.done.length} из 3</span><span class="rw">открыть ›</span></li>`; })();
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
@@ -3741,7 +3794,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   // the shop sells what you don't own yet; the wardrobe holds everything you own
   const SHOP_VIEWS = {
-    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены']] },
+    shop:     { title: 'Магазин', tabs: [['up', 'Улучшения'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
@@ -3857,6 +3910,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   const buyable = x => !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
   function sourceBadge(x) {
+    if (save.archived && save.archived.includes(x.id)) return '<span class="badge-ex" style="color:#9fd8ff">из архива</span>';
     if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
     if (x.chest) return `<span class="badge-r" style="color:${RARITY[x.chest].color}">${RARITY[x.chest].name}</span>`;
     if (x.ex) return '<span class="badge-ex">испытание</span>';
@@ -3919,7 +3973,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const own = sortOwned(save.pets.map(petById).filter(Boolean), save.pets, 'wpet');
       $('shop').innerHTML = sortBar('wpet') + `<p class="empty-note">Собрано ${own.length} из ${PETS.length}. Питомцы — награда лиги (за «Платину» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков. Бонус питомца не действует в рейтинговом бою.</p>` +
         (own.length ? own.map(pt => { const sel = save.pet === pt.id;
-          return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex">${pt.tier}</span></span>` +
+          return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex">${pt.tier}</span>${save.archived && save.archived.includes(pt.id) ? ' <span class="badge-ex" style="color:#9fd8ff">из архива</span>' : ''}</span>` +
             `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
             `<button class="buy ${sel ? 'sel' : ''}" id="pet-${pt.id}" data-pet="${pt.id}">${sel ? 'Убрать' : 'Взять'}</button></div>`; }).join('')
           : '<p class="empty-note">Пока пусто: дойди до лиги «Платина» в любом сезоне.</p>');
@@ -3979,6 +4033,30 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
           `<span class="rw">Награда: ${rewardName(ch.reward)}${done ? ' — в гардеробе' : ''}</span></div>`;
       }).join('');
+    } else if (shopTab === 'archive') {
+      const lv = playerLevel();
+      const icon = o => o.kind === 'skin' ? (k => `<span class="${swClass(k)}" style="${swatch(k)};width:44px;height:44px">${headIcon(k)}</span>`)(SKINS.find(x => x.id === o.id)) : thumbImg(o.kind, o.id);
+      // the nearest season (from the current one) that still has something you don't own; up to two years ahead
+      let nid = seasonNow; while (nid < seasonNow + 60 && !seasonOffers(nid).some(o => !ownsOffer(o))) nid++;
+      const nd = seasonData(nid), nDate = fmtDate(seasonEnd(nid)), nOffers = seasonOffers(nid).filter(o => !ownsOffer(o));
+      const preview = !nOffers.length ? '<p class="empty-note">У тебя есть все сезонные награды игры — новых поступлений в архив не будет.</p>'
+        : `<h3>Пополнение ${nDate}</h3><p class="empty-note">${nid === seasonNow ? `Когда закончится сезон ${nid}` : `Ближайшие новые награды — после сезона ${nid}`} «${nd.name}». В архив попадут:</p>` +
+        nOffers.map(o => `<div class="fxrow"><span class="ico thumb">${icon(o)}</span><span class="name">${offerName(o)}</span><span class="desc">${offerKind(o)} · будет стоить ${o.price} ◆</span><span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:var(--muted)">${nDate}</span></div>`).join('');
+      if (lv < ARCHIVE_LVL) {
+        $('shop').innerHTML = `<p class="empty-note">🔒 Архив сезонов откроется на ${ARCHIVE_LVL}-м уровне (сейчас ${lv}-й). В нём за монеты можно получить награды сезонов, которые ты пропустил.</p>`;
+      } else if (!seasonStarted || seasonNow === 1) {
+        $('shop').innerHTML = `<p class="empty-note">Архив пока пуст: у тебя ещё не закончился ни один сезон. Здесь будут награды прошедших сезонов, которые ты не успел получить в лиге.</p>` + preview;
+      } else {
+        const all = archiveOffers(), show = archiveShowcase(), days = Math.max(1, Math.ceil(((raidWeek() + 1) * 7 - 3) - Date.now() / 864e5));
+        const card = o => { const own = ownsOffer(o), can = save.coins >= o.price;
+          return `<div class="fxrow ex"><span class="ico thumb">${icon(o)}</span><span class="name">${offerName(o)} <span class="badge-ex">${offerKind(o)}</span></span><span class="desc">из сезона «${o.from}»</span>` +
+            (own ? '<button class="buy sel" disabled>Куплено</button>' : `<button class="buy" id="arch-${o.id}" data-arch="${o.id}" ${can ? '' : 'disabled'}>${o.price} ◆</button>`) + '</div>'; };
+        $('shop').innerHTML = all.length
+          ? `<p class="empty-note">Награды прошедших сезонов, которых у тебя нет: ${all.length}. Витрина обновится через ${days} дн.</p><h3>Витрина недели</h3>` + show.map(card).join('') +
+            `<h3>Сундук архива</h3><div class="fxrow"><span class="ico" style="font-size:1.6rem">🗃️</span><span class="name">Случайный предмет архива</span><span class="desc">Любая из ${all.length} наград, без повторов</span>` +
+            `<button class="buy" id="arch-chest" data-archchest="1" ${save.coins >= ARCHIVE_CHEST ? '' : 'disabled'}>${ARCHIVE_CHEST} ◆</button></div>`
+          : `<p class="empty-note">🎉 Ты собрал весь архив: у тебя есть все награды прошедших сезонов.</p>` + preview;
+      }
     } else if (shopTab === 'week') {
       const W = weeklyState(), days = Math.max(1, Math.ceil(((W.week + 1) * 7 - 3) - Date.now() / 864e5));
       const TIER = { easy: 'Лёгкое', mid: 'Среднее', hard: 'Сложное' };
@@ -4071,7 +4149,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   });
   $('shop').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
+    if (b.dataset.arch) {
+      const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price) return;
+      save.coins -= o.price; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
+    } else if (b.dataset.archchest) {
+      const all = archiveOffers(); if (!all.length || save.coins < ARCHIVE_CHEST) return;
+      const o = all[(Math.random() * all.length) | 0]; save.coins -= ARCHIVE_CHEST; grantArchive(o);
+      toast(`Сундук архива: ${offerKind(o)} «${offerName(o)}» из сезона «${o.from}»`); Sound.play('chest');
+    } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
     else if (b.dataset.col) {
       const c = COLLECTIONS.find(x => x.id === b.dataset.col);
@@ -4235,6 +4320,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const HEAD_NAME = { flame: 'пламя', antenna: 'антенны', halo: 'нимб', gem: 'парящий кристалл', star: 'звезда', horns: 'рожки', wings: 'крылья', moons: 'три луны', coins: 'стопка монет', nova: 'звёздный взрыв', laurel: 'лавровый венок', prism: 'вращающаяся призма' };
   const PATTERN_NAME = { stripes: 'полоски', dots: 'горошек', gradient: 'градиент', grid: 'сетка', zigzag: 'зигзаг', rings: 'кольца', stars: 'звёзды' };
   function sourceText(x) {
+    if (save.archived && save.archived.includes(x.id)) return 'куплен в архиве сезонов';
     if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
     if (x.skill) return 'все мастерские достижения';
     if (x.raid) return 'трофей босс-рейда';
@@ -4280,7 +4366,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       name = pt.name; tag = rarTag(pt.chest || pt.lchest) + (pt.tier ? `<span class="badge-ex">${pt.tier}</span>` : '');
       const g = buildPet(pt); scene.remove(g); g.visible = true; g.position.set(0, 0, 0); imObj = g;
       rows.push(['Вид', PET_SPECIES[pt.species]], ['Бонус', `${B.name}: ${B.text(pt.lv)}`], ['Сила', `уровень ${pt.lv} из 3`],
-        ['Откуда', pt.legend ? `легендарное достижение «${LEGEND.find(l => l.id === pt.legend).name}»` : pt.lchest ? 'сундук лиги' : pt.chest ? 'сундук' : pt.holiday ? 'праздничная лига' : `лига «${pt.tier}» в конце сезона`], ['В лиге', 'бонус не действует в рейтинговом бою']);
+        ['Откуда', save.archived && save.archived.includes(pt.id) ? 'куплен в архиве сезонов' : pt.legend ? `легендарное достижение «${LEGEND.find(l => l.id === pt.legend).name}»` : pt.lchest ? 'сундук лиги' : pt.chest ? 'сундук' : pt.holiday ? 'праздничная лига' : `лига «${pt.tier}» в конце сезона`], ['В лиге', 'бонус не действует в рейтинговом бою']);
       act = own ? `<button class="btn ${on ? 'ghost' : ''}" data-act="pet-${id}">${on ? 'Убрать' : 'Взять'}</button>` : '<button class="btn ghost" disabled>Ещё не получен</button>';
     } else if (kind === 'hat') {
       const own = save.hats.includes(id), on = save.hat === id, col = COLLECTIONS.find(c => c.hat === id);
@@ -4924,7 +5010,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '23';
+const APP_VER = '24';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

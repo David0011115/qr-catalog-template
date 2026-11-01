@@ -4806,7 +4806,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     };
     requestAnimationFrame(step);
   }
-  const buyable = x => !x.tut && !x.chaos && !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
+  const buyable = x => !x.raid && x.price > 0 && !x.tut && !x.chaos && !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
   function sourceBadge(x) {
     if (save.archived && save.archived.includes(x.id)) return '<span class="badge-ex" style="color:#9fd8ff">из архива</span>';
     if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
@@ -6216,7 +6216,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '49';
+const APP_VER = '50';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

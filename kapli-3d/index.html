@@ -327,6 +327,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .res-drawer > summary:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; border-radius: 8px; }
 .res-drawer[open] { display: grid; gap: 12px; padding-bottom: 12px; }
 .prof-secs { display: grid; gap: 8px; }
+.prof-special { display: grid; gap: 12px; }
+#profMillion, #profSpecial { margin-top: 12px; }
 .prof-secs .res-drawer > summary small.cnt { margin-right: auto; }
 .res-drawer.inner { background: rgba(255, 255, 255, .04); }
 .res-drawer small.cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
@@ -724,7 +726,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details class="res-drawer"><summary>Мастерство режимов <small class="cnt" id="psMastery"></small></summary><div class="mastery" id="profMastery"></div></details>
     <details class="res-drawer"><summary>Рекорды режимов</summary><dl class="keys" id="profBests"></dl></details>
     <details class="res-drawer" id="chartDrawer"><summary>Последние раунды · пик массы</summary><canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas></details>
-    <details class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><div class="legend-head" id="profLegend"></div><div class="legend-head" id="profMillion"></div></details>
+    <details class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><div class="legend-head" id="profLegend"></div><div class="legend-head" id="profMillion"></div><div class="prof-special" id="profSpecial"></div></details>
     <details class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
     <details class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
     </div>
@@ -848,6 +850,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Награды эксклюзивные — их нет в магазине и сундуках: скины, эффекты, рамки, титулы, питомцы и две арены.</li>
         <li>Значок «Легенда Капель» — за все девять основных достижений (у ступенчатых хватит первой ступени).</li>
         <li>Эксклюзивный значок «Миллионер» — за 1 000 000 заработанных монет («Золотой магнат II»).</li>
+        <li>Ещё четыре особых значка: «Великий коллекционер» — все коллекции, кроме праздничных; «Мастер режимов» — мастерство «Легенда» во всех режимах; «Чемпион Неона» — высшая лига в 10 сезонах; «Ветеран сезонов» — 26 значков сезонов. Все особые значки — в профиле.</li>
       </ul>
     </details>
     <details><summary>Монеты, опыт и улучшения</summary>
@@ -1357,6 +1360,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     helm:      { name: 'Шлем рейдера',    src: '3 победы над боссом рейда', svg: '<path d="M4 17 C4 8 8 4 12 4 C16 4 20 8 20 17 Z" fill="#3a2a5a" stroke="#ff2d55" stroke-width="1.4"/><path d="M12 1 L14 6 L10 6 Z" fill="#ff2d55"/><rect x="4" y="15" width="16" height="3" fill="#ff2d55"/>' },
     banner:    { name: 'Знамя рейда',     src: '5 побед над боссом рейда', svg: '<rect x="5" y="2" width="1.8" height="21" fill="#ffd23f"/><path d="M7 3 H20 L16.5 7.5 L20 12 H7 Z" fill="#ff2d55"/><circle cx="12" cy="7.5" r="2" fill="#ffd23f"/>' },
     crystals:  { name: 'Алмазная россыпь', src: 'лига «Алмаз» в конце сезона', svg: '<path d="M6 10 L9 6 L12 10 L9 15 Z" fill="#9fe8ff"/><path d="M12 7 L15.5 2 L19 7 L15.5 13 Z" fill="#b26bff"/><path d="M14 15 L17 11.5 L20 15 L17 20 Z" fill="#e8fbff"/>' },
+    cup:       { name: 'Кубок лиги',   svg: '<path d="M7 3 H17 V8 C17 12 14.5 14 12 14 C9.5 14 7 12 7 8 Z" fill="#ffd23f"/><path d="M7 5 H4 C4 9 6 10 7.5 10 M17 5 H20 C20 9 18 10 16.5 10" stroke="#ffd23f" stroke-width="1.5" fill="none"/><rect x="11" y="14" width="2" height="4" fill="#ffd23f"/><rect x="8" y="18" width="8" height="3" rx="1" fill="#ff9a3d"/>' },
     sprout:    { name: 'Росток',       svg: '<path d="M12 22 V10" stroke="#3dffa2" stroke-width="2"/><path d="M12 12 C6 12 3 8 3 4 C8 4 12 7 12 12 Z M12 10 C17 10 21 7 21 3 C16 3 12 6 12 10 Z" fill="#3dffa2"/>' },
   };
   // exclusive rewards for the legendary achievements
@@ -1391,8 +1395,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'colfx_party', name: 'Праздник',       fx: ['heartTrail', 'rainbowTrail', 'heartEat', 'confettiEat', 'popEat'],                   title: 'tt_col_party', coins: 1000 },
     { id: 'colfx_void',  name: 'Тьма',         fx: ['voidTrail', 'inkTrail', 'quantumTrail', 'miniholeEat', 'vortexEat'],                 title: 'tt_col_void',  coins: 1500 },
   ];
-  const colItems = c => c.skins || c.fx;
-  const colOwned = c => colItems(c).filter(id => (c.skins ? save.skins : save.fxOwned).includes(id)).length;
+  // a collection lists its items as [type, id]; skin and effect sets use the short skins / fx form, the newer ones a function (seasons and holidays are built late)
+  const colList = c => c.skins ? c.skins.map(id => ['skin', id]) : c.fx ? c.fx.map(id => ['fx', id]) : c.items();
+  const colItems = c => colList(c).map(x => x[1]);
+  const ownedList = t => t === 'skin' ? save.skins : t === 'pet' ? save.pets : save.fxOwned;
+  const colOwned = c => colList(c).filter(([t, id]) => ownedList(t).includes(id)).length;
+  const colRewardName = c => c.hat ? HATS[c.hat].name : `${c.frame ? 'рамка' : 'титул'} «${decorById(c.frame || c.title).name}»`;
   // ---- frames (around your name) and titles (after it): from chests and from the league ----
   const DECOR = [
     { id: 'fr_cyan',    kind: 'frame', name: 'Бирюзовая',  css: 'border:2px solid #22e6ff', chest: 'common' },
@@ -1674,6 +1682,24 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     valentine: [['heart', '#ff4f9a', '#ffd1e8', 'xp'], ['cupid', '#ffd1e8', '#ffd23f', 'eater']] };
   const holidayPets = (k, y) => HOL_PETS[k].map(([sp, c, a, bo], i) => { const n = y - 2027; return { id: `hp_${k}_${y}_${i ? 'ne' : 'pl'}`, tier: HOLIDAYS[k].leagues[i ? 5 : 3], holiday: k,
     name: `${PET_SPECIES[sp]} ${y}`, species: sp, color: shiftHue(c, n), accent: shiftHue(a, n), bonus: BONUS_KEYS[(BONUS_KEYS.indexOf(bo) + n) % BONUS_KEYS.length], lv: i ? 2 : 1 }; });
+  // ---- extra collections: league set, league seasons by quarter (1–13, 14–26, 27–39, 40–52), holiday sets ----
+  function addExtraCollections() {
+    COLLECTIONS.push({ id: 'col_league', group: 'league', name: 'Лиговый набор', hat: 'cup', coins: 3000,
+      items: () => [...SKINS.filter(k => k.lchest).map(k => ['skin', k.id]), ...FX.filter(f => f.lchest).map(f => ['fx', f.id]), ...PETS.filter(pt => pt.lchest).map(pt => ['pet', pt.id])] });
+    [['Первая', '#3dffa2'], ['Вторая', '#22e6ff'], ['Третья', '#ff9a3d'], ['Четвёртая', '#ff4fd8']].forEach(([n, c], q) => {
+      DECOR.push({ id: 'fr_q' + (q + 1), kind: 'frame', name: `${n} четверть`, css: `border:2px solid ${c};box-shadow:0 0 8px ${c}, 0 0 2px #ffffff inset`, col: true });
+      COLLECTIONS.push({ id: 'col_q' + (q + 1), group: 'seasons', name: `${n} четверть · сезоны ${q * 13 + 1}–${q * 13 + 13}`, frame: 'fr_q' + (q + 1), coins: 5000,
+        items: () => { const out = []; for (let id = q * 13 + 1; id <= q * 13 + 13; id++) { const sd = seasonData(id);
+          if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else out.push(['skin', sd.skin.id], ['fx', sd.fx.id]); } return out; } });
+    });
+    const HOL_TITLE = { newyear: ['Дух Нового года', '#9fe8ff'], valentine: ['Романтик', '#ff4f9a'], halloween: ['Ночной кошмар', '#ff7a00'] }, seen = new Set();
+    for (let id = 1; id <= seasonNow + 1; id++) { const hi = holidayInfo(id); if (!hi || seen.has(hi.k + hi.y)) continue; seen.add(hi.k + hi.y);
+      ensureHolidayItems(hi.k, hi.y);
+      DECOR.push({ id: `tt_hol_${hi.k}_${hi.y}`, kind: 'title', name: `${HOL_TITLE[hi.k][0]} ${hi.y}`, color: HOL_TITLE[hi.k][1], col: true });
+      COLLECTIONS.push({ id: `col_hol_${hi.k}_${hi.y}`, group: 'holiday', holiday: true, name: `${HOLIDAYS[hi.k].name} ${hi.y}`, title: `tt_hol_${hi.k}_${hi.y}`, coins: 2000,
+        items: () => holidayItems(hi.k, hi.y).map(it => [it.kind, it.id]) });
+    }
+  }
   const PETS = [], petMap = {};
   const addPet = pt => { if (!petMap[pt.id]) { petMap[pt.id] = pt; PETS.push(pt); } };
   SEASONS.forEach((_, i) => seasonPets(i).forEach(addPet));
@@ -1698,6 +1724,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
    ['lc_p_jelly', 'Алмазная медуза', 'jelly', '#b26bff', '#e8fbff', 'magnet', 3, 'epic'],
    ['lc_p_spirit', 'Неоновый дух', 'ghost', '#ff4fd8', '#22e6ff', 'speed', 3, 'legendary'],
   ].forEach(([id, name, species, color, accent, bonus, lv, lchest]) => addPet({ id, name, species, color, accent, bonus, lv, lchest, tier: 'Сундук лиги' }));
+  addExtraCollections();
   addPet({ id: 'lg_starpet', name: 'Звёздный страж', species: 'robot', color: '#fff6a0', accent: '#ff4fd8', bonus: 'shield', lv: 3, tier: 'Легенда', legend: 'stars2' });
   addPet({ id: 'lg_pet', name: 'Хранитель вечности', species: 'ghost', color: '#ffd23f', accent: '#ff4fd8', bonus: 'coins', lv: 3, tier: 'Легенда', legend: 'time' });
   function petById(id) {
@@ -2235,6 +2262,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       case 'banner': { M(new THREE.CylinderGeometry(.03, .03, 1.1, 6), basic('#ffd23f'), -.3, 1.45, 0);
         const fl = M(new THREE.PlaneGeometry(.6, .38, 6, 1), new THREE.MeshBasicMaterial({ color: '#ff2d55', side: THREE.DoubleSide }), 0, 1.78, 0); fl.userData.flag = 1; fl.add(glowSprite('#ff2d55', 1.2, .35)); break; }
       case 'crystals': [['#9fe8ff', 0], ['#b26bff', 2.1], ['#e8fbff', 4.2]].forEach(([c, a]) => { const cr = M(new THREE.OctahedronGeometry(.16), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .8, roughness: .1 }), 0, 1.45, 0); cr.scale.y = 1.6; cr.userData.orb = a; cr.add(glowSprite(c, .7, .5)); }); break;
+      case 'cup': { const gold = new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#b07a00', emissiveIntensity: .7, metalness: .6, roughness: .25 });
+        M(new THREE.CylinderGeometry(.3, .12, .38, 20, 1, true), gold, 0, 1.42, 0); M(new THREE.CylinderGeometry(.04, .04, .16, 8), gold, 0, 1.16, 0); M(new THREE.CylinderGeometry(.18, .2, .07, 16), gold, 0, 1.05, 0);
+        [-1, 1].forEach(sx => { const h = M(new THREE.TorusGeometry(.1, .025, 6, 16), gold, sx * .32, 1.45, 0); h.rotation.y = Math.PI / 2; });
+        const cg = new THREE.Group(); cg.position.y = 1.42; cg.add(glowSprite('#ffd23f', 1.2, .5)); g.add(cg); break; }
       case 'sprout': { M(new THREE.CylinderGeometry(.03, .04, .4, 6), basic('#3dffa2'), 0, 1.15, 0); [-1, 1].forEach(sx => { const lf = M(new THREE.SphereGeometry(.2, 12, 8), new THREE.MeshStandardMaterial({ color: '#3dffa2', emissive: '#0b6e3e', emissiveIntensity: .7 }), sx * .2, 1.38 + (sx > 0 ? .05 : 0), 0); lf.scale.set(1, .35, .6); lf.rotation.z = sx * .5; lf.userData.leaf = sx; }); break; }
     }
     return g;
@@ -3852,7 +3883,32 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('mode-' + save.mode).focus();
   });
 
+  // ---- special badges (besides «Легенда Капель» and «Миллионер») ----
+  const SPECIAL = [
+    { id: 'collector', name: 'Великий коллекционер', label: 'КОЛЛЕКЦИИ', c: '#3dffa2', c2: '#0b6e3e', glyph: '▦',
+      prog: () => { const L = COLLECTIONS.filter(c => !c.holiday); return [L.filter(c => save.colDone.includes(c.id)).length, L.length]; }, how: n => `Собери все коллекции, кроме праздничных: ${n[0]} из ${n[1]}.` },
+    { id: 'modes', name: 'Мастер режимов', label: 'МАСТЕР', c: '#22e6ff', c2: '#0a3a6e', glyph: '12',
+      prog: () => { const ids = Object.keys(MODES); return [ids.filter(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length).length, ids.length]; }, how: n => `Мастерство «Легенда» во всех режимах: ${n[0]} из ${n[1]}.` },
+    { id: 'neonchamp', name: 'Чемпион Неона', label: 'НЕОН ×10', c: '#ff4fd8', c2: '#5a0a4a', glyph: 'N',
+      prog: () => [Math.min(10, save.seasonLog.filter(x => x.league >= 5).length), 10], how: n => `Закончи 10 сезонов в высшей лиге («Неон» или праздничная): ${n[0]} из 10.` },
+    { id: 'veteran', name: 'Ветеран сезонов', label: 'ВЕТЕРАН', c: '#ff9a3d', c2: '#5a2a00', glyph: '26',
+      prog: () => [Math.min(26, save.seasonLog.length), 26], how: n => `Собери 26 значков сезонов — это год игры: ${n[0]} из 26.` },
+  ];
+  function specialBadgeSVG(b, got) {
+    return `<svg class="legend-badge ${got ? '' : 'off'}" viewBox="0 0 100 100" role="img" aria-label="Значок «${b.name}»${got ? '' : ', ещё не получен'}"${got ? ` style="filter:drop-shadow(0 0 10px ${b.c}99)"` : ''}>
+      <defs><linearGradient id="spb_${b.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="${b.c}"/><stop offset="1" stop-color="${b.c2}"/></linearGradient></defs>
+      <path d="M50 4 L88 18 V48 C88 70 70 82 50 90 C30 82 12 70 12 48 V18 Z" fill="url(#spb_${b.id})" stroke="${b.c}" stroke-width="2"/>
+      <path d="M50 12 L80 23 V48 C80 65 66 75 50 82 C34 75 20 65 20 48 V23 Z" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.2"/>
+      <text x="50" y="${b.glyph.length > 1 ? 58 : 60}" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="${b.glyph.length > 1 ? 28 : 34}" fill="#ffffff" style="paint-order:stroke" stroke="${b.c2}" stroke-width="3">${b.glyph}</text>
+      <text x="50" y="99" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="${b.label.length > 8 ? 9 : 10}" fill="${b.c}">${b.label}</text>
+    </svg>`;
+  }
+  function checkSpecialBadges() {
+    save.badges = save.badges || {};
+    for (const b of SPECIAL) { if (save.badges[b.id]) continue; const [v, n] = b.prog(); if (v >= n) { save.badges[b.id] = today; toast(`Новый особый значок «${b.name}»! Он в профиле.`); persist(); } }
+  }
   function renderAll() {
+    checkSpecialBadges();
     const li = levelInfo(save.xp);
     $('lvlName').textContent = `Уровень ${li.level}${li.max ? '' : ` из ${MAX_LEVEL}`}`;
     $('lvlXp').textContent = li.max ? 'максимальный уровень' : `${li.into} / ${li.need} опыта`;
@@ -4113,17 +4169,21 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     } else if (shopTab === 'wcol') {
       const colCard = c => {
         const items = colItems(c), have = colOwned(c), full = have === items.length, got = save.colDone.includes(c.id);
-        const chips = c.skins ? items.map(id => { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${save.skins.includes(id) ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }).join('')
-          : items.map(id => { const f = FX.find(x => x.id === id); return `<span class="col-sw fx ${save.fxOwned.includes(id) ? '' : 'off'}" title="${f.name}">${thumbImg('fx', id)}</span>`; }).join('');
+        const chips = colList(c).map(([t, id]) => { const own = ownedList(t).includes(id);
+          if (t === 'skin') { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${own ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }
+          const it = t === 'pet' ? petById(id) : FX.find(x => x.id === id); return `<span class="col-sw fx ${own ? '' : 'off'}" title="${it.name}">${thumbImg(t, id)}</span>`; }).join('');
         const names = c.fx ? `<small class="col-names">${items.map(id => FX.find(x => x.id === id).name).join(' · ')}</small>` : '';
-        const reward = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : `титул ${titleTag(c.title)}`;
+        const reward = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : c.frame ? `рамка <span ${frameAttr(c.frame)}>Ты</span>` : `титул ${titleTag(c.title)}`;
         return `<div class="chal ${got ? 'done' : ''}"><div class="chal-top"><b>${got ? '✓ ' : ''}${c.name}</b><span>${have} / ${items.length}</span></div>` +
           `<div class="col-row">${chips}</div>${names}<div class="track"><div class="fill" style="width:${(have / items.length * 100).toFixed(0)}%"></div></div>` +
           `<div class="col-foot"><span class="rw">${reward} + ${c.coins} ◆</span>` +
           (got ? '<span class="rw" style="color:var(--prey)">получено</span>' : `<button class="buy" id="col-${c.id}" data-col="${c.id}" ${full ? '' : 'disabled'}>${full ? 'Забрать' : 'Не собрано'}</button>`) + '</div></div>';
       };
       $('shop').innerHTML = '<h3>Скины</h3>' + COLLECTIONS.filter(c => c.skins).map(colCard).join('') +
-        '<h3>Эффекты</h3>' + COLLECTIONS.filter(c => c.fx).map(colCard).join('');
+        '<h3>Эффекты</h3>' + COLLECTIONS.filter(c => c.fx).map(colCard).join('') +
+        '<h3>Лига</h3>' + COLLECTIONS.filter(c => c.group === 'league').map(colCard).join('') +
+        '<h3>Сезоны лиги</h3>' + COLLECTIONS.filter(c => c.group === 'seasons').map(colCard).join('') +
+        '<h3>Праздники</h3>' + (COLLECTIONS.filter(c => c.group === 'holiday').map(colCard).join('') || '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
     } else if (shopTab === 'ch') {
       $('shop').innerHTML = CHALLENGES.map(ch => {
         const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
@@ -4221,7 +4281,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     wfx: () => ['Твои эффекты по слотам: след, аура, поедание. В каждом слоте можно надеть один эффект.', 'Нажми на эффект, чтобы посмотреть его подробнее.'],
     wdeco: () => ['Предмет над головой надевается на любой скин вместо его предмета или короны. Их дают за коллекции скинов.', 'Рамка и титул видны рядом с твоим именем в таблице лидеров.', 'Рамки выпадают из сундуков, даются за уровни, лигу и мастерство режимов. Титулы — из сундуков, за лигу, коллекции эффектов, мастерство и мастерские достижения.'],
     warena: () => ['Выбери тему арены из своих. Новые темы — в магазине, легендарные — за легендарные достижения.'],
-    wcol: () => ['Собери все скины коллекции и получи предмет над головой, который надевается на любой скин.', 'Собери все эффекты набора и получи уникальный титул для таблицы лидеров.', 'Каждая коллекция даёт ещё и монеты. Награду нужно забрать кнопкой «Забрать».'],
+    wcol: () => ['Скины: собери все скины коллекции и получи предмет над головой, который надевается на любой скин.', 'Эффекты: собери все эффекты набора и получи уникальный титул.',
+      'Лига: все 12 эксклюзивов сундука лиги — предмет над головой «Кубок лиги».', 'Сезоны лиги: скины и эффекты 13 сезонов подряд (за «Алмаз» и «Неон» или из архива) — своя рамка.',
+      'Праздники: все скины и эффекты праздничного сезона года — праздничный титул. Каждый год новый набор.', 'Каждая коллекция даёт ещё и монеты. Награду нужно забрать кнопкой «Забрать».'],
     wpet: () => ['Питомец летает рядом и даёт бонус: монеты, опыт, скорость, магнит и другие. Можно взять одного.', 'Питомцы — награда лиги («Платина» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков.', 'Бонус питомца не действует в рейтинговом бою.'],
     pcat: () => ['Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги).', 'Ещё питомцы выпадают из обычных сундуков и сундуков лиги: чем реже питомец, тем сильнее его бонус.', 'Пропущенных сезонных питомцев можно купить в архиве с 20-го уровня.'],
     week: () => ['Новые задания каждый понедельник: лёгкое, среднее и сложное.', 'Награды: лёгкое — редкий сундук, среднее — эпический, сложное — легендарный.', `За все три задания — ещё +${WEEK_BONUS} ◆.`],
@@ -4300,7 +4362,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       save.colDone.push(c.id); save.coins += c.coins;
       if (c.hat && !save.hats.includes(c.hat)) save.hats.push(c.hat);
       if (c.title && !save.decor.includes(c.title)) save.decor.push(c.title);
-      toast(`Коллекция «${c.name}» собрана: ${c.hat ? HATS[c.hat].name : 'титул «' + decorById(c.title).name + '»'} + ${c.coins} ◆`);
+      if (c.frame && !save.decor.includes(c.frame)) save.decor.push(c.frame);
+      toast(`Коллекция «${c.name}» собрана: ${colRewardName(c)} + ${c.coins} ◆`);
     } else if (b.dataset.arena) {
       const a = ARENAS.find(x => x.id === b.dataset.arena);
       if (a.price && !save.arenas.includes(a.id)) { if (save.coins < a.price || playerLevel() < (a.lvl || 1)) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
@@ -4865,7 +4928,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('psStats').textContent = `· раундов: ${T.rounds}`;
     $('psChests').textContent = `· открыто ${save.chestStats.total}`;
     $('psMastery').textContent = `· с уровнем ${Object.keys(MODES).filter(id => masteryLv(save.mastery[id] || 0)).length} из ${Object.keys(MODES).length}`;
-    $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0)} из 2`;
+    $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0) + SPECIAL.filter(b => save.badges && save.badges[b.id]).length} из ${2 + SPECIAL.length}`;
     $('psSeasons').textContent = `· ${save.seasonLog.length + (seasonStarted ? 1 : 0)}`;
     $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +200 ◆, Серебро +400 ◆, Золото — рамка, Платина +800 ◆, Легенда — титул.</p>' +
       Object.entries(MODES).map(([id, m]) => {
@@ -4877,6 +4940,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('profBests').innerHTML = Object.entries(MODES).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
     $('profLegend').innerHTML = `${legendBadgeSVG(!!save.legendBadge)}<div><b>${save.legendBadge ? 'Легенда Капель' : 'Ещё не получен'}</b><small>${save.legendBadge ? `Получен ${new Date(save.legendBadge).toLocaleDateString('ru-RU')}` : `Легендарных достижений: ${LEGEND_BASE.filter(L => save.legendDone.includes(L.id)).length} из ${LEGEND_BASE.length}. Смотри «Достижения» → «Легендарные».`}</small></div>`;
     { const got = save.badges && save.badges.millionaire;
+      $('profSpecial').innerHTML = SPECIAL.map(b => { const got = save.badges && save.badges[b.id], n = b.prog();
+        return `<div class="legend-head">${specialBadgeSVG(b, !!got)}<div><b>${got ? b.name : `Значок «${b.name}»`}</b><small>${got ? `Получен ${new Date(got).toLocaleDateString('ru-RU')}` : b.how(n)}</small></div></div>`; }).join('');
       $('profMillion').innerHTML = `${millionBadgeSVG(!!got)}<div><b>${got ? 'Миллионер' : 'Значок «Миллионер»'}</b><small>${got ? `Получен ${new Date(got).toLocaleDateString('ru-RU')}` : `Заработай 1 000 000 монет: ${Math.min(save.legend.coins || 0, 1e6).toLocaleString('ru-RU')} / 1 000 000.`}</small></div>`; }
     $('badgeTitle').textContent = `Значки сезонов · ${save.seasonLog.length} из 52`;
     const liveSd = seasonData(save.season.id);
@@ -5213,7 +5278,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '34';
+const APP_VER = '35';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

@@ -337,7 +337,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .res-drawer[open] { display: grid; gap: 12px; padding-bottom: 12px; }
 .prof-secs { display: grid; gap: 8px; }
 .prof-special { display: grid; gap: 12px; }
-#profMillion, #profSpecial { margin-top: 12px; }
+#profSpecial { margin-top: 10px; }
+.badge-wall .badge-tile svg { width: 64px; height: 64px; } .badge-wall .badge-tile.off { opacity: .45; } .badge-wall .badge-tile small { text-align: center; line-height: 1.25; }
 .prof-secs .res-drawer > summary small.cnt { margin-right: auto; }
 .res-drawer.inner { background: rgba(255, 255, 255, .04); }
 .res-drawer small.cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
@@ -817,7 +818,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <dt>Где начисляются</dt><dd>только в рейтинговом бою — кнопка «Играть в лиге» в этом окне. У каждого сезона свой режим, они идут по кругу: «На время» → «Захват короны» → «Гонка массы» → «Хардкор» → «Королевская битва». Купленные улучшения и бонусы питомцев в рейтинговом бою не действуют, зато монеты за бой ×1,5</dd>
       <dt>Королевская битва</dt><dd>место 1–13: чем дольше продержался, тем больше очков; победа +40</dd>
     </dl>
-    <p class="hint">Сезон длится 14 дней. В праздничные сезоны (Новый год, День влюблённых, Хэллоуин) свои 6 лиг, и награда дается за каждую из них; каждый год праздничные предметы новые. В конце награда начисляется по лиге, которой вы достигли, и выдаётся значок сезона, если вы набрали хотя бы одно очко. Затем очки обнуляются. У каждого из 52 сезонов свой скин и эффект, а на Новый год, Хэллоуин и День влюблённых сезон становится праздничным.</p>
+    <p class="hint">Сезон длится 14 дней. В праздничные сезоны (Новый год, День влюблённых, Хэллоуин) лиги обычные, но награды праздничные: предмет за каждую лигу; каждый год праздничные предметы новые. В конце награда начисляется по лиге, которой вы достигли, и выдаётся значок сезона, если вы набрали хотя бы одно очко. Затем очки обнуляются. У каждого из 52 сезонов свой скин и эффект, а на Новый год, Хэллоуин и День влюблённых сезон становится праздничным.</p>
     </template>
     <button class="btn" id="leagueBack">Готово</button>
   </div>
@@ -840,7 +841,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <details class="res-drawer"><summary>Мастерство режимов <small class="cnt" id="psMastery"></small></summary><div class="mastery" id="profMastery"></div></details>
     <details class="res-drawer"><summary>Рекорды режимов</summary><dl class="keys" id="profBests"></dl></details>
     <details class="res-drawer" id="chartDrawer"><summary>Последние раунды · пик массы</summary><canvas id="profChart" aria-label="Пик массы в последних раундах"></canvas></details>
-    <details class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><div class="legend-head" id="profLegend"></div><div class="legend-head" id="profMillion"></div><div class="prof-special" id="profSpecial"></div></details>
+    <details class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><p class="info-note" style="margin:0">Витрина статусов. Значки не нужно собирать отдельно — они приходят сами за лиги, Хаос-лигу, мастерство и коллекции, а «Легенда Капель» и «Миллионер» — награды легендарных достижений.</p><div class="badges badge-wall" id="profSpecial"></div></details>
     <details class="res-drawer"><summary><span id="chaosBadgeTitle">Значки Хаос-лиги</span></summary><div class="badges" id="profChaosBadges"></div></details>
     <details class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
     <details class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
@@ -1200,9 +1201,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ss26', name: 'Год в лиге',        desc: 'Собери 26 значков (целый год)',          coins: 800,  test: () => save.seasonLog.length >= 26 },
     { id: 'ss52', name: 'Два года в лиге',   desc: 'Собери все 52 значка',                   coins: 2000, test: () => save.seasonLog.length >= 52 },
     // holiday achievements carry the year: «Новый год 2027», «Хэллоуин 2027», «День влюблённых 2028»…
-    ...[['newyear', 'Новый год', 'ny', 'Новогоднем сезоне', ['Снежинка', 'Сосулька', 'Снеговик', 'Олень', 'Дед Мороз', 'Повелитель зимы']],
-        ['valentine', 'День влюблённых', 'vd', 'сезоне «День влюблённых', ['Улыбка', 'Симпатия', 'Влюблённость', 'Свидание', 'Купидон', 'Вечная любовь']],
-        ['halloween', 'Хэллоуин', 'hw', 'сезоне «Хэллоуин', ['Тыква', 'Призрак', 'Вампир', 'Ведьма', 'Оборотень', 'Король тьмы']]]
+    ...[['newyear', 'Новый год', 'ny', 'Новогоднем сезоне', ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон']],
+        ['valentine', 'День влюблённых', 'vd', 'сезоне «День влюблённых', ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон']],
+        ['halloween', 'Хэллоуин', 'hw', 'сезоне «Хэллоуин', ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон']]]
       .flatMap(([k, title, pre, where, names]) => [2027, 2028, 2029].flatMap(y => {
         const key = k + '_' + y, inSeason = k === 'newyear' ? `«${where} ${y}»` : `${where} ${y}»`;
         return [
@@ -1541,7 +1542,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return [i >= 4 ? `скин «${sd.skin.name}»` : '', i >= 5 ? `эффект «${sd.fx.name}»` : '', pet].filter(Boolean).join(' + ');
   }
   // league names/colours depend on the season (holiday seasons rename them)
-  const lgView = (li, hk) => hk ? { ...LEAGUES[li], name: HOLIDAYS[hk].leagues[li], color: HOLIDAYS[hk].colors[li] } : LEAGUES[li];
+  const lgView = li => LEAGUES[li];   // v48: holiday seasons keep the usual leagues (Бронза…Неон); only their rewards are festive
   SEASONS.forEach(x => { SKINS.push({ ...x.skin, season: true }); FX.push({ ...x.fx, season: true }); });
   for (const y of [2027, 2028]) Object.keys(HOLIDAYS).forEach(k => ensureHolidayItems(k, y));
 
@@ -1877,7 +1878,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const HOL_PETS = { halloween: [['pumpkin', '#ff7a00', '#3dff6e', 'magnet'], ['bat', '#6a2a8a', '#b26bff', 'speed']],
     newyear: [['snowman', '#ffffff', '#ff2d55', 'shield'], ['deer', '#c98a4b', '#ff2d55', 'coins']],
     valentine: [['heart', '#ff4f9a', '#ffd1e8', 'xp'], ['cupid', '#ffd1e8', '#ffd23f', 'eater']] };
-  const holidayPets = (k, y) => HOL_PETS[k].map(([sp, c, a, bo], i) => { const n = y - 2027; return { id: `hp_${k}_${y}_${i ? 'ne' : 'pl'}`, tier: HOLIDAYS[k].leagues[i ? 5 : 3], holiday: k,
+  const holidayPets = (k, y) => HOL_PETS[k].map(([sp, c, a, bo], i) => { const n = y - 2027; return { id: `hp_${k}_${y}_${i ? 'ne' : 'pl'}`, tier: i ? 'Неон' : 'Платина', holiday: k,
     name: `${PET_SPECIES[sp]} ${y}`, species: sp, color: shiftHue(c, n), accent: shiftHue(a, n), bonus: BONUS_KEYS[(BONUS_KEYS.indexOf(bo) + n) % BONUS_KEYS.length], lv: i ? 2 : 1 }; });
   // ---- extra collections: league set, league seasons by quarter (1–13, 14–26, 27–39, 40–52), holiday sets ----
   function addExtraCollections() {
@@ -4617,21 +4618,21 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
   // ---- special badges (besides «Легенда Капель» and «Миллионер») ----
   const SPECIAL = [
-    { id: 'collector', name: 'Великий коллекционер', label: 'КОЛЛЕКЦИИ', c: '#3dffa2', c2: '#0b6e3e', glyph: '▦',
+    { id: 'collector', src: 'все коллекции, кроме праздничных', name: 'Великий коллекционер', label: 'КОЛЛЕКЦИИ', c: '#3dffa2', c2: '#0b6e3e', glyph: '▦',
       prog: () => { const L = COLLECTIONS.filter(c => !c.holiday); return [L.filter(c => save.colDone.includes(c.id)).length, L.length]; }, how: n => `Собери все коллекции, кроме праздничных: ${n[0]} из ${n[1]}.` },
-    { id: 'modes', name: 'Мастер режимов', label: 'МАСТЕР', c: '#22e6ff', c2: '#0a3a6e', glyph: '12',
+    { id: 'modes', src: 'мастерство «Легенда» во всех режимах', name: 'Мастер режимов', label: 'МАСТЕР', c: '#22e6ff', c2: '#0a3a6e', glyph: '12',
       prog: () => { const ids = MODE_IDS; return [ids.filter(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length).length, ids.length]; }, how: n => `Мастерство «Легенда» во всех режимах: ${n[0]} из ${n[1]}.` },
-    { id: 'neonchamp', name: 'Чемпион Неона', label: 'НЕОН ×10', c: '#ff4fd8', c2: '#5a0a4a', glyph: 'N',
+    { id: 'neonchamp', src: '10 сезонов в «Неоне»', name: 'Чемпион Неона', label: 'НЕОН ×10', c: '#ff4fd8', c2: '#5a0a4a', glyph: 'N',
       prog: () => [Math.min(10, save.seasonLog.filter(x => x.league >= 5).length), 10], how: n => `Закончи 10 сезонов в высшей лиге («Неон» или праздничная): ${n[0]} из 10.` },
-    { id: 'firstneon', name: 'Первый Неон', label: 'НЕОН', c: '#ff4fd8', c2: '#3a0a40', glyph: '1',
+    { id: 'firstneon', src: 'первый сезон в «Неоне»', name: 'Первый Неон', label: 'НЕОН', c: '#ff4fd8', c2: '#3a0a40', glyph: '1',
       prog: () => [Math.min(1, save.seasonLog.filter(x => x.league >= 5).length), 1], how: () => 'Впервые закончи сезон основной лиги в «Неоне».' },
-    { id: 'leaguelegend', name: 'Легенда лиги', label: 'НЕОН ×25', c: '#ffd23f', c2: '#5a3b00', glyph: '25',
+    { id: 'leaguelegend', src: '25 сезонов в «Неоне»', name: 'Легенда лиги', label: 'НЕОН ×25', c: '#ffd23f', c2: '#5a3b00', glyph: '25',
       prog: () => [Math.min(25, save.seasonLog.filter(x => x.league >= 5).length), 25], how: n => `Закончи 25 сезонов основной лиги в высшей лиге: ${n[0]} из 25.` },
-    { id: 'conqueror', name: 'Покоритель лиг', label: 'ДВЕ ЛИГИ', c: '#22e6ff', c2: '#3a0a40', glyph: '⚔',
+    { id: 'conqueror', src: 'высшая ступень в обеих лигах', name: 'Покоритель лиг', label: 'ДВЕ ЛИГИ', c: '#22e6ff', c2: '#3a0a40', glyph: '⚔',
       prog: () => [(save.totals.maxLeague >= 5 ? 1 : 0) + ((save.totals.chaosMax || 0) >= 5 ? 1 : 0), 2], how: n => `Дойди до высшей ступени в обеих лигах: «Неон» в основной и «Сингулярность» в Хаос-лиге (${n[0]} из 2).` },
-    { id: 'chaosheart', name: 'Сердце хаоса', label: 'ХАОС ×50', c: '#ff4fd8', c2: '#1a0030', glyph: '◉', award: false,
+    { id: 'chaosheart', src: '50 сезонов Хаос-лиги в «Сингулярности»', name: 'Сердце хаоса', label: 'ХАОС ×50', c: '#ff4fd8', c2: '#1a0030', glyph: '◉', award: false,
       prog: () => [Math.min(50, save.chaosTop || 0), 50], how: n => `Закончи 50 сезонов Хаос-лиги в «Сингулярности»: ${n[0]} из 50.` },
-    { id: 'veteran', name: 'Ветеран сезонов', label: 'ВЕТЕРАН', c: '#ff9a3d', c2: '#5a2a00', glyph: '26',
+    { id: 'veteran', src: '26 значков сезонов', name: 'Ветеран сезонов', label: 'ВЕТЕРАН', c: '#ff9a3d', c2: '#5a2a00', glyph: '26',
       prog: () => [Math.min(26, save.seasonLog.length), 26], how: n => `Собери 26 значков сезонов — это год игры: ${n[0]} из 26.` },
   ];
   function specialBadgeSVG(b, got) {
@@ -5836,7 +5837,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       (seasonNotice ? `<span class="notice">${seasonNotice}</span>` : '');
     if (hk) {
       const top = sd.items[5];
-      $('seasonSkin').innerHTML = `<div class="sw crown" style="${swatch(top)}"></div><div><b>Праздничный сезон: ${sd.name}</b><br><small>Свои 6 лиг, и за каждую — праздничный скин или эффект. Главная награда — «${top.name}» за лигу «${HOLIDAYS[hk].leagues[5]}».</small></div>`;
+      $('seasonSkin').innerHTML = `<div class="sw crown" style="${swatch(top)}"></div><div><b>Праздничный сезон: ${sd.name}</b><br><small>Лиги обычные, но за каждую — праздничный скин или эффект. Главная награда — «${top.name}» за лигу «Неон».</small></div>`;
     } else {
       const sk = sd.skin;
       $('seasonSkin').innerHTML = `<div class="sw ${sk.crown ? 'crown' : ''}" style="${swatch(sk)}"></div><div><b>Скин сезона: ${sk.name}</b><br><small>${save.skins.includes(sk.id) ? 'Уже в гардеробе.' : 'За лиги «Алмаз» и «Неон».'} Эффект «${sd.fx.name}» — за «Неон».</small></div>`;
@@ -5845,7 +5846,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       $('curBadge').style.setProperty('--bc', L.color);
       $('curBadge').innerHTML = badgeDesc(cur, true).replace('<b>', '<b>Твой значок: '); }
     const nextIds = [1, 2, 3].map(k => save.season.id + k);
-    $('seasonNext').innerHTML = nextIds.map(id => { const d = seasonData(id); return `<li><span>Сезон ${id}: ${d.name}${d.holiday ? ' · праздник, свои лиги' : ''} · «${MODES[seasonMode(id)].name}»</span><span class="rw">с ${fmtDate(SEASON_EPOCH + (id - 1) * SEASON_LEN)}</span></li>`; }).join('');
+    $('seasonNext').innerHTML = nextIds.map(id => { const d = seasonData(id); return `<li><span>Сезон ${id}: ${d.name}${d.holiday ? ' · праздник, праздничные награды' : ''} · «${MODES[seasonMode(id)].name}»</span><span class="rw">с ${fmtDate(SEASON_EPOCH + (id - 1) * SEASON_LEN)}</span></li>`; }).join('');
     $('lgTable').innerHTML = LEAGUES.map((_, i) => { const l = lgView(i, hk), rw = leagueRewardText(sd, i);
       return `<li class="${i === li ? 'cur' : ''}" style="--lc:${l.color}"><b>${l.name}</b><span>от ${l.pts} очков</span>` +
       `<small>Награда: ${l.coins} ◆${rw ? ` + ${rw}` : ''} + значок сезона${i === li ? ' · вы здесь' : ''}</small></li>`; }).join('');
@@ -5886,11 +5887,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%"></div></div><small>${nx ? `${pts} / ${nx.pts} до «${nx.name}» · ${nx.coins ? `+${nx.coins} ◆` : nx.frame ? 'рамка' : 'титул'}` : `${pts} очков · максимум`}</small></div>`;
       }).join('');
     $('profBests').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
-    $('profLegend').innerHTML = `${legendBadgeSVG(!!save.legendBadge)}<div><b>${save.legendBadge ? 'Легенда Капель' : 'Ещё не получен'}</b><small>${save.legendBadge ? `Получен ${new Date(save.legendBadge).toLocaleDateString('ru-RU')}` : `Легендарных достижений: ${LEGEND_BASE.filter(L => save.legendDone.includes(L.id)).length} из ${LEGEND_BASE.length}. Смотри «Достижения» → «Легендарные».`}</small></div>`;
-    { const got = save.badges && save.badges.millionaire;
-      $('profSpecial').innerHTML = SPECIAL.map(b => { const got = save.badges && save.badges[b.id], n = b.prog();
-        return `<div class="legend-head">${specialBadgeSVG(b, !!got)}<div><b>${got ? b.name : `Значок «${b.name}»`}</b><small>${got ? `Получен ${new Date(got).toLocaleDateString('ru-RU')}` : b.how(n)}</small></div></div>`; }).join('');
-      $('profMillion').innerHTML = `${millionBadgeSVG(!!got)}<div><b>${got ? 'Миллионер' : 'Значок «Миллионер»'}</b><small>${got ? `Получен ${new Date(got).toLocaleDateString('ru-RU')}` : `Заработай 1 000 000 монет: ${Math.min(save.legend.coins || 0, 1e6).toLocaleString('ru-RU')} / 1 000 000.`}</small></div>`; }
+    { // one wall: legendary-achievement badges (a mark of the achievement) + status badges; locked ones only say where they come from
+      const tile = (svg, name, got, src) => `<div class="badge-tile ${got ? '' : 'off'}" title="${name}">${svg}<b>${name}</b><small>${got ? 'получен ' + new Date(got).toLocaleDateString('ru-RU') : src}</small></div>`;
+      const B = save.badges || {};
+      $('profSpecial').innerHTML = tile(legendBadgeSVG(!!save.legendBadge), 'Легенда Капель', save.legendBadge, 'за все легендарные достижения') +
+        tile(millionBadgeSVG(!!B.millionaire), 'Миллионер', B.millionaire, 'награда «Золотого магната II»') +
+        SPECIAL.map(b => tile(specialBadgeSVG(b, !!B[b.id]), b.name, B[b.id], b.src)).join(''); }
     $('badgeTitle').textContent = `Значки сезонов · ${save.seasonLog.length} из 52`;
     { const live = chaosStarted ? [{ id: save.chaos.id, tier: chaosOf(save.chaos.pts), live: true }] : [], all = [...live, ...save.chaosLog.slice().reverse()];
       $('chaosBadgeTitle').textContent = `Значки Хаос-лиги · ${save.chaosLog.length}`;
@@ -6230,7 +6232,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '47';
+const APP_VER = '48';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

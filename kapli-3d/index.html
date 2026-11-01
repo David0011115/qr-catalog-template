@@ -424,6 +424,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .menu-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .menu-btns #startBtn, .menu-btns #installBtn, .menu-btns .hint, .menu-btns .league-btn { grid-column: 1 / -1; }
 .league-btn b { font-weight: 400; font-family: var(--display); }
+.chaos-btn { border-color: #ff4fd8 !important; box-shadow: 0 0 10px rgba(255, 79, 216, .35), 0 0 6px rgba(34, 230, 255, .25) inset; }
+.chaos-xa { display: grid; gap: 8px; }
 .pet-ico { box-shadow: 0 0 10px rgba(255,255,255,.25); }
 .fxrow .ico.thumb { width: 56px; height: 56px; padding: 0; overflow: hidden; border-radius: 12px; background: #160c36; box-shadow: 0 0 0 1px var(--line); }
 .thumb-img { width: 100%; height: 100%; display: block; }
@@ -483,6 +485,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .odds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; font-size: .8rem; }
 .odds li { display: flex; justify-content: space-between; color: var(--muted); }
 .odds li b { font-weight: 600; }
+.chaos-banner { position: fixed; z-index: 4; left: 50%; top: 22%; transform: translateX(-50%); width: min(calc(100% - 24px), 460px); box-sizing: border-box; text-align: center;
+  background: rgba(20, 8, 40, .92); border: 1px solid #ff4fd8; border-radius: 16px; padding: 12px; box-shadow: 0 0 24px rgba(255, 79, 216, .45), 0 0 12px rgba(34, 230, 255, .35) inset; pointer-events: none; }
+.chaos-banner[hidden] { display: none; }
+@media (max-height: 500px) { .chaos-banner { top: 6px; padding: 8px; } .chaos-banner i { font-size: 1.3rem; } }
+.chaos-banner > small { color: #ff9ee8; text-transform: uppercase; letter-spacing: .1em; font-size: .7rem; }
+.chaos-banner > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.chaos-banner span { display: grid; gap: 2px; justify-items: center; } .chaos-banner i { font-style: normal; font-size: 1.8rem; color: var(--ac); }
+.chaos-banner b { font-size: .8rem; } .chaos-banner span small { color: var(--muted); font-size: .66rem; }
 .tut-box { position: fixed; z-index: 3; left: 50%; top: 68px; transform: translateX(-50%); width: min(calc(100% - 24px), 440px); box-sizing: border-box;
   background: rgba(20, 12, 50, .9); border: 1px solid var(--food); border-radius: 14px; padding: 10px 14px; box-shadow: 0 0 18px rgba(34, 230, 255, .35); display: grid; gap: 4px; }
 .tut-box[hidden] { display: none; }
@@ -635,6 +645,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 </div>
 <button class="pause-btn" id="pauseBtn" aria-label="Пауза" hidden><span aria-hidden="true">❚❚</span></button>
 <div class="combo" id="combo" aria-live="polite"></div>
+<div class="chaos-banner" id="chaosBanner" hidden aria-live="polite"></div>
 <div class="tut-box" id="tutBox" hidden aria-live="polite">
   <div class="tut-top"><span id="tutStep"></span><button class="tut-skip" id="tutSkip">Пропустить</button></div>
   <b id="tutTitle"></b><p id="tutText"></p>
@@ -657,6 +668,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="btns menu-btns">
       <button class="btn" id="startBtn">Играть</button>
       <button class="btn ghost league-btn" id="leagueBtn">Лига</button>
+      <button class="btn ghost league-btn chaos-btn" id="chaosBtn">Хаос-лига</button>
       <button class="btn ghost" id="shopBtn">Магазин <span class="coin" id="menuCoins">0 ◆</span></button>
       <button class="btn ghost" id="wardBtn">Гардероб</button>
       <button class="btn ghost" id="petBtn">Питомцы <span id="petCount">0</span></button>
@@ -719,6 +731,19 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <table class="lg-odds" id="lgOdds"></table>
     <p class="hint">Внутри скины, эффекты и питомцы — чем реже, тем сильнее бонус у питомца. Повторный предмет превращается в монеты.</p>
     <button class="btn ghost" id="chestBack">Назад</button>
+  </div>
+
+  <div class="card" id="chaosCard" hidden>
+    <h1>Хаос-лига</h1>
+    <button class="tab-info-btn" id="chaosInfoBtn">ⓘ Информация · Хаос-лига</button>
+    <div class="league" id="chaosPanel"></div>
+    <button class="btn" id="chaosPlay">Играть</button>
+    <p class="hint" id="chaosNote"></p>
+    <h2 class="section-title">Ступени и награды сезона</h2>
+    <ul class="lg-table" id="chaosTable"></ul>
+    <h2 class="section-title">Эксклюзивные способности · за «Неон», по одной за сезон</h2>
+    <div class="chaos-xa" id="chaosXa"></div>
+    <button class="btn ghost" id="chaosBack">Готово</button>
   </div>
 
   <div class="card" id="leagueCard" hidden>
@@ -908,6 +933,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 5 уровней: Бронза +200 ◆, Серебро +400 ◆, Золото — рамка режима, Платина +800 ◆, Легенда — титул режима. Прогресс — в «Профиле».</li>
       </ul>
     </details>
+    <details><summary>Хаос-лига</summary>
+      <ul class="info-list">
+        <li>Отдельная рейтинговая лига с 25 уровня. Сезон — 7 дней, режим боя меняется по кругу.</li>
+        <li>В начале боя каждый получает 3 случайные способности из 24: 12 обычных и 12 эксклюзивных. Одна всегда рывок или деление. Купленные способности и улучшения здесь не действуют — у всех равные условия.</li>
+        <li>Ступени те же (Бронза → Неон), очков нужно вдвое меньше. Взнос с «Золота»: 120 / 240 / 360 / 480. «Алмаз» и «Неон» — только с 46 уровня.</li>
+        <li>Награды сезона: монеты; «Алмаз» — скин сезона и рамка; «Неон» — ещё титул и эксклюзивная способность (по одной за сезон). Её можно ставить в билд в обычных режимах.</li>
+        <li>12 эксклюзивных способностей — коллекция «Хаос-арсенал».</li>
+      </ul>
+    </details>
     <details><summary>Лига и сезоны</summary>
       <ul class="info-list">
         <li>Сезон длится 14 дней. Очки лиги дают только раунды, начатые кнопкой «Играть в лиге» в окне «Лига».</li>
@@ -1062,7 +1096,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ab_first', abil: true, name: 'Первый билд',       desc: 'Купи любую способность',                  coins: 500,  test: () => save.abil.bought.length >= 1 },
     { id: 'ab_max',   abil: true, name: 'Мастер улучшений',  desc: 'Улучши одну способность до 5 уровня',     coins: 2000, test: () => Object.values(save.abil.lv).some(l => l >= 5) },
     { id: 'ab_three',             name: 'Три в одном',       desc: 'Выиграй раунд с тремя разными способностями в билде, применив каждую', coins: 1000, test: (T, s) => !!(s && s.threeInOne) },
-    { id: 'ab_all',   abil: true, name: 'Полный арсенал',    desc: 'Купи все 12 способностей',                coins: 3000, test: () => ABILITIES.every(a => save.abil.owned.includes(a.id)) },
+    { id: 'ab_all',   abil: true, name: 'Полный арсенал',    desc: 'Купи все 12 способностей',                coins: 3000, test: () => BASE_ABIL.every(a => save.abil.owned.includes(a.id)) },
+    { id: 'ch_first', name: 'Первый хаос', desc: 'Сыграй рейтинговый бой в Хаос-лиге', coins: 300, test: () => (save.totals.chaosGames || 0) >= 1 },
+    { id: 'ch_dia',   name: 'Хаос-Алмаз',  desc: 'Достигни ступени «Алмаз» в Хаос-лиге', coins: 1500, test: () => (save.totals.chaosMax || 0) >= 4 },
+    { id: 'ch_neon',  name: 'Хаос-Неон',   desc: 'Достигни ступени «Неон» в Хаос-лиге', coins: 3000, test: () => (save.totals.chaosMax || 0) >= 5 },
     { id: 'first',     name: 'Первая добыча',     desc: 'Съешь первую каплю',                    coins: 10,  test: T => T.kills >= 1 },
     { id: 'kills50',   name: 'Гроза арены',       desc: 'Съешь 50 капель за всё время',          coins: 60,  test: T => T.kills >= 50 },
     { id: 'boss1',     name: 'Охотник на боссов', desc: 'Победи любого босса',                   coins: 30,  test: T => T.bosses >= 1 },
@@ -1139,8 +1176,22 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 25, dur: 4, size: .3, desc: 'Капля на 30% меньше и на 25% быстрее, масса та же. В это время можно есть только еду' },
     { id: 'decoy',  name: 'Клон-приманка',     sh: 'Клон',    icon: '◎', color: '#ff6ad5', price: 28000, cd: 30, dur: 5,  desc: 'Оставляет копию, за которой гонятся боты. Её нельзя съесть, очков она не даёт' },
     { id: 'trap',   name: 'Ловушка-шип',       sh: 'Ловушка', icon: '✳', color: '#3dff6e', price: 35000, cd: 35, dur: 10, desc: 'Ставит временный шип: он рвёт крупные капли соперников, тебя и союзников не трогает. Не больше 2 сразу' },
+    // Chaos League exclusives (xa): no price, no upgrades; from Chaos League «Неон» seasons, one per season in this order
+    { id: 'x_hole',    xa: true, name: 'Мини-чёрная дыра',     sh: 'Дыра',     icon: '◉', color: '#b26bff', cd: 35, dur: 4, dist: 20, radius: 18, desc: 'В точке впереди на 4 с притягивает еду и мелкие капли' },
+    { id: 'x_ice',     xa: true, name: 'Ледяная волна',        sh: 'Лёд',      icon: '❄', color: '#9fe8ff', cd: 30, dur: 2, radius: 25, desc: 'Замораживает соперников рядом на 2 с' },
+    { id: 'x_over',    xa: true, name: 'Перегрузка',           sh: 'Перегруз', icon: '⚡', color: '#ffd23f', cd: 45, dur: 5, desc: 'На 5 с остальные твои способности перезаряжаются вдвое быстрее' },
+    { id: 'x_refl',    xa: true, name: 'Отражатель',           sh: 'Отраж.',   icon: '⟲', color: '#22e6ff', cd: 30, dur: 3, force: 60, desc: 'На 3 с отталкивает всех, кто коснулся тебя' },
+    { id: 'x_meteor',  xa: true, name: 'Метеорный удар',       sh: 'Метеор',   icon: '☄', color: '#ff6a00', cd: 35, dist: 22, radius: 14, force: 70, desc: 'Через 1 с бьёт по точке впереди: отталкивает и оглушает на 1 с' },
+    { id: 'x_twin',    xa: true, name: 'Двойное слияние',      sh: 'Двойник',  icon: '⧉', color: '#3dffa2', cd: 25, dur: 5, desc: 'Делишься на 2 части, через 5 с они мгновенно сливаются' },
+    { id: 'x_ghost',   xa: true, name: 'Фантом',               sh: 'Фантом',  icon: '☁', color: '#e8ecff', cd: 40, dur: 4, desc: 'На 4 с тебя нельзя съесть и шипы не рвут, но и есть нельзя; корона в это время не копится' },
+    { id: 'x_anchor',  xa: true, name: 'Гравитационный якорь', sh: 'Якорь',    icon: '⚓', color: '#4d7cff', cd: 35, dur: 5, radius: 20, desc: 'Зона на 5 с: соперники внутри вдвое медленнее' },
+    { id: 'x_hunt',    xa: true, name: 'Охотничий рывок',      sh: 'Охота',    icon: '➹', color: '#ff2d55', cd: 20, radius: 60, force: 80, desc: 'Рывок с наведением на ближайшего соперника меньше тебя' },
+    { id: 'x_vamp',    xa: true, name: 'Кровопийца',           sh: 'Кровоп.',   icon: '♆', color: '#c2185b', cd: 40, dur: 5, desc: '5 с масса, съеденная у соперников, даёт +20%' },
+    { id: 'x_typhoon', xa: true, name: 'Тайфун',               sh: 'Тайфун',   icon: '🌀', color: '#7fe8ff', cd: 35, dur: 4, radius: 18, desc: 'Вихрь на 4 с: отбрасывает выбросы массы и разворачивает мелкие капли' },
+    { id: 'x_phase',   xa: true, name: 'Фазовый скачок',       sh: 'Фаза',     icon: '⇉', color: '#ff4fd8', cd: 30, dist: 14, desc: 'Скачок вперёд, и в течение 2 с — второй, в новом направлении' },
   ];
   const abilById = id => ABILITIES.find(a => a.id === id);
+  const BASE_ABIL = ABILITIES.filter(a => !a.xa), XA_ABIL = ABILITIES.filter(a => a.xa);
   const abUpCost = (a, lv) => Math.round(a.price * ABIL_CFG.firstLevel * Math.pow(ABIL_CFG.growth, lv) / 50) * 50;   // price of level lv+1   // dash = 3.2x the starting speed, whatever the mass
   const OLD_SPEED = 11, BASE_SPEED = OLD_SPEED * 3;   // everyone moves 3x faster than the first version (shown as 300%)   // split cooldown (s) for everyone, part limit for bots
   const css = getComputedStyle(document.documentElement);
@@ -1772,9 +1823,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         items: () => { const out = []; for (let id = q * 13 + 1; id <= q * 13 + 13; id++) { const sd = seasonData(id);
           if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else out.push(['skin', sd.skin.id], ['fx', sd.fx.id]); } return out; } });
     });
+    DECOR.push({ id: 'fr_chaos', kind: 'frame', name: 'Разлом', css: 'border:2px dashed #ff4fd8;box-shadow:0 0 8px #22e6ff, 0 0 3px #ff4fd8 inset', chaos: true },
+      { id: 'tt_chaos', kind: 'title', name: 'Повелитель хаоса', color: '#ff4fd8', chaos: true },
+      { id: 'tt_xarsenal', kind: 'title', name: 'Архитектор хаоса', color: '#22e6ff', col: true },
+      { id: 'fr_xarsenal', kind: 'frame', name: 'Сингулярность', css: 'border:2px solid #b26bff;box-shadow:0 0 10px #ff4fd8, 0 0 4px #22e6ff inset', cls: 'fr-rainbow', col: true });
+    COLLECTIONS.push({ id: 'col_xarsenal', group: 'abil', name: 'Хаос-арсенал', title: 'tt_xarsenal', frame: 'fr_xarsenal', coins: 0, items: () => XA_ABIL.map(a => ['abil', a.id]) });
     DECOR.push({ id: 'tt_arsenal', kind: 'title', name: 'Оружейник', color: '#ff9a3d', col: true },
       { id: 'fr_arsenal', kind: 'frame', name: 'Оружейная', css: 'border:2px solid #ff9a3d;box-shadow:0 0 8px #ff9a3d, 0 0 2px #ffd23f inset', col: true });
-    COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', title: 'tt_arsenal', frame: 'fr_arsenal', coins: ABIL_CFG.arsenalCoins, items: () => ABILITIES.map(a => ['abil', a.id]) });
+    COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', title: 'tt_arsenal', frame: 'fr_arsenal', coins: ABIL_CFG.arsenalCoins, items: () => BASE_ABIL.map(a => ['abil', a.id]) });
     const HOL_TITLE = { newyear: ['Дух Нового года', '#9fe8ff'], valentine: ['Романтик', '#ff4f9a'], halloween: ['Ночной кошмар', '#ff7a00'] }, seen = new Set();
     for (let id = 1; id <= seasonNow + 1; id++) { const hi = holidayInfo(id); if (!hi || seen.has(hi.k + hi.y)) continue; seen.add(hi.k + hi.y);
       ensureHolidayItems(hi.k, hi.y);
@@ -1825,6 +1881,40 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   ];
   const LEAGUE_FEE = [0, 0, 80, 160, 240, 320];   // points paid per ranked game from «Золото» up
   const leagueOf = pts => LEAGUES.reduce((best, l, i) => pts >= l.pts ? i : best, 0);
+  // ================= Chaos League: ALL tunable numbers here =================
+  // tiers = the main league's six with half the thresholds (7-day seasons); fees ×1,5 from «Золото»; season coins halved
+  const CHAOS_CFG = { entryLevel: 25, topLevel: 46, topTier: 4, seasonDays: 7, start: [2026, 10, 2],   // first season: Monday 2 Nov 2026
+    pts: LEAGUES.map(l => Math.round(l.pts / 2)), fee: [0, 0, 120, 240, 360, 480], coins: LEAGUES.map(l => Math.round(l.coins / 2)),
+    achCoins: { first: 300, diamond: 1500, neon: 3000 }, showSec: 2.5, phase2Sec: 2, histMax: 20 };
+  const CHAOS_LEN = CHAOS_CFG.seasonDays * 864e5;
+  const CHAOS_BASE = new Date(...CHAOS_CFG.start).getTime();
+  const CHAOS_EPOCH = (() => { try { const s0 = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s0 && s0.chaosEpoch) return s0.chaosEpoch; } catch (e) {} return CHAOS_BASE; })();
+  const chaosStarted = Date.now() >= CHAOS_EPOCH;
+  const chaosNow = Math.max(1, Math.floor((Date.now() - CHAOS_EPOCH) / CHAOS_LEN) + 1);
+  const chaosEnd = id => CHAOS_EPOCH + id * CHAOS_LEN;
+  const chaosOf = pts => CHAOS_CFG.pts.reduce((best, p, i) => pts >= p ? i : best, 0);
+  // chaos season skins: one per season, names cycle with a roman numeral after the first round
+  const CHAOS_SKIN_NAMES = ['Глитч', 'Энтропия', 'Квантовый шум', 'Сбой системы', 'Буря пикселей', 'Искажение', 'Перегрев ядра', 'Фрактал', 'Вспышка хаоса', 'Аномалия', 'Помехи', 'Дикая частота'];
+  const ROMAN = ['', ' II', ' III', ' IV', ' V', ' VI', ' VII', ' VIII', ' IX', ' X'];
+  function chaosSkin(id) {
+    const i = (id - 1) % CHAOS_SKIN_NAMES.length, cyc = Math.floor((id - 1) / CHAOS_SKIN_NAMES.length), h = (id * 97.3) % 360;
+    return { id: 'cs_' + id, name: CHAOS_SKIN_NAMES[i] + (ROMAN[cyc] ?? ' ' + (cyc + 1)), color: hslHex(h, .95, .55), accent: hslHex(h + 150, 1, .6), pattern: ['zigzag', 'grid', 'stripes', 'dots', 'stars', 'rings'][id % 6], glow: true, pulse: id % 2 === 0, chaos: id };
+  }
+  // season rewards by tier: Diamond = season skin + frame; Neon = + title + the next exclusive ability (table order)
+  function chaosSeasonRewards(id, ti) {
+    const out = [];
+    if (ti >= CHAOS_CFG.topTier) {
+      const k = ensureChaosSkin(id); if (!save.skins.includes(k.id)) { save.skins.push(k.id); out.push(`скин «${k.name}»`); }
+      if (!save.decor.includes('fr_chaos')) { save.decor.push('fr_chaos'); out.push('рамка «Разлом»'); }
+    }
+    if (ti >= 5) {
+      if (!save.decor.includes('tt_chaos')) { save.decor.push('tt_chaos'); out.push('титул «Повелитель хаоса»'); }
+      const next = XA_ABIL.find(a => !save.abil.xa.includes(a.id));
+      if (next) { save.abil.xa.push(next.id); save.abil.owned.push(next.id); out.push(`способность «${next.name}»`); }
+    }
+    return out;
+  }
+  function ensureChaosSkin(id) { if (!SKINS.some(k => k.id === 'cs_' + id)) SKINS.push(chaosSkin(id)); return SKINS.find(k => k.id === 'cs_' + id); }
   const QUESTS = [
     { id: 'kills3',  text: 'Съешь 3 капли за раунд',     stat: 'kills',   goal: 3,   coins: 20, xp: 40 },
     { id: 'kills6',  text: 'Съешь 6 капель за раунд',    stat: 'kills',   goal: 6,   coins: 45, xp: 80 },
@@ -1917,7 +2007,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   let U = save.up;
   const fixModeForLeague = () => { if (save.mode === 'royale' && !TEST_MODE) save.mode = 'classic'; };   // test mode: royale open for testing
   let pendingRanked = false;   // true when the round is started from «Играть в лиге»
-  let pendingTut = false, tut = null;   // tutorial round: a quiet classic arena with step-by-step hints
+  let pendingTut = false, tut = null, pendingChaos = false;   // tutorial round: a quiet classic arena with step-by-step hints
   save.bests = { raid: 0, classic: save.best || 0, timed: 0, survival: 0, split: 0, crown: 0, race: 0, team: 0, giant: 0, hardcore: 0, daily: 0, ...(save.bests || {}) };
   save.ach = save.ach || [];
   save.totals = { kills: 0, bosses: 0, minions: 0, crumbs: 0, ejects: 0, rounds: 0, ...(save.totals || {}) };
@@ -1989,6 +2079,25 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     save.season = { id: seasonNow, pts: 0 };
   }
+  // ---- Chaos League save (schema 3) ----
+  save.chaos = save.chaos || { id: chaosStarted ? chaosNow : 1, pts: 0 };
+  save.chaosLog = save.chaosLog || [];
+  save.abil.xa = save.abil.xa || [];
+  save.skins.forEach(id => { const m = /^cs_(\d+)$/.exec(id); if (m) ensureChaosSkin(+m[1]); });
+  ensureChaosSkin(save.chaos.id);
+  let chaosNotice = '';
+  if (!chaosStarted) save.chaos = { id: 1, pts: 0 };
+  if (save.chaos.id !== chaosNow && chaosStarted) {
+    const ti = chaosOf(save.chaos.pts), id = save.chaos.id;
+    if (save.chaos.pts > 0) {
+      save.coins += CHAOS_CFG.coins[ti]; save.legend.coins = (save.legend.coins || 0) + CHAOS_CFG.coins[ti];
+      const got = chaosSeasonRewards(id, ti);
+      save.chaosLog.push({ id, tier: ti, pts: save.chaos.pts });
+      chaosNotice = `Хаос-сезон ${id} завершён: ступень «${LEAGUES[ti].name}». Награда: ${CHAOS_CFG.coins[ti]} ◆${got.map(g => ', ' + g).join('')}.`;
+    }
+    save.chaos = { id: chaosNow, pts: 0 };
+  }
+  save.schema = 3;
   if (TEST_MODE) {
     // unlock all content for testing; achievements and challenges stay open so they can be tried
     save.skins = SKINS.map(k => k.id);
@@ -2718,6 +2827,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       for (const c of cells) {
         if (c.gone || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes; bosses get popped too
         if (v.trap && (c.owner === player || (player.team && c.owner.team === player.team))) continue;   // a trap spares its owner and allies
+        if (c.owner === player && abOn('x_ghost')) continue;   // «Призрак» passes through spikes
         if (Math.hypot(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
           popCell(c, v); removeVirus(v); if (!v.trap) virusRespawn.push(10); rebuildCells(); break;
         }
@@ -2967,6 +3077,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT;
       v *= (1 + 0.03 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
     }
+    else if (o.freezeT > 0) v *= .05;
     else if (o.slowT > 0) v *= ABIL_CFG.slowFactor * (o.kind === 'boss' ? bossInfo(o).speed : 1);
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;
@@ -2974,7 +3085,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return v * (dailyIs('speedy') ? 1.3 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
   const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.armor : 1.25;
-  const canEat = (a, b) => !(a.owner.isPlayer && abOn('shrink')) && !(b.owner.isPlayer && effects.shield > 0) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
+  const canEat = (a, b) => !(a.owner.isPlayer && (abOn('shrink') || abOn('x_ghost'))) && !(b.owner.isPlayer && (effects.shield > 0 || abOn('x_ghost'))) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
   const playerMaxParts = () => mode === 'split' ? 10 : Math.min(10, 4 + U.splitmax);
@@ -3074,7 +3185,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       r.tries++; persist();
     }
     const isTut = pendingTut; pendingTut = false; tut = null;
-    runBuild = isTut ? [...ABIL_CFG.oldBuild] : pendingRanked ? [...ABIL_CFG.rankedBuild] : [...save.build];
+    const isChaos = pendingChaos && pendingRanked; pendingChaos = false;
+    runBuild = isTut ? [...ABIL_CFG.oldBuild] : isChaos ? chaosDraw() : pendingRanked ? [...ABIL_CFG.rankedBuild] : [...save.build];
     abReset();
     U = pendingRanked || isTut ? ZERO_UP : save.up;
     [...player.cells].forEach(removeCell);
@@ -3088,12 +3200,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     owners.forEach(o => o.splitCd = 0);
     lives = mode === 'hardcore' ? 0 : U.life;
     dashCdBase = dailyIs('dashonly') ? 1 : 4 * (1 - 0.06 * U.dash);
-    mode = isTut ? 'classic' : pendingRanked ? leagueMode() : save.mode;
+    mode = isTut ? 'classic' : isChaos ? seasonMode(save.chaos.id) : pendingRanked ? leagueMode() : save.mode;
     if (isTut) lives = 99;
     const ranked = pendingRanked;
     player.ejectCd = 0;
     stats = { mode, ranked, time: 0, maxMass: total(player), kills: 0, bosses: 0, minions: 0, bossCoins: 0, bossXp: 0, bonuses: 0, splits: 0, crumbs: 0, leader: 0, bestRank: 99, wave: 0,
-              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut, abUsed: {} };
+              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut, abUsed: {}, chaos: isChaos, lvStart: playerLevel() };
     clearEjects();
     resetViruses(); virusRespawn = []; resetEvents();
     history = [Math.round(total(player))];
@@ -3128,6 +3240,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('overlay').hidden = true;
     setGameUi(true);
     if (isTut) tutBegin();
+    if (isChaos) chaosBanner();
   }
   function setGameUi(on) {
     $('board').hidden = $('miniWrap').hidden = $('effects').hidden = $('actions').hidden = $('pauseBtn').hidden = !on;
@@ -3143,7 +3256,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // a slot is unusable in modes that forbid that action
   const slotBlocked = id => (id === 'dash' && mode === 'split') || (id === 'split' && dailyIs('dashonly'));
   function abReset() {
-    player.abCd = {}; player.abT = {}; player.rs = 1;
+    player.abCd = {}; player.abT = {}; player.rs = 1; player.phase2 = 0;
+    xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
+    owners.forEach(o => o.freezeT = 0);
     bots.concat(bossOwners).forEach(o => o.slowT = 0);
     if (decoy) { scene.remove(decoy.mesh); decoy = null; }
   }
@@ -3189,7 +3304,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       mesh.scale.setScalar(r); mesh.add(glowSprite(skin().color, 3, .5)); scene.add(mesh);
       decoy = { x: main.x, z: main.z, hx: main.hx, hz: main.hz, r, ttl: a.dur * pw, gone: false, mesh, owner: { decoy: true } };
       mesh.position.set(decoy.x, r, decoy.z);
-    } else if (id === 'trap') {
+    } else if (a.xa) { if (!castXa(id, a, px, pz)) return; if (id === 'x_phase') { abUsed(id); return; } }
+    else if (id === 'trap') {
       const mine = viruses.filter(v => v.trap);
       if (mine.length >= ABIL_CFG.maxTraps) removeVirus(mine[0]);
       const v = { x: px, z: pz, vx: 0, vz: 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh(), trap: { ttl: a.dur } };
@@ -3198,7 +3314,100 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     player.abCd[id] = abCdOf(id); abUsed(id);
     emit(px, 2, pz, a.color, 24, 6, .5); Sound.play('bonus'); buzz(15);
   }
+  // ---- Chaos League exclusives ----
+  let xfx = [];   // timed world effects: hole, meteor, anchor, twin
+  function blinkBy(d, color) {
+    const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y);
+    for (const c of player.cells) { emit(c.x, cellR(c), c.z, color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, color, 18, 10, .5); }
+  }
+  function castXa(id, a, px, pz) {
+    const main = player.cells.reduce((x, y) => x.mass >= y.mass ? x : y);
+    const ahead = d => { let x = px + main.hx * d, z = pz + main.hz * d; const dc = Math.hypot(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; } return [x, z]; };
+    const foes = () => owners.filter(o => !o.isPlayer && o.cells.length && !(player.team && o.team === player.team));
+    if (['x_over', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].includes(id)) { player.abT[id] = a.dur; return true; }
+    if (id === 'x_ice') { for (const o of foes()) if (o.cells.some(c => Math.hypot(c.x - px, c.z - pz) < a.radius + cellR(c))) o.freezeT = a.dur; emit(px, 2, pz, a.color, 70, a.radius, .9); return true; }
+    if (id === 'x_hole' || id === 'x_meteor' || id === 'x_anchor') {
+      const [x, z] = id === 'x_anchor' ? [px, pz] : ahead(a.dist);
+      const mesh = id === 'x_anchor' ? new THREE.Mesh(new THREE.TorusGeometry(a.radius, .25, 8, 48), new THREE.MeshBasicMaterial({ color: a.color, transparent: true, opacity: .7 }))
+        : new THREE.Mesh(new THREE.SphereGeometry(id === 'x_hole' ? 1.6 : 1.1, 16, 12), new THREE.MeshBasicMaterial({ color: id === 'x_hole' ? '#05010f' : a.color }));
+      if (id === 'x_anchor') mesh.rotation.x = Math.PI / 2;
+      mesh.position.set(x, id === 'x_anchor' ? .4 : 1.6, z); mesh.add(glowSprite(a.color, id === 'x_hole' ? 6 : 3, .7)); scene.add(mesh);
+      xfx.push({ id, x, z, t: id === 'x_meteor' ? 1 : a.dur, a, mesh }); return true;
+    }
+    if (id === 'x_twin') {
+      if (player.cells.length >= playerMaxParts() || main.mass < 20) { toast('Двойник: нужна масса 20 и место для ещё одной части'); return false; }
+      const n0 = player.cells.length;
+      if (!splitOwner(player, n0 + 1, a.dur)) return false;
+      const nb = player.cells[player.cells.length - 1]; rebuildCells();
+      xfx.push({ id, t: a.dur, ca: main, cb: nb, a }); return true;
+    }
+    if (id === 'x_hunt') {
+      let best = null, bd = a.radius;
+      for (const o of foes()) for (const c of o.cells) { const d = Math.hypot(c.x - main.x, c.z - main.z); if (d < bd && canEat(main, c)) { bd = d; best = c; } }
+      if (!best) { toast('Охотничий рывок: рядом нет добычи меньше тебя'); return false; }
+      for (const c of player.cells) { const dx = best.x - c.x, dz = best.z - c.z, d = Math.hypot(dx, dz) || 1; c.vx += dx / d * a.force; c.vz += dz / d * a.force; c.hx = dx / d; c.hz = dz / d; }
+      player.dashT = Math.max(player.dashT, .3); return true;
+    }
+    if (id === 'x_phase') {
+      blinkBy(a.dist, a.color);
+      if (player.phase2 > 0) { player.phase2 = 0; player.abCd[id] = abCdOf(id); }   // second jump: now the cooldown starts
+      else player.phase2 = CHAOS_CFG.phase2Sec;
+      Sound.play('dash'); return true;
+    }
+    return false;
+  }
+  function xaTick(dt) {
+    const over = abOn('x_over');
+    if (over) { for (const k in player.abCd) if (k !== 'x_over') player.abCd[k] = Math.max(0, player.abCd[k] - dt); player.dashCd = Math.max(0, player.dashCd - dt); player.splitCd = Math.max(0, player.splitCd - dt); }
+    if (player.phase2 > 0) { player.phase2 -= dt; if (player.phase2 <= 0) { player.phase2 = 0; player.abCd.x_phase = abCdOf('x_phase'); } }
+    for (const o of owners) if (o.freezeT) o.freezeT = Math.max(0, o.freezeT - dt);
+    const [px, pz] = pCenterXZ(), main = player.cells.length ? player.cells.reduce((x, y) => x.mass >= y.mass ? x : y) : null;
+    const foes = owners.filter(o => !o.isPlayer && o.cells.length && !(player.team && o.team === player.team));
+    if (abOn('x_refl') && main) for (const o of foes) for (const c of o.cells) for (const pc of player.cells) {
+      const dx = c.x - pc.x, dz = c.z - pc.z, d = Math.hypot(dx, dz) || 1;
+      if (d < cellR(c) + cellR(pc) + .5) { const f = abilById('x_refl').force; c.vx = dx / d * f; c.vz = dz / d * f; c.x = pc.x + dx / d * (cellR(c) + cellR(pc) + .6); c.z = pc.z + dz / d * (cellR(c) + cellR(pc) + .6); clampArena(c); }
+    }
+    if (abOn('x_typhoon') && main) {
+      const a = abilById('x_typhoon'), rad = a.radius + cellR(main);
+      for (const e of ejects) { const dx = e.x - px, dz = e.z - pz, d = Math.hypot(dx, dz) || 1; if (d < rad) { e.vx += dx / d * 120 * dt; e.vz += dz / d * 120 * dt; } }
+      for (const o of foes) for (const c of o.cells) { const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1;
+        if (d < rad + cellR(c) && c.mass < main.mass * .6) { c.vx += dx / d * 90 * dt; c.vz += dz / d * 90 * dt; c.hx = dx / d; c.hz = dz / d; if (o.kind === 'bot') { o.target = null; o.tx = c.x + dx / d * 30; o.tz = c.z + dz / d * 30; o.think = .6; } } }
+      if (Math.random() < .5) { const ang = Math.random() * Math.PI * 2; emit(px + Math.cos(ang) * rad, 1, pz + Math.sin(ang) * rad, a.color, 2, 3, .4); }
+    }
+    let foodMoved = false;
+    for (const f of [...xfx]) {
+      f.t -= dt;
+      if (f.id === 'x_hole') {
+        const rad = f.a.radius;
+        for (let i = 0; i < FOOD; i++) { const fd = foods[i], dx = f.x - fd.x, dz = f.z - fd.z, d = Math.hypot(dx, dz);
+          if (d < rad && d > .3) { const st = Math.min(d, 22 * dt); fd.x += dx / d * st; fd.z += dz / d * st; dummy.position.set(fd.x, .35, fd.z); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix); foodMoved = true; } }
+        for (const o of foes) for (const c of o.cells) { if (main && c.mass >= main.mass * .5) continue; const dx = f.x - c.x, dz = f.z - c.z, d = Math.hypot(dx, dz) || 1; if (d < rad * 1.4) { c.vx += dx / d * 60 * dt; c.vz += dz / d * 60 * dt; } }
+        f.mesh.rotation.y += dt * 4;
+      } else if (f.id === 'x_anchor') { for (const o of foes) if (o.cells.some(c => Math.hypot(c.x - f.x, c.z - f.z) < f.a.radius)) o.slowT = Math.max(o.slowT || 0, .2); }
+      else if (f.id === 'x_meteor') { f.mesh.position.y = .5 + f.t * 12; }
+      if (f.t > 0) continue;
+      if (f.id === 'x_meteor') {
+        for (const o of foes) { let hit = false; for (const c of o.cells) { const dx = c.x - f.x, dz = c.z - f.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius + cellR(c)) { c.vx += dx / d * f.a.force; c.vz += dz / d * f.a.force; hit = true; } } if (hit) o.freezeT = 1; }
+        emit(f.x, 1, f.z, f.a.color, 80, f.a.radius, .9); Sound.play('spike');
+      }
+      if (f.id === 'x_twin') { if (!f.ca.gone && !f.cb.gone && f.ca.owner === player && f.cb.owner === player) { f.ca.mass += f.cb.mass; emit(f.cb.x, cellR(f.cb), f.cb.z, f.a.color, 20, 8, .5); removeCell(f.cb); f.ca.mergeT = 0; rebuildCells(); } }
+      if (f.mesh) scene.remove(f.mesh);
+      xfx.splice(xfx.indexOf(f), 1);
+    }
+    if (foodMoved) foodMesh.instanceMatrix.needsUpdate = true;
+  }
+  function chaosDraw() {
+    const first = Math.random() < .5 ? 'dash' : 'split', pool = ABILITIES.map(a => a.id).filter(id => id !== first), out = [first];
+    while (out.length < 3) { const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(id); }
+    return out;
+  }
+  function chaosBanner() {
+    const el = $('chaosBanner');
+    el.innerHTML = '<small>Хаос-лига · твои способности на этот бой</small><div>' + runBuild.map((id, i) => { const a = abilById(id); return `<span style="--ac:${a.color}"><i>${a.icon}</i><b>${a.name}</b><small>${ABIL_CFG.slotKeyName[i]}</small></span>`; }).join('') + '</div>';
+    el.hidden = false; clearTimeout(chaosBanner.t); chaosBanner.t = setTimeout(() => { el.hidden = true; }, CHAOS_CFG.showSec * 1000);
+  }
   function abTick(dt) {
+    xaTick(dt);
     for (const k in player.abCd) player.abCd[k] = Math.max(0, player.abCd[k] - dt);
     for (const k in player.abT) player.abT[k] = Math.max(0, player.abT[k] - dt);
     for (const o of owners) if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
@@ -3218,7 +3427,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   function abilChips() {
     if (!running || !player.abT) return '';
-    return ['shrink', 'cloak'].filter(abOn).map(id => `<div class="chip"><i style="background:${abilById(id).color}"></i>${abilById(id).name} ${Math.ceil(player.abT[id])} с</div>`).join('') +
+    return ['shrink', 'cloak', 'x_over', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].filter(abOn).map(id => `<div class="chip"><i style="background:${abilById(id).color}"></i>${abilById(id).name} ${Math.ceil(player.abT[id])} с</div>`).join('') +
       (decoy ? `<div class="chip"><i style="background:${abilById('decoy').color}"></i>Клон ${Math.ceil(decoy.ttl)} с</div>` : '') +
       (viruses.some(v => v.trap) ? `<div class="chip"><i style="background:${abilById('trap').color}"></i>Ловушки: ${viruses.filter(v => v.trap).length}</div>` : '');
   }
@@ -3229,6 +3438,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const maxParts = playerMaxParts(), n = player.cells.length, cd = player.splitCd, heavy = player.cells.some(c => c.mass >= 20), can = n > 0 && n < maxParts && heavy && cd <= 0;
       return { ready: cd > 0 ? 1 - cd / playerSplitCd() : can ? 1 : 0, off: !can, sub: cd > 0 ? `${cd.toFixed(1)} с` : n >= maxParts ? `${n}/${maxParts} макс.` : !heavy ? 'нужно 20' : n > 1 ? `${n}/${maxParts}` : null };
     }
+    if (id === 'x_phase' && player.phase2 > 0) return { ready: 1, off: false, sub: `ещё раз ${player.phase2.toFixed(1)} с` };
     const cd = player.abCd[id] || 0, act = player.abT[id] || 0;
     return { ready: cd > 0 ? 1 - cd / abCdOf(id) : 1, off: false, sub: act > 0 ? `${act.toFixed(1)} с ✓` : cd > 0 ? `${cd.toFixed(1)} с` : null };
   }
@@ -3315,7 +3525,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     // legendary achievements
     { const G = save.legend; const add = (k, v) => G[k] = (G[k] || 0) + v;
       add('kills', stats.kills); add('coins', coins); add('bosses', stats.bosses); add('stars', stats.starKills || 0); add('wins', stats.win ? 1 : 0);
-      add('time', Math.round(stats.time)); add('crumbs', stats.crumbs); add('lwins', stats.ranked && stats.win ? 1 : 0); G.combo = Math.max(G.combo || 0, stats.bestCombo || 0); }
+      add('time', Math.round(stats.time)); add('crumbs', stats.crumbs); add('lwins', stats.ranked && !stats.chaos && stats.win ? 1 : 0); G.combo = Math.max(G.combo || 0, stats.bestCombo || 0); }
     const legendLine = checkLegend().map(L => L.badge ? '<li class="done legend"><span>👑 Все легендарные достижения! Значок «Легенда Капель»</span><span class="rw">в профиле</span></li>'
       : `<li class="done legend"><span>👑 Легендарное достижение «${L.name}»</span><span class="rw">${legendNames(L)}</span></li>`).join('');
     // mode mastery
@@ -3340,9 +3550,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
     if (mode === 'royale' && stats.finalRank) pts += (13 - stats.finalRank) * 4;
     if (!stats.ranked) pts = 0;
-    const lgBefore = leagueOf(save.season.pts), gain = pts, fee = stats.ranked ? LEAGUE_FEE[lgBefore] : 0;
+    let chaosR = null;
+    if (stats.chaos) { chaosR = chaosApply(Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0)) * (mode === 'hardcore' ? 1.5 : 1) + (mode === 'royale' && stats.finalRank ? (13 - stats.finalRank) * 4 : 0)); pts = 0; }
+    const mainRanked = stats.ranked && !stats.chaos;
+    const lgBefore = leagueOf(save.season.pts), gain = pts, fee = mainRanked ? LEAGUE_FEE[lgBefore] : 0;
     pts = gain - fee;
-    if (stats.ranked) {
+    if (mainRanked) {
       const before = save.season.pts, after = Math.max(LEAGUES[lgBefore].pts, before + pts);
       save.season.last = { gain, fee, net: after - before, floor: before + pts < LEAGUES[lgBefore].pts };
       save.season.fees = (save.season.fees || 0) + Math.min(fee, before - after + gain);
@@ -3388,7 +3601,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       cExtra.map(([k, v]) => `<li><span>${k}</span><span class="rw">+${v}</span></li>`).join('') +
       `<li class="cb-sum"><span>Всего</span><span class="rw">${coins} ◆</span></li>`;
     $('coinBreak').hidden = true;
-    $('rewards').innerHTML = `<button class="coin coin-btn" id="coinBtn" aria-expanded="false" title="Из чего сложились монеты">+${coins} ◆ <small>▾</small></button><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
+    $('rewards').innerHTML = `<button class="coin coin-btn" id="coinBtn" aria-expanded="false" title="Из чего сложились монеты">+${coins} ◆ <small>▾</small></button><span class="xp">+${xp} опыта</span>${chaosR ? `<span style="color:${LEAGUES[chaosR.tier].color}">Хаос: ${chaosR.net >= 0 ? '+' : '−'}${Math.abs(chaosR.net)} очков${chaosR.fee ? ` <small>(+${chaosR.gain} − взнос ${chaosR.fee})</small>` : ''}${chaosR.capped ? ' <small>· выше Платины — с 46 ур.</small>' : ''}</span>` : stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
       weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
@@ -3660,7 +3873,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     if (mode === 'crown') {
       crownHolder = contenders.reduce((best, o) => !best || total(o) > total(best) ? o : best, null);
-      if (crownHolder) crownHolder.crownT += dt;
+      if (crownHolder && !(crownHolder === player && abOn('x_ghost'))) crownHolder.crownT += dt;   // no crown time while a ghost
       if (stats.time >= TIMED_LEN) {
         const r = [player, ...bots].sort((a, b) => b.crownT - a.crownT).indexOf(player) + 1;
         stats.finalRank = r;
@@ -3845,7 +4058,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
-        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
+        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1) * (a.owner.isPlayer && abOn('x_vamp') ? 1.2 : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
@@ -3963,7 +4176,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     }
     if (running && ev.active) modeChip += `<div class="chip"><i style="background:${evInfo(ev.active).color}"></i>${evInfo(ev.active).name} ${Math.ceil(ev.left)} с</div>`;
     else if (running && ev.warn) modeChip += `<div class="chip"><i style="background:${evInfo(ev.warn).color}"></i>Скоро: ${evInfo(ev.warn).name}</div>`;
-    $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:var(--gold)"></i>Рейтинговый бой · без улучшений · монеты ×1,5</div>` : '') + modeChip + Object.keys(effects || {}).filter(k => effects[k] > 0)
+    $('effects').innerHTML = (running && stats.ranked ? `<div class="chip"><i style="background:${stats.chaos ? '#ff4fd8' : 'var(--gold)'}"></i>${stats.chaos ? 'Хаос-лига · случайные способности' : 'Рейтинговый бой · без улучшений'} · монеты ×1,5</div>` : '') + modeChip + Object.keys(effects || {}).filter(k => effects[k] > 0)
       .map(k => `<div class="chip"><i style="background:${BONUS[k].color}"></i>${BONUS[k].name}${k === 'speed' ? ' +45%' : ''} ${Math.ceil(effects[k])} с</div>`).join('') +
       mergeChip() + abilChips();
     if (running) {
@@ -4041,7 +4254,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'infoCard', 'pauseCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'infoCard', 'pauseCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -4192,7 +4405,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     for (const b of SPECIAL) { if (save.badges[b.id]) continue; const [v, n] = b.prog(); if (v >= n) { save.badges[b.id] = today; toast(`Новый особый значок «${b.name}»! Он в профиле.`); persist(); } }
   }
   function renderAll() {
-    checkSpecialBadges();
+    checkSpecialBadges(); renderChaosBtn();
     const li = levelInfo(save.xp);
     $('lvlName').textContent = `Уровень ${li.level}${li.max ? '' : ` из ${MAX_LEVEL}`}`;
     $('lvlXp').textContent = li.max ? 'максимальный уровень' : `${li.into} / ${li.need} опыта`;
@@ -4348,7 +4561,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     };
     requestAnimationFrame(step);
   }
-  const buyable = x => !x.tut && !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
+  const buyable = x => !x.tut && !x.chaos && !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
   function sourceBadge(x) {
     if (save.archived && save.archived.includes(x.id)) return '<span class="badge-ex" style="color:#9fd8ff">из архива</span>';
     if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
@@ -4585,7 +4798,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       return `<div class="b-slot" style="--ac:${a ? a.color : 'var(--line)'}"><small>Слот ${i + 1} · ${ABIL_CFG.slotKeyName[i]}</small><span class="b-ico">${a ? a.icon : '＋'}</span>` +
         `<select data-slot="${i}" aria-label="Слот ${i + 1}">${opts}</select><button class="buy" data-slotclear="${i}" ${a ? '' : 'disabled'}>Очистить слот</button></div>`;
     }).join('');
-    const rows = ABILITIES.map(a => {
+    const rows = BASE_ABIL.map(a => {
       const has = own.includes(a.id), l = save.abil.lv[a.id] || 0, inB = save.build.includes(a.id);
       const head = `<div class="ab-row ${has ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${inB ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small>`;
       if (a.branches) return head + `<small class="now">Бесплатно, есть у всех. Улучшения:</small></div></div>` + a.branches.map(id => upRowHtml(UPG.find(u => u.id === id), lv)).join('');
@@ -4596,7 +4809,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         `<button class="buy" id="aup-${a.id}" data-aup="${a.id}" ${max || save.coins < cost ? 'disabled' : ''}>${max ? 'Макс.' : `Улучшить · ${cost.toLocaleString('ru-RU')} ◆`}</button></div>`;
     }).join('');
     return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${slots}</div>` +
-      `<p class="empty-note">Билд меняется только в меню. В рейтинге и «Королевской битве» у всех рывок и деление.</p><h3>Все способности · ${own.length} из ${ABILITIES.length}</h3>` + rows;
+      `<p class="empty-note">Билд меняется только в меню. В рейтинге и «Королевской битве» у всех рывок и деление.</p><h3>Все способности · ${own.filter(id => !abilById(id).xa).length} из ${BASE_ABIL.length}</h3>` + rows +
+      `<h3>Эксклюзивы Хаос-лиги · ${save.abil.xa.length} из ${XA_ABIL.length}</h3>` + XA_ABIL.map(a => { const has = save.abil.xa.includes(a.id);
+        return `<div class="ab-row ${has ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}</b><small>${a.desc}.</small><small class="now">${has ? `Получена · перезарядка ${a.cd} с · без улучшений` : 'Награда за «Неон» в Хаос-лиге'}</small></div></div>`; }).join('');
   }
   function checkAbilAch() {
     for (const a of ACH) {
@@ -4612,6 +4827,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   });
   // per-tab help: what the tab is for and how its items are earned (opened by the ⓘ button at the top of each tab)
   const TAB_INFO = {
+    chaos: () => [`Хаос-лига открывается с ${CHAOS_CFG.entryLevel} уровня. Сезон длится ${CHAOS_CFG.seasonDays} дней, режим боя меняется по кругу, как в основной лиге.`,
+      'В начале боя выдаются 3 случайные способности из 24 (12 обычных и 12 эксклюзивных); одна из них всегда рывок или деление. Набор не меняется до конца боя. Купленные способности и улучшения не действуют — у всех равные условия.',
+      `Ступени как в основной лиге, но очков нужно вдвое меньше. Взнос за бой с «Золота»: ${CHAOS_CFG.fee.slice(2).join(' / ')}. Ниже порога своей ступени не опустишься. Монеты за бой — как в рейтинге (×1,5).`,
+      `«Алмаз» и «Неон» открываются с ${CHAOS_CFG.topLevel} уровня. Награды: монеты всем; «Алмаз» — скин сезона и рамка «Разлом»; «Неон» — ещё титул «Повелитель хаоса» и эксклюзивная способность (по одной за сезон).`,
+      'Полученные эксклюзивные способности можно ставить в билд в обычных режимах (без улучшений). В рейтинге основной лиги и в Хаос-лиге их выбрать нельзя.'],
     abil: () => ['Способности стоят в трёх слотах билда — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E, Q.', 'Рывок и деление есть у всех. Остальные покупаются за монеты и улучшаются до 5 уровней: меньше перезарядка, сильнее эффект.',
       'Одну способность нельзя поставить в два слота. Слот может быть пустым. Билд меняется только в меню.', 'В рейтинге и «Королевской битве» у всех рывок и деление, купленное там не действует.'],
     up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.'],
@@ -4635,7 +4855,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     legend: () => ['Легендарные достижения — самые долгие цели игры. Каждое даёт эксклюзивную награду, которую больше нигде не получить.', 'За все — значок «Легенда Капель». Дата начала отсчёта прогресса указана вверху вкладки.'],
   };
   function openTabInfo(tab) {
-    const name = (Object.values(SHOP_VIEWS).flatMap(v => v.tabs).find(t => t[0] === tab) || [, ''])[1];
+    const name = tab === 'chaos' ? 'Хаос-лига' : (Object.values(SHOP_VIEWS).flatMap(v => v.tabs).find(t => t[0] === tab) || [, ''])[1];
     $('tiName').textContent = 'Информация · ' + name;
     $('tiBody').innerHTML = TAB_INFO[tab]().map(t => `<li>${t}</li>`).join('');
     tiReturn = document.activeElement; $('tabInfoModal').hidden = false; $('tiOk').focus();
@@ -4651,7 +4871,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // ---- sorting for wardrobe and pets ----
   const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
   const SOURCE_ORDER = ['Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда'];
-  const sourceOf = x => x.tut ? 'Обучение' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  const sourceOf = x => x.tut ? 'Обучение' : x.chaos ? 'Хаос-лига' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
   // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
   const rarityScore = x => {
     if (x.legend) return 5;
@@ -4876,6 +5096,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
     if (x.skill) return 'все мастерские достижения';
     if (x.tut) return 'награда за обучение';
+    if (x.chaos) return `Хаос-лига, сезон ${x.chaos}: «Алмаз» или «Неон»`;
     if (x.raid) return 'трофей босс-рейда';
     if (x.special === 'raid') return 'первая победа в босс-рейде';
     if (x.special === 'league') return 'лига «Неон» в конце сезона';
@@ -5166,7 +5387,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     // a clean save that keeps only the settings; league seasons restart from season 1 today
     // season 1 = the season running now on the shared calendar, so holidays and season dates stay the same for everyone
     const base = new Date(2026, 10, 1).getTime(), k = Math.max(0, Math.floor((Date.now() - base) / SEASON_LEN));
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: save.settings, seasonEpoch: base + k * SEASON_LEN })); } catch (e) {}
+    const kc = Math.max(0, Math.floor((Date.now() - CHAOS_BASE) / CHAOS_LEN));   // Chaos League: season 1 = the chaos week running now
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: save.settings, seasonEpoch: base + k * SEASON_LEN, chaosEpoch: CHAOS_BASE + kc * CHAOS_LEN })); } catch (e) {}
     location.reload();
   });
 
@@ -5224,6 +5446,57 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
 
   // ================= league =================
+  // ================= Chaos League: points, window =================
+  function chaosApply(gain) {
+    if (!chaosStarted) return null;
+    gain = Math.round(gain);
+    const C = save.chaos, tb = chaosOf(C.pts), fee = CHAOS_CFG.fee[tb], floor = CHAOS_CFG.pts[tb], before = C.pts;
+    let after = Math.max(floor, before + gain - fee), capped = false;
+    // below level 46 the tier stops at Platinum: points above the Diamond threshold don't pile up
+    const cap = CHAOS_CFG.pts[CHAOS_CFG.topTier] - 1;
+    if (stats.lvStart < CHAOS_CFG.topLevel && after > cap) { after = Math.max(before, cap); capped = true; }
+    C.last = { gain, fee, net: after - before, floor: before + gain - fee < floor, capped };
+    C.games = (C.games || 0) + 1; C.fees = (C.fees || 0) + Math.min(fee, Math.max(0, before - after + gain));
+    C.pts = after;
+    const tier = chaosOf(after);
+    C.hist = [...(C.hist || []), { t: Date.now(), mode, gain, fee, net: after - before, tier }].slice(-CHAOS_CFG.histMax);
+    save.totals.chaosGames = (save.totals.chaosGames || 0) + 1; save.totals.chaosMax = Math.max(save.totals.chaosMax || 0, tier);
+    return { ...C.last, tier };
+  }
+  const chaosOpen = () => playerLevel() >= CHAOS_CFG.entryLevel;
+  function chaosRewardText(ti) {
+    const r = [`${CHAOS_CFG.coins[ti]} ◆`];
+    if (ti >= CHAOS_CFG.topTier) r.push(`скин сезона «${ensureChaosSkin(save.chaos.id).name}»`, 'рамка «Разлом»');
+    if (ti >= 5) { const nx = XA_ABIL.find(a => !save.abil.xa.includes(a.id)); r.push('титул «Повелитель хаоса»', nx ? `способность «${nx.name}»` : 'все способности уже получены'); }
+    return r.join(' + ');
+  }
+  function renderChaosBtn() {
+    const ti = chaosOf(save.chaos.pts);
+    $('chaosBtn').innerHTML = chaosOpen() ? `Хаос-лига · <b style="color:${LEAGUES[ti].color}">${LEAGUES[ti].name}</b> · ${save.chaos.pts}` : `Хаос-лига · 🔒 с ${CHAOS_CFG.entryLevel} уровня`;
+  }
+  function renderChaos() {
+    const C = save.chaos, ti = chaosOf(C.pts), L = LEAGUES[ti], lv = playerLevel(), open = chaosOpen(), lockTop = lv < CHAOS_CFG.topLevel;
+    const nextI = ti < 5 ? ti + 1 : null, nextPts = nextI !== null ? CHAOS_CFG.pts[nextI] : null;
+    const pct = nextPts !== null ? (C.pts - CHAOS_CFG.pts[ti]) / (nextPts - CHAOS_CFG.pts[ti]) * 100 : 100;
+    const days = Math.max(0, Math.ceil((chaosEnd(C.id) - Date.now()) / 864e5));
+    const when = chaosStarted ? `Хаос-сезон ${C.id} · режим «${MODES[seasonMode(C.id)].name}» · до ${fmtDate(chaosEnd(C.id))} (осталось ${days} дн.)` : `Хаос-сезон 1 начнётся ${fmtDate(CHAOS_EPOCH)}. До старта очки не начисляются`;
+    const g = C.last, sign = v => (v >= 0 ? '+' : '−') + Math.abs(v);
+    $('chaosPanel').innerHTML = `<div class="league-top"><b style="color:${L.color}">${L.name}</b><span class="hint">${C.pts} очков</span></div>` +
+      `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%;background:${L.color}"></div></div><small>${when}. ${nextPts !== null ? `До ступени «${LEAGUES[nextI].name}»: ${nextPts - C.pts} очков.` : 'Это высшая ступень.'}</small>` +
+      (lockTop ? `<span class="notice">Алмаз и Неон откроются на ${CHAOS_CFG.topLevel} уровне (сейчас ${lv}-й). До этого ступень не выше Платины.</span>` : '') +
+      (g ? `<div class="lg-last ${g.net < 0 ? 'neg' : ''}"><b>Последняя игра: ${sign(g.net)} очков</b><small>за игру ${sign(g.gain)}${g.fee ? ` · взнос −${g.fee}` : ''}${g.floor ? ' · счёт остановился на пороге ступени' : ''}${g.capped ? ' · выше Платины — с 46 уровня' : ''}</small><small>За сезон: игр ${C.games || 0}${C.fees ? ` · взносов ${C.fees} очков` : ''}</small></div>` : '') +
+      (chaosNotice ? `<span class="notice">${chaosNotice}</span>` : '');
+    $('chaosPlay').disabled = !open;
+    $('chaosPlay').textContent = open ? `Играть · ${MODES[seasonMode(C.id)].name}` : `Откроется на ${CHAOS_CFG.entryLevel} уровне`;
+    $('chaosNote').textContent = open ? `3 случайные способности на бой (одна — рывок или деление), у всех равные условия. Купленные способности и улучшения не действуют.${CHAOS_CFG.fee[ti] ? ` Взнос за бой: ${CHAOS_CFG.fee[ti]} очков.` : ''}` : `Сейчас у тебя ${lv}-й уровень.`;
+    $('chaosTable').innerHTML = LEAGUES.map((l, i) => `<li class="${i === ti ? 'cur' : ''}" style="--lc:${l.color}"><b>${l.name}</b><span>от ${CHAOS_CFG.pts[i]} очков${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span>` +
+      `<small>Награда: ${chaosRewardText(i)}${i >= CHAOS_CFG.topTier ? ` · с ${CHAOS_CFG.topLevel} ур.` : ''}${i === ti ? ' · вы здесь' : ''}</small></li>`).join('');
+    $('chaosXa').innerHTML = XA_ABIL.map(a => `<div class="ab-row ${save.abil.xa.includes(a.id) ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.abil.xa.includes(a.id) ? ' <span class="badge-ex">получена</span>' : ''}</b><small>${a.desc}. Перезарядка ${a.cd} с.</small></div></div>`).join('');
+  }
+  $('chaosBtn').addEventListener('click', () => { renderChaos(); showCard('chaosCard'); $('chaosBack').focus(); });
+  $('chaosPlay').addEventListener('click', () => { if (!chaosOpen()) return; pendingRanked = true; pendingChaos = true; startRound(); });
+  $('chaosBack').addEventListener('click', () => { showCard('menuCard'); $('chaosBtn').focus(); });
+  $('chaosInfoBtn').addEventListener('click', () => openTabInfo('chaos'));
   function renderLeague() {
     const sd = seasonData(save.season.id), hk = sd.holiday, li = leagueOf(save.season.pts), L = lgView(li, hk), next = li < 5 ? lgView(li + 1, hk) : null;
     $('leaguePlay').textContent = `Играть в лиге · ${MODES[leagueMode()].name}`;
@@ -5270,7 +5543,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       ['Уровень', `${lvl.level}`], ['Лига', `<span style="color:${L.color}">${L.name}</span>`],
       ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
       ['Достижения', `${save.ach.length} / ${ACH.length}`], ['Испытания', `${save.chDone.length} / ${CHALLENGES.length}`],
-      ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Способности', `${save.abil.owned.length} / ${ABILITIES.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
+      ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Способности', `${save.abil.owned.filter(id => !abilById(id).xa).length} / ${BASE_ABIL.length}`],
+      ['Хаос-лига', `<span style="color:${LEAGUES[chaosOf(save.chaos.pts)].color}">${LEAGUES[chaosOf(save.chaos.pts)].name}</span> · эксклюзивов ${save.abil.xa.length}/${XA_ABIL.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('profStats').innerHTML = [
       ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
@@ -5632,7 +5906,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '37';
+const APP_VER = '38';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

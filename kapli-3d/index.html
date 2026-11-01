@@ -464,9 +464,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .icon-btn small { font-size: .66rem; color: var(--muted); }
 .icon-btn { position: relative; }
 .news-dot { position: absolute; top: 6px; right: 14px; width: 9px; height: 9px; border-radius: 50%; background: #ff4f6d; box-shadow: 0 0 6px #ff4f6d; }
-.news-item { margin: 0 0 14px; }
-.news-item h3 { margin: 0 0 4px; font-size: 1rem; }
-.news-item h3 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.news-item { margin: 0 0 8px; background: var(--row); border-radius: 12px; padding: 0 12px; }
+.news-item summary { cursor: pointer; padding: 11px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.news-item summary::-webkit-details-marker { display: none; }
+.news-item summary::after { content: "+"; color: var(--muted); font-size: 1.2rem; line-height: 1; }
+.news-item[open] summary::after { content: "−"; }
+.news-item summary small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.news-item[open] { padding-bottom: 10px; }
+.news-item > p { margin: 0 0 6px; }
 .news-item ul { margin: 4px 0 0; padding-left: 18px; }
 .news-item li { margin: 3px 0; }
 .news-gift { color: var(--food); }
@@ -4763,7 +4768,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     ] },
   ];
   function newsHtml(list) {
-    return list.map(n => `<div class="news-item"><h3>${n.title}<small>${n.ver} · ${n.date}</small></h3>${n.lead ? `<p>${n.lead}</p>` : ''}<ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}</div>`).join('');
+    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.title}<small>${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}</details>`).join('');
   }
   function newsUnseen() { return NEWS.filter(n => n.id > (save.newsSeen || 0)); }
   function newsRefresh() { $('newsDot').hidden = !newsUnseen().length; }
@@ -6513,7 +6518,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '63';
+const APP_VER = '64';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

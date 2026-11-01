@@ -279,6 +279,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 #graph { width: 100%; height: 120px; display: block; }
 .rewards { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; font-weight: 600; }
 .rewards .xp { color: var(--food); }
+.coin-btn { background: none; border: 1px dashed rgba(255, 210, 63, .5); border-radius: 8px; padding: 2px 8px; font: inherit; color: var(--gold); cursor: pointer; }
+.coin-btn small { font-size: .7em; opacity: .8; }
+.coin-break li { font-size: .8rem; padding: 5px 10px; }
+.coin-break li.cb-sum { font-weight: 600; background: rgba(255, 210, 63, .1); }
 .unlock { text-align: center; color: var(--prey); font-size: .9rem; }
 
 .shop-card { max-width: 540px; }
@@ -611,6 +615,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <h2 class="section-title">Рост массы</h2>
     <canvas id="graph" aria-label="График массы за раунд"></canvas>
     <div class="rewards" id="rewards"></div>
+    <ul class="quests coin-break" id="coinBreak" hidden></ul>
     <ul class="quests" id="resQuests"></ul>
     <p class="unlock" id="unlock" hidden></p>
     <div class="btns">
@@ -815,7 +820,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     </details>
     <details><summary>Монеты, опыт и улучшения</summary>
       <ul class="info-list">
-        <li>Монеты и опыт дают за массу, съеденные капли, боссов, время в игре и место. В «Хардкоре» монеты ×2.</li>
+        <li>Монеты дают за массу, съеденные капли (5 ◆ каждая), боссов, звёзд, комбо, время в игре и место. В «Хардкоре» монеты ×1,6. Нажми на «+N ◆» в итогах раунда — увидишь, из чего они сложились.</li>
         <li>Опыт повышает уровень, максимум — 50. С уровнями открываются улучшения, скины, эффекты и арены в магазине (до 30-го уровня).</li>
         <li>За каждый уровень — 50 × уровень монет, за каждый 5-й — сундук, за 10/20/30/40/50 — титул или рамка уровня. Задания в меню с уровнем становятся сложнее и щедрее.</li>
         <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
@@ -931,7 +936,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     race:     { name: 'Гонка массы',    desc: 'Кто первым наберёт 4000. Рекорд — лучшее время' },
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
-    hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Монеты ×2' },
+    hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Монеты ×1,6' },
     daily:    { name: 'Испытание дня',  desc: '' },
     raid:     { name: 'Босс-рейд',      desc: 'Босс недели: урон копится между попытками. 3 попытки в день, за победу — уникальный скин' },
     royale:   { name: 'Королевская битва', desc: 'Арена сужается, боты не возрождаются, побеждает последний. Только в лиге, в свой сезон' },
@@ -2954,16 +2959,23 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const lvBefore = playerLevel();
     const placeBonus = stats.modeBonus || 0;
     const surviveBonus = mode === 'survival' ? stats.time / 6 : 0;
-    let coins = Math.round((Math.sqrt(stats.maxMass) * 3 + stats.kills * 3 + stats.minions + stats.bossCoins + (stats.comboCoins || 0) + stats.time / 25 + placeBonus + surviveBonus) * (1 + 0.08 * U.greed) * (mode === 'hardcore' ? 2 : 1));
-    coins = Math.round(coins * (1 + 0.05 * petLv('coins')));
+    // coins for skill: drops eaten and time survived pay more, mass a bit less, Hardcore ×1.6
+    const cParts = [['Масса', Math.sqrt(stats.maxMass) * 2.6], ['Съеденные капли', stats.kills * 5], ['Прислужники', stats.minions], ['Боссы и звёзды', stats.bossCoins],
+                    ['Комбо', stats.comboCoins || 0], ['Время в игре', stats.time / 10], ['Бонус режима', placeBonus], ['Выживание', surviveBonus]].map(([k, v]) => [k, Math.round(v)]).filter(([, v]) => v > 0);
+    const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
+    if (U.greed) cMul.push([`«Жадность» +${8 * U.greed}%`, 1 + .08 * U.greed]);
+    if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);
+    if (petLv('coins')) cMul.push([`Питомец +${5 * petLv('coins')}%`, 1 + .05 * petLv('coins')]);
+    let coins = Math.round(cMul.reduce((t, [, m]) => t * m, cBase));
+    const cExtra = [];
     let raidLine = '';
     if (mode === 'raid') {
       const rs = raidState(), dmg = stats.raidDmg || 0;
-      rs.dmg = Math.min(RAID_HP, rs.dmg + dmg); coins += Math.round(dmg / 25);
+      rs.dmg = Math.min(RAID_HP, rs.dmg + dmg); coins += Math.round(dmg / 25); if (dmg) cExtra.push(['Урон в рейде', Math.round(dmg / 25)]);
       if (rs.dmg >= RAID_HP && !rs.done) {
         rs.done = true; const id = 'raid_' + rs.week; ensureRaidSkin(rs.week);
         if (!save.skins.includes(id)) save.skins.push(id);
-        coins += 1500; save.special.push({ kind: 'challenge', rar: 'epic', title: 'Рейд' });
+        coins += 1500; cExtra.push(['Победа в рейде', 1500]); save.special.push({ kind: 'challenge', rar: 'epic', title: 'Рейд' });
         raidLine = `<li class="done"><span>Босс недели повержен! Скин «${SKINS.find(k => k.id === id).name}»</span><span class="rw">+1500 ◆ + эпический сундук</span></li>`;
         save.raidWins = (save.raidWins || 0) + 1;
         const extra = save.raidWins >= 1 && !save.fxOwned.includes('raidAura') ? (save.fxOwned.push('raidAura'), 'аура «Аура рейдера»')
@@ -2977,7 +2989,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     xp = Math.round(xp * (1 + 0.05 * petLv('xp')));
     const questRows = save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => {
       const done = doneQuests.has(q.id);
-      if (done) { coins += qCoins(q); xp += qXp(q); }
+      if (done) { coins += qCoins(q); xp += qXp(q); cExtra.push([`Задание: ${q.text}`, qCoins(q)]); }
       return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
     save.coins += coins; save.xp += xp;
@@ -3014,7 +3026,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         if (W.prog[t.id] >= t.n) { W.done.push(t.id); save.special.push({ kind: 'challenge', rar: WEEK_RAR[t.tier], title: 'Неделя' });
           weekLine += `<li class="done"><span>📅 Задание недели: ${t.text(t.n)}</span><span class="rw">сундук «${RARITY[WEEK_RAR[t.tier]].name}»</span></li>`; }
       }
-      if (W.done.length === 3 && !W.bonus) { W.bonus = true; coins += WEEK_BONUS; save.coins += WEEK_BONUS; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
+      if (W.done.length === 3 && !W.bonus) { W.bonus = true; coins += WEEK_BONUS; cExtra.push(['Все задания недели', WEEK_BONUS]); save.coins += WEEK_BONUS; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
     const skillLine = checkSkill(stats).map(k => k.all ? '<li class="done skill"><span>🎯 Все мастерские достижения! Рамка «Мастер» и скин «Виртуоз»</span><span class="rw">в гардеробе</span></li>'
       : `<li class="done skill"><span>🎯 Мастерское достижение «${k.name}»</span><span class="rw">титул «${k.title[0]}» + ${k.coins} ◆</span></li>`).join('');
     // legendary achievements
@@ -3077,10 +3089,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (placeBonus) cellsHtml.push(['Бонус режима', `+${placeBonus} ◆`]);
     if (mode === 'crown') cellsHtml.push(['С короной', fmtTime(player.crownT)]);
     if (mode === 'raid') cellsHtml.push(['Урон боссу', stats.raidDmg || 0], ['Здоровье босса', `${Math.ceil(stats.raidLeft / RAID_HP * 100)}%`], ['Попыток сегодня', `${RAID_TRIES - raidState().tries} из ${RAID_TRIES}`]);
-    if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×2']);
+    if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×1,6']);
     if (mode === 'daily') cellsHtml.push(['Испытание', stats.dailyDone ? 'пройдено' : `нужно ${DAILY_GOAL}`]);
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
-    $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
+    // tap the coins to see what they were made of
+    $('coinBreak').innerHTML = cParts.map(([k, v]) => `<li><span>${k}</span><span class="rw">+${v}</span></li>`).join('') +
+      `<li class="cb-sum"><span>Итого за игру</span><span class="rw">${cBase}</span></li>` +
+      cMul.map(([k, m]) => `<li><span>${k}</span><span class="rw">×${m.toFixed(2).replace(/\.?0+$/, '').replace('.', ',')}</span></li>`).join('') +
+      cExtra.map(([k, v]) => `<li><span>${k}</span><span class="rw">+${v}</span></li>`).join('') +
+      `<li class="cb-sum"><span>Всего</span><span class="rw">${coins} ◆</span></li>`;
+    $('coinBreak').hidden = true;
+    $('rewards').innerHTML = `<button class="coin coin-btn" id="coinBtn" aria-expanded="false" title="Из чего сложились монеты">+${coins} ◆ <small>▾</small></button><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
       weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
@@ -3748,6 +3767,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('backBtn').addEventListener('click', closeShop);
   $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
   $('againBtn').addEventListener('click', startRound);
+  $('rewards').addEventListener('click', e => { const b = e.target.closest('#coinBtn'); if (!b) return; const open = $('coinBreak').hidden; $('coinBreak').hidden = !open; b.setAttribute('aria-expanded', open); });
   $('menuBtn').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('startBtn').focus(); });
   // ---- information: the dynamic lists are built from the game data so they stay correct ----
   function renderInfo() {
@@ -5038,7 +5058,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '26';
+const APP_VER = '27';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

@@ -471,6 +471,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .news-item[open] summary::after { content: "−"; }
 .news-item summary small { color: var(--muted); font-weight: 400; margin-left: 6px; }
 .news-item[open] { padding-bottom: 10px; }
+.news-patch { font-style: normal; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #14102a; background: var(--food); border-radius: 6px; padding: 2px 6px; margin-right: 6px; vertical-align: 2px; }
 .news-item > p { margin: 0 0 6px; }
 .news-item ul { margin: 4px 0 0; padding-left: 18px; }
 .news-item li { margin: 3px 0; }
@@ -4749,6 +4750,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 164, ver: '1.6.4', date: '1 ноября', title: 'Удобнее список обновлений', patch: true, items: [
+      'Каждое обновление теперь в своей шторке: свежее открыто сразу, прошлые — по нажатию.',
+    ] },
     { id: 163, ver: '1.6.3', date: '1 ноября', title: 'Ребаланс прокачки', refund: true,
       lead: 'Мы перебалансировали улучшения и способности, чтобы прогресс был равномернее: сила растёт постепенно, без резких скачков, а новички не отстают от прокачанных игроков в разы.', items: [
       'Улучшения дают меньше: «Жадность» до +30% монет, «Пищеварение» до +25% массы, «Обтекаемость» до +20% скорости, «Защита» −4% потерь и +1,5% к защите за уровень.',
@@ -4768,7 +4772,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     ] },
   ];
   function newsHtml(list) {
-    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.title}<small>${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}</details>`).join('');
+    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.patch ? '<i class="news-patch">патч</i>' : ''}${n.title}<small>${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}</details>`).join('');
   }
   function newsUnseen() { return NEWS.filter(n => n.id > (save.newsSeen || 0)); }
   function newsRefresh() { $('newsDot').hidden = !newsUnseen().length; }

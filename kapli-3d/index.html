@@ -446,7 +446,22 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .icon-btn { flex: 1; max-width: 110px; display: grid; justify-items: center; gap: 2px; background: var(--row); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; color: var(--fg); font: inherit; font-size: 1.15rem; cursor: pointer; }
 .icon-btn small { font-size: .66rem; color: var(--muted); }
 .icon-btn:focus-visible, .hub-btn:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
-.mode-btn { width: 100%; text-align: left; display: block; } .mode-btn b { font-family: var(--display); font-weight: 400; } .mode-btn small { color: var(--muted); font-weight: 400; }
+.mode-btn { width: 100%; text-align: left; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; } .mode-btn b { font-family: var(--display); font-weight: 400; } .mode-btn small { color: var(--muted); font-weight: 400; flex-basis: 100%; }
+.mode-btn .mode-more { margin-left: auto; color: var(--food); font-size: .78rem; font-weight: 400; }
+.menu-btns .hub-btn { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; text-align: left; min-height: 60px; }
+.menu-btns .hub-btn small { display: block; margin: 0; }
+.goals { background: var(--row); border-radius: 14px; padding: 6px; margin: 10px 0; }
+.goal-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.goal-tabs button { background: transparent; border: 0; border-radius: 10px; padding: 8px 6px; color: var(--muted); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; }
+.goal-tabs button[aria-selected="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 0 0 1px var(--food) inset; }
+.goal-tabs small { font-weight: 400; color: var(--food); margin-left: 4px; }
+.goal-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.goal-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; background: var(--panel); font-size: .84rem; }
+.goal-list .g-txt { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.goal-list .g-rw { display: grid; justify-items: end; gap: 1px; flex: none; text-align: right; }
+.goal-list .g-rw b { color: var(--gold); font-weight: 600; font-size: .8rem; } .goal-list .g-rw small { color: var(--muted); font-size: .7rem; }
+.goal-list .g-bar { display: block; height: 4px; border-radius: 3px; background: var(--line); overflow: hidden; } .goal-list .g-bar i { display: block; height: 100%; }
+.goal-list li.done { opacity: .55; } .goal-list li.g-note { background: transparent; padding: 2px 8px; color: var(--muted); font-size: .72rem; justify-content: center; }
 .chaos-btn { border-color: #ff4fd8 !important; box-shadow: 0 0 10px rgba(255, 79, 216, .35), 0 0 6px rgba(34, 230, 255, .25) inset; }
 .chaos-xa { display: grid; gap: 8px; }
 .pet-ico { box-shadow: 0 0 10px rgba(255,255,255,.25); }
@@ -687,8 +702,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <div class="track"><div class="fill" id="lvlFill"></div></div>
     </div>
     <button class="btn ghost mode-btn" id="modeBtn">Режим</button>
-    <h2 class="section-title">Цели</h2>
-    <ul class="quests" id="menuQuests"></ul>
+    <div class="goals">
+      <div class="goal-tabs" role="tablist" aria-label="Цели">
+        <button role="tab" data-gtab="day" id="gtabDay">Цели на сегодня <small id="gtDay"></small></button>
+        <button role="tab" data-gtab="week" id="gtabWeek">На неделю <small id="gtWeek"></small></button>
+      </div>
+      <ul class="goal-list" id="menuQuests"></ul>
+    </div>
     <div class="btns menu-btns">
       <button class="btn" id="startBtn">Играть</button>
       <button class="btn ghost" id="installBtn" hidden>Установить на телефон</button>
@@ -4639,6 +4659,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('achBtn').addEventListener('click', () => openView('goals', 'ach'));
 
   // the weekly line in the menu opens the «Неделя» tab
+  document.querySelector('.goal-tabs').addEventListener('click', e => { const b = e.target.closest('[data-gtab]'); if (!b) return; save.settings.goalTab = b.dataset.gtab; persist(); renderAll(); b.focus(); });
   // menu groups: each opens its own small window; ← back returns to the menu
   document.querySelectorAll('[data-hub]').forEach(b => b.addEventListener('click', () => { showCard(b.dataset.hub); const f = $(b.dataset.hub).querySelector('.hub-list button'); if (f) f.focus(); }));
   document.querySelectorAll('[data-hubback]').forEach(b => b.addEventListener('click', () => { showCard('menuCard'); $('startBtn').focus(); }));
@@ -4688,16 +4709,22 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('lvlName').textContent = `Уровень ${li.level}${li.max ? '' : ` из ${MAX_LEVEL}`}`;
     $('lvlXp').textContent = li.max ? 'максимальный уровень' : `${li.into} / ${li.need} опыта`;
     $('lvlFill').style.width = (li.into / li.need * 100) + '%';
-    $('menuQuests').innerHTML = save.quests.map(id => QUESTS.find(q => q.id === id))
-      .map(q => `<li><span>${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`).join('') +
-      (() => { const W = weeklyState(), days = Math.max(1, Math.ceil(((W.week + 1) * 7 - 3) - Date.now() / 864e5));
-        return `<li class="goal-sep"><span>📅 На неделю · ещё ${days} дн.</span><span class="rw">${W.done.length}/3${W.bonus ? ' · +' + WEEK_BONUS + ' ◆ получено' : ` · за все +${WEEK_BONUS} ◆`}</span></li>` +
-          weeklyTasks(W.week).map(t => { const v = Math.min(t.n, W.prog[t.id] || 0), ok = W.done.includes(t.id), R = RARITY[WEEK_RAR[t.tier]];
-            return `<li class="${ok ? 'done' : ''}"><span>${ok ? '✓ ' : ''}${t.text(t.n)} <small>${v.toLocaleString('ru-RU')}/${t.n.toLocaleString('ru-RU')}</small></span><span class="rw" style="color:${R.color}">сундук «${R.name}»</span></li>`; }).join(''); })();
+    { // «Цели»: two compact tabs — today's 3 round goals and this week's 3 tasks
+      const W = weeklyState(), days = Math.max(1, Math.ceil(((W.week + 1) * 7 - 3) - Date.now() / 864e5)), tab = save.settings.goalTab === 'week' ? 'week' : 'day';
+      $('gtDay').textContent = `${save.quests.length}`; $('gtWeek').textContent = `${W.done.length}/3`;
+      $('gtabDay').setAttribute('aria-selected', tab === 'day'); $('gtabWeek').setAttribute('aria-selected', tab === 'week');
+      $('menuQuests').innerHTML = tab === 'day'
+        ? save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => `<li><span class="g-txt">${q.text}</span><span class="g-rw"><b>+${qCoins(q)} ◆</b><small>+${qXp(q)} оп.</small></span></li>`).join('') +
+          '<li class="g-note">За один раунд · новые цели появляются после выполнения</li>'
+        : weeklyTasks(W.week).map(t => { const v = Math.min(t.n, W.prog[t.id] || 0), ok = W.done.includes(t.id), R = RARITY[WEEK_RAR[t.tier]];
+            return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${t.text(t.n)}<span class="g-bar"><i style="width:${(v / t.n * 100).toFixed(0)}%;background:${R.color}"></i></span></span>` +
+              `<span class="g-rw"><b style="color:${R.color}">🎁 ${R.name}</b><small>${v.toLocaleString('ru-RU')}/${t.n.toLocaleString('ru-RU')}</small></span></li>`; }).join('') +
+          `<li class="g-note">Ещё ${days} дн. · ${W.bonus ? `бонус +${WEEK_BONUS} ◆ получен` : `за все три +${WEEK_BONUS} ◆`}</li>`;
+    }
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
-    $('modeBtn').innerHTML = `Режим: <b>${MODES[save.mode].name}</b> <small>· рекорд ${fmtBest(save.mode, save.bests[save.mode] || 0)} · все режимы ▸</small>`;
+    $('modeBtn').innerHTML = `<span>Режим:</span> <b>${MODES[save.mode].name}</b><span class="mode-more">все режимы ▸</span><small>рекорд: ${fmtBest(save.mode, save.bests[save.mode] || 0)}</small>`;
     $('modes').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) =>
       `<button class="mode" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${save.mode === id}" ${id === 'royale' && !TEST_MODE ? 'disabled' : ''}><b>${m.name}</b><small>${m.desc}</small>` +
       (id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })() : id === 'royale' ? `<span class="lg-tag">${TEST_MODE ? 'Открыта для теста' : 'Только в лиге'} · сезон ${nextSeasonOf('royale')}</span>` : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '') +
@@ -6311,7 +6338,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '52';
+const APP_VER = '53';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

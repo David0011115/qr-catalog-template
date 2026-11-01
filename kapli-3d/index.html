@@ -462,6 +462,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .menu-icons { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
 .icon-btn { flex: 1; max-width: 110px; display: grid; justify-items: center; gap: 2px; background: var(--row); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; color: var(--fg); font: inherit; font-size: 1.15rem; cursor: pointer; }
 .icon-btn small { font-size: .66rem; color: var(--muted); }
+.icon-btn { position: relative; }
+.news-dot { position: absolute; top: 6px; right: 14px; width: 9px; height: 9px; border-radius: 50%; background: #ff4f6d; box-shadow: 0 0 6px #ff4f6d; }
+.news-item { margin: 0 0 14px; }
+.news-item h3 { margin: 0 0 4px; font-size: 1rem; }
+.news-item h3 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.news-item ul { margin: 4px 0 0; padding-left: 18px; }
+.news-item li { margin: 3px 0; }
+.news-gift { color: var(--food); }
 .icon-btn:focus-visible, .hub-btn:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
 .mode-btn { width: 100%; text-align: left; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; } .mode-btn b { font-family: var(--display); font-weight: 400; } .mode-btn small { color: var(--muted); font-weight: 400; flex-basis: 100%; }
 .mode-btn .mode-more { margin-left: auto; color: var(--food); font-size: .78rem; font-weight: 400; }
@@ -744,6 +752,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="menu-icons">
       <button class="icon-btn" id="profBtn" aria-label="Профиль">👤<small>Профиль</small></button>
       <button class="icon-btn" id="infoBtn" aria-label="Информация">ⓘ<small>Информация</small></button>
+      <button class="icon-btn" id="newsBtn" aria-label="Обновления">📰<small>Обновления</small><i class="news-dot" id="newsDot" hidden></i></button>
       <button class="icon-btn" id="setBtn" aria-label="Настройки">⚙<small>Настройки</small></button>
     </div>
     </div>
@@ -1062,7 +1071,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>За каждый уровень — 50 × уровень монет, за каждый 5-й — сундук, за 10/20/30/40/50 — титул или рамка уровня. Задания в меню с уровнем становятся сложнее и щедрее.</li>
         <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
         <li><b>Достижения</b> дают монеты один раз. <b>Испытания</b> дают скины и эффекты плюс сундук.</li>
-        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги.</li>
+        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги. Каждое даёт небольшой прирост за уровень: монеты («Жадность» до +50%), масса («Пищеварение» до +40%, «Крупный старт»), защита («Защита», «Второй шанс»), скорость, бонусы и сбор крошек.</li>
         <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 3 уровня: Бронза +600 ◆, Золото — рамка режима и +800 ◆, Легенда — титул режима. Прогресс — в «Профиле».</li>
       </ul>
     </details>
@@ -1360,18 +1369,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const PRICE_MULT = 2;   // all shop prices (upgrades, skins, effects)
   const costs = (base, n, g = 1.38) => Array.from({ length: n }, (_, i) => Math.round(base * PRICE_MULT * Math.pow(g, i) / 5) * 5);
   const UPG = [
-    { id: 'big',      lvl: 1, name: 'Крупный старт',    desc: '+3 к стартовой массе за уровень', cost: costs(30, 10), info: l => `старт ${10 + 3 * l} массы` },
+    { id: 'big',      lvl: 1, name: 'Крупный старт',    desc: '+4 к стартовой массе за уровень', cost: costs(30, 10), info: l => `старт ${10 + 4 * l} массы` },
     { id: 'speed',    lvl: 1, name: 'Обтекаемость',     desc: '+3% к скорости за уровень. Бонус «Ускорение» даёт +45%. Рывок: ×3,2 от стартовой скорости при любой массе', cost: costs(40, 10), info: l => `скорость ${Math.round(100 * (1 + 0.03 * l))}% (+${3 * l}%)` },
     { id: 'dash',     lvl: 1, name: 'Реактивный рывок', desc: 'Рывок перезаряжается на 6% быстрее за уровень', cost: costs(35, 8), info: l => `перезарядка ${(4 * (1 - 0.06 * l)).toFixed(2)} с` },
-    { id: 'greed',    lvl: 1, name: 'Жадность',         desc: '+8% монет за раунд за уровень', cost: costs(50, 10), info: l => `+${8 * l}% монет` },
-    { id: 'magnet',   lvl: 2, name: 'Магнит',           desc: 'Подбираешь крошки дальше на 0,5 за уровень', cost: costs(40, 8), info: l => `+${(0.5 * l).toFixed(1)} к радиусу` },
+    { id: 'greed',    lvl: 1, name: 'Жадность',         desc: '+5% монет за раунд за уровень', cost: costs(50, 10), info: l => `+${5 * l}% монет` },
+    { id: 'magnet',   lvl: 2, name: 'Магнит',           desc: 'Подбираешь крошки дальше на 0,8 за уровень', cost: costs(40, 8), info: l => `+${(0.8 * l).toFixed(1)} к радиусу` },
     { id: 'splitmax', lvl: 3, name: 'Больше частей',    desc: '+1 к максимуму частей за уровень (базово 4)', cost: costs(80, 6, 1.5), info: l => `${4 + l} частей` },
     { id: 'bonus',    lvl: 3, name: 'Удачливость',      desc: 'Бонусы действуют на 10% дольше за уровень', cost: costs(50, 8), info: l => `+${10 * l}% к длительности` },
-    { id: 'digest',   lvl: 4, name: 'Пищеварение',      desc: '+6% массы от еды и капель за уровень', cost: costs(60, 10), info: l => `+${6 * l}% массы` },
+    { id: 'digest',   lvl: 4, name: 'Пищеварение',      desc: '+4% массы от еды и капель за уровень', cost: costs(60, 10), info: l => `+${4 * l}% массы` },
     { id: 'merge',    lvl: 4, name: 'Быстрое слияние',  desc: 'Части сливаются на 6% быстрее за уровень', cost: costs(50, 8), info: l => `слияние ${(14 * (1 - 0.06 * l)).toFixed(1)} с` },
-    { id: 'life',     lvl: 5, name: 'Второй шанс',      desc: '+1 спасение за раунд: выживаешь с половиной массы', cost: costs(200, 3, 2.5), info: l => `спасений: ${l}` },
+    { id: 'life',     lvl: 5, name: 'Второй шанс',      desc: '+1 спасение за раунд: возрождаешься с 40% массы. В «Хардкоре» не действует', cost: costs(300, 3, 2.5), info: l => `спасений: ${l}` },
     { id: 'light',    lvl: 5, name: 'Лёгкий рывок',     desc: 'Рывок длиннее, а массы забирает на 12% меньше за уровень', cost: costs(40, 6), info: l => `рывок ${(0.35 + 0.05 * l).toFixed(2)} с (×${((0.35 + 0.05 * l) / 0.35).toFixed(2)} длины), −${(3 * (1 - 0.12 * l)).toFixed(1)}% массы` },
-    { id: 'guard',    lvl: 6, name: 'Защита',           desc: 'Крупная капля теряет массу на 10% медленнее, а врагу нужно быть на 3% крупнее, чтобы съесть тебя — за каждый уровень', cost: costs(80, 8), info: l => `−${10 * l}% потерь, +${3 * l}% к защите` },
+    { id: 'guard',    lvl: 6, name: 'Защита',           desc: 'Крупная капля теряет массу на 6% медленнее, а врагу нужно быть на 2% крупнее, чтобы съесть тебя — за каждый уровень', cost: costs(80, 8), info: l => `−${6 * l}% потерь, +${2 * l}% к защите` },
     { id: 'keep',     hidden: true, lvl: 6, name: 'Сохранность',      desc: 'Крупная капля теряет массу на 10% медленнее за уровень', cost: costs(50, 8), info: l => `−${10 * l}% потерь` },
     { id: 'armor',    hidden: true, lvl: 7, name: 'Плотная оболочка', desc: 'Врагу нужно быть на 3% крупнее за уровень, чтобы съесть тебя', cost: costs(80, 8), info: l => `+${3 * l}% к защите` },
   ];
@@ -3359,7 +3368,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     else v *= (o.star ? 1 : 0.92) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
     return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
-  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.03 * U.guard : 1.25;
+  const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.02 * U.guard : 1.25;
   const canEat = (a, b) => !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
 
   let mode = save.mode;
@@ -3408,7 +3417,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         if (c.gone || (c.owner.isPlayer && e.age < 0.6)) continue;
         const r = cellR(c);
         if (r > 1.3 && Math.hypot(c.x - e.x, c.z - e.z) < r) {
-          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.06 * U.digest : 1);
+          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.04 * U.digest : 1);
           scene.remove(e.mesh); ejects.splice(i, 1);
           break;
         }
@@ -3481,7 +3490,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     [...bossOwners, colossus, ...minions].forEach(o => [...o.cells].forEach(removeCell));
     rebuildCells();
     effects = { speed: 0, shield: 3, double: 0, magnet: 0 };   // short spawn protection
-    addCell(player, 0, 0, START_MASS + 3 * U.big, freeVis.pop());
+    addCell(player, 0, 0, START_MASS + 4 * U.big, freeVis.pop());
     rebuildCells();
     player.dashCd = 0; player.dashT = 0;
     owners.forEach(o => o.splitCd = 0);
@@ -3803,7 +3812,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const cParts = [['Масса', Math.sqrt(stats.maxMass) * 2.6], ['Съеденные капли', stats.kills * 5], ['Прислужники', stats.minions], ['Боссы и звёзды', stats.bossCoins],
                     ['Комбо', stats.comboCoins || 0], ['Время в игре', stats.time / 10], ['Бонус режима', placeBonus], ['Выживание', surviveBonus]].map(([k, v]) => [k, Math.round(v)]).filter(([, v]) => v > 0);
     const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
-    if (U.greed) cMul.push([`«Жадность» +${8 * U.greed}%`, 1 + .08 * U.greed]);
+    if (U.greed) cMul.push([`«Жадность» +${5 * U.greed}%`, 1 + .05 * U.greed]);
     if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);
     if (arenaIs('olympus')) cMul.push(['Арена «Олимп»', 1.05]);
     // П8: every star of the skin you wear gives +1% coins (normal modes only)
@@ -3986,7 +3995,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         lives--;
         rebuildCells();
         const [x, z] = safeSpot(14);
-        addCell(player, x, z, Math.max(START_MASS, lastMass * 0.5), freeVis.pop());
+        addCell(player, x, z, Math.max(START_MASS, lastMass * 0.4), freeVis.pop());
         toast(`Второй шанс! Тебя съел ${eater.name}`);
         return;
       }
@@ -4374,8 +4383,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     rebuildCells();
 
     // food + decay
-    const pMagnet = starBonus('magnet') + 0.5 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
-    const pGain = (1 + 0.06 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * (arenaIs('jungle') ? 1.15 : 1);
+    const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
+    const pGain = (1 + 0.04 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * (arenaIs('jungle') ? 1.15 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const r = cellR(c) + (isP ? pMagnet : 0);
@@ -4390,7 +4399,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         }
       }
       // decay grows with size, so mass can't snowball forever
-      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.1 * U.guard : 1) * dt;
+      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.06 * U.guard : 1) * dt;
     }
 
     // bonuses (player only)
@@ -4414,7 +4423,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
-        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.06 * U.digest : 1) * (abOn('x_vamp', a.owner) ? 1.2 : 1);
+        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.04 * U.digest : 1) * (abOn('x_vamp', a.owner) ? 1.2 : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
@@ -4722,6 +4731,41 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   if (!save.tutSeen && !save.totals.rounds) setTimeout(() => tutModal('Добро пожаловать в «Капли 3D»!',
     `<p>Ты — неоновая капля. Ешь тех, кто меньше, и убегай от тех, кто больше. Короткое обучение покажет всё за пару минут.</p><p>За прохождение: <b>+${TUT_COINS} ◆ и скин «Ученик»</b>.</p>`,
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
+  // ---- updates feed: short, player-facing notes (newest first) ----
+  const NEWS = [
+    { id: 162, ver: '1.6.2', date: '1 ноября', title: 'Честнее улучшения', gift: 500, items: [
+      '«Жадность»: +5% монет за уровень вместо +8% (на максимуме +50%).',
+      '«Пищеварение»: +4% массы за уровень вместо +6% (на максимуме +40%).',
+      '«Защита»: −6% потерь массы и +2% к защите за уровень (было −10% и +3%) — крупная капля больше не почти неуязвима.',
+      '«Второй шанс»: после спасения у тебя 40% массы вместо половины, улучшение стало дороже.',
+      '«Магнит» сильнее: +0,8 к радиусу за уровень вместо +0,5.',
+      '«Крупный старт» сильнее: +4 к стартовой массе за уровень вместо +3.',
+      'Новая кнопка «Обновления» в меню — здесь будут все изменения игры.',
+    ] },
+  ];
+  function newsHtml(list) {
+    return list.map(n => `<div class="news-item"><h3>${n.title}<small>${n.ver} · ${n.date}</small></h3><ul>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${n.gift ? `<p class="news-gift">Подарок за обновление: +${n.gift} ◆</p>` : ''}</div>`).join('');
+  }
+  function newsUnseen() { return NEWS.filter(n => n.id > (save.newsSeen || 0)); }
+  function newsRefresh() { $('newsDot').hidden = !newsUnseen().length; }
+  function newsMarkSeen() {
+    NEWS.forEach(n => { if (n.id > (save.newsSeen || 0) && n.gift && !n.giftGiven) save.coins += n.gift; });
+    save.newsSeen = NEWS[0].id; persist(); newsRefresh(); if (typeof renderAll === 'function') renderAll();
+  }
+  function openNews(onlyNew) {
+    const list = onlyNew ? newsUnseen() : NEWS;
+    tutModal(onlyNew ? 'Что нового' : 'Обновления', newsHtml(list), onlyNew ? [['newsOk', 'Понятно', 'btn'], ['newsAll', 'Все обновления', 'btn ghost']] : [['newsOk', 'Закрыть', 'btn']]);
+    $('tutMBody').scrollTop = 0;
+  }
+  $('newsBtn').addEventListener('click', () => { const fresh = newsUnseen().length; openNews(false); if (fresh) newsMarkSeen(); });
+  $('tutModal').addEventListener('click', e => {
+    if (e.target.id === 'newsOk') { $('tutModal').hidden = true; $('newsBtn').focus(); }
+    else if (e.target.id === 'newsAll') openNews(false);
+  });
+  newsRefresh();
+  // a returning player sees what changed once; brand-new players start with the tutorial instead
+  if (save.totals && save.totals.rounds && newsUnseen().length) setTimeout(() => { openNews(true); newsMarkSeen(); }, 900);
+  else if (!(save.totals && save.totals.rounds) && !save.newsSeen) { save.newsSeen = NEWS[0].id; persist(); newsRefresh(); }
   $('againBtn').addEventListener('click', startRound);
   $('resDrawer').addEventListener('toggle', () => { if ($('resDrawer').open) requestAnimationFrame(drawGraph); });
   $('rewards').addEventListener('click', e => { const b = e.target.closest('#coinBtn'); if (!b) return; const open = $('coinBreak').hidden; $('coinBreak').hidden = !open; b.setAttribute('aria-expanded', open); });
@@ -5286,7 +5330,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     mab: () => ['Здесь билд — три слота способностей (Пробел, E, Q) — и все способности, которые у тебя есть.', 'Улучшаемые — купленные в магазине, а также рывок и деление (они есть у всех). Улучшения — в «Магазине» → «Способности».', 'Без улучшений — эксклюзивы Хаос-лиги: даются за «Сингулярность».', 'Облик способности выбирается под слотом, если он у тебя есть. Облики меняют только вид и работают в обычных режимах и в Хаос-лиге.'],
     abil: () => ['Здесь покупаются новые способности и улучшаются купленные. Улучшения каждой способности — в своей шторке: до 5 уровней, меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения.',
       'Билд (что стоит в трёх слотах), купленные и полученные способности и облики — в «Коллекция» → «Способности».', 'В рейтинге и «Королевской битве» у всех рывок, деление и выброс, купленное там не действует. Эксклюзивы Хаос-лиги не улучшаются.'],
-    up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.'],
+    up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.', 'Баланс 1.6.2: «Жадность» +5% монет за уровень (до +50%), «Пищеварение» +4% массы (до +40%), «Защита» −6% потерь и +2% к защите за уровень, «Второй шанс» — 40% массы, «Магнит» +0,8 и «Крупный старт» +4 за уровень.'],
     skin: () => ['Здесь скины, которые можно купить за монеты. Купленный скин появляется в гардеробе.', 'Остальные скины выпадают из сундуков, даются за испытания, достижения, лигу и сезоны.', 'Нажми на скин, чтобы посмотреть его подробнее.'],
     fx: () => ['Эффекты бывают трёх видов: след, аура и эффект поедания. В каждом слоте можно надеть один.', 'Здесь эффекты, которые продаются за монеты. Остальные — в сундуках, испытаниях и коллекциях.'],
     arena: () => ['Тема арены меняет пол, сетку, края арены, туманности и частицы вокруг.', 'Темы открываются с определённого уровня игрока, эксклюзивные — с 30-го. Купленные темы — в гардеробе.'],
@@ -6450,7 +6494,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '61';
+const APP_VER = '62';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

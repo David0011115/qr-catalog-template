@@ -76,7 +76,7 @@ body {
   position: fixed; z-index: 2; pointer-events: none;
   top: calc(66px + env(safe-area-inset-top, 0px));
   right: max(16px, env(safe-area-inset-right, 0px));
-  width: 186px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  width: 186px; background: rgba(14, 10, 38, .42); border: 1px solid var(--line); border-radius: 12px;
   padding: 10px 12px; font-size: .8rem;
 }
 .board h2, .mini-wrap h2 { margin: 0 0 6px; font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
@@ -121,6 +121,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .chip.boss-chip.soon { color: var(--boss); border-color: var(--boss); animation: bossSoon .8s ease-in-out infinite; }
 @keyframes bossSoon { 50% { box-shadow: 0 0 12px rgba(255, 45, 117, .6); } }
 @media (prefers-reduced-motion: reduce) { .chip.boss-chip.soon { animation: none; } }
+.fps { position: fixed; z-index: 2; left: max(16px, env(safe-area-inset-left, 0px)); top: calc(40px + env(safe-area-inset-top, 0px)); font: 600 .72rem var(--body); color: var(--prey); background: rgba(14, 10, 38, .55); padding: 2px 7px; border-radius: 6px; font-variant-numeric: tabular-nums; pointer-events: none; }
+.fps.slow { color: var(--threat); }
 .board li.star { color: var(--gold); font-weight: 600; }
 .star-tag { color: var(--gold); text-shadow: 0 0 6px var(--gold); margin-right: 2px; }
 
@@ -558,6 +560,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   <div class="mini-legend"><span><i style="background:var(--prey)"></i>еда</span><span><i style="background:var(--threat)"></i>опасно</span></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="fps" id="fps" hidden>– FPS</div>
 <div class="joy" id="joy" hidden><div class="knob" id="knob"></div></div>
 <div class="actions" id="actions">
   <button class="act" id="split" aria-label="Деление"><span class="in"><b>Деление</b><small id="splitSub">E</small></span></button>
@@ -571,7 +574,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   <div class="card" id="menuCard">
     <h1>Капли 3D</h1>
     <div class="pane" id="panePlay">
-    <p>Ешь крошки и капли меньше тебя, убегай от крупных. На арене бывают боссы: Громила, Шустрик, Матка роя, Делитель, Телепорт и Хамелеон.</p>
+    <p>Ешь крошки и капли меньше тебя, убегай от крупных. На арене бывают боссы: Громила, Шустрик, Матка роя, Делитель, Телепорт и Мимик.</p>
     <div class="lvl">
       <div class="lvl-top"><b id="lvlName">Уровень 1</b><span id="lvlXp">0 / 100 опыта</span></div>
       <div class="track"><div class="fill" id="lvlFill"></div></div>
@@ -730,6 +733,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <dt>Рывок, деление, выброс</dt><dd>круглые кнопки над мини-картой</dd>
         <dt>Пауза</dt><dd>кнопка ❚❚ в правом нижнем углу. Игра сама встаёт на паузу, если свернуть приложение</dd>
         <dt>Джойстик и мини-карта</dt><dd>размер и прозрачность меняются в «Настройках»</dd>
+        <dt>Тормозит?</dt><dd>в «Настройках» включи «Авто-качество» или выбери «Низкое»; «Показывать FPS» покажет скорость игры</dd>
       </dl>
     </details>
     <details><summary>Цвета колец</summary>
@@ -771,6 +775,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>В каждом раунде один бот — звезда: отмечен <b style="color:var(--gold)">★</b> в таблице лидеров, носит легендарный скин с тремя звёздами и радужной рамкой.</li>
         <li>Звезда крупнее, быстрее, дальше видит и редко влетает в шипы.</li>
         <li>Съешь её целиком — +50 монет и +40 опыта. За это есть достижения.</li>
+      </ul>
+    </details>
+    <details><summary>Задания недели</summary>
+      <ul class="info-list">
+        <li>Каждый понедельник — 3 новых задания: лёгкое, среднее и сложное. Прогресс копится по всем раундам недели.</li>
+        <li>Награды: лёгкое — редкий сундук, среднее — эпический, сложное — легендарный. За все три — ещё +1 000 ◆.</li>
+        <li>Смотри «Испытания» → «Неделя». Счётчик выполненных — в меню под заданиями.</li>
       </ul>
     </details>
     <details><summary>Мастерские достижения</summary>
@@ -852,7 +863,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <h1>Настройки</h1>
     <div class="set"><span>Качество графики</span>
       <div class="seg" id="setQuality" role="radiogroup"><button data-v="high">Высокое</button><button data-v="medium">Среднее</button><button data-v="low">Низкое</button></div>
-      <small>Низкое: без частиц, ореолов и звёзд — для слабых телефонов</small></div>
+      <small>Низкое: без частиц, ореолов, звёзд и украшений у ботов — для слабых телефонов</small></div>
     <div class="set"><span>Размер мини-карты</span>
       <div class="seg" id="setMiniSize" role="radiogroup"><button data-v="s">Маленькая</button><button data-v="m">Средняя</button><button data-v="l">Большая</button><button data-v="xl">Огромная</button></div></div>
     <div class="set"><span>Размер джойстика</span>
@@ -862,6 +873,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="set"><label for="setMus">Громкость музыки</label><input type="range" id="setMus" min="0" max="1" step="0.05"></div>
     <label class="set row" for="setVib"><span>Вибрация на телефоне</span><input type="checkbox" id="setVib"></label>
     <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
+    <label class="set row" for="setAutoQ"><span>Авто-качество<small class="reset-note" style="margin:2px 0 0">снижает графику, если игра идёт медленнее 40 кадров в секунду</small></span><input type="checkbox" id="setAutoQ"></label>
+    <label class="set row" for="setFps"><span>Показывать FPS</span><input type="checkbox" id="setFps"></label>
     <div class="set">
       <button class="btn ghost danger" id="resetBtn">Сбросить весь прогресс</button>
       <small class="reset-note">Удалится всё: монеты, уровень, улучшения, скины, эффекты, питомцы, украшения, арены, сундуки, достижения, испытания, коллекции, мастерство, рекорды, значки и лига. Сезоны лиги начнутся заново — с 1-го сезона в день сброса. Настройки (звук, графика, управление) останутся.</small>
@@ -932,18 +945,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'combo5',    name: 'Комбо-мастер',       desc: 'Сделай комбо ×5',                       coins: 80,  test: T => T.bestCombo >= 5 },
     { id: 'combo10',   name: 'Неудержимый',        desc: 'Сделай комбо ×10',                      coins: 200, test: T => T.bestCombo >= 10 },
     { id: 'teleport1', name: 'Поймал телепорта',   desc: 'Победи босса «Телепорт»',               coins: 50,  test: T => T.bossTypes.includes('teleport') },
-    { id: 'chameleon1',name: 'Зоркий глаз',        desc: 'Победи босса «Хамелеон»',               coins: 50,  test: T => T.bossTypes.includes('chameleon') },
+    { id: 'chameleon1',name: 'Зоркий глаз',        desc: 'Победи босса «Мимик»',               coins: 50,  test: T => T.bossTypes.includes('chameleon') },
     { id: 'minions20', name: 'Гроза роя',         desc: 'Съешь 20 прислужников за всё время',    coins: 40,  test: T => T.minions >= 20 },
     { id: 'mass500',   name: 'Тяжеловес',         desc: 'Набери массу 500 за раунд',             coins: 30,  test: (T, S) => S.maxMass >= 500 },
     { id: 'mass1500',  name: 'Гигант',            desc: 'Набери массу 1500 за раунд',            coins: 80,  test: (T, S) => S.maxMass >= 1500 },
     { id: 'mass2500',  name: 'Исполин',           desc: 'Набери массу 2500 за раунд',            coins: 100, test: (T, S) => S.maxMass >= 2500 },
-    { id: 'mass5000',  name: 'Титан',             desc: 'Набери массу 5000 за раунд',            coins: 150, test: (T, S) => S.maxMass >= 5000 },
+    { id: 'mass5000',  name: 'Великан',             desc: 'Набери массу 5000 за раунд',            coins: 150, test: (T, S) => S.maxMass >= 5000 },
     { id: 'mass8000',  name: 'Левиафан',          desc: 'Набери массу 8000 за раунд',            coins: 250, test: (T, S) => S.maxMass >= 8000 },
     { id: 'part10k',   name: 'Предел',            desc: 'Дорасти одной частью до массы 10 000',  coins: 400, test: (T, S) => S.maxPart >= 10000 },
     { id: 'bigPrey',   name: 'Крупная дичь',      desc: 'Съешь за раз каплю массой от 1000',     coins: 80,  test: (T, S) => S.biggestPrey >= 1000 },
     { id: 'bossCrush', name: 'Сокрушитель',       desc: 'Съешь за раз часть босса массой от 3000', coins: 200, test: (T, S) => S.biggestBoss >= 3000 },
     { id: 'leader',    name: 'Король горы',       desc: 'Стань лидером арены',                   coins: 20,  test: (T, S) => S.leader },
-    { id: 'timedWin',  name: 'Чемпион',           desc: 'Займи 1 место в режиме «На время»',     coins: 60,  test: (T, S) => S.timedWin },
+    { id: 'timedWin',  name: 'Победитель на время',           desc: 'Займи 1 место в режиме «На время»',     coins: 60,  test: (T, S) => S.timedWin },
     { id: 'survive5',  name: 'Несокрушимый',      desc: 'Продержись 5 минут в «Выживании»',      coins: 80,  test: (T, S) => S.mode === 'survival' && S.time >= 300 },
     { id: 'split8',    name: 'Рой',               desc: 'Разделись на 8 частей',                 coins: 40,  test: (T, S) => S.maxParts >= 8 },
     { id: 'eject100',  name: 'Щедрый',            desc: 'Выброси 100 сгустков массы за всё время', coins: 20, test: T => T.ejects >= 100 },
@@ -1004,6 +1017,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'keep',     lvl: 6, name: 'Сохранность',      desc: 'Крупная капля теряет массу на 10% медленнее за уровень', cost: costs(50, 8), info: l => `−${10 * l}% потерь` },
     { id: 'armor',    lvl: 7, name: 'Плотная оболочка', desc: 'Врагу нужно быть на 3% крупнее за уровень, чтобы съесть тебя', cost: costs(80, 8), info: l => `+${3 * l}% к защите` },
   ];
+  // economy: the upper half of every upgrade's levels costs 50% more (the first levels stay cheap)
+  UPG.forEach(u => { const h = Math.ceil(u.cost.length / 2); u.cost = u.cost.map((c, i) => i >= h ? Math.round(c * 1.5 / 5) * 5 : c); });
   const CATS = [
     ['Рост', ['big', 'digest', 'magnet', 'keep']],
     ['Движение', ['speed', 'dash', 'light']],
@@ -1023,8 +1038,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ringAura',     slot: 'aura',  name: 'Кольцо',         desc: 'Неоновое кольцо, как у планеты',    price: 350, lvl: 5 },
     { id: 'pulseAura',    slot: 'aura',  name: 'Пульс',          desc: 'Волны расходятся по полу',          price: 400, lvl: 6 },
     { id: 'haloAura',     slot: 'aura',  name: 'Нимб',           desc: 'Золотой нимб над каплей',           price: 500, lvl: 8 },
-    { id: 'electricAura', slot: 'aura',  name: 'Электричество',  desc: 'По капле бегают разряды',           ex: true },
-    { id: 'galaxyAura',   slot: 'aura',  name: 'Галактика',      desc: 'Диск из крошечных звёзд',           ex: true },
+    { id: 'electricAura', slot: 'aura',  name: 'Искрящаяся аура',  desc: 'По капле бегают разряды',           ex: true },
+    { id: 'galaxyAura',   slot: 'aura',  name: 'Звёздный диск',      desc: 'Диск из крошечных звёзд',           ex: true },
     { id: 'heartEat',     slot: 'eat',   name: 'Сердечки',       desc: 'Из добычи вылетают сердечки',       price: 200, lvl: 2 },
     { id: 'shockEat',     slot: 'eat',   name: 'Ударная волна',  desc: 'Кольцо расходится от добычи',       price: 300, lvl: 3 },
     { id: 'boltEat',      slot: 'eat',   name: 'Молнии',         desc: 'Вспышка с молниями',                price: 350, lvl: 4 },
@@ -1033,11 +1048,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'galaxyTrail',  slot: 'trail', name: 'Галактическая пыль',   desc: 'Звёзды глубокого фиолетового, бирюзового и золотого',             colors: ['#6a3dff', '#2ee6c8', '#ffd23f'], style: 'stars',  price: 1000, lvl: 10 },
     { id: 'quantumTrail', slot: 'trail', name: 'Квантовая спираль',    desc: 'Спираль из зелёных, фиолетовых и белых искр', colors: ['#3dffa2', '#7b3dff', '#ffffff'], style: 'spiral', price: 1500, lvl: 12 },
     { id: 'starveilTrail', slot: 'trail', name: 'Звёздный шлейф',      desc: 'Золотые, фиолетовые и оранжевые кольца за каплей',     colors: ['#ffd23f', '#b26bff', '#ff9a3d'], style: 'rings',  price: 2000, lvl: 15 },
-    { id: 'prismAura',    slot: 'aura',  name: 'Призма',               desc: 'Шесть радужных огней на наклонной орбите', price: 1200, lvl: 11 },
+    { id: 'prismAura',    slot: 'aura',  name: 'Спектральное кольцо',               desc: 'Шесть радужных огней на наклонной орбите', price: 1200, lvl: 11 },
     { id: 'starAura',     slot: 'aura',  name: 'Созвездие',            desc: 'Два кольца золотых звёзд вращаются навстречу', price: 2000, lvl: 15 },
     { id: 'prismEat',     slot: 'eat',   name: 'Призматический взрыв', desc: 'Радужная вспышка и три волны',             price: 1500, lvl: 12 },
     { id: 'goldEat',      slot: 'eat',   name: 'Золотой дождь',        desc: 'Ливень золотых звёзд и золотая волна',     price: 2000, lvl: 15 },    { id: 'starfall',     slot: 'eat',   name: 'Звездопад',      desc: 'Россыпь золотых звёзд',             ex: true },
-    { id: 'supernova',    slot: 'eat',   name: 'Сверхновая',     desc: 'Яркий взрыв и две ударные волны',   ex: true },
+    { id: 'supernova',    slot: 'eat',   name: 'Взрыв звезды',     desc: 'Яркий взрыв и две ударные волны',   ex: true },
     { id: 'snowTrail',    slot: 'trail', name: 'Снежинки',       desc: 'Белые и голубые снежинки',          ex: true },
     { id: 'sparkTrail',   slot: 'trail', name: 'Разряды',        desc: 'Быстрые бело-голубые искры',        ex: true },
     { id: 'heartTrail',   slot: 'trail', name: 'Сердечный след', desc: 'За каплей летят сердечки',          ex: true },
@@ -1120,7 +1135,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'inkTrail',      slot: 'trail', name: 'Чернила',           desc: 'Тёмно-фиолетовые клубы с розовым', chest: 'common' },
     { id: 'goldTrail',     slot: 'trail', name: 'Золотой след',      desc: 'Сверкающее золото', chest: 'rare' },
     { id: 'plasmaTrail',   slot: 'trail', name: 'Плазменный след',   desc: 'Быстрые голубые и розовые искры', chest: 'epic' },
-    { id: 'auroraTrail',   slot: 'trail', name: 'Северное сияние',   desc: 'Медленно переливается зелёным и фиолетовым', chest: 'legendary' },
+    { id: 'auroraTrail',   slot: 'trail', name: 'Полярный след',   desc: 'Медленно переливается зелёным и фиолетовым', chest: 'legendary' },
     { id: 'moonAura',      slot: 'aura',  name: 'Луна',              desc: 'Одинокая луна на орбите', chest: 'common' },
     { id: 'binaryAura',    slot: 'aura',  name: 'Двойная звезда',    desc: 'Две звезды кружат друг напротив друга', chest: 'rare' },
     { id: 'snowglobeAura', slot: 'aura',  name: 'Снежный шар',       desc: 'Стеклянная сфера и снег внутри', chest: 'epic' },
@@ -1301,9 +1316,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'colfx_fire',  name: 'Огненный набор', fx: ['fireTrail', 'flameAura', 'raysAura', 'supernova'],                                   title: 'tt_col_fire',  coins: 1500 },
     { id: 'colfx_ice',   name: 'Снег и лёд',     fx: ['snowTrail', 'snowglobeAura', 'iceEat'],                                             title: 'tt_col_ice',   coins: 1000 },
     { id: 'colfx_star',  name: 'Звёздное небо',  fx: ['starTrail', 'galaxyTrail', 'starveilTrail', 'starAura', 'galaxyAura', 'starfall'], title: 'tt_col_star',  coins: 2000 },
-    { id: 'colfx_volt',  name: 'Электричество',  fx: ['sparkTrail', 'plasmaTrail', 'electricAura', 'boltEat', 'shockEat'],                  title: 'tt_col_volt',  coins: 1500 },
+    { id: 'colfx_volt',  name: 'Гроза',  fx: ['sparkTrail', 'plasmaTrail', 'electricAura', 'boltEat', 'shockEat'],                  title: 'tt_col_volt',  coins: 1500 },
     { id: 'colfx_party', name: 'Праздник',       fx: ['heartTrail', 'rainbowTrail', 'heartEat', 'confettiEat', 'popEat'],                   title: 'tt_col_party', coins: 1000 },
-    { id: 'colfx_void',  name: 'Бездна',         fx: ['voidTrail', 'inkTrail', 'quantumTrail', 'miniholeEat', 'vortexEat'],                 title: 'tt_col_void',  coins: 1500 },
+    { id: 'colfx_void',  name: 'Тьма',         fx: ['voidTrail', 'inkTrail', 'quantumTrail', 'miniholeEat', 'vortexEat'],                 title: 'tt_col_void',  coins: 1500 },
   ];
   const colItems = c => c.skins || c.fx;
   const colOwned = c => colItems(c).filter(id => (c.skins ? save.skins : save.fxOwned).includes(id)).length;
@@ -1319,9 +1334,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'fr_rainbow', kind: 'frame', name: 'Радужная',   css: 'border:2px solid;border-image:linear-gradient(90deg,#ff4fd8,#ffd23f,#3dffa2,#22e6ff,#7b3dff) 1', cls: 'fr-rainbow', chest: 'legendary' },
     { id: 'tt_glutton', kind: 'title', name: 'Обжора',           color: '#b8b5d6', chest: 'common' },
     { id: 'tt_crumb',   kind: 'title', name: 'Крошкоед',         color: '#b8b5d6', chest: 'common' },
-    { id: 'tt_quick',   kind: 'title', name: 'Шустрик',          color: '#b8b5d6', chest: 'common' },
+    { id: 'tt_quick',   kind: 'title', name: 'Юркий',          color: '#b8b5d6', chest: 'common' },
     { id: 'tt_hunter',  kind: 'title', name: 'Охотник',          color: '#4d7cff', chest: 'rare' },
-    { id: 'tt_splitter',kind: 'title', name: 'Мастер деления',   color: '#4d7cff', chest: 'rare' },
+    { id: 'tt_splitter',kind: 'title', name: 'Дробитель',   color: '#4d7cff', chest: 'rare' },
     { id: 'tt_tactic',  kind: 'title', name: 'Стратег',          color: '#4d7cff', chest: 'rare' },
     { id: 'tt_storm',   kind: 'title', name: 'Гроза ботов',      color: '#b26bff', chest: 'epic' },
     { id: 'tt_bosseat', kind: 'title', name: 'Пожиратель боссов',color: '#b26bff', chest: 'epic' },
@@ -1333,12 +1348,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const c = ['#cd7f32', '#c0c8e0', '#ffd23f', '#7fe8ff', '#b26bff', '#ff4fd8'][i];
     DECOR.push({ id: 'fr_lg' + i, kind: 'frame', name: `Лига «${n}»`, css: `border:2px solid ${c};box-shadow:0 0 ${2 + i * 2}px ${c}`, league: i });
   });
-  [[3, 'Платиновый игрок', '#7fe8ff'], [4, 'Алмазный ас', '#b26bff'], [5, 'Неоновая легенда', '#ff4fd8']].forEach(([i, n, c]) => DECOR.push({ id: 'tt_lg' + i, kind: 'title', name: n, color: c, league: i }));
+  [[3, 'Платиновый игрок', '#7fe8ff'], [4, 'Алмазный ас', '#b26bff'], [5, 'Неоновый чемпион', '#ff4fd8']].forEach(([i, n, c]) => DECOR.push({ id: 'tt_lg' + i, kind: 'title', name: n, color: c, league: i }));
   [['fire', 'Повелитель огня', '#ff6a00'], ['ice', 'Снежный король', '#9fe8ff'], ['star', 'Звездочёт', '#ffd23f'], ['volt', 'Громовержец', '#22e6ff'], ['party', 'Душа вечеринки', '#ff4fd8'], ['void', 'Хранитель бездны', '#b26bff']]
     .forEach(([k, n, c]) => DECOR.push({ id: 'tt_col_' + k, kind: 'title', name: n, color: c, col: true }));
   // mastery of each mode: 5 levels; level 3 gives a frame, level 5 a title
   const MASTERY_LV = [{ name: 'Бронза', pts: 100, coins: 200 }, { name: 'Серебро', pts: 300, coins: 400 }, { name: 'Золото', pts: 700, frame: true }, { name: 'Платина', pts: 1500, coins: 800 }, { name: 'Легенда', pts: 3000, title: true }];
-  const MASTERY_TITLE = { classic: 'Классик', timed: 'Повелитель времени', survival: 'Несокрушимый', split: 'Виртуоз деления', crown: 'Коронованный', race: 'Король гонки', team: 'Капитан команды',
+  const MASTERY_TITLE = { classic: 'Классик', timed: 'Повелитель времени', survival: 'Бессмертный', split: 'Виртуоз деления', crown: 'Коронованный', race: 'Король гонки', team: 'Капитан команды',
     giant: 'Гроза колоссов', hardcore: 'Хардкорщик', daily: 'Герой дня', raid: 'Рейдер', royale: 'Последний выживший' };
   Object.keys(MODES).forEach((m, i) => {
     const c = '#' + new THREE.Color().setHSL((i * .618) % 1, .9, .6).getHexString();
@@ -1354,6 +1369,31 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'fr_platinum', kind: 'frame', name: 'Платиновая', css: 'border:3px double #e8fbff;box-shadow:0 0 10px #c0c8e0, 0 0 4px #ffd23f inset', cls: 'fr-legend', legend: 'coins2' },
     { id: 'tt_millionaire', kind: 'title', name: 'Миллионер', color: '#ffd23f', legend: 'coins2' });
   const decorById = id => DECOR.find(d => d.id === id) || null;
+  // weekly tasks: three a week (easy / medium / hard), each pays a chest; all three — a coin bonus
+  const WEEKLY = {
+    easy: [
+      { id: 'w_rounds', text: n => `Сыграй ${n} раундов`, n: 15, add: S => 1 },
+      { id: 'w_kills', text: n => `Съешь ${n} капель`, n: 40, add: S => S.kills },
+      { id: 'w_crumbs', text: n => `Собери ${n.toLocaleString('ru-RU')} крошек`, n: 3000, add: S => S.crumbs },
+      { id: 'w_bonus', text: n => `Подбери ${n} бонусов`, n: 20, add: S => S.bonuses },
+    ],
+    mid: [
+      { id: 'w_bosses', text: n => `Победи ${n} боссов`, n: 8, add: S => S.bosses },
+      { id: 'w_wins', text: n => `Одержи ${n} побед в любых режимах`, n: 5, add: S => S.win ? 1 : 0 },
+      { id: 'w_mass', text: n => `${n} раза набери 3 000 массы за раунд`, n: 3, add: S => S.maxMass >= 3000 ? 1 : 0 },
+      { id: 'w_combo', text: n => `${n} раза сделай комбо ×5`, n: 3, add: S => (S.bestCombo || 0) >= 5 ? 1 : 0 },
+    ],
+    hard: [
+      { id: 'w_stars', text: n => `Съешь ${n} ботов-звёзд`, n: 5, add: S => S.starKills || 0 },
+      { id: 'w_modes', text: n => `Сыграй в ${n} разных режимах`, n: 6, modes: true },
+      { id: 'w_big', text: () => 'Набери 8 000 массы за один раунд', n: 1, add: S => S.maxMass >= 8000 ? 1 : 0 },
+      { id: 'w_raid', text: n => `Нанеси ${n.toLocaleString('ru-RU')} урона боссу рейда`, n: 20000, add: S => S.mode === 'raid' ? S.raidDmg || 0 : 0 },
+      { id: 'w_wave', text: () => 'Доживи до 8-й волны «Выживания»', n: 1, add: S => S.mode === 'survival' && S.wave >= 8 ? 1 : 0 },
+    ],
+  };
+  const WEEK_RAR = { easy: 'rare', mid: 'epic', hard: 'legendary' }, WEEK_BONUS = 1000;
+  const weeklyTasks = w => ['easy', 'mid', 'hard'].map((t, k) => { const pool = WEEKLY[t]; return { tier: t, ...pool[(w * 7 + k * 3) % pool.length] }; });
+
   // skill achievements: one round, done right. Each gives its own title and coins; all of them — a frame and a skin
   const SKILL = [
     { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, обходи шипы.', coins: 1500, title: ['Железный', '#c0c8e0'],
@@ -1368,7 +1408,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       test: S => S.mode === 'race' && S.win && S.time <= 120, best: S => S.mode === 'race' && S.win ? Math.floor(S.time) : null, lower: true, unit: 'с' },
     { id: 'sk_crown', name: 'Король арены', desc: 'В «Захвате короны» продержи корону 2 минуты из 3', hint: 'Корона у самой крупной капли: держи массу и не дели её без нужды.', coins: 1500, title: ['Монарх', '#ffd23f'],
       test: S => S.mode === 'crown' && S.crownT >= 120, best: S => S.mode === 'crown' ? Math.floor(S.crownT || 0) : null, unit: 'с' },
-    { id: 'sk_royale', name: 'Тихий охотник', desc: 'Победи в «Королевской битве», ни разу не сделав рывок', hint: 'Без рывка важнее позиция: держись ближе к центру безопасной зоны.', coins: 2000, title: ['Тень', '#b26bff'],
+    { id: 'sk_royale', name: 'Тихий охотник', desc: 'Победи в «Королевской битве», ни разу не сделав рывок', hint: 'Без рывка важнее позиция: держись ближе к центру безопасной зоны.', coins: 2000, title: ['Невидимка', '#b26bff'],
       test: S => S.mode === 'royale' && S.win && !S.dashes },
     { id: 'sk_survival', name: 'Скала', desc: 'Доживи до 10-й волны «Выживания», ни разу не разделившись', hint: 'Боссов можно обходить — главное выжить. Шипы — твоё укрытие от крупных.', coins: 2000, title: ['Скала', '#7fe8ff'],
       test: S => S.mode === 'survival' && !S.splits && S.wave >= 10, best: S => S.mode === 'survival' && !S.splits ? S.wave || 0 : null, unit: 'волна' },
@@ -1441,15 +1481,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'default', name: 'Неоновый космос', price: 0,     floor: '#0b0824', grid: 'rgba(140, 100, 255, .55)', dot: '#22e6ff', rim: '#ff4fd8', inner: '#22e6ff', neb: ['#ff4fd8', '#22e6ff', '#7b3dff', '#ff3d6e'], fx: null, desc: 'Стандартная арена' },
     { id: 'lava',    name: 'Лава',            price: 30000, floor: '#1a0500', grid: 'rgba(255, 90, 0, .6)',     dot: '#ffd23f', rim: '#ff3d00', inner: '#ffd23f', neb: ['#ff3d00', '#ff9a3d', '#7b0020', '#ff2d55'], fx: 'embers', desc: 'Раскалённое дно, огненный край и искры' },
     { id: 'ice',     name: 'Лёд',             price: 33000, floor: '#06142a', grid: 'rgba(160, 230, 255, .6)',  dot: '#ffffff', rim: '#9fe8ff', inner: '#ffffff', neb: ['#9fe8ff', '#4d7cff', '#ffffff', '#22e6ff'], fx: 'snow',   desc: 'Ледяная гладь и снегопад' },
-    { id: 'ocean',   name: 'Океан',           price: 38000, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
+    { id: 'ocean',   name: 'Подводный мир',   price: 38000, floor: '#021a33', grid: 'rgba(34, 170, 255, .55)',  dot: '#3dffa2', rim: '#22a6ff', inner: '#3dffa2', neb: ['#22a6ff', '#3dffa2', '#0a3a6e', '#22e6ff'], fx: 'bubbles', desc: 'Морское дно и пузыри' },
     { id: 'jungle',  name: 'Джунгли',         price: 42000, floor: '#04170a', grid: 'rgba(61, 255, 120, .5)',   dot: '#ffd23f', rim: '#3dff6e', inner: '#ffd23f', neb: ['#3dff6e', '#c6ff3d', '#0b6e3e', '#ffd23f'], fx: 'fireflies', desc: 'Зелёная чаща и светлячки' },
     { id: 'desert',  name: 'Пустыня',         price: 48000, floor: '#1f1405', grid: 'rgba(255, 200, 100, .5)',  dot: '#ff6a00', rim: '#ffb347', inner: '#ff6a00', neb: ['#ffb347', '#ff6a00', '#7a4a00', '#ffd23f'], fx: 'sand',   desc: 'Песчаные дюны и пылевые вихри' },
-    { id: 'galaxy',  name: 'Галактика',       price: 0, legend: 'crumbs', floor: '#07021a', grid: 'rgba(178, 107, 255, .55)', dot: '#ffffff', rim: '#b26bff', inner: '#ff4fd8', neb: ['#7b3dff', '#ff4fd8', '#22e6ff', '#3a0a8e'], fx: 'cosmos', desc: 'Пол из звёздного неба, мерцающие звёзды вокруг' },
+    { id: 'galaxy',  name: 'Млечный путь',    price: 0, legend: 'crumbs', floor: '#07021a', grid: 'rgba(178, 107, 255, .55)', dot: '#ffffff', rim: '#b26bff', inner: '#ff4fd8', neb: ['#7b3dff', '#ff4fd8', '#22e6ff', '#3a0a8e'], fx: 'cosmos', desc: 'Пол из звёздного неба, мерцающие звёзды вокруг' },
     { id: 'olympus', name: 'Олимп',           price: 0, legend: 'lwins',  floor: '#1a1405', grid: 'rgba(255, 210, 63, .6)',   dot: '#ffffff', rim: '#ffd23f', inner: '#ffffff', neb: ['#ffd23f', '#ff9a3d', '#fff6a0', '#ff4fd8'], fx: 'gold', desc: 'Золотая арена чемпионов и сияющие искры' },
     // exclusive themes: twice the price of the most expensive regular one
     { id: 'sakura',  name: 'Сад сакуры',      price: 120000, exclusive: true, floor: '#1f0a17', grid: 'rgba(255, 158, 196, .55)', dot: '#ffffff', rim: '#ff9ec4', inner: '#ffd1e8', neb: ['#ff9ec4', '#ff4fd8', '#ffd1e8', '#b26bff'], fx: 'petals', desc: 'Розовый сад: падают лепестки сакуры' },
     { id: 'inferno', name: 'Пекло',           price: 120000, exclusive: true, floor: '#140000', grid: 'rgba(255, 45, 0, .65)',    dot: '#ffd23f', rim: '#ff2d00', inner: '#ff9a3d', neb: ['#7b0000', '#ff2d00', '#ff9a3d', '#2a0000'], fx: 'ash', desc: 'Алое-чёрная арена: летит пепел и вспыхивают искры' },
-    { id: 'aurora',  name: 'Северное сияние', price: 120000, exclusive: true, floor: '#020f14', grid: 'rgba(61, 255, 162, .45)',  dot: '#b26bff', rim: '#3dffa2', inner: '#b26bff', neb: ['#3dffa2', '#b26bff', '#22e6ff', '#3dffa2'], fx: 'aurora', desc: 'Небо переливается зелёным и фиолетовым сиянием' },
+    { id: 'aurora',  name: 'Полярная ночь',   price: 120000, exclusive: true, floor: '#020f14', grid: 'rgba(61, 255, 162, .45)',  dot: '#b26bff', rim: '#3dffa2', inner: '#b26bff', neb: ['#3dffa2', '#b26bff', '#22e6ff', '#3dffa2'], fx: 'aurora', desc: 'Небо переливается зелёным и фиолетовым сиянием' },
     { id: 'retro',   name: 'Ретро-волна',     price: 120000, exclusive: true, floor: '#12001f', grid: 'rgba(255, 79, 216, .8)',   dot: '#22e6ff', rim: '#ff4fd8', inner: '#ffd23f', neb: ['#ff4fd8', '#ff9a3d', '#7b3dff', '#22e6ff'], fx: 'retro', desc: 'Синтвейв-сетка и закатное солнце на горизонте' },
     { id: 'cyber',   name: 'Киберград',       price: 60000, floor: '#0a0018', grid: 'rgba(255, 79, 216, .7)',   dot: '#22e6ff', rim: '#22e6ff', inner: '#ff4fd8', neb: ['#ff4fd8', '#22e6ff', '#3dffa2', '#7b3dff'], fx: 'rain',   desc: 'Неоновый город и цифровой дождь' },
   ];
@@ -1529,12 +1569,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     return petMap[id] || null;
   }
   const LEAGUES = [
-    { name: 'Бронза',  pts: 0,    color: '#cd7f32', coins: 50 },
-    { name: 'Серебро', pts: 300,  color: '#c0c8e0', coins: 150 },
-    { name: 'Золото',  pts: 800,  color: '#ffd23f', coins: 300 },
-    { name: 'Платина', pts: 1600, color: '#7fe8ff', coins: 600 },
-    { name: 'Алмаз',   pts: 3000, color: '#b26bff', coins: 1000, skin: true },
-    { name: 'Неон',    pts: 5000, color: '#ff4fd8', coins: 2000, skin: true, fx: true },
+    { name: 'Бронза',  pts: 0,    color: '#cd7f32', coins: 100 },
+    { name: 'Серебро', pts: 300,  color: '#c0c8e0', coins: 300 },
+    { name: 'Золото',  pts: 800,  color: '#ffd23f', coins: 600 },
+    { name: 'Платина', pts: 1600, color: '#7fe8ff', coins: 1200 },
+    { name: 'Алмаз',   pts: 3000, color: '#b26bff', coins: 2000, skin: true },
+    { name: 'Неон',    pts: 5000, color: '#ff4fd8', coins: 4000, skin: true, fx: true },
   ];
   const leagueOf = pts => LEAGUES.reduce((best, l, i) => pts >= l.pts ? i : best, 0);
   const QUESTS = [
@@ -1616,6 +1656,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   save.colDone = save.colDone || [];
   save.mastery = save.mastery || {};
   save.legend = save.legend || { since: today };   // counters start the day the legendary achievements appeared
+  function weeklyState() {
+    const w = raidWeek();
+    if (!save.weekly || save.weekly.week !== w) save.weekly = { week: w, prog: {}, modes: [], done: [], bonus: false };
+    return save.weekly;
+  }
   save.skillDone = save.skillDone || []; save.skillBest = save.skillBest || {};
   save.legendDone = (save.legendDone || []).filter(id => !['stars', 'wins'].includes(id));
   save.raid = save.raid || { week: 0, dmg: 0, done: false, day: '', tries: 0 };
@@ -1628,7 +1673,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   save.history = save.history || [];
   save.totals.modeRounds = save.totals.modeRounds || {};
-  save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', sfxVol: .7, musVol: .45, ...(save.settings || {}) };
+  save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', sfxVol: .7, musVol: .45, autoQ: true, showFps: false, ...(save.settings || {}) };
   save.season = save.season || { id: seasonNow, pts: 0 };
   [...(save.skins || []), ...(save.fxOwned || [])].forEach(id => { const m = /^hf?_(\w+?)_(\d{4})_\d$/.exec(id); if (m && HOLIDAYS[m[1]]) ensureHolidayItems(m[1], +m[2]); });
   save.seasonLog = save.seasonLog || [];
@@ -1682,7 +1727,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ch_team10',    name: 'Капитан',            desc: 'Выиграй 10 «Командных боёв»',              goal: 10,   prog: () => save.bests.team || 0, reward: ['skin', 'abyss'] },
     { id: 'ch_round20',   name: 'Сердцеед',           desc: 'Съешь 20 капель за один раунд',            goal: 20,   prog: () => save.totals.bestKills, reward: ['fx', 'heartTrail'] },
     { id: 'ch_eject500',  name: 'Щедрая душа',        desc: 'Выброси 500 сгустков массы',               goal: 500,  prog: () => save.totals.ejects,    reward: ['fx', 'snowTrail'] },
-    { id: 'ch_race2',     name: 'Молния',             desc: 'Выиграй «Гонку массы» быстрее 5 минут',    goal: 1,    prog: () => save.bests.race > 0 && save.bests.race <= 300 ? 1 : 0, reward: ['fx', 'sparkTrail'] },
+    { id: 'ch_race2',     name: 'Гонщик',             desc: 'Выиграй «Гонку массы» быстрее 5 минут',    goal: 1,    prog: () => save.bests.race > 0 && save.bests.race <= 300 ? 1 : 0, reward: ['fx', 'sparkTrail'] },
     { id: 'ch_race3',     name: 'Полосатый рейс',     desc: 'Выиграй «Гонку массы» 3 раза',             goal: 3,    prog: () => save.totals.raceWins,  reward: ['skin', 'zebra'] },
     { id: 'ch_crown5',    name: 'Венценосный',        desc: 'Победи в «Захвате короны» 5 раз',          goal: 5,    prog: () => save.totals.crownWins, reward: ['skin', 'prism'] },
     { id: 'ch_wave15',    name: 'Стена',              desc: 'Дойди до 15-й волны в «Выживании»',        goal: 15,   prog: () => save.totals.bestWave,  reward: ['fx', 'flameAura'] },
@@ -1695,7 +1740,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ch_skins10',   name: 'Модник',             desc: 'Собери 10 скинов',                         goal: 10,   prog: () => save.skins.length,     reward: ['fx', 'hexAura'] },
     { id: 'ch_ach12',     name: 'Коллекционер наград', desc: 'Получи 12 достижений',                    goal: 12,   prog: () => save.ach.length,       reward: ['fx', 'confettiEat'] },
     { id: 'ch_mass10k',   name: 'Сверхгигант',        desc: 'Набери массу 10 000 в «Классике»',         goal: 10000, prog: () => save.bests.classic || 0, reward: ['skin', 'titan'] },
-    { id: 'ch_surv20',    name: 'Последний рубеж',    desc: 'Дойди до 20-й волны в «Выживании»',        goal: 20,   prog: () => save.totals.bestWave,  reward: ['fx', 'crownAura'] },
+    { id: 'ch_surv20',    name: 'Двадцатая волна',    desc: 'Дойди до 20-й волны в «Выживании»',        goal: 20,   prog: () => save.totals.bestWave,  reward: ['fx', 'crownAura'] },
     { id: 'ch_kills500',  name: 'Легенда арены',      desc: 'Съешь 500 капель за всё время',            goal: 500,  prog: () => save.totals.kills,     reward: ['skin', 'shade'] },
   ];
   const rewardName = ([type, id]) => type === 'skin' ? `скин «${SKINS.find(k => k.id === id).name}»` : `эффект «${FX.find(f => f.id === id).name}»`;
@@ -2173,6 +2218,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   function trailFx(dt, now) {
     trailT += dt; if (trailT < 0.035) return; trailT = 0;
+    if (QUALITY === 'low') return;
     if (save.fx.trail) { if (!player.trailDef || player.trailDef.id !== save.fx.trail) player.trailDef = fxById(save.fx.trail); trailOwner(player, save.fx.trail, now); }
     // bots emit at half rate and only near the camera, to keep particles cheap
     for (const o of bots) if (o.fx && o.fx.trail && o.cells.length && Math.random() < .5) trailOwner(o, o.fx.trail, now);
@@ -2455,9 +2501,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const STAR_COINS = 50;
   const STAR_BOTS = [
     { name: 'Аврора',  skin: 'c_starborn',  aura: 'starAura',   trail: 'auroraTrail',  persona: 'hunter' },
-    { name: 'Титан',   skin: 'c_diamond',   aura: 'raysAura',   trail: 'goldTrail',    persona: 'aggressive' },
+    { name: 'Атлант',  skin: 'c_diamond',   aura: 'raysAura',   trail: 'goldTrail',    persona: 'aggressive' },
     { name: 'Вспышка', skin: 'c_solar',     aura: 'flameAura',  trail: 'fireTrail',    persona: 'aggressive' },
-    { name: 'Призма',  skin: 'lc_absolute', aura: 'prismAura',  trail: 'rainbowTrail', persona: 'normal' },
+    { name: 'Спектр',  skin: 'lc_absolute', aura: 'prismAura',  trail: 'rainbowTrail', persona: 'normal' },
     { name: 'Мираж',   skin: 'c_chameleon', aura: 'galaxyAura', trail: 'quantumTrail', persona: 'normal' },
     { name: 'Вулкан',  skin: 'c_lavalamp',  aura: 'binaryAura', trail: 'plasmaTrail',  persona: 'aggressive' },
   ];
@@ -2477,7 +2523,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(MAX_MASS * 0.6, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
     queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(MAX_MASS * 0.6, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
     teleport: { name: 'Телепорт',  color: '#22e6ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(MAX_MASS * 0.6, Math.max(150, p * 1.4)), about: 'исчезает и появляется рядом с тобой' },
-    chameleon:{ name: 'Хамелеон',  color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(MAX_MASS * 0.6, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
+    chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(MAX_MASS * 0.6, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
     splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(MAX_MASS * 0.6, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
   };
   // two of each kind, so survival can field duplicates in later waves
@@ -2830,6 +2876,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const record = mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
     if (record) save.bests[mode] = score;
     stats.crownT = player.crownT;
+    // weekly tasks
+    let weekLine = '';
+    { const W = weeklyState();
+      if (!W.modes.includes(mode)) W.modes.push(mode);
+      for (const t of weeklyTasks(W.week)) {
+        if (W.done.includes(t.id)) continue;
+        W.prog[t.id] = t.modes ? W.modes.length : (W.prog[t.id] || 0) + t.add(stats);
+        if (W.prog[t.id] >= t.n) { W.done.push(t.id); save.special.push({ kind: 'challenge', rar: WEEK_RAR[t.tier], title: 'Неделя' });
+          weekLine += `<li class="done"><span>📅 Задание недели: ${t.text(t.n)}</span><span class="rw">сундук «${RARITY[WEEK_RAR[t.tier]].name}»</span></li>`; }
+      }
+      if (W.done.length === 3 && !W.bonus) { W.bonus = true; coins += WEEK_BONUS; save.coins += WEEK_BONUS; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
     const skillLine = checkSkill(stats).map(k => k.all ? '<li class="done skill"><span>🎯 Все мастерские достижения! Рамка «Мастер» и скин «Виртуоз»</span><span class="rw">в гардеробе</span></li>'
       : `<li class="done skill"><span>🎯 Мастерское достижение «${k.name}»</span><span class="rw">титул «${k.title[0]}» + ${k.coins} ◆</span></li>`).join('');
     // legendary achievements
@@ -2897,7 +2954,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('rewards').innerHTML = `<span class="coin">+${coins} ◆</span><span class="xp">+${xp} опыта</span>${stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">+${pts} рейтинга</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
-      skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
+      weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
       (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
       const opened = [...UPG.filter(u => u.lvl > lvBefore && u.lvl <= lvAfter).map(u => u.name),
@@ -3591,7 +3648,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('lvlXp').textContent = `${li.into} / ${li.need} опыта`;
     $('lvlFill').style.width = (li.into / li.need * 100) + '%';
     $('menuQuests').innerHTML = save.quests.map(id => QUESTS.find(q => q.id === id))
-      .map(q => `<li><span>${q.text}</span><span class="rw">+${q.coins} ◆ · +${q.xp} оп.</span></li>`).join('');
+      .map(q => `<li><span>${q.text}</span><span class="rw">+${q.coins} ◆ · +${q.xp} оп.</span></li>`).join('') +
+      (() => { const W = weeklyState(); return `<li class="week-li"><span>📅 Задания недели: ${W.done.length} из 3</span><span class="rw">«Испытания» → «Неделя»</span></li>`; })();
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
@@ -3630,7 +3688,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     pets:     { title: 'Питомцы', tabs: [['wpet', 'Мои питомцы'], ['pcat', 'Где получить']] },
-    goals:    { title: 'Испытания и достижения', tabs: [['ch', 'Испытания'], ['ach', 'Достижения'], ['skill', 'Мастерские'], ['legend', 'Легендарные']] },
+    goals:    { title: 'Испытания и достижения', tabs: [['week', 'Неделя'], ['ch', 'Испытания'], ['ach', 'Достижения'], ['skill', 'Мастерские'], ['legend', 'Легендарные']] },
   };
   let shopView = 'shop';
   const FX_ICON = { trail: '〰', aura: '◎', eat: '✦' };
@@ -3864,6 +3922,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
           `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
           `<span class="rw">Награда: ${rewardName(ch.reward)}${done ? ' — в гардеробе' : ''}</span></div>`;
       }).join('');
+    } else if (shopTab === 'week') {
+      const W = weeklyState(), days = Math.max(1, Math.ceil(((W.week + 1) * 7 - 3) - Date.now() / 864e5));
+      const TIER = { easy: 'Лёгкое', mid: 'Среднее', hard: 'Сложное' };
+      $('shop').innerHTML = `<p class="empty-note">Новые задания каждый понедельник. До обновления: ${days} дн. За каждое — сундук, за все три — ещё +${WEEK_BONUS} ◆.</p>` +
+        weeklyTasks(W.week).map(t => { const v = Math.min(t.n, W.prog[t.id] || 0), ok = W.done.includes(t.id), R = RARITY[WEEK_RAR[t.tier]];
+          return `<div class="chal ${ok ? 'done' : ''}"><div class="chal-top"><b>${ok ? '✓ ' : ''}${t.text(t.n)}</b><span>${v.toLocaleString('ru-RU')} / ${t.n.toLocaleString('ru-RU')}</span></div>` +
+            `<small>${TIER[t.tier]} задание</small><div class="track"><div class="fill" style="width:${(v / t.n * 100).toFixed(0)}%"></div></div>` +
+            `<span class="rw" style="color:${R.color}">Награда: сундук «${R.name}»${ok ? ' — получен, открой в «Сундуках»' : ''}</span></div>`; }).join('') +
+        `<div class="chal ${W.bonus ? 'done' : ''}"><div class="chal-top"><b>${W.bonus ? '✓ ' : ''}Все три задания</b><span>${W.done.length} / 3</span></div><span class="rw">Награда: +${WEEK_BONUS} ◆</span></div>`;
     } else if (shopTab === 'skill') {
       const vir = SKINS.find(k => k.id === 'sk_virtuoso'), done = save.skillDone.length;
       const fmtB = k => { const v = save.skillBest[k.id]; return v === undefined ? '' : `Лучшее: ${k.unit === 'с' ? fmtTime(v) : `${v.toLocaleString('ru-RU')} ${k.unit}`}`; };
@@ -4337,13 +4404,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     document.documentElement.style.setProperty('--joy-a', st.joyAlpha);
     JOY_R = js * .47;
     $('miniWrap').classList.toggle('off', !st.minimap);
+    $('fps').hidden = !st.showFps;
     const mz = { s: [110, 84], m: [140, 100], l: [190, 140], xl: [240, 180] }[st.miniSize] || [140, 100];
     document.documentElement.style.setProperty('--mini-d', mz[0] + 'px'); document.documentElement.style.setProperty('--mini-p', mz[1] + 'px');
   }
   function renderSettings() {
     const st = save.settings;
     [['setQuality', st.quality], ['setJoy', st.joySize], ['setMiniSize', st.miniSize]].forEach(([id, v]) => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.v === v)));
-    $('setAlpha').value = st.joyAlpha; $('setVib').checked = st.vibrate; $('setMini').checked = st.minimap; $('setSfx').value = st.sfxVol; $('setMus').value = st.musVol;
+    $('setAlpha').value = st.joyAlpha; $('setVib').checked = st.vibrate; $('setMini').checked = st.minimap; $('setSfx').value = st.sfxVol; $('setMus').value = st.musVol; $('setAutoQ').checked = st.autoQ; $('setFps').checked = st.showFps;
     $('resetConfirm').hidden = true; $('resetBtn').hidden = false;
   }
   const saveSettings = () => { persist(); applySettings(); renderSettings(); };
@@ -4355,6 +4423,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('setSfx').addEventListener('input', e => { save.settings.sfxVol = +e.target.value; persist(); Sound.ensure(); Sound.apply(); Sound.play('bonus'); });
   $('setMus').addEventListener('input', e => { save.settings.musVol = +e.target.value; persist(); Sound.ensure(); Sound.apply(); });
   $('setMini').addEventListener('change', e => { save.settings.minimap = e.target.checked; saveSettings(); });
+  $('setAutoQ').addEventListener('change', e => { save.settings.autoQ = e.target.checked; saveSettings(); });
+  $('setFps').addEventListener('change', e => { save.settings.showFps = e.target.checked; saveSettings(); });
   $('setBtn').addEventListener('click', () => { renderSettings(); showCard('settingsCard'); $('setBack').focus(); });
   $('setBack').addEventListener('click', () => { showCard('menuCard'); $('setBtn').focus(); });
   $('resetBtn').addEventListener('click', () => { $('resetConfirm').hidden = false; $('resetBtn').hidden = true; $('resetNo').focus(); });
@@ -4661,6 +4731,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       if (lk) {
         const crownMode = mode === 'crown' && running;
         v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
+        if (!c.owner.isPlayer) { const show = QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show; if (v.shine) v.shine.visible = show && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
         if (v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
         if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
         if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');
@@ -4739,7 +4810,24 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
 
   let last = performance.now();
+  // frame rate: shown on demand; when it stays under 40 for 5 s in a round, graphics step down once per 10 s
+  const perf = { frames: 0, t0: 0, fps: 60, low: 0, cool: 0 };
+  function trackFps(now) {
+    perf.frames++;
+    if (now - perf.t0 < 1000) return;
+    perf.fps = perf.frames * 1000 / (now - perf.t0); perf.frames = 0; perf.t0 = now;
+    if (save.settings.showFps) { const el = $('fps'); el.textContent = `${Math.round(perf.fps)} FPS`; el.classList.toggle('slow', perf.fps < 40); }
+    if (!running || paused || document.hidden || !save.settings.autoQ || save.settings.quality === 'low') { perf.low = 0; return; }
+    perf.cool = Math.max(0, perf.cool - 1);
+    perf.low = perf.fps < 40 ? perf.low + 1 : 0;
+    if (perf.low >= 5 && !perf.cool) {
+      save.settings.quality = save.settings.quality === 'high' ? 'medium' : 'low'; persist(); applySettings();
+      toast(`Игра шла медленно — графика снижена до «${save.settings.quality === 'medium' ? 'Среднее' : 'Низкое'}»`);
+      perf.low = 0; perf.cool = 10;
+    }
+  }
   function frame(now) {
+    trackFps(now);
     const dt = Math.min((now - last) / 1000, 0.05); last = now;
     if (running && !paused && !dying) update(dt);
     else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
@@ -4778,7 +4866,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '21';
+const APP_VER = '22';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

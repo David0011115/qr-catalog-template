@@ -741,7 +741,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <p class="hint" id="chaosNote"></p>
     <h2 class="section-title">Ступени и награды сезона</h2>
     <ul class="lg-table" id="chaosTable"></ul>
-    <h2 class="section-title">Эксклюзивные способности · за «Неон», по одной за сезон</h2>
+    <button class="tab-info-btn" id="chaosAbilBtn">ⓘ Все 24 способности: что делают и как работают</button>
+    <h2 class="section-title">Эксклюзивные способности · за «Сингулярность», по одной за сезон</h2>
     <div class="chaos-xa" id="chaosXa"></div>
     <button class="btn ghost" id="chaosBack">Готово</button>
   </div>
@@ -751,7 +752,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="league" id="leaguePanel"></div>
     <button class="btn" id="leaguePlay">Играть в лиге</button>
     <p class="hint" id="leaguePlayNote"></p>
-    <p class="hint">В рейтинге у всех рывок и деление: купленные способности и улучшения не действуют.</p>
+    <p class="hint">В рейтинге у всех рывок, деление и выброс: купленные способности, улучшения и облики не действуют.</p>
     <div class="season-skin" id="seasonSkin"></div>
     <div class="badge-info" id="curBadge"></div>
     <h2 class="section-title">Лиги и награды сезона</h2>
@@ -909,7 +910,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Награды эксклюзивные — их нет в магазине и сундуках: скины, эффекты, рамки, титулы, питомцы и две арены.</li>
         <li>Значок «Легенда Капель» — за все девять основных достижений (у ступенчатых хватит первой ступени).</li>
         <li>Эксклюзивный значок «Миллионер» — за 1 000 000 заработанных монет («Золотой магнат II»).</li>
-        <li>Ещё четыре особых значка: «Великий коллекционер» — все коллекции, кроме праздничных; «Мастер режимов» — мастерство «Легенда» во всех режимах; «Чемпион Неона» — высшая лига в 10 сезонах; «Ветеран сезонов» — 26 значков сезонов. Все особые значки — в профиле.</li>
+        <li>Другие особые значки: «Великий коллекционер» — все коллекции, кроме праздничных; «Мастер режимов» — мастерство «Легенда» во всех режимах; «Первый Неон», «Чемпион Неона» и «Легенда лиги» — 1, 10 и 25 сезонов в высшей лиге; «Покоритель лиг» — высшая ступень в обеих лигах; «Ветеран сезонов» — 26 значков сезонов. Все особые значки — в профиле.</li>
       </ul>
     </details>
     <details><summary>Способности и билд</summary>
@@ -918,7 +919,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         <li>Рывок и деление есть у всех. Ещё 10 способностей продаются в «Магазине» → «Способности»: выброс массы, щит, магнитный импульс, скачок, замедляющая волна, маскировка, взрыв-толчок, сжатие, клон-приманка и ловушка-шип.</li>
         <li>Каждую купленную способность можно улучшить до 5 уровней: меньше перезарядка и сильнее эффект. У рывка и деления свои улучшения: «Реактивный рывок», «Лёгкий рывок», «Больше частей», «Быстрое слияние».</li>
         <li>Билд — что стоит в слотах — меняется только в меню. Слот может быть пустым, одну способность нельзя поставить дважды.</li>
-        <li>В рейтинге и «Королевской битве» у всех одинаково: рывок и деление.</li>
+        <li>В рейтинге основной лиги и «Королевской битве» у всех одинаково — и у игрока, и у ботов: рывок, деление и выброс.</li>
         <li>Все 12 способностей — коллекция «Арсенал».</li>
       </ul>
     </details>
@@ -937,8 +938,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <ul class="info-list">
         <li>Отдельная рейтинговая лига с 25 уровня. Сезон — 7 дней, режим боя меняется по кругу.</li>
         <li>В начале боя каждый получает 3 случайные способности из 24: 12 обычных и 12 эксклюзивных. Одна всегда рывок или деление. Купленные способности и улучшения здесь не действуют — у всех равные условия.</li>
-        <li>Ступени те же (Бронза → Неон), очков нужно вдвое меньше. Взнос с «Золота»: 120 / 240 / 360 / 480. «Алмаз» и «Неон» — только с 46 уровня.</li>
-        <li>Награды сезона: монеты; «Алмаз» — скин сезона и рамка; «Неон» — ещё титул и эксклюзивная способность (по одной за сезон). Её можно ставить в билд в обычных режимах.</li>
+        <li>Свои 6 ступеней: Искра → Помеха → Сбой → Шторм → Разлом → Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос со «Сбоя»: 120 / 240 / 360 / 480. «Разлом» и «Сингулярность» — только с 46 уровня.</li>
+        <li>Награды сезона: монеты; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда все получены — облик способности. Способность можно ставить в билд в обычных режимах.</li>
         <li>12 эксклюзивных способностей — коллекция «Хаос-арсенал».</li>
       </ul>
     </details>
@@ -1082,13 +1083,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'speedy',   name: 'Турбо',        desc: 'Все капли на 30% быстрее' },
   ];
   const today = new Date().toISOString().slice(0, 10);
-  const MAX_LEVEL = 50, LEVEL_STEP = 75;   // level L → L+1 needs 100 + 75·(L−1) XP; 50 is the top
+  // level L → L+1 needs 100 + 75·(L−1) XP; from level 30 on the step doubles: + another 75·(L−29). 50 is the top
+  const MAX_LEVEL = 50, LEVEL_STEP = 75, LEVEL_HARD_FROM = 30, LEVEL_HARD_STEP = 75;
+  const levelNeed = L => 100 + LEVEL_STEP * (L - 1) + (L >= LEVEL_HARD_FROM ? LEVEL_HARD_STEP * (L - LEVEL_HARD_FROM + 1) : 0);
   function levelInfo(xp) {
-    let level = 1, need = 100;
-    while (xp >= need && level < MAX_LEVEL) { xp -= need; level++; need = 100 + LEVEL_STEP * (level - 1); }
+    let level = 1, need = levelNeed(1);
+    while (xp >= need && level < MAX_LEVEL) { xp -= need; level++; need = levelNeed(level); }
     return { level, into: level >= MAX_LEVEL ? need : xp, need, max: level >= MAX_LEVEL };
   }
-  const xpForLevel = L => { let t = 0; for (let k = 1; k < L; k++) t += 100 + LEVEL_STEP * (k - 1); return t; };
+  const xpForLevel = L => { let t = 0; for (let k = 1; k < L; k++) t += levelNeed(k); return t; };
   const dailyMod = DAILY[[...today].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % DAILY.length];
   MODES.daily.desc = `${dailyMod.name}: ${dailyMod.desc.toLowerCase()}. Цель: масса ${DAILY_GOAL}, награда раз в день`;
   const EJECT_COST = 10, EJECT_MASS = 8, EJECT_MIN = 25, MAX_EJECTS = 60;
@@ -1098,8 +1101,8 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'ab_three',             name: 'Три в одном',       desc: 'Выиграй раунд с тремя разными способностями в билде, применив каждую', coins: 1000, test: (T, s) => !!(s && s.threeInOne) },
     { id: 'ab_all',   abil: true, name: 'Полный арсенал',    desc: 'Купи все 12 способностей',                coins: 3000, test: () => BASE_ABIL.every(a => save.abil.owned.includes(a.id)) },
     { id: 'ch_first', name: 'Первый хаос', desc: 'Сыграй рейтинговый бой в Хаос-лиге', coins: 300, test: () => (save.totals.chaosGames || 0) >= 1 },
-    { id: 'ch_dia',   name: 'Хаос-Алмаз',  desc: 'Достигни ступени «Алмаз» в Хаос-лиге', coins: 1500, test: () => (save.totals.chaosMax || 0) >= 4 },
-    { id: 'ch_neon',  name: 'Хаос-Неон',   desc: 'Достигни ступени «Неон» в Хаос-лиге', coins: 3000, test: () => (save.totals.chaosMax || 0) >= 5 },
+    { id: 'ch_dia',   name: 'Хаос-Разлом',  desc: 'Достигни ступени «Разлом» в Хаос-лиге', coins: 1500, test: () => (save.totals.chaosMax || 0) >= 4 },
+    { id: 'ch_neon',  name: 'Хаос-Сингулярность', desc: 'Достигни ступени «Сингулярность» в Хаос-лиге', coins: 3000, test: () => (save.totals.chaosMax || 0) >= 5 },
     { id: 'first',     name: 'Первая добыча',     desc: 'Съешь первую каплю',                    coins: 10,  test: T => T.kills >= 1 },
     { id: 'kills50',   name: 'Гроза арены',       desc: 'Съешь 50 капель за всё время',          coins: 60,  test: T => T.kills >= 50 },
     { id: 'boss1',     name: 'Охотник на боссов', desc: 'Победи любого босса',                   coins: 30,  test: T => T.bosses >= 1 },
@@ -1160,7 +1163,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
   // every level: cooldown −cdPerLv, power (duration / distance / radius / force) +powPerLv.
   const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .5, growth: 1.8, cdPerLv: .06, powPerLv: .1,
-    rankedBuild: ['dash', 'split', null], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
+    rankedBuild: ['dash', 'split', 'eject'], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
     slotBtn: ['dash', 'split', 'eject'], slotKey: ['Space', 'KeyE', 'KeyQ'], slotKeyName: ['Пробел', 'E', 'Q'],
     arsenalCoins: 5000, slowFactor: .5, shrinkSpeed: 1.25, maxTraps: 2, decoySpeed: .55 };
   const ABILITIES = [
@@ -1176,7 +1179,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 25, dur: 4, size: .3, desc: 'Капля на 30% меньше и на 25% быстрее, масса та же. В это время можно есть только еду' },
     { id: 'decoy',  name: 'Клон-приманка',     sh: 'Клон',    icon: '◎', color: '#ff6ad5', price: 28000, cd: 30, dur: 5,  desc: 'Оставляет копию, за которой гонятся боты. Её нельзя съесть, очков она не даёт' },
     { id: 'trap',   name: 'Ловушка-шип',       sh: 'Ловушка', icon: '✳', color: '#3dff6e', price: 35000, cd: 35, dur: 10, desc: 'Ставит временный шип: он рвёт крупные капли соперников, тебя и союзников не трогает. Не больше 2 сразу' },
-    // Chaos League exclusives (xa): no price, no upgrades; from Chaos League «Неон» seasons, one per season in this order
+    // Chaos League exclusives (xa): no price, no upgrades; from Chaos League «Сингулярность» seasons, one per season in this order
     { id: 'x_hole',    xa: true, name: 'Мини-чёрная дыра',     sh: 'Дыра',     icon: '◉', color: '#b26bff', cd: 35, dur: 4, dist: 20, radius: 18, desc: 'В точке впереди на 4 с притягивает еду и мелкие капли' },
     { id: 'x_ice',     xa: true, name: 'Ледяная волна',        sh: 'Лёд',      icon: '❄', color: '#9fe8ff', cd: 30, dur: 2, radius: 25, desc: 'Замораживает соперников рядом на 2 с' },
     { id: 'x_over',    xa: true, name: 'Перегрузка',           sh: 'Перегруз', icon: '⚡', color: '#ffd23f', cd: 45, dur: 5, desc: 'На 5 с остальные твои способности перезаряжаются вдвое быстрее' },
@@ -1823,10 +1826,10 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         items: () => { const out = []; for (let id = q * 13 + 1; id <= q * 13 + 13; id++) { const sd = seasonData(id);
           if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else out.push(['skin', sd.skin.id], ['fx', sd.fx.id]); } return out; } });
     });
-    DECOR.push({ id: 'fr_chaos', kind: 'frame', name: 'Разлом', css: 'border:2px dashed #ff4fd8;box-shadow:0 0 8px #22e6ff, 0 0 3px #ff4fd8 inset', chaos: true },
+    DECOR.push({ id: 'fr_chaos', kind: 'frame', name: 'Трещина', css: 'border:2px dashed #ff4fd8;box-shadow:0 0 8px #22e6ff, 0 0 3px #ff4fd8 inset', chaos: true },
       { id: 'tt_chaos', kind: 'title', name: 'Повелитель хаоса', color: '#ff4fd8', chaos: true },
       { id: 'tt_xarsenal', kind: 'title', name: 'Архитектор хаоса', color: '#22e6ff', col: true },
-      { id: 'fr_xarsenal', kind: 'frame', name: 'Сингулярность', css: 'border:2px solid #b26bff;box-shadow:0 0 10px #ff4fd8, 0 0 4px #22e6ff inset', cls: 'fr-rainbow', col: true });
+      { id: 'fr_xarsenal', kind: 'frame', name: 'Горизонт событий', css: 'border:2px solid #b26bff;box-shadow:0 0 10px #ff4fd8, 0 0 4px #22e6ff inset', cls: 'fr-rainbow', col: true });
     COLLECTIONS.push({ id: 'col_xarsenal', group: 'abil', name: 'Хаос-арсенал', title: 'tt_xarsenal', frame: 'fr_xarsenal', coins: 0, items: () => XA_ABIL.map(a => ['abil', a.id]) });
     DECOR.push({ id: 'tt_arsenal', kind: 'title', name: 'Оружейник', color: '#ff9a3d', col: true },
       { id: 'fr_arsenal', kind: 'frame', name: 'Оружейная', css: 'border:2px solid #ff9a3d;box-shadow:0 0 8px #ff9a3d, 0 0 2px #ffd23f inset', col: true });
@@ -1893,8 +1896,18 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const chaosNow = Math.max(1, Math.floor((Date.now() - CHAOS_EPOCH) / CHAOS_LEN) + 1);
   const chaosEnd = id => CHAOS_EPOCH + id * CHAOS_LEN;
   const chaosOf = pts => CHAOS_CFG.pts.reduce((best, p, i) => pts >= p ? i : best, 0);
+  // Chaos League tiers: own names, icons and colours, brighter as you climb (thresholds and rules as above)
+  const CHAOS_TIERS = [
+    { name: 'Искра',         icon: '✦', color: '#9a8fc4' },
+    { name: 'Помеха',        icon: '≈', color: '#6f8cff' },
+    { name: 'Сбой',          icon: '⌁', color: '#22c8ff' },
+    { name: 'Шторм',         icon: 'ϟ', color: '#3dffa2' },
+    { name: 'Разлом',        icon: '⟋', color: '#ffb020' },
+    { name: 'Сингулярность', icon: '◉', color: '#ff4fd8' },
+  ];
+  const ctName = i => CHAOS_TIERS[i].name, ctTag = i => `<span style="color:${CHAOS_TIERS[i].color}">${CHAOS_TIERS[i].icon} ${CHAOS_TIERS[i].name}</span>`;
   // chaos season skins: one per season, names cycle with a roman numeral after the first round
-  const CHAOS_SKIN_NAMES = ['Глитч', 'Энтропия', 'Квантовый шум', 'Сбой системы', 'Буря пикселей', 'Искажение', 'Перегрев ядра', 'Фрактал', 'Вспышка хаоса', 'Аномалия', 'Помехи', 'Дикая частота'];
+  const CHAOS_SKIN_NAMES = ['Глитч', 'Энтропия', 'Квантовый шум', 'Сбой системы', 'Буря пикселей', 'Искажение', 'Перегрев ядра', 'Фрактал', 'Вспышка хаоса', 'Аномалия', 'Белый шум', 'Дикая частота'];
   const ROMAN = ['', ' II', ' III', ' IV', ' V', ' VI', ' VII', ' VIII', ' IX', ' X'];
   function chaosSkin(id) {
     const i = (id - 1) % CHAOS_SKIN_NAMES.length, cyc = Math.floor((id - 1) / CHAOS_SKIN_NAMES.length), h = (id * 97.3) % 360;
@@ -1905,7 +1918,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     const out = [];
     if (ti >= CHAOS_CFG.topTier) {
       const k = ensureChaosSkin(id); if (!save.skins.includes(k.id)) { save.skins.push(k.id); out.push(`скин «${k.name}»`); }
-      if (!save.decor.includes('fr_chaos')) { save.decor.push('fr_chaos'); out.push('рамка «Разлом»'); }
+      if (!save.decor.includes('fr_chaos')) { save.decor.push('fr_chaos'); out.push('рамка «Трещина»'); }
     }
     if (ti >= 5) {
       if (!save.decor.includes('tt_chaos')) { save.decor.push('tt_chaos'); out.push('титул «Повелитель хаоса»'); }
@@ -2035,6 +2048,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     save.xp = xpForLevel(L) + Math.round(xp / need * (100 + LEVEL_STEP * (L - 1)));
     save.lvlCurve = 2; save.lvlPaid = L;   // rewards start from the next level
   }
+  if (save.lvlCurve === 2) {
+    // v39: harder levels after 30 — keep everyone's level and progress inside it
+    let xp = save.xp || 0, L = 1, need = 100;
+    while (xp >= need && L < MAX_LEVEL) { xp -= need; L++; need = 100 + LEVEL_STEP * (L - 1); }
+    save.xp = xpForLevel(L) + (L >= MAX_LEVEL ? 0 : Math.round(xp / need * levelNeed(L)));
+    save.lvlCurve = 3;
+  }
   save.legend = save.legend || { since: today };   // counters start the day the legendary achievements appeared
   function weeklyState() {
     const w = raidWeek();
@@ -2093,7 +2113,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       save.coins += CHAOS_CFG.coins[ti]; save.legend.coins = (save.legend.coins || 0) + CHAOS_CFG.coins[ti];
       const got = chaosSeasonRewards(id, ti);
       save.chaosLog.push({ id, tier: ti, pts: save.chaos.pts });
-      chaosNotice = `Хаос-сезон ${id} завершён: ступень «${LEAGUES[ti].name}». Награда: ${CHAOS_CFG.coins[ti]} ◆${got.map(g => ', ' + g).join('')}.`;
+      chaosNotice = `Хаос-сезон ${id} завершён: ступень «${ctName(ti)}». Награда: ${CHAOS_CFG.coins[ti]} ◆${got.map(g => ', ' + g).join('')}.`;
     }
     save.chaos = { id: chaosNow, pts: 0 };
   }
@@ -3601,7 +3621,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       cExtra.map(([k, v]) => `<li><span>${k}</span><span class="rw">+${v}</span></li>`).join('') +
       `<li class="cb-sum"><span>Всего</span><span class="rw">${coins} ◆</span></li>`;
     $('coinBreak').hidden = true;
-    $('rewards').innerHTML = `<button class="coin coin-btn" id="coinBtn" aria-expanded="false" title="Из чего сложились монеты">+${coins} ◆ <small>▾</small></button><span class="xp">+${xp} опыта</span>${chaosR ? `<span style="color:${LEAGUES[chaosR.tier].color}">Хаос: ${chaosR.net >= 0 ? '+' : '−'}${Math.abs(chaosR.net)} очков${chaosR.fee ? ` <small>(+${chaosR.gain} − взнос ${chaosR.fee})</small>` : ''}${chaosR.capped ? ' <small>· выше Платины — с 46 ур.</small>' : ''}</span>` : stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
+    $('rewards').innerHTML = `<button class="coin coin-btn" id="coinBtn" aria-expanded="false" title="Из чего сложились монеты">+${coins} ◆ <small>▾</small></button><span class="xp">+${xp} опыта</span>${chaosR ? ` <span style="color:${CHAOS_TIERS[chaosR.tier].color}">Хаос: ${chaosR.net >= 0 ? '+' : '−'}${Math.abs(chaosR.net)} очков${chaosR.fee ? ` <small>(+${chaosR.gain} − взнос ${chaosR.fee})</small>` : ''}${chaosR.capped ? ' <small>· выше «Шторма» — с 46 ур.</small>' : ''}</span>` : stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${rewardName(ch.reward)} + сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
       weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
@@ -4388,6 +4408,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       prog: () => { const ids = Object.keys(MODES); return [ids.filter(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length).length, ids.length]; }, how: n => `Мастерство «Легенда» во всех режимах: ${n[0]} из ${n[1]}.` },
     { id: 'neonchamp', name: 'Чемпион Неона', label: 'НЕОН ×10', c: '#ff4fd8', c2: '#5a0a4a', glyph: 'N',
       prog: () => [Math.min(10, save.seasonLog.filter(x => x.league >= 5).length), 10], how: n => `Закончи 10 сезонов в высшей лиге («Неон» или праздничная): ${n[0]} из 10.` },
+    { id: 'firstneon', name: 'Первый Неон', label: 'НЕОН', c: '#ff4fd8', c2: '#3a0a40', glyph: '1',
+      prog: () => [Math.min(1, save.seasonLog.filter(x => x.league >= 5).length), 1], how: () => 'Впервые закончи сезон основной лиги в «Неоне».' },
+    { id: 'leaguelegend', name: 'Легенда лиги', label: 'НЕОН ×25', c: '#ffd23f', c2: '#5a3b00', glyph: '25',
+      prog: () => [Math.min(25, save.seasonLog.filter(x => x.league >= 5).length), 25], how: n => `Закончи 25 сезонов основной лиги в высшей лиге: ${n[0]} из 25.` },
+    { id: 'conqueror', name: 'Покоритель лиг', label: 'ДВЕ ЛИГИ', c: '#22e6ff', c2: '#3a0a40', glyph: '⚔',
+      prog: () => [(save.totals.maxLeague >= 5 ? 1 : 0) + ((save.totals.chaosMax || 0) >= 5 ? 1 : 0), 2], how: n => `Дойди до высшей ступени в обеих лигах: «Неон» в основной и «Сингулярность» в Хаос-лиге (${n[0]} из 2).` },
     { id: 'veteran', name: 'Ветеран сезонов', label: 'ВЕТЕРАН', c: '#ff9a3d', c2: '#5a2a00', glyph: '26',
       prog: () => [Math.min(26, save.seasonLog.length), 26], how: n => `Собери 26 значков сезонов — это год игры: ${n[0]} из 26.` },
   ];
@@ -4809,7 +4835,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         `<button class="buy" id="aup-${a.id}" data-aup="${a.id}" ${max || save.coins < cost ? 'disabled' : ''}>${max ? 'Макс.' : `Улучшить · ${cost.toLocaleString('ru-RU')} ◆`}</button></div>`;
     }).join('');
     return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${slots}</div>` +
-      `<p class="empty-note">Билд меняется только в меню. В рейтинге и «Королевской битве» у всех рывок и деление.</p><h3>Все способности · ${own.filter(id => !abilById(id).xa).length} из ${BASE_ABIL.length}</h3>` + rows +
+      `<p class="empty-note">Билд меняется только в меню. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p><h3>Все способности · ${own.filter(id => !abilById(id).xa).length} из ${BASE_ABIL.length}</h3>` + rows +
       `<h3>Эксклюзивы Хаос-лиги · ${save.abil.xa.length} из ${XA_ABIL.length}</h3>` + XA_ABIL.map(a => { const has = save.abil.xa.includes(a.id);
         return `<div class="ab-row ${has ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}</b><small>${a.desc}.</small><small class="now">${has ? `Получена · перезарядка ${a.cd} с · без улучшений` : 'Награда за «Неон» в Хаос-лиге'}</small></div></div>`; }).join('');
   }
@@ -4827,13 +4853,14 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   });
   // per-tab help: what the tab is for and how its items are earned (opened by the ⓘ button at the top of each tab)
   const TAB_INFO = {
+    chaosAbil: () => ABILITIES.map(a => `<span style="color:${a.color}">${a.icon}</span> <b>${a.name}</b>${a.xa ? ' <small>(эксклюзив)</small>' : ''} — ${a.desc}.${a.cd > 1 ? ` Перезарядка ${a.cd} с.` : a.id === 'dash' ? ' Перезарядка 4 с.' : a.id === 'split' ? ' Перезарядка 10 с, до 10 частей.' : ''}`),
     chaos: () => [`Хаос-лига открывается с ${CHAOS_CFG.entryLevel} уровня. Сезон длится ${CHAOS_CFG.seasonDays} дней, режим боя меняется по кругу, как в основной лиге.`,
       'В начале боя выдаются 3 случайные способности из 24 (12 обычных и 12 эксклюзивных); одна из них всегда рывок или деление. Набор не меняется до конца боя. Купленные способности и улучшения не действуют — у всех равные условия.',
-      `Ступени как в основной лиге, но очков нужно вдвое меньше. Взнос за бой с «Золота»: ${CHAOS_CFG.fee.slice(2).join(' / ')}. Ниже порога своей ступени не опустишься. Монеты за бой — как в рейтинге (×1,5).`,
-      `«Алмаз» и «Неон» открываются с ${CHAOS_CFG.topLevel} уровня. Награды: монеты всем; «Алмаз» — скин сезона и рамка «Разлом»; «Неон» — ещё титул «Повелитель хаоса» и эксклюзивная способность (по одной за сезон).`,
+      `Свои ступени: Искра, Помеха, Сбой, Шторм, Разлом, Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос за бой со «Сбоя»: ${CHAOS_CFG.fee.slice(2).join(' / ')}. Ниже порога своей ступени не опустишься. Монеты за бой — как в рейтинге (×1,5).`,
+      `«Разлом» и «Сингулярность» открываются с ${CHAOS_CFG.topLevel} уровня. Награды: монеты всем; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда получены все — облик способности. За 5, 10, 25 и 50 сезонов в «Сингулярности» — особые награды.`,
       'Полученные эксклюзивные способности можно ставить в билд в обычных режимах (без улучшений). В рейтинге основной лиги и в Хаос-лиге их выбрать нельзя.'],
     abil: () => ['Способности стоят в трёх слотах билда — на месте кнопок рывка, деления и выброса. На компьютере: Пробел, E, Q.', 'Рывок и деление есть у всех. Остальные покупаются за монеты и улучшаются до 5 уровней: меньше перезарядка, сильнее эффект.',
-      'Одну способность нельзя поставить в два слота. Слот может быть пустым. Билд меняется только в меню.', 'В рейтинге и «Королевской битве» у всех рывок и деление, купленное там не действует.'],
+      'Одну способность нельзя поставить в два слота. Слот может быть пустым. Билд меняется только в меню.', 'В рейтинге и «Королевской битве» у всех рывок, деление и выброс, купленное там не действует.'],
     up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.'],
     skin: () => ['Здесь скины, которые можно купить за монеты. Купленный скин появляется в гардеробе.', 'Остальные скины выпадают из сундуков, даются за испытания, достижения, лигу и сезоны.', 'Нажми на скин, чтобы посмотреть его подробнее.'],
     fx: () => ['Эффекты бывают трёх видов: след, аура и эффект поедания. В каждом слоте можно надеть один.', 'Здесь эффекты, которые продаются за монеты. Остальные — в сундуках, испытаниях и коллекциях.'],
@@ -4855,7 +4882,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     legend: () => ['Легендарные достижения — самые долгие цели игры. Каждое даёт эксклюзивную награду, которую больше нигде не получить.', 'За все — значок «Легенда Капель». Дата начала отсчёта прогресса указана вверху вкладки.'],
   };
   function openTabInfo(tab) {
-    const name = tab === 'chaos' ? 'Хаос-лига' : (Object.values(SHOP_VIEWS).flatMap(v => v.tabs).find(t => t[0] === tab) || [, ''])[1];
+    const name = tab === 'chaos' ? 'Хаос-лига' : tab === 'chaosAbil' ? 'способности' : (Object.values(SHOP_VIEWS).flatMap(v => v.tabs).find(t => t[0] === tab) || [, ''])[1];
     $('tiName').textContent = 'Информация · ' + name;
     $('tiBody').innerHTML = TAB_INFO[tab]().map(t => `<li>${t}</li>`).join('');
     tiReturn = document.activeElement; $('tabInfoModal').hidden = false; $('tiOk').focus();
@@ -5096,7 +5123,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
     if (x.skill) return 'все мастерские достижения';
     if (x.tut) return 'награда за обучение';
-    if (x.chaos) return `Хаос-лига, сезон ${x.chaos}: «Алмаз» или «Неон»`;
+    if (x.chaos) return `Хаос-лига, сезон ${x.chaos}: «Разлом» или «Сингулярность»`;
     if (x.raid) return 'трофей босс-рейда';
     if (x.special === 'raid') return 'первая победа в босс-рейде';
     if (x.special === 'league') return 'лига «Неон» в конце сезона';
@@ -5466,30 +5493,30 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const chaosOpen = () => playerLevel() >= CHAOS_CFG.entryLevel;
   function chaosRewardText(ti) {
     const r = [`${CHAOS_CFG.coins[ti]} ◆`];
-    if (ti >= CHAOS_CFG.topTier) r.push(`скин сезона «${ensureChaosSkin(save.chaos.id).name}»`, 'рамка «Разлом»');
+    if (ti >= CHAOS_CFG.topTier) r.push(`скин сезона «${ensureChaosSkin(save.chaos.id).name}»`, 'рамка «Трещина»');
     if (ti >= 5) { const nx = XA_ABIL.find(a => !save.abil.xa.includes(a.id)); r.push('титул «Повелитель хаоса»', nx ? `способность «${nx.name}»` : 'все способности уже получены'); }
     return r.join(' + ');
   }
   function renderChaosBtn() {
     const ti = chaosOf(save.chaos.pts);
-    $('chaosBtn').innerHTML = chaosOpen() ? `Хаос-лига · <b style="color:${LEAGUES[ti].color}">${LEAGUES[ti].name}</b> · ${save.chaos.pts}` : `Хаос-лига · 🔒 с ${CHAOS_CFG.entryLevel} уровня`;
+    $('chaosBtn').innerHTML = chaosOpen() ? `Хаос-лига · <b style="color:${CHAOS_TIERS[ti].color}">${CHAOS_TIERS[ti].icon} ${ctName(ti)}</b> · ${save.chaos.pts}` : `Хаос-лига · 🔒 с ${CHAOS_CFG.entryLevel} уровня`;
   }
   function renderChaos() {
-    const C = save.chaos, ti = chaosOf(C.pts), L = LEAGUES[ti], lv = playerLevel(), open = chaosOpen(), lockTop = lv < CHAOS_CFG.topLevel;
+    const C = save.chaos, ti = chaosOf(C.pts), L = CHAOS_TIERS[ti], lv = playerLevel(), open = chaosOpen(), lockTop = lv < CHAOS_CFG.topLevel;
     const nextI = ti < 5 ? ti + 1 : null, nextPts = nextI !== null ? CHAOS_CFG.pts[nextI] : null;
     const pct = nextPts !== null ? (C.pts - CHAOS_CFG.pts[ti]) / (nextPts - CHAOS_CFG.pts[ti]) * 100 : 100;
     const days = Math.max(0, Math.ceil((chaosEnd(C.id) - Date.now()) / 864e5));
     const when = chaosStarted ? `Хаос-сезон ${C.id} · режим «${MODES[seasonMode(C.id)].name}» · до ${fmtDate(chaosEnd(C.id))} (осталось ${days} дн.)` : `Хаос-сезон 1 начнётся ${fmtDate(CHAOS_EPOCH)}. До старта очки не начисляются`;
     const g = C.last, sign = v => (v >= 0 ? '+' : '−') + Math.abs(v);
-    $('chaosPanel').innerHTML = `<div class="league-top"><b style="color:${L.color}">${L.name}</b><span class="hint">${C.pts} очков</span></div>` +
-      `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%;background:${L.color}"></div></div><small>${when}. ${nextPts !== null ? `До ступени «${LEAGUES[nextI].name}»: ${nextPts - C.pts} очков.` : 'Это высшая ступень.'}</small>` +
-      (lockTop ? `<span class="notice">Алмаз и Неон откроются на ${CHAOS_CFG.topLevel} уровне (сейчас ${lv}-й). До этого ступень не выше Платины.</span>` : '') +
-      (g ? `<div class="lg-last ${g.net < 0 ? 'neg' : ''}"><b>Последняя игра: ${sign(g.net)} очков</b><small>за игру ${sign(g.gain)}${g.fee ? ` · взнос −${g.fee}` : ''}${g.floor ? ' · счёт остановился на пороге ступени' : ''}${g.capped ? ' · выше Платины — с 46 уровня' : ''}</small><small>За сезон: игр ${C.games || 0}${C.fees ? ` · взносов ${C.fees} очков` : ''}</small></div>` : '') +
+    $('chaosPanel').innerHTML = `<div class="league-top"><b style="color:${L.color}">${L.icon} ${L.name}</b><span class="hint">${C.pts} очков</span></div>` +
+      `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%;background:${L.color}"></div></div><small>${when}. ${nextPts !== null ? `До ступени «${ctName(nextI)}»: ${nextPts - C.pts} очков.` : 'Это высшая ступень.'}</small>` +
+      (lockTop ? `<span class="notice">«Разлом» и «Сингулярность» откроются на ${CHAOS_CFG.topLevel} уровне (сейчас ${lv}-й). До этого ступень не выше «Шторма».</span>` : '') +
+      (g ? `<div class="lg-last ${g.net < 0 ? 'neg' : ''}"><b>Последняя игра: ${sign(g.net)} очков</b><small>за игру ${sign(g.gain)}${g.fee ? ` · взнос −${g.fee}` : ''}${g.floor ? ' · счёт остановился на пороге ступени' : ''}${g.capped ? ' · выше «Шторма» — с 46 уровня' : ''}</small><small>За сезон: игр ${C.games || 0}${C.fees ? ` · взносов ${C.fees} очков` : ''}</small></div>` : '') +
       (chaosNotice ? `<span class="notice">${chaosNotice}</span>` : '');
     $('chaosPlay').disabled = !open;
     $('chaosPlay').textContent = open ? `Играть · ${MODES[seasonMode(C.id)].name}` : `Откроется на ${CHAOS_CFG.entryLevel} уровне`;
     $('chaosNote').textContent = open ? `3 случайные способности на бой (одна — рывок или деление), у всех равные условия. Купленные способности и улучшения не действуют.${CHAOS_CFG.fee[ti] ? ` Взнос за бой: ${CHAOS_CFG.fee[ti]} очков.` : ''}` : `Сейчас у тебя ${lv}-й уровень.`;
-    $('chaosTable').innerHTML = LEAGUES.map((l, i) => `<li class="${i === ti ? 'cur' : ''}" style="--lc:${l.color}"><b>${l.name}</b><span>от ${CHAOS_CFG.pts[i]} очков${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span>` +
+    $('chaosTable').innerHTML = CHAOS_TIERS.map((l, i) => `<li class="${i === ti ? 'cur' : ''}" style="--lc:${l.color}"><b>${l.icon} ${l.name}</b><span>от ${CHAOS_CFG.pts[i]} очков${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span>` +
       `<small>Награда: ${chaosRewardText(i)}${i >= CHAOS_CFG.topTier ? ` · с ${CHAOS_CFG.topLevel} ур.` : ''}${i === ti ? ' · вы здесь' : ''}</small></li>`).join('');
     $('chaosXa').innerHTML = XA_ABIL.map(a => `<div class="ab-row ${save.abil.xa.includes(a.id) ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.abil.xa.includes(a.id) ? ' <span class="badge-ex">получена</span>' : ''}</b><small>${a.desc}. Перезарядка ${a.cd} с.</small></div></div>`).join('');
   }
@@ -5497,6 +5524,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('chaosPlay').addEventListener('click', () => { if (!chaosOpen()) return; pendingRanked = true; pendingChaos = true; startRound(); });
   $('chaosBack').addEventListener('click', () => { showCard('menuCard'); $('chaosBtn').focus(); });
   $('chaosInfoBtn').addEventListener('click', () => openTabInfo('chaos'));
+  $('chaosAbilBtn').addEventListener('click', () => openTabInfo('chaosAbil'));
   function renderLeague() {
     const sd = seasonData(save.season.id), hk = sd.holiday, li = leagueOf(save.season.pts), L = lgView(li, hk), next = li < 5 ? lgView(li + 1, hk) : null;
     $('leaguePlay').textContent = `Играть в лиге · ${MODES[leagueMode()].name}`;
@@ -5544,7 +5572,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
       ['Достижения', `${save.ach.length} / ${ACH.length}`], ['Испытания', `${save.chDone.length} / ${CHALLENGES.length}`],
       ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Способности', `${save.abil.owned.filter(id => !abilById(id).xa).length} / ${BASE_ABIL.length}`],
-      ['Хаос-лига', `<span style="color:${LEAGUES[chaosOf(save.chaos.pts)].color}">${LEAGUES[chaosOf(save.chaos.pts)].name}</span> · эксклюзивов ${save.abil.xa.length}/${XA_ABIL.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
+      ['Хаос-лига', `${ctTag(chaosOf(save.chaos.pts))} · эксклюзивов ${save.abil.xa.length}/${XA_ABIL.length}`], ['Имя', `<span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}`],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('profStats').innerHTML = [
       ['В игре', `${hours} ч ${mins} мин`], ['Раундов', T.rounds], ['Любимый режим', fav ? MODES[fav].name : '–'],
@@ -5906,7 +5934,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '38';
+const APP_VER = '39';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

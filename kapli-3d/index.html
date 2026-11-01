@@ -309,6 +309,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .buy.sel { background: var(--prey); }
 .pane { display: flex; flex-direction: column; gap: 14px; }
 .info-card { gap: 10px; }
+.reset-note { display: block; color: var(--muted); font-size: .76rem; line-height: 1.45; margin-top: 6px; }
 .legend-head { display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(255, 210, 63, .14), rgba(255, 79, 216, .12)); border: 1px solid rgba(255, 210, 63, .35); }
 .legend-head > div { display: grid; gap: 4px; min-width: 0; }
 .legend-head small { color: var(--muted); font-size: .78rem; }
@@ -863,8 +864,9 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
     <div class="set">
       <button class="btn ghost danger" id="resetBtn">Сбросить весь прогресс</button>
+      <small class="reset-note">Удалится всё: монеты, уровень, улучшения, скины, эффекты, питомцы, украшения, арены, сундуки, достижения, испытания, коллекции, мастерство, рекорды, значки и лига. Сезоны лиги начнутся заново — с 1-го сезона в день сброса. Настройки (звук, графика, управление) останутся.</small>
       <div id="resetConfirm" class="confirm" hidden>
-        <p>Пропадут монеты, уровень, улучшения, скины, эффекты и рекорды. Отменить это нельзя.</p>
+        <p><b>Точно сбросить?</b> Отменить это нельзя.</p>
         <button class="btn" id="resetYes">Да, сбросить</button>
         <button class="btn ghost" id="resetNo">Отмена</button>
       </div>
@@ -1133,7 +1135,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { id: 'rainbowEat',    slot: 'eat',   name: 'Радужный взрыв',    desc: 'Радуга искр и две волны', chest: 'legendary' },
   );
   // seasons: 14 days each; every season has its own skin for Diamond and Neon leagues
-  const SEASON_LEN = 14 * 86400000, SEASON_EPOCH = new Date(2026, 10, 1).getTime();   // season 1 starts 1 Nov 2026 (local time)
+  // season 1 starts 1 Nov 2026 (local time); after a full progress reset it starts again on the day of the reset
+  const SEASON_LEN = 14 * 86400000, SEASON_EPOCH = (() => {
+    try { const s0 = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s0 && s0.seasonEpoch) return s0.seasonEpoch; } catch (e) {}
+    return new Date(2026, 10, 1).getTime();
+  })();
   const seasonStarted = Date.now() >= SEASON_EPOCH;
   const seasonNow = Math.max(1, Math.floor((Date.now() - SEASON_EPOCH) / SEASON_LEN) + 1);
   const seasonEnd = id => SEASON_EPOCH + id * SEASON_LEN;
@@ -4353,7 +4359,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   $('setBack').addEventListener('click', () => { showCard('menuCard'); $('setBtn').focus(); });
   $('resetBtn').addEventListener('click', () => { $('resetConfirm').hidden = false; $('resetBtn').hidden = true; $('resetNo').focus(); });
   $('resetNo').addEventListener('click', () => { $('resetConfirm').hidden = true; $('resetBtn').hidden = false; $('resetBtn').focus(); });
-  $('resetYes').addEventListener('click', () => { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} location.reload(); });
+  $('resetYes').addEventListener('click', () => {
+    // a clean save that keeps only the settings; league seasons restart from season 1 today
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: save.settings, seasonEpoch: d.getTime() })); } catch (e) {}
+    location.reload();
+  });
 
   // ================= season badges (inline SVG) =================
   let badgeUid = 0;
@@ -4767,7 +4778,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '20';
+const APP_VER = '21';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

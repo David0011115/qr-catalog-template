@@ -90,6 +90,8 @@ body {
 .fr-fire { animation: frFire 1.2s ease-in-out infinite; }
 @keyframes frFire { 50% { box-shadow: 0 0 9px #ff6a00, 0 0 3px #ffd23f inset; } }
 .fr-rainbow { animation: frHue 4s linear infinite; }
+.fr-beta { animation: frBeta 2.2s ease-in-out infinite; }
+@keyframes frBeta { 0%, 100% { box-shadow: 0 0 6px #22e6ff, 0 0 3px #7b3dff inset; border-color: #22e6ff; } 50% { box-shadow: 0 0 14px #7b3dff, 0 0 6px #22e6ff inset; border-color: #9b6bff; } }
 .fr-legend { animation: frLegend 1.6s ease-in-out infinite; }
 @keyframes frLegend { 50% { box-shadow: 0 0 16px #ffd23f, 0 0 6px #ff4fd8 inset; border-color: #fff6a0; } }
 @keyframes frHue { to { filter: hue-rotate(360deg); } }
@@ -119,7 +121,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .col-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .arena-pv { display: block; width: 34px; height: 26px; border-radius: 10px; border: 2px solid var(--rm); box-shadow: 0 0 10px var(--rm);
   background: linear-gradient(var(--gr) 1px, transparent 1px) 0 0/10px 10px, linear-gradient(90deg, var(--gr) 1px, transparent 1px) 0 0/10px 10px, var(--fl); }
-@media (prefers-reduced-motion: reduce) { .fr-fire, .fr-rainbow, .fr-legend { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fr-fire, .fr-rainbow, .fr-legend, .fr-beta { animation: none; } }
 .board li.boss { color: var(--boss); font-weight: 600; }
 .quests li.legend { color: var(--gold); }
 .quests li.week-li { cursor: pointer; outline: 1px dashed var(--line); }
@@ -490,6 +492,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .promo-text small { color: var(--muted); text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; }
 .promo-text b { font-family: var(--display); font-weight: 400; font-size: 1.7rem; color: #fff; text-shadow: 0 0 14px var(--pc), 0 0 30px var(--pc); }
 .promo-text span { color: var(--pc); font-size: .85rem; }
+.promo-text .fr { color: #fff; padding: 1px 8px; border-radius: 8px; margin: 0 2px; }
 @keyframes pfIn { from { opacity: 0; } }
 @keyframes pfSpin { 0% { transform: scale(.1) rotateY(-540deg); opacity: 0; } 60% { transform: scale(1.15) rotateY(-20deg); opacity: 1; } 100% { transform: scale(1) rotateY(0); } }
 @keyframes pfFloat { 0%, 100% { transform: translateY(0) rotateY(-14deg); } 50% { transform: translateY(-8px) rotateY(14deg); } }
@@ -1234,7 +1237,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   <div class="promo-burst"></div><div class="promo-ring"></div><div class="promo-ring r2"></div>
   <div class="promo-sparks" id="promoSparks"></div>
   <div class="promo-stage"><div class="promo-coin" id="promoCoin"></div></div>
-  <div class="promo-text"><small>Промокод активирован</small><b id="promoName"></b><span>Особый значок — в профиле</span></div>
+  <div class="promo-text"><small>Промокод активирован</small><b id="promoName"></b><span id="promoWhat">Особый значок — в профиле</span></div>
 </div>
 <div class="modal" id="tutModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tutMName">
@@ -1903,6 +1906,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       test: S => !!S.smallBoss },
   ];
   SKILL.forEach(k => DECOR.push({ id: 'tt_' + k.id, kind: 'title', name: k.title[0], color: k.title[1], skill: k.id }));
+  DECOR.push({ id: 'fr_beta', kind: 'frame', name: 'Бета-тестер', css: 'border:2px solid #22e6ff;box-shadow:0 0 8px #22e6ff, 0 0 3px #7b3dff inset', cls: 'fr-beta', promo: true });
   DECOR.push({ id: 'fr_master', kind: 'frame', name: 'Мастер', css: 'border:2px solid #22e6ff;box-shadow:0 0 8px #22e6ff, 0 0 4px #ff4fd8 inset', cls: 'fr-legend', skill: 'all' });
   SKINS.push({ id: 'cv_skin', name: 'Хаосит', color: '#14002a', accent: '#ff4fd8', pattern: 'zigzag', glow: true, pulse: true, head: 'halo', shine: 'bolt', chaos: 'vet' });
   SKINS.push({ id: 'tut_student', name: 'Ученик', color: '#9fe8ff', accent: '#ffd23f', pattern: 'dots', glow: true, head: 'star', tut: true });
@@ -4788,9 +4792,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 167, ver: '1.6.7', date: '1 ноября', title: 'Рамка «Бета-тестер»', patch: true, items: [
+      'Промокод «Бета-тестера» теперь даёт ещё и эксклюзивную неоновую рамку «Бета-тестер» — она в «Гардеробе» → «Украшения».',
+      'Если ты уже активировал этот промокод, рамка уже у тебя.',
+    ] },
     { id: 166, ver: '1.6.6', date: '1 ноября', title: 'Промокоды и новые значки', items: [
       'В «Настройках» появился раздел «🎁 Промокод». Введи код — и получи награду с яркой анимацией.',
-      'Три новых особых значка, которые можно получить только по промокодам: «Бета-тестер», «Создатель» и «Ветврач».',
+      'Три новых особых значка, которые можно получить только по промокодам: «Бета-тестер», «Создатель» и «Ветврач». К «Бета-тестеру» — ещё и неоновая рамка с тем же именем.',
       'Каждый промокод активируется один раз. Полученный значок появляется в «Профиле» → «Особые значки».',
       'Окно «Что нового» теперь показывается сразу при входе в игру, а все обновления можно перечитать по кнопке «Обновления» в меню.',
     ] },
@@ -4897,7 +4905,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   // exclusive badges from promo codes: shown in the profile only once received
   const PROMO_BADGES = [
-    { id: 'beta', src: 'промокод', name: 'Бета-тестер', label: 'БЕТА', c: '#22e6ff', c2: '#0a2a6e', glyph: 'β', sc: '#7cf3ff' },
+    { id: 'beta', src: 'промокод', name: 'Бета-тестер', label: 'БЕТА', c: '#22e6ff', c2: '#0a2a6e', glyph: 'β', sc: '#7cf3ff', frame: 'fr_beta' },
     { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a' },
     { id: 'vet', src: 'промокод', name: 'Ветврач', label: 'ВЕТВРАЧ', c: '#3dffa2', c2: '#0b5e36', glyph: '✚', sc: '#a6ffd4' },
   ];
@@ -4910,25 +4918,28 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     if (!b) return { err: 'Такого промокода нет.' };
     save.promo = save.promo || []; save.badges = save.badges || {};
     if (save.promo.includes(id) || save.badges[id]) return { err: 'Этот промокод уже активирован.' };
-    save.promo.push(id); save.badges[id] = today; persist();
+    save.promo.push(id); save.badges[id] = today; if (b.frame && !save.decor.includes(b.frame)) save.decor.push(b.frame); persist();
     return { badge: b };
   }
   function promoShow(b) {
     const fx = $('promoFx');
     fx.style.setProperty('--pc', b.c); fx.style.setProperty('--sc', b.sc);
     $('promoCoin').innerHTML = specialBadgeSVG(b, true); $('promoName').textContent = `«${b.name}»`;
+    $('promoWhat').innerHTML = b.frame ? `Особый значок и рамка <span ${frameAttr(b.frame)}>${b.name}</span> — в профиле и гардеробе` : 'Особый значок — в профиле';
     $('promoSparks').innerHTML = Array.from({ length: 36 }, (_, i) => { const a = i / 36 * Math.PI * 2 + Math.random() * .3, r = 110 + Math.random() * 170;
       return `<i style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r).toFixed(0)}px;animation-delay:${(Math.random() * .35).toFixed(2)}s;${i % 3 ? '' : 'background:#fff'}"></i>`; }).join('');
     fx.hidden = false; fx.querySelectorAll('.promo-coin, .promo-burst, .promo-ring, .promo-sparks i, .promo-text').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
     Sound.play('promo'); buzz([40, 60, 80]);
     clearTimeout(promoShow.t); promoShow.t = setTimeout(() => { fx.hidden = true; }, 4200);
   }
+  // players who redeemed the beta code before the frame existed get it too
+  if ((save.promo || []).includes('beta') && !save.decor.includes('fr_beta')) { save.decor.push('fr_beta'); persist(); }
   $('promoFx').addEventListener('click', () => { $('promoFx').hidden = true; });
   $('promoBtn').addEventListener('click', () => {
     const r = redeemPromo($('promoIn').value), m = $('promoMsg');
     m.className = 'reset-note ' + (r.err ? 'err' : 'ok');
     if (r.err) { m.textContent = r.err; Sound.play('click'); return; }
-    m.textContent = `Получен особый значок «${r.badge.name}»!`; $('promoIn').value = ''; promoShow(r.badge);
+    m.textContent = `Получен особый значок «${r.badge.name}»${r.badge.frame ? ' и рамка' : ''}!`; $('promoIn').value = ''; promoShow(r.badge);
   });
   $('promoIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('promoBtn').click(); } });
   function checkSpecialBadges() {
@@ -5215,7 +5226,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
           return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico" style="color:${d.color};border-color:${d.color}">Аа</span>`, `${d.name} <span class="badge-r" style="color:${RARITY[decoRarity(d)].color}">${RARITY[decoRarity(d)].name}</span>`, decoSource(d), `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
           : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков, даются за лигу и мастерство режимов' : 'Титулы выпадают из сундуков, даются за лигу, коллекции эффектов и мастерство режимов'}.</p>`; };
-      const cntOf = k => `${DECOR.filter(d => d.kind === k && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === k).length}`;
+      const cntOf = k => `${DECOR.filter(d => d.kind === k && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === k && (!d.promo || save.decor.includes(d.id))).length}`;
       $('shop').innerHTML = drawer('wd_hat', `Над головой <small class="cnt">${save.hats.length}/${Object.keys(HATS).length}${save.hat ? ' · надет: ' + HATS[save.hat].name : ''}</small>`, hats) +
         drawer('wd_frame', `Рамки <small class="cnt">${cntOf('frame')}${save.frame ? ' · выбрана: ' + decorById(save.frame).name : ''}</small>`, decoRows('frame')) +
         drawer('wd_title', `Титулы <small class="cnt">${cntOf('title')}${save.title ? ' · выбран: ' + decorById(save.title).name : ''}</small>`, decoRows('title'));
@@ -5893,6 +5904,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   const starBonus = kind => { if (!stats || stats.ranked) return 0; const b = starBonusOf(skin()); return b && b.k === kind ? b.per * b.n : 0; };
   // rarity of a frame or title, by where it comes from
   function decoRarity(d) {
+    if (d.promo) return 'legendary';
     if (d.chest) return d.chest;
     if (d.level) return d.level >= 50 ? 'legendary' : d.level >= 30 ? 'epic' : 'rare';
     if (d.league !== undefined) return d.league >= 4 ? 'legendary' : d.league === 3 ? 'epic' : d.league === 2 ? 'rare' : 'common';
@@ -5905,6 +5917,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   }
   const RAR_ORDER = { legendary: 0, epic: 1, rare: 2, common: 3 };
   function decoSource(d) {
+    if (d.promo) return 'Эксклюзив: награда за промокод.';
     if (d.level) return `Награда за ${d.level}-й уровень.`;
     if (d.skill) return d.skill === 'all' ? 'Все мастерские достижения.' : 'Мастерское достижение.';
     if (d.legend) return 'Легендарное достижение.';
@@ -6597,7 +6610,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '66';
+const APP_VER = '67';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

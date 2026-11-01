@@ -471,6 +471,33 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .news-item[open] summary::after { content: "−"; }
 .news-item summary small { color: var(--muted); font-weight: 400; margin-left: 6px; }
 .news-item[open] { padding-bottom: 10px; }
+.promo-row { display: flex; gap: 8px; margin-top: 6px; }
+.promo-row input { flex: 1; min-width: 0; background: var(--row); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font: inherit; font-size: 1rem; letter-spacing: .12em; text-transform: uppercase; padding: 10px 12px; }
+.promo-row input:focus { outline: 2px solid var(--food); outline-offset: 1px; }
+.promo-row .btn { flex: none; width: auto; padding: 10px 14px; margin: 0; }
+#promoMsg.ok { color: var(--food); } #promoMsg.err { color: #ff4f6d; }
+.promo-fx { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, rgba(20, 10, 50, .8), rgba(5, 3, 15, .97)); overflow: hidden; cursor: pointer; animation: pfIn .35s ease-out; }
+.promo-fx[hidden] { display: none; }
+.promo-stage { position: absolute; left: 50%; top: calc(50% - 90px); perspective: 700px; width: 190px; height: 190px; margin: -95px 0 0 -95px; }
+.promo-sparks { position: absolute; inset: 0; pointer-events: none; }
+.promo-coin { width: 100%; height: 100%; transform-style: preserve-3d; animation: pfSpin 1.6s cubic-bezier(.2, .8, .3, 1) both, pfFloat 3s ease-in-out 1.6s infinite; }
+.promo-coin svg { width: 100%; height: 100%; filter: drop-shadow(0 0 22px var(--pc)) drop-shadow(0 0 50px var(--pc)); }
+.promo-burst { position: absolute; left: 50%; top: calc(50% - 90px); width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 80px 40px var(--pc); animation: pfFlash .9s ease-out both; }
+.promo-ring { position: absolute; left: 50%; top: calc(50% - 90px); width: 120px; height: 120px; margin: -60px; border-radius: 50%; border: 3px solid var(--pc); box-shadow: 0 0 24px var(--pc), inset 0 0 24px var(--pc); animation: pfRing 1.4s ease-out both; }
+.promo-ring.r2 { animation-delay: .35s; }
+.promo-sparks i { position: absolute; left: 50%; top: calc(50% - 90px); width: 6px; height: 6px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 10px var(--sc); animation: pfSpark 1.3s ease-out both; }
+.promo-text { position: absolute; left: 16px; right: 16px; top: calc(50% + 40px); text-align: center; display: grid; gap: 6px; animation: pfUp .6s .7s ease-out both; }
+.promo-text small { color: var(--muted); text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; }
+.promo-text b { font-family: var(--display); font-weight: 400; font-size: 1.7rem; color: #fff; text-shadow: 0 0 14px var(--pc), 0 0 30px var(--pc); }
+.promo-text span { color: var(--pc); font-size: .85rem; }
+@keyframes pfIn { from { opacity: 0; } }
+@keyframes pfSpin { 0% { transform: scale(.1) rotateY(-540deg); opacity: 0; } 60% { transform: scale(1.15) rotateY(-20deg); opacity: 1; } 100% { transform: scale(1) rotateY(0); } }
+@keyframes pfFloat { 0%, 100% { transform: translateY(0) rotateY(-14deg); } 50% { transform: translateY(-8px) rotateY(14deg); } }
+@keyframes pfFlash { 0% { transform: scale(0); opacity: 1; } 40% { opacity: .9; } 100% { transform: scale(14); opacity: 0; } }
+@keyframes pfRing { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(4.2); opacity: 0; } }
+@keyframes pfSpark { 0% { transform: translate(0, 0) scale(1.4); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
+@keyframes pfUp { from { transform: translateY(16px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .promo-coin, .promo-burst, .promo-ring, .promo-sparks i { animation-duration: .01s; animation-iteration-count: 1; } }
 .news-patch { font-style: normal; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #14102a; background: var(--food); border-radius: 6px; padding: 2px 6px; margin-right: 6px; vertical-align: 2px; }
 .news-item > p { margin: 0 0 6px; }
 .news-item ul { margin: 4px 0 0; padding-left: 18px; }
@@ -1172,6 +1199,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     <div class="set"><label for="setAlpha">Прозрачность джойстика</label><input type="range" id="setAlpha" min="0.1" max="0.8" step="0.05"></div>
     <label class="set row" for="setVib"><span>Вибрация на телефоне</span><input type="checkbox" id="setVib"></label>
     </div></details>
+    <details class="res-drawer set-drawer"><summary>🎁 Промокод</summary><div class="drawer-body">
+      <div class="set promo-set"><label for="promoIn">Введи промокод</label>
+        <div class="promo-row"><input type="text" id="promoIn" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="КОД"><button class="btn" id="promoBtn">Активировать</button></div>
+        <small class="reset-note" id="promoMsg" aria-live="polite">Каждый промокод активируется один раз.</small></div>
+    </div></details>
     <details class="res-drawer set-drawer"><summary>💾 Прогресс</summary><div class="drawer-body">
       <div class="set">
         <button class="btn ghost danger" id="resetBtn">Сбросить весь прогресс</button>
@@ -1198,6 +1230,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   </div>
 </div>
 
+<div class="promo-fx" id="promoFx" hidden aria-live="assertive">
+  <div class="promo-burst"></div><div class="promo-ring"></div><div class="promo-ring r2"></div>
+  <div class="promo-sparks" id="promoSparks"></div>
+  <div class="promo-stage"><div class="promo-coin" id="promoCoin"></div></div>
+  <div class="promo-text"><small>Промокод активирован</small><b id="promoName"></b><span>Особый значок — в профиле</span></div>
+</div>
 <div class="modal" id="tutModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tutMName">
     <h2 id="tutMName"></h2>
@@ -4750,6 +4788,12 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 166, ver: '1.6.6', date: '1 ноября', title: 'Промокоды и новые значки', items: [
+      'В «Настройках» появился раздел «🎁 Промокод». Введи код — и получи награду с яркой анимацией.',
+      'Три новых особых значка, которые можно получить только по промокодам: «Бета-тестер», «Создатель» и «Ветврач».',
+      'Каждый промокод активируется один раз. Полученный значок появляется в «Профиле» → «Особые значки».',
+      'Окно «Что нового» теперь показывается сразу при входе в игру, а все обновления можно перечитать по кнопке «Обновления» в меню.',
+    ] },
     { id: 165, ver: '1.6.5', date: '1 ноября', title: 'Ребаланс прокачки и лента обновлений', refund: true, gift: 500, giftBefore: 162,
       lead: 'Мы перебалансировали улучшения и способности, чтобы прогресс был равномернее: сила растёт постепенно, без резких скачков, а новички не отстают от прокачанных игроков в разы.', items: [
       'Улучшения дают меньше: «Жадность» до +30% монет, «Пищеварение» до +25% массы, «Обтекаемость» до +20% скорости, «Защита» −4% потерь и +1,5% к защите за уровень.',
@@ -4785,7 +4829,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   });
   newsRefresh();
   // a returning player sees what changed once; brand-new players start with the tutorial instead
-  if (save.totals && save.totals.rounds && newsUnseen().length) setTimeout(() => { openNews(true); newsMarkSeen(); }, 900);
+  if (save.totals && save.totals.rounds && newsUnseen().length) setTimeout(() => { openNews(true); newsMarkSeen(); }, 250);
   else if (!(save.totals && save.totals.rounds) && !save.newsSeen) { save.newsSeen = NEWS[0].id; persist(); newsRefresh(); }
   $('againBtn').addEventListener('click', startRound);
   $('resDrawer').addEventListener('toggle', () => { if ($('resDrawer').open) requestAnimationFrame(drawGraph); });
@@ -4851,6 +4895,42 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       <text x="50" y="99" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="${b.label.length > 8 ? 9 : 10}" fill="${b.c}">${b.label}</text>
     </svg>`;
   }
+  // exclusive badges from promo codes: shown in the profile only once received
+  const PROMO_BADGES = [
+    { id: 'beta', src: 'промокод', name: 'Бета-тестер', label: 'БЕТА', c: '#22e6ff', c2: '#0a2a6e', glyph: 'β', sc: '#7cf3ff' },
+    { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a' },
+    { id: 'vet', src: 'промокод', name: 'Ветврач', label: 'ВЕТВРАЧ', c: '#3dffa2', c2: '#0b5e36', glyph: '✚', sc: '#a6ffd4' },
+  ];
+  const PROMO_CODES = { 3528217734: 'beta', 2752792474: 'creator', 1531340868: 'vet' };
+  const promoHash = t => { let x = 5381; for (const ch of t) x = (Math.imul(x, 33) ^ ch.charCodeAt(0)) >>> 0; return x; };
+  function redeemPromo(raw) {
+    const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!code) return { err: 'Введи промокод.' };
+    const id = PROMO_CODES[promoHash(code)], b = id && PROMO_BADGES.find(x => x.id === id);
+    if (!b) return { err: 'Такого промокода нет.' };
+    save.promo = save.promo || []; save.badges = save.badges || {};
+    if (save.promo.includes(id) || save.badges[id]) return { err: 'Этот промокод уже активирован.' };
+    save.promo.push(id); save.badges[id] = today; persist();
+    return { badge: b };
+  }
+  function promoShow(b) {
+    const fx = $('promoFx');
+    fx.style.setProperty('--pc', b.c); fx.style.setProperty('--sc', b.sc);
+    $('promoCoin').innerHTML = specialBadgeSVG(b, true); $('promoName').textContent = `«${b.name}»`;
+    $('promoSparks').innerHTML = Array.from({ length: 36 }, (_, i) => { const a = i / 36 * Math.PI * 2 + Math.random() * .3, r = 110 + Math.random() * 170;
+      return `<i style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r).toFixed(0)}px;animation-delay:${(Math.random() * .35).toFixed(2)}s;${i % 3 ? '' : 'background:#fff'}"></i>`; }).join('');
+    fx.hidden = false; fx.querySelectorAll('.promo-coin, .promo-burst, .promo-ring, .promo-sparks i, .promo-text').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+    Sound.play('promo'); buzz([40, 60, 80]);
+    clearTimeout(promoShow.t); promoShow.t = setTimeout(() => { fx.hidden = true; }, 4200);
+  }
+  $('promoFx').addEventListener('click', () => { $('promoFx').hidden = true; });
+  $('promoBtn').addEventListener('click', () => {
+    const r = redeemPromo($('promoIn').value), m = $('promoMsg');
+    m.className = 'reset-note ' + (r.err ? 'err' : 'ok');
+    if (r.err) { m.textContent = r.err; Sound.play('click'); return; }
+    m.textContent = `Получен особый значок «${r.badge.name}»!`; $('promoIn').value = ''; promoShow(r.badge);
+  });
+  $('promoIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('promoBtn').click(); } });
   function checkSpecialBadges() {
     save.badges = save.badges || {};
     for (const b of SPECIAL) { if (save.badges[b.id]) continue; const [v, n] = b.prog(); if (v >= n) { save.badges[b.id] = today; toast(`Новый особый значок «${b.name}»! Он в профиле.`); persist(); } }
@@ -5534,6 +5614,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       lose: () => arp([392, 330, 262, 196], .13, { type: 'triangle', vol: .12, dur: .4 }),
       chest: () => { noise(.3, { vol: .12, f: 5000, type: 'highpass' }); arp([784, 988, 1175, 1568], .07, { vol: .09, dur: .3, at: .2 }); },
       record: () => arp([784, 988, 1175, 1568, 1976], .07, { type: 'triangle', vol: .13, dur: .22 }),
+      promo: () => { arp([523, 659, 784, 1047], .08, { type: 'triangle', vol: .1, dur: .3 }); setTimeout(() => arp([1047, 1319, 1568, 2093], .07, { type: 'square', vol: .08, dur: .45 }), 360); setTimeout(() => arp([2093, 2637], .12, { type: 'triangle', vol: .07, dur: .6 }), 720); },
       rankup: () => { arp([523, 784, 1047, 1568], .09, { type: 'square', vol: .09, dur: .25 }); setTimeout(() => arp([1568, 2093], .1, { type: 'triangle', vol: .1, dur: .35 }), 380); },
       level: () => arp([659, 784, 988, 1319], .07, { type: 'square', vol: .06, dur: .25, lp: 3000 }),
       lookA: () => arp([660, 990, 1320], .05, { type: 'triangle', vol: .1, dur: .14 }),
@@ -6145,7 +6226,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     $('psStats').textContent = `· раундов: ${T.rounds}`;
     $('psChests').textContent = `· открыто ${save.chestStats.total}`;
     $('psMastery').textContent = `· с уровнем ${MODE_IDS.filter(id => masteryLv(save.mastery[id] || 0)).length} из ${MODE_IDS.length}`;
-    $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0) + SPECIAL.filter(b => save.badges && save.badges[b.id]).length} из ${2 + SPECIAL.length}`;
+    $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0) + SPECIAL.filter(b => save.badges && save.badges[b.id]).length + PROMO_BADGES.filter(b => save.badges && save.badges[b.id]).length} из ${2 + SPECIAL.length + PROMO_BADGES.filter(b => save.badges && save.badges[b.id]).length}`;
     $('psSeasons').textContent = `· ${save.seasonLog.length + (seasonStarted ? 1 : 0)}`;
     $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +600 ◆, Золото — рамка и +800 ◆, Легенда — титул.</p>' +
       MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
@@ -6160,6 +6241,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
       const B = save.badges || {};
       $('profSpecial').innerHTML = tile(legendBadgeSVG(!!save.legendBadge), 'Легенда Капель', save.legendBadge, 'за все легендарные достижения') +
         tile(millionBadgeSVG(!!B.millionaire), 'Миллионер', B.millionaire, 'награда «Золотого магната II»') +
+        PROMO_BADGES.filter(b => B[b.id]).map(b => tile(specialBadgeSVG(b, true), b.name, B[b.id], b.src)).join('') +
         SPECIAL.map(b => tile(specialBadgeSVG(b, !!B[b.id]), b.name, B[b.id], b.src)).join(''); }
     $('badgeTitle').textContent = `Значки сезонов · ${save.seasonLog.length} из 52`;
     { const live = chaosStarted ? [{ id: save.chaos.id, tier: chaosOf(save.chaos.pts), live: true }] : [], all = [...live, ...save.chaosLog.slice().reverse()];
@@ -6515,7 +6597,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '65';
+const APP_VER = '66';
 // shown to players as 1.5.9 instead of 59: generation . tens of updates . update within them
 const APP_LABEL = (n => `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);
 if ('serviceWorker' in navigator) {

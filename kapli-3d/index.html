@@ -1986,7 +1986,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
     { n: 'Золото', c: '#ffd23f', burst: 'spark', sfx: 'lookA' }, { n: 'Аметист', c: '#c46bff', burst: 'nova', sfx: 'lookB' }, { n: 'Лёд', c: '#9fe8ff', burst: 'ring', sfx: 'lookC' },
     { n: 'Пламя', c: '#ff7a1a', burst: 'nova', sfx: 'lookA' }, { n: 'Неон', c: '#ff4fd8', burst: 'ring', sfx: 'lookB' }, { n: 'Плазма', c: '#22e6ff', burst: 'spark', sfx: 'lookC' },
   ];
-  const lookOf = (a, k) => { const i = ABILITIES.indexOf(a), v = LOOK_VARIANTS[(i * 3 + k + Math.floor(i / 3)) % LOOK_VARIANTS.length]; return { id: `lk_${a.id}_${k}`, ab: a.id, k, name: `${a.name}: ${v.n}`, ...v }; };
+  // a look must differ from the ability's own colour: variants too close to it are skipped
+  const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+  const colorDist = (x, y) => { const p = hexRgb(x), q = hexRgb(y); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
+  const lookOf = (a, k) => {
+    const i = ABILITIES.indexOf(a), start = i * 3 + Math.floor(i / 3), n = LOOK_VARIANTS.length;
+    const ok = [...Array(n).keys()].map(j => LOOK_VARIANTS[(start + j) % n]).filter(v => colorDist(v.c, a.color) > 110);
+    const v = ok[k % ok.length];
+    return { id: `lk_${a.id}_${k}`, ab: a.id, k, name: `${a.name}: ${v.n}`, ...v };
+  };
   // reward order: round-robin — the 1st look of every ability, then the 2nd, then the 3rd
   const allLooks = () => [0, 1, 2].flatMap(k => ABILITIES.map(a => lookOf(a, k)));
   const lookById = id => allLooks().find(l => l.id === id);
@@ -6118,7 +6126,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '42';
+const APP_VER = '43';
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

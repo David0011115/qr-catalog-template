@@ -6154,7 +6154,7 @@ body.menu-bg .menu-backdrop { display: block; }
     if (mode === 'own') { if (sel) { label = 'Выбран'; cls += ' sel'; dis = 'disabled'; } else label = 'Выбрать'; }
     else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
-    const inf = mode === 'own' ? ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Подробнее: ${s.name}"` : '';
+    const inf = ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Предпросмотр: ${s.name}"`;
     return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
       ${starsOf(s) ? `<span class="stars-on" title="Звёзды скина: ${STAR_TEXT[starsOf(s)]}; ${starBonusOf(s) ? starBonusOf(s).text(starsOf(s)) : ''}">${'★'.repeat(starsOf(s))}</span>` : ''}<span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
@@ -6164,7 +6164,7 @@ body.menu-bg .menu-backdrop { display: block; }
     if (mode === 'own') { if (sel) { label = 'Снять'; cls += ' sel'; } else label = 'Выбрать'; }
     else if (lv < f.lvl) { label = `С ур. ${f.lvl}`; dis = 'disabled'; }
     else { label = `${f.price} ◆`; if (save.coins < f.price) dis = 'disabled'; }
-    const inf = mode === 'own' ? ` data-info="fx:${f.id}" tabindex="0" role="button" aria-label="Подробнее: ${f.name}"` : '';
+    const inf = ` data-info="fx:${f.id}" tabindex="0" role="button" aria-label="Предпросмотр: ${f.name}"`;
     return `<div class="fxrow ${f.ex || f.chest || f.season ? 'ex' : ''}"${inf}><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
       `<span class="desc">${f.desc}.</span><button class="${cls}" id="fx-${f.id}" data-fx="${f.id}" ${dis}>${label}</button></div>`;
   }
@@ -6765,7 +6765,7 @@ body.menu-bg .menu-backdrop { display: block; }
       if (k.chest || k.lchest) rows.push(['Звёзды', `${'★'.repeat(st)}${'☆'.repeat(3 - st)} — ${st ? STAR_TEXT[st] + `; бонус, пока скин надет: ${starBonusOf(k).text(st)}` : `пока нет; звёзды этого скина дадут: ${STAR_BONUS[k.chest || k.lchest].text(1)} за каждую`}${st < 3 ? `. Следующая за повтор из сундука: ${STAR_TEXT[st + 1]}` : ''}`]);
       const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
       if (save.hat) rows.push(['Сейчас надето', `${HATS[save.hat].name} вместо предмета скина`]);
-      act = save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
+      act = !save.skins.includes(id) ? '<button class="btn ghost" disabled>Купить можно в магазине</button>' : save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
     } else if (kind === 'fx') {
       const f = FX.find(x => x.id === id), on = save.fx[f.slot] === id;
       name = f.name; tag = rarTag(f.chest || f.lchest) + `<span class="badge-ex">${SLOT_NAME[f.slot]}</span>`;
@@ -6773,7 +6773,7 @@ body.menu-bg .menu-backdrop { display: block; }
       const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
       if (f.slot === 'aura') { const sc = skin().color; imVis = previewBlob(skin(), 0, save.hat); imObj = imVis.mesh; imVis.look = skin(); setAura(imVis, id, sc); }
       else { imVis = previewBlob(skin(), 0, save.hat); imObj = imVis.mesh; imVis.look = skin(); imFxSlot = f.slot; }
-      act = `<button class="btn ${on ? 'ghost' : ''}" data-act="fx-${id}">${on ? 'Снять' : 'Надеть'}</button>`;
+      act = !save.fxOwned.includes(id) ? '<button class="btn ghost" disabled>Купить можно в магазине</button>' : `<button class="btn ${on ? 'ghost' : ''}" data-act="fx-${id}">${on ? 'Снять' : 'Надеть'}</button>`;
     } else if (kind === 'pet') {
       const pt = petById(id), own = save.pets.includes(id), on = save.pet === id, B = PET_BONUS[pt.bonus];
       name = pt.name; tag = rarTag(pt.chest || pt.lchest) + (pt.tier ? `<span class="badge-ex">${pt.tier}</span>` : '');

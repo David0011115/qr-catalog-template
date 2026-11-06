@@ -1440,7 +1440,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <details><summary>Босс-рейд</summary>
       <ul class="info-list">
         <li>Каждую неделю (с понедельника) новый босс с общим здоровьем 40 000.</li>
-        <li>3 попытки в день по 4 минуты. Урон копится между попытками и днями.</li>
+        <li>3 попытки в день по 4 минуты. Не больше 18 000 урона за попытку: после этого колосс отступает. Урон копится между попытками и днями.</li>
         <li>Подплывай к боссу — он делится. Урон — это масса его частей, которые съел именно ты.</li>
         <li>За каждую попытку — монеты за урон. За победу — уникальный скин недели, 1500 монет и эпический сундук.</li>
         <li>Особые награды за победы над боссом недели: 1-я — аура «Аура рейдера», 3-я — «Шлем рейдера», 5-я — «Знамя рейда».</li>
@@ -2367,7 +2367,7 @@ body.menu-bg .menu-backdrop { display: block; }
   };
   const arenaIs = id => !!(stats && stats.arena === id);
   // ---- weekly boss raid ----
-  const RAID_HP = 40000, RAID_TRIES = 3, RAID_LEN = 240;
+  const RAID_HP = 40000, RAID_ATTEMPT_CAP = 18000, RAID_TRIES = 3, RAID_LEN = 240;
   const RAID_NAMES = ['Пожиратель', 'Тёмная медуза', 'Кристальный голем', 'Неоновый кракен', 'Звёздный червь', 'Ледяной титан', 'Магматический страж', 'Призрачный левиафан'];
   const RAID_HEADS = ['horns', 'gem', 'flame', 'antenna', 'halo', 'star', 'wings'];
   const raidWeek = () => Math.floor((Date.now() / 864e5 + 3) / 7);   // weeks start on Monday
@@ -4313,7 +4313,7 @@ body.menu-bg .menu-backdrop { display: block; }
     for (const v of [...colossus.free, ...colossus.cells.map(c => c.vis)]) { v.mesh.material.color.set(color); v.mesh.material.emissive.set(color); v.glow.material.color.set(color); }
   }
   function spawnRaidChunk() {
-    const r = raidState(), left = RAID_HP - r.dmg - (stats.raidDmg || 0);
+    const r = raidState(), dealt = stats.raidDmg || 0, left = Math.min(RAID_HP - r.dmg - dealt, RAID_ATTEMPT_CAP - dealt);
     if (left <= 0) return false;
     const [x, z] = safeSpot(45);
     const c = addCell(colossus, x, z, Math.min(12000, left), colossus.free.pop());
@@ -5339,9 +5339,16 @@ body.menu-bg .menu-backdrop { display: block; }
 
     // eating
     for (const a of cells) for (const b of cells) {
-      if (a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
+      if (dying || a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
-        if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass); }
+        if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) {
+          stats.raidDmg = Math.min(RAID_ATTEMPT_CAP, (stats.raidDmg || 0) + Math.round(b.mass));
+          const raidLeft = RAID_HP - raidState().dmg - stats.raidDmg;
+          if (stats.raidDmg >= RAID_ATTEMPT_CAP && raidLeft > 0) {
+            toast('Колосс отступает! Урон сохранён для следующей попытки');
+            finishRound('Колосс отступил после 18 000 урона', 0, false);
+          }
+        } }
         a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.02 * U.digest : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
@@ -5453,7 +5460,7 @@ body.menu-bg .menu-backdrop { display: block; }
       if (mode === 'crown') modeChip = `♛ ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)}`;
       if (mode === 'race') modeChip = `Гонка ${Math.round(total(player))}/${RACE_GOAL}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span>`;
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
-      if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · твой урон ${Math.round(stats.raidDmg || 0)}`; }
+      if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · урон за заход ${Math.round(stats.raidDmg || 0)}/${RAID_ATTEMPT_CAP}`; }
       if (mode === 'daily') modeChip = `${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}`;
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
     }

@@ -1941,8 +1941,8 @@ body.menu-bg .menu-backdrop { display: block; }
     legendary: { name: 'Легендарный', color: '#ffd23f', dup: 2500, w: 2 },
   };
   // seasons: 14 days each; every season has its own skin for Diamond and Neon leagues
-  // 2.0.0: season 1 starts 15 Nov 2026 (local time) for everyone; a progress reset only moves you to the season running on this calendar
-  const SEASON_LEN = 14 * 86400000, SEASON_BASE = new Date(2026, 10, 15).getTime(), SEASON_EPOCH = (() => {
+  // 2.0.0: season 1 starts Monday, 16 Nov 2026 (local time) for everyone; a progress reset only moves you to the season running on this calendar
+  const SEASON_LEN = 14 * 86400000, SEASON_BASE = new Date(2026, 10, 16).getTime(), SEASON_EPOCH = (() => {
     try { const s0 = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s0 && s0.seasonEpoch >= SEASON_BASE) return s0.seasonEpoch; } catch (e) {}
     return SEASON_BASE;
   })();
@@ -2484,7 +2484,7 @@ body.menu-bg .menu-backdrop { display: block; }
   // ================= Chaos League: ALL tunable numbers here =================
   // tiers = the main league's six with half the thresholds (7-day seasons); fees ×1,5 from «Золото»; season coins halved
   // tierLevel: player level needed for a tier (Разлом 40, Сингулярность 46); below it points stop under that tier's threshold
-  const CHAOS_CFG = { entryLevel: 25, tierLevel: { 4: 40, 5: 46 }, topTier: 4, seasonDays: 7, start: [2026, 10, 22],   // 2.0.0: first season — 22 Nov 2026, a week after the main league
+  const CHAOS_CFG = { entryLevel: 25, tierLevel: { 4: 40, 5: 46 }, topTier: 4, seasonDays: 7, start: [2026, 10, 23],   // 2.0.0: first season — 23 Nov 2026, a week after the main league
     pts: LEAGUES.map(l => Math.round(l.pts / 2)), fee: [0, 0, 120, 240, 360, 480], coins: LEAGUES.map(l => Math.round(l.coins / 2)),
     achCoins: { first: 300, diamond: 1500, neon: 3000 }, showSec: 2.5, phase2Sec: 2, histMax: 20 };
   const CHAOS_LEN = CHAOS_CFG.seasonDays * 864e5;

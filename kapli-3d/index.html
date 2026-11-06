@@ -5906,6 +5906,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('lvlXp').textContent = li.max ? 'максимальный уровень' : `${li.into} / ${li.need} опыта`;
     $('lvlFill').style.width = (li.into / li.need * 100) + '%';
     { // «Цели»: two compact tabs — today's 3 round goals and this week's 3 tasks
+      const TIER = { easy: 'Лёгкое', mid: 'Среднее', hard: 'Сложное' };
       const W = weeklyState(), days = Math.max(1, Math.ceil(((W.week + 1) * 7 - 3) - Date.now() / 864e5)), tab = save.settings.goalTab === 'week' ? 'week' : 'day';
       $('gtDay').textContent = `${save.quests.length}`; $('gtWeek').textContent = `${W.done.length}/3`;
       $('gtabDay').setAttribute('aria-selected', tab === 'day'); $('gtabWeek').setAttribute('aria-selected', tab === 'week');

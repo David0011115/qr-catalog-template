@@ -1,6 +1,6 @@
 /* Капли 3D: offline mode. Own cache name, never touches the catalog's caches on the same site. */
-const CACHE = "kapli3d-v67";
-const CORE = ["./", "index.html", "three.min.js", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"];
+const CACHE = "kapli3d-v200";
+const CORE = ["./", "index.html", "three.min.js", "supabase.js", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("kapli3d-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));

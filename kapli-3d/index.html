@@ -8214,18 +8214,18 @@ body.menu-bg .menu-backdrop { display: block; }
       });
       return sb;
     }
-    function setUser(user, nick) {
+    function setUser(user, nick, publicId) {
       Net.uid = user ? user.id : null; Net.nick = user ? (nick || meta.nick || null) : null;
-      Net.shortId = user ? user.id.replace(/-/g, '').slice(0, 10).toUpperCase() : '';
+      Net.shortId = user && publicId != null ? String(publicId).padStart(6, '0') : '';
       Net.email = user ? user.email : '';
       if (!user) { canPush = false; setSync('guest'); } else setTimeout(() => pushShowcase(), 3000);
       renderChip();
     }
     async function loadProfile() {
-      const { data } = await withTimeout(sb.from('player_profiles').select('nickname').eq('user_id', sess.user.id).maybeSingle(), 8000);
+      const { data } = await withTimeout(sb.from('player_profiles').select('nickname, public_id').eq('user_id', sess.user.id).maybeSingle(), 8000);
       const nick = data ? data.nickname : (sess.user.user_metadata && sess.user.user_metadata.nickname) || null;
       if (nick) { meta.nick = nick; saveMeta(); }
-      setUser(sess.user, nick);
+      setUser(sess.user, nick, data && data.public_id);
     }
 
     // ---------- sync status shown in the menu chip and the account window ----------

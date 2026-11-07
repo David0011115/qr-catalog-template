@@ -277,6 +277,13 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .ps-grid b { font: 400 1.15rem/1.1 var(--display); font-variant-numeric: tabular-nums; } .ps-grid small { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .ps-round h3 { margin: 4px 0 0; font: 400 .92rem var(--display); } .ps-round .goal-list { margin: 0; } .ps-note { margin: 0; color: var(--muted); font-size: .76rem; }
 @media (max-width: 420px) { .ps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* ===== 2.2: logos on the Collection / Rewards buttons and in the shop tabs ===== */
+#hubCol .hub-list .hub-card, #hubRew .hub-list .hub-card { display: grid; grid-template-columns: 56px minmax(0, 1fr); justify-content: stretch; justify-items: start; gap: 4px 14px; align-items: center; text-align: left; padding: 12px 16px; width: 100%; }
+.hub-card .lg-logo { display: grid; place-items: center; } .hub-logo { display: block; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--hc) 60%, transparent)); }
+.hub-card .lg-tx { display: grid; gap: 3px; min-width: 0; } .hub-card .lg-ttl { font: 400 1.12rem/1.1 var(--display); }
+.hub-card .lg-me { font-size: .8rem; color: var(--fg); font-weight: 500; } .hub-card .lg-when { font-size: .72rem; color: var(--muted); font-weight: 400; }
+.tab-ico { width: 20px; height: 20px; margin-right: 6px; vertical-align: -5px; flex: none; }
+@media (orientation: landscape) and (min-width: 640px) { #hubCol .hub-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } #hubCol { max-width: min(880px, 100%); } }
 /* ===== 2.2: league logos in the «Лиги» window ===== */
 #hubLeague .league-btn { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 14px; align-items: center; text-align: left; padding: 12px 16px; }
 #hubLeague .lg-logo { display: grid; place-items: center; } .lg-svg { display: block; filter: drop-shadow(0 0 8px rgba(255, 201, 58, .45)); } .lg-svg.lg-chaos { filter: drop-shadow(0 0 8px rgba(255, 79, 216, .6)); }
@@ -1721,18 +1728,18 @@ body.menu-bg .menu-backdrop { display: block; }
   <div class="card" id="hubCol" hidden>
     <h1>Коллекция</h1>
     <div class="btns hub-list">
-      <button class="btn ghost" id="wardBtn">Гардероб</button>
-      <button class="btn ghost" id="petBtn">Питомцы <span id="petCount">0</span></button>
-      <button class="btn ghost" id="colBtn">Коллекции <span id="colCount">0</span></button>
-      <button class="btn ghost" id="myAbilBtn">Способности <span id="abilCount">0</span></button>
+      <button class="btn ghost hub-card" id="wardBtn"><span class="lg-logo" data-logo="ward"></span><span class="lg-tx"><b class="lg-ttl">Гардероб</b><small class="lg-me"><span id="wardInfo"></span></small><small class="lg-when">шапки, эффекты, арены — всё, что носишь</small></span></button>
+      <button class="btn ghost hub-card" id="petBtn"><span class="lg-logo" data-logo="pet"></span><span class="lg-tx"><b class="lg-ttl">Питомцы</b><small class="lg-me">питомцев <span id="petCount">0</span><span id="petInfo"></span></small><small class="lg-when">помогают в бою и растут вместе с тобой</small></span></button>
+      <button class="btn ghost hub-card" id="colBtn"><span class="lg-logo" data-logo="col"></span><span class="lg-tx"><b class="lg-ttl">Коллекции</b><small class="lg-me">собрано <span id="colCount">0</span></small><small class="lg-when">наборы предметов с наградой за полный комплект</small></span></button>
+      <button class="btn ghost hub-card" id="myAbilBtn"><span class="lg-logo" data-logo="abil"></span><span class="lg-tx"><b class="lg-ttl">Способности</b><small class="lg-me">открыто <span id="abilCount">0</span><span id="abilInfo"></span></small><small class="lg-when">собери свой набор из трёх</small></span></button>
     </div>
     <button class="btn ghost" data-hubback>Назад</button>
   </div>
   <div class="card" id="hubRew" hidden>
     <h1>Награды</h1>
     <div class="btns hub-list">
-      <button class="btn ghost" id="chestBtn">Сундуки <span class="coin" id="chestCountBtn">0</span></button>
-      <button class="btn ghost" id="achBtn">Достижения <span id="achCount">0/0</span></button>
+      <button class="btn ghost hub-card" id="chestBtn"><span class="lg-logo" data-logo="chest"></span><span class="lg-tx"><b class="lg-ttl">Сундуки</b><small class="lg-me">ждут открытия: <span id="chestCountBtn">0</span></small><small class="lg-when"><span id="chestInfo">ежедневный, за раунды, лиги и испытания</span></small></span></button>
+      <button class="btn ghost hub-card" id="achBtn"><span class="lg-logo" data-logo="ach"></span><span class="lg-tx"><b class="lg-ttl">Достижения</b><small class="lg-me">выполнено <span id="achCount">0/0</span></small><small class="lg-when"><span id="achInfo">испытания, мастерские и легендарные цели</span></small></span></button>
     </div>
     <button class="btn ghost" data-hubback>Назад</button>
   </div>
@@ -6854,6 +6861,7 @@ body.menu-bg .menu-backdrop { display: block; }
       const nw = shopNewCount(); $('hubShopX').innerHTML = nw ? `<b class="hb-new">новое · ${nw}</b>` : ''; }
     $('chestCountBtn').textContent = chestTotal() + (save.dailyChestDay !== today ? ' +1' : '');
     $('petCount').textContent = `${save.pets.length}/${PETS.length}`;
+    try { hubCardsInfo(); } catch (e) {}
     { const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
       $('colCount').textContent = `${save.colDone.length}/${COLLECTIONS.length}` + (ready ? ` · забрать ${ready}` : ''); }
     { const L = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null);
@@ -7096,8 +7104,9 @@ body.menu-bg .menu-backdrop { display: block; }
     $('shopTabs').hidden = view.tabs.length < 2;
     if (view.groups) {
       const g = view.groups.find(([, ids]) => ids.includes(shopTab)) || view.groups[0];
-      $('shopTabs').innerHTML = `<div class="tab-groups">${view.groups.map(([name, ids]) => `<button class="tab tab-g" role="tab" data-tab="${ids[0]}" aria-selected="${ids.includes(shopTab)}">${name}</button>`).join('')}</div>` +
-        (g[1].length > 1 ? `<div class="tab-sub">${g[1].map(id => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${view.tabs.find(t => t[0] === id)[1]}</button>`).join('')}</div>` : '');
+      const ico = id => view === SHOP_VIEWS.shop ? tabIcon(id) : '';
+      $('shopTabs').innerHTML = `<div class="tab-groups">${view.groups.map(([name, ids]) => `<button class="tab tab-g" role="tab" data-tab="${ids[0]}" aria-selected="${ids.includes(shopTab)}">${ico(ids[0])}${name}</button>`).join('')}</div>` +
+        (g[1].length > 1 ? `<div class="tab-sub">${g[1].map(id => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${ico(id)}${view.tabs.find(t => t[0] === id)[1]}</button>`).join('')}</div>` : '');
     } else
     $('shopTabs').innerHTML = view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
     if (shopTab === 'skin') {
@@ -10189,6 +10198,39 @@ body.menu-bg .menu-backdrop { display: block; }
   // 2.2: time left in the league season, on the «Лиги» tile (updates every minute while the menu is open)
   function leftTxt(ms) { const m = Math.max(0, Math.floor(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60);
     return d ? `${d} дн${h ? ` ${h} ч` : ''}` : h ? `${h} ч ${m % 60} мин` : `${Math.max(1, m)} мин`; }
+  // ================= 2.2: logos for the Collection / Rewards buttons and the shop tabs =================
+  const HUB_ICON = {
+    ward: ['#ff4fd8', '#7b3dff', '<path d="M12 7.2a2.1 2.1 0 1 1 2.1-2.1c0 1.3-2.1 1.6-2.1 3.1v.9"/><path d="M12 9.1L3.6 15.4c-.8.6-.4 1.6.6 1.6h15.6c1 0 1.4-1 .6-1.6z"/><circle cx="12" cy="19.6" r="1.4" fill="currentColor"/>'],
+    pet: ['#3dffa2', '#0a8f6a', '<ellipse cx="12" cy="15.2" rx="4.6" ry="3.8"/><circle cx="6.2" cy="10.4" r="1.9"/><circle cx="9.8" cy="6.8" r="1.9"/><circle cx="14.2" cy="6.8" r="1.9"/><circle cx="17.8" cy="10.4" r="1.9"/>'],
+    col: ['#b26bff', '#ff4fd8', '<rect x="7" y="4" width="11" height="14" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2H15"/><path d="M10 9h5M10 12h5M10 15h3"/>'],
+    abil: ['#22e6ff', '#7b3dff', '<path d="M7 2.5l3.5 3.5L7 9.5 3.5 6zM17 2.5l3.5 3.5-3.5 3.5L13.5 6zM7 14.5l3.5 3.5L7 21.5 3.5 18zM17 14.5l3.5 3.5-3.5 3.5-3.5-3.5z"/>'],
+    chest: ['#ff9a3d', '#ff4fd8', '<rect x="3.5" y="10" width="17" height="10" rx="2"/><path d="M3.5 13.5h17M5 10V8.5A4 4 0 0 1 9 4.5h6a4 4 0 0 1 4 4V10"/><rect x="10.5" y="12" width="3" height="3.6" rx=".8"/><path d="M12 1.5v1.5M7.5 2.6l.8 1.2M16.5 2.6l-.8 1.2"/>'],
+    ach: ['#ffd23f', '#ff9a3d', '<circle cx="12" cy="9.5" r="6"/><path d="M12 6.8l1.1 2.2 2.4.3-1.8 1.7.5 2.4-2.2-1.2-2.2 1.2.5-2.4-1.8-1.7 2.4-.3z" fill="currentColor"/><path d="M8.3 14.3L6.5 21l3-1.5 2.5 2 .9-6M15.7 14.3L17.5 21l-3-1.5-2.5 2"/>'],
+    up: ['#3dffa2', '#22e6ff', '<path d="M5 12.5l7-7 7 7M5 19l7-7 7 7"/>'],
+    sabil: ['#22e6ff', '#b26bff', '<path d="M12 2.5l6 6.5-6 12.5L6 9z"/><path d="M6 9h12M9.5 9L12 21.5 14.5 9"/>'],
+    skin: ['#ff4fd8', '#ffd23f', '<path d="M12 3c3.2 4.2 6.5 7.6 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 10.6 8.8 7.2 12 3z"/><circle cx="10" cy="13" r="1.1" fill="currentColor"/><circle cx="14" cy="15.5" r="1.1" fill="currentColor"/><circle cx="11" cy="17.5" r="1.1" fill="currentColor"/>'],
+    fx: ['#ffd23f', '#ff4fd8', '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>'],
+    arena: ['#4d7cff', '#22e6ff', '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.6" transform="rotate(-18 12 12)"/>'],
+    arch: ['#c0a0ff', '#ffd23f', '<path d="M6 4h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v1.5h4V6a2 2 0 0 0-2-2zM8 21a2 2 0 0 1-2-2V7.5"/><path d="M10.5 9h5M10.5 12h5M10.5 15h3"/>'],
+  };
+  function hubLogoSVG(k, size = 56) {
+    const [c, c2, ic] = HUB_ICON[k] || HUB_ICON.col, id = 'hl' + k;
+    return `<svg class="hub-logo" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" style="--hc:${c}"><defs><linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient>` +
+      `<radialGradient id="${id}b" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="${c}" stop-opacity=".45"/><stop offset="1" stop-color="#0b0624"/></radialGradient></defs>` +
+      `<circle cx="32" cy="32" r="29" fill="url(#${id}b)" stroke="url(#${id}r)" stroke-width="3"/><circle cx="32" cy="32" r="24" fill="none" stroke="${c}" stroke-opacity=".3"/>` +
+      `<g transform="translate(17 17) scale(1.25)" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" color="#fff">${ic}</g></svg>`;
+  }
+  document.querySelectorAll('[data-logo]').forEach(el => { el.innerHTML = hubLogoSVG(el.dataset.logo, 56); });
+  const SHOP_TAB_ICON = { up: 'up', abil: 'sabil', skin: 'skin', fx: 'fx', arena: 'arena', archive: 'arch' };
+  const tabIcon = id => SHOP_TAB_ICON[id] ? hubLogoSVG(SHOP_TAB_ICON[id], 22).replace('class="hub-logo"', 'class="tab-ico"') : '';
+  function hubCardsInfo() {
+    $('wardInfo').textContent = `скинов ${save.skins.length}/${SKINS.length} · надето: «${skin().name}»`;
+    const pt = save.pet && petById(save.pet); $('petInfo').textContent = pt ? ` · рядом: «${pt.name}»` : '';
+    const bd = (save.build || []).filter(Boolean).map(id => (abilById(id) || {}).sh).filter(Boolean); $('abilInfo').textContent = bd.length ? ` · в бою: ${bd.join(' · ')}` : '';
+    const lines = ACH.filter(a => a.line), m = [3, 2, 1].map(k => lines.filter(a => achMetal(a, achTier(a)) === k).length);
+    $('achInfo').textContent = m.some(Boolean) ? `золото ${m[0]} · серебро ${m[1]} · бронза ${m[2]}` : 'испытания, мастерские и легендарные цели';
+    $('chestInfo').textContent = save.dailyChestDay !== today ? 'ежедневный сундук уже ждёт' : 'ежедневный сундук — завтра';
+  }
   // 2.2: league logos for the «Лиги» window — a gold crest for the League, the Chaos mark in a neon ring for the Chaos League
   function leagueLogoSVG(size = 56) {
     const leaf = (sx, k) => { const a = (-60 + k * 26) * Math.PI / 180, cx = 32 + sx * Math.cos(a) * 25, cy = 36 + Math.sin(a) * 23;

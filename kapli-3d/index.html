@@ -105,6 +105,29 @@ body {
 @keyframes frLegend { 50% { box-shadow: 0 0 16px #ffd23f, 0 0 6px #ff4fd8 inset; border-color: #fff6a0; } }
 @keyframes frHue { to { filter: hue-rotate(360deg); } }
 
+/* ===== clans: «coming soon» window, clan tab in chat ===== */
+.soon-dot { position: absolute; top: 5px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: #ffd23f; box-shadow: 0 0 6px #ffd23f; }
+.soon-tag { display: inline-block; margin-left: 4px; vertical-align: 2px; padding: 1px 5px; border-radius: 6px; background: #ffd23f; color: #1a1030; font: 700 .55rem/1.3 sans-serif; font-style: normal; text-transform: uppercase; letter-spacing: .04em; }
+.soon-badge { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 3px 8px; border-radius: 8px; background: #ffd23f; color: #1a1030; font: 700 .7rem/1.2 sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+#clanCard { max-width: min(1100px, 100%); }
+.clan-lead { margin: 0; }
+.clan-cols { display: grid; gap: 10px; }
+.clan-sec { background: var(--row); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; text-align: left; }
+.clan-sec h2 { margin: 0 0 6px; font-family: var(--display); font-weight: 400; font-size: 1rem; color: var(--fg); }
+.clan-sec ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: .82rem; line-height: 1.4; color: var(--muted); } .clan-sec b { color: var(--fg); font-weight: 600; }
+.chat-tabs { margin: 0; }
+.chat-clan { display: grid; gap: 8px; justify-items: center; text-align: center; padding: 22px 16px; min-height: 160px; align-content: center; background: var(--row); border-radius: 12px; }
+.chat-clan p { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.45; max-width: 460px; } .chat-clan .btn { width: auto; margin: 4px 0 0; padding: 9px 16px; }
+@media (orientation: landscape) and (min-width: 700px) {
+  #clanCard { max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+  .clan-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+  #chatCard .chat-list { max-height: calc(100dvh - 270px); min-height: 110px; }
+  .chat-clan { min-height: calc(100dvh - 330px); }
+}
+@media (orientation: landscape) and (min-width: 700px) and (max-height: 520px) {
+  #clanCard { padding: 12px 16px; gap: 8px; } #clanCard h1 { font-size: 1.2rem; } #clanCard .clan-lead { font-size: .84rem; } #clanCard > .hint { font-size: .74rem; margin: 0; } #clanBack { padding: 9px; } .clan-sec { padding: 8px 10px; } .clan-sec ul { font-size: .76rem; gap: 3px; }
+  #chatCard { padding: 12px 16px; gap: 8px; } #chatCard > h1 { font-size: 1.2rem; } #chatTabs .tab { padding-block: 6px; }
+}
 /* ===== friends + private messages ===== */
 .fr-badge { position: absolute; top: 3px; right: 8px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #ff4f6d; box-shadow: 0 0 6px #ff4f6d; color: #fff; font: 700 .64rem/17px var(--body, sans-serif); font-style: normal; }
 .fr-card, .dm-card { max-height: calc(100dvh - 32px); }
@@ -678,8 +701,9 @@ body.menu-bg .menu-backdrop { display: block; }
   #panePlay .mc-hubs { grid-area: hubs; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
   #panePlay .mc-hubs .hub-btn { min-height: 64px; margin: 0; }
   #panePlay .mc-hubs #installBtn, #panePlay .mc-hubs .hint { grid-column: 1 / -1; }
-  #menuCard .menu-icons { grid-area: rail; display: flex; flex-direction: column; gap: 6px; margin: 0; align-self: stretch; justify-content: flex-start; }
-  #menuCard .menu-icons .icon-btn { max-width: none; flex: 0 0 auto; padding: 7px 2px; }
+  /* the rail takes exactly the height of the menu (contain: size): buttons share it, so adding one never makes the card taller */
+  #menuCard .menu-icons { grid-area: rail; display: flex; flex-direction: column; gap: 6px; margin: 0; align-self: stretch; justify-content: flex-start; contain: size; min-height: 0; }
+  #menuCard .menu-icons .icon-btn { max-width: none; flex: 1 1 0; min-height: 0; max-height: 74px; overflow: hidden; align-content: center; padding: 4px 2px; }
   #menuCard .menu-icons .icon-btn small { font-size: .6rem; }
 }
 @media (orientation: landscape) and (min-width: 700px) and (max-height: 520px) {
@@ -1190,6 +1214,7 @@ body.menu-bg .menu-backdrop { display: block; }
       <button class="icon-btn" id="profBtn" aria-label="Профиль">👤<small>Профиль</small></button>
       <button class="icon-btn" id="chatBtn" aria-label="Чат">💬<small>Чат</small></button>
       <button class="icon-btn" id="frBtn" aria-label="Друзья">👥<small>Друзья</small><i class="fr-badge" id="frBadge" hidden></i></button>
+      <button class="icon-btn" id="clanBtn" aria-label="Кланы — скоро" title="Кланы — скоро">🛡<small>Кланы</small><i class="soon-dot" aria-hidden="true"></i></button>
       <button class="icon-btn" id="rankBtn" aria-label="Рейтинг">🏅<small>Рейтинг</small></button>
       <button class="icon-btn" id="newsBtn" aria-label="Обновления">📰<small>Обновления</small><i class="news-dot" id="newsDot" hidden></i></button>
       <button class="icon-btn" id="infoBtn" aria-label="Информация">ⓘ<small>Информация</small></button>
@@ -1234,10 +1259,36 @@ body.menu-bg .menu-backdrop { display: block; }
 
   <div class="card chat-card" id="chatCard" hidden>
     <h1>Чат</h1>
+    <div class="tabs chat-tabs" id="chatTabs" role="tablist" aria-label="Чаты"><button class="tab" role="tab" data-ct="all" aria-selected="true">💬 Общий</button><button class="tab" role="tab" data-ct="clan" aria-selected="false">🛡 Клановый <i class="soon-tag">скоро</i></button></div>
+    <div class="chat-clan" id="chatClan" hidden><b>🛡 Клановый чат появится вместе с кланами</b><p>Здесь будут общаться только участники твоего клана, а глава сможет закреплять объявления.</p><button class="btn ghost" type="button" id="chatClanMore">Что будет в кланах</button></div>
     <ul class="chat-list" id="chatList" aria-live="polite"></ul>
     <form class="chat-form" id="chatForm" novalidate><input id="chatIn" maxlength="200" placeholder="Сообщение…" autocomplete="off" aria-label="Сообщение"><button class="btn" id="chatSend" type="submit" aria-label="Отправить">➤</button></form>
     <p class="hint" id="chatNote"></p>
     <button class="btn ghost" id="chatBack" type="button">Назад</button>
+  </div>
+
+  <div class="card clan-card" id="clanCard" hidden>
+    <h1>🛡 Кланы <span class="soon-badge">скоро</span></h1>
+    <p class="clan-lead">Мы готовим кланы — объединяйся с друзьями, развивай свой клан и соревнуйся с другими. Вот что планируется:</p>
+    <div class="clan-cols">
+      <section class="clan-sec"><h2>👥 Свой клан</h2><ul>
+        <li><b>Создание и состав.</b> Название, тег [ТЕГ] перед ником и своя эмблема. До 20 игроков, роли: глава, офицеры, участники. Вступление открытое или по заявке.</li>
+        <li><b>Клановый чат</b> — отдельная вкладка в чате только для своих, с объявлениями главы.</li>
+        <li><b>Задания клана</b> на неделю: общий прогресс, награда всем, кто участвовал.</li>
+        <li><b>Казна.</b> Участники вносят монеты на развитие клана.</li></ul></section>
+      <section class="clan-sec"><h2>🔬 Наука клана</h2><ul>
+        <li><b>Исследования</b> за счёт казны — клан растёт вместе с вами.</li>
+        <li><b>Расширение состава:</b> с 20 до 25, а затем до 30 мест.</li>
+        <li><b>Бонусы для всех участников:</b> больше монет и опыта, сундуки открываются быстрее.</li>
+        <li><b>Новые возможности:</b> дополнительные задания, клановый рейд и украшения клана.</li></ul></section>
+      <section class="clan-sec"><h2>⚔ Соревнования</h2><ul>
+        <li><b>Рейтинг кланов</b> по очкам лиги участников за сезон, награды лучшим.</li>
+        <li><b>Клановые войны:</b> раз в неделю клан против клана равной силы, победителю — сундук.</li>
+        <li><b>Клановый рейд:</b> общий босс на неделю, урон всех складывается, награды по вкладу.</li>
+        <li><b>Клановая косметика:</b> цвет тега, рамка и титул клана, флаг над каплей в бою.</li></ul></section>
+    </div>
+    <p class="hint">Следи за разделом «Обновления» — расскажем, когда кланы откроются. Детали ещё могут измениться.</p>
+    <button class="btn ghost" id="clanBack" type="button">Назад</button>
   </div>
 
   <div class="card fr-card" id="friendsCard" hidden>
@@ -5679,7 +5730,7 @@ body.menu-bg .menu-backdrop { display: block; }
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard', 'friendsCard', 'dmCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard', 'friendsCard', 'dmCard', 'clanCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -5816,6 +5867,14 @@ body.menu-bg .menu-backdrop { display: block; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 175, ver: '2.0.5', date: '7 ноября', title: 'Скоро: кланы', kind: 'update',
+      lead: 'Мы начали работу над кланами. Рассказываем, что планируется, — загляни в новую кнопку «🛡 Кланы» в меню.', items: [
+      'Свой клан: название, тег перед ником и эмблема, до 20 игроков, роли главы, офицеров и участников.',
+      'Наука клана: исследования за счёт общей казны — расширение состава до 30 мест, бонусы к монетам и опыту для всех участников.',
+      'Соревнования: рейтинг кланов, клановые войны раз в неделю, общий клановый рейд и клановая косметика.',
+      'В чате появилась вкладка «🛡 Клановый» — она заработает вместе с кланами.',
+      'Кнопки в левой колонке меню стали чуть компактнее, чтобы поместилась новая.',
+    ] },
     { id: 174, ver: '2.0.4', date: '7 ноября', title: 'Список друзей на широком экране', kind: 'patch', items: [
       'Список друзей и заявок больше не обрезается: в горизонтальном режиме поиск и вкладки слева, а сам список — справа на всю высоту окна и листается свайпом.',
     ] },
@@ -8916,6 +8975,7 @@ body.menu-bg .menu-backdrop { display: block; }
       (newer ? data : data.reverse()).forEach(m => chatAdd(m));
     }
     async function openChat() {
+      { const t = $('chatTabs').querySelector('[data-ct="all"]'); if (t && t.getAttribute('aria-selected') !== 'true') t.click(); }
       showCard('chatCard'); const list = $('chatList'); list.innerHTML = '<p class="empty-note">Загрузка…</p>'; chatIds.clear(); chatLast = 0;
       $('chatNote').textContent = sess ? 'Не больше одного сообщения в 3 секунды. Будь вежлив: ⚑ — пожаловаться.' : 'Читать могут все. Чтобы писать, войди в аккаунт.';
       $('chatIn').disabled = $('chatSend').disabled = !sess; $('chatIn').placeholder = sess ? 'Сообщение…' : 'Войди в аккаунт, чтобы писать';
@@ -8950,6 +9010,17 @@ body.menu-bg .menu-backdrop { display: block; }
     });
     $('chatBtn').addEventListener('click', openChat);
     $('chatBack').addEventListener('click', closeChat);
+
+    // ---------- clans: announced, not built yet ----------
+    $('clanBtn').addEventListener('click', () => { showCard('clanCard'); $('clanBack').focus(); });
+    $('clanBack').addEventListener('click', () => { showCard('menuCard'); $('clanBtn').focus(); });
+    $('chatTabs').addEventListener('click', e => {
+      const b = e.target.closest('[data-ct]'); if (!b) return; const clan = b.dataset.ct === 'clan';
+      document.querySelectorAll('#chatTabs [data-ct]').forEach(t => t.setAttribute('aria-selected', t === b));
+      $('chatClan').hidden = !clan; $('chatList').hidden = clan; $('chatForm').hidden = clan; $('chatNote').hidden = clan;
+      if (!clan) $('chatList').scrollTop = $('chatList').scrollHeight;
+    });
+    $('chatClanMore').addEventListener('click', () => { closeChat(); showCard('clanCard'); $('clanBack').focus(); });
 
     // ---------- friends, private messages, block list, gifts, online status (server: FRIENDS-DM-MIGRATION.sql) ----------
     const FR = { list: [], blocks: [], counts: { requests: 0, unread: 0, gifts: 0 }, tab: 'friends', timer: null, ch: null, off: false, dm: null, dmLast: 0, dmPoll: null, dmBusy: false };
@@ -9187,7 +9258,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '204';
+const APP_VER = '205';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

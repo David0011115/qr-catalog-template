@@ -10018,6 +10018,13 @@ body.menu-bg .menu-backdrop { display: block; }
     ['Ур. 9', () => { save.xp = xpForLevel(9); }], ['Ур. 30', () => { save.xp = xpForLevel(30); }], ['Ур. 50', () => { save.xp = XP_AT_MAX; }],
     ['★5', () => { save.xp = xpForPs(1, 5); }], ['★18', () => { save.xp = xpForPs(1, 18); }], ['★25', () => { save.xp = xpForPs(1, 25); }],
     ['✦10', () => { save.xp = xpForPs(2, 10); }], ['✦25', () => { save.xp = xpForPs(2, 25); }]]);
+  testAdd('Всё сразу', [['Открыть всё сразу', () => {
+    testUnlockAll(); save.xp = xpForPs(2, 25); save.coins = Math.max(save.coins, 999999);
+    save.totals.maxLeague = 5; save.totals.chaosMax = 5; save.totals.chaosGames = Math.max(save.totals.chaosGames || 0, 1);
+    MODE_IDS.forEach(id => { save.mastery[id] = Math.max(save.mastery[id] || 0, MASTERY_LV[MASTERY_LV.length - 1].pts); });
+    ACH.forEach(a => { save.achT[a.id] = a.steps.length; if (!save.ach.includes(a.id)) save.ach.push(a.id); });
+    return 'всё открыто: престиж ✦25, лиги «Неон», мастерство «Легенда», достижения на III';
+  }]]);
   testAdd('Монеты и сундуки', [['+100 000 ◆', () => { save.coins += 100000; }], ['+10 сундуков', () => { save.chests += 10; }]]);
   testAdd('Графика', [['Сымитировать сбой графики', () => {
     const ext = renderer.getContext().getExtension('WEBGL_lose_context'); if (!ext) return 'браузер не умеет имитировать сбой';
@@ -10041,6 +10048,14 @@ body.menu-bg .menu-backdrop { display: block; }
     $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');
   }
   let testResetArm = 0;
+  // test build: everything collectable is open (profile backgrounds and badges too)
+  function testUnlockAll() {
+    save.pbg = PBG.map(b => b.id); save.badges = save.badges || {};
+    [...PROMO_BADGES, ...SPECIAL].forEach(b => { save.badges[b.id] = save.badges[b.id] || today; }); save.badges.millionaire = save.badges.millionaire || today;
+    save.legendBadge = save.legendBadge || today;
+    save.skins = SKINS.map(k => k.id); save.fxOwned = FX.map(f => f.id); save.pets = PETS.map(pt => pt.id); save.decor = DECOR.map(d => d.id); save.arenas = ARENAS.map(a => a.id); save.hats = Object.keys(HATS);
+  }
+  if (TEST_MODE) { testUnlockAll(); persist(); }
   if (TEST_MODE) {
     document.addEventListener('click', e => { if (e.target.closest('[data-testopen]')) { e.preventDefault(); e.stopPropagation(); testRender(); $('testState').textContent = ''; $('testModal').hidden = false; $('testClose').focus(); } }, true);
     $('testClose').addEventListener('click', () => { $('testModal').hidden = true; });

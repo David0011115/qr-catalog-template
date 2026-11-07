@@ -1688,7 +1688,6 @@ body.menu-bg .menu-backdrop { display: block; }
         <dt><i class="dot" style="background:var(--prey)"></i>Зелёное кольцо</dt><dd>каплю можно съесть</dd>
         <dt><i class="dot" style="background:var(--threat)"></i>Красное кольцо</dt><dd>капля опасна, съест тебя</dd>
         <dt><i class="dot" style="background:#8088c0"></i>Серое кольцо</dt><dd>примерно равны — никто никого не съест</dd>
-        <dt><i class="dot" style="background:#6fa8ff"></i>Синее кольцо</dt><dd>союзник в «Командном бое»</dd>
         <dt><i class="dot" style="background:var(--food)"></i>Голубое кольцо у тебя</dt><dd>части ещё не готовы слиться</dd>
       </dl>
     </details>
@@ -1714,7 +1713,7 @@ body.menu-bg .menu-backdrop { display: block; }
     </details>
     <details><summary>Боссы</summary>
       <dl class="keys" id="infoBosses"></dl>
-      <p class="info-note">Боссы носят корону. Награда — за последнюю съеденную часть босса. Боссов нет в «Командном бое», «Гонке массы», «Королевской битве» и рейде.</p>
+      <p class="info-note">Боссы носят корону. Награда — за последнюю съеденную часть босса. Боссов нет в «Гонке массы», «Королевской битве» и рейде.</p>
     </details>
     <details><summary>Боты</summary>
       <dl class="keys" id="infoBots"></dl>
@@ -1953,6 +1952,7 @@ body.menu-bg .menu-backdrop { display: block; }
     split:    { name: 'Только деление', desc: 'Без рывка, деление раз в 3 с, до 10 частей' },
     crown:    { name: 'Захват короны',  desc: 'Корона у самой крупной капли. Держи её дольше всех за 3 минуты' },
     race:     { name: 'Гонка массы',    desc: 'Кто первым наберёт 4000. Рекорд — лучшее время' },
+    rbuild:   { name: 'Случайный билд', desc: 'Каждый раунд — 3 случайные способности из твоих. Опыт ×1,2', lvl: 10 },
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
     hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Монеты ×1,6' },
@@ -1964,7 +1964,7 @@ body.menu-bg .menu-backdrop { display: block; }
   const RACE_GOAL = 4000, TEAM_LEN = 240, DAILY_GOAL = 3000, ALLY_COLOR = '#6fa8ff';
   const LOWER_BETTER = { race: true, giant: true };
   // v46: «Только деление» and «Охота на Колосса» were removed: «Только деление» lives on as a daily modifier, the Colossus as the weekly raid boss
-  const REMOVED_MODES = ['split', 'giant'];
+  const REMOVED_MODES = ['split', 'giant', 'team'];   // 2.1.0: «Командный бой» replaced by «Случайный билд»
   const MODE_IDS = Object.keys(MODES).filter(m => !REMOVED_MODES.includes(m));
   const DAILY = [
     { id: 'fog',      name: 'Туман',        desc: 'Видно только ближнее окружение' },
@@ -2566,8 +2566,8 @@ body.menu-bg .menu-backdrop { display: block; }
       test: S => S.firstStarT !== undefined && S.firstStarT <= 60, best: S => S.firstStarT !== undefined ? Math.floor(S.firstStarT) : null, lower: true, unit: 'с' },
     { id: 'sk_raid', name: 'Удар титана', desc: 'Нанеси боссу рейда 15 000 урона за одну попытку', hint: 'Урон — масса частей босса, которые съел именно ты. Не давай ботам их перехватывать.', coins: 1500, title: ['Титаноборец', '#ff2d55'],
       test: S => S.mode === 'raid' && (S.raidDmg || 0) >= 15000, best: S => S.mode === 'raid' ? S.raidDmg || 0 : null, unit: 'урона' },
-    { id: 'sk_team', name: 'Разгром', desc: 'Победи в «Командном бое» со счётом вдвое больше соперников', hint: 'Помогай союзникам: бери под защиту самых маленьких и ешь крупных врагов.', coins: 1000, title: ['Полководец', '#6fa8ff'],
-      test: S => S.mode === 'team' && S.win && S.teamA >= S.teamB * 2 },
+    { id: 'sk_team', name: 'Импровизатор', desc: 'В «Случайном билде» стань лидером арены, применив все три выпавшие способности', hint: 'Сразу попробуй каждую способность из билда — и пробейся на 1-е место хотя бы на мгновение.', coins: 1000, title: ['Импровизатор', '#b26bff'],
+      test: S => S.mode === 'rbuild' && S.bestRank === 1 && runBuild.filter(Boolean).every(id => S.abUsed[id]) },   // 2.1.0: was «Разгром» (team battle); the id stays so earned progress counts
     { id: 'sk_david', name: 'Давид и Голиаф', desc: 'Съешь последнюю часть босса, когда твоя масса меньше 400', hint: 'Не расти до первого босса (таймер «Босс через…» вверху): пока ты мал, Шустрик весит всего 90. Подрасти одной частью до 120–200, загони его на шип и добей.', coins: 1500, title: ['Давид', '#fff6a0'],
       test: S => !!S.smallBoss },
   ];
@@ -3215,7 +3215,7 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'ch_surv8',     name: 'Неуловимый',         desc: 'Продержись 8 минут в «Выживании»',          goal: 480,  prog: () => save.bests.survival || 0, time: true, reward: ['fx', 'rainbowTrail'] },
     { id: 'ch_timed5',    name: 'Король турниров',    desc: 'Займи 1 место в «На время» 5 раз',           goal: 5,    prog: () => save.totals.timedWins, reward: ['skin', 'phoenix'] },
     { id: 'ch_rounds50',  name: 'Марафонец',          desc: 'Сыграй 50 раундов',                         goal: 50,   prog: () => save.totals.rounds,    reward: ['fx', 'electricAura'] },
-    { id: 'ch_team10',    name: 'Капитан',            desc: 'Выиграй 10 «Командных боёв»',               goal: 10,   prog: () => save.bests.team || 0, reward: ['skin', 'abyss'] },
+    { id: 'ch_team10',    name: 'Мастер импровизации', desc: 'Сыграй 25 раундов в «Случайном билде»',      goal: 25,   prog: () => (save.totals.modeRounds || {}).rbuild || 0, reward: ['skin', 'abyss'] },   // 2.1.0: was «Капитан» (team battle)
     { id: 'ch_split1000', name: 'Рой разума',         desc: 'Разделись на 10 частей за один раунд',       goal: 10,   prog: () => Math.max(save.totals.bestParts || 0, (save.bests.split || 0) >= 4000 ? 10 : 0), reward: ['skin', 'matrix'] },
     { id: 'ch_crumbs20k', name: 'Ненасытный',         desc: 'Собери 20 000 крошек за всё время',         goal: 20000, prog: () => save.totals.crumbs,   reward: ['skin', 'magma'] },
     { id: 'ch_mass10k',   name: 'Сверхгигант',        desc: 'Набери массу 10 000 в «Классике»',          goal: 10000, prog: () => save.bests.classic || 0, reward: ['skin', 'titan'] },
@@ -4628,6 +4628,7 @@ body.menu-bg .menu-backdrop { display: block; }
   }
   function startRound() {
     fixModeForLeague();
+    if (!pendingRanked && !pendingTut && MODES[save.mode].lvl && playerLevel() < MODES[save.mode].lvl) { toast(`«${MODES[save.mode].name}» откроется на ${MODES[save.mode].lvl} уровне`); return; }
     if (!pendingRanked && !pendingTut && save.mode === 'raid') {
       const r = raidState();
       if (r.done) { toast('Босс этой недели уже повержен. Новый — в понедельник'); return; }
@@ -4636,7 +4637,8 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     const isTut = pendingTut; pendingTut = false; tut = null;
     const isChaos = pendingChaos && pendingRanked; pendingChaos = false;
-    runBuild = isTut ? [...ABIL_CFG.oldBuild] : isChaos ? chaosDraw() : pendingRanked ? [...ABIL_CFG.rankedBuild] : [...save.build];
+    const isRb = !isTut && !isChaos && !pendingRanked && save.mode === 'rbuild';
+    runBuild = isTut ? [...ABIL_CFG.oldBuild] : isChaos ? chaosDraw() : pendingRanked ? [...ABIL_CFG.rankedBuild] : isRb ? rbuildDraw() : [...save.build];
     abReset();
     bots.forEach(o => { o.build = isTut ? [] : botBuild(isChaos, pendingRanked && !isChaos); o.dashT = 0; });
     U = pendingRanked || isTut ? ZERO_UP : save.up;
@@ -4686,7 +4688,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('overlay').hidden = true;
     setGameUi(true);
     if (isTut) tutBegin();
-    if (isChaos) chaosBanner();
+    if (isChaos) chaosBanner(); else if (isRb) chaosBanner('Случайный билд · способности на этот раунд');
     if (stats.arena && stats.arena !== 'default') setTimeout(() => { if (running) toast(`Арена «${arenaDef().name}»: ${ARENA_FX[stats.arena]}`); }, 2600);
   }
   function setGameUi(on) {
@@ -4943,14 +4945,21 @@ body.menu-bg .menu-backdrop { display: block; }
     else if (pick === 'eject') { botEject(o); o.abCd.eject = 1.5; }
     else castAbility(pick, o);
   }
+  // «Случайный билд»: 3 random abilities out of the classic ones you own (no Chaos League exclusives); short of 3 → dash, split, eject
+  function rbuildDraw() {
+    const pool = ABILITIES.filter(a => !a.xa && save.abil.owned.includes(a.id)).map(a => a.id), out = [];
+    while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    for (const id of ABIL_CFG.oldBuild) if (out.length < 3 && !out.includes(id)) out.push(id);
+    return out;
+  }
   function chaosDraw() {
     const first = Math.random() < .5 ? 'dash' : 'split', pool = ABILITIES.map(a => a.id).filter(id => id !== first), out = [first];
     while (out.length < 3) { const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(id); }
     return out;
   }
-  function chaosBanner() {
+  function chaosBanner(label) {
     const el = $('chaosBanner');
-    el.innerHTML = '<small>Хаос-лига · твои способности на этот бой</small><div>' + runBuild.map((id, i) => { const a = abilById(id); return `<span style="--ac:${a.color}"><i>${a.icon}</i><b>${a.name}</b><small>${ABIL_CFG.slotKeyName[i]}</small></span>`; }).join('') + '</div>';
+    el.innerHTML = `<small>${label || 'Хаос-лига · твои способности на этот бой'}</small><div>` + runBuild.map((id, i) => { const a = abilById(id); return `<span style="--ac:${a.color}"><i>${a.icon}</i><b>${a.name}</b><small>${ABIL_CFG.slotKeyName[i]}</small></span>`; }).join('') + '</div>';
     el.hidden = false; clearTimeout(chaosBanner.t); chaosBanner.t = setTimeout(() => { el.hidden = true; }, CHAOS_CFG.showSec * 1000);
   }
   function abTick(dt) {
@@ -5044,7 +5053,7 @@ body.menu-bg .menu-backdrop { display: block; }
       }
       stats.raidLeft = RAID_HP - rs.dmg;
     }
-    let xp = (arenaIs('galaxy') ? 1.1 : 1) * Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
+    let xp = (arenaIs('galaxy') ? 1.1 : 1) * (mode === 'rbuild' ? 1.2 : 1) * Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
     xp = Math.round(xp * (1 + 0.05 * petLv('xp')) * (1 + starBonus('xp') / 100));
     const questRows = save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => {
       const done = doneQuests.has(q.id);
@@ -5791,7 +5800,7 @@ body.menu-bg .menu-backdrop { display: block; }
     if (running) {
       const lim = { timed: TIMED_LEN, crown: TIMED_LEN, team: TEAM_LEN, raid: RAID_LEN }[mode];
       if (lim) timer = `⏱ ${fmtTime(Math.max(0, lim - stats.time))}`;
-      else if (['race', 'survival', 'classic', 'hardcore', 'daily', 'royale'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
+      else if (['race', 'survival', 'classic', 'rbuild', 'hardcore', 'daily', 'royale'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
       if (mode === 'royale') modeChip = `Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
       if (mode === 'crown') modeChip = `♛ ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)}`;
       if (mode === 'race') modeChip = `Гонка ${Math.round(total(player))}/${RACE_GOAL}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span>`;
@@ -8932,7 +8941,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const SB_URL = 'https://kprkslsptcnxajdllwje.supabase.co', SB_KEY = 'sb_publishable_C6dIYs3B1t1tkMYl4AgzzA_hVtZLBaj';
     const SB_LIB = 'supabase.js';
     const META_KEY = SAVE_KEY + '-cloud', APP_SAVE_VER = 170;
-    const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'race', 'team', 'hardcore', 'royale'];
+    const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'race', 'rbuild', 'hardcore', 'royale'];
     const NICK_RE = [/^[A-Za-z0-9_]{3,16}$/, /^[А-Яа-яЁё0-9_]{3,16}$/];
     let sb = null, sess = null, canPush = false, pushing = false, pushTimer = null, retryMs = 0, sync = 'guest', pending = null, recoverPending = false, splashOn = true;
     let meta = {}; try { meta = JSON.parse(localStorage.getItem(META_KEY)) || {}; } catch (e) {}

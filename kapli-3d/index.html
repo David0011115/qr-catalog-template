@@ -231,6 +231,27 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .goals { position: relative; }
 .goal-list.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 34px), transparent); mask-image: linear-gradient(#000 calc(100% - 34px), transparent); }
 .goal-more { position: absolute; right: 12px; bottom: 6px; z-index: 1; padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--food); font-size: .7rem; font-weight: 600; pointer-events: none; }
+/* ===== 2.2: activity calendar ===== */
+.actv { display: grid; gap: 10px; text-align: left; }
+.actv-kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.actv-kpi div { padding: 8px 10px; border-radius: 12px; background: var(--row); display: grid; gap: 1px; min-width: 0; }
+.actv-kpi b { font: 400 1.15rem var(--display); white-space: nowrap; } .actv-kpi small { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.actv-kpi .fire b { color: #ff9a3d; text-shadow: 0 0 10px rgba(255, 106, 0, .7); }
+.actv-scroll { overflow-x: auto; padding-bottom: 2px; }
+.actv-cal { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 3px 6px; min-width: 420px; }
+.actv-mon { grid-column: 2; display: grid; font-size: .6rem; color: var(--muted); } .actv-mon span { white-space: nowrap; }
+.actv-days { display: grid; grid-template-rows: repeat(7, 1fr); gap: 3px; font-size: .56rem; color: var(--muted); align-items: center; }
+.actv-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, auto); gap: 3px; }
+.actv-grid > * { aspect-ratio: 1; border-radius: 3px; border: 0; padding: 0; background: rgba(255, 255, 255, .06); min-width: 0; }
+.actv-grid button { cursor: pointer; } .actv-grid button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.actv-grid .fut { background: transparent; }
+.actv-grid .l1, .actv-leg .l1 { background: rgba(34, 230, 255, .28); } .actv-grid .l2, .actv-leg .l2 { background: rgba(34, 230, 255, .55); }
+.actv-grid .l3, .actv-leg .l3 { background: #22e6ff; box-shadow: 0 0 6px rgba(34, 230, 255, .7); } .actv-grid .l4, .actv-leg .l4 { background: #ff4fd8; box-shadow: 0 0 7px rgba(255, 79, 216, .8); }
+.actv-grid .today { outline: 1.5px solid #fff; outline-offset: -1.5px; } .actv-grid .sel { outline: 2px solid var(--gold); outline-offset: 0; }
+.actv-day { margin: 0; font-size: .78rem; color: var(--muted); min-height: 1.3em; } .actv-day b { color: var(--fg); font-weight: 600; }
+.actv-leg { display: flex; align-items: center; gap: 4px; justify-content: flex-end; font-size: .64rem; color: var(--muted); }
+.actv-leg i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; background: rgba(255, 255, 255, .06); }
+@media (max-width: 520px) { .actv-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* ===== 2.1.0: mode cards ===== */
 #modesCard { max-width: min(1100px, 100%); }
 #modes { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
@@ -1677,6 +1698,7 @@ body.menu-bg .menu-backdrop { display: block; }
       <button class="btn ghost hub-btn" data-grp="pMastery">🏅 Мастерство и рекорды<small id="ptMastery"></small></button>
       <button class="btn ghost hub-btn" data-grp="pBadges">🎖 Значки<small id="ptBadges"></small></button>
       <button class="btn ghost hub-btn" data-grp="pSeasons">📅 Сезоны<small id="ptSeasons"></small></button>
+      <button class="btn ghost hub-btn" data-grp="pActivity">🔥 Активность<small id="ptActivity"></small></button>
     </div>
     <div class="g-group prof-secs" data-grpid="pDecor" hidden><h2 class="g-title">🎨 Оформление профиля</h2>
     <div id="pdPreview"></div><p class="pd-note" id="pdNote" aria-live="polite"></p>
@@ -1698,6 +1720,9 @@ body.menu-bg .menu-backdrop { display: block; }
     <details open class="res-drawer"><summary>Особые значки <small class="cnt" id="psSpecial"></small></summary><p class="info-note" style="margin:0">Витрина статусов. Значки не нужно собирать отдельно — они приходят сами за лиги, Хаос-лигу, мастерство и коллекции, а «Легенда Капель» и «Миллионер» — награды легендарных достижений.</p><div class="badges badge-wall" id="profSpecial"></div></details>
     <details open class="res-drawer"><summary><span id="chaosBadgeTitle">Значки Хаос-лиги</span></summary><div class="badges" id="profChaosBadges"></div></details>
     <details open class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
+    <button class="btn ghost" data-grpback>← Профиль</button></div>
+    <div class="g-group prof-secs" data-grpid="pActivity" hidden><h2 class="g-title">🔥 Активность</h2>
+    <div class="actv" id="profAct"></div>
     <button class="btn ghost" data-grpback>← Профиль</button></div>
     <div class="g-group prof-secs" data-grpid="pSeasons" hidden><h2 class="g-title">📅 Сезоны</h2>
     <details open class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
@@ -3176,6 +3201,7 @@ body.menu-bg .menu-backdrop { display: block; }
   save.season = save.season || { id: seasonNow, pts: 0 };
   [...(save.skins || []), ...(save.fxOwned || [])].forEach(id => { const m = /^hf?_(\w+?)_(\d{4})_\d$/.exec(id); if (m && HOLIDAYS[m[1]]) ensureHolidayItems(m[1], +m[2]); });
   save.seasonLog = save.seasonLog || [];
+  save.act = save.act || {};   // 2.2: activity calendar — local date → [rounds, seconds, best mass]
   let seasonNotice = '';
   if (!seasonStarted) save.season = { id: 1, pts: 0 };   // nothing counts before the first season opens
   if (save.season.id !== seasonNow) {
@@ -5256,7 +5282,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const chestChance = roundChestChance(stats.time / 60, stats.maxMass, stats.win, stats.ranked);
     const gotChest = save.pity >= CHEST_RULE[stats.ranked ? 'ranked' : 'normal'].pity - 1 || Math.random() < chestChance;
     if (gotChest) { save.chests++; save.pity = 0; } else save.pity++;
-    logRoundChest(stats.ranked, stats.time, gotChest);
+    logRoundChest(stats.ranked, stats.time, gotChest); actLog(stats.time, stats.maxMass);
     let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
     if (mode === 'royale' && stats.finalRank) pts += (13 - stats.finalRank) * 4;
@@ -8674,6 +8700,8 @@ body.menu-bg .menu-backdrop { display: block; }
     $('ptMastery').textContent = $('psMastery').textContent.replace(/^· /, '');
     $('ptBadges').textContent = `особых ${$('psSpecial').textContent.replace(/^· /, '')} · сезонов ${save.seasonLog.length + save.chaosLog.length}`;
     $('ptSeasons').textContent = `лига: ${save.seasonLog.length} · Хаос: ${save.chaosLog.length}`;
+    { const st = actStreak(); $('ptActivity').textContent = st ? `серия ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : `игровых дней: ${save.actDays || 0}`; }
+    renderActivity();
   }
   function renderProfChests() {
     const S = save.chestStats, sum = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
@@ -9791,6 +9819,62 @@ body.menu-bg .menu-backdrop { display: block; }
   bots.forEach(spawnBot);
   rebuildCells();
   if (TEST_MODE) { $('testBadge').hidden = false; document.querySelector('#menuCard h1').innerHTML += ' <button type="button" class="test-badge" data-testopen>ТЕСТ ▾</button>'; }
+
+  // ================= 2.2: activity calendar =================
+  // one entry per local day: [rounds, seconds played, best mass]; half a year is kept (+ a little slack), the day count and best streak live on
+  const plural = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b >= 2 && b <= 4 ? few : many; };
+  const ACT_KEEP = 190, ACT_WEEKS = 26;
+  const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const dayShift = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  function actStreak(from = new Date()) {
+    let d = from; if (!save.act[dayKey(d)]) d = dayShift(d, -1);   // today not played yet: the streak still counts up to yesterday
+    let n = 0; while (save.act[dayKey(d)]) { n++; d = dayShift(d, -1); }
+    return n;
+  }
+  function actBestStreak() {
+    const keys = Object.keys(save.act).sort(); let best = 0, run = 0, prev = null;
+    for (const k of keys) { const d = new Date(k + 'T12:00'); run = prev && dayKey(dayShift(prev, 1)) === k ? run + 1 : 1; best = Math.max(best, run); prev = d; }
+    return Math.max(best, save.actBest || 0);
+  }
+  function actPrune() { const cut = dayKey(dayShift(new Date(), -ACT_KEEP)); for (const k of Object.keys(save.act)) if (k < cut) delete save.act[k]; }
+  function actLog(sec, mass) {
+    const k = dayKey(new Date()), e = save.act[k];
+    if (!e) save.actDays = (save.actDays || 0) + 1;
+    save.act[k] = e ? [e[0] + 1, e[1] + Math.round(sec), Math.max(e[2], Math.round(mass))] : [1, Math.round(sec), Math.round(mass)];
+    save.actBest = actBestStreak(); actPrune();
+  }
+  const actLevel = r => !r ? 0 : r <= 2 ? 1 : r <= 5 ? 2 : r <= 10 ? 3 : 4;
+  const WD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'], WD_FULL = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
+  const MON = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  const MONG = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  const wdOf = d => (d.getDay() + 6) % 7;   // Monday = 0
+  let actSel = null;
+  function renderActivity() {
+    const box = $('profAct'); if (!box) return;
+    const now = new Date(), tk = dayKey(now), start = dayShift(now, -(wdOf(now) + (ACT_WEEKS - 1) * 7));
+    const byWd = [0, 0, 0, 0, 0, 0, 0]; Object.entries(save.act).forEach(([k, e]) => { byWd[wdOf(new Date(k + 'T12:00'))] += e[0]; });
+    const favWd = byWd.some(Boolean) ? byWd.indexOf(Math.max(...byWd)) : -1, streak = actStreak();
+    let cells = '', months = '', lastM = -1;
+    for (let w = 0; w < ACT_WEEKS; w++) {
+      const mon = dayShift(start, w * 7);
+      if (mon.getMonth() !== lastM) { months += `<span style="grid-column:${w + 1}">${MON[mon.getMonth()]}</span>`; lastM = mon.getMonth(); }
+      for (let i = 0; i < 7; i++) {
+        const d = dayShift(mon, i), k = dayKey(d), e = save.act[k], fut = k > tk;
+        cells += fut ? '<i class="fut"></i>' : `<button type="button" class="l${actLevel(e && e[0])}${k === tk ? ' today' : ''}${k === actSel ? ' sel' : ''}" data-day="${k}" aria-label="${d.getDate()} ${MONG[d.getMonth()]}: ${e ? `${e[0]} ${plural(e[0], 'раунд', 'раунда', 'раундов')}` : 'не играл'}"></button>`;
+      }
+    }
+    const sel = actSel && save.act[actSel], sd = actSel && new Date(actSel + 'T12:00');
+    box.innerHTML = `<div class="actv-kpi"><div class="fire"><b>${streak ? '🔥 ' : ''}${streak}</b><small>${plural(streak, 'день', 'дня', 'дней')} подряд</small></div><div><b>${actBestStreak()}</b><small>лучшая серия</small></div>` +
+      `<div><b>${save.actDays || 0}</b><small>игровых дней</small></div><div><b>${favWd < 0 ? '—' : WD[favWd][0].toUpperCase() + WD[favWd][1]}</b><small>любимый день</small></div></div>` +
+      `<div class="actv-scroll"><div class="actv-cal"><div class="actv-mon" style="grid-template-columns:repeat(${ACT_WEEKS},1fr)">${months}</div>` +
+      `<div class="actv-days">${WD.map((d, i) => `<span>${i % 2 ? '' : d}</span>`).join('')}</div><div class="actv-grid" style="grid-template-columns:repeat(${ACT_WEEKS},1fr)">${cells}</div></div></div>` +
+      `<p class="actv-day" aria-live="polite">${sel ? `<b>${sd.getDate()} ${MONG[sd.getMonth()]}, ${WD_FULL[wdOf(sd)]}</b> · ${sel[0]} ${plural(sel[0], 'раунд', 'раунда', 'раундов')} · ${Math.max(1, Math.round(sel[1] / 60))} мин · лучшая масса ${sel[2].toLocaleString('ru-RU')}`
+        : actSel ? `<b>${sd.getDate()} ${MONG[sd.getMonth()]}</b> · в этот день ты не играл` : 'Нажми на день — сколько раундов и лучший результат'}</p>` +
+      `<div class="actv-leg"><span>меньше</span>${[0, 1, 2, 3, 4].map(l => `<i class="l${l}"></i>`).join('')}<span>больше</span></div>` +
+      (Object.keys(save.act).length ? '' : '<p class="info-note" style="margin:6px 0 0">Календарь заполняется с этого обновления: каждый сыгранный день станет квадратиком.</p>');
+    const sc = box.querySelector('.actv-scroll'); if (sc) sc.scrollLeft = sc.scrollWidth;
+  }
+  $('profAct').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (!b) return; actSel = actSel === b.dataset.day ? null : b.dataset.day; renderActivity(); const nb = $('profAct').querySelector(`[data-day="${b.dataset.day}"]`); if (nb) nb.focus(); });
   // ---------- graphics recovery: the browser may take the GPU away (app in background, low memory) and give it back.
   // In the menu we simply restart with the saved progress; during a round we offer a restart instead of ending it on our own.
   const gfx = { lost: 0 };
@@ -9821,6 +9905,13 @@ body.menu-bg .menu-backdrop { display: block; }
     const ext = renderer.getContext().getExtension('WEBGL_lose_context'); if (!ext) return 'браузер не умеет имитировать сбой';
     ext.loseContext(); setTimeout(() => ext.restoreContext(), 1200); return 'графика вернётся через секунду';
   }], ['Показать плашку сбоя', () => { $('gfxBar').hidden = false; }]]);
+  testAdd('Календарь активности', [
+    ['Заполнить полгода', () => { save.act = {}; let r = 11; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280; const now = new Date();
+      for (let i = 0; i < 182; i++) { const x = rnd(); if (i > 8 && x < .35) continue; const n = i <= 8 ? 2 + Math.floor(rnd() * 6) : x < .65 ? 1 + Math.floor(rnd() * 2) : x < .85 ? 3 + Math.floor(rnd() * 3) : x < .96 ? 6 + Math.floor(rnd() * 5) : 11 + Math.floor(rnd() * 6);
+        save.act[dayKey(dayShift(now, -i))] = [n, n * (150 + Math.floor(rnd() * 120)), 800 + Math.floor(rnd() * 4000)]; }
+      save.actDays = Object.keys(save.act).length + 40; save.actBest = 0; save.actBest = actBestStreak(); return 'открой Профиль → Активность'; }],
+    ['Серия 30 дней', () => { const now = new Date(); for (let i = 0; i < 30; i++) { const k = dayKey(dayShift(now, -i)); if (!save.act[k]) save.act[k] = [3, 600, 1500]; } save.actBest = actBestStreak(); }],
+    ['Очистить', () => { save.act = {}; save.actDays = 0; save.actBest = 0; }]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
   function testRender() {
     $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');

@@ -68,6 +68,15 @@ body {
 }
 .logo { font-family: var(--display); font-weight: 800; font-size: 1.05rem; letter-spacing: .02em; }
 .logo span { color: var(--me); }
+.test-card { max-width: 460px; text-align: left; } .test-card h2 { margin: 0 40px 4px 0; font: 400 1.2rem var(--display); }
+.test-lead { margin: 0 0 10px; color: var(--muted); font-size: .78rem; line-height: 1.4; }
+.test-grp { margin: 0 0 10px; } .test-grp > small { display: block; margin: 0 0 5px; color: var(--gold); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; }
+.test-grp > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.test-grp button { border: 1px solid var(--line); background: var(--row); color: var(--fg); font: 600 .78rem var(--body); padding: 7px 10px; border-radius: 9px; cursor: pointer; }
+.test-grp button:hover { border-color: var(--gold); } .test-grp button:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
+.test-grp button.warn { border-color: rgba(255, 61, 110, .6); color: #ff8aa8; }
+.test-state { margin: 4px 0 0; min-height: 1.2em; color: #3dffa2; font-size: .76rem; }
+button.test-badge { border: 0; cursor: pointer; } button.test-badge:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
 .test-badge { font-style: normal; font-family: var(--body); font-size: .7rem; font-weight: 600; color: #1a1030; background: var(--gold); border-radius: 6px; padding: 2px 6px; vertical-align: middle; letter-spacing: .08em; text-shadow: none; }
 .stats { display: flex; gap: 16px; }
 .stat { display: flex; flex-direction: column; align-items: flex-end; }
@@ -1332,7 +1341,7 @@ body.menu-bg .menu-backdrop { display: block; }
 </div>
 
 <header class="hud">
-  <div class="logo">Капли<span>3D</span> <em class="test-badge" id="testBadge" hidden>ТЕСТ</em></div>
+  <div class="logo">Капли<span>3D</span> <button type="button" class="test-badge" id="testBadge" data-testopen hidden>ТЕСТ ▾</button></div>
   <div class="stats">
     <div class="stat st-side"><small>Скорость</small><b id="speed">0</b><span class="buff" id="buff"></span></div>
     <div class="stat st-side"><small>Место</small><b id="rank">–</b></div>
@@ -1977,6 +1986,15 @@ body.menu-bg .menu-backdrop { display: block; }
   <div class="tour-tip" id="tourTip" role="dialog" aria-live="polite">
     <small id="tourStep"></small><b id="tourTitle"></b><p id="tourText"></p>
     <div class="tour-acts"><button class="btn ghost" id="tourSkip">Пропустить</button><button class="btn" id="tourNext">Далее</button></div>
+  </div>
+</div>
+<div class="modal" id="testModal" hidden>
+  <div class="modal-card test-card" role="dialog" aria-modal="true" aria-labelledby="testTitle">
+    <button class="modal-x" id="testClose" aria-label="Закрыть">×</button>
+    <h2 id="testTitle">Панель теста</h2>
+    <p class="test-lead">Только в тестовой сборке. Меняет тестовое сохранение — настоящая игра не затрагивается.</p>
+    <div id="testGroups"></div>
+    <p class="test-state" id="testState" aria-live="polite"></p>
   </div>
 </div>
 <div class="modal" id="tutModal" hidden>
@@ -3308,7 +3326,7 @@ body.menu-bg .menu-backdrop { display: block; }
     save.pets = PETS.map(pt => pt.id);
     UPG.forEach(u => save.up[u.id] = u.cost.length);
     save.coins = Math.max(save.coins, 999999);
-    save.xp = Math.max(save.xp, 5000000);        // max level: everything (archive, Chaos League) is open
+    if (!save.testInit) { save.xp = Math.max(save.xp, 5000000); save.testInit = true; }   // max level once; the test panel can change it later
     save.abil.owned = [...new Set([...save.abil.owned, ...BASE_ABIL.map(a => a.id)])]; save.abil.xa = XA_ABIL.map(a => a.id);
     save.chests = Math.max(save.chests, 25);
     save.hats = Object.keys(HATS); save.decor = DECOR.map(d => d.id); save.arenas = ARENAS.map(a => a.id);
@@ -9765,7 +9783,37 @@ body.menu-bg .menu-backdrop { display: block; }
   stats = { time: 0 }; history = [0];
   bots.forEach(spawnBot);
   rebuildCells();
-  if (TEST_MODE) { $('testBadge').hidden = false; document.querySelector('#menuCard h1').innerHTML += ' <em class="test-badge">ТЕСТ</em>'; }
+  if (TEST_MODE) { $('testBadge').hidden = false; document.querySelector('#menuCard h1').innerHTML += ' <button type="button" class="test-badge" data-testopen>ТЕСТ ▾</button>'; }
+  // ---------- test panel (test build only): quick ways to reach any state; features add their own groups to TEST_GROUPS ----------
+  const TEST_GROUPS = [];
+  function testAdd(title, buttons) { TEST_GROUPS.push({ title, buttons }); }
+  const xpForPs = (t, n) => XP_AT_MAX + (t === 1 ? n * PS.star : PS.star * PS.max + n * PS.nova) + 1;
+  testAdd('Уровень и престиж', [
+    ['Ур. 9', () => { save.xp = xpForLevel(9); }], ['Ур. 30', () => { save.xp = xpForLevel(30); }], ['Ур. 50', () => { save.xp = XP_AT_MAX; }],
+    ['★5', () => { save.xp = xpForPs(1, 5); }], ['★18', () => { save.xp = xpForPs(1, 18); }], ['★25', () => { save.xp = xpForPs(1, 25); }],
+    ['✦10', () => { save.xp = xpForPs(2, 10); }], ['✦25', () => { save.xp = xpForPs(2, 25); }]]);
+  testAdd('Монеты и сундуки', [['+100 000 ◆', () => { save.coins += 100000; }], ['+10 сундуков', () => { save.chests += 10; }]]);
+  testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
+  function testRender() {
+    $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');
+  }
+  let testResetArm = 0;
+  if (TEST_MODE) {
+    document.addEventListener('click', e => { if (e.target.closest('[data-testopen]')) { e.preventDefault(); e.stopPropagation(); testRender(); $('testState').textContent = ''; $('testModal').hidden = false; $('testClose').focus(); } }, true);
+    $('testClose').addEventListener('click', () => { $('testModal').hidden = true; });
+    $('testModal').addEventListener('click', e => {
+      if (e.target === $('testModal')) { $('testModal').hidden = true; return; }
+      const b = e.target.closest('[data-tb]'); if (!b) return;
+      const [gi, bi] = b.dataset.tb.split(':').map(Number), [label, fn] = TEST_GROUPS[gi].buttons[bi];
+      let r; try { r = fn(); } catch (er) { $('testState').textContent = 'Ошибка: ' + er.message; return; }
+      if (r === 'reset') {
+        if (Date.now() - testResetArm > 4000) { testResetArm = Date.now(); $('testState').textContent = 'Нажми ещё раз в течение 4 секунд, чтобы сбросить'; return; }
+        try { localStorage.removeItem(SAVE_KEY); } catch (er) {} location.reload(); return;
+      }
+      persist(); renderAll(); $('testState').textContent = `Готово: ${label}${typeof r === 'string' ? ' · ' + r : ''}`;
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('testModal').hidden) { e.stopPropagation(); $('testModal').hidden = true; } }, true);
+  }
   fixModeForLeague(); mode = save.mode;
   applyPet();
   resetViruses();

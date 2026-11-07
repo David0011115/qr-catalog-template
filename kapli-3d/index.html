@@ -105,6 +105,27 @@ body {
 @keyframes frLegend { 50% { box-shadow: 0 0 16px #ffd23f, 0 0 6px #ff4fd8 inset; border-color: #fff6a0; } }
 @keyframes frHue { to { filter: hue-rotate(360deg); } }
 
+/* ===== arena preview: live 3D fly-around (menus hidden, camera orbits the field) ===== */
+body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidden !important; }
+.apv { position: fixed; inset: 0; z-index: 6; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; color: var(--fg); }
+.apv[hidden] { display: none; }
+.apv-touch { position: absolute; inset: 0; pointer-events: auto; touch-action: none; cursor: grab; }
+.apv-touch:active { cursor: grabbing; }
+.apv-top { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: max(12px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 0 max(14px, env(safe-area-inset-left, 0px)); }
+.apv-hint { margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(10, 8, 30, .6); font-size: .76rem; color: var(--muted); backdrop-filter: blur(6px); }
+.apv-x { pointer-events: auto; width: 44px; height: 44px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: rgba(10, 8, 30, .7); color: var(--fg); font-size: 1.1rem; cursor: pointer; backdrop-filter: blur(6px); }
+.apv-panel { position: relative; pointer-events: auto; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 8px; width: min(560px, 100%); margin: 0 auto;
+  padding: 12px max(12px, env(safe-area-inset-left, 0px)) max(14px, env(safe-area-inset-bottom, 0px)); }
+.apv-card { background: rgba(14, 10, 38, .82); border: 1px solid var(--apc, var(--line)); box-shadow: 0 0 24px -8px var(--apc, transparent); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; backdrop-filter: blur(10px); text-align: left; }
+.apv-card .apv-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.apv-card b { font-family: var(--display); font-weight: 400; font-size: 1.15rem; color: var(--apc); }
+.apv-card .apv-n { font-size: .74rem; color: var(--muted); }
+.apv-card small { font-size: .8rem; color: var(--muted); line-height: 1.35; }
+.apv-card .apv-fx { color: var(--fg); }
+.apv-card .btn { margin: 6px 0 0; }
+.apv-nav { width: 44px; height: 64px; border-radius: 14px; border: 1px solid var(--line); background: rgba(10, 8, 30, .7); color: var(--fg); font-size: 1.6rem; cursor: pointer; backdrop-filter: blur(6px); }
+.apv-link { grid-column: 2; justify-self: start; margin-top: 4px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--rm, var(--line)); background: transparent; color: var(--fg); font: inherit; font-size: .78rem; cursor: pointer; }
+.apv-link:hover, .apv-link:focus-visible { box-shadow: 0 0 10px var(--rm, transparent); }
 /* ===== rank emblems: league + Chaos League (metal, stones, wings; animated from Платина / «Шторм») ===== */
 .rk { display: inline-block; vertical-align: middle; overflow: visible; flex: none; }
 .rk .rk-sh { animation: rkSh 3.6s ease-in-out infinite; }
@@ -1631,6 +1652,11 @@ body.menu-bg .menu-backdrop { display: block; }
   </div>
 </div>
 
+<div class="apv" id="apv" hidden role="dialog" aria-modal="true" aria-label="Предпросмотр арены">
+  <div class="apv-touch" id="apvTouch" aria-hidden="true"></div>
+  <div class="apv-top"><p class="apv-hint">Свайп — повернуть · щипок или колесо — приблизить</p><button class="apv-x" id="apvClose" aria-label="Закрыть предпросмотр">✕</button></div>
+  <div class="apv-panel"><button class="apv-nav" id="apvPrev" aria-label="Предыдущая арена">‹</button><div class="apv-card" id="apvCard" aria-live="polite"></div><button class="apv-nav" id="apvNext" aria-label="Следующая арена">›</button></div>
+</div>
 <div class="modal" id="itemModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="imName">
     <button class="modal-x" id="imClose" aria-label="Закрыть">×</button>
@@ -2385,7 +2411,8 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'inferno', name: 'Пекло',           price: 0, exclusive: true, src: 'Хаос-лига: 10 сезонов, законченных в «Разломе» или выше', floor: '#140000', grid: 'rgba(255, 45, 0, .65)', dot: '#ffd23f', rim: '#ff2d00', inner: '#ff9a3d', neb: ['#7b0000', '#ff2d00', '#ff9a3d', '#2a0000'], fx: 'ash', ground: '#0d0000', desc: 'Раскалённый пол, огненные столбы и пепел' },
     { id: 'retro',   name: 'Ретро-волна',     price: 0, exclusive: true, src: 'коллекция «Второе полугодие» (сезоны лиги 14–26)', floor: '#12001f', grid: 'rgba(255, 79, 216, .8)', dot: '#22e6ff', rim: '#ff4fd8', inner: '#ffd23f', neb: ['#ff4fd8', '#ff9a3d', '#7b3dff', '#22e6ff'], fx: 'retro', ground: '#12001f', desc: 'Синтвейв: солнце, неоновые горы и сетка до горизонта' },
   ];
-  const arenaDef = () => ARENAS.find(a => a.id === save.arena) || ARENAS[0];
+  let apvArena = null;   // arena shown in the preview (overrides the chosen one while it is open)
+  const arenaDef = () => apvArena || ARENAS.find(a => a.id === save.arena) || ARENAS[0];
   // every arena has its own small rule — only in normal modes, never in the leagues (there everyone plays standard rules)
   const ARENA_FX = {
     default: 'без особенностей — стандартные правила',
@@ -6288,7 +6315,7 @@ body.menu-bg .menu-backdrop { display: block; }
       $('shop').innerHTML = (list.length ? list.map(a => {
           const sel = save.arena === a.id, lvOk = playerLevel() >= (a.lvl || 1), can = save.coins >= a.price && lvOk;
           const btn = shop && !a.price ? '<button class="buy" disabled>🔒</button>' : shop ? `<button class="buy" id="arena-${a.id}" data-arena="${a.id}" ${can ? '' : 'disabled'}>${lvOk ? `${a.price} ◆` : `С ур. ${a.lvl}`}</button>` : `<button class="buy ${sel ? 'sel' : ''}" id="arena-${a.id}" data-arena="${a.id}" ${sel ? 'disabled' : ''}>${sel ? 'Выбрана' : 'Выбрать'}</button>`;
-          return `<div class="fxrow${a.exclusive ? ' ex' : ''}"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}${a.exclusive ? ' <span class="badge-ex badge-legend">эксклюзив</span>' : ''}</span><span class="desc">${a.desc}.<br><span class="now">Особенность: ${ARENA_FX[a.id] || '—'}</span>${shop && !a.price ? `<br>Как получить: ${a.legend ? `легендарное достижение «${LEGEND.find(l => l.id === a.legend).name}»` : a.src}` : ''}</span>${btn}</div>`;
+          return `<div class="fxrow${a.exclusive ? ' ex' : ''}"${shop ? '' : ` data-info="arena:${a.id}" tabindex="0" role="button" aria-label="Подробнее: ${a.name}"`}><span class="ico"><span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span></span><span class="name">${a.name}${a.exclusive ? ' <span class="badge-ex badge-legend">эксклюзив</span>' : ''}</span><span class="desc">${a.desc}.<br><span class="now">Особенность: ${ARENA_FX[a.id] || '—'}</span>${shop && !a.price ? `<br>Как получить: ${a.legend ? `легендарное достижение «${LEGEND.find(l => l.id === a.legend).name}»` : a.src}` : ''}</span>${btn}<button class="apv-link" id="apv-${a.id}" data-apv="${a.id}" style="--rm:${a.rim}">👁 Посмотреть арену</button></div>`;
         }).join('') : '<p class="empty-note">Все темы арены уже твои.</p>');
     } else if (shopTab === 'wdeco') {
       const row = (ico, name, desc, attr, on, label, info) => `<div class="fxrow"${info ? ` data-info="${info}" tabindex="0" role="button" aria-label="Подробнее: ${String(name).replace(/<[^>]*>/g, '').replace(/"/g, '&quot;')}"` : ''}><span class="ico">${ico}</span><span class="name">${name}</span><span class="desc">${desc}</span><button class="buy ${on ? 'sel' : ''}" ${attr}>${label}</button></div>`;
@@ -6624,6 +6651,7 @@ body.menu-bg .menu-backdrop { display: block; }
       return;
     }
     const b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (b.dataset.apv) { openArenaPreview(b.dataset.apv, b.id); return; }
     if (b.dataset.arch) {
       const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price || (save.archTok || 0) < ARCH_TOK[o.rar] || archBuysLeft() < 1) return;
       save.coins -= o.price; save.archTok -= ARCH_TOK[o.rar]; save.archBuys.n++; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
@@ -6893,7 +6921,7 @@ body.menu-bg .menu-backdrop { display: block; }
       flat = `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`;
       rows.push(['Что меняет', a.desc], ['Особенность', `${ARENA_FX[a.id] || '—'} (только в обычных режимах)`], ['Частицы', ({ embers: 'искры', snow: 'снег', bubbles: 'пузыри', fireflies: 'светлячки', sand: 'песок', rain: 'цифровой дождь', cosmos: 'мерцающие звёзды', gold: 'золотые искры', petals: 'лепестки сакуры', ash: 'пепел и искры', aurora: 'переливы сияния в небе', retro: 'неоновые искры и солнце на горизонте' })[a.fx] || 'нет'],
         ['Откуда', a.src ? a.src : a.legend ? `легендарное достижение «${LEGEND.find(l => l.id === a.legend).name}»` : a.price ? `магазин · ${a.price} ◆` : 'есть с самого начала']);
-      act = on ? '<button class="btn ghost" disabled>Выбрана</button>' : `<button class="btn" data-act="arena-${id}">Выбрать</button>`;
+      act = `<button class="btn ghost" data-apv="${id}">👁 Посмотреть арену</button>` + (on ? '<button class="btn ghost" disabled>Выбрана</button>' : `<button class="btn" data-act="arena-${id}">Выбрать</button>`);
     }
     $('imName').textContent = name; $('imTag').innerHTML = tag;
     $('imInfo').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
@@ -6944,6 +6972,7 @@ body.menu-bg .menu-backdrop { display: block; }
   $('imClose').addEventListener('click', closeItem);
   $('itemModal').addEventListener('click', e => {
     if (e.target === $('itemModal') || e.target.id === 'imOk') { closeItem(); return; }
+    const pv = e.target.closest('button[data-apv]'); if (pv) { const ret = imReturn; closeItem(); openArenaPreview(pv.dataset.apv, ret && ret.id); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const orig = $(b.dataset.act);
     if (orig && !orig.disabled) orig.click();
@@ -8098,6 +8127,72 @@ body.menu-bg .menu-backdrop { display: block; }
     ov.addEventListener('touchcancel', end);
   })();
 
+  // ================= arena preview: live 3D fly-around of any arena; buy / select / flip through from it =================
+  let apv = null;
+  const apvOwned = a => a.id === 'default' || save.arenas.includes(a.id);
+  function apvShow() {
+    const a = ARENAS[apv.i], own = apvOwned(a), on = save.arena === a.id, lvOk = playerLevel() >= (a.lvl || 1);
+    apvArena = a; applyArena();
+    const how = a.legend ? `легендарное достижение «${LEGEND.find(l => l.id === a.legend).name}»` : a.src;
+    const act = on ? '<button class="btn ghost" disabled>Выбрана</button>'
+      : own ? '<button class="btn" id="apvDo">Выбрать</button>'
+      : a.price ? `<button class="btn ${save.coins >= a.price && lvOk ? '' : 'ghost'}" id="apvDo" ${save.coins >= a.price && lvOk ? '' : 'disabled'}>${lvOk ? `Купить · ${a.price.toLocaleString('ru-RU')} ◆` : `Откроется с ${a.lvl} уровня`}</button>${lvOk && save.coins < a.price ? `<small>Не хватает ${(a.price - save.coins).toLocaleString('ru-RU')} ◆</small>` : ''}`
+      : `<button class="btn ghost" disabled>🔒 Не в продаже</button><small>Как получить: ${how}</small>`;
+    $('apvCard').style.setProperty('--apc', a.rim);
+    $('apvCard').innerHTML = `<div class="apv-row"><b>${a.name}</b><span class="apv-n">${apv.i + 1} / ${ARENAS.length}${a.exclusive || a.legend ? ' · эксклюзив' : own ? ' · твоя' : ''}</span></div>` +
+      `<small>${a.desc}.</small><small class="apv-fx">Особенность: ${ARENA_FX[a.id] || '—'} <span style="color:var(--muted)">(в обычных режимах)</span></small>${act}`;
+  }
+  function openArenaPreview(id, retId) {
+    apv = { i: Math.max(0, ARENAS.findIndex(a => a.id === id)), ang: .5, pitch: .62, dist: R * 1.55, auto: true, drag: false, last: 0, pts: new Map(), pinch: 0, resume: 0, retId };
+    focus.x = 0; focus.z = 0;
+    $('overlay').hidden = true; document.body.classList.add('apv-on'); $('apv').hidden = false;
+    apvShow(); $('apvClose').focus();
+  }
+  function closeArenaPreview() {
+    if (!apv) return; const retId = apv.retId; clearTimeout(apv.resume); apv = null; apvArena = null;
+    applyArena(); setHoliday(curHoliday);
+    $('apv').hidden = true; document.body.classList.remove('apv-on'); $('overlay').hidden = false;
+    renderShop(); const r = retId && $(retId); if (r) r.focus();
+  }
+  function apvStep(d) { apv.i = (apv.i + d + ARENAS.length) % ARENAS.length; apvShow(); }
+  function apvCam(now) {
+    const dt = Math.min(.05, (now - (apv.last || now)) / 1000); apv.last = now;
+    if (apv.auto) apv.ang += dt * .14;
+    const c = Math.cos(apv.pitch) * apv.dist;
+    camLook.set(0, 0, 0); camPos.set(Math.sin(apv.ang) * c, Math.sin(apv.pitch) * apv.dist, Math.cos(apv.ang) * c);
+  }
+  $('apvClose').addEventListener('click', closeArenaPreview);
+  $('apvPrev').addEventListener('click', () => apvStep(-1));
+  $('apvNext').addEventListener('click', () => apvStep(1));
+  $('apvCard').addEventListener('click', e => {
+    if (!e.target.closest('#apvDo')) return;
+    const a = ARENAS[apv.i];
+    if (!apvOwned(a)) { if (!a.price || save.coins < a.price || playerLevel() < (a.lvl || 1)) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
+    else toast(`Арена «${a.name}» выбрана`);
+    save.arena = a.id;
+    for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
+    persist(); renderAll(); apvShow(); const b = $('apvCard').querySelector('button'); if (b) b.focus();
+  });
+  { const el = $('apvTouch'), clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+    const hold = () => { apv.auto = false; clearTimeout(apv.resume); };
+    const release = () => { apv.resume = setTimeout(() => { if (apv) apv.auto = true; }, 2500); };
+    el.addEventListener('pointerdown', e => { if (!apv) return; el.setPointerCapture(e.pointerId); apv.pts.set(e.pointerId, [e.clientX, e.clientY]); hold(); });
+    el.addEventListener('pointermove', e => {
+      if (!apv || !apv.pts.has(e.pointerId)) return;
+      const [px, py] = apv.pts.get(e.pointerId); apv.pts.set(e.pointerId, [e.clientX, e.clientY]);
+      if (apv.pts.size === 1) { apv.ang -= (e.clientX - px) * .006; apv.pitch = clampN(apv.pitch + (e.clientY - py) * .004, .12, 1.35); }
+      else if (apv.pts.size === 2) { const [a, b] = [...apv.pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (apv.pinch) apv.dist = clampN(apv.dist * apv.pinch / d, R * .45, R * 2.2); apv.pinch = d; }
+    });
+    const up = e => { if (!apv) return; apv.pts.delete(e.pointerId); apv.pinch = 0; if (!apv.pts.size) release(); };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('wheel', e => { if (!apv) return; e.preventDefault(); hold(); apv.dist = clampN(apv.dist * (1 + Math.sign(e.deltaY) * .1), R * .45, R * 2.2); release(); }, { passive: false });
+  }
+  document.addEventListener('keydown', e => {
+    if (!apv) return;
+    if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); closeArenaPreview(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { if (!e.target.closest('input, select, textarea')) { e.preventDefault(); apvStep(e.key === 'ArrowLeft' ? -1 : 1); } }
+  }, true);
+
   // ================= render loop =================
   const crownMesh = makeCrown(); crownMesh.visible = false; scene.add(crownMesh);
   const camPos = new THREE.Vector3(0, 40, 30), camLook = new THREE.Vector3(), tmpV = new THREE.Vector3();
@@ -8307,6 +8402,7 @@ body.menu-bg .menu-backdrop { display: block; }
     h = Math.min(h, 330);   // never leave the starry sky or lose the far edge of the arena
     camLook.lerp(tmpV.set(focus.x, 0, focus.z), 0.16);
     camPos.lerp(tmpV.set(focus.x, h, focus.z + h * 0.62), 0.12);
+    if (apv) apvCam(now);
     camera.position.copy(camPos); camera.lookAt(camLook);
     // fog and shadows scale with the camera distance, so a big blob still sees clearly
     const camDist = camPos.distanceTo(camLook);

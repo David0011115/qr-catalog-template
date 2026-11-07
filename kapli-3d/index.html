@@ -105,6 +105,27 @@ body {
 @keyframes frLegend { 50% { box-shadow: 0 0 16px #ffd23f, 0 0 6px #ff4fd8 inset; border-color: #fff6a0; } }
 @keyframes frHue { to { filter: hue-rotate(360deg); } }
 
+/* ===== friends + private messages ===== */
+.fr-badge { position: absolute; top: 3px; right: 8px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #ff4f6d; box-shadow: 0 0 6px #ff4f6d; color: #fff; font: 700 .64rem/17px var(--body, sans-serif); font-style: normal; }
+.fr-card, .dm-card { max-height: calc(100dvh - 32px); }
+.fr-add { margin: 0; } .fr-add input { min-width: 0; }
+.fr-tabs { margin: 0; }
+.fr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 48dvh; overscroll-behavior: contain; touch-action: pan-y; }
+.fr-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who acts" "st acts"; gap: 2px 8px; align-items: center; background: var(--row); border-radius: 10px; padding: 7px 10px; text-align: left; }
+.fr-row[data-pc] { cursor: pointer; } .fr-row[data-pc]:hover, .fr-row[data-pc]:focus-visible { background: rgba(110, 80, 220, .38); outline: none; }
+.fr-row .rk-who { grid-area: who; } .fr-row .fr-st { grid-area: st; }
+.fr-st { font-size: .72rem; color: var(--muted); } .fr-st.on { color: #3dffa2; }
+.fr-acts { grid-area: acts; display: flex; gap: 6px; align-items: center; }
+.fr-b { position: relative; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: rgba(10, 6, 30, .5); font-size: 1.05rem; cursor: pointer; color: var(--fg); }
+.fr-b:disabled { opacity: .4; cursor: default; }
+.fr-n { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; border-radius: 8px; background: #ff4f6d; color: #fff; font: 700 .6rem/16px sans-serif; font-style: normal; padding: 0 3px; }
+.btn.fr-sm { width: auto; margin: 0; padding: 7px 10px; font-size: .78rem; }
+.dm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dm-head .ch-who .rk-n { font-size: 1rem; }
+.dm-rd { color: #22e6ff; letter-spacing: -.2em; }
+.pc-social { margin-top: 10px; display: grid; gap: 6px; text-align: center; }
+.pc-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; } .pc-acts .btn { margin: 0; padding: 9px 8px; font-size: .82rem; }
+.pc-acts .btn:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
 /* ===== arena preview: live 3D fly-around (menus hidden, camera orbits the field) ===== */
 body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidden !important; }
 .apv { position: fixed; inset: 0; z-index: 6; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; color: var(--fg); }
@@ -1155,6 +1176,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="menu-icons">
       <button class="icon-btn" id="profBtn" aria-label="Профиль">👤<small>Профиль</small></button>
       <button class="icon-btn" id="chatBtn" aria-label="Чат">💬<small>Чат</small></button>
+      <button class="icon-btn" id="frBtn" aria-label="Друзья">👥<small>Друзья</small><i class="fr-badge" id="frBadge" hidden></i></button>
       <button class="icon-btn" id="rankBtn" aria-label="Рейтинг">🏅<small>Рейтинг</small></button>
       <button class="icon-btn" id="newsBtn" aria-label="Обновления">📰<small>Обновления</small><i class="news-dot" id="newsDot" hidden></i></button>
       <button class="icon-btn" id="infoBtn" aria-label="Информация">ⓘ<small>Информация</small></button>
@@ -1203,6 +1225,24 @@ body.menu-bg .menu-backdrop { display: block; }
     <form class="chat-form" id="chatForm" novalidate><input id="chatIn" maxlength="200" placeholder="Сообщение…" autocomplete="off" aria-label="Сообщение"><button class="btn" id="chatSend" type="submit" aria-label="Отправить">➤</button></form>
     <p class="hint" id="chatNote"></p>
     <button class="btn ghost" id="chatBack" type="button">Назад</button>
+  </div>
+
+  <div class="card fr-card" id="friendsCard" hidden>
+    <h1>Друзья</h1>
+    <form class="chat-form fr-add" id="frAdd" novalidate><input id="frIn" maxlength="24" placeholder="Ник или ID игрока" autocomplete="off" aria-label="Ник или ID игрока"><button class="btn" type="submit" id="frAddBtn">Добавить</button></form>
+    <p class="hint" id="frNote" aria-live="polite"></p>
+    <div class="tabs fr-tabs" id="frTabs" role="tablist" aria-label="Разделы"></div>
+    <ul class="fr-list" id="frList" aria-live="polite"></ul>
+    <p class="hint">Подарок другу — 100 ◆ раз в день. Получить можно до 5 подарков в день.</p>
+    <button class="btn ghost" id="frBack" type="button">Назад</button>
+  </div>
+
+  <div class="card chat-card dm-card" id="dmCard" hidden>
+    <div class="dm-head" id="dmHead"></div>
+    <ul class="chat-list" id="dmList" aria-live="polite"></ul>
+    <form class="chat-form" id="dmForm" novalidate><input id="dmIn" maxlength="300" placeholder="Сообщение…" autocomplete="off" aria-label="Личное сообщение"><button class="btn" id="dmSend" type="submit" aria-label="Отправить">➤</button></form>
+    <p class="hint" id="dmNote"></p>
+    <button class="btn ghost" id="dmBack" type="button">← Друзья</button>
   </div>
 
   <div class="card rank-card" id="rankCard" hidden>
@@ -2735,7 +2775,7 @@ body.menu-bg .menu-backdrop { display: block; }
   }
   fillQuests();
   try { localStorage.removeItem('blobs3d-save'); } catch (e) {}
-  const Net = { uid: null, nick: null, shortId: '', email: '', submitRecord() {}, boot() {}, pushShowcase() {}, getShowcases: async () => new Map() };   // filled by the accounts block below
+  const Net = { uid: null, nick: null, shortId: '', email: '', submitRecord() {}, boot() {}, pushShowcase() {}, getShowcases: async () => new Map(), pcSocial() {}, pcSocialClick() {} };   // filled by the accounts block below
   const escHtml = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   let persistHook = null;   // cloud sync: told about every local save
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} if (persistHook) persistHook(); };
@@ -5626,7 +5666,7 @@ body.menu-bg .menu-backdrop { display: block; }
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard', 'friendsCard', 'dmCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -7940,8 +7980,9 @@ body.menu-bg .menu-backdrop { display: block; }
     let d = me ? myShowcase() : null;
     if (!me) { const m = await Net.getShowcases([nick]); d = m.get(nick); }
     if ($('pcModal').hidden) return;
-    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>');
+    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
     pbgMount($('pcBody'));
+    if (!me) Net.pcSocial(nick, $('pcSocial'));
   }
   pbgCheck(true);   // what the player already has gets unlocked silently
   const closePlayerCard = () => { $('pcModal').hidden = true; if (pcReturn && pcReturn.isConnected) pcReturn.focus(); };
@@ -8072,6 +8113,7 @@ body.menu-bg .menu-backdrop { display: block; }
   $('pdGrid').addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid }; renderDecorEditor(); const again = document.querySelector(`[data-pk="${b.dataset.pk}"][data-pid="${b.dataset.pid}"]`); if (again) again.focus({ preventScroll: true }); });
   $('pdApply').addEventListener('click', applyDecor);
   $('pcClose').addEventListener('click', closePlayerCard);
+  $('pcBody').addEventListener('click', e => { const box = $('pcSocial'); if (box && box.contains(e.target)) Net.pcSocialClick(e, box); });
   $('pcModal').addEventListener('click', e => { if (e.target === $('pcModal')) closePlayerCard(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('pcModal').hidden) { e.stopPropagation(); closePlayerCard(); } }, true);
 
@@ -8517,7 +8559,8 @@ body.menu-bg .menu-backdrop { display: block; }
       Net.uid = user ? user.id : null; Net.nick = user ? (nick || meta.nick || null) : null;
       Net.shortId = user && publicId != null ? String(publicId).padStart(6, '0') : '';
       Net.email = user ? user.email : '';
-      if (!user) { canPush = false; setSync('guest'); } else setTimeout(() => pushShowcase(), 3000);
+      if (!user) { canPush = false; setSync('guest'); frStop(); } else { setTimeout(() => pushShowcase(), 3000); if (Net.uid !== frStart.uid) frStart(); }
+      frStart.uid = Net.uid;
       renderChip();
     }
     async function loadProfile() {
@@ -8871,6 +8914,189 @@ body.menu-bg .menu-backdrop { display: block; }
     $('chatBtn').addEventListener('click', openChat);
     $('chatBack').addEventListener('click', closeChat);
 
+    // ---------- friends, private messages, block list, gifts, online status (server: FRIENDS-DM-MIGRATION.sql) ----------
+    const FR = { list: [], blocks: [], counts: { requests: 0, unread: 0, gifts: 0 }, tab: 'friends', timer: null, ch: null, off: false, dm: null, dmLast: 0, dmPoll: null, dmBusy: false };
+    const frErr = e => netErr(e) ? 'Нет связи с сервером.' : /kapli_|function|PGRST20|schema cache/i.test(String((e && (e.message || e.code)) || '')) ? 'Друзья ещё не включены на сервере.' : 'Не получилось, попробуй ещё раз.';
+    const agoTxt = t => { if (!t) return 'давно не заходил(а)'; const m = Math.round((Date.now() - new Date(t)) / 6e4);
+      return m < 60 ? `был(а) ${Math.max(1, m)} мин назад` : m < 1440 ? `был(а) ${Math.round(m / 60)} ч назад` : `был(а) ${Math.round(m / 1440)} дн. назад`; };
+    async function frRpc(fn, args) { await ensureClient(); const { data, error } = await withTimeout(sb.rpc(fn, args || {}), 9000); if (error) throw error; return data; }
+    function frBadge() {
+      const n = FR.counts.requests + FR.counts.unread, b = $('frBadge');
+      b.hidden = !sess || !n; b.textContent = n > 99 ? '99+' : n;
+      $('frBtn').setAttribute('aria-label', n ? `Друзья: ${FR.counts.requests ? `заявок ${FR.counts.requests}` : ''}${FR.counts.requests && FR.counts.unread ? ', ' : ''}${FR.counts.unread ? `непрочитанных ${FR.counts.unread}` : ''}` : 'Друзья');
+    }
+    // every minute while the game is open: online mark + counters; waiting gifts are claimed into the save
+    async function frPing() {
+      if (!sess || FR.off || document.hidden) return;
+      try {
+        const c = await frRpc('kapli_ping'); const before = FR.counts; FR.counts = c || FR.counts; frBadge();
+        if (c.requests > before.requests && $('friendsCard').hidden) toast('👥 Новая заявка в друзья');
+        if (c.gifts) await frClaim();
+      } catch (e) { if (!netErr(e)) FR.off = true; }   // no server part yet: stay quiet until the next sign-in
+    }
+    async function frClaim() {
+      const got = await frRpc('kapli_gifts_claim'); if (!got || !got.length) return;
+      const sum = got.reduce((a, g) => a + g.amount, 0); save.coins += sum; persist(); renderAll();
+      toast(got.length === 1 ? `🎁 Подарок от ${got[0].nickname}: +${sum} ◆` : `🎁 Подарки от друзей (${got.length}): +${sum} ◆`);
+      FR.counts.gifts = 0;
+    }
+    function frStart() {
+      frStop(); FR.off = false; frPing(); FR.timer = setInterval(frPing, 60000);
+      ensureClient().then(() => {
+        if (!sess) return;
+        FR.ch = sb.channel('kapli-dm-' + sess.user.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kapli_dm', filter: `recipient=eq.${sess.user.id}` }, () => {
+          if (FR.dm && !$('dmCard').hidden) { dmFetch(true).catch(() => {}); return; }
+          FR.counts.unread++; frBadge(); toast('💬 Новое личное сообщение');
+          if (!$('friendsCard').hidden) frLoad();
+        }).subscribe();
+      }).catch(() => {});
+    }
+    function frStop() { clearInterval(FR.timer); FR.timer = null; if (FR.ch && sb) { sb.removeChannel(FR.ch); FR.ch = null; } FR.counts = { requests: 0, unread: 0, gifts: 0 }; FR.list = []; frBadge(); }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && sess && FR.timer) frPing(); });
+
+    // ---- the friends window ----
+    const frRel = nick => { const n = String(nick).toLowerCase(), f = FR.list.find(x => x.nickname.toLowerCase() === n); if (f) return f.status;
+      return FR.blocks.some(x => x.nickname.toLowerCase() === n) ? 'blocked' : 'none'; };
+    async function frLoad() {
+      if (!sess) return;
+      try { const [l, b] = await Promise.all([frRpc('kapli_friends'), frRpc('kapli_blocks')]); FR.list = l || []; FR.blocks = b || [];
+        FR.counts.requests = FR.list.filter(f => f.status === 'incoming').length; FR.counts.unread = FR.list.reduce((a, f) => a + (f.unread || 0), 0); frBadge();
+        if (!$('friendsCard').hidden) frRender(); }
+      catch (e) { if (!$('friendsCard').hidden) $('frList').innerHTML = `<p class="empty-note">${frErr(e)}</p>`; throw e; }
+    }
+    function frRender() {
+      const fr = FR.list.filter(f => f.status === 'friend'), rq = FR.list.filter(f => f.status !== 'friend');
+      const inc = rq.filter(f => f.status === 'incoming').length;
+      $('frTabs').innerHTML = [['friends', `Друзья${fr.length ? ` · ${fr.length}` : ''}`], ['req', `Заявки${inc ? ` · ${inc}` : ''}`], ['blocked', 'Чёрный список']]
+        .map(([k, n]) => `<button class="tab" role="tab" data-frt="${k}" aria-selected="${FR.tab === k}">${n}</button>`).join('');
+      const who = f => `<span class="rk-who" data-who="${escHtml(f.nickname)}">${whoHTML(f.nickname, null)}</span>`;
+      const nk = f => escHtml(f.nickname);
+      let html = '';
+      if (FR.tab === 'friends') html = fr.length ? fr.map(f => `<li class="fr-row" data-pc="${nk(f)}" tabindex="0" role="button" aria-label="Профиль игрока ${nk(f)}">${who(f)}` +
+          `<small class="fr-st ${f.online ? 'on' : ''}">${f.online ? '● в игре' : agoTxt(f.last_seen)}</small>` +
+          `<span class="fr-acts"><button class="fr-b" data-fa="dm" data-nick="${nk(f)}" aria-label="Написать ${nk(f)}${f.unread ? `, непрочитанных ${f.unread}` : ''}">💬${f.unread ? `<i class="fr-n">${f.unread}</i>` : ''}</button>` +
+          `<button class="fr-b" data-fa="gift" data-nick="${nk(f)}" ${f.gift_sent ? 'disabled title="Подарок уже отправлен сегодня"' : 'title="Подарить 100 ◆ (раз в день)"'} aria-label="Подарок для ${nk(f)}">🎁</button></span></li>`).join('')
+        : '<p class="empty-note">Друзей пока нет. Найди игрока по нику или ID выше — или нажми на ник в рейтинге или чате.</p>';
+      else if (FR.tab === 'req') html = rq.length ? rq.map(f => `<li class="fr-row" data-pc="${nk(f)}" tabindex="0" role="button" aria-label="Профиль игрока ${nk(f)}">${who(f)}` +
+          (f.status === 'incoming' ? `<small class="fr-st">хочет дружить</small><span class="fr-acts"><button class="btn fr-sm" data-fa="accept" data-nick="${nk(f)}">Принять</button><button class="btn ghost fr-sm" data-fa="decline" data-nick="${nk(f)}">Нет</button></span>`
+            : `<small class="fr-st">заявка отправлена</small><span class="fr-acts"><button class="btn ghost fr-sm" data-fa="cancel" data-nick="${nk(f)}">Отменить</button></span>`) + '</li>').join('')
+        : '<p class="empty-note">Заявок нет.</p>';
+      else html = FR.blocks.length ? FR.blocks.map(f => `<li class="fr-row">${who(f)}<small class="fr-st">заблокирован(а)</small><span class="fr-acts"><button class="btn ghost fr-sm" data-fa="unblock" data-nick="${nk(f)}">Разблокировать</button></span></li>`).join('')
+        : '<p class="empty-note">Чёрный список пуст. Заблокированный игрок не может присылать заявки, сообщения и подарки.</p>';
+      $('frList').innerHTML = html; decorateWho($('frList'));
+    }
+    async function openFriends(keepTab) {
+      showCard('friendsCard'); $('frNote').textContent = '';
+      const on = !!sess; $('frIn').disabled = $('frAddBtn').disabled = !on;
+      if (!on) { $('frTabs').innerHTML = ''; $('frList').innerHTML = '<p class="empty-note">Друзья и личные сообщения — для игроков с аккаунтом. Войди или создай аккаунт в меню.</p>'; $('frBack').focus(); return; }
+      if (keepTab !== true) FR.tab = FR.counts.requests && !FR.counts.unread ? 'req' : 'friends';
+      $('frList').innerHTML = '<p class="empty-note">Загрузка…</p>'; $('frBack').focus();
+      try { await frLoad(); frRender(); if (FR.counts.gifts) frClaim().catch(() => {}); } catch (e) {}
+    }
+    const FA_TXT = { sent: 'Заявка отправлена', accepted: 'Теперь вы друзья!', already: 'Вы уже друзья', pending: 'Заявка уже отправлена — ждём ответа', self: 'Это ты 🙂',
+      not_found: 'Игрок не найден — проверь ник или ID', unavailable: 'Нельзя отправить заявку этому игроку', limit: 'Лимит: 200 друзей и 30 открытых заявок',
+      declined: 'Заявка отклонена', removed: 'Готово', blocked: 'Игрок в чёрном списке', unblocked: 'Игрок убран из чёрного списка', none: 'Уже неактуально', not_friends: 'Подарки — только друзьям' };
+    // one action from the friends window or a player card; returns the server answer
+    async function frAct(act, nick) {
+      if (!sess) { toast('Войди в аккаунт'); return null; }
+      if ((act === 'remove' && !confirm(`Удалить ${nick} из друзей?`)) || (act === 'block' && !confirm(`Заблокировать ${nick}? Дружба и переписка прекратятся.`))) return null;
+      if (act === 'dm') { openDm(nick); return 'dm'; }
+      try {
+        const r = act === 'add' ? await frRpc('kapli_friend_request', { p_query: nick })
+          : act === 'accept' || act === 'decline' ? await frRpc('kapli_friend_respond', { p_nick: nick, p_accept: act === 'accept' })
+          : act === 'cancel' || act === 'remove' ? await frRpc('kapli_friend_remove', { p_nick: nick })
+          : act === 'block' || act === 'unblock' ? await frRpc('kapli_block', { p_nick: nick, p_on: act === 'block' })
+          : act === 'gift' ? await frRpc('kapli_gift_send', { p_nick: nick }) : null;
+        toast(act === 'gift' ? (r === 'sent' ? `🎁 Подарок отправлен: ${nick} получит 100 ◆` : r === 'already' ? 'Сегодня ты уже дарил(а) этому другу' : FA_TXT[r] || r)
+          : act === 'cancel' && r === 'removed' ? 'Заявка отменена' : act === 'remove' && r === 'removed' ? `${nick} удалён(а) из друзей` : FA_TXT[r] || r);
+        await frLoad().catch(() => {}); return r;
+      } catch (e) { toast(frErr(e)); return null; }
+    }
+    $('frBtn').addEventListener('click', () => openFriends());
+    $('frBack').addEventListener('click', () => { showCard('menuCard'); $('frBtn').focus(); });
+    $('frTabs').addEventListener('click', e => { const b = e.target.closest('[data-frt]'); if (b) { FR.tab = b.dataset.frt; frRender(); const a = $('frTabs').querySelector(`[data-frt="${FR.tab}"]`); if (a) a.focus(); } });
+    $('frAdd').addEventListener('submit', async e => {
+      e.preventDefault(); const q = $('frIn').value.trim(); if (!q) return;
+      $('frAddBtn').disabled = true; const r = await frAct('add', q); $('frAddBtn').disabled = false;
+      if (r) { $('frNote').textContent = FA_TXT[r] || ''; if (r === 'sent' || r === 'accepted') { $('frIn').value = ''; FR.tab = r === 'sent' ? 'req' : 'friends'; frRender(); } }
+    });
+    $('frList').addEventListener('click', async e => {
+      const b = e.target.closest('[data-fa]');
+      if (b) { b.disabled = true; await frAct(b.dataset.fa, b.dataset.nick); if (b.isConnected) b.disabled = false; return; }
+      const row = e.target.closest('[data-pc]'); if (row) openPlayerCard(row.dataset.pc);
+    });
+    $('frList').addEventListener('keydown', e => { const r = e.target.closest('[data-pc]'); if (r && e.target === r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPlayerCard(r.dataset.pc); } });
+
+    // ---- actions on another player's card ----
+    async function pcSocial(nick, box) {
+      if (!sess || !nick || nick === Net.nick) { box.innerHTML = sess || nick === Net.nick ? '' : '<p class="info-note">Войди в аккаунт, чтобы добавлять в друзья и писать.</p>'; return; }
+      box.innerHTML = '<p class="empty-note">…</p>';
+      try { await frLoad(); } catch (e) { box.innerHTML = `<p class="info-note">${frErr(e)}</p>`; return; }
+      const rel = frRel(nick), f = FR.list.find(x => x.nickname.toLowerCase() === nick.toLowerCase()), n = escHtml(nick);
+      const B = (a, t, cls = 'ghost', dis) => `<button class="btn ${cls}" data-fa="${a}" data-nick="${n}" ${dis ? 'disabled' : ''}>${t}</button>`;
+      box.innerHTML = (f && f.status === 'friend' ? `<small class="fr-st ${f.online ? 'on' : ''}">${f.online ? '● в игре' : agoTxt(f.last_seen)}</small>` : '') + '<div class="pc-acts">' + (
+        rel === 'friend' ? B('dm', `💬 Написать${f.unread ? ` · ${f.unread}` : ''}`, '') + B('gift', f.gift_sent ? '🎁 Подарено сегодня' : '🎁 Подарить 100 ◆', 'ghost', f.gift_sent) + B('remove', 'Удалить из друзей') + B('block', '⛔ Заблокировать')
+        : rel === 'incoming' ? B('accept', '✓ Принять заявку', '') + B('decline', 'Отклонить') + B('block', '⛔ Заблокировать')
+        : rel === 'outgoing' ? B('cancel', 'Отменить заявку') + B('block', '⛔ Заблокировать')
+        : rel === 'blocked' ? B('unblock', 'Разблокировать')
+        : B('add', '👥 Добавить в друзья', '') + B('block', '⛔ Заблокировать')) + '</div>';
+    }
+    async function pcSocialClick(e, box) {
+      const b = e.target.closest('[data-fa]'); if (!b) return;
+      const nick = b.dataset.nick; b.disabled = true;
+      if (b.dataset.fa === 'dm') { $('pcModal').hidden = true; openDm(nick); return; }
+      await frAct(b.dataset.fa, nick); if (box.isConnected && !$('pcModal').hidden) pcSocial(nick, box);
+    }
+
+    // ---- one private conversation ----
+    function dmAdd(m) {
+      const list = $('dmList'); if (list.querySelector(`[data-dm="${m.id}"]`)) return;
+      const empty = list.querySelector('.empty-note'); if (empty) empty.remove();
+      FR.dmLast = Math.max(FR.dmLast, m.id);
+      const near = list.scrollHeight - list.scrollTop - list.clientHeight < 60, li = document.createElement('li');
+      li.dataset.dm = m.id; if (m.mine) li.className = 'me';
+      li.innerHTML = `<b>${m.mine ? 'Ты' : escHtml(FR.dm)}</b><time>${hhmm(m.created_at)}${m.mine ? ` <span class="dm-rd" title="${m.read_at ? 'Прочитано' : 'Доставлено'}">${m.read_at ? '✓✓' : '✓'}</span>` : ''}</time>` +
+        (!m.mine ? `<button class="rep" data-dmrep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : '') + `<p>${escHtml(m.body)}</p>`;
+      list.appendChild(li); while (list.children.length > 200) list.firstChild.remove();
+      if (near || m.mine) list.scrollTop = list.scrollHeight;
+    }
+    async function dmFetch(newer) {
+      const nick = FR.dm; const rows = await frRpc('kapli_dm_history', { p_nick: nick, p_after: newer ? FR.dmLast : null, p_limit: 60 });
+      if (FR.dm !== nick) return;
+      (rows || []).reverse().forEach(dmAdd);
+      if ((rows || []).some(r => !r.mine)) { frRpc('kapli_dm_read', { p_nick: nick }).then(() => frPing()).catch(() => {}); }
+      if (!newer) $('dmList').scrollTop = $('dmList').scrollHeight;
+    }
+    async function openDm(nick) {
+      FR.dm = nick; FR.dmLast = 0; showCard('dmCard');
+      const f = FR.list.find(x => x.nickname.toLowerCase() === nick.toLowerCase());
+      $('dmHead').innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(nick)}" data-who="${escHtml(nick)}" aria-label="Профиль игрока ${escHtml(nick)}">${whoHTML(nick, null)}</button>` +
+        (f ? `<small class="fr-st ${f.online ? 'on' : ''}">${f.online ? '● в игре' : agoTxt(f.last_seen)}</small>` : '');
+      decorateWho($('dmHead'));
+      $('dmList').innerHTML = '<p class="empty-note">Загрузка…</p>'; $('dmNote').textContent = 'Личные сообщения видите только вы двое. ⚑ — пожаловаться.';
+      $('dmIn').value = ''; $('dmIn').disabled = $('dmSend').disabled = false; $('dmIn').focus();
+      try { await dmFetch(false); if (!$('dmList').querySelector('li')) $('dmList').innerHTML = '<p class="empty-note">Сообщений пока нет — напиши первым!</p>'; }
+      catch (e) { $('dmList').innerHTML = `<p class="empty-note">${frErr(e)}</p>`; }
+      clearInterval(FR.dmPoll); FR.dmPoll = setInterval(() => { if (!$('dmCard').hidden) dmFetch(true).catch(() => {}); }, 6000);
+    }
+    function closeDm() { clearInterval(FR.dmPoll); FR.dmPoll = null; FR.dm = null; openFriends(true); }
+    const DM_ERR = { not_friends: 'Писать можно только друзьям', too_fast: 'Не так быстро — подожди секунду', daily_limit: 'На сегодня лимит сообщений исчерпан', empty: '' };
+    $('dmForm').addEventListener('submit', async e => {
+      e.preventDefault(); const t = $('dmIn').value.trim(); if (!t || !FR.dm || FR.dmBusy) return;
+      FR.dmBusy = true; $('dmSend').disabled = true;
+      try { await frRpc('kapli_dm_send', { p_nick: FR.dm, p_body: t }); $('dmIn').value = ''; await dmFetch(true); }
+      catch (er) { const k = Object.keys(DM_ERR).find(k => String(er.message || '').includes(k)); toast(k ? DM_ERR[k] || 'Пустое сообщение' : frErr(er)); }
+      FR.dmBusy = false; $('dmSend').disabled = false; $('dmIn').focus();
+    });
+    $('dmBack').addEventListener('click', closeDm);
+    $('dmHead').addEventListener('click', e => { const w = e.target.closest('[data-pc]'); if (w) openPlayerCard(w.dataset.pc); });
+    $('dmList').addEventListener('click', async e => {
+      const b = e.target.closest('[data-dmrep]'); if (!b) return;
+      b.disabled = true;
+      try { await frRpc('kapli_dm_report', { p_message: +b.dataset.dmrep }); toast('Жалоба отправлена, спасибо. Игрока можно заблокировать в его профиле.'); b.remove(); }
+      catch (er) { b.disabled = false; toast(frErr(er)); }
+    });
+
     // ---------- ranking by mode ----------
     let rankMode = 'classic';
     $('rankModes').innerHTML = RANK_MODES.map(m => `<button type="button" data-rm="${m}" aria-pressed="false">${MODES[m].name}</button>`).join('');
@@ -8899,7 +9125,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('rankBtn').addEventListener('click', () => { showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });
     $('rankBack').addEventListener('click', () => { showCard('menuCard'); $('rankBtn').focus(); });
 
-    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, openAccount, pushShowcase, getShowcases });
+    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
     renderChip();
   }
 

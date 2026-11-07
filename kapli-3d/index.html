@@ -1776,7 +1776,7 @@ body.menu-bg .menu-backdrop { display: block; }
         <li>За каждый уровень — 50 × уровень монет, за каждый 10-й — сундук, за 25-й и 50-й — рамка и титул уровня. Задания в меню с уровнем становятся сложнее и щедрее.</li>
         <li><b>Задания</b> в меню — три небольшие цели на раунды, за них монеты и опыт.</li>
         <li><b>Достижения</b> — 10 линеек по 3 ступени: монеты, опыт, за III ступень некоторых — титул. <b>Испытания</b> (15) дают скин, эффект, рамку или титул плюс сундук.</li>
-        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги. Каждое даёт небольшой прирост за уровень: монеты («Жадность» до +30%), масса («Пищеварение» до +20%, «Крупный старт»), защита («Защита», «Второй шанс»), скорость, бонусы и сбор крошек.</li>
+        <li><b>Улучшения</b> покупаются в магазине навсегда, но не действуют в рейтинговом бою лиги. Каждое даёт небольшой прирост за уровень: монеты («Жадность» до +20%), масса («Пищеварение» до +12% с еды и крошек, «Крупный старт» до +10 к старту), защита («Защита», «Второй шанс», «Шипостойкость» — шип рвёт на меньшее число частей), скорость, бонусы и сбор крошек. Все множители монет вместе дают не больше ×2.</li>
         <li><b>Мастерство режимов:</b> за каждый раунд в режиме — очки мастерства (больше за победу и рекорд). 3 уровня: Бронза +600 ◆, Золото +1 500 ◆, Легенда +2 500 ◆. «Легенда» во всех режимах — рамка «Мастер режимов». Прогресс — в «Профиле».</li>
       </ul>
     </details>
@@ -2062,19 +2062,21 @@ body.menu-bg .menu-backdrop { display: block; }
 
   // ================= content =================
   const PRICE_MULT = 2;   // all shop prices (upgrades, skins, effects)
+  const COIN_MULT_CAP = 2;   // 2.0.9: the product of all coin multipliers of a round never goes above this
   const costs = (base, n, g = 1.38) => Array.from({ length: n }, (_, i) => Math.round(base * PRICE_MULT * Math.pow(g, i) / 5) * 5);
   const UPG = [
-    { id: 'big',      lvl: 1, name: 'Крупный старт',    desc: '+2 к стартовой массе за уровень', cost: costs(30, 10), info: l => `старт ${10 + 2 * l} массы` },
+    { id: 'big',      lvl: 1, name: 'Крупный старт',    desc: '+1 к стартовой массе за уровень', cost: costs(30, 10), info: l => `старт ${10 + l} массы` },
     { id: 'speed',    lvl: 1, name: 'Обтекаемость',     desc: '+1% к скорости за уровень. Бонус «Ускорение» даёт +45%. Рывок: ×3,2 от стартовой скорости у маленькой капли, у крупной меньше', cost: costs(40, 10), info: l => `скорость ${100 + l}% (+${l}%)` },
     { id: 'dash',     lvl: 1, name: 'Реактивный рывок', desc: 'Рывок перезаряжается на 3% быстрее за уровень', cost: costs(35, 8), info: l => `перезарядка ${(4 * (1 - 0.03 * l)).toFixed(2)} с` },
-    { id: 'greed',    lvl: 1, name: 'Жадность',         desc: '+3% монет за раунд за уровень', cost: costs(50, 10), info: l => `+${3 * l}% монет` },
+    { id: 'greed',    lvl: 1, name: 'Жадность',         desc: '+2% монет за раунд за уровень', cost: costs(50, 10), info: l => `+${2 * l}% монет` },
     { id: 'magnet',   lvl: 2, name: 'Магнит',           desc: 'Подбираешь крошки дальше на 0,8 за уровень', cost: costs(40, 8), info: l => `+${(0.8 * l).toFixed(1)} к радиусу` },
     { id: 'splitmax', lvl: 3, name: 'Больше частей',    desc: '+1 к максимуму частей за уровень (базово 4)', cost: costs(80, 6, 1.5), info: l => `${4 + l} частей` },
-    { id: 'bonus',    lvl: 3, name: 'Удачливость',      desc: 'Бонусы действуют на 6% дольше за уровень', cost: costs(50, 8), info: l => `+${6 * l}% к длительности` },
-    { id: 'digest',   lvl: 4, name: 'Пищеварение',      desc: '+2% массы от еды и капель за уровень', cost: costs(60, 10), info: l => `+${2 * l}% массы` },
+    { id: 'bonus',    lvl: 3, name: 'Удачливость',      desc: 'Бонусы действуют на 5% дольше за уровень', cost: costs(50, 8), info: l => `+${5 * l}% к длительности` },
+    { id: 'digest',   lvl: 4, name: 'Пищеварение',      desc: '+1,5% массы от еды и крошек за уровень (съеденные капли — без бонуса)', cost: costs(60, 10), info: l => `+${String(1.5 * l).replace('.', ',')}% массы с еды` },
     { id: 'merge',    lvl: 4, name: 'Быстрое слияние',  desc: 'Части сливаются на 3% быстрее за уровень', cost: costs(50, 8), info: l => `слияние ${(14 * (1 - 0.03 * l)).toFixed(1)} с` },
     { id: 'life',     lvl: 5, name: 'Второй шанс',      desc: '+1 спасение за раунд: возрождаешься с 40% массы. В «Хардкоре» не действует', cost: costs(300, 3, 2.5), info: l => `спасений: ${l}` },
     { id: 'light',    lvl: 5, name: 'Лёгкий рывок',     desc: 'Рывок длиннее, а массы забирает на 8% меньше за уровень', cost: costs(40, 6), info: l => `рывок ${(0.35 + 0.035 * l).toFixed(2)} с (×${((0.35 + 0.035 * l) / 0.35).toFixed(2)} длины), −${(3 * (1 - 0.08 * l)).toFixed(1)}% массы` },
+    { id: 'spike',    lvl: 4, name: 'Шипостойкость',    desc: 'Шип разрывает тебя на 1 часть меньше за уровень (без улучшения — до 8 частей)', cost: costs(45, 4), info: l => `не больше ${8 - l} частей` },
     { id: 'guard',    lvl: 6, name: 'Защита',           desc: 'Крупная капля теряет массу на 4% медленнее, а врагу нужно быть на 1% крупнее, чтобы съесть тебя — за каждый уровень', cost: costs(80, 8), info: l => `−${4 * l}% потерь, +${l}% к защите` },
     { id: 'keep',     hidden: true, lvl: 6, name: 'Сохранность',      desc: 'Крупная капля теряет массу на 10% медленнее за уровень', cost: costs(50, 8), info: l => `−${10 * l}% потерь` },
     { id: 'armor',    hidden: true, lvl: 7, name: 'Плотная оболочка', desc: 'Врагу нужно быть на 3% крупнее за уровень, чтобы съесть тебя', cost: costs(80, 8), info: l => `+${3 * l}% к защите` },
@@ -2085,13 +2087,13 @@ body.menu-bg .menu-backdrop { display: block; }
   // 1.6.3: upgrades cost 50% more
   UPG.forEach(u => { u.oldCost = u.cost; u.cost = u.cost.map(c => Math.round(c * 1.5 / 5) * 5); });
   // 1.7.0 part 2: fewer levels where the top was too strong (8 parts, 2 saves); cut levels are refunded below
-  const UPG_MAX = { splitmax: 4, life: 2 };
+  const UPG_MAX = { splitmax: 4, life: 2, digest: 8 };   // 2.0.9: «Пищеварение» — 8 levels
   UPG.forEach(u => { if (UPG_MAX[u.id]) { u.cutCost = u.cost.slice(UPG_MAX[u.id]); u.cost = u.cost.slice(0, UPG_MAX[u.id]); } });
   // dash and split upgrades moved to the «Способности» tab as branches of those abilities (same save.up levels)
   const CATS = [
     ['Рост', ['big', 'digest', 'magnet']],
     ['Движение', ['speed']],
-    ['Защита', ['life', 'guard']],
+    ['Защита', ['life', 'guard', 'spike']],
     ['Награды', ['greed', 'bonus']],
   ];
   // cosmetic effects: one per slot, bought or earned in challenges (ex: true = challenge only)
@@ -3183,6 +3185,14 @@ body.menu-bg .menu-backdrop { display: block; }
     if (back) { save.coins += back; save.upgRefund170 = back; }
     save.upg170 = true; persist();
   }
+  if (!save.bal209) {   // 2.0.9: «Крупный старт», «Пищеварение», «Жадность», «Удачливость» weaker — 35% back; «Пищеварение» 9–10 fully back
+    let back = 0;
+    for (const id of ['big', 'digest', 'greed', 'bonus']) { const u = UPG.find(x => x.id === id), l = save.up[id] || 0; for (let k = 0; k < Math.min(l, u.cost.length); k++) back += u.cost[k] * .35; }
+    const dg = UPG.find(x => x.id === 'digest'), dl = save.up.digest || 0;
+    if (dl > dg.cost.length) { back += dg.cutCost.slice(0, dl - dg.cost.length).reduce((a, b) => a + b, 0); save.up.digest = dg.cost.length; }
+    back = Math.round(back / 5) * 5; if (back > 0) { save.coins += back; save.bal209Refund = back; }
+    save.bal209 = true; persist();
+  }
   if (TEST_MODE) {
     // unlock all content for testing; achievements and challenges stay open so they can be tried
     save.skins = SKINS.map(k => k.id);
@@ -4216,7 +4226,7 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     const maxP = o.isPlayer ? playerMaxParts() : o.kind === 'bot' ? BOT_PARTS : o.kind === 'boss' ? o.cells.length + o.free.length : 1;
     c.mass += v.mass * 0.5;
-    const pieces = Math.min(8, maxP - o.cells.length + 1, o.free.length + 1);
+    const pieces = Math.min(o.isPlayer ? 8 - (U.spike || 0) : 8, maxP - o.cells.length + 1, o.free.length + 1);   // «Шипостойкость»: fewer pieces
     emit(v.x, radius(v.mass), v.z, VIRUS_COLOR, 30, 16, .7);
     if (pieces <= 1) return;
     const each = c.mass / pieces, mt = o.isPlayer ? playerMergeTime() : 14;
@@ -4491,7 +4501,7 @@ body.menu-bg .menu-backdrop { display: block; }
   let running = false, paused = false, dying = false, lives = 0, dashCdBase = 4;
   let bossTimer = 20, bonusTimer = 0;
   let stats, history, doneQuests, effects, bonuses = [];
-  const effectDur = t => BONUS[t].dur * (1 + 0.06 * U.bonus) * (arenaIs('sakura') ? 1.25 : 1) * (1 + starBonus('bonus') / 100);
+  const effectDur = t => BONUS[t].dur * (1 + 0.05 * (U.bonus || 0)) * (arenaIs('sakura') ? 1.25 : 1) * (1 + starBonus('bonus') / 100);
 
   function speedOf(c) {
     const o = c.owner;
@@ -4558,7 +4568,7 @@ body.menu-bg .menu-backdrop { display: block; }
         if (c.gone || (c.owner.isPlayer && e.age < 0.6)) continue;
         const r = cellR(c);
         if (r > 1.3 && Math.hypot(c.x - e.x, c.z - e.z) < r) {
-          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.02 * U.digest : 1);
+          c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.015 * (U.digest || 0) : 1);
           scene.remove(e.mesh); ejects.splice(i, 1);
           break;
         }
@@ -4635,7 +4645,7 @@ body.menu-bg .menu-backdrop { display: block; }
     [...bossOwners, colossus, ...minions].forEach(o => [...o.cells].forEach(removeCell));
     rebuildCells();
     effects = { speed: 0, shield: 3, double: 0, magnet: 0 };   // short spawn protection
-    addCell(player, 0, 0, START_MASS + 2 * U.big, freeVis.pop());
+    addCell(player, 0, 0, START_MASS + (U.big || 0), freeVis.pop());
     rebuildCells();
     player.dashCd = 0; player.dashT = 0;
     owners.forEach(o => o.splitCd = 0);
@@ -5006,13 +5016,15 @@ body.menu-bg .menu-backdrop { display: block; }
     const cParts = [['Масса', Math.sqrt(stats.maxMass) * 2.6], ['Съеденные капли', stats.kills * 5], ['Прислужники', stats.minions], ['Боссы и звёзды', stats.bossCoins],
                     ['Комбо', stats.comboCoins || 0], ['Время в игре', stats.time / 10], ['Бонус режима', placeBonus], ['Выживание', surviveBonus]].map(([k, v]) => [k, Math.round(v)]).filter(([, v]) => v > 0);
     const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
-    if (U.greed) cMul.push([`«Жадность» +${3 * U.greed}%`, 1 + .03 * U.greed]);
+    if (U.greed) cMul.push([`«Жадность» +${2 * U.greed}%`, 1 + .02 * U.greed]);
     if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);
     if (arenaIs('olympus')) cMul.push(['Арена «Олимп»', 1.05]);
     // П8: every star of the skin you wear gives +1% coins (normal modes only)
     if (starBonus('coins')) cMul.push([`Звёзды скина ${'★'.repeat(starsOf(skin()))}`, 1 + starBonus('coins') / 100]);
     if (stats.ranked) cMul.push(['Рейтинговый бой', 1.5]);
     if (petLv('coins')) cMul.push([`Питомец +${5 * petLv('coins')}%`, 1 + .05 * petLv('coins')]);
+    // 2.0.9: all coin multipliers together give at most ×2
+    { const m = cMul.reduce((t, [, x]) => t * x, 1); if (m > COIN_MULT_CAP) cMul.push([`Потолок множителей ×${COIN_MULT_CAP}`, COIN_MULT_CAP / m]); }
     let coins = Math.round(cMul.reduce((t, [, m]) => t * m, cBase));
     const cExtra = [];
     let raidLine = '';
@@ -5622,7 +5634,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
     // food + decay
     const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
-    const pGain = (1 + 0.02 * U.digest) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
+    const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const r = cellR(c) + (isP ? pMagnet : 0);
@@ -5671,7 +5683,7 @@ body.menu-bg .menu-backdrop { display: block; }
             finishRound('Колосс отступил после 18 000 урона', 0, false);
           }
         } }
-        a.mass += b.mass * 0.8 * (a.owner.isPlayer ? 1 + 0.02 * U.digest : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        a.mass += b.mass * 0.8 * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const victim = b.owner, lastMass = b.mass;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
@@ -6022,6 +6034,16 @@ body.menu-bg .menu-backdrop { display: block; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 179, ver: '2.0.9', date: '7 ноября', title: 'Баланс улучшений', kind: 'update', refundKey: 'bal209Refund',
+      lead: 'Улучшения роста и наград давали слишком большой отрыв в обычных режимах. Мы их ослабили, вернули часть монет и добавили новое защитное улучшение.', items: [
+      '«Крупный старт»: +1 к стартовой массе за уровень вместо +2 (максимум — старт 20 вместо 30).',
+      '«Пищеварение»: +1,5% массы за уровень и только с еды и крошек — за съеденные капли бонуса больше нет. Уровней теперь 8 вместо 10.',
+      '«Жадность»: +2% монет за уровень вместо +3% (максимум +20%).',
+      '«Удачливость»: бонусы длятся на 5% дольше за уровень вместо 6% (максимум +40%).',
+      'Все множители монет вместе («Жадность», «Хардкор», арена, звёзды скина, питомец, рейтинговый бой) теперь дают не больше ×2.',
+      'Новое улучшение «Шипостойкость» (вкладка «Защита», с 7-го уровня): шип разрывает тебя на 1 часть меньше за уровень — до 4 частей вместо 8.',
+      'Возврат: 35% монет, потраченных на эти четыре улучшения, а 9-й и 10-й уровни «Пищеварения» вернулись монетами полностью.',
+    ] },
     { id: 178, ver: '2.0.8', date: '7 ноября', title: 'Новый экран боя и итогов', kind: 'update', items: [
       'Экран боя стал чище: масса крупно в центральной плашке сверху, рядом скорость, место и монеты. Таймер режима — прямо под ней.',
       'Таблица лидеров в бою компактная: первые три и ты. Нажми «ещё», чтобы развернуть до шести.',
@@ -6133,7 +6155,7 @@ body.menu-bg .menu-backdrop { display: block; }
   const NEWS_KIND = { patch: ['k-patch', '🟢 Патч'], update: ['k-update', '🔵 Обновление'], season: ['k-season', '⭐ Сезон'] };
   const newsKind = n => { const k = NEWS_KIND[n.kind || 'update']; return `<i class="news-kind ${k[0]}">${k[1]}</i>`; };
   function newsHtml(list) {
-    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.title}<small>${newsKind(n)}${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul${n.kinds ? ' class="news-kinds"' : ''}>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${newsGift(n) ? `<p class="news-gift">Подарок за обновление: +${newsGift(n)} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}${n.id === 170 && save.mig170 && save.mig170.replaced ? `<p class="news-gift">Обновлён гардероб: заменено предметов — ${save.mig170.replaced}${save.mig170.coins ? `, за повторы начислено +${save.mig170.coins} ◆` : ''}.</p>` : ''}</details>`).join('');
+    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.title}<small>${newsKind(n)}${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul${n.kinds ? ' class="news-kinds"' : ''}>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${newsGift(n) ? `<p class="news-gift">Подарок за обновление: +${newsGift(n)} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}${n.refundKey && save[n.refundKey] ? `<p class="news-gift">Тебе возвращено: +${save[n.refundKey]} ◆</p>` : ''}${n.id === 170 && save.mig170 && save.mig170.replaced ? `<p class="news-gift">Обновлён гардероб: заменено предметов — ${save.mig170.replaced}${save.mig170.coins ? `, за повторы начислено +${save.mig170.coins} ◆` : ''}.</p>` : ''}</details>`).join('');
   }
   // gift: given once; giftBefore — only to players who had not seen that older announcement yet
   const newsGift = n => ((save.newsGot || {})[n.id]) || (n.gift && n.id > (save.newsSeen || 0) && (!n.giftBefore || (save.newsSeen || 0) < n.giftBefore) ? n.gift : 0);
@@ -9564,7 +9586,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '208';
+const APP_VER = '209';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

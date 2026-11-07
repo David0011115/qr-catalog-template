@@ -268,6 +268,12 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .achc-f .rw { color: var(--gold); } .achc.done .achc-f > span:first-child { color: #ffd23f; font-weight: 600; }
 .ach-h { margin: 14px 0 8px; font: 400 1rem var(--display); text-align: left; }
 .ach-hol { margin-top: 12px; } .ach-hol .achc-grid { padding: 8px 0; } .ach-hol .achc { opacity: .75; }
+/* ===== 2.2: share as a picture ===== */
+.prof-share-btn { width: 100%; margin: 0; }
+.share-card { max-width: 560px; text-align: left; display: grid; gap: 10px; } .share-card h2 { margin: 0 40px 0 0; font: 400 1.15rem var(--display); }
+.share-pv { border-radius: 14px; overflow: hidden; background: var(--row); min-height: 120px; display: grid; place-items: center; } .share-pv img { display: block; width: 100%; height: auto; }
+.share-note { margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.4; }
+.share-acts, .recap-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; } .share-acts .btn, .recap-acts .btn { margin: 0; }
 /* ===== 2.2: season summary ===== */
 .recap-card { max-width: 560px; text-align: left; display: grid; gap: 10px; } .recap-card #recapOk { margin: 0; }
 .rc { position: relative; overflow: hidden; border-radius: 16px; padding: 12px 14px; display: grid; gap: 10px; text-align: left; border: 1px solid rgba(255, 79, 216, .5);
@@ -1773,6 +1779,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="prof-card g-hide" id="profId"></div>
     <div class="ps-panel g-hide" id="profPs" hidden></div>
     <div class="prof-head g-hide" id="profHead"></div>
+    <button class="btn ghost g-hide prof-share-btn" id="profShare" type="button">📤 Поделиться карточкой</button>
     <button class="btn ghost g-hide prof-acct-btn" id="profAcct" type="button">☁ Аккаунт</button>
     <div class="g-tiles">
       <button class="btn ghost hub-btn pd-open" data-grp="pDecor">🎨 Оформление профиля<small>фон, рамка, титул, значок</small></button>
@@ -2103,11 +2110,20 @@ body.menu-bg .menu-backdrop { display: block; }
   </div>
 </div>
 <div class="gfx-bar" id="gfxBar" role="alert" hidden><span>Графика сбоила. Если капли пропали — перезагрузи её.</span><button class="btn" id="gfxBarDo" type="button">Перезагрузить</button><button class="modal-x" id="gfxBarX" type="button" aria-label="Скрыть">×</button></div>
+<div class="modal" id="shareModal" hidden>
+  <div class="modal-card share-card" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <button class="modal-x" id="shareClose" aria-label="Закрыть">×</button>
+    <h2 id="shareTitle">Поделиться</h2>
+    <div class="share-pv" id="sharePv"><p class="empty-note">Рисую картинку…</p></div>
+    <p class="share-note" id="shareNote">Отправь картинку друзьям или сохрани её. На телефоне можно также нажать на картинку и удерживать.</p>
+    <div class="share-acts"><button class="btn" id="shareGo" type="button">📤 Отправить</button><button class="btn ghost" id="shareSave" type="button">⬇ Сохранить</button></div>
+  </div>
+</div>
 <div class="modal" id="recapModal" hidden>
   <div class="modal-card recap-card" role="dialog" aria-modal="true" aria-label="Итоги сезона">
     <button class="modal-x" id="recapClose" aria-label="Закрыть">×</button>
     <div id="recapBody"></div>
-    <button class="btn" id="recapOk" type="button">Отлично!</button>
+    <div class="recap-acts"><button class="btn ghost" id="recapShare" type="button">📤 Поделиться</button><button class="btn" id="recapOk" type="button">Отлично!</button></div>
   </div>
 </div>
 <div class="modal" id="testModal" hidden>
@@ -10131,7 +10147,8 @@ body.menu-bg .menu-backdrop { display: block; }
       `<div class="rc-bx"><small>Заработано</small><b class="rc-gold">${rcNum(rc.c).toLocaleString('ru-RU')} ◆ · ${rcNum(rc.x).toLocaleString('ru-RU')} опыта</b></div></div></div>`;
   }
   const rcPrev = rc => { const i = save.recaps.indexOf(rc); return i > 0 ? save.recaps[i - 1] : null; };
-  function openRecap(rc) { $('recapBody').innerHTML = rcHTML(rc, rcPrev(rc)); $('recapModal').hidden = false; $('recapOk').focus(); }
+  let recapCur = null;
+  function openRecap(rc) { recapCur = rc; $('recapBody').innerHTML = rcHTML(rc, rcPrev(rc)); $('recapModal').hidden = false; $('recapOk').focus(); }
   function closeRecap() { $('recapModal').hidden = true; if (save.recapShow) { delete save.recapShow; persist(); } }
   $('recapOk').addEventListener('click', closeRecap); $('recapClose').addEventListener('click', closeRecap);
   $('recapModal').addEventListener('click', e => { if (e.target === $('recapModal')) closeRecap(); });
@@ -10156,6 +10173,111 @@ body.menu-bg .menu-backdrop { display: block; }
     const lg = Number.isInteger(rc.lg) && rc.lg >= 0 && rc.lg <= 5 ? rc.lg : -1;
     return `<details class="pc-actv pc-rc"><summary>🏆 Итоги сезона ${rcNum(rc.id)} <small>${rcNum(rc.r)} ${plural(rcNum(rc.r), 'раунд', 'раунда', 'раундов')}${lg >= 0 ? ` · ${LG_NAMES[lg]}` : ''}</small></summary>${rcHTML(rc, null)}</details>`;
   }
+  // ================= 2.2: share as a picture =================
+  // the card and the season summary are drawn on a canvas from the same parts the game uses (background, skin texture, SVG emblems)
+  const svgImg = (svg, w, h) => new Promise(res => {
+    let t = String(svg); if (!/xmlns=/.test(t)) t = t.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    t = t.replace(/<svg([^>]*?)\swidth="[^"]*"/, '<svg$1').replace(/<svg([^>]*?)\sheight="[^"]*"/, '<svg$1').replace('<svg', `<svg width="${w}" height="${h}"`);
+    const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(t);
+  });
+  const urlImg = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  const rr = (x, X, Y, W, H, R) => { x.beginPath(); x.moveTo(X + R, Y); x.arcTo(X + W, Y, X + W, Y + H, R); x.arcTo(X + W, Y + H, X, Y + H, R); x.arcTo(X, Y + H, X, Y, R); x.arcTo(X, Y, X + W, Y, R); x.closePath(); };
+  const FD = '"Russo One", "Arial Black", sans-serif', FB = '"Golos Text", system-ui, sans-serif';
+  function fitText(x, t, maxW) { let s = String(t); while (s.length > 1 && x.measureText(s).width > maxW) s = s.slice(0, -2) + '…'; return s; }
+  async function drawCard(d, nick) {
+    try { await document.fonts.ready; } catch (e) {}
+    const W = 1080, H = 640, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+    x.save(); rr(x, 0, 0, W, H, 36); x.clip();
+    try { pbgDraw(x, W, H, (pbgById(d.bg) || {}).id || 'bg_base', 3.3); } catch (e) { x.fillStyle = '#0b0824'; x.fillRect(0, 0, W, H); }
+    const gr = x.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, 'rgba(5,4,15,.15)'); gr.addColorStop(.55, 'rgba(5,4,15,.35)'); gr.addColorStop(1, 'rgba(5,4,15,.8)'); x.fillStyle = gr; x.fillRect(0, 0, W, H);
+    // avatar: skin texture in a circle, eyes, frame ornament, badge
+    const k = SKINS.find(s => s.id === d.skin) || SKINS[0], fr = decorById(d.frame), AX = 70, AY = 60, AS = 210;
+    x.save(); x.beginPath(); x.arc(AX + AS / 2, AY + AS / 2, AS / 2 - 6, 0, Math.PI * 2); x.closePath(); x.fillStyle = '#05040f'; x.fill(); x.clip();
+    let su = null; try { su = swatchUrl(k); } catch (e) {}
+    const sk = su && await urlImg(su);
+    if (sk) x.drawImage(sk, AX, AY, AS, AS);
+    else { const g = x.createRadialGradient(AX + AS * .4, AY + AS * .35, 6, AX + AS / 2, AY + AS / 2, AS / 2); g.addColorStop(0, k.accent || '#ffffff'); g.addColorStop(.35, k.color || '#22e6ff'); g.addColorStop(1, '#0b0624'); x.fillStyle = g; x.fillRect(AX, AY, AS, AS); }
+    const sh = x.createRadialGradient(AX + AS * .35, AY + AS * .3, 4, AX + AS / 2, AY + AS / 2, AS / 2); sh.addColorStop(0, 'rgba(255,255,255,.35)'); sh.addColorStop(.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.45)'); x.fillStyle = sh; x.fillRect(AX, AY, AS, AS);
+    x.restore();
+    [[-1], [1]].forEach(([sx]) => { x.fillStyle = '#fff'; x.beginPath(); x.ellipse(AX + AS / 2 + sx * 24, AY + AS * .44, 13, 17, 0, 0, Math.PI * 2); x.fill(); x.fillStyle = '#0b0624'; x.beginPath(); x.arc(AX + AS / 2 + sx * 24 + 3, AY + AS * .44 + 3, 6, 0, Math.PI * 2); x.fill(); });
+    if (fr) { const o = await svgImg(frameOrnSVG(fr), AS * 1.44, AS * 1.44); if (o) x.drawImage(o, AX - AS * .22, AY - AS * .22); }
+    else { x.strokeStyle = 'rgba(150,120,255,.6)'; x.lineWidth = 5; x.beginPath(); x.arc(AX + AS / 2, AY + AS / 2, AS / 2 - 3, 0, Math.PI * 2); x.stroke(); }
+    if (d.badge) { const b = await svgImg(pbBadgeSVG(d.badge), 92, 92); if (b) x.drawImage(b, AX + AS - 70, AY + AS - 70); }
+    // name, title, league
+    const TX = 330, TW = 520; x.textBaseline = 'alphabetic';
+    x.fillStyle = '#fff'; x.font = `64px ${FD}`; x.shadowColor = 'rgba(0,0,0,.7)'; x.shadowBlur = 16; x.fillText(fitText(x, nick, TW), TX, 128); x.shadowBlur = 0;
+    let ty = 150; const td = d.title && decorById(d.title);
+    if (td) { x.font = `600 30px ${FB}`; const tw = x.measureText(td.name).width + 44; rr(x, TX, ty, tw, 52, 26); x.fillStyle = 'rgba(10,6,30,.75)'; x.fill(); x.strokeStyle = 'rgba(255,255,255,.2)'; x.lineWidth = 2; x.stroke(); x.fillStyle = td.color || '#ffd23f'; x.fillText(td.name, TX + 22, ty + 36); ty += 70; }
+    const li = Math.max(0, Math.min(5, d.league || 0)), le = await svgImg(rankEmblem(li, 44, { still: true }), 44, 44);
+    if (le) x.drawImage(le, TX, ty); x.font = `600 30px ${FB}`; x.fillStyle = LG_COLS[li]; x.fillText(LG_NAMES[li], TX + 54, ty + 33);
+    // level hexagon with the prestige outline
+    const HX = 900, HY = 70, HW = 120, HH = 132, hex = new Path2D(`M${HX + 60} ${HY} L${HX + 114} ${HY + 32} V${HY + 100} L${HX + 60} ${HY + 132} L${HX + 6} ${HY + 100} V${HY + 32} Z`);
+    const hg = x.createLinearGradient(HX, HY, HX + HW, HY + HH), st = psStops(d.ps); st.forEach((c, i) => hg.addColorStop(i / Math.max(1, st.length - 1), c));
+    x.fillStyle = 'rgba(20,10,50,.82)'; x.fill(hex); x.strokeStyle = hg; x.lineWidth = d.ps ? 7 : 5; x.stroke(hex);
+    x.textAlign = 'center'; x.fillStyle = '#cfc9f0'; x.font = `600 17px ${FB}`; x.fillText('УРОВЕНЬ', HX + 60, HY + 52); x.fillStyle = '#fff'; x.font = `56px ${FD}`; x.fillText(String(Math.max(1, Math.min(50, d.lvl || 1))), HX + 60, HY + 108);
+    if (d.ps) { const lb = psLabel(d.ps); x.font = `26px ${FD}`; const lw = x.measureText(lb).width + 28; rr(x, HX + 60 - lw / 2, HY - 24, lw, 38, 19); x.fillStyle = '#140c2e'; x.fill(); x.strokeStyle = d.ps.n ? '#ff4fd8' : '#ffd23f'; x.lineWidth = 2.5; x.stroke(); x.fillStyle = d.ps.n ? '#ff8ae6' : '#ffd23f'; x.fillText(lb, HX + 60, HY + 5); }
+    x.textAlign = 'left';
+    // three numbers
+    const stats = [[(d.wins || 0).toLocaleString('ru-RU'), 'побед'], [(d.best || 0).toLocaleString('ru-RU'), 'рекорд «Классики»'], [String(d.ach || 0), 'достижений']];
+    let sx = 70; const SY = 320;
+    for (const [v, l] of stats) { x.font = `600 22px ${FB}`; const w = Math.max(150, x.measureText(l).width + 40); rr(x, sx, SY, w, 96, 20); x.fillStyle = 'rgba(10,6,30,.66)'; x.fill(); x.strokeStyle = 'rgba(150,120,255,.35)'; x.lineWidth = 2; x.stroke();
+      x.fillStyle = '#fff'; x.font = `40px ${FD}`; x.fillText(v, sx + 20, SY + 50); x.fillStyle = '#cfc9f0'; x.font = `22px ${FB}`; x.fillText(l, sx + 20, SY + 80); sx += w + 14; }
+    // shelf
+    const shelf = (Array.isArray(d.shelf) ? d.shelf : []).map(([id, t]) => [achById(id), t]).filter(([a, t]) => a && t).slice(0, 3);
+    if (shelf.length) { const bw = (W - 140 - 2 * 14) / 3; let bx = 70; const BY = 438;
+      for (const [a, t] of shelf) { const [ac] = achArtOf(a); rr(x, bx, BY, bw, 104, 22); x.fillStyle = 'rgba(10,6,30,.72)'; x.fill(); x.strokeStyle = ac; x.globalAlpha = .7; x.lineWidth = 2.5; x.stroke(); x.globalAlpha = 1;
+        const em = await svgImg(achEmblem(a, Math.min(t, a.steps.length), 80), 80, 80); if (em) x.drawImage(em, bx + 14, BY + 12);
+        x.fillStyle = '#fff'; x.font = `28px ${FD}`; x.fillText(fitText(x, a.name, bw - 120), bx + 106, BY + 50); x.fillStyle = '#cfc9f0'; x.font = `22px ${FB}`;
+        x.fillText(a.steps.length <= 3 ? `${ROM3[Math.min(t, 3)]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`, bx + 106, BY + 82); bx += bw + 14; } }
+    // signature
+    x.textAlign = 'right'; x.font = `30px ${FD}`; x.fillStyle = '#fff'; x.shadowColor = '#ff4fd8'; x.shadowBlur = 18; x.fillText('Капли 3D', W - 44, H - 34); x.shadowBlur = 0;
+    x.font = `20px ${FB}`; x.fillStyle = 'rgba(255,255,255,.6)'; x.fillText(new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }), W - 44, H - 74);
+    x.restore();
+    x.lineWidth = 4; x.strokeStyle = 'rgba(150,120,255,.6)'; rr(x, 2, 2, W - 4, H - 4, 35); x.stroke();
+    return cv;
+  }
+  async function drawRecap(rc, nick) {
+    try { await document.fonts.ready; } catch (e) {}
+    const W = 1080, H = 760, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+    x.save(); rr(x, 0, 0, W, H, 36); x.clip();
+    const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#1a0b3a'); bg.addColorStop(1, '#07102a'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    [[W, 0, '#ff4fd8', .45], [0, H, '#22e6ff', .35]].forEach(([cx, cy, c, a]) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, 620); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = a; x.fillStyle = g; x.fillRect(0, 0, W, H); x.globalAlpha = 1; });
+    const id = rcNum(rc.id), r = rcNum(rc.r), w = rcNum(rc.w), lg = Number.isInteger(rc.lg) && rc.lg >= 0 && rc.lg <= 5 ? rc.lg : -1;
+    x.fillStyle = '#fff'; x.font = `56px ${FD}`; x.fillText(`Итоги сезона ${id}`, 60, 104);
+    x.font = `26px ${FB}`; x.fillStyle = '#cfc9f0'; x.fillText(`${nick} · ${rc.n ? `«${String(rc.n).slice(0, 40)}» · ` : ''}${fmtDate(seasonEnd(id - 1))} — ${fmtDate(seasonEnd(id) - 864e5)}`, 60, 148);
+    const tiles = [[r.toLocaleString('ru-RU'), plural(r, 'раунд', 'раунда', 'раундов')], [rcDur(rc.t), 'в игре'], [rcNum(rc.m).toLocaleString('ru-RU'), 'лучшая масса'], [w.toLocaleString('ru-RU'), plural(w, 'победа', 'победы', 'побед')]];
+    const tw = (W - 120 - 3 * 16) / 4; tiles.forEach(([v, l], i) => { const tx = 60 + i * (tw + 16); rr(x, tx, 190, tw, 150, 24); x.fillStyle = 'rgba(10,6,30,.6)'; x.fill();
+      x.fillStyle = '#fff'; x.font = `${v.length > 7 ? 38 : 50}px ${FD}`; x.fillText(v, tx + 24, 272); x.fillStyle = '#cfc9f0'; x.font = `22px ${FB}`; x.fillText(l.toUpperCase(), tx + 24, 312); });
+    const fav = Array.isArray(rc.fav) && MODES[rc.fav[0]] ? rc.fav : null, ch = rc.ch || {};
+    const boxes = [['ЛИГА', lg < 0 ? 'без рейтинговых боёв' : LG_NAMES[lg], lg < 0 ? '#cfc9f0' : LG_COLS[lg]], ['ЛЮБИМЫЙ РЕЖИМ', fav ? MODES[fav[0]].name : '—', '#fff'],
+      ['ИЗ СУНДУКОВ', RAR_KEYS.slice().reverse().filter(k => rcNum(ch[k])).map(k => `${({ legendary: 'лег.', epic: 'эпич.', rare: 'редк.', common: 'обыч.' })[k] || k} ×${rcNum(ch[k])}`).join(' · ') || 'не открывал', '#fff'], ['ЗАРАБОТАНО', `${rcNum(rc.c).toLocaleString('ru-RU')} ◆ · ${rcNum(rc.x).toLocaleString('ru-RU')} опыта`, '#ffd23f']];
+    const bw2 = (W - 120 - 16) / 2; boxes.forEach(([l, v, c], i) => { const bx = 60 + (i % 2) * (bw2 + 16), by = 364 + Math.floor(i / 2) * 140; rr(x, bx, by, bw2, 124, 24); x.fillStyle = 'rgba(10,6,30,.6)'; x.fill();
+      x.fillStyle = '#cfc9f0'; x.font = `22px ${FB}`; x.fillText(l, bx + 24, by + 44); x.fillStyle = c; x.font = `${i === 0 ? '40px ' + FD : '600 28px ' + FB}`; x.fillText(fitText(x, v, bw2 - 48), bx + 24, by + 92); });
+    x.textAlign = 'right'; x.font = `30px ${FD}`; x.fillStyle = '#fff'; x.shadowColor = '#ff4fd8'; x.shadowBlur = 18; x.fillText('Капли 3D', W - 44, H - 34); x.shadowBlur = 0; x.textAlign = 'left';
+    x.restore(); x.lineWidth = 4; x.strokeStyle = 'rgba(255,79,216,.6)'; rr(x, 2, 2, W - 4, H - 4, 35); x.stroke();
+    return cv;
+  }
+  let shareBlob = null, shareName = 'kapli3d.png';
+  async function openShare(make, name, title) {
+    shareBlob = null; shareName = name; $('shareTitle').textContent = title; $('sharePv').innerHTML = '<p class="empty-note">Рисую картинку…</p>'; $('shareModal').hidden = false; $('shareClose').focus();
+    $('shareGo').hidden = !(navigator.canShare && navigator.share);
+    try { const cv = await make(); shareBlob = await new Promise(r => cv.toBlob(r, 'image/png')); const url = cv.toDataURL('image/png');
+      $('sharePv').innerHTML = `<img src="${url}" alt="${escHtml(title)}">`; }
+    catch (e) { console.warn('share picture:', e); $('sharePv').innerHTML = '<p class="empty-note">Не получилось нарисовать картинку. Попробуй ещё раз.</p>'; }
+  }
+  $('shareClose').addEventListener('click', () => { $('shareModal').hidden = true; });
+  $('shareModal').addEventListener('click', e => { if (e.target === $('shareModal')) $('shareModal').hidden = true; });
+  $('shareGo').addEventListener('click', async () => {
+    if (!shareBlob) return; const file = new File([shareBlob], shareName, { type: 'image/png' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: 'Капли 3D' }); else $('shareNote').textContent = 'Этот браузер не умеет отправлять картинки — сохрани её кнопкой «Сохранить».'; }
+    catch (e) { if (e && e.name !== 'AbortError') $('shareNote').textContent = 'Отправить не получилось — сохрани картинку кнопкой «Сохранить».'; }
+  });
+  $('shareSave').addEventListener('click', () => {
+    if (!shareBlob) return; const a = document.createElement('a'); a.href = URL.createObjectURL(shareBlob); a.download = shareName; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); $('shareNote').textContent = 'Картинка сохранена в загрузки. Если ничего не скачалось — нажми на картинку и удерживай.';
+  });
+  $('profShare').addEventListener('click', () => openShare(() => drawCard(myShowcase(), Net.nick || 'Капля'), 'kapli3d-kartochka.png', 'Поделиться карточкой'));
+  $('recapShare').addEventListener('click', () => { const rc = recapCur; if (rc) openShare(() => drawRecap(rc, Net.nick || 'Капля'), `kapli3d-sezon-${rc.id}.png`, 'Поделиться итогами'); });
   // ---------- graphics recovery: the browser may take the GPU away (app in background, low memory) and give it back.
   // In the menu we simply restart with the saved progress; during a round we offer a restart instead of ending it on our own.
   const gfx = { lost: 0 };

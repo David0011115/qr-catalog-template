@@ -276,6 +276,17 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .pc-actv > summary:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; border-radius: 14px; }
 .pc-actv > .actv { padding: 0 12px 12px; } .pc-actv .actv-kpi { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 /* ===== 2.2: activity calendar ===== */
+.actm { display: grid; gap: 4px; max-width: 340px; width: 100%; justify-self: center; }
+.actm-head { font-size: .72rem; color: var(--muted); text-align: center; }
+.actm-wd, .actm-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.actm-wd span { text-align: center; font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.actm-grid > * { aspect-ratio: 1; border-radius: 7px; border: 0; padding: 0; display: grid; place-items: center; font: 600 .7rem var(--body); color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .06); min-width: 0; font-style: normal; }
+.actm-grid button { cursor: pointer; } .actm-grid button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.actm-grid .out { background: transparent; color: rgba(255, 255, 255, .18); }
+.actm-grid .l1 { background: rgba(34, 230, 255, .28); color: #fff; } .actm-grid .l2 { background: rgba(34, 230, 255, .55); color: #fff; }
+.actm-grid .l3 { background: #22e6ff; color: #04212a; box-shadow: 0 0 8px rgba(34, 230, 255, .7); } .actm-grid .l4 { background: #ff4fd8; color: #2a0420; box-shadow: 0 0 9px rgba(255, 79, 216, .8); }
+.actm-grid .today { outline: 2px solid #fff; outline-offset: -2px; } .actm-grid .sel { outline: 2px solid var(--gold); outline-offset: 0; }
+.actv-kpi b small { font-size: .7rem; color: var(--muted); }
 .actv { display: grid; gap: 10px; text-align: left; }
 .actv-kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .actv-kpi div { padding: 8px 10px; border-radius: 12px; background: var(--row); display: grid; gap: 1px; min-width: 0; }
@@ -8742,7 +8753,6 @@ body.menu-bg .menu-backdrop { display: block; }
     if ($('pcModal').hidden) return;
     $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (d && !me ? actOtherHTML(d.act) : '') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
     pbgMount($('pcBody'));
-    { const ac = $('pcBody').querySelector('.pc-actv'); if (ac) ac.addEventListener('toggle', () => { const sc = ac.querySelector('.actv-scroll'); if (ac.open && sc) sc.scrollLeft = sc.scrollWidth; }); }
     if (!me) Net.pcSocial(nick, $('pcSocial'));
   }
   pbgCheck(true);   // what the player already has gets unlocked silently
@@ -8824,7 +8834,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('ptMastery').textContent = $('psMastery').textContent.replace(/^· /, '');
     $('ptBadges').textContent = `особых ${$('psSpecial').textContent.replace(/^· /, '')} · сезонов ${save.seasonLog.length + save.chaosLog.length}`;
     $('ptSeasons').textContent = `лига: ${save.seasonLog.length} · Хаос: ${save.chaosLog.length}`;
-    { const st = actStreak(); $('ptActivity').textContent = st ? `серия ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : `игровых дней: ${save.actDays || 0}`; }
+    { const st = actStreak(), md = actMonthDays(); $('ptActivity').textContent = st ? `серия ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : `за месяц: ${md} ${plural(md, 'день', 'дня', 'дней')}`; }
     renderActivity();
   }
   function renderProfChests() {
@@ -9631,9 +9641,9 @@ body.menu-bg .menu-backdrop { display: block; }
       const card = { bg: 'bg_ps_gal', frame: 'fr_ps_orbit', title: 'tt_ps_lg', badge: 'legend', skin: 'lg_supernova', lvl: 50, ps: { s: 25, n: 12 },
         shelf: [['ln_boss', 3], ['ln_league', 3], ['ln_combo', 2]], league: 5, chaos: 4, wins: 1240, best: 3812, ach: 14 };
       { let r = 5, g = ''; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
-        for (let i = 0; i < 182; i++) { const x = rnd(); g += i >= 168 ? String(2 + (i % 3)) : x < .3 ? '0' : x < .6 ? '1' : x < .82 ? '2' : x < .95 ? '3' : '4'; }
+        for (let i = 0; i < 30; i++) { const x = rnd(); g += i >= 16 ? String(2 + (i % 3)) : x < .3 ? '0' : x < .6 ? '1' : x < .82 ? '2' : x < .95 ? '3' : '4'; }
         const t = new Date(now), tk = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-        card.act = { g, t: tk, s: 14, b: 37, d: 152 }; }
+        card.act = { g, t: tk, s: 14, b: 37 }; }
       const dms = [[1, false, 'Привет! Видел мой новый фон «Галактика»?', 64], [2, true, 'Ага, круто! Это за ✦25?', 61], [3, false, 'Да, вторая ступень престижа. Сыграем в «Захват короны»?', 5], [4, false, 'Я в игре 😉', 2]]
         .map(([id, mine, body, ago]) => ({ id, mine, body, created_at: iso(ago), read_at: mine ? iso(ago - 1) : null }));
       return { fr, card, dms, list: [fr], blocks: [] };
@@ -9984,9 +9994,9 @@ body.menu-bg .menu-backdrop { display: block; }
   if (TEST_MODE) { $('testBadge').hidden = false; document.querySelector('#menuCard h1').innerHTML += ' <button type="button" class="test-badge" data-testopen>ТЕСТ ▾</button>'; }
 
   // ================= 2.2: activity calendar =================
-  // one entry per local day: [rounds, seconds played, best mass]; half a year is kept (+ a little slack), the day count and best streak live on
+  // one entry per local day: [rounds, seconds played, best mass]; the last 40 days are kept, the day count and best streak live on
   const plural = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b >= 2 && b <= 4 ? few : many; };
-  const ACT_KEEP = 190, ACT_WEEKS = 26;
+  const ACT_KEEP = 40;   // a month is shown; a little slack for time zones
   const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const dayShift = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   function actStreak(from = new Date()) {
@@ -10012,52 +10022,50 @@ body.menu-bg .menu-backdrop { display: block; }
   const MONG = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
   const wdOf = d => (d.getDay() + 6) % 7;   // Monday = 0
   let actSel = null;
-  // the half-year grid: weeks as columns (Mon…Sun), ending with the week of `end`; lvl(key) → 0…4; own calendar has clickable days
+  // the last 30 days as a month calendar: weekday columns, one row per week; lvl(key) → 0…4; own calendar has clickable days
+  const ACT_DAYS = 30;
   function actGridHTML(lvl, end, opt = {}) {
-    const ek = dayKey(end), start = dayShift(end, -(wdOf(end) + (ACT_WEEKS - 1) * 7));
-    let cells = '', months = '', lastM = -1;
-    for (let w = 0; w < ACT_WEEKS; w++) {
-      const mon = dayShift(start, w * 7);
-      if (mon.getMonth() !== lastM) { months += `<span style="grid-column:${w + 1}">${MON[mon.getMonth()]}</span>`; lastM = mon.getMonth(); }
-      for (let i = 0; i < 7; i++) {
-        const d = dayShift(mon, i), k = dayKey(d), l = lvl(k);
-        cells += k > ek ? '<i class="fut"></i>' : opt.click ? `<button type="button" class="l${l}${k === ek ? ' today' : ''}${k === opt.sel ? ' sel' : ''}" data-day="${k}" aria-label="${d.getDate()} ${MONG[d.getMonth()]}: ${opt.label(k)}"></button>` : `<i class="l${l}${k === ek ? ' today' : ''}"></i>`;
-      }
+    const ek = dayKey(end), first = dayShift(end, -(ACT_DAYS - 1)), fk = dayKey(first), start = dayShift(first, -wdOf(first));
+    let cells = '';
+    for (let d = start; dayKey(d) <= ek || wdOf(d) !== 0; d = dayShift(d, 1)) {
+      const k = dayKey(d), out = k < fk || k > ek, l = out ? 0 : lvl(k), num = d.getDate();
+      cells += out ? `<i class="out">${k > ek ? '' : num}</i>` : opt.click ? `<button type="button" class="l${l}${k === ek ? ' today' : ''}${k === opt.sel ? ' sel' : ''}" data-day="${k}" aria-label="${num} ${MONG[d.getMonth()]}: ${opt.label(k)}">${num}</button>` : `<i class="l${l}${k === ek ? ' today' : ''}">${num}</i>`;
     }
-    return `<div class="actv-scroll"><div class="actv-cal"><div class="actv-mon" style="grid-template-columns:repeat(${ACT_WEEKS},1fr)">${months}</div>` +
-      `<div class="actv-days">${WD.map((d, i) => `<span>${i % 2 ? '' : d}</span>`).join('')}</div><div class="actv-grid" style="grid-template-columns:repeat(${ACT_WEEKS},1fr)">${cells}</div></div></div>` +
+    return `<div class="actm"><div class="actm-head">${first.getDate()} ${MONG[first.getMonth()]} — ${end.getDate()} ${MONG[end.getMonth()]}</div>` +
+      `<div class="actm-wd">${WD.map(d => `<span>${d}</span>`).join('')}</div><div class="actm-grid">${cells}</div></div>` +
       `<div class="actv-leg"><span>меньше</span>${[0, 1, 2, 3, 4].map(l => `<i class="l${l}"></i>`).join('')}<span>больше</span></div>`;
   }
+  const actMonthDays = () => { const now = new Date(); let n = 0; for (let i = 0; i < ACT_DAYS; i++) if (save.act[dayKey(dayShift(now, -i))]) n++; return n; };
   // what other players see: 182 day levels as digits (oldest → the day it was sent) plus the counters
   function actPublic() {
     const now = new Date(); let g = '';
-    for (let i = ACT_WEEKS * 7 - 1; i >= 0; i--) { const e = save.act[dayKey(dayShift(now, -i))]; g += actLevel(e && e[0]); }
-    return { g, t: dayKey(now), s: actStreak(), b: actBestStreak(), d: save.actDays || 0 };
+    for (let i = ACT_DAYS - 1; i >= 0; i--) { const e = save.act[dayKey(dayShift(now, -i))]; g += actLevel(e && e[0]); }
+    return { g, t: dayKey(now), s: actStreak(), b: actBestStreak() };
   }
   // another player's activity, folded under the card
   function actOtherHTML(a) {
     if (!a || typeof a.g !== 'string' || !/^\d{4}-\d\d-\d\d$/.test(a.t || '')) return '';
     const end = new Date(a.t + 'T12:00'), n = a.g.length, map = {};
-    for (let i = 0; i < n; i++) map[dayKey(dayShift(end, -(n - 1 - i)))] = Math.min(4, +a.g[i] || 0);
+    for (let i = 0; i < n; i++) map[dayKey(dayShift(end, -(n - 1 - i)))] = Math.min(4, +a.g[i] || 0);   // older cards may send more days: only the last 30 are drawn
     // a streak counts only if the card was sent today or yesterday
     const fresh = dayKey(new Date()) === a.t || dayKey(dayShift(new Date(), -1)) === a.t, st = fresh ? +a.s || 0 : 0;
-    return `<details class="pc-actv"><summary>🔥 Активность <small>${st ? `серия ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : `игровых дней: ${+a.d || 0}`}</small></summary>` +
-      `<div class="actv"><div class="actv-kpi"><div class="fire"><b>${st ? '🔥 ' : ''}${st}</b><small>${plural(st, 'день', 'дня', 'дней')} подряд</small></div><div><b>${+a.b || 0}</b><small>лучшая серия</small></div><div><b>${+a.d || 0}</b><small>игровых дней</small></div></div>` +
+    const md = [...a.g.slice(-ACT_DAYS)].filter(c => c !== '0').length;
+    return `<details class="pc-actv"><summary>🔥 Активность <small>${st ? `серия ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : `за месяц: ${md} ${plural(md, 'день', 'дня', 'дней')}`}</small></summary>` +
+      `<div class="actv"><div class="actv-kpi"><div class="fire"><b>${st ? '🔥 ' : ''}${st}</b><small>${plural(st, 'день', 'дня', 'дней')} подряд</small></div><div><b>${+a.b || 0}</b><small>лучшая серия</small></div><div><b>${md}<small> / ${ACT_DAYS}</small></b><small>дней за месяц</small></div></div>` +
       actGridHTML(k => map[k] || 0, end) + '</div></details>';
   }
   function renderActivity() {
     const box = $('profAct'); if (!box) return;
     const now = new Date();
-    const byWd = [0, 0, 0, 0, 0, 0, 0]; Object.entries(save.act).forEach(([k, e]) => { byWd[wdOf(new Date(k + 'T12:00'))] += e[0]; });
-    const favWd = byWd.some(Boolean) ? byWd.indexOf(Math.max(...byWd)) : -1, streak = actStreak();
+    const byWd = [0, 0, 0, 0, 0, 0, 0], cut = dayKey(dayShift(now, -(ACT_DAYS - 1))); Object.entries(save.act).forEach(([k, e]) => { if (k >= cut) byWd[wdOf(new Date(k + 'T12:00'))] += e[0]; });
+    const md = actMonthDays(), favWd = byWd.some(Boolean) ? byWd.indexOf(Math.max(...byWd)) : -1, streak = actStreak();
     const sel = actSel && save.act[actSel], sd = actSel && new Date(actSel + 'T12:00');
     box.innerHTML = `<div class="actv-kpi"><div class="fire"><b>${streak ? '🔥 ' : ''}${streak}</b><small>${plural(streak, 'день', 'дня', 'дней')} подряд</small></div><div><b>${actBestStreak()}</b><small>лучшая серия</small></div>` +
-      `<div><b>${save.actDays || 0}</b><small>игровых дней</small></div><div><b>${favWd < 0 ? '—' : WD[favWd][0].toUpperCase() + WD[favWd][1]}</b><small>любимый день</small></div></div>` +
+      `<div><b>${md}<small> / ${ACT_DAYS}</small></b><small>дней за месяц</small></div><div><b>${favWd < 0 ? '—' : WD[favWd][0].toUpperCase() + WD[favWd][1]}</b><small>любимый день</small></div></div>` +
       actGridHTML(k => actLevel(save.act[k] && save.act[k][0]), now, { click: true, sel: actSel, label: k => { const e = save.act[k]; return e ? `${e[0]} ${plural(e[0], 'раунд', 'раунда', 'раундов')}` : 'не играл'; } }) +
       `<p class="actv-day" aria-live="polite">${sel ? `<b>${sd.getDate()} ${MONG[sd.getMonth()]}, ${WD_FULL[wdOf(sd)]}</b> · ${sel[0]} ${plural(sel[0], 'раунд', 'раунда', 'раундов')} · ${Math.max(1, Math.round(sel[1] / 60))} мин · лучшая масса ${sel[2].toLocaleString('ru-RU')}`
         : actSel ? `<b>${sd.getDate()} ${MONG[sd.getMonth()]}</b> · в этот день ты не играл` : 'Нажми на день — сколько раундов и лучший результат'}</p>` +
-      (Object.keys(save.act).length ? '' : '<p class="info-note" style="margin:6px 0 0">Календарь заполняется с этого обновления: каждый сыгранный день станет квадратиком.</p>');
-    const sc = box.querySelector('.actv-scroll'); if (sc) sc.scrollLeft = sc.scrollWidth;
+      (Object.keys(save.act).length ? '' : '<p class="info-note" style="margin:6px 0 0">Календарь заполняется с этого обновления: каждый сыгранный день подсветится.</p>');
   }
   $('profAct').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (!b) return; actSel = actSel === b.dataset.day ? null : b.dataset.day; renderActivity(); const nb = $('profAct').querySelector(`[data-day="${b.dataset.day}"]`); if (nb) nb.focus(); });
   // ---------- graphics recovery: the browser may take the GPU away (app in background, low memory) and give it back.
@@ -10104,10 +10112,10 @@ body.menu-bg .menu-backdrop { display: block; }
     ['Сбросить', () => { ACH.forEach(a => { save.achT[a.id] = 0; }); save.ach = save.ach.filter(id => !achById(id)); save.pc = { ...(save.pc || {}), shelf: [] }; }],
     ['Витрина: 3 трофея', () => { const got = ACH.filter(a => achTier(a)).sort((x, y) => achMetal(y, achTier(y)) - achMetal(x, achTier(x))); save.pc = { ...(save.pc || {}), shelf: got.slice(0, 3).map(a => a.id) }; return got.length ? 'открой Профиль' : 'сначала выдай достижения'; }]]);
   testAdd('Календарь активности', [
-    ['Заполнить полгода', () => { save.act = {}; let r = 11; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280; const now = new Date();
+    ['Заполнить месяц', () => { save.act = {}; let r = 11; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280; const now = new Date();
       for (let i = 0; i < 182; i++) { const x = rnd(); if (i > 8 && x < .35) continue; const n = i <= 8 ? 2 + Math.floor(rnd() * 6) : x < .65 ? 1 + Math.floor(rnd() * 2) : x < .85 ? 3 + Math.floor(rnd() * 3) : x < .96 ? 6 + Math.floor(rnd() * 5) : 11 + Math.floor(rnd() * 6);
         save.act[dayKey(dayShift(now, -i))] = [n, n * (150 + Math.floor(rnd() * 120)), 800 + Math.floor(rnd() * 4000)]; }
-      save.actDays = Object.keys(save.act).length + 40; save.actBest = 0; save.actBest = actBestStreak(); return 'открой Профиль → Активность'; }],
+      save.actDays = Object.keys(save.act).length; save.actBest = 0; save.actBest = actBestStreak(); return 'открой Профиль → Активность'; }],
     ['Серия 30 дней', () => { const now = new Date(); for (let i = 0; i < 30; i++) { const k = dayKey(dayShift(now, -i)); if (!save.act[k]) save.act[k] = [3, 600, 1500]; } save.actBest = actBestStreak(); }],
     ['Очистить', () => { save.act = {}; save.actDays = 0; save.actBest = 0; }]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);

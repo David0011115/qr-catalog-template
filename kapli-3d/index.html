@@ -277,6 +277,32 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .ps-grid b { font: 400 1.15rem/1.1 var(--display); font-variant-numeric: tabular-nums; } .ps-grid small { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .ps-round h3 { margin: 4px 0 0; font: 400 .92rem var(--display); } .ps-round .goal-list { margin: 0; } .ps-note { margin: 0; color: var(--muted); font-size: .76rem; }
 @media (max-width: 420px) { .ps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* ===== 2.2: wide windows on landscape screens — more room, fewer swipes (portrait phones keep one column) ===== */
+.prof-cols, .prof-l, .prof-r { display: contents; }
+@media (orientation: landscape) and (min-width: 700px) {
+  .card.shop-card { max-width: min(1040px, 100%); }
+  #profileCard, #chestCard, #chaosCard, #settingsCard, #hubLeague, #hubRew { max-width: min(1000px, 100%); }
+  #pauseCard { max-width: min(880px, 100%); }
+  /* profile: card and prestige on the left, counters and sections on the right */
+  #profileCard .prof-cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+  #profileCard .prof-cols[hidden] { display: none; }
+  #profileCard .prof-l, #profileCard .prof-r { display: grid; gap: 10px; align-content: start; min-width: 0; }
+  #profileCard .prof-r .prof-head { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
+  #profileCard .prof-r .g-tiles { margin: 0; gap: 8px; } #profileCard .prof-r .g-tiles .hub-btn { min-height: 0; padding: 9px 10px; }
+  #profileCard .prof-r > * { margin: 0; }
+  /* leagues and rewards: the two choices side by side */
+  #hubLeague .hub-list, #hubRew .hub-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* chests: the chest on the left, the list on the right */
+  #chestCard { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); column-gap: 16px; grid-auto-flow: row dense; align-items: start; }
+  #chestCard > * { grid-column: 1 / -1; } #chestCard > .chest-stage, #chestCard > .reveal { grid-column: 1; } #chestCard > .chest-list { grid-column: 2; grid-row: span 3; }
+  /* settings: sections in two columns */
+  #settingsCard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; align-items: start; }
+  #settingsCard > * { grid-column: 1 / -1; } #settingsCard > details.set-drawer { grid-column: auto; margin-top: 0; }
+  /* pause: the round on the left, the goals on the right */
+  #pauseCard .ps-round { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; align-items: start; }
+  #pauseCard .ps-round .ps-grid { grid-row: span 2; } #pauseCard .ps-round h3, #pauseCard .ps-round .goal-list, #pauseCard .ps-round .ps-note { grid-column: 2; }
+  #pauseCard .btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } #pauseCard .btns .btn { margin: 0; }
+}
 /* ===== 2.2: logos on the Collection / Rewards buttons and in the shop tabs ===== */
 #hubCol .hub-list .hub-card, #hubRew .hub-list .hub-card { display: grid; grid-template-columns: 56px minmax(0, 1fr); justify-content: stretch; justify-items: start; gap: 4px 14px; align-items: center; text-align: left; padding: 12px 16px; width: 100%; }
 .hub-card .lg-logo { display: grid; place-items: center; } .hub-logo { display: block; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--hc) 60%, transparent)); }
@@ -1812,8 +1838,10 @@ body.menu-bg .menu-backdrop { display: block; }
       <li><b>Особые значки</b> — редкие значки за большие цели. <b>Значки Хаос-лиги</b> и <b>значки сезонов</b> — по одному за каждый сезон с очками; форма и цвет зависят от ступени.</li>
       <li><b>Оформление профиля</b> — фон, рамка аватара, титул и значок, сочетаются как угодно. Нажми на любой вариант, даже закрытый, — он появится на карточке, а ниже будет написано, где его получить. Самые редкие фоны — за «Неон» в лиге и «Сингулярность» в Хаос-лиге.</li>
       <li>Карточку видят другие игроки: в рейтинге и общем чате нажми на ник, чтобы открыть профиль игрока.</li></ul></template>
+    <div class="prof-cols g-hide"><div class="prof-l">
     <div class="prof-card g-hide" id="profId"></div>
     <div class="ps-panel g-hide" id="profPs" hidden></div>
+    </div><div class="prof-r">
     <div class="prof-head g-hide" id="profHead"></div>
     <button class="btn ghost g-hide prof-share-btn" id="profShare" type="button">📤 Поделиться карточкой</button>
     <button class="btn ghost g-hide prof-acct-btn" id="profAcct" type="button">☁ Аккаунт</button>
@@ -1825,6 +1853,7 @@ body.menu-bg .menu-backdrop { display: block; }
       <button class="btn ghost hub-btn" data-grp="pSeasons">📅 Сезоны<small id="ptSeasons"></small></button>
       <button class="btn ghost hub-btn" data-grp="pActivity">🔥 Активность<small id="ptActivity"></small></button>
     </div>
+    </div></div>
     <div class="g-group prof-secs" data-grpid="pDecor" hidden><h2 class="g-title">🎨 Оформление профиля</h2>
     <div id="pdPreview"></div><p class="pd-note" id="pdNote" aria-live="polite"></p>
     <div class="tabs pd-tabs" id="pdTabs" role="tablist"></div>

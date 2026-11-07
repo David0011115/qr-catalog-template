@@ -68,6 +68,9 @@ body {
 }
 .logo { font-family: var(--display); font-weight: 800; font-size: 1.05rem; letter-spacing: .02em; }
 .logo span { color: var(--me); }
+.gfx-bar { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%); top: calc(10px + env(safe-area-inset-top, 0px)); width: min(520px, calc(100% - 32px)); display: grid; grid-template-columns: 1fr auto 36px; gap: 8px; align-items: center;
+  padding: 8px 10px 8px 14px; border-radius: 14px; background: var(--panel); border: 1px solid var(--gold); box-shadow: 0 8px 30px rgba(0, 0, 0, .5); font-size: .82rem; }
+.gfx-bar .btn { margin: 0; padding: 8px 12px; font-size: .8rem; } .gfx-bar .modal-x { position: static; }
 .test-card { max-width: 460px; text-align: left; } .test-card h2 { margin: 0 40px 4px 0; font: 400 1.2rem var(--display); }
 .test-lead { margin: 0 0 10px; color: var(--muted); font-size: .78rem; line-height: 1.4; }
 .test-grp { margin: 0 0 10px; } .test-grp > small { display: block; margin: 0 0 5px; color: var(--gold); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; }
@@ -1939,6 +1942,9 @@ body.menu-bg .menu-backdrop { display: block; }
     <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
     <div class="set"><span>Размер мини-карты</span>
         <div class="seg" id="setMiniSize" role="radiogroup"><button data-v="s">Маленькая</button><button data-v="m">Средняя</button><button data-v="l">Большая</button><button data-v="xl">Огромная</button></div></div>
+    <div class="set"><span>Если капли пропали или выглядят странно</span>
+        <button class="btn ghost" id="gfxReload" type="button">Перезагрузить графику</button>
+        <small class="reset-note" id="gfxNote" style="margin:0">Игра перезапустится с твоим сохранением. Идущий раунд будет прерван.</small></div>
     </div></details>
     <details class="res-drawer set-drawer"><summary>🔊 Звук</summary><div class="drawer-body">
       <div class="set"><label for="setSfx">Громкость звуков</label><input type="range" id="setSfx" min="0" max="1" step="0.05"></div>
@@ -1988,6 +1994,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="tour-acts"><button class="btn ghost" id="tourSkip">Пропустить</button><button class="btn" id="tourNext">Далее</button></div>
   </div>
 </div>
+<div class="gfx-bar" id="gfxBar" role="alert" hidden><span>Графика сбоила. Если капли пропали — перезагрузи её.</span><button class="btn" id="gfxBarDo" type="button">Перезагрузить</button><button class="modal-x" id="gfxBarX" type="button" aria-label="Скрыть">×</button></div>
 <div class="modal" id="testModal" hidden>
   <div class="modal-card test-card" role="dialog" aria-modal="true" aria-labelledby="testTitle">
     <button class="modal-x" id="testClose" aria-label="Закрыть">×</button>
@@ -9784,6 +9791,23 @@ body.menu-bg .menu-backdrop { display: block; }
   bots.forEach(spawnBot);
   rebuildCells();
   if (TEST_MODE) { $('testBadge').hidden = false; document.querySelector('#menuCard h1').innerHTML += ' <button type="button" class="test-badge" data-testopen>ТЕСТ ▾</button>'; }
+  // ---------- graphics recovery: the browser may take the GPU away (app in background, low memory) and give it back.
+  // In the menu we simply restart with the saved progress; during a round we offer a restart instead of ending it on our own.
+  const gfx = { lost: 0 };
+  function gfxReload() { try { persist(); } catch (e) {} location.reload(); }
+  function gfxWatch(cv) {
+    if (!cv || cv.dataset.gfxw) return; cv.dataset.gfxw = 1;
+    cv.addEventListener('webglcontextlost', e => { e.preventDefault(); gfx.lost++; }, false);
+    cv.addEventListener('webglcontextrestored', () => { if (!running) gfxReload(); else $('gfxBar').hidden = false; }, false);
+  }
+  gfxWatch(renderer.domElement); gfxWatch($('mbCanvas')); gfxWatch($('imCanvas'));
+  let gfxArm = 0;
+  $('gfxReload').addEventListener('click', () => {
+    if (running && Date.now() - gfxArm > 4000) { gfxArm = Date.now(); $('gfxNote').textContent = 'Идёт раунд — нажми ещё раз, чтобы прервать его и перезагрузить графику'; return; }
+    gfxReload();
+  });
+  $('gfxBarDo').addEventListener('click', gfxReload);
+  $('gfxBarX').addEventListener('click', () => { $('gfxBar').hidden = true; });
   // ---------- test panel (test build only): quick ways to reach any state; features add their own groups to TEST_GROUPS ----------
   const TEST_GROUPS = [];
   function testAdd(title, buttons) { TEST_GROUPS.push({ title, buttons }); }
@@ -9793,6 +9817,10 @@ body.menu-bg .menu-backdrop { display: block; }
     ['★5', () => { save.xp = xpForPs(1, 5); }], ['★18', () => { save.xp = xpForPs(1, 18); }], ['★25', () => { save.xp = xpForPs(1, 25); }],
     ['✦10', () => { save.xp = xpForPs(2, 10); }], ['✦25', () => { save.xp = xpForPs(2, 25); }]]);
   testAdd('Монеты и сундуки', [['+100 000 ◆', () => { save.coins += 100000; }], ['+10 сундуков', () => { save.chests += 10; }]]);
+  testAdd('Графика', [['Сымитировать сбой графики', () => {
+    const ext = renderer.getContext().getExtension('WEBGL_lose_context'); if (!ext) return 'браузер не умеет имитировать сбой';
+    ext.loseContext(); setTimeout(() => ext.restoreContext(), 1200); return 'графика вернётся через секунду';
+  }], ['Показать плашку сбоя', () => { $('gfxBar').hidden = false; }]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
   function testRender() {
     $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');

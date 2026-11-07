@@ -7924,27 +7924,41 @@ body.menu-bg .menu-backdrop { display: block; }
   $('pcModal').addEventListener('click', e => { if (e.target === $('pcModal')) closePlayerCard(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('pcModal').hidden) { e.stopPropagation(); closePlayerCard(); } }, true);
 
-  // menus scroll by script on touch screens: some app viewers swallow native vertical swipes
+  // menus scroll by script on touch screens: some app viewers swallow native vertical swipes.
+  // A swipe first scrolls the nearest inner scrollable list (e.g. the profile decor grid),
+  // and hands the rest to the overlay once that list reaches its edge.
   (function menuScroll() {
     const ov = $('overlay');
-    let y0 = null, s0 = 0, lastY = 0, lastT = 0, vel = 0, raf = 0;
+    let lastY = null, lastT = 0, vel = 0, raf = 0, chain = [];
+    const scrollable = el => { if (el.scrollHeight <= el.clientHeight + 1) return false; const o = getComputedStyle(el).overflowY; return o === 'auto' || o === 'scroll'; };
+    const scrollBy = d => {
+      for (const el of chain) {
+        if (!d) break;
+        const before = el.scrollTop; el.scrollTop = before + d;
+        d -= el.scrollTop - before;
+      }
+      return d;
+    };
     ov.addEventListener('touchstart', e => {
-      if (e.touches.length !== 1 || e.target.closest('input[type="range"]')) { y0 = null; return; }
+      if (e.touches.length !== 1 || e.target.closest('input[type="range"]')) { lastY = null; return; }
       cancelAnimationFrame(raf);
-      y0 = lastY = e.touches[0].clientY; s0 = ov.scrollTop; lastT = performance.now(); vel = 0;
+      chain = [];
+      for (let el = e.target; el && el !== ov; el = el.parentElement) if (scrollable(el)) chain.push(el);
+      chain.push(ov);
+      lastY = e.touches[0].clientY; lastT = performance.now(); vel = 0;
     }, { passive: true });
     ov.addEventListener('touchmove', e => {
-      if (y0 === null) return;
+      if (lastY === null) return;
       const y = e.touches[0].clientY, t = performance.now();
-      ov.scrollTop = s0 - (y - y0);
+      scrollBy(lastY - y);
       vel = (lastY - y) / Math.max(1, t - lastT); lastY = y; lastT = t;
       e.preventDefault();
     }, { passive: false });
     const end = () => {
-      if (y0 === null) return;
-      y0 = null;
+      if (lastY === null) return;
+      lastY = null;
       let v = vel * 16;
-      const step = () => { if (Math.abs(v) < 0.5) return; ov.scrollTop += v; v *= 0.94; raf = requestAnimationFrame(step); };
+      const step = () => { if (Math.abs(v) < 0.5) return; if (scrollBy(v) === v) return; v *= 0.94; raf = requestAnimationFrame(step); };
       step();
     };
     ov.addEventListener('touchend', end);

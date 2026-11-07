@@ -268,6 +268,26 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .achc-f .rw { color: var(--gold); } .achc.done .achc-f > span:first-child { color: #ffd23f; font-weight: 600; }
 .ach-h { margin: 14px 0 8px; font: 400 1rem var(--display); text-align: left; }
 .ach-hol { margin-top: 12px; } .ach-hol .achc-grid { padding: 8px 0; } .ach-hol .achc { opacity: .75; }
+/* ===== 2.2: season summary ===== */
+.recap-card { max-width: 560px; text-align: left; display: grid; gap: 10px; } .recap-card #recapOk { margin: 0; }
+.rc { position: relative; overflow: hidden; border-radius: 16px; padding: 12px 14px; display: grid; gap: 10px; text-align: left; border: 1px solid rgba(255, 79, 216, .5);
+  background: radial-gradient(circle at 100% 0, rgba(255, 79, 216, .3), transparent 55%), radial-gradient(circle at 0 100%, rgba(34, 230, 255, .22), transparent 55%), #100a2a; }
+.rc-hd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; padding-right: 30px; } .rc-hd b { font: 400 1.15rem var(--display); } .rc-hd small { color: #cfc9f0; font-size: .7rem; }
+.pc-rc .rc-hd, .rc-fold .rc-hd { padding-right: 0; }
+.rc-big { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rc-big div { padding: 8px; border-radius: 11px; background: rgba(10, 6, 30, .55); display: grid; gap: 1px; min-width: 0; }
+.rc-big b { font: 400 1.15rem/1.1 var(--display); } .rc-big small { font-size: .58rem; color: #cfc9f0; text-transform: uppercase; letter-spacing: .06em; }
+.rc-big span { font-size: .6rem; color: var(--muted); } .rc-big span.rc-up { color: #3dffa2; }
+.rc-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.rc-bx { padding: 8px 10px; border-radius: 11px; background: rgba(10, 6, 30, .55); font-size: .74rem; display: grid; gap: 3px; align-content: start; min-width: 0; }
+.rc-bx > small { font-size: .58rem; color: #cfc9f0; text-transform: uppercase; letter-spacing: .06em; } .rc-bx b { font-weight: 600; }
+.rc-lg { font: 400 .9rem var(--display); } .rc-lg span { color: var(--muted); font-family: var(--body); font-size: .8rem; } .rc-dim { color: var(--muted); font-size: .68rem; } .rc-gold { color: #ffd23f; }
+.rc-drops { display: flex; gap: 4px; flex-wrap: wrap; } .rc-drops i { font-style: normal; padding: 2px 6px; border-radius: 6px; font-size: .62rem; font-weight: 700; background: color-mix(in srgb, var(--c) 22%, transparent); color: color-mix(in srgb, var(--c) 70%, #fff); }
+@media (max-width: 520px) { .rc-big { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rc-two { grid-template-columns: minmax(0, 1fr); } }
+.rc-list { display: grid; gap: 6px; padding: 6px 0 10px; }
+.rc-fold > summary { cursor: pointer; list-style: none; display: flex; gap: 8px; align-items: baseline; padding: 6px 2px; font-weight: 600; font-size: .84rem; }
+.rc-fold > summary::-webkit-details-marker { display: none; } .rc-fold > summary small { color: var(--muted); font-weight: 400; } .rc-fold > summary::after { content: '▸'; margin-left: auto; color: var(--food); } .rc-fold[open] > summary::after { content: '▾'; }
+.pc-rc > summary small { color: #ffd23f; } .pc-rc > .rc { margin: 0 10px 10px; }
 /* ===== 2.2: another player's activity, folded under the card ===== */
 .pc-actv { margin-top: 8px; border-radius: 14px; background: var(--row); border: 1px solid var(--line); text-align: left; }
 .pc-actv > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-weight: 600; font-size: .86rem; }
@@ -1787,6 +1807,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="actv" id="profAct"></div>
     <button class="btn ghost" data-grpback>← Профиль</button></div>
     <div class="g-group prof-secs" data-grpid="pSeasons" hidden><h2 class="g-title">📅 Сезоны</h2>
+    <div id="profRecaps"></div>
     <details open class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
     <button class="btn ghost" data-grpback>← Профиль</button></div>
     <button class="btn" id="profBack">Готово</button>
@@ -2082,6 +2103,13 @@ body.menu-bg .menu-backdrop { display: block; }
   </div>
 </div>
 <div class="gfx-bar" id="gfxBar" role="alert" hidden><span>Графика сбоила. Если капли пропали — перезагрузи её.</span><button class="btn" id="gfxBarDo" type="button">Перезагрузить</button><button class="modal-x" id="gfxBarX" type="button" aria-label="Скрыть">×</button></div>
+<div class="modal" id="recapModal" hidden>
+  <div class="modal-card recap-card" role="dialog" aria-modal="true" aria-label="Итоги сезона">
+    <button class="modal-x" id="recapClose" aria-label="Закрыть">×</button>
+    <div id="recapBody"></div>
+    <button class="btn" id="recapOk" type="button">Отлично!</button>
+  </div>
+</div>
 <div class="modal" id="testModal" hidden>
   <div class="modal-card test-card" role="dialog" aria-modal="true" aria-labelledby="testTitle">
     <button class="modal-x" id="testClose" aria-label="Закрыть">×</button>
@@ -3264,6 +3292,8 @@ body.menu-bg .menu-backdrop { display: block; }
   [...(save.skins || []), ...(save.fxOwned || [])].forEach(id => { const m = /^hf?_(\w+?)_(\d{4})_\d$/.exec(id); if (m && HOLIDAYS[m[1]]) ensureHolidayItems(m[1], +m[2]); });
   save.seasonLog = save.seasonLog || [];
   save.act = save.act || {};   // 2.2: activity calendar — local date → [rounds, seconds, best mass]
+  save.recaps = save.recaps || [];   // 2.2: season summaries, newest last (kept: 6)
+  const ssNew = id => ({ id, r: 0, t: 0, m: 0, w: 0, c: 0, x: 0, ch: {}, md: {} });
   let seasonNotice = '';
   if (!seasonStarted) save.season = { id: 1, pts: 0 };   // nothing counts before the first season opens
   if (save.season.id !== seasonNow) {
@@ -3286,8 +3316,15 @@ body.menu-bg .menu-backdrop { display: block; }
       if (sd.holiday) { const ky = sd.holiday + '_' + sd.year; save.totals.holLeagueY = save.totals.holLeagueY || {}; save.totals.holLeagueY[ky] = Math.max(save.totals.holLeagueY[ky] ?? 0, li); }
       if (sd.holiday) { save.totals.holLeague = save.totals.holLeague || {}; save.totals.holLeague[sd.holiday] = Math.max(save.totals.holLeague[sd.holiday] || 0, li); }
     }
+    // 2.2: the season's summary, if anything was played in it (league points or not)
+    if (save.ss && save.ss.id === save.season.id && save.ss.r > 0) {
+      const S = save.ss, fav = Object.entries(S.md).sort((a, b) => b[1] - a[1])[0];
+      save.recaps.push({ id: S.id, n: sd.name, r: S.r, t: Math.round(S.t), m: S.m, w: S.w, c: S.c, x: S.x, ch: S.ch, fav: fav || null, lg: save.season.pts > 0 ? li : -1, pts: save.season.pts });
+      save.recaps = save.recaps.slice(-6); save.recapShow = S.id;
+    }
     save.season = { id: seasonNow, pts: 0 };
   }
+  if (!save.ss || save.ss.id !== save.season.id) save.ss = ssNew(save.season.id);
   addExtraCollections();   // after the Chaos League tables: its collections need them
   styleDecor();
   // ---- Chaos League save (schema 3) ----
@@ -5325,6 +5362,7 @@ body.menu-bg .menu-backdrop { display: block; }
       return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
     save.coins += coins; save.xp += xp;
+    if (seasonStarted && save.ss) { const S = save.ss; S.r++; S.t += stats.time; S.m = Math.max(S.m, Math.round(stats.maxMass)); S.w += stats.win ? 1 : 0; S.c += coins; S.x += xp; S.md[mode] = (S.md[mode] || 0) + 1; }
     const t = save.totals;
     t.splits += stats.splits; if (mode === 'timed' && stats.win) t.timedWins++;
     t.time += stats.time; t.bestKills = Math.max(t.bestKills, stats.kills); t.bestWave = Math.max(t.bestWave, stats.wave || 0);
@@ -7753,6 +7791,7 @@ body.menu-bg .menu-backdrop { display: block; }
   const LEG_PITY = 80;
   const CHEST_SRC = { normal: 'За раунды', daily: 'Ежедневные', league: 'Сундуки лиги', level: 'За уровни', week: 'Задания недели', raid: 'Рейд', challenge: 'Испытания', archive: 'Сундук архива' };
   function logChest(src, rar) {
+    if (save.ss) save.ss.ch[rar] = (save.ss.ch[rar] || 0) + 1;
     const S = save.chestStats; S.total++;
     const o = S.src[src] = S.src[src] || {}; o[rar] = (o[rar] || 0) + 1;
   }
@@ -8587,6 +8626,7 @@ body.menu-bg .menu-backdrop { display: block; }
       ps: (p => p && (p.s || p.n) ? { s: p.s, n: p.n } : undefined)(prestigeOf(save.xp)),
       shelf: ((save.pc || {}).shelf || []).map(id => [id, achTier(achById(id))]).filter(([, t]) => t > 0).slice(0, 3),
       act: (() => { try { return actPublic(); } catch (e) { return undefined; } })(),
+      rc: (save.recaps || []).slice(-1)[0] || undefined,
       league: save.totals.maxLeague || 0, chaos: save.totals.chaosMax || 0, wins: (save.legend && save.legend.wins) || 0, best: save.bests.classic || 0, ach: save.ach.length };
   }
   const LG_NAMES = ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон'], LG_COLS = ['#cd7f32', '#c0c8e0', '#ffd23f', '#7fe8ff', '#b26bff', '#ff4fd8'];
@@ -8751,7 +8791,7 @@ body.menu-bg .menu-backdrop { display: block; }
     let d = me ? myShowcase() : null;
     if (!me) { const m = await Net.getShowcases([nick]); d = m.get(nick); }
     if ($('pcModal').hidden) return;
-    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (d && !me ? actOtherHTML(d.act) : '') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
+    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (d && !me ? actOtherHTML(d.act) + rcOtherHTML(d.rc) : '') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
     pbgMount($('pcBody'));
     if (!me) Net.pcSocial(nick, $('pcSocial'));
   }
@@ -8835,7 +8875,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('ptBadges').textContent = `особых ${$('psSpecial').textContent.replace(/^· /, '')} · сезонов ${save.seasonLog.length + save.chaosLog.length}`;
     $('ptSeasons').textContent = `лига: ${save.seasonLog.length} · Хаос: ${save.chaosLog.length}`;
     { const st = actStreak(), md = actMonthDays(); $('ptActivity').textContent = st ? `серия ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : `за месяц: ${md} ${plural(md, 'день', 'дня', 'дней')}`; }
-    renderActivity();
+    renderActivity(); renderRecaps();
   }
   function renderProfChests() {
     const S = save.chestStats, sum = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
@@ -9644,6 +9684,7 @@ body.menu-bg .menu-backdrop { display: block; }
         for (let i = 0; i < 30; i++) { const x = rnd(); g += i >= 16 ? String(2 + (i % 3)) : x < .3 ? '0' : x < .6 ? '1' : x < .82 ? '2' : x < .95 ? '3' : '4'; }
         const t = new Date(now), tk = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
         card.act = { g, t: tk, s: 14, b: 37 }; }
+      card.rc = { id: 4, n: 'Неоновый прилив', r: 203, t: 52800, m: 6120, w: 77, c: 26300, x: 30100, ch: { legendary: 1, epic: 3, rare: 4, common: 2 }, fav: ['crown', 94], lg: 5, pts: 27400 };
       const dms = [[1, false, 'Привет! Видел мой новый фон «Галактика»?', 64], [2, true, 'Ага, круто! Это за ✦25?', 61], [3, false, 'Да, вторая ступень престижа. Сыграем в «Захват короны»?', 5], [4, false, 'Я в игре 😉', 2]]
         .map(([id, mine, body, ago]) => ({ id, mine, body, created_at: iso(ago), read_at: mine ? iso(ago - 1) : null }));
       return { fr, card, dms, list: [fr], blocks: [] };
@@ -10068,6 +10109,53 @@ body.menu-bg .menu-backdrop { display: block; }
       (Object.keys(save.act).length ? '' : '<p class="info-note" style="margin:6px 0 0">Календарь заполняется с этого обновления: каждый сыгранный день подсветится.</p>');
   }
   $('profAct').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (!b) return; actSel = actSel === b.dataset.day ? null : b.dataset.day; renderActivity(); const nb = $('profAct').querySelector(`[data-day="${b.dataset.day}"]`); if (nb) nb.focus(); });
+  // ================= 2.2: season summary =================
+  const rcNum = v => Math.max(0, Math.round(+v || 0));
+  const rcDur = sec => { const m = Math.round(rcNum(sec) / 60); return m >= 60 ? `${Math.floor(m / 60)} ч${m % 60 ? ` ${m % 60} мин` : ''}` : `${m} мин`; };
+  // rc: one summary; prev: the season before (for the arrows); data from another player is checked field by field
+  function rcHTML(rc, prev) {
+    const id = rcNum(rc.id), r = rcNum(rc.r), w = rcNum(rc.w), lg = Number.isInteger(rc.lg) && rc.lg >= 0 && rc.lg <= 5 ? rc.lg : -1;
+    const pl = prev && Number.isInteger(prev.lg) && prev.lg >= 0 && prev.lg <= 5 ? prev.lg : -1;
+    const ch = rc.ch && typeof rc.ch === 'object' ? rc.ch : {}, chN = RAR_KEYS.reduce((a, k) => a + rcNum(ch[k]), 0);
+    const fav = Array.isArray(rc.fav) && MODES[rc.fav[0]] ? rc.fav : null;
+    const delta = (a, b, f = v => v) => prev ? (a > b ? `<span class="rc-up">+${f(a - b)} к прошлому</span>` : a < b ? `<span>−${f(b - a)} к прошлому</span>` : '<span>как в прошлом</span>') : '';
+    const dates = id ? `${fmtDate(seasonEnd(id - 1))} — ${fmtDate(seasonEnd(id) - 864e5)}` : '';
+    return `<div class="rc"><div class="rc-hd"><b>Итоги сезона ${id}</b><small>${rc.n ? `«${escHtml(String(rc.n).slice(0, 40))}» · ` : ''}${dates}</small></div>` +
+      `<div class="rc-big"><div><b>${r.toLocaleString('ru-RU')}</b><small>${plural(r, 'раунд', 'раунда', 'раундов')}</small>${delta(r, rcNum(prev && prev.r))}</div>` +
+      `<div><b>${rcDur(rc.t)}</b><small>в игре</small>${delta(rcNum(rc.t), rcNum(prev && prev.t), rcDur)}</div>` +
+      `<div><b>${rcNum(rc.m).toLocaleString('ru-RU')}</b><small>лучшая масса</small>${prev && rcNum(rc.m) > rcNum(prev.m) ? '<span class="rc-up">новый рекорд сезона</span>' : ''}</div>` +
+      `<div><b>${w.toLocaleString('ru-RU')}</b><small>${plural(w, 'победа', 'победы', 'побед')}</small>${r ? `<span>${Math.round(w / r * 100)}% раундов</span>` : ''}</div></div>` +
+      `<div class="rc-two"><div class="rc-bx"><small>Лига</small>${lg < 0 ? '<span class="rc-dim">в рейтинговых боях не участвовал</span>' : `<div class="rc-lg">${pl >= 0 ? `<span>${LG_NAMES[pl]}</span> → ` : ''}<b style="color:${LG_COLS[lg]}">${LG_NAMES[lg]}</b></div><span class="rc-dim">${rcNum(rc.pts).toLocaleString('ru-RU')} очков лиги</span>`}</div>` +
+      `<div class="rc-bx"><small>Из сундуков · ${chN}</small>${chN ? `<div class="rc-drops">${RAR_KEYS.slice().reverse().filter(k => rcNum(ch[k])).map(k => `<i style="--c:${RARITY[k].color}">${RARITY[k].name} ×${rcNum(ch[k])}</i>`).join('')}</div>` : '<span class="rc-dim">сундуков не открыто</span>'}</div>` +
+      `<div class="rc-bx"><small>Любимый режим</small>${fav ? `<b>${MODES[fav[0]].name} · ${rcNum(fav[1])} ${plural(rcNum(fav[1]), 'раунд', 'раунда', 'раундов')}</b>` : '<span class="rc-dim">—</span>'}</div>` +
+      `<div class="rc-bx"><small>Заработано</small><b class="rc-gold">${rcNum(rc.c).toLocaleString('ru-RU')} ◆ · ${rcNum(rc.x).toLocaleString('ru-RU')} опыта</b></div></div></div>`;
+  }
+  const rcPrev = rc => { const i = save.recaps.indexOf(rc); return i > 0 ? save.recaps[i - 1] : null; };
+  function openRecap(rc) { $('recapBody').innerHTML = rcHTML(rc, rcPrev(rc)); $('recapModal').hidden = false; $('recapOk').focus(); }
+  function closeRecap() { $('recapModal').hidden = true; if (save.recapShow) { delete save.recapShow; persist(); } }
+  $('recapOk').addEventListener('click', closeRecap); $('recapClose').addEventListener('click', closeRecap);
+  $('recapModal').addEventListener('click', e => { if (e.target === $('recapModal')) closeRecap(); });
+  // the window comes once, after the season ended, when the menu is on screen
+  function recapWatch() {
+    let n = 0; const t = setInterval(() => {
+      if (++n > 120 || !save.recapShow) { clearInterval(t); return; }
+      const sp = $('splash'), splashUp = sp && !sp.classList.contains('out') && getComputedStyle(sp).display !== 'none';
+      if (splashUp || running || $('menuCard').hidden || [...document.querySelectorAll('.modal')].some(m => !m.hidden)) return;
+      const rc = save.recaps.find(x => x.id === save.recapShow); clearInterval(t); if (rc) openRecap(rc); else { delete save.recapShow; persist(); }
+    }, 500);
+  }
+  function renderRecaps() {
+    const box = $('profRecaps'); if (!box) return;
+    box.innerHTML = save.recaps.length ? `<details open class="res-drawer"><summary>Итоги сезонов <small class="cnt">${save.recaps.length}</small></summary><div class="rc-list">` +
+      save.recaps.slice().reverse().map((rc, i) => `<details class="rc-fold"${i ? '' : ' open'}><summary>Сезон ${rcNum(rc.id)} <small>${rcNum(rc.r)} ${plural(rcNum(rc.r), 'раунд', 'раунда', 'раундов')}${rc.lg >= 0 ? ` · ${LG_NAMES[rc.lg]}` : ''}</small></summary>${rcHTML(rc, rcPrev(rc))}</details>`).join('') + '</div></details>'
+      : '<p class="info-note" style="margin:0 0 8px">Итоги появятся после первого сыгранного сезона лиги: что сыграно, лучшая масса, лига, сундуки, любимый режим.</p>';
+  }
+  // what other players see under the card: the last summary, folded
+  function rcOtherHTML(rc) {
+    if (!rc || typeof rc !== 'object' || !rcNum(rc.id)) return '';
+    const lg = Number.isInteger(rc.lg) && rc.lg >= 0 && rc.lg <= 5 ? rc.lg : -1;
+    return `<details class="pc-actv pc-rc"><summary>🏆 Итоги сезона ${rcNum(rc.id)} <small>${rcNum(rc.r)} ${plural(rcNum(rc.r), 'раунд', 'раунда', 'раундов')}${lg >= 0 ? ` · ${LG_NAMES[lg]}` : ''}</small></summary>${rcHTML(rc, null)}</details>`;
+  }
   // ---------- graphics recovery: the browser may take the GPU away (app in background, low memory) and give it back.
   // In the menu we simply restart with the saved progress; during a round we offer a restart instead of ending it on our own.
   const gfx = { lost: 0 };
@@ -10111,6 +10199,17 @@ body.menu-bg .menu-backdrop { display: block; }
     ['Все на III', () => { ACH.forEach(a => { save.achT[a.id] = a.steps.length; if (!save.ach.includes(a.id)) save.ach.push(a.id); }); }],
     ['Сбросить', () => { ACH.forEach(a => { save.achT[a.id] = 0; }); save.ach = save.ach.filter(id => !achById(id)); save.pc = { ...(save.pc || {}), shelf: [] }; }],
     ['Витрина: 3 трофея', () => { const got = ACH.filter(a => achTier(a)).sort((x, y) => achMetal(y, achTier(y)) - achMetal(x, achTier(x))); save.pc = { ...(save.pc || {}), shelf: got.slice(0, 3).map(a => a.id) }; return got.length ? 'открой Профиль' : 'сначала выдай достижения'; }]]);
+  testAdd('Итоги сезона', [
+    ['Показать пример', () => {
+      const id = Math.max(2, save.season.id), base = { n: seasonData(id - 1).name };
+      save.recaps = [{ id: id - 1, n: seasonData(id - 1).name, r: 116, t: 31200, m: 2950, w: 24, c: 12400, x: 16800, ch: { common: 4, rare: 2, epic: 1 }, fav: ['classic', 52], lg: 3, pts: 9100 },
+        { id, n: seasonData(id).name, r: 148, t: 39600, m: 3812, w: 41, c: 18450, x: 21300, ch: { legendary: 1, epic: 2, rare: 3, common: 3 }, fav: ['crown', 61], lg: 4, pts: 16300 }];
+      void base; persist(); openRecap(save.recaps[1]); $('testModal').hidden = true; return 'так окно появится после конца сезона';
+    }],
+    ['Из моих раундов', () => { const S = save.ss; if (!S || !S.r) return 'сначала сыграй пару раундов';
+      const fav = Object.entries(S.md).sort((a, b) => b[1] - a[1])[0]; save.recaps.push({ id: S.id, n: seasonData(S.id).name, r: S.r, t: Math.round(S.t), m: S.m, w: S.w, c: S.c, x: S.x, ch: S.ch, fav: fav || null, lg: save.season.pts > 0 ? leagueOf(save.season.pts) : -1, pts: save.season.pts });
+      save.recaps = save.recaps.slice(-6); persist(); openRecap(save.recaps[save.recaps.length - 1]); $('testModal').hidden = true; }],
+    ['Очистить', () => { save.recaps = []; delete save.recapShow; }]]);
   testAdd('Календарь активности', [
     ['Заполнить месяц', () => { save.act = {}; let r = 11; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280; const now = new Date();
       for (let i = 0; i < 182; i++) { const x = rnd(); if (i > 8 && x < .35) continue; const n = i <= 8 ? 2 + Math.floor(rnd() * 6) : x < .65 ? 1 + Math.floor(rnd() * 2) : x < .85 ? 3 + Math.floor(rnd() * 3) : x < .96 ? 6 + Math.floor(rnd() * 5) : 11 + Math.floor(rnd() * 6);
@@ -10154,6 +10253,7 @@ body.menu-bg .menu-backdrop { display: block; }
   applySettings();
   renderAll();
   if (seasonNotice) { persist(); setTimeout(() => toast('Сезон завершён! Награда начислена'), 800); }
+  if (save.recapShow) recapWatch();
   setGameUi(false);
   requestAnimationFrame(frame);
   Net.boot();

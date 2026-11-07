@@ -281,7 +281,16 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .hub-live .hb-timer { position: absolute; top: 4px; right: 8px; z-index: 1; padding: 1px 7px; border-radius: 99px; background: rgba(10, 6, 30, .82); border: 1px solid rgba(255, 210, 63, .45);
   color: #ffd23f; font: 700 .6rem/1.5 var(--body); letter-spacing: .02em; white-space: nowrap; pointer-events: none; }
 .hub-live .hb-timer.hot { border-color: #ff3d6e; color: #ff8aa8; animation: hbPulse 1.6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .hub-live .hb-timer.hot { animation: none; } }
+/* Chaos League clock: its own look — the Chaos mark, neon pink and cyan, dashed edge, a slight flicker */
+.hub-live .hb-timer.hb-chaos { top: auto; bottom: 7px; display: inline-flex; align-items: center; gap: 4px; border: 1px dashed #ff4fd8; color: #9ff0ff;
+  background: linear-gradient(90deg, rgba(255, 79, 216, .22), rgba(34, 230, 255, .18)), rgba(10, 6, 30, .88); text-shadow: -1px 0 rgba(255, 79, 216, .9), 1px 0 rgba(34, 230, 255, .9);
+  box-shadow: 0 0 8px -2px #ff4fd8; animation: chaosFlick 3.2s steps(1) infinite; }
+.hub-live .hb-timer.hb-chaos[hidden] { display: none; }
+/* with both clocks the text keeps clear of them and the small league emblem steps aside */
+#panePlay .mc-hubs .hub-live.two-clocks .hb-t { padding-right: 62px; } .hub-live.two-clocks .hb-x { display: none; } .hub-live .hb-timer.hb-chaos.hot { border-style: solid; color: #fff; }
+.chaos-mark { flex: none; filter: drop-shadow(0 0 3px #ff4fd8); }
+@keyframes chaosFlick { 0%, 91%, 100% { opacity: 1; transform: none; } 92% { opacity: .55; transform: translateX(1px); } 94% { opacity: 1; transform: translateX(-1px); } 96% { opacity: .8; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .hub-live .hb-timer.hot, .hub-live .hb-timer.hb-chaos { animation: none; } }
 /* ===== 2.2: share as a picture ===== */
 .prof-share-btn { width: 100%; margin: 0; }
 .share-card { max-width: 560px; text-align: left; display: grid; gap: 10px; } .share-card h2 { margin: 0 40px 0 0; font: 400 1.15rem var(--display); }
@@ -1533,7 +1542,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="btns menu-btns mc-hubs">
       <button class="btn ghost" id="installBtn" hidden>Установить на телефон</button>
       <p class="hint" id="iosHint" hidden>Чтобы установить: нажми «Поделиться», затем «На экран „Домой“».</p>
-      <button class="btn ghost hub-btn hub-live" id="hubLeagueBtn" data-hub="hubLeague"><i class="ic" data-ic="trophy" style="--ic:#ffd23f"></i><span class="hb-t">Лиги<small id="hubLeagueSub"></small></span><span class="hb-x" id="hubLeagueX"></span><span class="hb-timer" id="hubLeagueTimer" hidden></span><i class="hb-bar" aria-hidden="true"><b id="hubLeagueBar"></b></i></button>
+      <button class="btn ghost hub-btn hub-live" id="hubLeagueBtn" data-hub="hubLeague"><i class="ic" data-ic="trophy" style="--ic:#ffd23f"></i><span class="hb-t">Лиги<small id="hubLeagueSub"></small></span><span class="hb-x" id="hubLeagueX"></span><span class="hb-timer" id="hubLeagueTimer" hidden></span><span class="hb-timer hb-chaos" id="hubChaosTimer" hidden></span><i class="hb-bar" aria-hidden="true"><b id="hubLeagueBar"></b></i></button>
       <button class="btn ghost hub-btn hub-live" id="hubColBtn" data-hub="hubCol"><i class="ic" data-ic="collection" style="--ic:#ff4fd8"></i><span class="hb-t">Коллекция<small id="hubColSub"></small></span><span class="hb-x" id="hubColX"></span><i class="hb-bar" aria-hidden="true"><b id="hubColBar"></b></i></button>
       <button class="btn ghost hub-btn hub-live" id="hubRewBtn" data-hub="hubRew"><i class="ic" data-ic="gift" style="--ic:#ff9a3d"></i><span class="hb-t">Награды<small id="hubRewSub"></small></span><span class="hb-x" id="hubRewX"></span></button>
       <button class="btn ghost hub-btn hub-live" id="shopBtn"><i class="ic" data-ic="shop" style="--ic:#22e6ff"></i><span class="hb-t">Магазин<span class="coin" id="menuCoins">0 ◆</span></span><span class="hb-x" id="hubShopX"></span></button>
@@ -10168,14 +10177,29 @@ body.menu-bg .menu-backdrop { display: block; }
   // 2.2: time left in the league season, on the «Лиги» tile (updates every minute while the menu is open)
   function leftTxt(ms) { const m = Math.max(0, Math.floor(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60);
     return d ? `${d} дн${h ? ` ${h} ч` : ''}` : h ? `${h} ч ${m % 60} мин` : `${Math.max(1, m)} мин`; }
+  // the Chaos League mark: eight arrows from one point, in the league's pink and cyan
+  function chaosMarkSVG(size = 14) {
+    let arms = ''; for (let i = 0; i < 8; i++) arms += `<g transform="rotate(${i * 45} 12 12)"><path d="M12 12V2.6"/><path d="M9.4 5.4L12 2.4l2.6 3"/></g>`;
+    return `<svg class="chaos-mark" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true"><defs><linearGradient id="chMk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4fd8"/><stop offset="1" stop-color="#22e6ff"/></linearGradient></defs>` +
+      `<g fill="none" stroke="url(#chMk)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${arms}</g><circle cx="12" cy="12" r="2.2" fill="#fff"/></svg>`;
+  }
+  // two leagues, two clocks: the league season (14 days) top right, the Chaos season (7 days, from level 25) bottom right
+  const shortLeft = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m >= 1440 ? `${Math.floor(m / 1440)} дн` : m >= 60 ? `${Math.floor(m / 60)} ч` : `${Math.max(1, m)} мин`; };
   function seasonTimerTick() {
-    const el = $('hubLeagueTimer'); if (!el) return;
+    const el = $('hubLeagueTimer'), ce = $('hubChaosTimer'); if (!el) return;
     const now = Date.now(), soon = !seasonStarted, left = soon ? SEASON_EPOCH - now : seasonEnd(save.season.id) - now;
     el.hidden = false; el.classList.toggle('hot', !soon && left < 864e5);
-    const m = Math.max(0, Math.floor(left / 60000)), short = m >= 1440 ? `${Math.floor(m / 1440)} дн` : m >= 60 ? `${Math.floor(m / 60)} ч` : `${Math.max(1, m)} мин`;
-    el.textContent = soon ? `▶ ${short}` : `⏳ ${short}`;
+    el.textContent = `${soon ? '▶' : '⏳'} ${shortLeft(left)}`;
     el.title = soon ? `Первый сезон лиги начнётся ${fmtDate(SEASON_EPOCH)}` : `До конца сезона ${save.season.id}: ${leftTxt(left)}`;
-    $('hubLeagueBtn').setAttribute('aria-label', `Лиги. ${el.title}`);
+    let label = `Лиги. ${el.title}`;
+    ce.hidden = !chaosOpen(); $('hubLeagueBtn').classList.toggle('two-clocks', !ce.hidden);
+    if (!ce.hidden) {
+      const cs = !chaosStarted, cl = cs ? CHAOS_EPOCH - now : chaosEnd(save.chaos.id) - now;
+      ce.classList.toggle('hot', !cs && cl < 864e5); ce.innerHTML = `${chaosMarkSVG(16)}${shortLeft(cl)}`;
+      ce.title = cs ? `Первый Хаос-сезон начнётся ${fmtDate(CHAOS_EPOCH)}` : `До конца Хаос-сезона ${save.chaos.id}: ${leftTxt(cl)}`;
+      label += `. ${ce.title}`;
+    }
+    $('hubLeagueBtn').setAttribute('aria-label', label);
   }
   setInterval(() => { if (!$('menuCard').hidden && !document.hidden) seasonTimerTick(); }, 60000);
   // ================= 2.2: season summary =================

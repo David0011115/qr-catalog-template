@@ -277,6 +277,12 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .ps-grid b { font: 400 1.15rem/1.1 var(--display); font-variant-numeric: tabular-nums; } .ps-grid small { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .ps-round h3 { margin: 4px 0 0; font: 400 .92rem var(--display); } .ps-round .goal-list { margin: 0; } .ps-note { margin: 0; color: var(--muted); font-size: .76rem; }
 @media (max-width: 420px) { .ps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* ===== 2.2: league logos in the «Лиги» window ===== */
+#hubLeague .league-btn { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 14px; align-items: center; text-align: left; padding: 12px 16px; }
+#hubLeague .lg-logo { display: grid; place-items: center; } .lg-svg { display: block; filter: drop-shadow(0 0 8px rgba(255, 201, 58, .45)); } .lg-svg.lg-chaos { filter: drop-shadow(0 0 8px rgba(255, 79, 216, .6)); }
+#hubLeague .lg-tx { display: grid; gap: 3px; min-width: 0; } #hubLeague .lg-ttl { font: 400 1.15rem/1.1 var(--display); }
+#hubLeague .lg-me { font-size: .82rem; color: var(--fg); font-weight: 500; } #hubLeague .lg-when { font-size: .72rem; color: var(--muted); font-weight: 400; }
+#hubLeague .chaos-btn .lg-ttl { background: linear-gradient(90deg, #ff4fd8, #22e6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 /* ===== 2.2: season timer on the Leagues tile ===== */
 .hub-live .hb-timer { position: absolute; top: 4px; right: 8px; z-index: 1; padding: 1px 7px; border-radius: 99px; background: rgba(10, 6, 30, .82); border: 1px solid rgba(255, 210, 63, .45);
   color: #ffd23f; font: 700 .6rem/1.5 var(--body); letter-spacing: .02em; white-space: nowrap; pointer-events: none; }
@@ -6832,7 +6838,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('abilCount').textContent = `${save.abil.owned.length}/${ABILITIES.length}`;
     $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;
     { const lg = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null), ct = CHAOS_TIERS[chaosOf(save.chaos.pts)];
-      $('hubLeagueSub').innerHTML = `<span style="color:${lg.color}">${lg.name}</span>${chaosOpen() ? ` · Хаос: <span style="color:${ct.color}">${ct.name}</span>` : ''}`;
+      $('hubLeagueSub').innerHTML = ''; void ct;   // 2.2: the tile shows the two season clocks instead of the rank line
       seasonTimerTick();
       const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
       $('hubColSub').textContent = ready ? `можно забрать: ${ready}` : `коллекций ${save.colDone.length}/${COLLECTIONS.length}`;
@@ -6850,7 +6856,10 @@ body.menu-bg .menu-backdrop { display: block; }
     $('petCount').textContent = `${save.pets.length}/${PETS.length}`;
     { const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
       $('colCount').textContent = `${save.colDone.length}/${COLLECTIONS.length}` + (ready ? ` · забрать ${ready}` : ''); }
-    { const L = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null); $('leagueBtn').innerHTML = `Лига · <b class="rk-name" style="color:${L.color}">${rankEmblem(leagueOf(save.season.pts), 24)}${L.name}</b> · ${save.season.pts} очков${curHoliday ? ` · ${HOLIDAYS[curHoliday].name}` : ''}`; }
+    { const L = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null);
+      $('leagueBtn').innerHTML = `<span class="lg-logo">${leagueLogoSVG(56)}</span><span class="lg-tx"><b class="lg-ttl">Лига</b>` +
+        `<small class="lg-me"><b class="rk-name" style="color:${L.color}">${rankEmblem(leagueOf(save.season.pts), 22)}${L.name}</b> · ${save.season.pts} очков${curHoliday ? ` · ${HOLIDAYS[curHoliday].name}` : ''}</small>` +
+        `<small class="lg-when">${seasonStarted ? `сезон ${save.season.id} · до ${fmtDate(seasonEnd(save.season.id))}` : `первый сезон — с ${fmtDate(SEASON_EPOCH)}`} · 14 дней</small></span>`; }
   }
   const OLD_PAT = ['stripes', 'dots', 'stars', 'gradient', 'grid', 'zigzag', 'rings'];
   const MAT_CSS = { chrome: 'linear-gradient(160deg, rgba(255,255,255,.75), transparent 38%, rgba(255,255,255,.35) 58%, transparent 70%), ',
@@ -8223,7 +8232,10 @@ body.menu-bg .menu-backdrop { display: block; }
   }
   function renderChaosBtn() {
     const ti = chaosOf(save.chaos.pts);
-    $('chaosBtn').innerHTML = chaosOpen() ? `Хаос-лига · <b class="rk-name" style="color:${CHAOS_TIERS[ti].color}">${chaosEmblem(ti, 24)}${ctName(ti)}</b> · ${save.chaos.pts}` : `Хаос-лига · 🔒 с ${CHAOS_CFG.entryLevel} уровня`;
+    $('chaosBtn').innerHTML = `<span class="lg-logo">${chaosLogoSVG(56)}</span><span class="lg-tx"><b class="lg-ttl">Хаос-лига</b>` + (chaosOpen()
+      ? `<small class="lg-me"><b class="rk-name" style="color:${CHAOS_TIERS[ti].color}">${chaosEmblem(ti, 22)}${ctName(ti)}</b> · ${save.chaos.pts} очков</small>` +
+        `<small class="lg-when">${chaosStarted ? `сезон ${save.chaos.id} · до ${fmtDate(chaosEnd(save.chaos.id))}` : `первый сезон — с ${fmtDate(CHAOS_EPOCH)}`} · 7 дней</small>`
+      : `<small class="lg-me">🔒 откроется с ${CHAOS_CFG.entryLevel}-го уровня</small><small class="lg-when">случайные способности · сезон 7 дней</small>`) + '</span>';
   }
   function renderChaos() {
     const C = save.chaos, ti = chaosOf(C.pts), L = CHAOS_TIERS[ti], lv = playerLevel(), open = chaosOpen(), lockT = chaosLockTier(lv);
@@ -10177,6 +10189,26 @@ body.menu-bg .menu-backdrop { display: block; }
   // 2.2: time left in the league season, on the «Лиги» tile (updates every minute while the menu is open)
   function leftTxt(ms) { const m = Math.max(0, Math.floor(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60);
     return d ? `${d} дн${h ? ` ${h} ч` : ''}` : h ? `${h} ч ${m % 60} мин` : `${Math.max(1, m)} мин`; }
+  // 2.2: league logos for the «Лиги» window — a gold crest for the League, the Chaos mark in a neon ring for the Chaos League
+  function leagueLogoSVG(size = 56) {
+    const leaf = (sx, k) => { const a = (-60 + k * 26) * Math.PI / 180, cx = 32 + sx * Math.cos(a) * 25, cy = 36 + Math.sin(a) * 23;
+      return `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="2.4" ry="5.6" transform="rotate(${(sx * (a * 180 / Math.PI + 90)).toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})" fill="url(#lgLf)"/>`; };
+    let laurel = ''; for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) laurel += leaf(sx, k);
+    return `<svg class="lg-svg" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true"><defs>` +
+      `<linearGradient id="lgSh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6b0"/><stop offset=".5" stop-color="#ffc93a"/><stop offset="1" stop-color="#a8650a"/></linearGradient>` +
+      `<linearGradient id="lgIn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2a8a"/><stop offset="1" stop-color="#0b0624"/></linearGradient>` +
+      `<linearGradient id="lgLf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3dffa2"/><stop offset="1" stop-color="#0a8f6a"/></linearGradient></defs>` + laurel +
+      `<path d="M32 14l15 5v13c0 9-6.4 15.2-15 18.6C23.4 47.2 17 41 17 32V19z" fill="url(#lgSh)"/><path d="M32 17.6l11.8 4V32c0 7.2-5 12.4-11.8 15.4C25.2 44.4 20.2 39.2 20.2 32V21.6z" fill="url(#lgIn)"/>` +
+      `<path d="M32 23.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" fill="url(#lgSh)"/>` +
+      `<path d="M23 12.5l3.6 3.6L32 8.6l5.4 7.5 3.6-3.6-1.6 7.2H24.6z" fill="url(#lgSh)" stroke="#a8650a" stroke-width=".8" stroke-linejoin="round"/><circle cx="32" cy="8.2" r="1.6" fill="#22e6ff"/></svg>`;
+  }
+  function chaosLogoSVG(size = 56) {
+    let arms = ''; for (let i = 0; i < 8; i++) arms += `<g transform="rotate(${i * 45} 32 32)"><path d="M32 32V12.5"/><path d="M27.6 17.6L32 12l4.4 5.6"/></g>`;
+    return `<svg class="lg-svg lg-chaos" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true"><defs><linearGradient id="chLg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4fd8"/><stop offset="1" stop-color="#22e6ff"/></linearGradient>` +
+      `<radialGradient id="chBg"><stop offset="0" stop-color="#3a0a5e"/><stop offset="1" stop-color="#0b0624"/></radialGradient></defs>` +
+      `<circle cx="32" cy="32" r="29" fill="url(#chBg)" stroke="url(#chLg)" stroke-width="2" stroke-dasharray="5 3.5"/>` +
+      `<g fill="none" stroke="url(#chLg)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">${arms}</g><circle cx="32" cy="32" r="4.6" fill="#fff"/><circle cx="32" cy="32" r="8.5" fill="none" stroke="#fff" stroke-opacity=".35"/></svg>`;
+  }
   // the Chaos League mark: eight arrows from one point, in the league's pink and cyan
   function chaosMarkSVG(size = 14) {
     let arms = ''; for (let i = 0; i < 8; i++) arms += `<g transform="rotate(${i * 45} 12 12)"><path d="M12 12V2.6"/><path d="M9.4 5.4L12 2.4l2.6 3"/></g>`;

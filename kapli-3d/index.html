@@ -231,6 +231,42 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .goals { position: relative; }
 .goal-list.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 34px), transparent); mask-image: linear-gradient(#000 calc(100% - 34px), transparent); }
 .goal-more { position: absolute; right: 12px; bottom: 6px; z-index: 1; padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--food); font-size: .7rem; font-weight: 600; pointer-events: none; }
+/* ===== 2.2: shelf on the profile card ===== */
+.pc-shelf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 16px 14px; }
+.pc-tr { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 7px; align-items: center; padding: 6px 8px; border-radius: 12px; background: rgba(10, 6, 30, .66); border: 1px solid color-mix(in srgb, var(--ac) 45%, transparent); text-align: left; min-width: 0; }
+.pc-tr b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 400 .72rem/1.15 var(--display); color: #fff; overflow: hidden; overflow-wrap: anywhere; hyphens: auto; } .pc-tr small { font-size: .6rem; color: #cfc9f0; }
+@media (max-width: 520px) { .pc-shelf { grid-template-columns: minmax(0, 1fr); } }
+.pd-shelf-note { grid-column: 1 / -1; margin: 0; font-size: .74rem; color: var(--muted); text-align: left; }
+.pd-sh .ach-em { margin: 0 auto; } .pd-sh .pd-cur { font-weight: 800; }
+/* ===== 2.2: achievement emblems and cards ===== */
+.ach-em { display: block; flex: none; overflow: visible; }
+.ach-em:not(.off) { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ac) 55%, transparent)); }
+.ach-em.top { filter: drop-shadow(0 0 5px #ffc93a) drop-shadow(0 0 14px color-mix(in srgb, var(--ac) 60%, transparent)); }
+.ach-sum { display: grid; grid-template-columns: 1.3fr repeat(3, 1fr); gap: 8px; margin: 0 0 10px; }
+.ach-sum > div { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--row); font-size: .74rem; color: var(--muted); min-width: 0; }
+.ach-sum > div:first-child { display: grid; gap: 0; } .ach-sum > div:first-child b { font: 400 1.4rem/1 var(--display); color: #ffd23f; } .ach-sum > div:first-child b small { font-size: .8rem; color: var(--muted); }
+.ach-sum span b { font: 400 1rem var(--display); color: var(--fg); }
+.achc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 640px) { .achc-grid { grid-template-columns: minmax(0, 1fr); } .ach-sum { grid-template-columns: repeat(2, 1fr); } }
+.achc { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 12px; align-items: start; padding: 11px 12px; border-radius: 16px; text-align: left;
+  background: radial-gradient(circle at 0 0, color-mix(in srgb, var(--ac) 16%, transparent), transparent 60%), var(--row); border: 1px solid color-mix(in srgb, var(--ac) 22%, transparent); }
+.achc.m0 { background: var(--row); border-color: var(--line); } .achc.m0 .achc-h b { color: #cfc9f0; }
+.achc.done { border-color: rgba(255, 201, 58, .55); box-shadow: 0 0 18px -8px #ffc93a; }
+.achc-b { display: grid; gap: 5px; min-width: 0; }
+.achc-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; } .achc-h b { font: 400 .98rem/1.15 var(--display); }
+.achc-tier { font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; color: var(--muted); }
+.achc.m1 .achc-tier { color: #e8a66a; } .achc.m2 .achc-tier { color: #d6dcf5; } .achc.m3 .achc-tier { color: #ffd23f; }
+.achc-d { font-size: .74rem; color: var(--muted); line-height: 1.3; }
+.achc-steps { list-style: none; margin: 2px 0 0; padding: 0; display: flex; gap: 4px; flex-wrap: wrap; }
+.achc-steps li { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px 2px 3px; border-radius: 99px; background: rgba(255, 255, 255, .05); font-size: .64rem; color: var(--muted); }
+.achc-steps li i { font-style: normal; font-weight: 800; font-size: .56rem; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 99px; display: grid; place-items: center; background: rgba(255, 255, 255, .08); }
+.achc-steps li.on { color: var(--fg); background: color-mix(in srgb, var(--ac) 18%, transparent); } .achc-steps li.on i { background: var(--ac); color: #0b0624; }
+.achc-steps li.next { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ac) 55%, transparent); color: var(--fg); }
+.achc-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .07); overflow: hidden; } .achc-bar i { display: block; height: 100%; background: linear-gradient(90deg, color-mix(in srgb, var(--ac) 55%, #0b0624), var(--ac)); }
+.achc-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.achc-f .rw { color: var(--gold); } .achc.done .achc-f > span:first-child { color: #ffd23f; font-weight: 600; }
+.ach-h { margin: 14px 0 8px; font: 400 1rem var(--display); text-align: left; }
+.ach-hol { margin-top: 12px; } .ach-hol .achc-grid { padding: 8px 0; } .ach-hol .achc { opacity: .75; }
 /* ===== 2.2: activity calendar ===== */
 .actv { display: grid; gap: 10px; text-align: left; }
 .actv-kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -4738,6 +4774,47 @@ body.menu-bg .menu-backdrop { display: block; }
   }
 
   // ================= achievements =================
+  // ================= 2.2: achievement emblems =================
+  // a rosette medal per achievement: own icon and colour, the metal shows the stage (I bronze · II silver · III gold; holidays: 6 steps)
+  const ACH_ART = {
+    ln_hunter:  ['#ff3d6e', '<path d="M18.5 8.5A8 8 0 1 0 19 16l-4.5-2 4.5-1.5z"/><circle cx="10" cy="9.6" r="1.2" fill="currentColor"/>'],
+    ln_boss:    ['#ff9a3d', '<path d="M5 11a7 7 0 0 1 14 0v3l-2 2v3.5H7V16l-2-2z"/><circle cx="9.3" cy="12" r="1.7"/><circle cx="14.7" cy="12" r="1.7"/><path d="M6.6 6.2L4.2 2.8M17.4 6.2l2.4-3.4"/>'],
+    ln_star:    ['#ffd23f', '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.1 1.2 6L12 16.4 6.6 19.4l1.2-6-4.5-4.1 6.1-.7z"/>'],
+    ln_giant:   ['#3dffa2', '<circle cx="13.5" cy="14.5" r="6.5"/><circle cx="5" cy="19" r="2"/><path d="M13.5 8V2.5M11 5l2.5-2.5L16 5"/>'],
+    ln_combo:   ['#22e6ff', '<path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z"/>'],
+    ln_surv:    ['#b26bff', '<path d="M7 3h10M7 21h10M8 3c0 5.5 8 5.5 8 9s-8 3.5-8 9M16 3c0 5.5-8 5.5-8 9s8 3.5 8 9"/>'],
+    ln_league:  ['#4d7cff', '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20.5h7M9.5 17h5"/>'],
+    ln_season:  ['#9fe8ff', '<path d="M6 21V3.5M6 4h11l-2.5 4L17 12H6"/>'],
+    ln_chaos:   ['#ff2d55', '<path d="M12 12a1.5 1.5 0 1 1 1.5-1.5 3.5 3.5 0 0 1-3.5 3.5 5 5 0 0 1-5-5 6.5 6.5 0 0 1 6.5-6.5 8 8 0 0 1 8 8 9.5 9.5 0 0 1-9.5 9.5"/>'],
+    ln_arsenal: ['#ff6ad5', '<path d="M7 2.5l3.5 3.5L7 9.5 3.5 6zM17 2.5l3.5 3.5-3.5 3.5L13.5 6zM7 14.5l3.5 3.5L7 21.5 3.5 18zM17 14.5l3.5 3.5-3.5 3.5-3.5-3.5z"/>'],
+    ny:         ['#9fe8ff', '<path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>'],
+    vd:         ['#ff4fd8', '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>'],
+    hw:         ['#ff9a3d', '<path d="M12 7.5c-5 0-8 3-8 6.5s3 6 8 6 8-2.5 8-6-3-6.5-8-6.5z"/><path d="M12 7.5c-2 2.5-2 10 0 12.5M12 7.5c2 2.5 2 10 0 12.5M12 7.5V4.5l2-1.5"/>'],
+  };
+  const METAL = { 0: ['#5a557a', '#3a3560', '#211d3c'], 1: ['#ffd2a8', '#cd7f32', '#6e3a12'], 2: ['#ffffff', '#b9c2e0', '#5b6488'], 3: ['#fff6b0', '#ffc93a', '#a8650a'] };
+  const METAL_NAME = ['', 'Бронза', 'Серебро', 'Золото'];
+  const ROM3 = ['', 'I', 'II', 'III'];
+  const achById = id => ACH.find(a => a.id === id);
+  const achTier = a => !a ? 0 : save.ach.includes(a.id) ? a.steps.length : Math.min(a.steps.length, (save.achT || {})[a.id] || 0);
+  // stage → metal: lines map 1:1; holidays (6 steps): 1–2 bronze, 3–4 silver, 5–6 gold
+  const achMetal = (a, t) => !t ? 0 : a.steps.length <= 3 ? t : t <= 2 ? 1 : t <= 4 ? 2 : 3;
+  const achArtOf = a => ACH_ART[a.id] || ACH_ART[a.id.split('_')[0]] || ['#22e6ff', '<circle cx="12" cy="12" r="7"/>'];
+  let emUid = 0;
+  function achEmblem(a, t, size = 64) {
+    const [ac, ic] = achArtOf(a), m = achMetal(a, t), [m1, m2, m3] = METAL[m], id = 'em' + (++emUid), top = t && t >= a.steps.length;
+    let ros = ''; for (let i = 0; i < 32; i++) { const r = i % 2 ? 27.2 : 30.5, g = (i / 32) * Math.PI * 2 - Math.PI / 2; ros += `${i ? 'L' : 'M'}${(32 + Math.cos(g) * r).toFixed(2)} ${(32 + Math.sin(g) * r).toFixed(2)}`; }
+    const label = !t ? '' : a.steps.length <= 3 ? ROM3[t] : `${t}/${a.steps.length}`;
+    return `<svg class="ach-em${top ? ' top' : ''}${t ? '' : ' off'}" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" style="--ac:${ac}">` +
+      `<defs><linearGradient id="${id}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${m1}"/><stop offset=".5" stop-color="${m2}"/><stop offset="1" stop-color="${m3}"/></linearGradient>` +
+      `<radialGradient id="${id}i" cx=".5" cy=".35" r=".75"><stop offset="0" stop-color="${t ? ac : '#2a2550'}" stop-opacity="${t ? .55 : 1}"/><stop offset="1" stop-color="#0b0624"/></radialGradient></defs>` +
+      `<path d="${ros}Z" fill="url(#${id}m)"/><circle cx="32" cy="32" r="22.5" fill="#0b0624" opacity=".55"/><circle cx="32" cy="32" r="21" fill="url(#${id}i)" stroke="${m2}" stroke-width="1.2"/>` +
+      `<g transform="translate(18.5 17.5) scale(1.125)" fill="none" stroke="${t ? '#fff' : '#8f89b8'}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" color="${t ? '#fff' : '#8f89b8'}" opacity="${t ? 1 : .55}">${ic}</g>` +
+      (label ? `<rect x="${32 - (label.length > 2 ? 11 : 8.5)}" y="49" width="${label.length > 2 ? 22 : 17}" height="11" rx="5.5" fill="${m3}" stroke="${m1}" stroke-width="1"/><text x="32" y="57.4" text-anchor="middle" font-size="8" font-weight="800" font-family="Golos Text, sans-serif" fill="#fff">${label}</text>` : '') +
+      (top ? '<path d="M8 12l1.2 2.8L12 16l-2.8 1.2L8 20l-1.2-2.8L4 16l2.8-1.2zM56 6l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1z" fill="#fff6b0"/>' : '') + '</svg>';
+  }
+  // numeric progress where a line counts one number; the rest show only the next step
+  const ACH_VAL = { ln_hunter: [T => T.kills, [50, 500, 5000]], ln_boss: [T => T.bosses, [1, 50, 500]], ln_star: [T => T.starKills, [1, 25, 250]],
+    ln_giant: [(T, B) => B.mass || 0, [1500, 5000, 12000]], ln_combo: [T => T.bestCombo, [5, 10, 15]], ln_season: [() => save.seasonLog.length, [1, 6, 26]] };
   function achTotals() {
     const t = save.totals;
     return {
@@ -7062,15 +7139,25 @@ body.menu-bg .menu-backdrop { display: block; }
             `<div class="col-foot"><span class="legend-pics">${pics}</span><span class="rw">${legendNames(L)}${done ? ' — получено' : ''}</span></div></div>`;
         }).join('');
     } else if (shopTab === 'ach') {
-      $('shop').innerHTML = ACH.map(a => {
-        const got = save.ach.includes(a.id);
-        if (a.steps && !got) { const t = (save.achT || {})[a.id] || 0;
-          return `<div class="ach ${t ? 'part' : ''}"><span class="ico">${t ? '🏅' : '?'}</span><span class="name">${a.name} <small>· ступень ${t}/${a.steps.length}</small></span>` +
-            `<span class="desc">${a.desc}. Дальше: ${a.steps[t]}${a.title ? ` · за III ступень — титул ${titleTag(a.title)}` : ''}</span><span class="rw">+${a.pay[t]} ◆</span></div>`; }
-        if (a.line) return `<div class="ach got"><span class="ico">🏆</span><span class="name">${a.name} III</span><span class="desc">${a.steps.join(' · ')}${a.title ? ` · ${titleTag(a.title)}` : ''}</span><span class="rw">Получено</span></div>`;
-        return `<div class="ach ${got ? 'got' : ''}"><span class="ico">${got ? '🏆' : '?'}</span><span class="name">${a.name}</span>` +
-          `<span class="desc">${a.desc}</span><span class="rw">${got ? 'Получено' : `+${a.coins} ◆`}</span></div>`;
-      }).join('');
+      const T = achTotals(), B = save.achBest || {}, lines = ACH.filter(a => a.line), hol = ACH.filter(a => a.hol);
+      const cnt = [0, 0, 0, 0]; lines.forEach(a => { const t = achTier(a); for (let k = 1; k <= t; k++) cnt[k]++; });
+      const card = a => {
+        const t = achTier(a), n = a.steps.length, done = t >= n, v = ACH_VAL[a.id], m = achMetal(a, t);
+        const val = v ? v[0](T, B) : null, goal = v && !done ? v[1][t] : null, prev = v && t ? v[1][t - 1] : 0;
+        const pct = goal ? Math.max(0, Math.min(100, (val - prev) / (goal - prev) * 100)) : done ? 100 : 0;
+        const steps = a.steps.map((st, k) => `<li class="${k < t ? 'on' : k === t ? 'next' : ''}"><i>${n <= 3 ? ROM3[k + 1] : k + 1}</i><span>${st}</span></li>`).join('');
+        return `<div class="achc m${m}${done ? ' done' : ''}${a.hol ? ' hol' : ''}" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, t, 62)}<div class="achc-b">` +
+          `<div class="achc-h"><b>${a.name}</b><span class="achc-tier">${t ? (n <= 3 ? `${ROM3[t]} · ${METAL_NAME[m]}` : `${t} из ${n}`) : 'не начато'}</span></div><small class="achc-d">${a.desc}</small>` +
+          `<ol class="achc-steps">${steps}</ol>` +
+          (done ? `<div class="achc-f"><span>✓ Все ступени пройдены</span>${a.title ? titleTag(a.title) : ''}</div>`
+            : `<div class="achc-bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="achc-f"><span>${goal ? `${Math.min(val, goal).toLocaleString('ru-RU')} / ${goal.toLocaleString('ru-RU')}` : `Дальше: ${a.steps[t]}`}</span><span class="rw">+${a.pay[t]} ◆${a.title && t === n - 1 ? ` · титул ${titleTag(a.title)}` : ''}</span></div>`) + '</div></div>';
+      };
+      const holSeen = hol.filter(a => achTier(a) > 0), holNext = hol.filter(a => !achTier(a));
+      $('shop').innerHTML = `<div class="ach-sum"><div><b>${lines.filter(a => achTier(a) >= 3).length}<small>/${lines.length}</small></b><span>линеек на золоте</span></div>` +
+        [1, 2, 3].map(k => `<div class="m${k}">${achEmblem({ id: 'ln_star', steps: ['', '', ''] }, k, 34)}<span><b>${cnt[k]}</b> ${METAL_NAME[k].toLowerCase()}</span></div>`).join('') + '</div>' +
+        `<div class="achc-grid">${lines.map(card).join('')}</div>` +
+        (holSeen.length ? `<h3 class="ach-h">Праздники</h3><div class="achc-grid">${holSeen.map(card).join('')}</div>` : '') +
+        `<details class="res-drawer ach-hol"><summary>Праздничные достижения впереди <small class="cnt">${holNext.length}</small></summary><div class="achc-grid">${holNext.map(card).join('')}</div></details>`;
     } else if (shopTab === 'abil') {
       $('shop').innerHTML = abilShopHtml(lv);
     } else if (shopTab === 'mab') {
@@ -8471,7 +8558,8 @@ body.menu-bg .menu-backdrop { display: block; }
   function myShowcase() {
     const pc = save.pc || {};
     return { bg: pc.bg || 'bg_base', frame: save.frame || '', title: save.title || '', badge: pc.badge || '', skin: save.skin, lvl: playerLevel(),
-      ps: (p => p && (p.s || p.n) ? { s: p.s, n: p.n } : undefined)(prestigeOf(save.xp)), league: save.totals.maxLeague || 0, chaos: save.totals.chaosMax || 0, wins: (save.legend && save.legend.wins) || 0, best: save.bests.classic || 0, ach: save.ach.length };
+      ps: (p => p && (p.s || p.n) ? { s: p.s, n: p.n } : undefined)(prestigeOf(save.xp)),
+      shelf: ((save.pc || {}).shelf || []).map(id => [id, achTier(achById(id))]).filter(([, t]) => t > 0).slice(0, 3), league: save.totals.maxLeague || 0, chaos: save.totals.chaosMax || 0, wins: (save.legend && save.legend.wins) || 0, best: save.bests.classic || 0, ach: save.ach.length };
   }
   const LG_NAMES = ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон'], LG_COLS = ['#cd7f32', '#c0c8e0', '#ffd23f', '#7fe8ff', '#b26bff', '#ff4fd8'];
   // the avatar: the player's drop (skin) inside the avatar frame, the showcased badge at the corner
@@ -8547,6 +8635,12 @@ body.menu-bg .menu-backdrop { display: block; }
       `<g style="filter:drop-shadow(0 0 2.5px ${a})">${o}</g></svg>`;
   }
   let pcUid = 0;
+  // 2.2: the shelf — up to 3 achievement emblems the player chose to show
+  function shelfHTML(sh) {
+    const list = (Array.isArray(sh) ? sh : []).map(([id, t]) => [achById(id), Math.max(0, Math.min(6, +t || 0))]).filter(([a, t]) => a && t).slice(0, 3);
+    if (!list.length) return '';
+    return `<div class="pc-shelf">${list.map(([a, t]) => `<span class="pc-tr" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, Math.min(t, a.steps.length), 40)}<span><b>${a.name}</b><small>${a.steps.length <= 3 ? `${ROM3[Math.min(t, 3)]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</small></span></span>`).join('')}</div>`;
+  }
   function pcardHTML(d, nick, opt = {}) {
     const lv = Math.max(1, Math.min(50, d.lvl || 1)), li = Math.max(0, Math.min(5, d.league || 0)), ci = Math.max(0, Math.min(5, d.chaos || 0)), bg = pbgById(d.bg);
     const lvInfo = opt.me ? levelInfo(save.xp) : null, pct = lvInfo ? (lvInfo.max ? 100 : lvInfo.into / lvInfo.need * 100) : 100;
@@ -8554,7 +8648,7 @@ body.menu-bg .menu-backdrop { display: block; }
       `<div class="pc-main">${pcAvatar(d, opt.mini ? 64 : 88)}<div class="pc-info"><b class="pc-nick">${escHtml(nick || 'Ты')}</b>${d.title && decorById(d.title) ? `<span class="pc-title">${titleTag(d.title)}</span>` : ''}` +
       `<small class="pc-lg">${rankEmblem(li, 22)}<span style="color:${LG_COLS[li]}">${LG_NAMES[li]}</span>${ci ? ` · ${chaosEmblem(ci, 22)}${ctTag(ci)}` : ''}</small></div>` +
       `<div class="pc-lvl"><svg viewBox="0 0 60 66" aria-hidden="true"><path d="M30 2 L57 17 V49 L30 64 L3 49 V17 Z" fill="rgba(20,10,50,.75)" stroke="url(#pcLvG${++pcUid})" stroke-width="${d.ps ? 3.2 : 2.5}"/><defs><linearGradient id="pcLvG${pcUid}" x1="0" y1="0" x2="1" y2="1">${(st => st.map((c, i) => `<stop offset="${(i / (st.length - 1)).toFixed(2)}" stop-color="${c}"/>`).join(''))(psStops(d.ps))}</linearGradient></defs></svg><small>Уровень</small><b>${lv}</b>${d.ps ? `<span class="ps-mark${d.ps.n ? ' nova' : ''}">${psLabel(d.ps)}</span>` : ''}${lvInfo ? `<i style="--p:${pct.toFixed(0)}%"></i>` : ''}</div></div>` +
-      `<div class="pc-stats"><span><b>${(d.wins || 0).toLocaleString('ru-RU')}</b><small>побед</small></span><span><b>${(d.best || 0).toLocaleString('ru-RU')}</b><small>рекорд «Классики»</small></span><span><b>${d.ach || 0}</b><small>достижений</small></span></div></div>`;
+      `<div class="pc-stats"><span><b>${(d.wins || 0).toLocaleString('ru-RU')}</b><small>побед</small></span><span><b>${(d.best || 0).toLocaleString('ru-RU')}</b><small>рекорд «Классики»</small></span><span><b>${d.ach || 0}</b><small>достижений</small></span></div>` + shelfHTML(d.shelf) + '</div>';
   }
   // unlocks: backgrounds and the Singularity avatar frame are checked against progress; new ones are announced once
   // prestige rewards: granted the moment a step is reached (and at once for players who already have the experience)
@@ -8583,7 +8677,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
   // ---- profile appearance editor: tap anything (even locked) to preview it on the live card ----
   let pdTab = 'bg', pdDraft = null;
-  const PD_TABS = [['bg', 'Фон'], ['frame', 'Рамка'], ['title', 'Титул'], ['badge', 'Значок']];
+  const PD_TABS = [['bg', 'Фон'], ['frame', 'Рамка'], ['title', 'Титул'], ['badge', 'Значок'], ['shelf', 'Витрина']];
   const pdOwned = (k, id) => !id ? true : k === 'bg' ? (save.pbg || []).includes(id) : k === 'badge' ? PB_BADGES().some(b => b.id === id && b.got) : save.decor.includes(id);
   const pdSrc = (k, id) => k === 'bg' ? pbgById(id).src : k === 'badge' ? ((PB_BADGES().find(b => b.id === id) || {}).src || 'особая цель') : decoSource(decorById(id));
   const pdName = (k, id) => !id ? 'нет' : k === 'bg' ? pbgById(id).name : k === 'badge' ? (PB_BADGES().find(b => b.id === id) || {}).name : decorById(id).name;
@@ -8605,13 +8699,19 @@ body.menu-bg .menu-backdrop { display: block; }
       order(DECOR.filter(d => d.kind === 'frame' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('frame', d.id, pcAvatar({ ...pdDraft, frame: d.id, badge: '' }, 58), d.name, d.rar)).join('');
     else if (pdTab === 'title') html = item('title', '', '<span class="pd-tt">—</span>', 'Без титула') +
       order(DECOR.filter(d => d.kind === 'title' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('title', d.id, `<span class="pd-tt">${titleTag(d.id)}</span>`, d.name, d.rar)).join('');
+    else if (pdTab === 'shelf') {
+      const on = (pdDraft.shelf || []).map(x => x[0]);
+      html = `<p class="pd-shelf-note">Выбери до трёх достижений — они встанут на карточку. Показывается ступень, до которой ты дошёл. Выбрано: ${on.length} из 3.</p>` +
+        ACH.filter(a => !a.hol || achTier(a)).map(a => ({ a, t: achTier(a) })).sort((x, y) => (y.t > 0) - (x.t > 0) || achMetal(y.a, y.t) - achMetal(x.a, x.t)).map(({ a, t }) =>
+          `<button class="pd-it pd-sh${t ? '' : ' lock'}" data-shelf="${a.id}" aria-pressed="${on.includes(a.id)}" ${t ? '' : 'disabled'}>${achEmblem(a, t, 52)}<b>${a.name}</b>${t ? `<span class="rr">${a.steps.length <= 3 ? `${ROM3[t]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</span>` : '<small>ещё не начато</small>'}${on.includes(a.id) ? `<span class="pd-cur">${on.indexOf(a.id) + 1}</span>` : ''}</button>`).join('');
+    }
     else html = item('badge', '', '<span class="badge-mini pd-none">—</span>', 'Без значка') +
       PB_BADGES().filter(b => b.got || !b.promo).sort((a, b) => b.got - a.got).map(b => item('badge', b.id, `<span class="badge-mini">${pbBadgeSVG(b.id)}</span>`, b.name)).join('');
     $('pdGrid').innerHTML = html;
   }
   function applyDecor() {
     if (!pdDraft || ['bg', 'frame', 'title', 'badge'].some(k => !pdOwned(k, pdDraft[k]))) return;
-    save.pc = { ...(save.pc || {}), bg: pdDraft.bg, badge: pdDraft.badge || '' }; save.frame = pdDraft.frame || null; save.title = pdDraft.title || null;
+    save.pc = { ...(save.pc || {}), bg: pdDraft.bg, badge: pdDraft.badge || '', shelf: (pdDraft.shelf || []).map(x => x[0]).slice(0, 3) }; save.frame = pdDraft.frame || null; save.title = pdDraft.title || null;
     persist(); Net.pushShowcase(); toast('Оформление профиля сохранено'); renderProfile(); renderDecorEditor();
   }
   // someone else's card (from the ranking or the chat)
@@ -8768,7 +8868,12 @@ body.menu-bg .menu-backdrop { display: block; }
   $('profAcct').addEventListener('click', () => Net.openAccount(undefined, 'profileCard'));
   document.querySelector('[data-grp="pDecor"]').addEventListener('click', () => setTimeout(openDecorEditor, 0));
   $('pdTabs').addEventListener('click', e => { const b = e.target.closest('[data-pd]'); if (b) { pdTab = b.dataset.pd; renderDecorEditor(); } });
-  $('pdGrid').addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid }; renderDecorEditor(); const again = document.querySelector(`[data-pk="${b.dataset.pk}"][data-pid="${b.dataset.pid}"]`); if (again) again.focus({ preventScroll: true }); });
+  $('pdGrid').addEventListener('click', e => {
+    const sb = e.target.closest('[data-shelf]');
+    if (sb) { const id = sb.dataset.shelf, cur = (pdDraft.shelf || []).filter(x => x[0] !== id), had = cur.length !== (pdDraft.shelf || []).length;
+      pdDraft = { ...pdDraft, shelf: had ? cur : [...cur, [id, achTier(achById(id))]].slice(-3) }; renderDecorEditor();
+      const again = document.querySelector(`[data-shelf="${id}"]`); if (again) again.focus({ preventScroll: true }); return; }
+    const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid }; renderDecorEditor(); const again = document.querySelector(`[data-pk="${b.dataset.pk}"][data-pid="${b.dataset.pid}"]`); if (again) again.focus({ preventScroll: true }); });
   $('pdApply').addEventListener('click', applyDecor);
   $('pcClose').addEventListener('click', closePlayerCard);
   $('pcBody').addEventListener('click', e => { const box = $('pcSocial'); if (box && box.contains(e.target)) Net.pcSocialClick(e, box); });
@@ -9905,6 +10010,12 @@ body.menu-bg .menu-backdrop { display: block; }
     const ext = renderer.getContext().getExtension('WEBGL_lose_context'); if (!ext) return 'браузер не умеет имитировать сбой';
     ext.loseContext(); setTimeout(() => ext.restoreContext(), 1200); return 'графика вернётся через секунду';
   }], ['Показать плашку сбоя', () => { $('gfxBar').hidden = false; }]]);
+  testAdd('Достижения', [
+    ['Все на I', () => { ACH.forEach(a => { save.achT[a.id] = 1; }); save.ach = save.ach.filter(id => !achById(id)); }],
+    ['Вперемешку', () => { save.ach = save.ach.filter(id => !achById(id)); ACH.filter(a => a.line).forEach((a, i) => { save.achT[a.id] = [3, 2, 1, 0, 2, 3, 1, 0, 2, 1][i]; if (save.achT[a.id] >= 3) save.ach.push(a.id); }); ACH.filter(a => a.hol).slice(0, 2).forEach((a, i) => { save.achT[a.id] = i ? 6 : 3; if (i) save.ach.push(a.id); }); }],
+    ['Все на III', () => { ACH.forEach(a => { save.achT[a.id] = a.steps.length; if (!save.ach.includes(a.id)) save.ach.push(a.id); }); }],
+    ['Сбросить', () => { ACH.forEach(a => { save.achT[a.id] = 0; }); save.ach = save.ach.filter(id => !achById(id)); save.pc = { ...(save.pc || {}), shelf: [] }; }],
+    ['Витрина: 3 трофея', () => { const got = ACH.filter(a => achTier(a)).sort((x, y) => achMetal(y, achTier(y)) - achMetal(x, achTier(x))); save.pc = { ...(save.pc || {}), shelf: got.slice(0, 3).map(a => a.id) }; return got.length ? 'открой Профиль' : 'сначала выдай достижения'; }]]);
   testAdd('Календарь активности', [
     ['Заполнить полгода', () => { save.act = {}; let r = 11; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280; const now = new Date();
       for (let i = 0; i < 182; i++) { const x = rnd(); if (i > 8 && x < .35) continue; const n = i <= 8 ? 2 + Math.floor(rnd() * 6) : x < .65 ? 1 + Math.floor(rnd() * 2) : x < .85 ? 3 + Math.floor(rnd() * 3) : x < .96 ? 6 + Math.floor(rnd() * 5) : 11 + Math.floor(rnd() * 6);

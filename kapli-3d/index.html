@@ -5886,6 +5886,7 @@ body.menu-bg .menu-backdrop { display: block; }
       'Переписка с бывшим другом остаётся в списке: историю можно перечитать, но новые сообщения — только друзьям.',
       'Вверху меню теперь мини-профиль: твоя аватарка с рамкой и эмблема лиги рядом с ником. Нажми на него — откроется профиль; отдельной кнопки «Профиль» больше нет.',
       'Вход в аккаунт и облачные сохранения — кнопкой в самом профиле.',
+      '🎁 В честь друзей и сообщений — промокод <b>ДРУЗЬЯ</b> на 1 000 ◆. Введи его в «Настройках» → «Промокод». Активировать можно один раз.',
     ] },
     { id: 175, ver: '2.0.5', date: '7 ноября', title: 'Скоро: кланы', kind: 'update',
       lead: 'Мы начали работу над кланами. Рассказываем, что планируется, — загляни в новую кнопку «🛡 Кланы» в меню.', items: [
@@ -6102,23 +6103,35 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a', frame: 'fr_creator', title: 'tt_creator' },
     { id: 'vet', src: 'промокод', name: 'Ветврач', label: 'ВЕТВРАЧ', c: '#3dffa2', c2: '#0b5e36', glyph: '✚', sc: '#a6ffd4', frame: 'fr_vet', title: 'tt_vet' },
   ];
-  const PROMO_CODES = { 3528217734: 'beta', 2752792474: 'creator', 1531340868: 'vet' };
+  const PROMO_CODES = { 3528217734: 'beta', 2752792474: 'creator', 1531340868: 'vet', 2337100390: 'c_druzya' };
+  // coin codes (2.0.6): a one-time gift of coins, announced in «Обновления»
+  const PROMO_COINS = { c_druzya: { name: 'Друзья', coins: 1000, c: '#ffd23f', sc: '#fff6a0' } };
   const promoHash = t => { let x = 5381; for (const ch of t) x = (Math.imul(x, 33) ^ ch.charCodeAt(0)) >>> 0; return x; };
   function redeemPromo(raw) {
     const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!code) return { err: 'Введи промокод.' };
-    const id = PROMO_CODES[promoHash(code)], b = id && PROMO_BADGES.find(x => x.id === id);
-    if (!b) return { err: 'Такого промокода нет.' };
+    const id = PROMO_CODES[promoHash(code)], b = id && PROMO_BADGES.find(x => x.id === id), cc = id && PROMO_COINS[id];
     save.promo = save.promo || []; save.badges = save.badges || {};
+    if (cc) {
+      if (save.promo.includes(id)) return { err: 'Этот промокод уже активирован.' };
+      save.promo.push(id); save.coins += cc.coins; persist(); renderAll();
+      return { coins: cc };
+    }
+    if (!b) return { err: 'Такого промокода нет.' };
     if (save.promo.includes(id) || save.badges[id]) return { err: 'Этот промокод уже активирован.' };
     save.promo.push(id); save.badges[id] = today; [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) save.decor.push(d); }); pbgCheck(true); persist();
     return { badge: b };
   }
+  const promoCoinSVG = n => `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pcg" cx=".35" cy=".3"><stop offset="0" stop-color="#fff6a0"/><stop offset=".6" stop-color="#ffd23f"/><stop offset="1" stop-color="#b07a00"/></radialGradient></defs>` +
+    `<circle cx="50" cy="50" r="44" fill="url(#pcg)" stroke="#fff6a0" stroke-width="3"/><circle cx="50" cy="50" r="35" fill="none" stroke="#b07a00" stroke-width="2" stroke-dasharray="4 4"/>` +
+    `<path d="M50 24 L64 50 L50 76 L36 50 Z" fill="#fff" opacity=".9"/><text x="50" y="96" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="13" fill="#5a3b00">+${n}</text></svg>`;
   function promoShow(b) {
     const fx = $('promoFx');
     fx.style.setProperty('--pc', b.c); fx.style.setProperty('--sc', b.sc);
+    if (b.coins) { $('promoCoin').innerHTML = promoCoinSVG(b.coins); $('promoName').textContent = `+${b.coins.toLocaleString('ru-RU')} ◆`; $('promoWhat').textContent = `Подарок по промокоду «${b.name}» — монеты уже у тебя`; }
+    else {
     $('promoCoin').innerHTML = specialBadgeSVG(b, true); $('promoName').textContent = `«${b.name}»`;
-    $('promoWhat').innerHTML = `Особый значок, рамка <span ${frameAttr(b.frame)}>${b.name}</span>, титул ${titleTag(b.title)} и фон профиля «${pbgById('bg_' + b.id).name}» — в профиле и гардеробе`;
+    $('promoWhat').innerHTML = `Особый значок, рамка <span ${frameAttr(b.frame)}>${b.name}</span>, титул ${titleTag(b.title)} и фон профиля «${pbgById('bg_' + b.id).name}» — в профиле и гардеробе`; }
     $('promoSparks').innerHTML = Array.from({ length: 36 }, (_, i) => { const a = i / 36 * Math.PI * 2 + Math.random() * .3, r = 110 + Math.random() * 170;
       return `<i style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r).toFixed(0)}px;animation-delay:${(Math.random() * .35).toFixed(2)}s;${i % 3 ? '' : 'background:#fff'}"></i>`; }).join('');
     fx.hidden = false; fx.querySelectorAll('.promo-coin, .promo-burst, .promo-ring, .promo-sparks i, .promo-text').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
@@ -6133,6 +6146,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const r = redeemPromo($('promoIn').value), m = $('promoMsg');
     m.className = 'reset-note ' + (r.err ? 'err' : 'ok');
     if (r.err) { m.textContent = r.err; Sound.play('click'); return; }
+    if (r.coins) { m.textContent = `Получено ${r.coins.coins.toLocaleString('ru-RU')} ◆!`; $('promoIn').value = ''; promoShow(r.coins); return; }
     m.textContent = `Получены значок, рамка и титул «${r.badge.name}»!`; $('promoIn').value = ''; promoShow(r.badge);
   });
   $('promoIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('promoBtn').click(); } });

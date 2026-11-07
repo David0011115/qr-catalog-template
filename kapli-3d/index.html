@@ -268,6 +268,20 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .achc-f .rw { color: var(--gold); } .achc.done .achc-f > span:first-child { color: #ffd23f; font-weight: 600; }
 .ach-h { margin: 14px 0 8px; font: 400 1rem var(--display); text-align: left; }
 .ach-hol { margin-top: 12px; } .ach-hol .achc-grid { padding: 8px 0; } .ach-hol .achc { opacity: .75; }
+.goal-list .g-swap { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--row); color: var(--food); font: 700 .95rem/1 var(--body); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.goal-list .g-swap:hover { border-color: var(--food); } .goal-list .g-swap:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; }
+/* ===== 2.2: pause screen with the round so far ===== */
+#pauseCard { max-width: 520px; } .ps-round { display: grid; gap: 8px; margin: 0 0 12px; text-align: left; }
+.ps-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ps-grid div { padding: 8px 10px; border-radius: 12px; background: var(--row); display: grid; gap: 1px; min-width: 0; }
+.ps-grid b { font: 400 1.15rem/1.1 var(--display); font-variant-numeric: tabular-nums; } .ps-grid small { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.ps-round h3 { margin: 4px 0 0; font: 400 .92rem var(--display); } .ps-round .goal-list { margin: 0; } .ps-note { margin: 0; color: var(--muted); font-size: .76rem; }
+@media (max-width: 420px) { .ps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* ===== 2.2: season timer on the Leagues tile ===== */
+.hub-live .hb-timer { position: absolute; top: 4px; right: 8px; z-index: 1; padding: 1px 7px; border-radius: 99px; background: rgba(10, 6, 30, .82); border: 1px solid rgba(255, 210, 63, .45);
+  color: #ffd23f; font: 700 .6rem/1.5 var(--body); letter-spacing: .02em; white-space: nowrap; pointer-events: none; }
+.hub-live .hb-timer.hot { border-color: #ff3d6e; color: #ff8aa8; animation: hbPulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .hub-live .hb-timer.hot { animation: none; } }
 /* ===== 2.2: share as a picture ===== */
 .prof-share-btn { width: 100%; margin: 0; }
 .share-card { max-width: 560px; text-align: left; display: grid; gap: 10px; } .share-card h2 { margin: 0 40px 0 0; font: 400 1.15rem var(--display); }
@@ -1519,7 +1533,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="btns menu-btns mc-hubs">
       <button class="btn ghost" id="installBtn" hidden>Установить на телефон</button>
       <p class="hint" id="iosHint" hidden>Чтобы установить: нажми «Поделиться», затем «На экран „Домой“».</p>
-      <button class="btn ghost hub-btn hub-live" id="hubLeagueBtn" data-hub="hubLeague"><i class="ic" data-ic="trophy" style="--ic:#ffd23f"></i><span class="hb-t">Лиги<small id="hubLeagueSub"></small></span><span class="hb-x" id="hubLeagueX"></span><i class="hb-bar" aria-hidden="true"><b id="hubLeagueBar"></b></i></button>
+      <button class="btn ghost hub-btn hub-live" id="hubLeagueBtn" data-hub="hubLeague"><i class="ic" data-ic="trophy" style="--ic:#ffd23f"></i><span class="hb-t">Лиги<small id="hubLeagueSub"></small></span><span class="hb-x" id="hubLeagueX"></span><span class="hb-timer" id="hubLeagueTimer" hidden></span><i class="hb-bar" aria-hidden="true"><b id="hubLeagueBar"></b></i></button>
       <button class="btn ghost hub-btn hub-live" id="hubColBtn" data-hub="hubCol"><i class="ic" data-ic="collection" style="--ic:#ff4fd8"></i><span class="hb-t">Коллекция<small id="hubColSub"></small></span><span class="hb-x" id="hubColX"></span><i class="hb-bar" aria-hidden="true"><b id="hubColBar"></b></i></button>
       <button class="btn ghost hub-btn hub-live" id="hubRewBtn" data-hub="hubRew"><i class="ic" data-ic="gift" style="--ic:#ff9a3d"></i><span class="hb-t">Награды<small id="hubRewSub"></small></span><span class="hb-x" id="hubRewX"></span></button>
       <button class="btn ghost hub-btn hub-live" id="shopBtn"><i class="ic" data-ic="shop" style="--ic:#22e6ff"></i><span class="hb-t">Магазин<span class="coin" id="menuCoins">0 ◆</span></span><span class="hb-x" id="hubShopX"></span></button>
@@ -1823,6 +1837,7 @@ body.menu-bg .menu-backdrop { display: block; }
   <div class="card" id="pauseCard" hidden>
     <h1>Пауза</h1>
     <p class="info-lead">Раунд остановлен. Капли ждут тебя.</p>
+    <div class="ps-round" id="pauseInfo"></div>
     <div class="btns">
       <button class="btn" id="resumeBtn">Продолжить</button>
       <button class="btn ghost" id="quitBtn">Завершить раунд</button>
@@ -3223,12 +3238,14 @@ body.menu-bg .menu-backdrop { display: block; }
   }
   save.schema = 2;
   save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
-  function fillQuests() {
+  function fillQuests(skip = []) {
     const lv = levelInfo(save.xp).level;
     save.quests = save.quests.filter(id => QUESTS.some(q => q.id === id));
     while (save.quests.length < 3) {
-      // higher levels mostly get the harder tier they have unlocked
-      const open = QUESTS.filter(q => !save.quests.includes(q.id) && (q.lvl || 1) <= lv), top = Math.max(...open.map(q => q.lvl || 1));
+      // higher levels mostly get the harder tier they have unlocked; `skip`: goals that must not come back right now (a replaced one)
+      let open = QUESTS.filter(q => !save.quests.includes(q.id) && !skip.includes(q.id) && (q.lvl || 1) <= lv);
+      if (!open.length) open = QUESTS.filter(q => !save.quests.includes(q.id) && (q.lvl || 1) <= lv);
+      const top = Math.max(...open.map(q => q.lvl || 1));
       const pool = top > 1 && Math.random() < .6 ? open.filter(q => (q.lvl || 1) === top) : open;
       save.quests.push(pool[Math.floor(Math.random() * pool.length)].id);
     }
@@ -6776,8 +6793,10 @@ body.menu-bg .menu-backdrop { display: block; }
       $('gtDay').textContent = `${save.quests.length}`; $('gtWeek').textContent = `${W.done.length}/3`;
       $('gtabDay').setAttribute('aria-selected', tab === 'day'); $('gtabWeek').setAttribute('aria-selected', tab === 'week');
       $('menuQuests').innerHTML = tab === 'day'
-        ? save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => `<li><span class="g-txt">${q.text}</span><span class="g-rw"><b>+${qCoins(q)} ◆</b><small>+${qXp(q)} оп.</small></span></li>`).join('') +
-          '<li class="g-note">За один раунд · новые цели появляются после выполнения</li>'
+        ? (sw => save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => `<li><span class="g-txt">${q.text}</span>` +
+            (sw ? `<button type="button" class="g-swap" data-qswap="${q.id}" title="Заменить эту цель (раз в день)" aria-label="Заменить цель «${q.text}»">↻</button>` : '') +
+            `<span class="g-rw"><b>+${qCoins(q)} ◆</b><small>+${qXp(q)} оп.</small></span></li>`).join('') +
+          `<li class="g-note">За один раунд · ${sw ? 'неудобную цель можно заменить ↻ раз в день' : 'замена цели уже использована сегодня'}</li>`)(save.qSwapDay !== today)
         : weeklyTasks(W.week).map(t => { const v = Math.min(t.n, W.prog[t.id] || 0), ok = W.done.includes(t.id), R = RARITY[WEEK_RAR[t.tier]];
             return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${t.text(t.n)}<span class="g-bar"><i style="width:${(v / t.n * 100).toFixed(0)}%;background:${R.color}"></i></span></span>` +
               `<span class="g-rw"><b style="color:${R.color}">${TIER[t.tier]}</b><small>${v.toLocaleString('ru-RU')}/${t.n.toLocaleString('ru-RU')}</small></span></li>`; }).join('') +
@@ -6805,6 +6824,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;
     { const lg = lgView(leagueOf(save.season.pts), seasonStarted ? holidayOf(save.season.id) : null), ct = CHAOS_TIERS[chaosOf(save.chaos.pts)];
       $('hubLeagueSub').innerHTML = `<span style="color:${lg.color}">${lg.name}</span>${chaosOpen() ? ` · Хаос: <span style="color:${ct.color}">${ct.name}</span>` : ''}`;
+      seasonTimerTick();
       const ready = COLLECTIONS.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
       $('hubColSub').textContent = ready ? `можно забрать: ${ready}` : `коллекций ${save.colDone.length}/${COLLECTIONS.length}`;
       const ch = chestTotal() + (save.dailyChestDay !== today ? 1 : 0);
@@ -7616,7 +7636,7 @@ body.menu-bg .menu-backdrop { display: block; }
   function setPause(on) {
     if (!running || dying) return;
     paused = on;
-    if (on) { showCard('pauseCard'); $('overlay').hidden = false; setGameUi(false); $('resumeBtn').focus(); }
+    if (on) { renderPauseInfo(); showCard('pauseCard'); $('overlay').hidden = false; setGameUi(false); $('resumeBtn').focus(); }
     else { $('overlay').hidden = true; setGameUi(true); }
   }
   $('pauseBtn').addEventListener('click', () => setPause(true));
@@ -10125,6 +10145,39 @@ body.menu-bg .menu-backdrop { display: block; }
       (Object.keys(save.act).length ? '' : '<p class="info-note" style="margin:6px 0 0">Календарь заполняется с этого обновления: каждый сыгранный день подсветится.</p>');
   }
   $('profAct').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (!b) return; actSel = actSel === b.dataset.day ? null : b.dataset.day; renderActivity(); const nb = $('profAct').querySelector(`[data-day="${b.dataset.day}"]`); if (nb) nb.focus(); });
+  // 2.2: the pause screen shows how the round is going and the goals of the day
+  function renderPauseInfo() {
+    const box = $('pauseInfo'); if (!box || !stats) return;
+    const now = Math.round(total(player)), cell = (v, l) => `<div><b>${v}</b><small>${l}</small></div>`;
+    const tiles = [cell(now.toLocaleString('ru-RU'), 'масса сейчас'), cell(Math.round(stats.maxMass || 0).toLocaleString('ru-RU'), 'лучшая за раунд'), cell($('rank').textContent || '–', 'место'),
+      cell((stats.kills || 0).toLocaleString('ru-RU'), 'съедено капель'), cell(fmtTime(stats.time || 0), 'в раунде'), cell((stats.bosses || 0).toLocaleString('ru-RU'), 'боссов')].join('');
+    const goals = stats.ranked ? '' : save.quests.map(id => QUESTS.find(q => q.id === id)).filter(Boolean).map(q => {
+      const v = Math.min(q.goal, Math.round(stats[q.stat] || 0)), ok = doneQuests.has(q.id) || v >= q.goal;
+      return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${q.text}<span class="g-bar"><i style="width:${(v / q.goal * 100).toFixed(0)}%;background:${ok ? '#3dffa2' : 'var(--food)'}"></i></span></span>` +
+        `<span class="g-rw"><b>${ok ? 'готово' : `${v.toLocaleString('ru-RU')} / ${q.goal.toLocaleString('ru-RU')}`}</b><small>+${qCoins(q)} ◆</small></span></li>`; }).join('');
+    box.innerHTML = `<div class="ps-grid">${tiles}</div>` + (goals ? `<h3>Цели на сегодня</h3><ul class="goal-list">${goals}</ul>` : '<p class="ps-note">В рейтинговом бою цели дня не считаются.</p>');
+  }
+  // 2.2: one daily goal may be swapped once a day
+  $('menuQuests').addEventListener('click', e => {
+    const b = e.target.closest('[data-qswap]'); if (!b || save.qSwapDay === today) return;
+    const id = b.dataset.qswap, i = save.quests.indexOf(id); if (i < 0) return;
+    save.quests.splice(i, 1); fillQuests([id]);
+    const nu = save.quests.pop(); save.quests.splice(i, 0, nu);   // the new goal takes the old one's place
+    save.qSwapDay = today; persist(); renderAll(); toast('Цель заменена · следующая замена завтра');
+  });
+  // 2.2: time left in the league season, on the «Лиги» tile (updates every minute while the menu is open)
+  function leftTxt(ms) { const m = Math.max(0, Math.floor(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60);
+    return d ? `${d} дн${h ? ` ${h} ч` : ''}` : h ? `${h} ч ${m % 60} мин` : `${Math.max(1, m)} мин`; }
+  function seasonTimerTick() {
+    const el = $('hubLeagueTimer'); if (!el) return;
+    const now = Date.now(), soon = !seasonStarted, left = soon ? SEASON_EPOCH - now : seasonEnd(save.season.id) - now;
+    el.hidden = false; el.classList.toggle('hot', !soon && left < 864e5);
+    const m = Math.max(0, Math.floor(left / 60000)), short = m >= 1440 ? `${Math.floor(m / 1440)} дн` : m >= 60 ? `${Math.floor(m / 60)} ч` : `${Math.max(1, m)} мин`;
+    el.textContent = soon ? `▶ ${short}` : `⏳ ${short}`;
+    el.title = soon ? `Первый сезон лиги начнётся ${fmtDate(SEASON_EPOCH)}` : `До конца сезона ${save.season.id}: ${leftTxt(left)}`;
+    $('hubLeagueBtn').setAttribute('aria-label', `Лиги. ${el.title}`);
+  }
+  setInterval(() => { if (!$('menuCard').hidden && !document.hidden) seasonTimerTick(); }, 60000);
   // ================= 2.2: season summary =================
   const rcNum = v => Math.max(0, Math.round(+v || 0));
   const rcDur = sec => { const m = Math.round(rcNum(sec) / 60); return m >= 60 ? `${Math.floor(m / 60)} ч${m % 60 ? ` ${m % 60} мин` : ''}` : `${m} мин`; };
@@ -10310,6 +10363,7 @@ body.menu-bg .menu-backdrop { display: block; }
     ACH.forEach(a => { save.achT[a.id] = a.steps.length; if (!save.ach.includes(a.id)) save.ach.push(a.id); });
     return 'всё открыто: престиж ✦25, лиги «Неон», мастерство «Легенда», достижения на III';
   }]]);
+  testAdd('Цели', [['Вернуть замену цели', () => { delete save.qSwapDay; }]]);
   testAdd('Монеты и сундуки', [['+100 000 ◆', () => { save.coins += 100000; }], ['+10 сундуков', () => { save.chests += 10; }]]);
   testAdd('Графика', [['Сымитировать сбой графики', () => {
     const ext = renderer.getContext().getExtension('WEBGL_lose_context'); if (!ext) return 'браузер не умеет имитировать сбой';
@@ -10349,6 +10403,10 @@ body.menu-bg .menu-backdrop { display: block; }
     save.pbg = PBG.map(b => b.id); save.badges = save.badges || {};
     [...PROMO_BADGES, ...SPECIAL].forEach(b => { save.badges[b.id] = save.badges[b.id] || today; }); save.badges.millionaire = save.badges.millionaire || today;
     save.legendBadge = save.legendBadge || today;
+    // every league season of the first year (all six league shapes take turns) and a dozen Chaos seasons
+    if (save.seasonLog.length < SEASON_YEAR) save.seasonLog = Array.from({ length: SEASON_YEAR }, (_, i) => { const id = i + 1, sd = seasonData(id), lg = [5, 4, 3, 2, 1, 0][i % 6];
+      return { id, league: lg, pts: LEAGUES[lg].pts + 500, name: sd.name, holiday: sd.holiday, year: sd.year || null }; });
+    if (save.chaosLog.length < 12) save.chaosLog = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, tier: (CHAOS_TIERS.length - 1) - (i % CHAOS_TIERS.length), pts: 100 }));
     save.skins = SKINS.map(k => k.id); save.fxOwned = FX.map(f => f.id); save.pets = PETS.map(pt => pt.id); save.decor = DECOR.map(d => d.id); save.arenas = ARENAS.map(a => a.id); save.hats = Object.keys(HATS);
   }
   if (TEST_MODE) { testUnlockAll(); persist(); }

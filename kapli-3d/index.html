@@ -232,9 +232,10 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .goal-list.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 34px), transparent); mask-image: linear-gradient(#000 calc(100% - 34px), transparent); }
 .goal-more { position: absolute; right: 12px; bottom: 6px; z-index: 1; padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--food); font-size: .7rem; font-weight: 600; pointer-events: none; }
 /* ===== 2.2: shelf on the profile card ===== */
-.pc-shelf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 16px 14px; }
-.pc-tr { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 7px; align-items: center; padding: 6px 8px; border-radius: 12px; background: rgba(10, 6, 30, .66); border: 1px solid color-mix(in srgb, var(--ac) 45%, transparent); text-align: left; min-width: 0; }
-.pc-tr b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 400 .72rem/1.15 var(--display); color: #fff; overflow: hidden; overflow-wrap: anywhere; hyphens: auto; } .pc-tr small { font-size: .6rem; color: #cfc9f0; }
+.pc-shelf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 14px 14px; }
+.pc-tr .ach-em { width: 34px; height: 34px; }
+.pc-tr { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; align-items: center; padding: 6px 8px; border-radius: 12px; background: rgba(10, 6, 30, .66); border: 1px solid color-mix(in srgb, var(--ac) 45%, transparent); text-align: left; min-width: 0; }
+.pc-tr b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 400 .7rem/1.15 var(--display); color: #fff; overflow: hidden; } .pc-tr small { display: block; font-size: .6rem; color: #cfc9f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 520px) { .pc-shelf { grid-template-columns: minmax(0, 1fr); } }
 .pd-shelf-note { grid-column: 1 / -1; margin: 0; font-size: .74rem; color: var(--muted); text-align: left; }
 .pd-sh .ach-em { margin: 0 auto; } .pd-sh .pd-cur { font-weight: 800; }
@@ -8646,7 +8647,7 @@ body.menu-bg .menu-backdrop { display: block; }
   function shelfHTML(sh) {
     const list = (Array.isArray(sh) ? sh : []).map(([id, t]) => [achById(id), Math.max(0, Math.min(6, +t || 0))]).filter(([a, t]) => a && t).slice(0, 3);
     if (!list.length) return '';
-    return `<div class="pc-shelf">${list.map(([a, t]) => `<span class="pc-tr" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, Math.min(t, a.steps.length), 40)}<span><b>${a.name}</b><small>${a.steps.length <= 3 ? `${ROM3[Math.min(t, 3)]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</small></span></span>`).join('')}</div>`;
+    return `<div class="pc-shelf">${list.map(([a, t]) => `<span class="pc-tr" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, Math.min(t, a.steps.length), 34)}<span style="min-width:0"><b>${a.name}</b><small>${a.steps.length <= 3 ? `${ROM3[Math.min(t, 3)]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</small></span></span>`).join('')}</div>`;
   }
   function pcardHTML(d, nick, opt = {}) {
     const lv = Math.max(1, Math.min(50, d.lvl || 1)), li = Math.max(0, Math.min(5, d.league || 0)), ci = Math.max(0, Math.min(5, d.chaos || 0)), bg = pbgById(d.bg);
@@ -9613,6 +9614,36 @@ body.menu-bg .menu-backdrop { display: block; }
 
     // ---------- profile showcase (others see it in the ranking and the chat) ----------
     const scCache = new Map(); let scTimer = null, scLast = '';
+    // ---- test build only: a pretend friend served locally, so the friend screens and a friend's card can be seen without the server ----
+    const TN = TEST_MODE ? (() => {
+      const now = Date.now(), iso = m => new Date(now - m * 60000).toISOString();
+      const fr = { nickname: 'Спектр', public_id: 104729, status: 'friend', online: true, last_seen: iso(0), unread: 2, gift_sent: false };
+      const card = { bg: 'bg_ps_gal', frame: 'fr_ps_orbit', title: 'tt_ps_lg', badge: 'legend', skin: 'lg_supernova', lvl: 50, ps: { s: 25, n: 12 },
+        shelf: [['ln_boss', 3], ['ln_league', 3], ['ln_combo', 2]], league: 5, chaos: 4, wins: 1240, best: 3812, ach: 14 };
+      const dms = [[1, false, 'Привет! Видел мой новый фон «Галактика»?', 64], [2, true, 'Ага, круто! Это за ✦25?', 61], [3, false, 'Да, вторая ступень престижа. Сыграем в «Захват короны»?', 5], [4, false, 'Я в игре 😉', 2]]
+        .map(([id, mine, body, ago]) => ({ id, mine, body, created_at: iso(ago), read_at: mine ? iso(ago - 1) : null }));
+      return { fr, card, dms, list: [fr], blocks: [] };
+    })() : null;
+    if (TN) scCache.set(TN.fr.nickname, TN.card);
+    const tnOn = () => TEST_MODE && !sess;
+    function tnRpc(fn, a) {
+      const f = TN.fr, last = TN.dms[TN.dms.length - 1];
+      switch (fn) {
+        case 'kapli_friends': return TN.list.map(x => ({ ...x }));
+        case 'kapli_blocks': return TN.blocks.map(x => ({ ...x }));
+        case 'kapli_dm_threads': return TN.list.filter(x => x.status === 'friend').map(x => ({ nickname: x.nickname, public_id: x.public_id, is_friend: true, online: x.online, last_seen: x.last_seen, last_body: last.body, last_mine: last.mine, last_at: last.created_at, unread: x.unread }));
+        case 'kapli_dm_history': return TN.dms.filter(m => !a.p_after || m.id > a.p_after).slice().reverse();
+        case 'kapli_dm_read': f.unread = 0; return null;
+        case 'kapli_dm_send': TN.dms.push({ id: TN.dms.length + 1, mine: true, body: a.p_body, created_at: new Date().toISOString(), read_at: null }); return 'sent';
+        case 'kapli_gift_send': if (f.gift_sent) return 'already'; f.gift_sent = true; return 'sent';
+        case 'kapli_ping': return { requests: 0, unread: f.unread, gifts: 0 };
+        case 'kapli_gifts_claim': return [];
+        case 'kapli_friend_remove': TN.list = TN.list.filter(x => x.nickname !== a.p_nick); return 'removed';
+        case 'kapli_friend_request': if (TN.list.some(x => x.nickname.toLowerCase() === String(a.p_query).toLowerCase())) return 'already'; TN.list = [...TN.list, f]; f.status = 'friend'; return 'accepted';
+        case 'kapli_block': return a.p_on ? 'blocked' : 'unblocked';
+        default: return null;
+      }
+    }
     async function getShowcases(nicks) {
       const need = [...new Set(nicks)].filter(n => n && !scCache.has(n) && n !== Net.nick).slice(0, 50);
       if (need.length) {
@@ -9712,7 +9743,7 @@ body.menu-bg .menu-backdrop { display: block; }
       return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', ''); };
     const agoTxt = t => { if (!t) return 'давно не заходил(а)'; const m = Math.round((Date.now() - new Date(t)) / 6e4);
       return m < 60 ? `был(а) ${Math.max(1, m)} мин назад` : m < 1440 ? `был(а) ${Math.round(m / 60)} ч назад` : `был(а) ${Math.round(m / 1440)} дн. назад`; };
-    async function frRpc(fn, args) { await ensureClient(); const { data, error } = await withTimeout(sb.rpc(fn, args || {}), 9000); if (error) throw error; return data; }
+    async function frRpc(fn, args) { if (tnOn()) return tnRpc(fn, args || {}); await ensureClient(); const { data, error } = await withTimeout(sb.rpc(fn, args || {}), 9000); if (error) throw error; return data; }
     function frBadge() {
       const n = FR.counts.requests + FR.counts.unread, b = $('frBadge');
       b.hidden = !sess || !n; b.textContent = n > 99 ? '99+' : n;
@@ -9751,7 +9782,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const frRel = nick => { const n = String(nick).toLowerCase(), f = FR.list.find(x => x.nickname.toLowerCase() === n); if (f) return f.status;
       return FR.blocks.some(x => x.nickname.toLowerCase() === n) ? 'blocked' : 'none'; };
     async function frLoad() {
-      if (!sess) return;
+      if (!sess && !tnOn()) return;
       try { const [l, b, t] = await Promise.all([frRpc('kapli_friends'), frRpc('kapli_blocks'), frRpc('kapli_dm_threads').catch(e => { FR.thrErr = e; return null; })]);
         FR.list = l || []; FR.blocks = b || []; if (t) { FR.threads = t; FR.thrErr = null; }
         FR.counts.requests = FR.list.filter(f => f.status === 'incoming').length; FR.counts.unread = FR.list.reduce((a, f) => a + (f.unread || 0), 0); frBadge();
@@ -9786,7 +9817,7 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     async function openFriends(keepTab) {
       showCard('friendsCard'); $('frNote').textContent = '';
-      const on = !!sess; $('frIn').disabled = $('frAddBtn').disabled = !on;
+      const on = !!sess || tnOn(); $('frIn').disabled = $('frAddBtn').disabled = !on;
       $('frTabs').hidden = !on;
       if (!on) { $('frTabs').innerHTML = ''; $('frList').innerHTML = emptyHTML('Друзья и личные сообщения — для игроков с аккаунтом. Войди или создай аккаунт: нажми на свой ник вверху меню.', 'sad'); $('frBack').focus(); return; }
       if (keepTab !== true) FR.tab = FR.counts.unread ? 'msgs' : FR.counts.requests ? 'req' : 'friends';
@@ -9798,7 +9829,7 @@ body.menu-bg .menu-backdrop { display: block; }
       declined: 'Заявка отклонена', removed: 'Готово', blocked: 'Игрок в чёрном списке', unblocked: 'Игрок убран из чёрного списка', none: 'Уже неактуально', not_friends: 'Подарки — только друзьям' };
     // one action from the friends window or a player card; returns the server answer
     async function frAct(act, nick) {
-      if (!sess) { toast('Войди в аккаунт'); return null; }
+      if (!sess && !tnOn()) { toast('Войди в аккаунт'); return null; }
       if ((act === 'remove' && !confirm(`Удалить ${nick} из друзей?`)) || (act === 'block' && !confirm(`Заблокировать ${nick}? Дружба и переписка прекратятся.`))) return null;
       if (act === 'dm') { openDm(nick); return 'dm'; }
       try {
@@ -9830,7 +9861,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
     // ---- actions on another player's card ----
     async function pcSocial(nick, box) {
-      if (!sess || !nick || nick === Net.nick) { box.innerHTML = sess || nick === Net.nick ? '' : '<p class="info-note">Войди в аккаунт, чтобы добавлять в друзья и писать.</p>'; return; }
+      if ((!sess && !tnOn()) || !nick || nick === Net.nick) { box.innerHTML = sess || nick === Net.nick ? '' : '<p class="info-note">Войди в аккаунт, чтобы добавлять в друзья и писать.</p>'; return; }
       box.innerHTML = '<p class="empty-note">…</p>';
       try { await frLoad(); } catch (e) { box.innerHTML = `<p class="info-note">${frErr(e)}</p>`; return; }
       const rel = frRel(nick), f = FR.list.find(x => x.nickname.toLowerCase() === nick.toLowerCase()), n = escHtml(nick);

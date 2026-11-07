@@ -219,6 +219,63 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .goals { position: relative; }
 .goal-list.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 34px), transparent); mask-image: linear-gradient(#000 calc(100% - 34px), transparent); }
 .goal-more { position: absolute; right: 12px; bottom: 6px; z-index: 1; padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--food); font-size: .7rem; font-weight: 600; pointer-events: none; }
+/* ===== 2.0.8: battle HUD — a centre pill with the mass, a compact top 3, a round minimap ===== */
+.hud { justify-content: center; } .hud .logo { display: none; }
+.hud .stats { gap: 0; align-items: center; padding: 5px 8px; border-radius: 999px; background: rgba(10, 8, 30, .45); border: 1px solid var(--line); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.hud .stat { align-items: center; padding: 0 12px; position: relative; } .hud .stat small { font-size: .56rem; letter-spacing: .1em; }
+.hud .stat.st-side b { font-size: .95rem; }
+.hud .st-mass { padding: 0 18px; } .hud .st-mass::before, .hud .st-mass::after { content: ''; position: absolute; top: 4px; bottom: 4px; width: 1px; background: var(--line); } .hud .st-mass::before { left: 0; } .hud .st-mass::after { right: 0; }
+.hud .st-mass b { font-size: 1.75rem; line-height: 1; color: #fff; text-shadow: 0 0 12px var(--food), 0 0 26px rgba(34, 230, 255, .45); }
+.hud .st-mass small { margin-top: 2px; }
+.hud .stat .buff { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); min-height: 0; }
+#modeTimer.mode-timer { top: calc(68px + env(safe-area-inset-top, 0px)); }
+.board { top: calc(10px + env(safe-area-inset-top, 0px)); width: 170px; padding: 7px 10px; background: rgba(10, 8, 30, .38); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.board h2 { display: none; }
+.board li.bd-more { justify-content: center; } .board li.bd-more button { pointer-events: auto; background: none; border: 0; padding: 2px 8px; color: var(--food); font: inherit; font-size: .74rem; font-weight: 600; cursor: pointer; }
+#miniWrap.mini-wrap { padding: 0; border-radius: 50%; overflow: hidden; border: 0; line-height: 0; box-shadow: 0 0 0 2px var(--food), 0 0 18px rgba(34, 230, 255, .45); background: rgba(10, 8, 30, .55); }
+#miniWrap #minimap { border-radius: 50%; } #miniWrap .mini-legend { display: none; }
+@media (orientation: landscape) and (max-height: 520px) { .hud { padding-top: calc(6px + env(safe-area-inset-top, 0px)); } .hud .st-mass b { font-size: 1.45rem; } #modeTimer.mode-timer { top: calc(58px + env(safe-area-inset-top, 0px)); padding: 2px 12px; font-size: .9rem; } }
+@media (max-width: 520px) { .hud .stats { width: auto; } }
+@media (max-width: 900px) { .hud .stat:last-child { display: none; } .hud .stat { padding: 0 8px; } .hud .st-mass { padding: 0 12px; } .board { width: 150px; font-size: .74rem; } .board li em { display: none; } }
+/* ===== 2.0.8: skeleton rows while lists load ===== */
+.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skel { list-style: none; display: grid; grid-template-columns: 34px minmax(0, 1fr) 56px; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-sm); background: var(--row); margin: 0; }
+.skel i { display: block; height: 11px; border-radius: 6px; background: linear-gradient(90deg, rgba(255, 255, 255, .06) 25%, rgba(180, 160, 255, .22) 45%, rgba(255, 255, 255, .06) 65%); background-size: 300% 100%; animation: skel 1.3s ease-in-out infinite; }
+.skel .sk-a { width: 34px; height: 34px; border-radius: 50%; } .skel .sk-t { display: grid; gap: 7px; } .skel .sk-t i:last-child { height: 9px; width: 55%; }
+.chat-list .skel { grid-template-columns: minmax(0, 1fr); } .chat-list .skel .sk-a, .chat-list .skel > i:last-child { display: none; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel i { animation: none; } }
+/* ===== 2.0.8: results — a big number and reward tiles ===== */
+.res-main { display: grid; gap: 10px; }
+.res-hero { position: relative; overflow: hidden; display: grid; justify-items: center; align-content: center; gap: 4px; padding: 16px 12px; border-radius: var(--r-lg); border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 40%, rgba(34, 230, 255, .2), transparent 70%), var(--row); animation: rwIn .45s ease-out both; }
+.res-hero small { color: var(--muted); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; }
+.res-hero .rh-num { font: 400 3.1rem/1 var(--display); color: #fff; text-shadow: 0 0 18px var(--food), 0 0 40px rgba(34, 230, 255, .55); font-variant-numeric: tabular-nums; }
+.rh-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; } .rh-chips span { padding: 3px 10px; border-radius: 999px; background: rgba(10, 8, 30, .5); font-size: .78rem; font-weight: 700; }
+.rh-rec { position: absolute; top: 14px; right: -38px; transform: rotate(35deg); padding: 5px 42px; background: linear-gradient(90deg, #ffd23f, #ff9a3d); color: #2a1600; font: 800 .66rem/1 var(--body); letter-spacing: .08em; text-transform: uppercase; box-shadow: 0 0 14px rgba(255, 210, 63, .7); }
+#resultCard .rewards { display: grid; gap: 8px; align-content: center; justify-content: stretch; font-weight: 400; }
+.rw-tile { box-sizing: border-box; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border-radius: var(--r-md); background: var(--row); border: 1px solid var(--line); color: var(--fg); font: inherit; text-align: left; animation: rwIn .45s ease-out both; }
+button.rw-tile { cursor: pointer; } .rw-tile.coin-btn { border: 1px solid rgba(255, 210, 63, .45); } button.rw-tile:hover, button.rw-tile:focus-visible { border-color: var(--gold); outline: none; }
+.rw-ico { font-size: 1.25rem; text-align: center; } .rw-txt { display: grid; min-width: 0; } .rw-txt b { font: 400 1.05rem/1.2 var(--display); font-variant-numeric: tabular-nums; } .rw-txt small { color: var(--muted); font-size: .72rem; }
+.rw-txt > span { font-weight: 600; } .rw-txt > span small { font-weight: 400; }
+.rw-c { color: var(--gold); } .rw-go { color: var(--muted); }
+.rw-bar { display: block; height: 5px; margin-top: 5px; border-radius: 3px; background: rgba(255, 255, 255, .08); overflow: hidden; } .rw-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--me), var(--food)); }
+.rw-tile.new { border-color: var(--gold); box-shadow: 0 0 14px -2px rgba(255, 210, 63, .6); } .rw-tag { color: var(--gold); font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+.rw-note { margin: 0; text-align: center; color: var(--muted); font-size: .76rem; animation: rwIn .45s ease-out both; }
+#resultCard .rewards > :nth-child(1) { animation-delay: .15s; } #resultCard .rewards > :nth-child(2) { animation-delay: .3s; } #resultCard .rewards > :nth-child(3) { animation-delay: .45s; }
+#resultCard .rewards > :nth-child(4) { animation-delay: .6s; } #resultCard .rewards > :nth-child(5) { animation-delay: .75s; }
+#resultCard .rewards .rk-up { animation-delay: 0s; }
+@keyframes rwIn { from { opacity: 0; transform: translateX(16px); } }
+@media (orientation: landscape) and (min-width: 700px) {
+  #resultCard { max-width: min(900px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+  #resultCard #resTitle { font-size: 1.25rem; }
+  .res-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; gap: 12px; }
+  #resultCard > .btns { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; } #resultCard > .btns .btn { margin: 0; }
+}
+@media (orientation: landscape) and (min-width: 700px) and (max-height: 520px) {
+  #resultCard { padding: 12px 16px; gap: 8px; } .res-hero .rh-num { font-size: 2.5rem; } .res-hero { padding: 10px; } .rw-tile { padding: 6px 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .res-hero, .rw-tile, .rw-note { animation: none; } }
 /* ===== 2.0.7: live hub tiles ===== */
 #panePlay .mc-hubs .hub-live { position: relative; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0 10px; text-align: left; font-size: 1.05rem; }
 .hub-live .ic { font-size: 1.35rem; }
@@ -1213,11 +1270,11 @@ body.menu-bg .menu-backdrop { display: block; }
 <header class="hud">
   <div class="logo">Капли<span>3D</span> <em class="test-badge" id="testBadge" hidden>ТЕСТ</em></div>
   <div class="stats">
-    <div class="stat"><small>Масса</small><b id="mass">0</b></div>
-    <div class="stat"><small>Скорость</small><b id="speed">0</b><span class="buff" id="buff"></span></div>
-    <div class="stat"><small>Место</small><b id="rank">–</b></div>
-    <div class="stat"><small>Монеты</small><b id="coins">0</b></div>
-    <div class="stat"><small>Рекорд</small><b id="best">0</b></div>
+    <div class="stat st-side"><small>Скорость</small><b id="speed">0</b><span class="buff" id="buff"></span></div>
+    <div class="stat st-side"><small>Место</small><b id="rank">–</b></div>
+    <div class="stat st-mass"><b id="mass">0</b><small>Масса</small></div>
+    <div class="stat st-side"><small>Монеты</small><b id="coins">0</b></div>
+    <div class="stat st-side"><small>Рекорд</small><b id="best">0</b></div>
   </div>
 </header>
 
@@ -1391,7 +1448,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
   <div class="card" id="resultCard" hidden>
     <h1 id="resTitle">Раунд окончен</h1>
-    <div class="rewards" id="rewards"></div>
+    <div class="res-main"><div class="res-hero" id="resHero"></div><div class="rewards" id="rewards"></div></div>
     <ul class="quests coin-break" id="coinBreak" hidden></ul>
     <p class="unlock" id="unlock" hidden></p>
     <details class="res-drawer" id="resDrawer">
@@ -5102,7 +5159,19 @@ body.menu-bg .menu-backdrop { display: block; }
     const upMain = stats.ranked && !stats.chaos && lgAfter > lgBefore, upChaos = chaosR && chaosOf(save.chaos.pts) > chaosOf(save.chaos.pts - chaosR.net);
     const upHTML = upMain ? (L2 => `<div class="rk-up" style="--rc:${L2.color}">${rankEmblem(lgAfter, 84)}<div class="rk-up-t"><small>Новая лига</small><b>${L2.name}</b><small>+ сундук лиги</small></div></div>`)(lgView(lgAfter, holidayOf(save.season.id)))
       : upChaos ? (ct => `<div class="rk-up" style="--rc:${CHAOS_TIERS[ct].color}">${chaosEmblem(ct, 84)}<div class="rk-up-t"><small>Хаос-лига · новая ступень</small><b>${CHAOS_TIERS[ct].icon} ${CHAOS_TIERS[ct].name}</b></div></div>`)(chaosOf(save.chaos.pts)) : '';
-    $('rewards').innerHTML = upHTML + `<button class="coin coin-btn" id="coinBtn" aria-expanded="false" title="Из чего сложились монеты">+${coins} ◆ <small>▾</small></button><span class="xp">+${xp} опыта</span>${chaosR ? ` <span style="color:${CHAOS_TIERS[chaosR.tier].color}">Хаос: ${chaosR.net >= 0 ? '+' : '−'}${Math.abs(chaosR.net)} очков${chaosR.fee ? ` <small>(+${chaosR.gain} − взнос ${chaosR.fee})</small>` : ''}${chaosR.capped ? ` <small>· «${chaosR.capped}» откроется с ${CHAOS_CFG.tierLevel[CHAOS_TIERS.findIndex(t => t.name === chaosR.capped)]} ур.</small>` : ''}</span>` : stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`;
+    // 2.0.7 results: a big number on the left, reward tiles sliding in on the right
+    const lgHtml = `${chaosR ? ` <span style="color:${CHAOS_TIERS[chaosR.tier].color}">Хаос: ${chaosR.net >= 0 ? '+' : '−'}${Math.abs(chaosR.net)} очков${chaosR.fee ? ` <small>(+${chaosR.gain} − взнос ${chaosR.fee})</small>` : ''}${chaosR.capped ? ` <small>· «${chaosR.capped}» откроется с ${CHAOS_CFG.tierLevel[CHAOS_TIERS.findIndex(t => t.name === chaosR.capped)]} ур.</small>` : ''}</span>` : stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`.trim();
+    const lvI = levelInfo(save.xp), lvPct = lvI.max ? 100 : lvI.into / lvI.need * 100;
+    const heroVal = mode === 'raid' ? Math.round(stats.raidDmg || 0) : best, heroLbl = mode === 'raid' ? 'урон боссу' : 'пик массы';
+    const place = stats.finalRank || (stats.bestRank > 50 ? 0 : stats.bestRank);
+    $('resHero').innerHTML = (record && mode !== 'team' ? '<span class="rh-rec">новый рекорд</span>' : '') + `<small>${heroLbl}</small><b class="rh-num" data-to="${heroVal}">0</b>` +
+      `<div class="rh-chips">${place ? `<span>🏆 ${place}-е место</span>` : ''}<span>⏱ ${fmtTime(stats.time)}</span>${stats.kills ? `<span>🍴 ${stats.kills}</span>` : ''}</div>`;
+    $('rewards').innerHTML = upHTML +
+      `<button class="coin-btn rw-tile" id="coinBtn" aria-expanded="false" title="Из чего сложились монеты"><span class="rw-ico" style="color:var(--gold)">◆</span><span class="rw-txt"><b class="rw-c" data-to="${coins}">+0</b><small>монет · нажми, из чего сложились</small></span><span class="rw-go">▾</span></button>` +
+      `<div class="rw-tile"><span class="rw-ico" style="color:var(--food)">✦</span><span class="rw-txt"><b style="color:var(--food)">+${xp} опыта</b><small>${lvAfter > lvBefore ? `новый уровень: ${lvAfter}!` : lvI.max ? 'максимальный уровень' : `уровень ${lvI.level} → ${lvI.level + 1} · осталось ${lvI.need - lvI.into}`}</small><i class="rw-bar"><i style="width:${lvPct.toFixed(0)}%"></i></i></span></div>` +
+      (gotChest ? '<div class="rw-tile new"><span class="rw-ico">🎁</span><span class="rw-txt"><b>Выпал сундук</b><small>открой в меню «Награды»</small></span><span class="rw-tag">новое</span></div>' : '') +
+      (/class="hint"/.test(lgHtml) ? `<p class="rw-note">${lgHtml.replace(/<\/?span[^>]*>/g, '')}</p>` : `<div class="rw-tile"><span class="rw-ico">🏆</span><span class="rw-txt">${lgHtml}</span></div>`);
+    resCountUp();
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${ch.reward ? rewardName(ch.reward) + ' + ' : ''}сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
       weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
@@ -5352,6 +5421,18 @@ body.menu-bg .menu-backdrop { display: block; }
     clampArena(c);
   }
 
+  // results: numbers count up, tiles slide in one by one (instant with reduced motion)
+  document.addEventListener('pointerdown', e => { const b = e.target.closest && e.target.closest('#boardMore'); if (!b) return; e.stopPropagation(); e.preventDefault(); boardOpen = !boardOpen; hudT = 0; }, true);
+  // skeleton rows for lists that load from the server
+  const skelHTML = (n = 6) => Array.from({ length: n }, (_, i) => `<li class="skel" aria-hidden="true"><i class="sk-a"></i><span class="sk-t"><i style="width:${55 + (i * 23) % 35}%"></i><i></i></span><i></i></li>`).join('') + '<li class="sr-only">Загрузка…</li>';
+  function resCountUp() {
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches, t0 = performance.now(), D = 900;
+    const els = [...document.querySelectorAll('#resultCard [data-to]')];
+    const fmt = (el, v) => { el.textContent = (el.classList.contains('rw-c') ? '+' : '') + Math.round(v).toLocaleString('ru-RU') + (el.classList.contains('rw-c') ? ' ◆' : ''); };
+    if (still) { els.forEach(el => fmt(el, +el.dataset.to)); return; }
+    const step = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3); els.forEach(el => fmt(el, +el.dataset.to * e)); if (k < 1 && !$('resultCard').hidden) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
   function finishRound(title, bonus, win) {
     if (dying) return;
     stats.endTitle = title; stats.modeBonus = bonus || 0; stats.win = !!win;
@@ -5654,6 +5735,7 @@ body.menu-bg .menu-backdrop { display: block; }
   let hudT = 0;
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const setText = (id, t) => { const el = $(id); if (el.textContent !== t) el.textContent = t; };
+  let boardOpen = false;   // in-battle leaderboard: top 3 + you, «ещё N» shows the top 6
   function updateHud(now) {
     $('mass').textContent = Math.round(total(player));
     if (player.cells.length) {
@@ -5685,11 +5767,12 @@ body.menu-bg .menu-backdrop { display: block; }
       stats.bestRank = Math.min(stats.bestRank, rank); if (rank <= 3) stats.top3T = (stats.top3T || 0) + .25;
       if (rank === 1 && !stats.leader) { stats.leader = 1; toast('Ты лидер арены!'); }
     }
-    $('leaders').innerHTML = ranked.slice(0, 6).map((o, i) => {
+    $('leaders').innerHTML = ranked.slice(0, boardOpen ? 6 : 3).map((o, i) => {
       const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
       const fr = o.isPlayer ? save.frame : o.frame, lvl = o.isPlayer ? playerLevel() : o.lvl;
       return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
-    }).join('') + (rank > 6 ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '');
+    }).join('') + (rank > (boardOpen ? 6 : 3) ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '') +
+      (ranked.length > 3 ? `<li class="bd-more"><button type="button" id="boardMore" aria-expanded="${boardOpen}">${boardOpen ? '▴ свернуть' : `▾ ещё ${Math.min(ranked.length, 6) - 3}`}</button></li>` : '');
     // ---- in-battle HUD: one short mode line, a separate mode timer with a clock, and round icon badges with a countdown ring ----
     let modeChip = '', timer = '';
     const T = (left, total) => ({ left: Math.max(0, left), total });
@@ -5939,6 +6022,13 @@ body.menu-bg .menu-backdrop { display: block; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 178, ver: '2.0.8', date: '7 ноября', title: 'Новый экран боя и итогов', kind: 'update', items: [
+      'Экран боя стал чище: масса крупно в центральной плашке сверху, рядом скорость, место и монеты. Таймер режима — прямо под ней.',
+      'Таблица лидеров в бою компактная: первые три и ты. Нажми «ещё», чтобы развернуть до шести.',
+      'Мини-карта стала круглой, с неоновым ободком.',
+      'Итоги боя: крупно пик массы (в рейде — урон боссу) с лентой «Новый рекорд», место и время; монеты и опыт набегают, награды выезжают по очереди, а под опытом — полоска до следующего уровня.',
+      'Пока рейтинг, друзья, чат и переписка загружаются, вместо надписи «Загрузка…» мерцают заготовки строк.',
+    ] },
     { id: 177, ver: '2.0.7', date: '7 ноября', title: 'Новый вид меню', kind: 'update', items: [
       'Твоя капля теперь живёт в меню: рядом с кнопкой «Играть» крутится твой скин со шляпой и аурой. Нажми на неё — откроется гардероб.',
       'Новые неоновые иконки в меню вместо эмодзи — одинаковые на всех телефонах.',
@@ -9162,7 +9252,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const hhmm = t => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     function chatAdd(m, atEnd = true) {
       if (chatIds.has(m.id)) return; chatIds.add(m.id); chatLast = Math.max(chatLast, m.id);
-      const list = $('chatList'), empty = list.querySelector('.empty-box, .empty-note'); if (empty) empty.remove();
+      const list = $('chatList'); list.querySelectorAll('.empty-box, .empty-note, .skel, .sr-only').forEach(x => x.remove());
       const me = Net.nick && m.nickname === Net.nick, near = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
       const li = document.createElement('li'); if (me) li.className = 'me';
       li.innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(m.nickname)}" data-who="${escHtml(m.nickname)}" aria-label="Профиль игрока ${escHtml(m.nickname)}"><b>${escHtml(m.nickname)}</b></button><time>${hhmm(m.created_at)}</time>${!me && sess ? `<button class="rep" data-rep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : ''}<p>${escHtml(m.body)}</p>`;
@@ -9179,11 +9269,11 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     async function openChat() {
       { const t = $('chatTabs').querySelector('[data-ct="all"]'); if (t && t.getAttribute('aria-selected') !== 'true') t.click(); }
-      showCard('chatCard'); const list = $('chatList'); list.innerHTML = '<p class="empty-note">Загрузка…</p>'; chatIds.clear(); chatLast = 0;
+      showCard('chatCard'); const list = $('chatList'); list.innerHTML = skelHTML(6); chatIds.clear(); chatLast = 0;
       $('chatNote').textContent = sess ? 'Не больше одного сообщения в 3 секунды. Будь вежлив: ⚑ — пожаловаться.' : 'Читать могут все. Чтобы писать, войди в аккаунт.';
       $('chatIn').disabled = $('chatSend').disabled = !sess; $('chatIn').placeholder = sess ? 'Сообщение…' : 'Войди в аккаунт, чтобы писать';
       try {
-        await ensureClient(); await chatFetch(false);
+        await ensureClient(); await chatFetch(false); list.querySelectorAll('.skel, .sr-only').forEach(x => x.remove());
         if (!list.children.length) list.innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep');
         list.scrollTop = list.scrollHeight;
         chatCh = sb.channel('kapli-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kapli_chat' }, p => { if (p.new && p.new.id) chatAdd(p.new); }).subscribe();
@@ -9311,7 +9401,7 @@ body.menu-bg .menu-backdrop { display: block; }
       $('frTabs').hidden = !on;
       if (!on) { $('frTabs').innerHTML = ''; $('frList').innerHTML = emptyHTML('Друзья и личные сообщения — для игроков с аккаунтом. Войди или создай аккаунт: нажми на свой ник вверху меню.', 'sad'); $('frBack').focus(); return; }
       if (keepTab !== true) FR.tab = FR.counts.unread ? 'msgs' : FR.counts.requests ? 'req' : 'friends';
-      $('frList').innerHTML = '<p class="empty-note">Загрузка…</p>'; $('frBack').focus();
+      $('frList').innerHTML = skelHTML(5); $('frBack').focus();
       try { await frLoad(); frRender(); if (FR.counts.gifts) frClaim().catch(() => {}); } catch (e) {}
     }
     const FA_TXT = { sent: 'Заявка отправлена', accepted: 'Теперь вы друзья!', already: 'Вы уже друзья', pending: 'Заявка уже отправлена — ждём ответа', self: 'Это ты 🙂',
@@ -9373,7 +9463,7 @@ body.menu-bg .menu-backdrop { display: block; }
     // ---- one private conversation ----
     function dmAdd(m) {
       const list = $('dmList'); if (list.querySelector(`[data-dm="${m.id}"]`)) return;
-      const empty = list.querySelector('.empty-box, .empty-note'); if (empty) empty.remove();
+      list.querySelectorAll('.empty-box, .empty-note, .skel, .sr-only').forEach(x => x.remove());
       FR.dmLast = Math.max(FR.dmLast, m.id);
       const near = list.scrollHeight - list.scrollTop - list.clientHeight < 60, li = document.createElement('li');
       li.dataset.dm = m.id; if (m.mine) li.className = 'me';
@@ -9395,11 +9485,11 @@ body.menu-bg .menu-backdrop { display: block; }
       $('dmHead').innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(nick)}" data-who="${escHtml(nick)}" aria-label="Профиль игрока ${escHtml(nick)}">${whoHTML(nick, null)}</button>` +
         (f ? `<small class="fr-st ${f.online ? 'on' : ''}">${f.online ? '● в игре' : agoTxt(f.last_seen)}</small>` : '');
       decorateWho($('dmHead'));
-      $('dmList').innerHTML = '<p class="empty-note">Загрузка…</p>'; $('dmNote').textContent = 'Личные сообщения видите только вы двое. ⚑ — пожаловаться.';
+      $('dmList').innerHTML = skelHTML(4); $('dmNote').textContent = 'Личные сообщения видите только вы двое. ⚑ — пожаловаться.';
       const canWrite = !!(f && f.status === 'friend');
       $('dmIn').value = ''; $('dmIn').disabled = $('dmSend').disabled = !canWrite; $('dmIn').placeholder = canWrite ? 'Сообщение…' : 'Вы больше не друзья — писать нельзя';
       if (canWrite) $('dmIn').focus(); else $('dmBack').focus();
-      try { await dmFetch(false); if (!$('dmList').querySelector('li')) $('dmList').innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep'); }
+      try { await dmFetch(false); $('dmList').querySelectorAll('.skel, .sr-only').forEach(x => x.remove()); if (!$('dmList').querySelector('li')) $('dmList').innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep'); }
       catch (e) { $('dmList').innerHTML = `<p class="empty-note">${frErr(e)}</p>`; }
       clearInterval(FR.dmPoll); FR.dmPoll = setInterval(() => { if (!$('dmCard').hidden) dmFetch(true).catch(() => {}); }, 6000);
     }
@@ -9426,7 +9516,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('rankModes').innerHTML = RANK_MODES.map(m => `<button type="button" data-rm="${m}" aria-pressed="false">${MODES[m].name}</button>`).join('');
     async function loadRank(m) {
       rankMode = m; document.querySelectorAll('[data-rm]').forEach(b => b.setAttribute('aria-pressed', b.dataset.rm === m));
-      const list = $('rankList'); list.innerHTML = '<p class="empty-note">Загрузка…</p>'; $('rankMe').textContent = '';
+      const list = $('rankList'); list.innerHTML = skelHTML(8); $('rankMe').textContent = '';
       try {
         await ensureClient();
         if (sess) await syncBests();
@@ -9474,7 +9564,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '207';
+const APP_VER = '208';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

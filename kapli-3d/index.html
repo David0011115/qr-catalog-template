@@ -1330,10 +1330,34 @@ body.menu-bg .menu-backdrop { display: block; }
 .league small { color: var(--muted); font-size: .78rem; line-height: 1.4; }
 .league .notice { color: var(--prey); font-size: .82rem; }
 .chest-stage { display: grid; place-items: center; padding: 14px 0 4px; }
-.chest { position: relative; width: 120px; height: 86px; border-radius: var(--r-lg); background: linear-gradient(180deg, var(--cb1, #7b3dff), var(--cb2, #3a1580));
-  box-shadow: 0 0 26px var(--cg, rgba(178, 107, 255, .55)), inset 0 -6px 0 rgba(0,0,0,.25); }
-.chest .lid { position: absolute; left: -6px; right: -6px; top: -16px; height: 34px; border-radius: var(--r-lg) 14px 6px 6px; background: linear-gradient(180deg, var(--cl1, #ff4fd8), var(--cl2, #9b3dff)); box-shadow: 0 0 18px var(--cg, rgba(255, 79, 216, .5)); transform-origin: 50% 100%; transition: transform .35s; }
-.chest .lock { position: absolute; left: 50%; top: 10px; width: 20px; height: 24px; margin-left: -10px; border-radius: 5px; background: var(--gold); box-shadow: 0 0 12px rgba(255,210,63,.7); }
+.chest-stage { position: relative; }
+/* 2.3: a crafted chest — planks, gold bands with rivets, a lock with a keyhole and an emblem of the chest's kind; on opening light rays and sparks in the colour of what dropped */
+.chest { position: relative; z-index: 1; width: 132px; height: 92px; border-radius: 12px 12px 14px 14px; border: 2px solid rgba(255,255,255,.14);
+  background: radial-gradient(circle at 26px 12px, #fff6c8 0 2px, transparent 2.6px), radial-gradient(circle at calc(100% - 26px) 12px, #fff6c8 0 2px, transparent 2.6px),
+    radial-gradient(circle at 26px calc(100% - 12px), #fff6c8 0 2px, transparent 2.6px), radial-gradient(circle at calc(100% - 26px) calc(100% - 12px), #fff6c8 0 2px, transparent 2.6px),
+    linear-gradient(90deg, transparent 18px, #8a5a12 18px, #ffd27a 24px, #b07a1a 32px, transparent 32px, transparent calc(100% - 32px), #8a5a12 calc(100% - 32px), #ffd27a calc(100% - 26px), #b07a1a calc(100% - 18px), transparent calc(100% - 18px)),
+    repeating-linear-gradient(180deg, transparent 0 21px, rgba(0,0,0,.25) 21px 23px), linear-gradient(180deg, var(--cb1, #7b3dff), var(--cb2, #3a1580));
+  box-shadow: 0 0 28px var(--cg, rgba(178, 107, 255, .55)), inset 0 -8px 0 rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.12); }
+.chest .lid { position: absolute; z-index: 2; left: -8px; right: -8px; top: -20px; height: 36px; border-radius: 22px 22px 6px 6px; border: 2px solid rgba(255,255,255,.16);
+  background: linear-gradient(90deg, transparent 24px, #8a5a12 24px, #ffd27a 30px, #b07a1a 38px, transparent 38px, transparent calc(100% - 38px), #8a5a12 calc(100% - 38px), #ffd27a calc(100% - 32px), #b07a1a calc(100% - 24px), transparent calc(100% - 24px)),
+    linear-gradient(180deg, rgba(255,255,255,.28), transparent 45%), linear-gradient(180deg, var(--cl1, #ff4fd8), var(--cl2, #9b3dff));
+  box-shadow: 0 0 18px var(--cg, rgba(255, 79, 216, .5)); transform-origin: 50% 100%; transition: transform .35s cubic-bezier(.3, 1.6, .5, 1); }
+.chest .lock { position: absolute; z-index: 3; left: 50%; top: 4px; width: 22px; height: 26px; margin-left: -11px; border-radius: 6px; background: linear-gradient(180deg, #fff2a8, var(--gold) 45%, #b07a1a); box-shadow: 0 0 12px rgba(255,210,63,.7), inset 0 -2px 0 rgba(0,0,0,.25); }
+.chest .lock::after { content: ""; position: absolute; left: 50%; top: 7px; width: 6px; height: 11px; margin-left: -3px; border-radius: 3px 3px 1px 1px; background: #2a1408; }
+.chest .emb { position: absolute; z-index: 3; left: 0; right: 0; bottom: 8px; text-align: center; font: 700 1.05rem/1 var(--display); color: var(--cl1, #fff); text-shadow: 0 0 8px var(--cl1, #fff), 0 1px 0 rgba(0,0,0,.6); }
+.chest[data-kind="daily"] .emb::before { content: "☀\FE0E"; } .chest[data-kind="normal"] .emb::before { content: "★\FE0E"; } .chest[data-kind="shard"] .emb::before { content: "◆\FE0E"; }
+.chest[data-kind="league"] .emb::before { content: "♛\FE0E"; } .chest[data-kind="challenge"] .emb::before { content: "◎\FE0E"; }
+.chest .glow-in { position: absolute; z-index: 1; left: 10px; right: 10px; top: -8px; height: 16px; border-radius: 50%; background: radial-gradient(ellipse, #fff 0 20%, var(--rc, var(--cl1, #fff)) 45%, transparent 72%); opacity: 0; transition: opacity .3s; }
+.chest.open .glow-in { opacity: 1; }
+.ch-rays { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; z-index: 0; pointer-events: none; opacity: 0; transform: scale(.3);
+  background: repeating-conic-gradient(from 0deg, var(--rc, #ffd23f) 0 7deg, transparent 7deg 30deg); -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%); mask: radial-gradient(circle, #000 18%, transparent 68%); transition: opacity .4s, transform .5s; }
+.chest-stage:has(.chest.open) .ch-rays { opacity: .55; transform: scale(1); animation: chRays 9s linear infinite; }
+@keyframes chRays { to { rotate: 360deg; } }
+.ch-sp { position: absolute; z-index: 2; left: 50%; top: 42%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: var(--rc, #ffd23f); box-shadow: 0 0 8px var(--rc, #ffd23f); opacity: 0; pointer-events: none; }
+.chest-stage:has(.chest.open) .ch-sp { animation: chSp .9s ease-out forwards; }
+@keyframes chSp { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-90px) scale(.3); } }
+.chest.shake { filter: drop-shadow(0 0 14px var(--cg, #fff)); }
+@media (prefers-reduced-motion: reduce) { .chest-stage:has(.chest.open) .ch-rays { animation: none; } .chest-stage:has(.chest.open) .ch-sp { animation: none; } }
 .chest.empty { opacity: .35; filter: grayscale(.6); }
 .chest.shake { animation: shake .7s; }
 .chest.open .lid { transform: translateY(-22px) rotate(-14deg); }
@@ -1352,6 +1376,11 @@ body.menu-bg .menu-backdrop { display: block; }
 .ws-bal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .ws-bal span { display: grid; justify-items: center; gap: 1px; padding: 8px 4px; border-radius: var(--r-md); background: var(--row); border: 1px solid var(--line); color: var(--rc); font-size: .72rem; }
 .ws-bal b { font: 400 1.25rem var(--display); }
+.im-pbg { position: relative; display: block; width: min(100%, 420px); aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; margin: 0 auto; }
+.im-pbg canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; } .im-pbg-av { position: absolute; left: 6%; bottom: 8%; }
+.im-abil { display: grid; place-items: center; width: 120px; height: 120px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--ac) 30%, transparent), transparent 70%); border: 2px solid var(--ac); box-shadow: 0 0 30px -6px var(--ac); }
+.im-abil b { font-size: 3.4rem; color: var(--ac); text-shadow: 0 0 16px var(--ac); }
+.im-frame { display: grid; justify-items: center; gap: 10px; }
 .ws-pk { display: inline-flex; align-items: center; gap: 8px; } .ws-ico { width: 24px; height: 24px; flex: none; filter: drop-shadow(0 0 4px currentColor); }
 .sh-ico { flex: none; vertical-align: middle; } .sh-ex { display: inline-flex; align-items: center; gap: 4px; } .sh-pr { display: inline-flex; align-items: center; gap: 2px; font-weight: 800; font-size: .8rem; }
 .ws-top { display: grid; gap: 0 16px; } @media (orientation: landscape) and (min-width: 700px) { .ws-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .ws-top .ws-ex { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ws-top .ws-ex button { font-size: .72rem; padding: 8px 6px; } }
@@ -1366,15 +1395,21 @@ body.menu-bg .menu-backdrop { display: block; }
 .ws-it b { font: 400 .92rem/1.15 var(--display); }
 .ws-it small { font-size: .7rem; color: var(--muted); }
 .ws-it .rar { color: var(--rc); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .64rem; }
+.ws-it[data-info] { cursor: pointer; } .ws-it[data-info]:hover, .ws-it[data-info]:focus-visible { box-shadow: 0 0 14px -4px var(--rc); } .ws-it .ws-look { font-size: .64rem; color: var(--muted); }
 .ws-it .own { color: var(--prey); font-weight: 700; font-size: .8rem; }
 .ws-it button { width: 100%; font-size: .78rem; }
 .ch-btns { grid-row: 1 / span 2; grid-column: 3; display: flex; gap: 6px; } .ch-btns .ch-multi { background: transparent; border: 1.5px solid var(--food); color: var(--food); }
-.rv-multi { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; width: 100%; }
-.rv-it { display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: var(--r-md); background: rgba(0,0,0,.25); border: 1px solid var(--rc); min-width: 0; }
-.rv-it .sw { width: 42px; height: 42px; } .rv-it b { font-size: .74rem; line-height: 1.15; overflow-wrap: anywhere; } .rv-it small { font-size: .64rem; color: var(--rc); }
+.rv-multi { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; width: 100%; }
+.rv-it { display: grid; justify-items: center; align-content: start; gap: 2px; padding: 5px 3px; border-radius: var(--r-md); background: rgba(0,0,0,.25); border: 1px solid var(--rc); min-width: 0; cursor: pointer; }
+.rv-it:hover, .rv-it:focus-visible { box-shadow: 0 0 10px -2px var(--rc); }
+.rv-it .sw { width: 34px; height: 34px; } .rv-it img.sw { width: 34px; height: 34px; } .rv-it .deco-pv { transform: scale(.7); max-width: 100%; overflow: hidden; }
+.rv-it b { font-size: .64rem; line-height: 1.1; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .rv-it small { font-size: .56rem; color: var(--rc); }
+.rv-look { margin-top: 2px; } .rv-pic { cursor: pointer; } .rv-pic:hover { filter: drop-shadow(0 0 8px var(--rc)); }
+@media (orientation: landscape) and (max-height: 520px) { #reveal { gap: 3px; padding: 8px 10px; } #reveal .sw { width: 48px; height: 48px; } #reveal > b { font-size: 1.05rem; } #reveal .rv-look { padding: 5px 12px; font-size: .8rem; } }
 .chest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .chest-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 12px; align-items: center; background: var(--row); border-radius: var(--r-md); padding: 10px 12px; }
-.chest-list .ci { grid-row: 1 / span 2; width: 30px; height: 24px; border-radius: 6px; background: linear-gradient(180deg, var(--cl1), var(--cb2)); box-shadow: 0 0 10px var(--cl1); }
+.chest-list .ci { grid-row: 1 / span 2; position: relative; width: 32px; height: 26px; border-radius: 8px 8px 5px 5px; background: linear-gradient(90deg, transparent 6px, #ffd27a 6px 9px, transparent 9px calc(100% - 9px), #ffd27a calc(100% - 9px) calc(100% - 6px), transparent 0), linear-gradient(180deg, var(--cl1) 0 38%, rgba(0,0,0,.45) 38% 44%, var(--cb1) 44%, var(--cb2)); box-shadow: 0 0 10px var(--cg); }
+.chest-list .ci::after { content: ""; position: absolute; left: 50%; top: 6px; width: 6px; height: 7px; margin-left: -3px; border-radius: 2px; background: var(--gold); }
 .chest-list b { font-weight: 600; }
 .chest-list small { grid-column: 2; color: var(--muted); font-size: .78rem; }
 .chest-list .buy { grid-column: 3; grid-row: 1 / span 2; }
@@ -1785,7 +1820,8 @@ body.menu-bg .menu-backdrop { display: block; }
   </div>
   <div class="card" id="chestCard" hidden>
     <div class="shop-head"><h1>Сундуки</h1><b class="coin" id="chestCount">0</b></div>
-    <div class="chest-stage"><div class="chest" id="chestBox"><span class="lid"></span><span class="lock"></span></div></div>
+    <div class="chest-stage"><span class="ch-rays" aria-hidden="true"></span><div class="chest" id="chestBox" data-kind="normal"><span class="glow-in"></span><span class="lid"></span><span class="lock"></span><span class="emb"></span></div>
+      <span class="ch-sp" style="--a:0deg"></span><span class="ch-sp" style="--a:45deg"></span><span class="ch-sp" style="--a:90deg"></span><span class="ch-sp" style="--a:135deg"></span><span class="ch-sp" style="--a:180deg"></span><span class="ch-sp" style="--a:225deg"></span><span class="ch-sp" style="--a:270deg"></span><span class="ch-sp" style="--a:315deg"></span></div>
     <div class="reveal" id="reveal" hidden></div>
     <ul class="chest-list" id="chestList"></ul>
     <button class="tab-info-btn" data-infotpl="tplChest" data-infotitle="Сундуки">ⓘ Информация · Сундуки: как получить</button>
@@ -8211,13 +8247,26 @@ body.menu-bg .menu-backdrop { display: block; }
       imVis = previewBlob(skin(), 0, id); imObj = imVis.mesh; imVis.look = skin();
       rows.push(['Откуда', col ? `коллекция «${col.name}» (${colOwned(col)}/${colItems(col).length})` : HATS[id].src], ['Как носить', 'на любом скине, вместо его короны или предмета']);
       act = own ? `<button class="btn ${on ? 'ghost' : ''}" data-act="hat-${id}">${on ? 'Снять' : 'Надеть'}</button>` : `<button class="btn ghost" disabled>${col ? 'Собери коллекцию' : 'Ещё не получен'}</button>`;
+    } else if (kind === 'pbg') {
+      const b = pbgById(id), own = (save.pbg || []).includes(id), on = (save.pc || {}).bg === id;
+      name = b.name; tag = rarTag(b.rar) + '<span class="badge-ex">фон профиля</span>';
+      flat = `<span class="im-pbg"><canvas data-pbg="${id}"></canvas><span class="im-pbg-av">${pcAvatar({ skin: save.skin, frame: save.frame }, 64)}</span></span>`;
+      rows.push(['Где видно', 'фон твоей карточки игрока: в профиле, в рейтинге и у друзей'], ['Откуда', b.craft ? `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(id)) || PACKS[0]).name}»: создаётся только из осколков` : b.src]);
+      act = own ? (on ? '<button class="btn ghost" disabled>Стоит в профиле</button>' : `<button class="btn" data-act="pbg-${id}">Поставить в профиль</button>`) : `<button class="btn ghost" disabled>${b.craft ? 'Создаётся в мастерской' : 'Ещё не получен'}</button>`;
+    } else if (kind === 'abil') {
+      const a = abilById(id), own = save.abil.owned.includes(id);
+      name = a.name; tag = (a.cr ? rarTag('legendary') : '') + '<span class="badge-ex">способность</span>';
+      flat = `<span class="im-abil" style="--ac:${a.color}"><b>${a.icon}</b></span>`;
+      rows.push(['Что делает', a.desc + '.'], ['Перезарядка', `${a.cd} с`], ['Где работает', a.cr ? 'только обычные режимы, без улучшений; в рейтинге и Хаос-лиге её нет' : a.xa ? 'эксклюзив Хаос-лиги' : 'обычные режимы и Хаос-лига'],
+        ['Откуда', a.cr ? `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(id)) || PACKS[0]).name}»: создаётся только из осколков` : a.xa ? 'Хаос-лига, «Сингулярность»' : 'магазин']);
+      act = `<button class="btn ghost" disabled>${own ? 'Есть · ставится в билд в «Коллекции»' : a.cr ? 'Создаётся в мастерской' : 'Ещё нет'}</button>`;
     } else if (kind === 'deco') {
-      const d = decorById(id), on = (d.kind === 'frame' ? save.frame : save.title) === id;
+      const d = decorById(id), on = (d.kind === 'frame' ? save.frame : save.title) === id, own = save.decor.includes(id);
       name = d.name; tag = rarTag(decoRarity(d)) + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
-      flat = decoPreview(d);
+      flat = d.kind === 'frame' ? `<span class="im-frame">${pcAvatar({ skin: save.skin, frame: id }, 110)}${decoPreview(d)}</span>` : decoPreview(d);
       rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
-        ['Откуда', d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
-      act = `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>`;
+        ['Откуда', d.craft ? decoSource(d).replace(/\.$/, '') : d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
+      act = own ? `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>` : `<button class="btn ghost" disabled>${d.craft ? 'Создаётся в мастерской' : 'Ещё не получена'}</button>`;
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
       name = a.name; tag = '<span class="badge-ex">тема арены</span>' + (a.exclusive ? '<span class="badge-ex badge-legend">эксклюзив</span>' : '');
@@ -8229,7 +8278,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('imName').textContent = name; $('imTag').innerHTML = tag;
     $('imInfo').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
     $('imActions').innerHTML = act + '<button class="btn ghost" id="imOk">Закрыть</button>';
-    $('imFlat').innerHTML = flat; $('imFlat').hidden = !flat; $('imCanvas').hidden = !!flat;
+    $('imFlat').innerHTML = flat; $('imFlat').hidden = !flat; $('imCanvas').hidden = !!flat; if (flat) pbgMount($('imFlat'));
     if (imObj) imScene.add(imObj);
     const big = kind === 'pet' ? 3.6 : imFxSlot === 'trail' ? 12.5 : imFxSlot ? 10 : imVis && imVis.aura ? 7.4 : 6.4, y = kind === 'pet' ? 0 : imFxSlot ? .4 : .6;
     if (imFxSlot && !imFx) imFx = makePreviewFx(imScene, 1);
@@ -8279,6 +8328,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const orig = $(b.dataset.act);
     if (orig && !orig.disabled) orig.click();
+    else if (b.dataset.act.startsWith('pbg-')) { save.pc = { ...(save.pc || {}), bg: imId }; persist(); try { Net.pushShowcase(); } catch (er) {} toast('Фон профиля поставлен'); }
     else if (b.dataset.act.startsWith('pet-')) { save.pet = save.pet === imId ? null : imId; applyPet(); persist(); renderShop(); }
     openItem(imKind + ':' + imId);   // refresh the window after the change
   });
@@ -8322,7 +8372,7 @@ body.menu-bg .menu-backdrop { display: block; }
     normal:    ['#7b3dff', '#3a1580', '#ff4fd8', '#9b3dff', 'rgba(178,107,255,.55)'],
     daily:     ['#22b8ff', '#0a3a6e', '#22e6ff', '#4d7cff', 'rgba(34,230,255,.55)'],
     league:    ['#ffb020', '#7a4a00', '#ffd23f', '#ff9a3d', 'rgba(255,210,63,.6)'],
-    shard:     ['#e8b05a', '#3a1a08', '#22e6ff', '#ffd27a', 'rgba(34,230,255,.55)'],
+    shard:     ['#e8b05a', '#5a3008', '#ffd27a', '#22e6ff', 'rgba(255,210,122,.6)'],
   };
   function chestLook(kind, rar) {
     const L = kind === 'challenge' ? [RARITY[rar].color, '#1a0a3a', RARITY[rar].color, '#3a1580', RARITY[rar].color] : CHEST_LOOK[kind] || CHEST_LOOK.normal;
@@ -8415,7 +8465,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const daily = save.dailyChestDay !== today;
     const left = (() => { const t = new Date(); t.setHours(24, 0, 0, 0); const m = Math.ceil((t - Date.now()) / 60000); return `${Math.floor(m / 60)} ч ${m % 60} мин`; })();
     rows.push({ key: 'daily', look: chestLook('daily'), title: 'Ежедневный сундук', sub: daily ? 'Случайная редкость, раз в сутки' : `Следующий через ${left}`, btn: daily ? 'Забрать' : 'Завтра', dis: !daily });
-    if (save.shardChests) rows.push({ key: 'shard', look: chestLook('shard'), title: `Сундук осколков ×${save.shardChests}`, sub: '20–30 осколков для «Мастерской»', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.shardChests) });
+    if (save.shardChests) rows.push({ key: 'shard', look: chestLook('shard'), title: `Сундук осколков ×${save.shardChests}`, sub: '20–30 осколков', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.shardChests) });
     if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.chests) });
     save.special.forEach((c, i) => rows.push(c.kind === 'league'
       ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть' }
@@ -8450,6 +8500,7 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     chestBusy = true;
     const box = $('chestBox'); $('reveal').hidden = true; box.setAttribute('style', look);
+    box.dataset.kind = key === 'daily' || key === 'normal' || key === 'shard' ? key : opts.league ? 'league' : 'challenge';
     box.classList.remove('open', 'empty'); void box.offsetWidth; box.classList.add('shake');
     buzz(40); Sound.play('chest');
     $('overlay').scrollTop = 0;
@@ -8458,18 +8509,20 @@ body.menu-bg .menu-backdrop { display: block; }
         const got = { common: 0, rare: 0, epic: 0, legendary: 0 }, n = 20 + Math.floor(Math.random() * 11);
         for (let i = 0; i < n; i++) got[pickRarity(SHARD_W)]++;
         RAR_KEYS.forEach(k => { save.shards[k] += got[k]; }); logChest('shard', got.legendary ? 'legendary' : got.epic ? 'epic' : 'rare'); persist();
-        box.classList.remove('shake'); box.classList.add('open');
+        box.style.setProperty('--rc', got.legendary ? RARITY.legendary.color : '#22e6ff'); box.classList.remove('shake'); box.classList.add('open');
         const el = $('reveal'); el.style.setProperty('--rc', '#22e6ff');
         el.innerHTML = `<span class="rar">Сундук осколков · ${n} шт.</span><div class="ws-bal" style="width:100%">${RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 30)}<b>+${got[k]}</b>${RARITY[k].name}</span>`).join('')}</div><small>Создавать предметы — в «Мастерской» в главном меню.</small>`;
         el.hidden = false; renderChest(); renderAll(); chestBusy = false; return;
       }
       const r = rollChest(opts), R2 = RARITY[r.rar];
       logChest(opts.src || key, r.rar); persist();
-      box.classList.remove('shake'); box.classList.add('open');
+      box.style.setProperty('--rc', R2.color); box.classList.remove('shake'); box.classList.add('open');
       const pic = r.type === 'skin' ? `<div class="${swClass(r.item)}" style="${swatch(r.item)}">${headIcon(r.item)}</div>` : r.type === 'deco' ? decoPreview(r.item) : `<img class="sw" style="border-radius:14px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
       const kind = r.type === 'deco' ? (r.item.kind === 'frame' ? 'Рамка для имени' : 'Титул') : r.type === 'skin' ? 'Скин' : r.type === 'pet' ? `Питомец · ${PET_BONUS[r.item.bonus].name}: ${PET_BONUS[r.item.bonus].text(r.item.lv)}` : 'Эффект · ' + FX_SLOTS.find(sl => sl[0] === r.item.slot)[1].toLowerCase();
-      const el = $('reveal'); el.style.setProperty('--rc', R2.color);
+      const el = $('reveal'); el.style.setProperty('--rc', R2.color); el.dataset.look = `${r.type}:${r.item.id}`;
       el.innerHTML = `<span class="rar">${R2.name}${opts.league ? ' · сундук лиги' : ''}</span>${pic}<b>${r.item.name}</b><small>${kind}${r.star ? ` · повтор: звезда ${'★'.repeat(r.star)}${'☆'.repeat(3 - r.star)} — ${STAR_TEXT[r.star]}` : r.dup ? ' · уже есть, превращён в монеты' : r.type === 'pet' ? ' · теперь в «Питомцах»' : r.type === 'deco' ? ' · гардероб → «Украшения»' : ' · теперь в гардеробе'}</small><span class="coin">+${r.coins} ◆</span>`;
+      { const pv = el.children[1]; if (pv) { pv.dataset.info = `${r.type}:${r.item.id}`; pv.classList.add('rv-pic'); pv.setAttribute('role', 'button'); pv.setAttribute('tabindex', '0'); pv.setAttribute('aria-label', 'Посмотреть: ' + r.item.name); pv.title = 'Нажми, чтобы посмотреть'; } }
+      el.insertAdjacentHTML('beforeend', `<button class="btn ghost rv-look" type="button" data-info="${r.type}:${r.item.id}">👁 Посмотреть</button>`);
       el.hidden = false;
       renderChest(); renderAll(); chestBusy = false;
     }, 750);
@@ -8507,12 +8560,12 @@ body.menu-bg .menu-backdrop { display: block; }
   const packOf = id => CR_PACK[id] || 'chronos';
   const WS_CATS = [['bg', 'Фоны профиля'], ['frame', 'Рамки'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['pet', 'Питомцы'], ['abil', 'Способности']];
   function wsItems(cat) {
-    if (cat === 'bg') return PBG.filter(b => b.craft).map(b => ({ id: b.id, name: b.name, rar: b.rar, pv: `<img src="${pbgThumb(b.id)}" alt="">`, own: (save.pbg || []).includes(b.id), give: () => save.pbg.push(b.id) }));
-    if (cat === 'frame') return DECOR.filter(d => d.craft).map(d => ({ id: d.id, name: d.name, rar: d.craft, pv: decoPreview(d), own: save.decor.includes(d.id), give: () => save.decor.push(d.id) }));
+    if (cat === 'bg') return PBG.filter(b => b.craft).map(b => ({ id: b.id, name: b.name, rar: b.rar, pv: `<img src="${pbgThumb(b.id)}" alt="">`, own: (save.pbg || []).includes(b.id), give: () => save.pbg.push(b.id), info: 'pbg:' + b.id }));
+    if (cat === 'frame') return DECOR.filter(d => d.craft).map(d => ({ id: d.id, name: d.name, rar: d.craft, pv: pcAvatar({ skin: save.skin, frame: d.id }, 56), own: save.decor.includes(d.id), give: () => save.decor.push(d.id), info: 'deco:' + d.id }));
     if (cat === 'skin') return SKINS.filter(k => k.craft).map(k => ({ id: k.id, name: k.name, rar: k.craft, pv: `<div class="${swClass(k)}" style="${swatch(k)}">${headIcon(k)}</div>`, own: save.skins.includes(k.id), give: () => save.skins.push(k.id), info: 'skin:' + k.id }));
     if (cat === 'fx') return FX.filter(f => f.craft).map(f => ({ id: f.id, name: f.name, rar: f.craft, sub: SLOT_NAME[f.slot], pv: `<img alt="" src="${fxThumb(f)}">`, own: save.fxOwned.includes(f.id), give: () => save.fxOwned.push(f.id), info: 'fx:' + f.id }));
     if (cat === 'pet') return PETS.filter(pt => pt.craft).map(pt => ({ id: pt.id, name: pt.name, rar: pt.craft, sub: PET_BONUS[pt.bonus].text(), pv: `<img alt="" src="${petThumb(pt)}">`, own: save.pets.includes(pt.id), give: () => save.pets.push(pt.id), info: 'pet:' + pt.id }));
-    return CR_ABIL.map(a => ({ id: a.id, name: a.name, rar: 'legendary', sub: `${a.desc}. Перезарядка ${a.cd} с`, pv: `<span class="ab-big" style="--ac:${a.color}">${a.icon}</span>`, own: save.abil.owned.includes(a.id), give: () => save.abil.owned.push(a.id) }));
+    return CR_ABIL.map(a => ({ id: a.id, name: a.name, rar: 'legendary', sub: `${a.desc}. Перезарядка ${a.cd} с`, pv: `<span class="ab-big" style="--ac:${a.color}">${a.icon}</span>`, own: save.abil.owned.includes(a.id), give: () => save.abil.owned.push(a.id), info: 'abil:' + a.id }));
   }
   const priceText = id => CR_PRICE[id].map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}" title="${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}">${shardIco(r, 16)}${n}</span>`).join(' ');
   const canPay = id => CR_PRICE[id].every(([r, n]) => save.shards[r] >= n);
@@ -8521,7 +8574,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('wsBal').innerHTML = RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 34)}<b>${save.shards[k]}</b>${RARITY[k].name}</span>`).join('');
     $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'} aria-label="10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} в 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}"><span class="sh-ex">10 ${shardIco(k, 18)} → 1 ${shardIco(RAR_KEYS[i + 1], 18)}</span></button>`).join('');
     const card = x => `<div class="ws-it" style="--rc:${RARITY[x.rar].color}"${x.info ? ` data-info="${x.info}" tabindex="0" role="button" aria-label="Подробнее: ${x.name}"` : ''}><div class="pv">${x.pv}</div><span class="rar">${RARITY[x.rar].name}</span><b>${x.name}</b>${x.sub ? `<small>${x.sub}</small>` : ''}` +
-        (x.own ? '<span class="own">✓ Создано</span>' : `<small>${priceText(x.id)}</small><button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id) ? '' : 'disabled'}>Создать</button>`) + '</div>';
+        (x.info ? '<span class="ws-look">👁 нажми, чтобы посмотреть</span>' : '') + (x.own ? '<span class="own">✓ Создано</span>' : `<small>${priceText(x.id)}</small><button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id) ? '' : 'disabled'}>Создать</button>`) + '</div>';
     $('wsList').innerHTML = '<h2 class="section-title">Серии</h2>' + PACKS.map(pk => {
       const all = WS_CATS.flatMap(([cat]) => wsItems(cat).filter(x => packOf(x.id) === pk.id).map(x => ({ ...x, cat }))), own = all.filter(x => x.own).length, can = all.filter(x => !x.own && canPay(x.id)).length;
       const body = `<p class="hint" style="margin:0 0 6px">Тема серии: ${pk.desc}.</p>` + WS_CATS.map(([cat, title]) => { const list = all.filter(x => x.cat === cat); if (!list.length) return '';
@@ -8542,6 +8595,8 @@ body.menu-bg .menu-backdrop { display: block; }
     const t = e.target.closest('[data-info]'); if (t && !e.target.closest('button')) openItem(t.dataset.info);
   }, true);
   $('wsCard').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-info]')) { e.preventDefault(); openItem(e.target.dataset.info); } });
+  $('reveal').addEventListener('click', e => { const t = e.target.closest('[data-info]'); if (t) openItem(t.dataset.info); });
+  $('reveal').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-info]')) { e.preventDefault(); openItem(e.target.dataset.info); } });
   $('chestList').addEventListener('click', e => { const m = e.target.closest('button[data-openn]'); if (m) { openChestMany(m.dataset.openn); return; } const b = e.target.closest('button[data-open]'); if (b && !b.disabled) openChest(b.dataset.open); });
   // 2.3: open up to CHEST_MULTI round chests or shard chests in one go; the reveal shows everything at once
   function openChestMany(key) {
@@ -8549,7 +8604,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const left = key === 'shard' ? save.shardChests : save.chests, n = Math.min(CHEST_MULTI, left || 0); if (n < 2) return openChest(key);
     if (key === 'shard') save.shardChests -= n; else save.chests -= n;
     chestBusy = true;
-    const box = $('chestBox'); $('reveal').hidden = true; box.setAttribute('style', chestLook(key === 'shard' ? 'shard' : 'normal'));
+    const box = $('chestBox'); $('reveal').hidden = true; box.setAttribute('style', chestLook(key === 'shard' ? 'shard' : 'normal')); box.dataset.kind = key;
     box.classList.remove('open', 'empty'); void box.offsetWidth; box.classList.add('shake');
     buzz(60); Sound.play('chest'); $('overlay').scrollTop = 0;
     setTimeout(() => {
@@ -8558,15 +8613,15 @@ body.menu-bg .menu-backdrop { display: block; }
         const got = { common: 0, rare: 0, epic: 0, legendary: 0 }; let tot = 0;
         for (let c = 0; c < n; c++) { const k = 20 + Math.floor(Math.random() * 11); tot += k; const one = { common: 0, rare: 0, epic: 0, legendary: 0 };
           for (let i = 0; i < k; i++) one[pickRarity(SHARD_W)]++; RAR_KEYS.forEach(r => { got[r] += one[r]; save.shards[r] += one[r]; }); logChest('shard', one.legendary ? 'legendary' : one.epic ? 'epic' : 'rare'); }
-        el.style.setProperty('--rc', '#22e6ff');
+        el.style.setProperty('--rc', '#22e6ff'); box.style.setProperty('--rc', got.legendary ? RARITY.legendary.color : '#22e6ff');
         el.innerHTML = `<span class="rar">Сундуков осколков: ${n} · ${tot} шт.</span><div class="ws-bal" style="width:100%">${RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 30)}<b>+${got[k]}</b>${RARITY[k].name}</span>`).join('')}</div><small>Создавать предметы — в «Мастерской» в главном меню.</small>`;
       } else {
         const res = []; for (let c = 0; c < n; c++) { const r = rollChest({}); logChest('normal', r.rar); res.push(r); }
         const best = res.reduce((a, r) => RAR_KEYS.indexOf(r.rar) > RAR_KEYS.indexOf(a.rar) ? r : a, res[0]), coins = res.reduce((a, r) => a + r.coins, 0);
-        el.style.setProperty('--rc', RARITY[best.rar].color);
+        el.style.setProperty('--rc', RARITY[best.rar].color); box.style.setProperty('--rc', RARITY[best.rar].color);
         el.innerHTML = `<span class="rar">Открыто сундуков: ${n}</span><div class="rv-multi">${res.map(r => { const R2 = RARITY[r.rar];
           const pic = r.type === 'skin' ? `<div class="${swClass(r.item)}" style="${swatch(r.item)}">${headIcon(r.item)}</div>` : r.type === 'deco' ? decoPreview(r.item) : `<img class="sw" style="border-radius:12px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
-          return `<span class="rv-it" style="--rc:${R2.color}">${pic}<b>${r.item.name}</b><small>${R2.name}${r.star ? ` · ${'★'.repeat(r.star)}` : r.dup ? ' · повтор' : ' · новое'}</small></span>`; }).join('')}</div><small>Монеты за сундуки и повторы: +${coins.toLocaleString('ru-RU')} ◆</small>`;
+          return `<span class="rv-it" style="--rc:${R2.color}" data-info="${r.type}:${r.item.id}" tabindex="0" role="button" aria-label="Посмотреть: ${r.item.name}">${pic}<b>${r.item.name}</b><small>${R2.name}${r.star ? ` · ${'★'.repeat(r.star)}` : r.dup ? ' · повтор' : ' · новое'}</small></span>`; }).join('')}</div><small>Монеты за сундуки и повторы: +${coins.toLocaleString('ru-RU')} ◆ · нажми на предмет, чтобы посмотреть</small>`;
       }
       persist(); box.classList.remove('shake'); box.classList.add('open'); el.hidden = false; renderChest(); renderAll(); chestBusy = false;
     }, 900);

@@ -775,14 +775,15 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .pause-btn { position: fixed; z-index: 2; width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--fg);
   font-size: 1rem; letter-spacing: -.1em; cursor: pointer; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(6px); }
 .boss-tag { color: var(--boss); margin-right: 3px; }
-.eb-row { display: flex; flex-wrap: wrap; gap: 6px; max-width: 230px; }
+.eb-row { display: flex; flex-wrap: wrap; gap: 8px; max-width: 300px; }
 /* 2.3: a badge keeps its colour to the end — the spent part of the ring is a dim shade of the same colour (not grey), the centre is tinted, the icons are drawn (emoji turned grey on many phones) */
-.eb { width: 40px; height: 40px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: conic-gradient(var(--c) calc(var(--f) * 360deg), color-mix(in srgb, var(--c) 28%, transparent) 0); box-shadow: 0 0 10px -3px var(--c); }
+.eb { width: 54px; height: 54px; border-radius: 50%; padding: 4px; box-sizing: border-box; background: conic-gradient(var(--c) calc(var(--f) * 360deg), color-mix(in srgb, var(--c) 28%, transparent) 0); box-shadow: 0 0 10px -3px var(--c); }
 .eb-in { width: 100%; height: 100%; border-radius: 50%; background: color-mix(in srgb, var(--c) 18%, var(--panel)); display: grid; place-items: center; align-content: center; line-height: 1; }
-.eb-in b { font-size: .82rem; color: var(--c); font-weight: 700; display: grid; place-items: center; text-shadow: 0 0 6px var(--c); }
-.eb-in b svg { width: 15px; height: 15px; fill: currentColor; filter: drop-shadow(0 0 3px var(--c)); }
+.eb-in b { font-size: 1.12rem; color: var(--c); font-weight: 700; display: grid; place-items: center; text-shadow: 0 0 6px var(--c); }
+.eb-in b svg { width: 21px; height: 21px; fill: currentColor; filter: drop-shadow(0 0 3px var(--c)); }
 .eb.low { animation: ebLow .5s steps(2, jump-none) infinite; } @keyframes ebLow { 50% { box-shadow: 0 0 14px 1px var(--c); filter: brightness(1.35); } }
-@media (prefers-reduced-motion: reduce) { .eb.low { animation: none; } } .eb-in small { font-size: .6rem; color: var(--fg); font-variant-numeric: tabular-nums; margin-top: 1px; }
+@media (prefers-reduced-motion: reduce) { .eb.low { animation: none; } }
+@media (orientation: landscape) and (max-height: 420px) { .eb { width: 48px; height: 48px; padding: 3.5px; } .eb-in b { font-size: 1rem; } .eb-in b svg { width: 19px; height: 19px; } .eb-in small { font-size: .72rem; } } .eb-in small { font-size: .78rem; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; margin-top: 1px; }
 .mode-timer { position: fixed; z-index: 2; left: 50%; transform: translateX(-50%); top: calc(62px + env(safe-area-inset-top, 0px)); padding: 4px 14px; border-radius: 99px;
   background: var(--panel); border: 1px solid var(--line); font-family: var(--display); font-size: 1.05rem; font-variant-numeric: tabular-nums; pointer-events: none; }
 .mode-timer[hidden] { display: none; }

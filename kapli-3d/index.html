@@ -281,7 +281,7 @@ body.apv-on > :not(#stage):not(#apv):not(#toast):not(script) { visibility: hidde
 .prof-cols, .prof-l, .prof-r { display: contents; }
 @media (orientation: landscape) and (min-width: 700px) {
   .card.shop-card { max-width: min(1040px, 100%); }
-  #profileCard, #chestCard, #chaosCard, #settingsCard, #hubLeague, #hubRew { max-width: min(1000px, 100%); }
+  #profileCard, #chestCard, #chaosCard, #settingsCard, #hubLeague, #hubRew, #wsCard { max-width: min(1000px, 100%); }
   #pauseCard { max-width: min(880px, 100%); }
   /* profile: card and prestige on the left, counters and sections on the right */
   #profileCard .prof-cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 12px; align-items: start; }
@@ -1330,6 +1330,23 @@ body.menu-bg .menu-backdrop { display: block; }
 .sortbar span { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
 .sortbar select { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 10px; font: 600 .9rem var(--body); min-width: 0; }
 .sortbar select:focus-visible { outline: 3px solid var(--food); outline-offset: 2px; }
+/* 2.3 workshop «Хронос»: shards and crafting */
+.ws-bal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ws-bal span { display: grid; justify-items: center; gap: 1px; padding: 8px 4px; border-radius: var(--r-md); background: var(--row); border: 1px solid var(--line); color: var(--rc); font-size: .72rem; }
+.ws-bal b { font: 400 1.25rem var(--display); }
+.ws-ex { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.ws-ex button { font-size: .8rem; }
+.ws-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ws-it { display: grid; gap: 4px; align-content: start; padding: 8px; border-radius: var(--r-md); background: var(--row); border: 1.5px solid color-mix(in srgb, var(--rc) 55%, transparent); text-align: center; justify-items: center; min-width: 0; }
+.ws-it .pv { width: 100%; height: 70px; display: grid; place-items: center; overflow: hidden; border-radius: 10px; background: #0a0620; }
+.ws-it .pv img { max-width: 100%; max-height: 70px; }
+.ws-it .pv .sw { width: 54px; height: 54px; }
+.ws-it .pv .ab-big { font-size: 2rem; color: var(--ac); }
+.ws-it b { font: 400 .92rem/1.15 var(--display); }
+.ws-it small { font-size: .7rem; color: var(--muted); }
+.ws-it .rar { color: var(--rc); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .64rem; }
+.ws-it .own { color: var(--prey); font-weight: 700; font-size: .8rem; }
+.ws-it button { width: 100%; font-size: .78rem; }
 .chest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .chest-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 12px; align-items: center; background: var(--row); border-radius: var(--r-md); padding: 10px 12px; }
 .chest-list .ci { grid-row: 1 / span 2; width: 30px; height: 24px; border-radius: 6px; background: linear-gradient(180deg, var(--cl1), var(--cb2)); box-shadow: 0 0 10px var(--cl1); }
@@ -1726,11 +1743,22 @@ body.menu-bg .menu-backdrop { display: block; }
     <button class="btn" id="backBtn">Готово</button>
   </div>
 
+  <div class="card" id="wsCard" hidden>
+    <div class="shop-head"><h1>Мастерская «Хронос»</h1></div>
+    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: это 2–3 из каждых 10 сундуков за раунды.</p>
+    <h2 class="section-title">Твои осколки</h2>
+    <div class="ws-bal" id="wsBal"></div>
+    <h2 class="section-title">Обмен: 10 осколков → 1 следующей редкости</h2>
+    <div class="ws-ex" id="wsEx"></div>
+    <div id="wsList"></div>
+    <button class="btn ghost" id="wsBack" type="button">Назад к сундукам</button>
+  </div>
   <div class="card" id="chestCard" hidden>
     <div class="shop-head"><h1>Сундуки</h1><b class="coin" id="chestCount">0</b></div>
     <div class="chest-stage"><div class="chest" id="chestBox"><span class="lid"></span><span class="lock"></span></div></div>
     <div class="reveal" id="reveal" hidden></div>
     <ul class="chest-list" id="chestList"></ul>
+    <button class="btn" id="wsOpen" type="button">⚙ Мастерская «Хронос» · осколки</button>
     <button class="tab-info-btn" data-infotpl="tplChest" data-infotitle="Сундуки">ⓘ Информация · Сундуки: как получить</button>
     <template id="tplChest"><h3 class="ti-h">Как получить</h3>
     <dl class="keys">
@@ -3372,6 +3400,7 @@ body.menu-bg .menu-backdrop { display: block; }
   // chest stats for the profile: opened chests by source and rarity (counted from v33), and round chests per hour over the last 7 days
   save.chestStats = save.chestStats || { since: Date.now(), total: 0, src: {} };
   save.chestDays = save.chestDays || [];
+  save.shards = Object.assign({ common: 0, rare: 0, epic: 0, legendary: 0 }, save.shards || {}); save.shardChests = save.shardChests || 0; save.chestSeq = save.chestSeq || 0;
   save.special = save.special || [];   // league / challenge chests: { kind, rar | league, title }
   save.dailyChestDay = save.dailyChestDay || '';
   save.stars = save.stars || {};                       // skin id -> 1..3 stars from chest duplicates
@@ -4568,7 +4597,7 @@ body.menu-bg .menu-backdrop { display: block; }
         case 'sparksTrail': emit(x, r * .5, z, cellColor(c), 2, 2.5, .5); break;
         case 'cr_cogs': if (Math.random() < .3) trailIcon(x, r * .5, z, 'gear', Math.random() < .6 ? '#ffd27a' : '#e8b05a', 1 + r * .1, .25); break;
         case 'cr_marks': { o._mkT = (o._mkT || 0) + 1; if (o._mkT % 6) break; o._mkN = ((o._mkN || 0) + 1) % 36; const n = o._mkN, num = n % 3 === 0, rot = Math.atan2(c.hx, c.hz);
-          const icon = num ? 'n' + (12 - (n / 3) % 12) : 'tick', size = (num ? 1.2 : .9) + r * .12;
+          const icon = num ? 'n' + (12 - (n / 3) % 12) : 'tick', size = (num ? 2.2 : 1.6) + r * .45;
           if (fxTarget) fxTarget.icons(x, .1, z, icon, '#ffd27a', 1, size, true); else crMark(x, z, icon, size, rot, num ? '#fff6d8' : '#ffd27a'); break; }
         case 'psDust': emit(x, r * .5, z, ['#ffffff', '#ff8ae6', '#b26bff', '#9ff0ff'][(Math.random() * 4) | 0], 3, 1.6, .9); if (Math.random() < .12) emitIcons(x, r * .7, z, 'star', '#ffffff', 1, .7); break;
         case 'bubbleTrail': emit(x, r * .3, z, '#7fe8ff', 1, 1.2, 1.2); break;
@@ -5240,7 +5269,7 @@ body.menu-bg .menu-backdrop { display: block; }
     effects.shield += 2 * petLv('shield');
     zoneR = R;
     bots.forEach(o => o.disabled = false);
-    bossTimer = mode === 'survival' ? 5 : dailyIs('bosses') ? 10 : 20; bonusTimer = 0;
+    bossTimer = mode === 'survival' ? 5 : dailyIs('bosses') ? 10 : 20; bonusTimer = 0; crPetReset();
     bonuses.forEach(b => scene.remove(b.mesh)); bonuses = [];
     running = true; paused = false; dying = false;
     // teams: you + 5 allies (blue) vs 6 rivals (red); the 12th bot sits out
@@ -5293,6 +5322,7 @@ body.menu-bg .menu-backdrop { display: block; }
   function abReset() {
     owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.abCd = o.isPlayer || o.kind === 'bot' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
+    crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
     if (decoy) { scene.remove(decoy.mesh); decoy = null; }
   }
@@ -5355,7 +5385,8 @@ body.menu-bg .menu-backdrop { display: block; }
     else if (id === 'decoy') {
       if (me) { if (decoy) scene.remove(decoy.mesh); decoy = makeDecoy(o, a, a.dur * pw); }
       else { botDecoys.filter(d => d.src === o).forEach(d => { scene.remove(d.mesh); d.gone = true; }); botDecoys = botDecoys.filter(d => !d.gone); botDecoys.push(makeDecoy(o, a, a.dur)); }
-    } else if (a.xa) { if (!castXa(id, a, px, pz, o)) return false; if (id === 'x_phase') { if (me) abUsed(id); return true; } }
+    } else if (a.cr) { if (!castCr(id, a, px, pz, o)) return false; }
+    else if (a.xa) { if (!castXa(id, a, px, pz, o)) return false; if (id === 'x_phase') { if (me) abUsed(id); return true; } }
     else if (id === 'trap') {
       const mine = viruses.filter(v => v.trap && v.trap.owner === o);
       if (mine.length >= ABIL_CFG.maxTraps) removeVirus(mine[0]);
@@ -5368,6 +5399,51 @@ body.menu-bg .menu-backdrop { display: block; }
     return true;
   }
   // ---- Chaos League exclusives ----
+  // ---- 2.3 workshop «Хронос» abilities ----
+  let crfx = [], crHist = [], crClock = 0, crHistT = 0;
+  function castCr(id, a, px, pz, o) {
+    const me = o === player, main = mainOf(o);
+    if (id === 'cr_gearwall') {
+      const rr = cellR(main), gr = Math.max(2.4, rr * .5), dist = rr + gr + 2, cx = px + main.hx * dist, cz = pz + main.hz * dist, nx = -main.hz, nz = main.hx;
+      const gm = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .8, metalness: .6, roughness: .3 }), grp = new THREE.Group(), segs = [];
+      [-1.9, 0, 1.9].forEach((k, i) => { const x = cx + nx * gr * k, z = cz + nz * gr * k; segs.push({ x, z }); const ge = new THREE.Mesh(gearGeo(gr, 12, .6), gm); ge.position.set(x, gr * .8, z); ge.rotation.order = 'YXZ'; ge.rotation.y = Math.atan2(main.hx, main.hz); ge.rotation.x = -1.05; ge.userData.dir = i % 2 ? -1 : 1; ge.add(glowSprite(a.color, gr * 2.4, .35)); grp.add(ge); emit(x, gr, z, a.color, 16, 6, .5); });
+      scene.add(grp); crfx.push({ id, t: a.dur, segs, gr, o, mesh: grp, hit: new Set() }); return true;
+    }
+    if (id === 'cr_rewind') {
+      if (!me) return false;
+      const want = crClock - a.back; let h = null; for (const e of crHist) if (e.t <= want) h = e;
+      if (!h) { toast('Перемотка: прошло меньше 4 секунд — пока некуда вернуться'); return false; }
+      const dx = h.x - px, dz = h.z - pz, m0 = total(o);
+      emitIcons(px, 3, pz, 'clock', a.color, 4, 1.6); emit(px, 2, pz, a.color, 30, 8, .6);
+      for (const c of o.cells) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (h.m > m0) c.mass *= h.m / m0; }
+      wave(h.x, h.z, a.color, 2, 14, .7); emit(h.x, 2, h.z, '#ffffff', 30, 10, .5); Sound.play('dash'); return true;
+    }
+    if (id === 'cr_swap') {
+      let best = null, bd = a.radius + cellR(main);
+      for (const x of foesOf(o)) { if (x.kind === 'boss' || x.kind === 'minion') continue; for (const c of x.cells) { const dx = c.x - main.x, dz = c.z - main.z, d = Math.hypot(dx, dz); if (d < bd && d > .1 && (dx * main.hx + dz * main.hz) / d > .2) { bd = d; best = c; } } }
+      if (!best) { if (me) toast('Рокировка: впереди в радиусе 25 нет капли'); return false; }
+      const mx = main.x, mz = main.z, dx = best.x - mx, dz = best.z - mz;
+      emit(mx, 2, mz, a.color, 24, 7, .5); emit(best.x, 2, best.z, a.color, 24, 7, .5);
+      for (const c of o.cells) { c.x += dx; c.z += dz; clampArena(c); } best.x = mx; best.z = mz; best.vx = best.vz = 0;
+      wave(mx, mz, a.color, 1, 8, .5); wave(mx + dx, mz + dz, a.color, 1, 8, .5); if (me) Sound.play('dash'); return true;
+    }
+    return false;
+  }
+  function crTick(dt) {
+    crClock += dt; crHistT -= dt;
+    if (crHistT <= 0 && player.cells.length) { crHistT = .1; const [x, z] = centerOf(player); crHist.push({ t: crClock, x, z, m: total(player) }); while (crHist.length && crHist[0].t < crClock - 6) crHist.shift(); }
+    for (const f of crfx) {
+      f.t -= dt; f.mesh.children.forEach(g => { g.rotation.z += dt * 3 * g.userData.dir; });
+      for (const x of foesOf(f.o)) for (const c of x.cells) for (const sg of f.segs) {
+        const dx = c.x - sg.x, dz = c.z - sg.z, d = Math.hypot(dx, dz) || .01, lim = f.gr + cellR(c);
+        if (d >= lim) continue;
+        c.x = sg.x + dx / d * lim; c.z = sg.z + dz / d * lim; c.vx += dx / d * 38; c.vz += dz / d * 38;
+        if (!f.hit.has(c)) { f.hit.add(c); c.mass *= 1 - abilById('cr_gearwall').dmg; if (nearView(c.x, c.z)) emit(c.x, cellR(c), c.z, '#ffd27a', 18, 7, .4); }
+      }
+      if (f.t < .4) f.mesh.scale.setScalar(Math.max(.01, f.t / .4));
+    }
+    crfx = crfx.filter(f => { if (f.t > 0) return true; scene.remove(f.mesh); return false; });
+  }
   let xfx = [];   // timed world effects: hole, meteor, anchor, twin (each remembers its caster)
   function blinkBy(o, d, color) {
     const main = mainOf(o);
@@ -5536,7 +5612,7 @@ body.menu-bg .menu-backdrop { display: block; }
     el.hidden = false; clearTimeout(chaosBanner.t); chaosBanner.t = setTimeout(() => { el.hidden = true; }, CHAOS_CFG.showSec * 1000);
   }
   function abTick(dt) {
-    xaTick(dt);
+    xaTick(dt); crTick(dt);
     for (const o of owners) {
       if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
       if (o.iceT) o.iceT = Math.max(0, o.iceT - dt);
@@ -5694,7 +5770,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const chNow = checkChallenges();
     const chestChance = roundChestChance(stats.time / 60, stats.maxMass, stats.win, stats.ranked);
     const gotChest = save.pity >= CHEST_RULE[stats.ranked ? 'ranked' : 'normal'].pity - 1 || Math.random() < chestChance;
-    if (gotChest) { save.chests++; save.pity = 0; } else save.pity++;
+    if (gotChest) { save.chestSeq = (save.chestSeq || 0) + 1; const k = save.chestSeq % 10; if (k === 3 || k === 7 || (k === 0 && Math.random() < .5)) save.shardChests++; else save.chests++; save.pity = 0; } else save.pity++;
     logRoundChest(stats.ranked, stats.time, gotChest); actLog(stats.time, stats.maxMass);
     let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
@@ -5829,7 +5905,7 @@ body.menu-bg .menu-backdrop { display: block; }
     mesh.add(new THREE.Mesh(bonusCore, new THREE.MeshBasicMaterial({ color: col })));
     mesh.add(new THREE.Mesh(bonusRing, new THREE.MeshBasicMaterial({ color: col })));
     mesh.add(glowSprite(col, 5, .7));
-    const [x, z] = randInArena(8);
+    const [x, z] = owlNext || randInArena(8); owlNext = null; owlMark.visible = false;
     mesh.position.set(x, 1.2, z);
     scene.add(mesh);
     bonuses.push({ x, z, type, mesh });
@@ -6130,7 +6206,7 @@ body.menu-bg .menu-backdrop { display: block; }
     abTick(dt);
     trailFx(dt, performance.now());
     if (player.dashT > 0) { const lk = lookFor('dash'); for (const c of player.cells) { const r = cellR(c); emit(c.x - c.hx * r, r * .8, c.z - c.hz * r, lk ? lk.c : cellColor(c), 4, 4, .45); } }
-    if (!stats.tutorial) { bonusTimer -= dt; if (bonusTimer <= 0) { spawnBonus(); bonusTimer = arenaIs('ocean') ? 5.4 : 9; } }
+    if (!stats.tutorial) { bonusTimer -= dt; owlTick(performance.now()); if (bonusTimer <= 0) { spawnBonus(); bonusTimer = arenaIs('ocean') ? 5.4 : 9; } }
     else if (tutTick(dt)) return;
     if (bossesOn()) bossTimer -= dt;
     if (bossTimer <= 0) {
@@ -6481,7 +6557,7 @@ body.menu-bg .menu-backdrop { display: block; }
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard', 'friendsCard', 'dmCard', 'clanCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard', 'friendsCard', 'dmCard', 'clanCard', 'wsCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -7087,7 +7163,7 @@ body.menu-bg .menu-backdrop { display: block; }
         `<small class="lg-when">${seasonStarted ? `сезон ${save.season.id} · до ${fmtDate(seasonEnd(save.season.id))}` : `первый сезон — с ${fmtDate(SEASON_EPOCH)}`} · 14 дней</small></span>`; }
   }
   const OLD_PAT = ['stripes', 'dots', 'stars', 'gradient', 'grid', 'zigzag', 'rings'];
-  const MAT_CSS = { chrome: 'linear-gradient(160deg, rgba(255,255,255,.75), transparent 38%, rgba(255,255,255,.35) 58%, transparent 70%), ',
+  const MAT_CSS = { skeleton: 'radial-gradient(circle at 36% 42%, transparent 0 18%, #ffd27a 19% 25%, transparent 26%), radial-gradient(circle at 66% 64%, transparent 0 10%, #ffd27a 11% 16%, transparent 17%), radial-gradient(circle at 64% 30%, #ffd27a 0 6%, transparent 7%), ', sandglass: 'radial-gradient(ellipse at 50% 12%, #ffd27a 0 28%, transparent 30%), radial-gradient(circle, #ffd27a 0 1.5px, transparent 2px) 0 0/8px 8px, ', chrome: 'linear-gradient(160deg, rgba(255,255,255,.75), transparent 38%, rgba(255,255,255,.35) 58%, transparent 70%), ',
     glass: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,.8) 0 8%, transparent 22%), ', jelly: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,.7) 0 9%, transparent 25%), ',
     crystal: 'conic-gradient(from 30deg, rgba(255,255,255,.45), transparent 15%, rgba(255,255,255,.25) 30%, transparent 45%, rgba(255,255,255,.4) 60%, transparent 75%, rgba(255,255,255,.2) 90%), ',
     rim: '', magma: '', matte: '' };
@@ -7567,13 +7643,15 @@ body.menu-bg .menu-backdrop { display: block; }
   // «Коллекция → Способности»: the build + what you own, split into upgradable and not upgradable
   function myAbilHtml() {
     const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small><small class="now">${extra}</small></div></div>`;
-    const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id));
+    const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id)), crafted = CR_ABIL.filter(a => own.includes(a.id));
     return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +
       `<p class="empty-note">Билд меняется только здесь, между боями. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p>` +
       `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') +
       `<p class="empty-note">Улучшать — в «Магазине» → «Способности». Новые способности тоже там.</p>` +
       `<h3>Без улучшений · ${fixed.length} из ${XA_ABIL.length}</h3>` + (fixed.length ? fixed.map(a => row(a, `эксклюзив Хаос-лиги · перезарядка ${a.cd} с${abLooksText(a)}`)).join('')
-        : '<p class="empty-note">Эксклюзивные способности даёт «Сингулярность» в Хаос-лиге — по одной за сезон.</p>');
+        : '<p class="empty-note">Эксклюзивные способности даёт «Сингулярность» в Хаос-лиге — по одной за сезон.</p>') +
+      `<h3>Мастерская «Хронос» · ${crafted.length} из ${CR_ABIL.length}</h3>` + (crafted.length ? crafted.map(a => row(a, `создана из осколков · только обычные режимы · перезарядка ${a.cd} с`)).join('')
+        : '<p class="empty-note">Эти способности создаются из осколков: Сундуки → Мастерская «Хронос».</p>');
   }
   // «Магазин → Способности»: buy new ones; upgrades of owned ones in drawers
   function abilShopHtml(lv) {
@@ -7606,7 +7684,7 @@ body.menu-bg .menu-backdrop { display: block; }
   });
   // per-tab help: what the tab is for and how its items are earned (opened by the ⓘ button at the top of each tab)
   const TAB_INFO = {
-    chaosAbil: () => ABILITIES.map(a => `<span style="color:${a.color}">${a.icon}</span> <b>${a.name}</b>${a.xa ? ' <small>(эксклюзив)</small>' : ''} — ${a.desc}.${a.cd > 1 ? ` Перезарядка ${a.cd} с.` : a.id === 'dash' ? ' Перезарядка 4 с.' : a.id === 'split' ? ' Перезарядка 10 с, до 10 частей.' : ''}`),
+    chaosAbil: () => ABILITIES.map(a => `<span style="color:${a.color}">${a.icon}</span> <b>${a.name}</b>${a.xa ? ' <small>(эксклюзив)</small>' : a.cr ? ' <small>(мастерская, не в Хаос-лиге)</small>' : ''} — ${a.desc}.${a.cd > 1 ? ` Перезарядка ${a.cd} с.` : a.id === 'dash' ? ' Перезарядка 4 с.' : a.id === 'split' ? ' Перезарядка 10 с, до 10 частей.' : ''}`),
     chaos: () => [`Хаос-лига открывается с ${CHAOS_CFG.entryLevel} уровня. Сезон длится ${CHAOS_CFG.seasonDays} дней, режим боя меняется по кругу, как в основной лиге.`,
       'В начале боя выдаются 3 случайные способности из 24 (12 обычных и 12 эксклюзивных); одна из них всегда рывок или деление. Набор не меняется до конца боя. Купленные способности и улучшения не действуют — у всех равные условия.',
       `Свои ступени: Искра, Помеха, Сбой, Шторм, Разлом, Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос за бой со «Сбоя»: ${CHAOS_CFG.fee.slice(2).join(' / ')}. Ниже порога своей ступени не опустишься. Монеты за бой — как в рейтинге (×1,5).`,
@@ -8087,12 +8165,13 @@ body.menu-bg .menu-backdrop { display: block; }
   const leagueExcl = () => [...SKINS.filter(k => k.lchest).map(k => ['skin', k]), ...FX.filter(f => f.lchest).map(f => ['fx', f]), ...PETS.filter(pt => pt.lchest).map(pt => ['pet', pt])];
   const ownsTI = ([type, item]) => (type === 'skin' ? save.skins : type === 'pet' ? save.pets : type === 'deco' ? save.decor : save.fxOwned).includes(item.id);
   const RAR_KEYS = Object.keys(RARITY);
-  const chestTotal = () => save.chests + save.special.length;
+  const chestTotal = () => save.chests + save.special.length + (save.shardChests || 0);
   const pickRarity = w => { const tot = w.reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (let i = 0; i < w.length; i++) if ((x -= w[i]) < 0) return RAR_KEYS[i]; return RAR_KEYS[0]; };
   const CHEST_LOOK = {
     normal:    ['#7b3dff', '#3a1580', '#ff4fd8', '#9b3dff', 'rgba(178,107,255,.55)'],
     daily:     ['#22b8ff', '#0a3a6e', '#22e6ff', '#4d7cff', 'rgba(34,230,255,.55)'],
     league:    ['#ffb020', '#7a4a00', '#ffd23f', '#ff9a3d', 'rgba(255,210,63,.6)'],
+    shard:     ['#e8b05a', '#3a1a08', '#22e6ff', '#ffd27a', 'rgba(34,230,255,.55)'],
   };
   function chestLook(kind, rar) {
     const L = kind === 'challenge' ? [RARITY[rar].color, '#1a0a3a', RARITY[rar].color, '#3a1580', RARITY[rar].color] : CHEST_LOOK[kind] || CHEST_LOOK.normal;
@@ -8185,6 +8264,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const daily = save.dailyChestDay !== today;
     const left = (() => { const t = new Date(); t.setHours(24, 0, 0, 0); const m = Math.ceil((t - Date.now()) / 60000); return `${Math.floor(m / 60)} ч ${m % 60} мин`; })();
     rows.push({ key: 'daily', look: chestLook('daily'), title: 'Ежедневный сундук', sub: daily ? 'Случайная редкость, раз в сутки' : `Следующий через ${left}`, btn: daily ? 'Забрать' : 'Завтра', dis: !daily });
+    if (save.shardChests) rows.push({ key: 'shard', look: chestLook('shard'), title: `Сундук осколков ×${save.shardChests}`, sub: '20–30 осколков для мастерской «Хронос»', btn: 'Открыть' });
     if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть' });
     save.special.forEach((c, i) => rows.push(c.kind === 'league'
       ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть' }
@@ -8209,6 +8289,7 @@ body.menu-bg .menu-backdrop { display: block; }
     let opts, look;
     if (key === 'daily') { if (save.dailyChestDay === today) return; save.dailyChestDay = today; opts = {}; look = chestLook('daily'); }
     else if (key === 'normal') { if (!save.chests) return; save.chests--; opts = {}; look = chestLook('normal'); }
+    else if (key === 'shard') { if (!save.shardChests) return; save.shardChests--; opts = { shards: true }; look = chestLook('shard'); }
     else {
       const i = +key.slice(2), c = save.special[i]; if (!c) return;
       save.special.splice(i, 1);
@@ -8222,6 +8303,15 @@ body.menu-bg .menu-backdrop { display: block; }
     buzz(40); Sound.play('chest');
     $('overlay').scrollTop = 0;
     setTimeout(() => {
+      if (opts.shards) {   // shard chest: 20–30 shards, each 60% common · 27% rare · 10% epic · 3% legendary
+        const got = { common: 0, rare: 0, epic: 0, legendary: 0 }, n = 20 + Math.floor(Math.random() * 11);
+        for (let i = 0; i < n; i++) got[pickRarity(SHARD_W)]++;
+        RAR_KEYS.forEach(k => { save.shards[k] += got[k]; }); logChest('shard', got.legendary ? 'legendary' : got.epic ? 'epic' : 'rare'); persist();
+        box.classList.remove('shake'); box.classList.add('open');
+        const el = $('reveal'); el.style.setProperty('--rc', '#22e6ff');
+        el.innerHTML = `<span class="rar">Сундук осколков · ${n} шт.</span><div class="ws-bal" style="width:100%">${RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}"><b>+${got[k]}</b>${RARITY[k].name}</span>`).join('')}</div><small>Осколки — в мастерской «Хронос»: кнопка ниже списка сундуков.</small>`;
+        el.hidden = false; renderChest(); renderAll(); chestBusy = false; return;
+      }
       const r = rollChest(opts), R2 = RARITY[r.rar];
       logChest(opts.src || key, r.rar); persist();
       box.classList.remove('shake'); box.classList.add('open');
@@ -8233,6 +8323,45 @@ body.menu-bg .menu-backdrop { display: block; }
       renderChest(); renderAll(); chestBusy = false;
     }, 750);
   }
+  // ================= 2.3 workshop «Хронос»: crafting from shards =================
+  const SHARD_W = [60, 27, 10, 3];
+  const CR_PRICE = { bg_cr_gears: [['common', 30]], bg_cr_sand: [['rare', 30]], bg_cr_behind: [['epic', 30]], bg_cr_void: [['legendary', 20]],
+    fr_cr_dial: [['common', 30]], fr_cr_roman: [['rare', 30]], fr_cr_pend: [['epic', 30]], fr_cr_gyro: [['legendary', 20]],
+    cr_engrave: [['epic', 45]], cr_watch: [['rare', 45]], cr_windup: [['rare', 40]], cr_skeleton: [['epic', 45]], cr_sandup: [['epic', 40]], cr_spiral: [['legendary', 30]], cr_moon: [['legendary', 30]],
+    cr_cogs: [['rare', 45]], cr_tick: [['rare', 45]], cr_marks: [['epic', 45]], cr_cogwings: [['epic', 45]], cr_freeze: [['legendary', 30]], cr_halo: [['legendary', 30]], cr_foucault: [['legendary', 30]],
+    cr_p_cuckoo: [['rare', 60]], cr_p_mouse: [['epic', 60]], cr_p_owl: [['legendary', 40]],
+    cr_gearwall: [['epic', 90], ['legendary', 15]], cr_rewind: [['epic', 90], ['legendary', 15]], cr_swap: [['epic', 90], ['legendary', 15]] };
+  const WS_CATS = [['bg', 'Фоны профиля'], ['frame', 'Рамки'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['pet', 'Питомцы'], ['abil', 'Способности']];
+  function wsItems(cat) {
+    if (cat === 'bg') return PBG.filter(b => b.craft).map(b => ({ id: b.id, name: b.name, rar: b.rar, pv: `<img src="${pbgThumb(b.id)}" alt="">`, own: (save.pbg || []).includes(b.id), give: () => save.pbg.push(b.id) }));
+    if (cat === 'frame') return DECOR.filter(d => d.craft).map(d => ({ id: d.id, name: d.name, rar: d.craft, pv: decoPreview(d), own: save.decor.includes(d.id), give: () => save.decor.push(d.id) }));
+    if (cat === 'skin') return SKINS.filter(k => k.craft).map(k => ({ id: k.id, name: k.name, rar: k.craft, pv: `<div class="${swClass(k)}" style="${swatch(k)}">${headIcon(k)}</div>`, own: save.skins.includes(k.id), give: () => save.skins.push(k.id), info: 'skin:' + k.id }));
+    if (cat === 'fx') return FX.filter(f => f.craft).map(f => ({ id: f.id, name: f.name, rar: f.craft, sub: SLOT_NAME[f.slot], pv: `<img alt="" src="${fxThumb(f)}">`, own: save.fxOwned.includes(f.id), give: () => save.fxOwned.push(f.id), info: 'fx:' + f.id }));
+    if (cat === 'pet') return PETS.filter(pt => pt.craft).map(pt => ({ id: pt.id, name: pt.name, rar: pt.craft, sub: PET_BONUS[pt.bonus].text(), pv: `<img alt="" src="${petThumb(pt)}">`, own: save.pets.includes(pt.id), give: () => save.pets.push(pt.id), info: 'pet:' + pt.id }));
+    return CR_ABIL.map(a => ({ id: a.id, name: a.name, rar: 'legendary', sub: `${a.desc}. Перезарядка ${a.cd} с`, pv: `<span class="ab-big" style="--ac:${a.color}">${a.icon}</span>`, own: save.abil.owned.includes(a.id), give: () => save.abil.owned.push(a.id) }));
+  }
+  const priceText = id => CR_PRICE[id].map(([r, n]) => `${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}`).join(' + ');
+  const canPay = id => CR_PRICE[id].every(([r, n]) => save.shards[r] >= n);
+  function renderWorkshop() {
+    $('wsBal').innerHTML = RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}"><b>${save.shards[k]}</b>${RARITY[k].name}</span>`).join('');
+    $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'}>10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} → 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}</button>`).join('');
+    $('wsList').innerHTML = WS_CATS.map(([cat, title]) => { const list = wsItems(cat);
+      return `<h2 class="section-title">${title} <small>${list.filter(x => x.own).length}/${list.length}</small></h2><div class="ws-grid">` + list.map(x => `<div class="ws-it" style="--rc:${RARITY[x.rar].color}"${x.info ? ` data-info="${x.info}" tabindex="0" role="button" aria-label="Подробнее: ${x.name}"` : ''}><div class="pv">${x.pv}</div><span class="rar">${RARITY[x.rar].name}</span><b>${x.name}</b>${x.sub ? `<small>${x.sub}</small>` : ''}` +
+        (x.own ? '<span class="own">✓ Создано</span>' : `<small>${priceText(x.id)}</small><button class="buy" type="button" data-wscraft="${cat}:${x.id}" ${canPay(x.id) ? '' : 'disabled'}>Создать</button>`) + '</div>').join('') + '</div>'; }).join('');
+  }
+  function openWorkshop() { showCard('wsCard'); renderWorkshop(); $('wsBack').focus(); }
+  $('wsOpen').addEventListener('click', openWorkshop);
+  $('wsBack').addEventListener('click', () => { showCard('chestCard'); renderChest(); $('wsOpen').focus(); });
+  $('wsCard').addEventListener('click', e => {
+    const ex = e.target.closest('[data-wsex]');
+    if (ex) { const k = ex.dataset.wsex, nx = RAR_KEYS[RAR_KEYS.indexOf(k) + 1]; if (save.shards[k] < 10) return; save.shards[k] -= 10; save.shards[nx]++; persist(); renderWorkshop(); const b = document.querySelector(`[data-wsex="${k}"]`); if (b && !b.disabled) b.focus(); return; }
+    const cb = e.target.closest('[data-wscraft]');
+    if (cb) { e.stopPropagation(); const [cat, id] = cb.dataset.wscraft.split(':'), it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) return;
+      CR_PRICE[id].forEach(([r, n]) => { save.shards[r] -= n; }); it.give(); persist(); Sound.play('chest'); buzz(30);
+      toast(`Создано: «${it.name}»${cat === 'abil' ? ' — поставь в билд: Коллекция → Способности' : ''}`); renderWorkshop(); renderAll(); return; }
+    const t = e.target.closest('[data-info]'); if (t && !e.target.closest('button')) openItem(t.dataset.info);
+  }, true);
+  $('wsCard').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-info]')) { e.preventDefault(); openItem(e.target.dataset.info); } });
   $('chestList').addEventListener('click', e => { const b = e.target.closest('button[data-open]'); if (b && !b.disabled) openChest(b.dataset.open); });
   $('chestBtn').addEventListener('click', () => { showCard('chestCard'); $('reveal').hidden = true; $('chestBox').classList.remove('open'); $('chestBox').setAttribute('style', chestLook('normal')); renderChest(); const f = document.querySelector('#chestList button:not([disabled])'); (f || $('chestBack')).focus(); });
   $('chestBack').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('chestBtn').focus(); });
@@ -9488,6 +9617,20 @@ body.menu-bg .menu-backdrop { display: block; }
         [-1, 1].forEach(sx => M(new THREE.BoxGeometry(.12, .12, .05), basicMat('#120820'), sx * .16, .08, .45)); break; }
       case 'brute': M(new THREE.BoxGeometry(.75, .62, .6), mat); M(new THREE.SphereGeometry(.38, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), accMat, 0, .3, 0); M(new THREE.ConeGeometry(.07, .3, 6), basicMat('#ffd23f'), 0, .72, 0);
         [-1, 1].forEach(sx => M(new THREE.SphereGeometry(.17, 10, 8), accMat, sx * .48, -.12, .12)); eyes(.06, .31, .15); break;
+      // ---- 2.3 workshop «Хронос» ----
+      case 'cuckoo': { M(new THREE.SphereGeometry(.4, 16, 12), mat).scale.set(1, .9, 1.15); M(new THREE.SphereGeometry(.27, 14, 10), mat, 0, .32, .3);
+        M(new THREE.ConeGeometry(.08, .26, 8), basicMat('#ffd23f'), 0, .3, .64).rotation.x = Math.PI / 2;
+        { const tail = M(new THREE.ConeGeometry(.16, .5, 6), accMat, 0, .12, -.55); tail.rotation.x = -Math.PI / 2 - .5; tail.userData.tail = 1; }
+        [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.26, 10, 8), accMat, sx * .38, .05, -.05); w.scale.set(.35, .7, 1.1); w.userData.wing = sx; }); eyes(.4, .5, .11); break; }
+      case 'mouse': { M(new THREE.SphereGeometry(.4, 16, 12), mat).scale.set(1, .75, 1.3); [-1, 1].forEach(sx => M(new THREE.SphereGeometry(.17, 12, 8), accMat, sx * .24, .32, .28).scale.set(1, 1, .35));
+        M(new THREE.SphereGeometry(.06, 8, 6), basicMat('#ff8aa8'), 0, .02, .56); { const tail = M(new THREE.TorusGeometry(.22, .025, 6, 16, Math.PI * 1.2), accMat, 0, -.05, -.6); tail.rotation.y = Math.PI / 2; tail.userData.tail = 1; }
+        { const key = new THREE.Group(); key.position.set(0, .34, -.08); key.userData.reel = 1; g.add(key); const km = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .6, metalness: .6, roughness: .3 });
+          const sh = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, .26, 6), km); sh.position.y = .1; key.add(sh); [-1, 1].forEach(sx => { const lp = new THREE.Mesh(new THREE.TorusGeometry(.09, .03, 6, 14), km); lp.position.set(sx * .11, .26, 0); key.add(lp); }); }
+        eyes(.14, .46, .12); break; }
+      case 'owl': { M(new THREE.SphereGeometry(.45, 16, 12), mat).scale.set(1, 1.12, .95); [-1, 1].forEach(sx => { const t2 = M(new THREE.ConeGeometry(.09, .3, 6), accMat, sx * .24, .55, .05); t2.rotation.z = -sx * .4; });
+        M(new THREE.CircleGeometry(.2, 20), basicMat('#fff6d8'), 0, -.12, .44); { const fc = M(new THREE.PlaneGeometry(.38, .38), new THREE.MeshBasicMaterial({ map: ICONS.clock, color: '#2a1a08', transparent: true }), 0, -.12, .445); fc.userData.owlDial = 1; }
+        [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.24, 10, 8), accMat, sx * .44, -.05, -.02); w.scale.set(.3, .75, .9); w.userData.wing = sx; });
+        eyes(.2, .4, .16); { const mono = M(new THREE.TorusGeometry(.13, .025, 6, 20), new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .7, metalness: .7 }), .16, .2, .47); mono.userData.mono = 1; } break; }
       default: M(new THREE.SphereGeometry(.5, 18, 14), mat); eyes(.1, .45);
     }
     g.add(glowSprite(col, 2.2, .45));
@@ -9504,6 +9647,7 @@ body.menu-bg .menu-backdrop { display: block; }
       if (u.seg !== undefined) o.position.x = Math.sin(t * 5 - u.seg * .8) * .18 * (u.seg ? 1 : .3);
       if (u.starSpin) o.material.rotation = t * 1.2;
       if (u.reel) o.rotation.y = t * 6;
+      if (u.owlDial) o.rotation.z = -t * 1.2;
       if (u.blinkTip) o.visible = Math.sin(t * 6 + u.blinkTip) > -.5;
       if (u.disk) o.rotation.z = t * 2.5;
       if (u.squash) { const k = Math.sin(t * 5); o.scale.set(1 + k * .08, .7 - k * .08, 1 + k * .08); }
@@ -9535,6 +9679,45 @@ body.menu-bg .menu-backdrop { display: block; }
       petT = .5; const rr = 2 + petObj.pt.lv, rr2 = rr * rr;
       for (let i = 0; i < FOOD; i++) { const f = foods[i]; if ((f.x - petObj.x) ** 2 + (f.z - petObj.z) ** 2 < rr2) { c.mass += 1; placeFood(i); } }
     }
+    if (running) crPetTick(dt, c, now);
+  }
+  // ---- 2.3 «Хронос» pet skills ----
+  let petCk = 60, petWd = 45, crArrowT = 0, crArrowB = null, owlNext = null;
+  const textSprite = (txt, col) => { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const x = cv.getContext('2d'); x.font = '900 40px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = col; x.shadowColor = col; x.shadowBlur = 10; x.fillText(txt, 128, 34);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false })); sp.scale.set(4, 1, 1); sp.visible = false; scene.add(sp); return sp; };
+  const cuckooTxt = textSprite('Ку-ку!', '#ffd27a'), windTxt = textSprite('−2 с', '#22e6ff'); let txtT = 0, txtSp = null;
+  const crArrow = (() => { const sh = new THREE.Shape(); sh.moveTo(0, 1.6); sh.lineTo(1, .2); sh.lineTo(.36, .2); sh.lineTo(.36, -1.2); sh.lineTo(-.36, -1.2); sh.lineTo(-.36, .2); sh.lineTo(-1, .2); sh.closePath();
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), decal(new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: .9, depthWrite: false, side: THREE.DoubleSide }))); m.rotation.order = 'YXZ'; m.visible = false; scene.add(m); return m; })();
+  const owlMark = (() => { const g = new THREE.Group(); const face = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decal(new THREE.MeshBasicMaterial({ map: dialTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })));
+    face.rotation.x = -Math.PI / 2; face.position.y = .07; g.add(face); const hand = new THREE.Mesh(new THREE.PlaneGeometry(.05, .42), decal(new THREE.MeshBasicMaterial({ color: '#3dffa2', transparent: true, depthWrite: false })));
+    hand.geometry.translate(0, .21, 0); hand.rotation.x = -Math.PI / 2; hand.position.y = .08; g.add(hand); const num = new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.n5, color: '#3dffa2', transparent: true, depthWrite: false })); num.position.y = 3.2; num.scale.setScalar(2.4); g.add(num);
+    g.userData = { hand, num }; g.scale.setScalar(5); g.visible = false; scene.add(g); return g; })();
+  function showTxt(sp) { if (txtSp) txtSp.visible = false; txtSp = sp; txtT = 1.4; sp.visible = true; }
+  function crPetTick(dt, c, now) {
+    const kind = petObj.pt.bonus;
+    if (txtSp) { txtT -= dt; txtSp.position.set(petObj.x, petObj.y + 1.6 + (1.4 - txtT) * .8, petObj.z); txtSp.material.opacity = Math.min(1, txtT * 2); if (txtT <= 0) { txtSp.visible = false; txtSp = null; } }
+    if (kind === 'cuckoo' && petLv('cuckoo')) {
+      petCk -= dt;
+      if (petCk <= 0) { let best = null, bd = Infinity; for (const b of bonuses) { const d = Math.hypot(b.x - c.x, b.z - c.z); if (d < bd) { bd = d; best = b; } }
+        if (best) { petCk = 60; crArrowB = best; crArrowT = 3.5; showTxt(cuckooTxt); Sound.play('bonus'); } else petCk = 5; }
+    }
+    if (crArrowT > 0 && crArrowB && bonuses.includes(crArrowB)) { crArrowT -= dt; const dx = crArrowB.x - c.x, dz = crArrowB.z - c.z, d = Math.hypot(dx, dz) || 1, rr = cellR(c) + 3.5;
+      crArrow.position.set(c.x + dx / d * rr, .1, c.z + dz / d * rr); crArrow.rotation.set(-Math.PI / 2, Math.atan2(-dx, -dz), 0);
+      crArrow.scale.setScalar(1.4 + Math.sin(now / 120) * .15); crArrow.material.opacity = Math.min(.9, crArrowT); crArrow.visible = true; }
+    else { crArrow.visible = false; crArrowT = 0; }
+    if (kind === 'windup' && petLv('windup')) {
+      petWd -= dt;
+      if (petWd <= 0) { petWd = 45; for (const k in player.abCd) player.abCd[k] = Math.max(0, player.abCd[k] - 2); player.dashCd = Math.max(0, (player.dashCd || 0) - 2); player.splitCd = Math.max(0, (player.splitCd || 0) - 2);
+        emitIcons(c.x, cellR(c) * 1.4 + 1, c.z, 'gear', '#ffd27a', 5, 1.2); showTxt(windTxt); Sound.play('bonus'); }
+    }
+  }
+  // «Совёнок-часовщик»: the next bonus spot is chosen 5 s early and marked with a ticking dial
+  function owlTick(now) {
+    if (!(petObj && petObj.pt.bonus === 'owl' && petLv('owl')) || mode === 'hardcore') { owlMark.visible = false; return; }
+    if (!owlNext && bonusTimer <= 5 && bonuses.length < MAX_BONUS) { owlNext = randInArena(8); owlMark.position.set(owlNext[0], 0, owlNext[1]); }
+    if (owlNext) { const left = Math.max(0, bonusTimer), u = owlMark.userData; owlMark.visible = true; u.hand.rotation.z = -(1 - left / 5) * Math.PI * 2; u.num.material.map = ICONS['n' + Math.max(1, Math.ceil(left))]; u.num.position.y = 3.2 + Math.sin(now / 200) * .15; }
+  }
+  function crPetReset() { petCk = 60; petWd = 45; crArrowT = 0; crArrowB = null; crArrow.visible = false; owlNext = null; owlMark.visible = false; if (txtSp) txtSp.visible = false; txtSp = null;
   }
 
   // holiday look for the running season (snow, embers, hearts and a recoloured rim)
@@ -10781,6 +10964,22 @@ body.menu-bg .menu-backdrop { display: block; }
       save.actDays = Object.keys(save.act).length; save.actBest = 0; save.actBest = actBestStreak(); return 'открой Профиль → Активность'; }],
     ['Серия 30 дней', () => { const now = new Date(); for (let i = 0; i < 30; i++) { const k = dayKey(dayShift(now, -i)); if (!save.act[k]) save.act[k] = [3, 600, 1500]; } save.actBest = actBestStreak(); }],
     ['Очистить', () => { save.act = {}; save.actDays = 0; save.actBest = 0; }]]);
+  testAdd('Мастерская «Хронос»', [
+    ['Открыть мастерскую', () => { $('testModal').hidden = true; openWorkshop(); return 'открыта'; }],
+    ['+5 сундуков осколков', () => { save.shardChests = (save.shardChests || 0) + 5; return 'Сундуки → «Сундук осколков»'; }],
+    ['+300 осколков каждой редкости', () => { RAR_KEYS.forEach(k => { save.shards[k] += 300; }); }],
+    ['Обнулить осколки', () => { RAR_KEYS.forEach(k => { save.shards[k] = 0; }); }],
+    ['Создать всё', () => { WS_CATS.forEach(([cat]) => wsItems(cat).forEach(x => { if (!x.own) x.give(); })); return 'всё есть в коллекции'; }],
+    ['Забрать всё созданное', () => { const crIds = new Set(Object.keys(CR_PRICE)); const drop = l => l.filter(id => !crIds.has(id));
+      save.skins = drop(save.skins); save.fxOwned = drop(save.fxOwned); save.pets = drop(save.pets); save.decor = drop(save.decor); save.pbg = drop(save.pbg || []); save.abil.owned = drop(save.abil.owned);
+      if (crIds.has(save.skin)) { save.skin = 'coral'; refreshSkin(); } ['trail', 'aura', 'eat'].forEach(sl => { if (crIds.has(save.fx[sl])) save.fx[sl] = null; }); applyAura();
+      if (crIds.has(save.pet)) { save.pet = null; applyPet(); } if (crIds.has(save.frame)) save.frame = null; if (save.pc && crIds.has(save.pc.bg)) save.pc.bg = 'bg_base'; save.build = save.build.map(id => crIds.has(id) ? null : id); return 'можно создавать заново'; }],
+    ...[['Надеть набор 1', 'cr_moon', 'cr_marks', 'cr_foucault', 'cr_freeze', 'cr_p_owl'], ['Надеть набор 2', 'cr_watch', 'cr_cogs', 'cr_cogwings', 'cr_tick', 'cr_p_cuckoo'],
+      ['Надеть набор 3', 'cr_spiral', 'cr_marks', 'cr_halo', 'cr_tick', 'cr_p_mouse'], ['Надеть набор 4', 'cr_skeleton', 'cr_cogs', 'cr_halo', 'cr_freeze', 'cr_p_owl'],
+      ['Надеть набор 5', 'cr_sandup', 'cr_cogs', 'cr_cogwings', 'cr_tick', 'cr_p_cuckoo'], ['Надеть набор 6', 'cr_engrave', 'cr_marks', 'cr_foucault', 'cr_freeze', 'cr_p_mouse'], ['Надеть набор 7', 'cr_windup', 'cr_cogs', 'cr_halo', 'cr_tick', 'cr_p_owl']]
+      .map(([label, sk, tr, au, ea, pet]) => [label, () => { [[save.skins, sk], [save.fxOwned, tr], [save.fxOwned, au], [save.fxOwned, ea], [save.pets, pet]].forEach(([l, id]) => { if (!l.includes(id)) l.push(id); });
+        save.skin = sk; save.hat = null; save.fx.trail = tr; save.fx.aura = au; save.fx.eat = ea; save.pet = pet; refreshSkin(); applyPet(); return `${SKINS.find(k => k.id === sk).name} · ${PETS.find(x => x.id === pet).name}`; }]),
+    ['Билд: 3 способности Хронос', () => { CR_ABIL.forEach(a => { if (!save.abil.owned.includes(a.id)) save.abil.owned.push(a.id); }); save.build = CR_ABIL.map(a => a.id); return 'Пробел — стена, E — перемотка, Q — рокировка'; }]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
   function testRender() {
     $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');
@@ -10788,14 +10987,16 @@ body.menu-bg .menu-backdrop { display: block; }
   let testResetArm = 0;
   // test build: everything collectable is open (profile backgrounds and badges too)
   function testUnlockAll() {
-    save.pbg = PBG.map(b => b.id); save.badges = save.badges || {};
+    save.pbg = [...new Set([...PBG.filter(b => !b.craft).map(b => b.id), ...(save.pbg || [])])]; save.badges = save.badges || {};
     [...PROMO_BADGES, ...SPECIAL].forEach(b => { save.badges[b.id] = save.badges[b.id] || today; }); save.badges.millionaire = save.badges.millionaire || today;
     save.legendBadge = save.legendBadge || today;
     // every league season of the first year (all six league shapes take turns) and a dozen Chaos seasons
     if (save.seasonLog.length < SEASON_YEAR) save.seasonLog = Array.from({ length: SEASON_YEAR }, (_, i) => { const id = i + 1, sd = seasonData(id), lg = [5, 4, 3, 2, 1, 0][i % 6];
       return { id, league: lg, pts: LEAGUES[lg].pts + 500, name: sd.name, holiday: sd.holiday, year: sd.year || null }; });
     if (save.chaosLog.length < 12) save.chaosLog = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, tier: (CHAOS_TIERS.length - 1) - (i % CHAOS_TIERS.length), pts: 100 }));
-    save.skins = SKINS.map(k => k.id); save.fxOwned = FX.map(f => f.id); save.pets = PETS.map(pt => pt.id); save.decor = DECOR.map(d => d.id); save.arenas = ARENAS.map(a => a.id); save.hats = Object.keys(HATS);
+    // workshop «Хронос» items stay out: they are made in the workshop (crafted ones are kept)
+    const keep = (all, mine) => [...new Set([...all.filter(x => !x.craft).map(x => x.id), ...(mine || [])])];
+    save.skins = keep(SKINS, save.skins); save.fxOwned = keep(FX, save.fxOwned); save.pets = keep(PETS, save.pets); save.decor = keep(DECOR, save.decor); save.arenas = ARENAS.map(a => a.id); save.hats = Object.keys(HATS);
   }
   if (TEST_MODE) { testUnlockAll(); persist(); }
   if (TEST_MODE) {

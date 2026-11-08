@@ -1343,6 +1343,7 @@ body.menu-bg .menu-backdrop { display: block; }
 .ws-bal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .ws-bal span { display: grid; justify-items: center; gap: 1px; padding: 8px 4px; border-radius: var(--r-md); background: var(--row); border: 1px solid var(--line); color: var(--rc); font-size: .72rem; }
 .ws-bal b { font: 400 1.25rem var(--display); }
+.ws-pk { display: inline-flex; align-items: center; gap: 8px; } .ws-ico { width: 24px; height: 24px; flex: none; filter: drop-shadow(0 0 4px currentColor); }
 .ws-top { display: grid; gap: 0 16px; } @media (orientation: landscape) and (min-width: 700px) { .ws-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .ws-top .ws-ex { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ws-top .ws-ex button { font-size: .72rem; padding: 8px 6px; } }
 .ws-ex { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
 .ws-ex button { font-size: .8rem; }
@@ -8354,7 +8355,10 @@ body.menu-bg .menu-backdrop { display: block; }
     cr_p_cuckoo: [['rare', 60]], cr_p_mouse: [['epic', 60]], cr_p_owl: [['legendary', 40]],
     cr_gearwall: [['epic', 90], ['legendary', 15]], cr_rewind: [['epic', 90], ['legendary', 15]], cr_swap: [['epic', 90], ['legendary', 15]] };
   // packs: each is a folder with its own theme; the next pack adds a folder (items name their pack in CR_PACK, «Хронос» by default)
-  const PACKS = [{ id: 'chronos', name: 'Хронос', desc: 'часовой механизм: латунь, шестерни, циферблаты, время', color: '#ffd27a' }];
+  const PACKS = [{ id: 'chronos', name: 'Хронос', desc: 'часовой механизм: латунь, шестерни, циферблаты, время', color: '#ffd27a',
+    // the series emblem: a pocket-watch dial inside a gear
+    ico: '<path d="M12 1.6l1.3 2.2 2.5-.6.6 2.5 2.4.9-.6 2.5 1.9 1.8-1.9 1.8.6 2.5-2.4.9-.6 2.5-2.5-.6L12 22.4l-1.3-2.2-2.5.6-.6-2.5-2.4-.9.6-2.5L3.9 13l1.9-1.8-.6-2.5 2.4-.9.6-2.5 2.5.6z" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M12 8.6V12l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' }];
+  const packIco = pk => `<svg class="ws-ico" viewBox="0 0 24 24" aria-hidden="true" style="color:${pk.color}">${pk.ico}</svg>`;
   const CR_PACK = {};
   const packOf = id => CR_PACK[id] || 'chronos';
   const WS_CATS = [['bg', 'Фоны профиля'], ['frame', 'Рамки'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['pet', 'Питомцы'], ['abil', 'Способности']];
@@ -8378,7 +8382,7 @@ body.menu-bg .menu-backdrop { display: block; }
       const all = WS_CATS.flatMap(([cat]) => wsItems(cat).filter(x => packOf(x.id) === pk.id).map(x => ({ ...x, cat }))), own = all.filter(x => x.own).length, can = all.filter(x => !x.own && canPay(x.id)).length;
       const body = `<p class="hint" style="margin:0 0 6px">Тема серии: ${pk.desc}.</p>` + WS_CATS.map(([cat, title]) => { const list = all.filter(x => x.cat === cat); if (!list.length) return '';
         return drawer(`wsc_${pk.id}_${cat}`, `${title} <small class="cnt">${list.filter(x => x.own).length}/${list.length}${list.some(x => !x.own && canPay(x.id)) ? ' · можно создать' : ''}</small>`, `<div class="ws-grid">${list.map(card).join('')}</div>`); }).join('');
-      return drawer('wsp_' + pk.id, `<span style="color:${pk.color}">📁 Серия «${pk.name}»</span> <small class="cnt">${own}/${all.length}${can ? ` · можно создать: ${can}` : ''}</small>`, body); }).join('');
+      return drawer('wsp_' + pk.id, `<span class="ws-pk" style="color:${pk.color}">${packIco(pk)}Серия «${pk.name}»</span> <small class="cnt">${own}/${all.length}${can ? ` · можно создать: ${can}` : ''}</small>`, body); }).join('');
   }
   function openWorkshop() { if (!save.wsSeen) { save.wsSeen = 1; openDrawers.add('wsp_' + PACKS[0].id); persist(); } showCard('wsCard'); renderWorkshop(); $('wsBack').focus(); }
   $('wsBtn').addEventListener('click', openWorkshop);

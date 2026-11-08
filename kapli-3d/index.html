@@ -1359,6 +1359,10 @@ body.menu-bg .menu-backdrop { display: block; }
 .ws-it .rar { color: var(--rc); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .64rem; }
 .ws-it .own { color: var(--prey); font-weight: 700; font-size: .8rem; }
 .ws-it button { width: 100%; font-size: .78rem; }
+.ch-btns { grid-row: 1 / span 2; grid-column: 3; display: flex; gap: 6px; } .ch-btns .ch-multi { background: transparent; border: 1.5px solid var(--food); color: var(--food); }
+.rv-multi { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; width: 100%; }
+.rv-it { display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: var(--r-md); background: rgba(0,0,0,.25); border: 1px solid var(--rc); min-width: 0; }
+.rv-it .sw { width: 42px; height: 42px; } .rv-it b { font-size: .74rem; line-height: 1.15; overflow-wrap: anywhere; } .rv-it small { font-size: .64rem; color: var(--rc); }
 .chest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .chest-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 12px; align-items: center; background: var(--row); border-radius: var(--r-md); padding: 10px 12px; }
 .chest-list .ci { grid-row: 1 / span 2; width: 30px; height: 24px; border-radius: 6px; background: linear-gradient(180deg, var(--cl1), var(--cb2)); box-shadow: 0 0 10px var(--cl1); }
@@ -1758,7 +1762,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
   <div class="card" id="wsCard" hidden>
     <div class="shop-head"><h1>Мастерская</h1></div>
-    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: это 2–3 из каждых 10 сундуков за раунды. Каждая серия — своя папка со своей темой.</p>
+    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: каждый 4-й сундук за раунды приносит ещё и сундук осколков. Каждая серия — своя папка со своей темой.</p>
     <div class="ws-top"><div><h2 class="section-title">Твои осколки</h2><div class="ws-bal" id="wsBal"></div></div>
     <div><h2 class="section-title">Обмен: 10 осколков → 1 следующей редкости</h2><div class="ws-ex" id="wsEx"></div></div></div>
     <div id="wsList"></div>
@@ -1777,6 +1781,8 @@ body.menu-bg .menu-backdrop { display: block; }
       <dt>Повышение лиги</dt><dd>сундук лиги: внутри эксклюзивные предметы, которых нет больше нигде. Пока не собраны все 12, повторов не бывает. Чем выше лига, тем реже добыча</dd>
       <dt>Испытание</dt><dd>сундук, редкость зависит от сложности испытания</dd>
       <dt>Ежедневный</dt><dd>раз в сутки, редкость случайная</dd>
+      <dt>Сундук осколков</dt><dd>каждый 4-й сундук за раунды приносит ещё и сундук осколков (сверху, обычный сундук остаётся). Внутри 20–30 осколков для «Мастерской»</dd>
+      <dt>Сразу несколько</dt><dd>кнопка «×5» открывает до 5 сундуков за раунды или сундуков осколков за раз</dd>
     </dl>
     <p class="hint">Внутри скины, эффекты и питомцы — чем реже, тем сильнее бонус у питомца. Повторный предмет превращается в монеты.</p>
     </template>
@@ -5791,7 +5797,8 @@ body.menu-bg .menu-backdrop { display: block; }
     const chNow = checkChallenges();
     const chestChance = roundChestChance(stats.time / 60, stats.maxMass, stats.win, stats.ranked);
     const gotChest = save.pity >= CHEST_RULE[stats.ranked ? 'ranked' : 'normal'].pity - 1 || Math.random() < chestChance;
-    if (gotChest) { save.chestSeq = (save.chestSeq || 0) + 1; const k = save.chestSeq % 10; if (k === 3 || k === 7 || (k === 0 && Math.random() < .5)) save.shardChests++; else save.chests++; save.pity = 0; } else save.pity++;
+    // 2.3: every 4th round chest also brings a shard chest (on top, the round chest itself is never replaced)
+    if (gotChest) { save.chests++; save.chestSeq = (save.chestSeq || 0) + 1; if (save.chestSeq % 4 === 0) save.shardChests++; save.pity = 0; } else save.pity++;
     logRoundChest(stats.ranked, stats.time, gotChest); actLog(stats.time, stats.maxMass);
     let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
@@ -8288,8 +8295,8 @@ body.menu-bg .menu-backdrop { display: block; }
     const daily = save.dailyChestDay !== today;
     const left = (() => { const t = new Date(); t.setHours(24, 0, 0, 0); const m = Math.ceil((t - Date.now()) / 60000); return `${Math.floor(m / 60)} ч ${m % 60} мин`; })();
     rows.push({ key: 'daily', look: chestLook('daily'), title: 'Ежедневный сундук', sub: daily ? 'Случайная редкость, раз в сутки' : `Следующий через ${left}`, btn: daily ? 'Забрать' : 'Завтра', dis: !daily });
-    if (save.shardChests) rows.push({ key: 'shard', look: chestLook('shard'), title: `Сундук осколков ×${save.shardChests}`, sub: '20–30 осколков для «Мастерской»', btn: 'Открыть' });
-    if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть' });
+    if (save.shardChests) rows.push({ key: 'shard', look: chestLook('shard'), title: `Сундук осколков ×${save.shardChests}`, sub: '20–30 осколков для «Мастерской»', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.shardChests) });
+    if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.chests) });
     save.special.forEach((c, i) => rows.push(c.kind === 'league'
       ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть' }
       : { key: 'sp' + i, look: chestLook('challenge', c.rar), title: `Сундук испытания «${c.title}»`, sub: `Редкость: ${RARITY[c.rar].name}`, btn: 'Открыть' }));
@@ -8299,7 +8306,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('chestCount').textContent = chestTotal();
     const rows = chestRows();
     $('chestList').innerHTML = rows.map(r => `<li style="${r.look}"><span class="ci"></span><b>${r.title}</b><small>${r.sub}</small>` +
-      `<button class="buy" id="ch-${r.key}" data-open="${r.key}" ${r.dis ? 'disabled' : ''}>${r.btn}</button></li>`).join('');
+      `<span class="ch-btns">${r.multi > 1 ? `<button class="buy ch-multi" id="chn-${r.key}" data-openn="${r.key}" aria-label="Открыть сразу ${r.multi}">×${r.multi}</button>` : ''}<button class="buy" id="ch-${r.key}" data-open="${r.key}" ${r.dis ? 'disabled' : ''}>${r.btn}</button></span></li>`).join('');
     const tot = Object.values(RARITY).reduce((a, r) => a + r.w, 0);
     $('odds').innerHTML = Object.values(RARITY).map(r => `<li><b style="color:${r.color}">${r.name}</b><span>${Math.round(r.w / tot * 100)}%</span></li>`).join('');
     $('legPityNote').textContent = `Гарантия легендарного: если ${LEG_PITY} сундуков за раунды и ежедневных подряд без легендарного, следующий — легендарный. Без легендарного уже: ${save.legPity || 0} из ${LEG_PITY}.`;
@@ -8348,7 +8355,7 @@ body.menu-bg .menu-backdrop { display: block; }
     }, 750);
   }
   // ================= 2.3 workshop «Хронос»: crafting from shards =================
-  const SHARD_W = [60, 27, 10, 3];
+  const SHARD_W = [60, 27, 10, 3], CHEST_MULTI = 5;
   // shard icons: common — a rough chip, rare — a prism, epic — a three-crystal cluster, legendary — a cut gem with sparks
   const SHARD_ART = {
     common: [['#f4f2ff', '#7d7aa0'], '<path d="M22 70 L40 22 L66 30 L78 60 L54 82 Z" fill="url(#G)" stroke="#fff" stroke-opacity=".5" stroke-width="2"/><path d="M40 22 L50 56 L22 70 M50 56 L78 60 M50 56 L54 82" stroke="#fff" stroke-opacity=".25" stroke-width="1.5" fill="none"/>'],
@@ -8415,7 +8422,35 @@ body.menu-bg .menu-backdrop { display: block; }
     const t = e.target.closest('[data-info]'); if (t && !e.target.closest('button')) openItem(t.dataset.info);
   }, true);
   $('wsCard').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-info]')) { e.preventDefault(); openItem(e.target.dataset.info); } });
-  $('chestList').addEventListener('click', e => { const b = e.target.closest('button[data-open]'); if (b && !b.disabled) openChest(b.dataset.open); });
+  $('chestList').addEventListener('click', e => { const m = e.target.closest('button[data-openn]'); if (m) { openChestMany(m.dataset.openn); return; } const b = e.target.closest('button[data-open]'); if (b && !b.disabled) openChest(b.dataset.open); });
+  // 2.3: open up to CHEST_MULTI round chests or shard chests in one go; the reveal shows everything at once
+  function openChestMany(key) {
+    if (chestBusy) return;
+    const left = key === 'shard' ? save.shardChests : save.chests, n = Math.min(CHEST_MULTI, left || 0); if (n < 2) return openChest(key);
+    if (key === 'shard') save.shardChests -= n; else save.chests -= n;
+    chestBusy = true;
+    const box = $('chestBox'); $('reveal').hidden = true; box.setAttribute('style', chestLook(key === 'shard' ? 'shard' : 'normal'));
+    box.classList.remove('open', 'empty'); void box.offsetWidth; box.classList.add('shake');
+    buzz(60); Sound.play('chest'); $('overlay').scrollTop = 0;
+    setTimeout(() => {
+      const el = $('reveal');
+      if (key === 'shard') {
+        const got = { common: 0, rare: 0, epic: 0, legendary: 0 }; let tot = 0;
+        for (let c = 0; c < n; c++) { const k = 20 + Math.floor(Math.random() * 11); tot += k; const one = { common: 0, rare: 0, epic: 0, legendary: 0 };
+          for (let i = 0; i < k; i++) one[pickRarity(SHARD_W)]++; RAR_KEYS.forEach(r => { got[r] += one[r]; save.shards[r] += one[r]; }); logChest('shard', one.legendary ? 'legendary' : one.epic ? 'epic' : 'rare'); }
+        el.style.setProperty('--rc', '#22e6ff');
+        el.innerHTML = `<span class="rar">Сундуков осколков: ${n} · ${tot} шт.</span><div class="ws-bal" style="width:100%">${RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 30)}<b>+${got[k]}</b>${RARITY[k].name}</span>`).join('')}</div><small>Создавать предметы — в «Мастерской» в главном меню.</small>`;
+      } else {
+        const res = []; for (let c = 0; c < n; c++) { const r = rollChest({}); logChest('normal', r.rar); res.push(r); }
+        const best = res.reduce((a, r) => RAR_KEYS.indexOf(r.rar) > RAR_KEYS.indexOf(a.rar) ? r : a, res[0]), coins = res.reduce((a, r) => a + r.coins, 0);
+        el.style.setProperty('--rc', RARITY[best.rar].color);
+        el.innerHTML = `<span class="rar">Открыто сундуков: ${n}</span><div class="rv-multi">${res.map(r => { const R2 = RARITY[r.rar];
+          const pic = r.type === 'skin' ? `<div class="${swClass(r.item)}" style="${swatch(r.item)}">${headIcon(r.item)}</div>` : r.type === 'deco' ? decoPreview(r.item) : `<img class="sw" style="border-radius:12px" alt="" src="${r.type === 'pet' ? petThumb(r.item) : fxThumb(r.item)}">`;
+          return `<span class="rv-it" style="--rc:${R2.color}">${pic}<b>${r.item.name}</b><small>${R2.name}${r.star ? ` · ${'★'.repeat(r.star)}` : r.dup ? ' · повтор' : ' · новое'}</small></span>`; }).join('')}</div><small>Монеты за сундуки и повторы: +${coins.toLocaleString('ru-RU')} ◆</small>`;
+      }
+      persist(); box.classList.remove('shake'); box.classList.add('open'); el.hidden = false; renderChest(); renderAll(); chestBusy = false;
+    }, 900);
+  }
   $('chestBtn').addEventListener('click', () => { showCard('chestCard'); $('reveal').hidden = true; $('chestBox').classList.remove('open'); $('chestBox').setAttribute('style', chestLook('normal')); renderChest(); const f = document.querySelector('#chestList button:not([disabled])'); (f || $('chestBack')).focus(); });
   $('chestBack').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('chestBtn').focus(); });
 

@@ -1116,6 +1116,10 @@ body.menu-bg .menu-backdrop { display: block; }
 .res-drawer { background: var(--row); border-radius: var(--r-lg); padding: 0 12px; }
 .res-drawer > summary { cursor: pointer; list-style: none; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: 600; }
 .res-drawer > summary::-webkit-details-marker { display: none; }
+/* 2.3: every drawer gets its own neon icon (picked by its title, see DRAWER_ICONS) */
+.dr-lbl { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+.dr-ic { display: inline-grid; place-items: center; width: 24px; height: 24px; flex: none; color: var(--ic); filter: drop-shadow(0 0 4px var(--ic)); }
+.dr-ic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .res-drawer > summary::after { content: "▾"; color: var(--muted); transition: transform .2s; }
 .res-drawer[open] > summary::after { transform: rotate(180deg); }
 .res-drawer > summary:focus-visible { outline: 2px solid var(--food); outline-offset: 2px; border-radius: 8px; }
@@ -7664,6 +7668,84 @@ body.menu-bg .menu-backdrop { display: block; }
     if (TAB_INFO[shopTab]) $('shop').insertAdjacentHTML('afterbegin', `<button class="tab-info-btn" id="tabInfoBtn" data-tabinfo="${shopTab}">ⓘ Информация · ${tName}</button>`);
   }
   // ---- «Способности»: build editor + list (buy / upgrade); dash and split upgrade through their old upgrade branches ----
+  // ---- 2.3: icons for every drawer, matched by its title (the first match wins, so longer names go first) ----
+  const DI = {
+    sprout: '<path d="M12 21v-9M12 12c0-4 3-6.5 7-6.5 0 4-3 6.5-7 6.5zM12 14.5c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>',
+    bolt: '<path d="M13 2 4.5 14h6.5l-1 8 8.5-12H12z"/>',
+    shield: '<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/>',
+    gift: '<rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v8.5h14V12M12 8v12.5M12 8c-1.8-4.2-6.3-4-6-1.3.2 1.3 2.5 1.3 6 1.3zM12 8c1.8-4.2 6.3-4 6-1.3-.2 1.3-2.5 1.3-6 1.3z"/>',
+    shop: '<path d="M5 8h14l-1.2 12.5H6.2z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/>',
+    chest: '<path d="M3 11h18v9H3zM3 11c0-3.5 4-6 9-6s9 2.5 9 6M10.5 13.5h3v3h-3z"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+    skull: '<path d="M5 11a7 7 0 0 1 14 0v3.5l-2 1.2V19H7v-3.3l-2-1.2z"/><circle cx="9.2" cy="11.5" r="1.4"/><circle cx="14.8" cy="11.5" r="1.4"/><path d="M10.5 19v-2M13.5 19v-2"/>',
+    calendar: '<rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/>',
+    sparkle: '<path d="M12 3l1.8 5.6 5.7 1.9-5.7 1.9L12 18l-1.8-5.6-5.7-1.9 5.7-1.9zM19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+    crown: '<path d="M3.5 8.5l4.5 4 4-7 4 7 4.5-4-2 10.5h-13z"/>',
+    star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4l-5.3 3 1.2-6-4.5-4.1 6-.7z"/>',
+    workshop: '<circle cx="9" cy="14" r="4.2"/><circle cx="9" cy="14" r="1.4"/><path d="M9 8.3v1.5M9 18.2v1.5M3.3 14h1.5M13.2 14h1.5M14.5 3.5l6 6-2 2-6-6zM15.5 8.5l-3.2 3.2"/>',
+    cap: '<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2.2 9 2.2 12 0v-5M22 9v6"/>',
+    chaos: '<path d="M12 12a2 2 0 1 1 2-2M14 10a4 4 0 1 1-4-4M10 6a6 6 0 1 1-6 6M4 12a8 8 0 1 1 8 8"/>',
+    trail: '<path d="M3 16c3-5 5.5 1.5 8.5-3S17 13 21 8"/><circle cx="5" cy="19.5" r="1"/><circle cx="10" cy="19" r=".8"/><circle cx="20" cy="4.5" r="1.4"/>',
+    aura: '<ellipse cx="12" cy="13" rx="9.5" ry="4"/><circle cx="12" cy="11" r="3.5"/><path d="M12 3v1.5M5 5.5l1 1M19 5.5l-1 1"/>',
+    burst: '<path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5M5.3 5.3l3.5 3.5M15.2 15.2l3.5 3.5M5.3 18.7l3.5-3.5M15.2 8.8l3.5-3.5"/><circle cx="12" cy="12" r="1.6"/>',
+    hat: '<path d="M3 18.5h18M6 18.5c0-4.5 1.5-9 6-9s6 4.5 6 9M9 9.5l1-5.5h4l1 5.5"/>',
+    frame: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="12" cy="11" r="3.2"/><path d="M7 18c1-2.5 3-3.5 5-3.5s4 1 5 3.5"/>',
+    tag: '<path d="M3 12.5 12.5 3H20v7.5L10.5 20z"/><circle cx="16" cy="7" r="1.2"/>',
+    image: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/>',
+    drop: '<path d="M12 3c4 5 6.5 8 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 11 8 8 12 3z"/>',
+    paw: '<circle cx="8" cy="8.5" r="1.8"/><circle cx="16" cy="8.5" r="1.8"/><circle cx="4.8" cy="13" r="1.6"/><circle cx="19.2" cy="13" r="1.6"/><path d="M12 12.5c3 0 5 3.2 5 5.2s-2 2.3-5 2.3-5-.3-5-2.3 2-5.2 5-5.2z"/>',
+    crystal: '<path d="M12 2.5l6 6-6 13-6-13zM6 8.5h12M12 2.5v19"/>',
+    pad: '<path d="M7 8h10a4.5 4.5 0 0 1 4 6.5l-1 2a2.5 2.5 0 0 1-4 .5L14.5 15h-5L8 17a2.5 2.5 0 0 1-4-.5l-1-2A4.5 4.5 0 0 1 7 8zM8 10.5v3.5M6.25 12.25h3.5"/><circle cx="15.5" cy="11.5" r=".8"/><circle cx="17.5" cy="13.2" r=".8"/>',
+    rings: '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>',
+    planet: '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(-20 12 12)"/>',
+    flag: '<path d="M5 21V3.5h12l-2.5 4 2.5 4H5"/>',
+    robot: '<rect x="5" y="8" width="14" height="11" rx="3"/><circle cx="9.5" cy="13" r="1.3"/><circle cx="14.5" cy="13" r="1.3"/><path d="M12 8V4.5M10 16.5h4"/><circle cx="12" cy="3.5" r="1"/>',
+    archive: '<path d="M3 4h18v4.5H3zM5 8.5V20h14V8.5M10 12.5h4"/>',
+    coin: '<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5 15.5 12 12 17.5 8.5 12z"/>',
+    check: '<path d="M4 6.5l2 2 3.2-3.2M11.5 7H20M4 13.5l2 2 3.2-3.2M11.5 14H20M11.5 20H20"/>',
+    medal: '<path d="M8 2.5l4 6.5 4-6.5"/><circle cx="12" cy="15" r="6"/><path d="M12 12v6M10 13.5l2-1.5"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.3-1-1.6-1-2.6 0-.9.7-1.4 1.6-1.4H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="14.5" cy="7" r="1"/>',
+    bars: '<path d="M3 21h18M6 21v-8M11 21V5M16 21v-11M20.5 21v-5"/>',
+    line: '<path d="M3 17l5-6 4 3 5-7 4 4M3 21h18"/>',
+    hex: '<path d="M12 2.5l8.2 4.7v9.6L12 21.5l-8.2-4.7V7.2z"/><path d="M9 12l2 2 4-4"/>',
+    trash: '<path d="M4 7h16M9.5 7V4h5v3M6 7l1 13.5h10L18 7M10 11v6M14 11v6"/>',
+    flame: '<path d="M12 2.5c1 4 6 5.5 6 11.5a6 6 0 0 1-12 0c0-3 1.8-5 3-7 .2 2 1 3.2 2.2 3.4C11 7.8 11 5 12 2.5z"/>',
+    monitor: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20.5h8M12 16v4.5"/>',
+    sound: '<path d="M4 9.5h3.5L13 5v14l-5.5-4.5H4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',
+    ticket: '<path d="M3 7.5a2.5 2.5 0 0 0 0 5v4h18v-4a2.5 2.5 0 0 1 0-5v-4H3zM14 3.5v13" stroke-dasharray="0"/>',
+    list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  };
+  const DRAWER_ICONS = [
+    ['значки хаос', 'chaos', '#ff4fd8'], ['хаос', 'chaos', '#ff4fd8'], ['значки сезон', 'hex', '#ffd23f'], ['особые значки', 'hex', '#22e6ff'],
+    ['мастерские достижения', 'medal', '#3dffa2'], ['легендарные достижения', 'crown', '#ffd23f'], ['праздничные достижения', 'gift', '#ff6ad5'],
+    ['мастерство', 'medal', '#3dffa2'], ['мастерская', 'workshop', '#ffd27a'], ['все награды престижа', 'star', '#ffd23f'], ['престиж', 'star', '#ffd23f'],
+    ['эффект поедания', 'burst', '#ff9a3d'], ['след', 'trail', '#22e6ff'], ['аура', 'aura', '#b26bff'],
+    ['босс-рейд', 'skull', '#ff3d6e'], ['рейд', 'skull', '#ff3d6e'], ['боссы', 'skull', '#ff3d6e'], ['боты', 'robot', '#7fe8ff'],
+    ['сундук', 'chest', '#ff9a3d'], ['из сундуков', 'chest', '#ff9a3d'], ['каких сколько', 'chest', '#ff9a3d'],
+    ['над головой', 'hat', '#ff6ad5'], ['рамки', 'frame', '#22e6ff'], ['титулы', 'tag', '#ffd23f'], ['фоны профиля', 'image', '#7fe8ff'],
+    ['скины', 'drop', '#ff8a5c'], ['эффекты', 'sparkle', '#ff9a3d'], ['питомц', 'paw', '#3dffa2'], ['способност', 'crystal', '#22e6ff'],
+    ['рост', 'sprout', '#3dffa2'], ['движение', 'bolt', '#ffd23f'], ['защита', 'shield', '#7fe8ff'], ['награды', 'gift', '#ff9a3d'],
+    ['магазин', 'shop', '#22e6ff'], ['испытани', 'target', '#ff6ad5'], ['легенд', 'crown', '#ffd23f'], ['праздни', 'gift', '#ff6ad5'], ['обучение', 'cap', '#7fe8ff'],
+    ['как играть', 'pad', '#22e6ff'], ['управление', 'pad', '#22e6ff'], ['цвета колец', 'rings', '#3dffa2'], ['арена', 'planet', '#b26bff'], ['режим', 'flag', '#ff6ad5'],
+    ['лига', 'flag', '#ffd23f'], ['архив', 'archive', '#c9c2ff'], ['монеты', 'coin', '#ffd23f'], ['задания', 'check', '#3dffa2'], ['внешний вид', 'palette', '#ff4fd8'],
+    ['статистика', 'bars', '#22e6ff'], ['последние раунды', 'line', '#22e6ff'], ['рекорды', 'flag', '#ffd23f'], ['сезон', 'calendar', '#ffd23f'],
+    ['удалить аккаунт', 'trash', '#ff3d6e'], ['подробности', 'list', '#c9c2ff'], ['активность', 'flame', '#ff9a3d'], ['графика', 'monitor', '#22e6ff'], ['звук', 'sound', '#b26bff'], ['промокод', 'ticket', '#ffd23f'],
+  ];
+  function decorateDrawers(root = document) {
+    root.querySelectorAll('details > summary:not([data-ic])').forEach(sm => {
+      sm.dataset.ic = '1';
+      const d = sm.parentElement; if (d.classList.contains('news-item') || d.dataset.dk && /^(ab_|wsp_)/.test(d.dataset.dk) || sm.querySelector('.ws-pk')) return;
+      const first = sm.firstChild; if (!first) return;
+      let label = (first.textContent || '').trim();
+      const emoji = label.match(/^[^0-9A-Za-zА-Яа-яЁё«(]+/);   // old emoji prefixes are replaced by the drawn icon
+      const key = label.replace(/^[^0-9A-Za-zА-Яа-яЁё«(]+/, '').toLowerCase(), hit = DRAWER_ICONS.find(([k]) => key.startsWith(k)) || DRAWER_ICONS.find(([k]) => k.length > 4 && key.includes(k)); if (!hit) return;
+      if (emoji && first.nodeType === 3) first.textContent = first.textContent.replace(/^\s*[^0-9A-Za-zА-Яа-яЁё«(]+/, '');
+      const wrap = document.createElement('span'); wrap.className = 'dr-lbl';
+      wrap.innerHTML = `<i class="dr-ic" style="--ic:${hit[2]}" aria-hidden="true"><svg viewBox="0 0 24 24">${DI[hit[1]]}</svg></i>`;
+      sm.insertBefore(wrap, first); wrap.appendChild(first);
+    });
+  }
+  { let q = 0; new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; decorateDrawers(); }); }).observe(document.body, { childList: true, subtree: true }); decorateDrawers(); }
   function groupDrawers(prefix, list, keyOf, order, render) {
     const keys = [...new Set(list.map(keyOf))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
     return keys.map(k => { const part = list.filter(x => keyOf(x) === k); return drawer(prefix + k, `${k} <small class="cnt">${part.length}</small>`, render(part)); }).join('');

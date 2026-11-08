@@ -776,9 +776,13 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
   font-size: 1rem; letter-spacing: -.1em; cursor: pointer; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(6px); }
 .boss-tag { color: var(--boss); margin-right: 3px; }
 .eb-row { display: flex; flex-wrap: wrap; gap: 6px; max-width: 230px; }
-.eb { width: 40px; height: 40px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: conic-gradient(var(--c) calc(var(--f) * 360deg), rgba(255, 255, 255, .12) 0); }
-.eb-in { width: 100%; height: 100%; border-radius: 50%; background: var(--panel); display: grid; place-items: center; align-content: center; line-height: 1; }
-.eb-in b { font-size: .82rem; color: var(--c); font-weight: 700; } .eb-in small { font-size: .6rem; color: var(--fg); font-variant-numeric: tabular-nums; margin-top: 1px; }
+/* 2.3: a badge keeps its colour to the end — the spent part of the ring is a dim shade of the same colour (not grey), the centre is tinted, the icons are drawn (emoji turned grey on many phones) */
+.eb { width: 40px; height: 40px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: conic-gradient(var(--c) calc(var(--f) * 360deg), color-mix(in srgb, var(--c) 28%, transparent) 0); box-shadow: 0 0 10px -3px var(--c); }
+.eb-in { width: 100%; height: 100%; border-radius: 50%; background: color-mix(in srgb, var(--c) 18%, var(--panel)); display: grid; place-items: center; align-content: center; line-height: 1; }
+.eb-in b { font-size: .82rem; color: var(--c); font-weight: 700; display: grid; place-items: center; text-shadow: 0 0 6px var(--c); }
+.eb-in b svg { width: 15px; height: 15px; fill: currentColor; filter: drop-shadow(0 0 3px var(--c)); }
+.eb.low { animation: ebLow .5s steps(2, jump-none) infinite; } @keyframes ebLow { 50% { box-shadow: 0 0 14px 1px var(--c); filter: brightness(1.35); } }
+@media (prefers-reduced-motion: reduce) { .eb.low { animation: none; } } .eb-in small { font-size: .6rem; color: var(--fg); font-variant-numeric: tabular-nums; margin-top: 1px; }
 .mode-timer { position: fixed; z-index: 2; left: 50%; transform: translateX(-50%); top: calc(62px + env(safe-area-inset-top, 0px)); padding: 4px 14px; border-radius: 99px;
   background: var(--panel); border: 1px solid var(--line); font-family: var(--display); font-size: 1.05rem; font-variant-numeric: tabular-nums; pointer-events: none; }
 .mode-timer[hidden] { display: none; }
@@ -6505,9 +6509,11 @@ body.menu-bg .menu-backdrop { display: block; }
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
     }
     const badges = [];
-    const badge = (icon, color, left, total, title) => badges.push(`<div class="eb" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${icon}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);
+    const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);
     if (running) {
-      const BICON = { speed: '⚡', shield: '🛡', double: '×2', magnet: '🧲' };
+      const SV = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+      const BICON = { speed: SV('M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'), shield: SV('M12 2 4 5.2v6.1c0 5 3.4 9 8 10.7 4.6-1.7 8-5.7 8-10.7V5.2z'), double: '×2',
+        magnet: SV('M5 3h4v8.5a3 3 0 0 0 6 0V3h4v8.5a7 7 0 0 1-14 0zM5 3v3h4V3zm10 0v3h4V3z') };
       for (const k of Object.keys(effects || {})) if (effects[k] > 0) badge(BICON[k] || '•', BONUS[k].color, effects[k], k === 'shield' && stats.time < 6 ? 5 : effectDur(k), `${BONUS[k].name} ${Math.ceil(effects[k])} с`);
       for (const id of ['shrink', 'cloak', 'x_ice', 'x_refl', 'x_ghost', 'x_vamp', 'x_typhoon']) if (abOn(id)) { const a = abilById(id); badge(a.icon, a.color, player.abT[id], a.dur * (id.startsWith('x_') ? 1 : abPow(id)), `${a.name} ${Math.ceil(player.abT[id])} с`); }
       if (decoy) badge(abilById('decoy').icon, abilById('decoy').color, decoy.ttl, abilById('decoy').dur * abPow('decoy'), `Клон ${Math.ceil(decoy.ttl)} с`);

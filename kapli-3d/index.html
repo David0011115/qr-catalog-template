@@ -4394,37 +4394,45 @@ body.menu-bg .menu-backdrop { display: block; }
   const particles = new THREE.Points(pGeo, pMat); particles.frustumCulled = false; scene.add(particles);
   const pData = Array.from({ length: PMAX }, () => ({ life: 0, max: 1, vx: 0, vy: 0, vz: 0, r: 0, g: 0, b: 0 }));
   let pNext = 0;
+  // 2.3: eat effects get their own particles — 2.6× bigger, so a purchased effect reads on screen (also on «low» quality, with fewer of them)
+  const EMAX = 900, ePos = new Float32Array(EMAX * 3), eCol = new Float32Array(EMAX * 3), eGeo = new THREE.BufferGeometry();
+  eGeo.setAttribute('position', new THREE.BufferAttribute(ePos, 3)); eGeo.setAttribute('color', new THREE.BufferAttribute(eCol, 3));
+  const eMat = new THREE.PointsMaterial({ size: 2.6, map: dotTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+  const eParticles = new THREE.Points(eGeo, eMat); eParticles.frustumCulled = false; scene.add(eParticles);
+  const eData = Array.from({ length: EMAX }, () => ({ life: 0, max: 1, vx: 0, vy: 0, vz: 0, r: 0, g: 0, b: 0 }));
+  let eNext = 0;
   const tmpCol = new THREE.Color();
-  function emit(x, y, z, color, n, speed, life) {
+  function emit(x, y, z, color, n, speed, life, keep) {   // keep: eat effects stay on «low» quality, with a third of the particles
     if (fxTarget) return fxTarget.emit(x, y, z, color, n, speed, life);
-    if (QUALITY === 'low') return;
+    if (QUALITY === 'low') { if (!keep) return; n = Math.ceil(n / 3); }
     if (QUALITY === 'medium') n = Math.ceil(n / 2);
     tmpCol.set(color);
+    const P = keep ? ePos : pPos;
     for (let i = 0; i < n; i++) {
-      const d = pData[pNext], k = pNext * 3;
-      pNext = (pNext + 1) % PMAX;
+      let d, k; if (keep) { d = eData[eNext]; k = eNext * 3; eNext = (eNext + 1) % EMAX; } else { d = pData[pNext]; k = pNext * 3; pNext = (pNext + 1) % PMAX; }
       const a = Math.random() * Math.PI * 2, sp = speed * (0.35 + Math.random() * 0.8);
       d.vx = Math.cos(a) * sp; d.vz = Math.sin(a) * sp; d.vy = (Math.random() * 0.8 + 0.2) * sp * 0.5;
-      pPos[k] = x; pPos[k + 1] = y; pPos[k + 2] = z;
+      P[k] = x; P[k + 1] = y; P[k + 2] = z;
       d.r = tmpCol.r; d.g = tmpCol.g; d.b = tmpCol.b;
       d.life = d.max = life * (0.6 + Math.random() * 0.6);
     }
   }
-  function updateParticles(dt) {
+  function stepParticles(dt, data, pos, col, geo, max, fade) {
     const drag = Math.exp(-3 * dt);
-    for (let i = 0; i < PMAX; i++) {
-      const d = pData[i], k = i * 3;
-      if (d.life <= 0) { if (pCol[k] || pCol[k + 1] || pCol[k + 2]) pCol[k] = pCol[k + 1] = pCol[k + 2] = 0; continue; }
+    for (let i = 0; i < max; i++) {
+      const d = data[i], k = i * 3;
+      if (d.life <= 0) { if (col[k] || col[k + 1] || col[k + 2]) col[k] = col[k + 1] = col[k + 2] = 0; continue; }
       d.life -= dt;
-      pPos[k] += d.vx * dt; pPos[k + 1] += d.vy * dt; pPos[k + 2] += d.vz * dt;
+      pos[k] += d.vx * dt; pos[k + 1] += d.vy * dt; pos[k + 2] += d.vz * dt;
       d.vx *= drag; d.vy = d.vy * drag - 6 * dt; d.vz *= drag;
-      if (pPos[k + 1] < 0.1) { pPos[k + 1] = 0.1; d.vy = 0; }
-      const f = Math.max(0, d.life / d.max);
-      pCol[k] = d.r * f; pCol[k + 1] = d.g * f; pCol[k + 2] = d.b * f;
+      if (pos[k + 1] < 0.1) { pos[k + 1] = 0.1; d.vy = 0; }
+      const f = Math.max(0, d.life / d.max), g = fade ? Math.min(1, f * 1.8) : f;   // eat particles stay bright longer, then fade
+      col[k] = d.r * g; col[k + 1] = d.g * g; col[k + 2] = d.b * g;
     }
-    pGeo.attributes.position.needsUpdate = true;
-    pGeo.attributes.color.needsUpdate = true;
+    geo.attributes.position.needsUpdate = true;
+    geo.attributes.color.needsUpdate = true;
   }
+  function updateParticles(dt) { stepParticles(dt, pData, pPos, pCol, pGeo, PMAX, false); stepParticles(dt, eData, ePos, eCol, eGeo, EMAX, true); }
   const cellColor = c => c.vis.glow.material.color;
 
   // icon sprites (hearts, stars, bolts) and floor shockwaves for eat effects
@@ -4468,13 +4476,13 @@ body.menu-bg .menu-backdrop { display: block; }
     let s0 = 7; const r = () => (s0 = (s0 * 16807) % 2147483647) / 2147483647; for (let k = 0; k < 12; k++) { let px = r() * 256, py = r() * 128; x.beginPath(); x.moveTo(px, py); for (let i = 0; i < 6; i++) { px += (r() - .5) * 50; py += (r() - .5) * 34; x.lineTo(px, py); } x.stroke(); } return new THREE.CanvasTexture(cv); })();
   const crFrozen = Array.from({ length: 4 }, () => { const m = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ map: crackTex, color: '#c8c4e8', transparent: true, opacity: .9 })); m.visible = false; scene.add(m); return { m, life: 0, done: true }; });
   let crFrozenNext = 0;
-  function crFreeze(x, z, r) { const d = crFrozen[crFrozenNext]; crFrozenNext = (crFrozenNext + 1) % crFrozen.length; d.m.position.set(x, r * .92, z); d.m.scale.setScalar(r); d.r = r; d.life = .55; d.done = false; d.m.visible = true; }
+  function crFreeze(x, z, r, k = 1) { const d = crFrozen[crFrozenNext]; d.k = k; crFrozenNext = (crFrozenNext + 1) % crFrozen.length; d.m.position.set(x, r * .92, z); d.m.scale.setScalar(r); d.r = r; d.life = .55; d.done = false; d.m.visible = true; }
   function crFxTick(dt) {
     for (const d of crMarks) { if (!d.m.visible) continue; d.life -= dt; if (d.life <= 0) { d.m.visible = false; continue; } d.m.material.opacity = Math.min(1, d.life / d.max * 1.8); }
     for (const d of crDials) { if (!d.g.visible) continue; d.life -= dt; if (d.life <= 0) { d.g.visible = false; continue; } const p = 1 - d.life; d.g.quaternion.copy(camera.quaternion);
       d.hand.rotation.z = -p * Math.PI * 2.2; d.face.material.opacity = d.hand.material.opacity = p < .15 ? p / .15 : Math.min(1, d.life / .3); }
     for (const d of crFrozen) { if (!d.m.visible) continue; d.life -= dt; d.m.material.opacity = .9 * Math.min(1, d.life / .15 + .2);
-      if (d.life <= .12 && !d.done) { d.done = true; const p = d.m.position; emit(p.x, p.y, p.z, '#e8b05a', 46, 3 + d.r * .6, 1.3); emit(p.x, p.y, p.z, '#ffd27a', 20, 2, 1.6); emit(p.x, p.y, p.z, '#ffffff', 14, 8, .3); }
+      if (d.life <= .12 && !d.done) { d.done = true; const p = d.m.position; emit(p.x, p.y, p.z, '#e8b05a', 46, (3 + d.r * .6) * d.k, 1.3, true); emit(p.x, p.y, p.z, '#ffd27a', 20, 2 * d.k, 1.6, true); emit(p.x, p.y, p.z, '#ffffff', 14, 8 * d.k, .3, true); }
       if (d.life <= 0) d.m.visible = false; }
   }
   const iconPool = Array.from({ length: 70 }, () => {
@@ -4531,19 +4539,22 @@ body.menu-bg .menu-backdrop { display: block; }
   }
   const emitP = (...a) => emit(...a), emitIconsP = (...a) => emitIcons(...a), waveP = (...a) => wave(...a);
   // eat effects are drawn bigger and brighter: more particles, wider spread, longer life, bigger icons and waves
-  const EAT_FX_SCALE = { count: 1.8, spread: 1.45, life: 1.35, icons: 1.6, iconSize: 1.4, wave: 1.45 };
+  const EAT_FX_SCALE = { count: 1.8, spread: 1.45, life: 1.6, icons: 1.6, iconSize: 2.2, wave: 1.45 };
+  // 2.3: the camera backs off as the drop grows (up to ~7×), so eat effects grow with it and keep the same size on screen
+  let fxViewK = 1;
+  const FX_VIEW_BASE = (16 + 0.38 * Math.sqrt(10) * 4) * 2.2;   // camera height at the starting mass
   function eatFx(x, z, r, color, id = save.fx.eat) {
-    const K = EAT_FX_SCALE;
-    const emit = (a, b, c, col, n, sp, life) => emitP(a, b, c, col, Math.round(n * K.count), sp * K.spread, life * K.life);
-    const emitIcons = (a, b, c, ic, col, n, size) => emitIconsP(a, b, c, ic, col, Math.round(n * K.icons), size * K.iconSize);
-    const wave = (a, b, col, r0, r1, life) => waveP(a, b, col, r0, r1 * K.wave, life * K.life);
+    const K = EAT_FX_SCALE, S = fxTarget ? 1 : Math.max(1, fxViewK * .85);
+    const emit = (a, b, c, col, n, sp, life) => emitP(a, b, c, col, Math.round(n * K.count), sp * K.spread * S, life * K.life, true);
+    const emitIcons = (a, b, c, ic, col, n, size) => emitIconsP(a, b, c, ic, col, Math.round(n * K.icons), size * K.iconSize * S);
+    const wave = (a, b, col, r0, r1, life) => waveP(a, b, col, r0 * S, r1 * K.wave * S, life * K.life);
     r = Math.max(r, 1);
     const big = !fxTarget && player.cells.length ? Math.max(...player.cells.map(c => cellR(c))) : r;
     const y = fxTarget ? fxTarget.eatY : Math.max(r * 0.9, big * 1.15 + 1.2);   // above the eater, so the burst is not hidden inside the big drop
     switch (id) {
       case 'heartEat': emitIcons(x, y, z, 'heart', '#ff4f9a', 9, 1.4 + r * 0.25); break;
-      case 'cr_tick': if (fxTarget) { emitIcons(x, y, z, 'clock', '#ffd27a', 2, 1.4 + r * .25); wave(x, z, '#ffd27a', r, r * 2.5 + 2, .5); } else { crDial(x, y, z, r); emit(x, y, z, '#ffd27a', 10, 6, .4); } break;
-      case 'cr_freeze': if (fxTarget) { emit(x, y, z, '#c8c4e8', 20, 3, .4); emit(x, y, z, '#e8b05a', 30, 4, 1.1); emitIcons(x, y, z, 'square', '#c8c4e8', 3, .8); } else crFreeze(x, z, r); break;
+      case 'cr_tick': if (fxTarget) { emitIcons(x, y, z, 'clock', '#ffd27a', 2, 1.4 + r * .25); wave(x, z, '#ffd27a', r, r * 2.5 + 2, .5); } else { crDial(x, y, z, r * S); emit(x, y, z, '#ffd27a', 10, 6, .4); } break;
+      case 'cr_freeze': if (fxTarget) { emit(x, y, z, '#c8c4e8', 20, 3, .4); emit(x, y, z, '#e8b05a', 30, 4, 1.1); emitIcons(x, y, z, 'square', '#c8c4e8', 3, .8); } else crFreeze(x, z, Math.max(r, S * .9), S); break;
       case 'psNova': emit(x, y, z, '#ffffff', 26, 16, .45); emit(x, y, z, '#ff8ae6', 20, 11, .8); emitIcons(x, y, z, 'star', '#ffffff', 3, 1.6 + r * .25); wave(x, z, '#ff8ae6', r, r * 4.5 + 4, .65); wave(x, z, '#9ff0ff', r * .5, r * 3 + 3, .5); break;
       case 'shockEat': wave(x, z, color, r, r * 4 + 4, .6); wave(x, z, '#ffffff', r * .5, r * 3 + 3, .45); break;
       case 'sf_6': emit(x, y, z, '#ffd23f', 40, 22, .8); emit(x, y, z, '#ff9a3d', 24, 14, 1); emitIcons(x, y, z, 'star', '#fff6a0', 4, 1.2 + r * .2); wave(x, z, '#ffd23f', r, r * 5 + 5, .7); break;
@@ -5249,7 +5260,7 @@ body.menu-bg .menu-backdrop { display: block; }
     [...bossOwners, colossus, ...minions].forEach(o => [...o.cells].forEach(removeCell));
     rebuildCells();
     effects = { speed: 0, shield: 3, double: 0, magnet: 0 };   // short spawn protection
-    addCell(player, 0, 0, START_MASS + (U.big || 0), freeVis.pop());
+    addCell(player, 0, 0, (TEST_MODE && testStartMass) || START_MASS + (U.big || 0), freeVis.pop());
     rebuildCells();
     player.dashCd = 0; player.dashT = 0;
     owners.forEach(o => o.splitCd = 0);
@@ -5612,7 +5623,7 @@ body.menu-bg .menu-backdrop { display: block; }
     el.hidden = false; clearTimeout(chaosBanner.t); chaosBanner.t = setTimeout(() => { el.hidden = true; }, CHAOS_CFG.showSec * 1000);
   }
   function abTick(dt) {
-    xaTick(dt); crTick(dt);
+    xaTick(dt); crTick(dt); if (TEST_MODE && testEatShow) testEatTick(dt);
     for (const o of owners) {
       if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
       if (o.iceT) o.iceT = Math.max(0, o.iceT - dt);
@@ -9818,6 +9829,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const fr = radius(focus.m);
     let h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 2.2 * (camera.aspect < 1 ? 1 + Math.min(.6, (1 - camera.aspect) * 1.1) : 1);   // giants get extra zoom-out; 120% farther for everyone (1.7.0); narrow portrait screens (phones) up to 60% more
     h = Math.min(h, 330);   // never leave the starry sky or lose the far edge of the arena
+    fxViewK = h / FX_VIEW_BASE; pMat.size = Math.max(1, fxViewK * .7); eMat.size = 2.6 * Math.max(1, fxViewK * .7);   // particles keep their size on screen when the camera backs off
     camLook.lerp(tmpV.set(focus.x, 0, focus.z), 0.16);
     camPos.lerp(tmpV.set(focus.x, h, focus.z + h * 0.62), 0.12);
     if (apv) apvCam(now);
@@ -10921,6 +10933,12 @@ body.menu-bg .menu-backdrop { display: block; }
   $('gfxBarX').addEventListener('click', () => { $('gfxBar').hidden = true; });
   // ---------- test panel (test build only): quick ways to reach any state; features add their own groups to TEST_GROUPS ----------
   const TEST_GROUPS = [];
+  let testStartMass = 0, testEatShow = false, testEatI = 0, testEatT = 1;
+  function testEatTick(dt) {   // plays every eat effect in turn in front of the player
+    testEatT -= dt; if (testEatT > 0 || !player.cells.length) return; testEatT = 1.6;
+    const list = FX.filter(f => f.slot === 'eat'), f = list[testEatI++ % list.length], m = mainOf(player), d = cellR(m) + 8;
+    eatFx(m.x + m.hx * d, m.z + m.hz * d, radius(14), '#ff8a5c', f.id); toast(`${testEatI}/${list.length} · ${f.name}`);
+  }
   function testAdd(title, buttons) { TEST_GROUPS.push({ title, buttons }); }
   const xpForPs = (t, n) => XP_AT_MAX + (t === 1 ? n * PS.star : PS.star * PS.max + n * PS.nova) + 1;
   testAdd('Уровень и престиж', [
@@ -10980,6 +10998,9 @@ body.menu-bg .menu-backdrop { display: block; }
       .map(([label, sk, tr, au, ea, pet]) => [label, () => { [[save.skins, sk], [save.fxOwned, tr], [save.fxOwned, au], [save.fxOwned, ea], [save.pets, pet]].forEach(([l, id]) => { if (!l.includes(id)) l.push(id); });
         save.skin = sk; save.hat = null; save.fx.trail = tr; save.fx.aura = au; save.fx.eat = ea; save.pet = pet; refreshSkin(); applyPet(); return `${SKINS.find(k => k.id === sk).name} · ${PETS.find(x => x.id === pet).name}`; }]),
     ['Билд: 3 способности Хронос', () => { CR_ABIL.forEach(a => { if (!save.abil.owned.includes(a.id)) save.abil.owned.push(a.id); }); save.build = CR_ABIL.map(a => a.id); return 'Пробел — стена, E — перемотка, Q — рокировка'; }]]);
+  testAdd('Эффекты поедания', [
+    ['Показать все в раунде', () => { testEatShow = !testEatShow; testEatI = 0; testEatT = 1; return testEatShow ? 'начни раунд: каждые 1,6 с перед каплей сработает следующий эффект' : 'выключено'; }],
+    ['Старт: масса 10', () => { testStartMass = 0; }], ['Старт: масса 1 000', () => { testStartMass = 1000; }], ['Старт: масса 5 000', () => { testStartMass = 5000; }], ['Старт: масса 15 000', () => { testStartMass = 15000; }]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
   function testRender() {
     $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');

@@ -1388,6 +1388,12 @@ body.menu-bg .menu-backdrop { display: block; }
 .tut-box b { font-family: var(--display); font-weight: 400; font-size: 1.05rem; }
 .tut-box p { margin: 0; font-size: .86rem; line-height: 1.4; }
 .tut-box.done { border-color: var(--prey); box-shadow: 0 0 18px rgba(61, 255, 162, .45); }
+/* 2.3: the game is played in landscape — the hint sits in the free top-right corner, so it never covers the drop in the centre */
+@media (orientation: landscape) {
+  .tut-box { left: auto; right: max(12px, env(safe-area-inset-right, 0px)); top: max(10px, env(safe-area-inset-top, 0px)); transform: none; width: min(300px, 36vw); padding: 8px 12px; gap: 3px; }
+  .tut-box b { font-size: .95rem; } .tut-box p { font-size: .8rem; line-height: 1.35; }
+}
+@media (orientation: landscape) and (max-width: 960px) { .tut-box { top: 92px; width: min(270px, 36vw); } }   /* below the top HUD on phones */
 .b-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .b-slot { background: var(--row); border-radius: var(--r-md); padding: 8px; display: grid; gap: 6px; justify-items: center; border: 1px solid var(--ac); min-width: 0; }
 .b-slot small { color: var(--muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .06em; text-align: center; }

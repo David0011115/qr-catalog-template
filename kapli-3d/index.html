@@ -7721,13 +7721,13 @@ body.menu-bg .menu-backdrop { display: block; }
     ['мастерство', 'medal', '#3dffa2'], ['мастерская', 'workshop', '#ffd27a'], ['все награды престижа', 'star', '#ffd23f'], ['престиж', 'star', '#ffd23f'],
     ['эффект поедания', 'burst', '#ff9a3d'], ['след', 'trail', '#22e6ff'], ['аура', 'aura', '#b26bff'],
     ['босс-рейд', 'skull', '#ff3d6e'], ['рейд', 'skull', '#ff3d6e'], ['боссы', 'skull', '#ff3d6e'], ['боты', 'robot', '#7fe8ff'],
-    ['сундук', 'chest', '#ff9a3d'], ['из сундуков', 'chest', '#ff9a3d'], ['каких сколько', 'chest', '#ff9a3d'],
+    ['сундук', 'hub:chest'], ['из сундуков', 'hub:chest'], ['каких сколько', 'hub:chest'],
     ['над головой', 'hat', '#ff6ad5'], ['рамки', 'frame', '#22e6ff'], ['титулы', 'tag', '#ffd23f'], ['фоны профиля', 'image', '#7fe8ff'],
-    ['скины', 'drop', '#ff8a5c'], ['эффекты', 'sparkle', '#ff9a3d'], ['питомц', 'paw', '#3dffa2'], ['способност', 'crystal', '#22e6ff'],
+    ['скины', 'hub:skin'], ['эффекты', 'hub:fx'], ['питомц', 'hub:pet'], ['способност', 'hub:abil'],
     ['рост', 'sprout', '#3dffa2'], ['движение', 'bolt', '#ffd23f'], ['защита', 'shield', '#7fe8ff'], ['награды', 'gift', '#ff9a3d'],
     ['магазин', 'shop', '#22e6ff'], ['испытани', 'target', '#ff6ad5'], ['легенд', 'crown', '#ffd23f'], ['праздни', 'gift', '#ff6ad5'], ['обучение', 'cap', '#7fe8ff'],
-    ['как играть', 'pad', '#22e6ff'], ['управление', 'pad', '#22e6ff'], ['цвета колец', 'rings', '#3dffa2'], ['арена', 'planet', '#b26bff'], ['режим', 'flag', '#ff6ad5'],
-    ['лига', 'flag', '#ffd23f'], ['архив', 'archive', '#c9c2ff'], ['монеты', 'coin', '#ffd23f'], ['задания', 'check', '#3dffa2'], ['внешний вид', 'palette', '#ff4fd8'],
+    ['как играть', 'pad', '#22e6ff'], ['управление', 'pad', '#22e6ff'], ['цвета колец', 'rings', '#3dffa2'], ['арена', 'hub:arena'], ['режим', 'flag', '#ff6ad5'],
+    ['лига', 'flag', '#ffd23f'], ['архив', 'hub:arch'], ['монеты', 'coin', '#ffd23f'], ['задания', 'check', '#3dffa2'], ['внешний вид', 'palette', '#ff4fd8'],
     ['статистика', 'bars', '#22e6ff'], ['последние раунды', 'line', '#22e6ff'], ['рекорды', 'flag', '#ffd23f'], ['сезон', 'calendar', '#ffd23f'],
     ['удалить аккаунт', 'trash', '#ff3d6e'], ['подробности', 'list', '#c9c2ff'], ['активность', 'flame', '#ff9a3d'], ['графика', 'monitor', '#22e6ff'], ['звук', 'sound', '#b26bff'], ['промокод', 'ticket', '#ffd23f'],
   ];
@@ -7741,11 +7741,13 @@ body.menu-bg .menu-backdrop { display: block; }
       const key = label.replace(/^[^0-9A-Za-zА-Яа-яЁё«(]+/, '').toLowerCase(), hit = DRAWER_ICONS.find(([k]) => key.startsWith(k)) || DRAWER_ICONS.find(([k]) => k.length > 4 && key.includes(k)); if (!hit) return;
       if (emoji && first.nodeType === 3) first.textContent = first.textContent.replace(/^\s*[^0-9A-Za-zА-Яа-яЁё«(]+/, '');
       const wrap = document.createElement('span'); wrap.className = 'dr-lbl';
-      wrap.innerHTML = `<i class="dr-ic" style="--ic:${hit[2]}" aria-hidden="true"><svg viewBox="0 0 24 24">${DI[hit[1]]}</svg></i>`;
+      // categories that already have a logo on the Collection buttons and shop tabs use the same drawing and colour
+      const hub = hit[1].startsWith('hub:') && HUB_ICON[hit[1].slice(4)], art = hub ? hub[2] : DI[hit[1]], col = hub ? hub[0] : hit[2];
+      wrap.innerHTML = `<i class="dr-ic" style="--ic:${col}" aria-hidden="true"><svg viewBox="0 0 24 24">${art}</svg></i>`;
       sm.insertBefore(wrap, first); wrap.appendChild(first);
     });
   }
-  { let q = 0; new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; decorateDrawers(); }); }).observe(document.body, { childList: true, subtree: true }); decorateDrawers(); }
+  { let q = 0; new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; decorateDrawers(); }); }).observe(document.body, { childList: true, subtree: true }); requestAnimationFrame(() => decorateDrawers()); }
   function groupDrawers(prefix, list, keyOf, order, render) {
     const keys = [...new Set(list.map(keyOf))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
     return keys.map(k => { const part = list.filter(x => keyOf(x) === k); return drawer(prefix + k, `${k} <small class="cnt">${part.length}</small>`, render(part)); }).join('');

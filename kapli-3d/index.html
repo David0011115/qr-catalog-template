@@ -1342,9 +1342,9 @@ body.menu-bg .menu-backdrop { display: block; }
   background: linear-gradient(90deg, transparent 24px, #8a5a12 24px, #ffd27a 30px, #b07a1a 38px, transparent 38px, transparent calc(100% - 38px), #8a5a12 calc(100% - 38px), #ffd27a calc(100% - 32px), #b07a1a calc(100% - 24px), transparent calc(100% - 24px)),
     linear-gradient(180deg, rgba(255,255,255,.28), transparent 45%), linear-gradient(180deg, var(--cl1, #ff4fd8), var(--cl2, #9b3dff));
   box-shadow: 0 0 18px var(--cg, rgba(255, 79, 216, .5)); transform-origin: 50% 100%; transition: transform .35s cubic-bezier(.3, 1.6, .5, 1); }
-.chest .lock { position: absolute; z-index: 3; left: 50%; top: 4px; width: 22px; height: 26px; margin-left: -11px; border-radius: 6px; background: linear-gradient(180deg, #fff2a8, var(--gold) 45%, #b07a1a); box-shadow: 0 0 12px rgba(255,210,63,.7), inset 0 -2px 0 rgba(0,0,0,.25); }
+.chest .lock { position: absolute; z-index: 3; left: 50%; top: 2px; width: 22px; height: 26px; margin-left: -11px; border-radius: 6px; background: linear-gradient(180deg, #fff2a8, var(--gold) 45%, #b07a1a); box-shadow: 0 0 12px rgba(255,210,63,.7), inset 0 -2px 0 rgba(0,0,0,.25); }
 .chest .lock::after { content: ""; position: absolute; left: 50%; top: 7px; width: 6px; height: 11px; margin-left: -3px; border-radius: 3px 3px 1px 1px; background: #2a1408; }
-.chest .emb { position: absolute; z-index: 3; left: 0; right: 0; bottom: 8px; text-align: center; font: 700 1.05rem/1 var(--display); color: var(--cl1, #fff); text-shadow: 0 0 8px var(--cl1, #fff), 0 1px 0 rgba(0,0,0,.6); }
+.chest .emb { position: absolute; z-index: 3; left: 0; right: 0; bottom: 6px; text-align: center; font: 700 2.1rem/1 var(--display); color: var(--cl1, #fff); text-shadow: 0 0 8px var(--cl1, #fff), 0 1px 0 rgba(0,0,0,.6); }
 .chest[data-kind="daily"] .emb::before { content: "☀\FE0E"; } .chest[data-kind="normal"] .emb::before { content: "★\FE0E"; } .chest[data-kind="shard"] .emb::before { content: "◆\FE0E"; }
 .chest[data-kind="league"] .emb::before { content: "♛\FE0E"; } .chest[data-kind="challenge"] .emb::before { content: "◎\FE0E"; }
 .chest .glow-in { position: absolute; z-index: 1; left: 10px; right: 10px; top: -8px; height: 16px; border-radius: 50%; background: radial-gradient(ellipse, #fff 0 20%, var(--rc, var(--cl1, #fff)) 45%, transparent 72%); opacity: 0; transition: opacity .3s; }

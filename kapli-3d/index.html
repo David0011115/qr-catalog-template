@@ -2009,13 +2009,15 @@ body.menu-bg .menu-backdrop { display: block; }
   const TEST_MODE = false;   // ВНИМАНИЕ: перед заливкой в репозиторий вернуть false (сборка PWA проверяет это)
   const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';
   const R = 190, FOOD = 5250, START_MASS = 10, MAX_BONUS = 6;
-  const MAX_MASS = 10000;   // per-part cap (radius ~38, about a quarter of the arena)
+  const MAX_MASS = 15000;   // player per-part cap
+  const BOT_MASS_CAP = 6000;   // total mass cap for each regular bot
+  const BOSS_MASS_CAP = 9000;  // ordinary bosses; survival and raid have separate caps
   const MODES = {
     classic:  { name: 'Классика',       desc: 'Обычный раунд до поражения' },
     timed:    { name: 'На время',       desc: '3 минуты, награда за место' },
     survival: { name: 'Выживание',      desc: 'Волна боссов каждые 15 с, каждая сильнее' },
     split:    { name: 'Только деление', desc: 'Без рывка, деление раз в 3 с, до 10 частей' },
-    crown:    { name: 'Захват короны',  desc: 'Корона у самой крупной капли. Держи её дольше всех за 3 минуты' },
+    crown:    { name: 'Захват короны',  desc: 'Корона у самой крупной капли. Держи её дольше всех — матч до поражения' },
     race:     { name: 'Гонка массы',    desc: 'Кто первым наберёт 4000. Рекорд — лучшее время' },
     rbuild:   { name: 'Случайный билд', desc: 'Каждый раунд — 3 случайные способности из 12 обычных, даже не купленные. Опыт ×1,2', lvl: 10 },
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
@@ -2657,7 +2659,7 @@ body.menu-bg .menu-backdrop { display: block; }
       test: S => S.mode === 'timed' && S.win && !S.bonuses },
     { id: 'sk_race', name: 'Стремительный', desc: 'Выиграй «Гонку массы» быстрее чем за 2 минуты', hint: 'Рывок + деление на крупную добычу ускоряют набор массы.', coins: 1500, title: ['Стрела', '#ff9a3d'],
       test: S => S.mode === 'race' && S.win && S.time <= 120, best: S => S.mode === 'race' && S.win ? Math.floor(S.time) : null, lower: true, unit: 'с' },
-    { id: 'sk_crown', name: 'Король арены', desc: 'В «Захвате короны» продержи корону 2 минуты из 3', hint: 'Корона у самой крупной капли: держи массу и не дели её без нужды.', coins: 1500, title: ['Монарх', '#ffd23f'],
+    { id: 'sk_crown', name: 'Король арены', desc: 'В «Захвате короны» удержи корону суммарно 2 минуты за раунд', hint: 'Корона у самой крупной капли: держи массу и не дели её без нужды.', coins: 1500, title: ['Монарх', '#ffd23f'],
       test: S => S.mode === 'crown' && S.crownT >= 120, best: S => S.mode === 'crown' ? Math.floor(S.crownT || 0) : null, unit: 'с' },
     { id: 'sk_royale', name: 'Тихий охотник', desc: 'Победи в «Королевской битве», ни разу не сделав рывок', hint: 'Без рывка важнее позиция: держись ближе к центру безопасной зоны.', coins: 2000, title: ['Невидимка', '#b26bff'],
       test: S => S.mode === 'royale' && S.win && !S.dashes },
@@ -4477,12 +4479,12 @@ body.menu-bg .menu-backdrop { display: block; }
   bots[7].partner = bots[8]; bots[8].partner = bots[7];
   // bosses: up to two on the arena at once, never two of the same kind
   const BOSS_TYPES = {
-    giant:    { name: 'Громила',   color: '#c2416b', speed: .78, life: 90, parts: 1, coins: 20, xp: 30, mass: p => Math.min(MAX_MASS * 0.6, Math.max(220, p * 1.4)), about: 'огромный и медленный' },
-    hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(MAX_MASS * 0.6, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
-    queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(MAX_MASS * 0.6, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
-    teleport: { name: 'Телепорт',  color: '#22e6ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(MAX_MASS * 0.6, Math.max(150, p * 1.4)), about: 'исчезает и появляется рядом с тобой' },
-    chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(MAX_MASS * 0.6, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
-    splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(MAX_MASS * 0.6, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
+    giant:    { name: 'Громила',   color: '#c2416b', speed: .78, life: 90, parts: 1, coins: 20, xp: 30, mass: p => Math.min(BOSS_MASS_CAP, Math.max(220, p * 1.4)), about: 'огромный и медленный' },
+    hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(BOSS_MASS_CAP, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
+    queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(BOSS_MASS_CAP, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
+    teleport: { name: 'Телепорт',  color: '#22e6ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'исчезает и появляется рядом с тобой' },
+    chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
+    splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(BOSS_MASS_CAP, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
   };
   // two of each kind, so survival can field duplicates in later waves
   let BOSS_TYPES_EXTRA = {};
@@ -4544,17 +4546,18 @@ body.menu-bg .menu-backdrop { display: block; }
     if (o.disabled) return;
     if (!o.cells.length) dressBot(o);
     // bot size no longer follows the player (that fed an endless growth loop)
-    const top = Math.min(120, Math.max(30, total(player) * 0.6));
+    const top = Math.min(BOT_MASS_CAP, Math.max(30, total(player) * 0.6));
     const [x, z] = safeSpot(running ? 22 : 14);
     // 1.7.0: a respawned bot is not just food — it starts at 30–50% of the median bot and is protected for 3 s
     const alive = bots.filter(b => b !== o && b.cells.length).map(b => total(b)).sort((a, b) => a - b), med = alive.length ? alive[alive.length >> 1] : 0;
     const base = 6 + Math.pow(Math.random(), 2) * top, catchUp = running ? Math.min(300, med * (.3 + Math.random() * .2)) : 0;
-    addCell(o, x, z, o.star ? Math.max(60, top * 1.1) : Math.max(base, catchUp), o.free.pop());
+    addCell(o, x, z, Math.min(BOT_MASS_CAP, o.star ? Math.max(60, top * 1.1) : Math.max(base, catchUp)), o.free.pop());
     o.tx = x; o.tz = z; o.think = 0; o.target = null; o.spawnSh = running ? 3 : 0;
     rebuildCells();
   }
   let lastBoss = null;
-  const SURV_BOSS_CAP = 20000;
+  const SURV_BOSS_CAP = 30000;
+  const RAID_BOSS_CAP = 20000;   // unchanged: preserve the weekly Colossus raid cap
   function maxBosses() {
     if (dailyIs('bosses')) return 3;
     if (mode !== 'survival') return 2;
@@ -5341,6 +5344,12 @@ body.menu-bg .menu-backdrop { display: block; }
         return;
       }
       if (mode === 'royale') { stats.finalRank = bots.filter(b => b.cells.length).length + 1; stats.endTitle = `Место ${stats.finalRank} из 13`; }
+      if (mode === 'crown') {
+        const r = [player, ...bots].sort((a, b) => b.crownT - a.crownT).indexOf(player) + 1;
+        stats.finalRank = r;
+        finishRound(`Корона: ${r} место (${fmtTime(player.crownT)})`, PLACE_BONUS[r - 1] || 0, r === 1);
+        return;
+      }
       dying = true;
       setTimeout(endRound, 800);
     } else if (o.kind === 'boss') {
@@ -5598,12 +5607,7 @@ body.menu-bg .menu-backdrop { display: block; }
     if (mode === 'crown') {
       crownHolder = contenders.reduce((best, o) => !best || total(o) > total(best) ? o : best, null);
       if (crownHolder && !abOn('x_ghost', crownHolder)) crownHolder.crownT += dt;   // no crown time while a ghost
-      if (stats.time >= TIMED_LEN) {
-        const r = [player, ...bots].sort((a, b) => b.crownT - a.crownT).indexOf(player) + 1;
-        stats.finalRank = r;
-        finishRound(`Корона: ${r} место (${fmtTime(player.crownT)})`, PLACE_BONUS[r - 1] || 0, r === 1);
-        return true;
-      }
+      
     }
     if (mode === 'race') {
       const winner = contenders.find(o => total(o) >= RACE_GOAL);
@@ -5719,7 +5723,8 @@ body.menu-bg .menu-backdrop { display: block; }
       if (a.gone || b.gone) continue;
       const ra = cellR(a), rb = cellR(b);
       let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 0.001;
-      if (a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > MAX_MASS) {   // parts that would exceed the cap stay apart
+      const mergeCap = o.isPlayer ? MAX_MASS : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP) : MAX_MASS;
+      if (a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > mergeCap) {   // parts that would exceed this owner's cap stay apart
         if (d < ra + rb) {
           const push = (ra + rb - d) / 2 * Math.min(1, dt * 10); dx /= d; dz /= d;
           a.x -= dx * push; a.z -= dz * push; b.x += dx * push; b.z += dz * push;
@@ -5771,7 +5776,10 @@ body.menu-bg .menu-backdrop { display: block; }
         }
       } }
       // decay grows with size, so mass can't snowball forever
-      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.04 * U.guard : 1) * dt;
+      if (c.mass > 100 && c.owner.kind !== 'boss') {
+        const ease = 1 - 0.12 * Math.min(1, Math.max(0, (c.mass - 10000) / 5000));
+        c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.04 * U.guard : 1) * ease * dt;
+      }
     }
 
     // bonuses (player only)
@@ -5908,9 +5916,9 @@ body.menu-bg .menu-backdrop { display: block; }
     let modeChip = '', timer = '';
     const T = (left, total) => ({ left: Math.max(0, left), total });
     if (running) {
-      const lim = { timed: TIMED_LEN, crown: TIMED_LEN, team: TEAM_LEN, raid: RAID_LEN }[mode];
+      const lim = { timed: TIMED_LEN, team: TEAM_LEN, raid: RAID_LEN }[mode];
       if (lim) timer = `⏱ ${fmtTime(Math.max(0, lim - stats.time))}`;
-      else if (['race', 'survival', 'classic', 'rbuild', 'hardcore', 'daily', 'royale'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
+      else if (['race', 'survival', 'classic', 'rbuild', 'hardcore', 'daily', 'royale', 'crown'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
       if (mode === 'royale') modeChip = `Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
       if (mode === 'crown') modeChip = `♛ ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)}`;
       if (mode === 'race') modeChip = `Гонка ${Math.round(total(player))}/${RACE_GOAL}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span>`;
@@ -6153,6 +6161,15 @@ body.menu-bg .menu-backdrop { display: block; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 182, ver: '2.1.2', date: '9 ноября', title: 'Баланс массы и «Захват короны»', kind: 'update',
+      lead: 'Переработан рост массы сильных игроков, а «Захват короны» теперь продолжается до поражения.', items: [
+      'Максимальная масса одной части игрока увеличена до 15 000.',
+      'Обычные боты постепенно масштабируются вслед за массой игрока, но общая масса каждого бота ограничена 6 000.',
+      'Обычные боссы ограничены массой 9 000, боссы «Выживания» — 30 000.',
+      'Распад массы выше 10 000 постепенно смягчается — максимум на 12% у отметки 15 000.',
+      'В «Захвате короны» больше нет ограничения в 3 минуты: матч длится до окончательного поражения игрока, а рекорд по-прежнему считается по суммарному времени с короной.',
+      'Рейдовый Колосс не изменён: 40 000 здоровья, до 18 000 урона за попытку и части до 12 000.'
+    ] },
     { id: 181, ver: '2.1.1', date: '7 ноября', title: '«Случайный билд»: все способности', kind: 'patch', items: [
       '«Случайный билд» теперь выдаёт 3 любые способности из 12 обычных — даже те, что ты ещё не купил. Эксклюзивные способности в розыгрыш не попадают.',
       'Улучшения купленных способностей в этом режиме работают как обычно, остальные выпадают на базовом уровне.'] },
@@ -9782,7 +9799,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '211';
+const APP_VER = '212';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

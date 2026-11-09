@@ -2111,7 +2111,7 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'shield', name: 'Щит',               sh: 'Щит',     icon: '⛨', color: '#9fe8ff', price: 15000, cd: 25, dur: 2,  desc: '2 с тебя нельзя съесть; кто попробует — отлетает и теряет 5% массы. Шипы всё равно рвут крупную каплю' },
     { id: 'pulse',  name: 'Насыщение',         sh: 'Насыщ.',  icon: '✦', color: '#ffd23f', price: 12000, cd: 24, dur: 5,  desc: 'На 5 с обычная еда даёт вдвое больше массы' },
     { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 18, dist: 16, desc: 'Мгновенный перенос вперёд; на старом месте на 1 с остаётся тень, за которой гонятся боты' },
-    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 3, radius: 36, force: 24, desc: 'Расходящаяся волна замедляет соперников на 3 с и слегка отталкивает их' },
+    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 6, radius: 36, desc: 'Волна подавляет подвижность соперников на 6 с: снижает скорость и не даёт использовать резкие ускорения' },
     { id: 'cloak',  name: 'Маскировка',        sh: 'Маскир.', icon: '◌', color: '#c9c2ff', price: 30000, cd: 28, dur: 4,  desc: '4 с боты тебя не видят; первая капля, съеденная из маскировки, даёт +15% массы' },
     { id: 'push',   name: 'Отражение',         sh: 'Отраж.',  icon: '⤺', color: '#ff9a3d', price: 22000, cd: 22, radius: 29, force: 100, stun: .6, desc: 'Мощно отбрасывает соперников в радиусе действия; крупные капли отбрасываются с повышенной силой' },
     { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 24, dur: 4, size: .3, desc: '4 с: на 30% меньше, на 25% быстрее, шипы не режут. Масса та же, есть можно только еду' },
@@ -4888,16 +4888,13 @@ body.menu-bg .menu-backdrop { display: block; }
       const rad = a.radius * pw;
       for (const x of foesOf(o)) {
         if (!nearOf(o, x, rad)) continue;
+        // The wave suppresses movement and dash acceleration; it does not push targets physically.
         x.slowT = Math.max(x.slowT || 0, a.dur * pw);
-        for (const c of x.cells) {
-          const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1, edge = d - cellR(c);
-          if (edge < rad + Math.sqrt(total(o)) * .35) {
-            const f = a.force * pw * Math.max(.25, 1 - edge / (rad * 1.5));
-            c.vx += dx / d * f; c.vz += dz / d * f;
-          }
-        }
       }
-      emit(px, 2, pz, a.color, 70, rad, .75);
+      // Three expanding blue pulses make the ability visually distinct from «Отражение».
+      emit(px, 2, pz, a.color, 70, rad * .45, .65);
+      emit(px, 2, pz, a.color, 55, rad * .75, .85);
+      emit(px, 2, pz, a.color, 40, rad, 1.05);
     }
     else if (id === 'push') {
       const rad = a.radius * pw;
@@ -7148,7 +7145,7 @@ body.menu-bg .menu-backdrop { display: block; }
     if (a.radius) parts.push(`радиус ${Math.round(a.radius * k)}`);
     if (a.id === 'blink') parts.push(`дальность ${Math.round(a.dist * k)}`);
     if (a.id === 'eject') parts.push(`скорость выброса ×${k.toFixed(1).replace('.', ',')}`);
-    if (a.id === 'push' || a.id === 'slow') parts.push(`сила ${Math.round(a.force * k)}`);
+    if (a.id === 'push') parts.push(`сила ${Math.round(a.force * k)}`);
     return parts.join(' · ');
   }
   // drawers in the shop remember which ones are open between re-renders

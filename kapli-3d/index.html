@@ -2112,11 +2112,11 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'split',  name: 'Деление',           sh: 'Деление', icon: '◐', color: '#22e6ff', price: 0,     branches: ['splitmax', 'merge'], desc: 'Капля делится пополам и бросает часть вперёд. Части потом сливаются' },
     { id: 'eject',  name: 'Выброс массы',      sh: 'Выброс',  icon: '•', color: '#3dffa2', price: 5000,  cd: .12, dist: 1, desc: 'Отдаёт кусочек массы вперёд: стать легче, покормить шип или союзника. Улучшение: выброс летит дальше' },
     { id: 'shield', name: 'Щит',               sh: 'Щит',     icon: '⛨', color: '#9fe8ff', price: 15000, cd: 25, dur: 2,  desc: '2 с тебя нельзя съесть; кто попробует — отлетает и теряет 5% массы. Шипы всё равно рвут крупную каплю' },
-    { id: 'pulse',  name: 'Магнит',            sh: 'Магнит',  icon: '⊛', color: '#ffd23f', price: 12000, cd: 20, dur: 3,  desc: 'Притягивает крошки и выбросы массы рядом — они летят к тебе по дугам' },
+    { id: 'pulse',  name: 'Насыщение',         sh: 'Насыщ.',  icon: '✦', color: '#ffd23f', price: 12000, cd: 24, dur: 5,  desc: 'На 5 с обычная еда даёт вдвое больше массы' },
     { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 18, dist: 16, desc: 'Мгновенный перенос вперёд; на старом месте на 1 с остаётся тень, за которой гонятся боты' },
-    { id: 'slow',   name: 'Волна',             sh: 'Волна',   icon: '≋', color: '#4d7cff', price: 25000, cd: 22, dur: 3, radius: 34, desc: 'Конус вперёд: соперники в нём 3 с вдвое медленнее' },
+    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 3, radius: 36, force: 24, desc: 'Расходящаяся волна замедляет соперников на 3 с и слегка отталкивает их' },
     { id: 'cloak',  name: 'Маскировка',        sh: 'Маскир.', icon: '◌', color: '#c9c2ff', price: 30000, cd: 28, dur: 4,  desc: '4 с боты тебя не видят; первая капля, съеденная из маскировки, даёт +15% массы' },
-    { id: 'push',   name: 'Толчок',            sh: 'Толчок',  icon: '✸', color: '#ff9a3d', price: 22000, cd: 22, radius: 25, force: 55, stun: .6, desc: 'Отбрасывает соперников рядом и на 0,6 с оглушает их' },
+    { id: 'push',   name: 'Отражение',         sh: 'Отраж.',  icon: '⤺', color: '#ff9a3d', price: 22000, cd: 22, radius: 29, force: 70, stun: .6, desc: 'Мощно отбрасывает ближайших соперников и прерывает их атаку' },
     { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 24, dur: 4, size: .3, desc: '4 с: на 30% меньше, на 25% быстрее, шипы не режут. Масса та же, есть можно только еду' },
     { id: 'decoy',  name: 'Клон',              sh: 'Клон',    icon: '◎', color: '#ff6ad5', price: 28000, cd: 28, dur: 5,  desc: 'Клон бежит туда, куда ты смотришь; если его схватят — рассыпается крошками и замедляет схватившего' },
     { id: 'trap',   name: 'Ловушка',           sh: 'Ловушка', icon: '✳', color: '#3dff6e', price: 35000, cd: 32, dur: 10, desc: 'Мина-шип на 10 с: срабатывает от крупной чужой капли и разрывает её на части. Тебя и союзников не трогает, не больше 2 сразу' },
@@ -4876,14 +4876,25 @@ body.menu-bg .menu-backdrop { display: block; }
     if (!o.cells.length || !o.abCd || (o.abCd[id] || 0) > 0) return false;
     const me = o === player, a = abilById(id), pw = me ? abPow(id) : 1, [px, pz] = centerOf(o);
     if (id === 'shield') { if (me) effects.shield = Math.max(effects.shield, a.dur * pw); else o.abT.shield = a.dur; o.abT.shieldB = a.dur * pw; o.shHit = new Set(); }
-    else if (id === 'pulse') { if (me) effects.magnet = Math.max(effects.magnet, a.dur * pw); o.abT.pulse = a.dur * pw; }
+    else if (id === 'pulse') { o.abT.pulse = a.dur * pw; }
     else if (id === 'blink') { const sh = makeDecoy(o, a, 1); sh.still = true; sh.mesh.material.opacity = .35;
       if (me) { if (decoy) scene.remove(decoy.mesh); decoy = sh; } else botDecoys.push(sh);
       owners.forEach(x => { if (x.target && x.target.owner === o) x.target = sh; }); blinkBy(o, a.dist * pw, a.color); }
-    else if (id === 'slow') {   // a cone forward (±40°)
-      const m = mainOf(o), rad = a.radius * pw;
-      for (const x of foesOf(o)) if (x.cells.some(c => { const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1; return d < rad + cellR(c) + cellR(m) && (dx * m.hx + dz * m.hz) / d > .76; })) x.slowT = a.dur * pw;
-      for (let k = 0; k < 14; k++) { const ang = Math.atan2(m.hz, m.hx) + (k / 13 - .5) * 1.4, d = cellR(m) + rad * .7; emit(px + Math.cos(ang) * d, 1, pz + Math.sin(ang) * d, a.color, 5, 4, .6); } }
+    else if (id === 'slow') {
+      const rad = a.radius * pw;
+      for (const x of foesOf(o)) {
+        if (!nearOf(o, x, rad)) continue;
+        x.slowT = Math.max(x.slowT || 0, a.dur * pw);
+        for (const c of x.cells) {
+          const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1, edge = d - cellR(c);
+          if (edge < rad + Math.sqrt(total(o)) * .35) {
+            const f = a.force * pw * Math.max(.25, 1 - edge / (rad * 1.5));
+            c.vx += dx / d * f; c.vz += dz / d * f;
+          }
+        }
+      }
+      emit(px, 2, pz, a.color, 70, rad, .75);
+    }
     else if (id === 'push') {
       const rad = a.radius * pw;
       for (const x of foesOf(o)) for (const c of x.cells) {
@@ -5762,7 +5773,7 @@ body.menu-bg .menu-backdrop { display: block; }
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const r = cellR(c) + (isP ? pMagnet : 0);
-      const gain = isP ? pGain : 1;
+      const gain = (isP ? pGain : 1) * (abOn('pulse', c.owner) ? 2 : 1);
       const gx0 = fgCell(c.x - r), gx1 = fgCell(c.x + r), gz0 = fgCell(c.z - r), gz1 = fgCell(c.z + r);
       for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) { const bucket = fgrid[gx * FGN + gz];
       for (let j = bucket.length - 1; j >= 0; j--) {
@@ -6172,6 +6183,12 @@ body.menu-bg .menu-backdrop { display: block; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 184, ver: '2.1.4', date: '9 ноября', title: 'Обновление способностей', kind: 'update',
+      lead: 'Переработаны «Насыщение», «Импульс» и «Отражение»: способности получили новые эффекты и визуальные обозначения.', items: [
+      '«Магнит» заменён на «Насыщение»: в течение 5 секунд обычная еда даёт вдвое больше массы.',
+      '«Волна» переименована в «Импульс»: круговая волна замедляет и слегка отталкивает ближайших соперников.',
+      '«Толчок» переименован в «Отражение»: увеличены радиус и сила отбрасывания соперников.'
+    ] },
     { id: 183, ver: '2.1.3', date: '9 ноября', title: 'Корректировка баланса массы', kind: 'patch',
       lead: 'Настроены лимиты массы ботов и обычных боссов, возвращено прежнее снижение массы.', items: [
       'Общая масса обычного бота теперь ограничена 10 000.',
@@ -7094,7 +7111,7 @@ body.menu-bg .menu-backdrop { display: block; }
     if (a.radius) parts.push(`радиус ${Math.round(a.radius * k)}`);
     if (a.id === 'blink') parts.push(`дальность ${Math.round(a.dist * k)}`);
     if (a.id === 'eject') parts.push(`скорость выброса ×${k.toFixed(1).replace('.', ',')}`);
-    if (a.id === 'push') parts.push(`сила ${Math.round(a.force * k)}`);
+    if (a.id === 'push' || a.id === 'slow') parts.push(`сила ${Math.round(a.force * k)}`);
     return parts.join(' · ');
   }
   // drawers in the shop remember which ones are open between re-renders
@@ -9817,7 +9834,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '213';
+const APP_VER = '214';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

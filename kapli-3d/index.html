@@ -1922,9 +1922,6 @@ body.menu-bg .menu-backdrop { display: block; }
       <div class="set"><span>Качество графики</span>
         <div class="seg" id="setQuality" role="radiogroup"><button data-v="high">Высокое</button><button data-v="medium">Среднее</button><button data-v="low">Низкое</button></div>
         <small>Низкое: без частиц, ореолов, звёзд, декораций арен и украшений у ботов — для слабых телефонов</small></div>
-      <div class="set"><span>Сложность ботов</span>
-        <div class="seg" id="setBots" role="radiogroup"><button data-v="easy">Лёгкие</button><button data-v="normal">Обычные</button><button data-v="hard">Сложные</button></div>
-        <small>Влияет на дальность обнаружения, предугадывание движения, осторожность у шипов и скорость обычных ботов. Действует в одиночных режимах; в рейтинговых боях сложность фиксирована — обычная</small></div>
     <label class="set row" for="setAutoQ"><span>Авто-качество<small class="reset-note" style="margin:2px 0 0">снижает графику, если игра идёт медленнее 40 кадров в секунду</small></span><input type="checkbox" id="setAutoQ"></label>
     <label class="set row" for="setFps"><span>Показывать FPS</span><input type="checkbox" id="setFps"></label>
     <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
@@ -3149,7 +3146,8 @@ body.menu-bg .menu-backdrop { display: block; }
   }
   save.history = save.history || [];
   save.totals.modeRounds = save.totals.modeRounds || {};
-  save.settings = { botLevel: 'normal', quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', sfxVol: .7, musVol: .45, autoQ: true, showFps: false, ...(save.settings || {}) };
+  save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', sfxVol: .7, musVol: .45, autoQ: true, showFps: false, ...(save.settings || {}) };
+  delete save.settings.botLevel; // единая сложность ботов для всех игроков
   save.season = save.season || { id: seasonNow, pts: 0 };
   [...(save.skins || []), ...(save.fxOwned || [])].forEach(id => { const m = /^hf?_(\w+?)_(\d{4})_\d$/.exec(id); if (m && HOLIDAYS[m[1]]) ensureHolidayItems(m[1], +m[2]); });
   save.seasonLog = save.seasonLog || [];
@@ -5482,9 +5480,9 @@ body.menu-bg .menu-backdrop { display: block; }
   }
 
   // ================= bot brain =================
-  // bot difficulty (casual modes only; leagues always «normal»)
-  const BOT_SKILL = { easy: { sense: .8, lead: 0, careful: 1.3, speed: .88 }, normal: { sense: 1, lead: .4, careful: 1, speed: .92 }, hard: { sense: 1.2, lead: .6, careful: .85, speed: .97 } };
-  const botSkill = () => BOT_SKILL[stats && stats.ranked ? 'normal' : save.settings.botLevel] || BOT_SKILL.normal;
+  // Одинаковая обычная сложность ботов во всех режимах и для всех игроков.
+  const BOT_SKILL = { normal: { sense: 1, lead: .4, careful: 1, speed: .92 } };
+  const botSkill = () => BOT_SKILL.normal;
   const botLead = o => botSkill().lead * (o.persona === 'hunter' || o.star ? 1.5 : 1);
   function think(o) {
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.25 + .1), flee: p0.flee * .8 } : p0;
@@ -7862,11 +7860,10 @@ body.menu-bg .menu-backdrop { display: block; }
   }
   function renderSettings() {
     const st = save.settings;
-    [['setQuality', st.quality], ['setBots', st.botLevel], ['setJoy', st.joySize], ['setMiniSize', st.miniSize]].forEach(([id, v]) => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.v === v)));
+    [['setQuality', st.quality], ['setJoy', st.joySize], ['setMiniSize', st.miniSize]].forEach(([id, v]) => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.v === v)));
     $('setAlpha').value = st.joyAlpha; $('setVib').checked = st.vibrate; $('setMini').checked = st.minimap; $('setSfx').value = st.sfxVol; $('setMus').value = st.musVol; $('setAutoQ').checked = st.autoQ; $('setFps').checked = st.showFps;
   }
   const saveSettings = () => { persist(); applySettings(); renderSettings(); };
-  $('setBots').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.botLevel = b.dataset.v; saveSettings(); b.focus(); });
   $('setQuality').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.quality = b.dataset.v; saveSettings(); b.focus(); });
   $('setMiniSize').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.miniSize = b.dataset.v; saveSettings(); b.focus(); });
   $('setJoy').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; save.settings.joySize = b.dataset.v; saveSettings(); b.focus(); });

@@ -2108,10 +2108,10 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'dash',   name: 'Рывок',             sh: 'Рывок',   icon: '»', color: '#ff4fd8', price: 0,     branches: ['dash', 'light'], desc: 'Короткое ускорение: ×3,2 от стартовой скорости у маленькой капли, у крупной меньше (масса 10 000 — примерно ×1,6). Забирает немного массы' },
     { id: 'split',  name: 'Деление',           sh: 'Деление', icon: '◐', color: '#22e6ff', price: 0,     branches: ['splitmax', 'merge'], desc: 'Капля делится пополам и бросает часть вперёд. Части потом сливаются' },
     { id: 'eject',  name: 'Выброс массы',      sh: 'Выброс',  icon: '•', color: '#3dffa2', price: 5000,  cd: .12, dist: 1, desc: 'Отдаёт кусочек массы вперёд: стать легче, покормить шип или союзника. Улучшение: выброс летит дальше' },
-    { id: 'shield', name: 'Щит',               sh: 'Щит',     icon: '⛨', color: '#9fe8ff', price: 15000, cd: 25, dur: 2,  desc: '2 с тебя нельзя съесть; кто попробует — отлетает и теряет 5% массы. Шипы всё равно рвут крупную каплю' },
+    { id: 'shield', name: 'Щит',               sh: 'Щит',     icon: '⛨', color: '#9fe8ff', price: 15000, cd: 25, dur: 6,  desc: '6 с тебя нельзя съесть; кто попробует — отлетает и теряет 5% массы. Шипы всё равно рвут крупную каплю' },
     { id: 'pulse',  name: 'Насыщение',         sh: 'Насыщ.',  icon: '✦', color: '#ffd23f', price: 12000, cd: 24, dur: 5,  desc: 'На 5 с обычная еда даёт вдвое больше массы' },
-    { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 18, dist: 16, desc: 'Мгновенный перенос вперёд; на старом месте на 1 с остаётся тень, за которой гонятся боты' },
-    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 6, radius: 36, desc: 'Волна подавляет подвижность соперников на 6 с: снижает скорость и не даёт использовать резкие ускорения' },
+    { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 18, dist: 24, desc: 'Мгновенный перенос вперёд на увеличенную дистанцию; на старом месте на 1 с остаётся тень, за которой гонятся боты' },
+    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 15, radius: 36, desc: 'Волна подавляет подвижность соперников на 15 с: снижает скорость и не даёт использовать резкие ускорения' },
     { id: 'cloak',  name: 'Маскировка',        sh: 'Маскир.', icon: '◌', color: '#c9c2ff', price: 30000, cd: 28, dur: 4,  desc: '4 с боты тебя не видят; первая капля, съеденная из маскировки, даёт +15% массы' },
     { id: 'push',   name: 'Отражение',         sh: 'Отраж.',  icon: '⤺', color: '#ff9a3d', price: 22000, cd: 22, radius: 29, force: 100, stun: .6, desc: 'Мощно отбрасывает соперников в радиусе действия; крупные капли отбрасываются с повышенной силой' },
     { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 24, dur: 4, size: .3, desc: '4 с: на 30% меньше, на 25% быстрее, шипы не режут. Масса та же, есть можно только еду' },
@@ -4891,10 +4891,20 @@ body.menu-bg .menu-backdrop { display: block; }
         // The wave suppresses movement and dash acceleration; it does not push targets physically.
         x.slowT = Math.max(x.slowT || 0, a.dur * pw);
       }
-      // Three expanding blue pulses make the ability visually distinct from «Отражение».
+      // Clearly visible expanding ground rings; particle bursts alone were too subtle.
+      [1, .78, .56].forEach((k, i) => {
+        const life = 1.05 + i * .12;
+        const mesh = new THREE.Mesh(
+          new THREE.RingGeometry(.94, 1, 72),
+          new THREE.MeshBasicMaterial({ color: a.color, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
+        );
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set(px, .16 + i * .025, pz);
+        mesh.scale.setScalar(rad * k * .08);
+        scene.add(mesh);
+        xfx.push({ id: 'slowwave', x: px, z: pz, t: life, life, rad: rad * k, mesh, o });
+      });
       emit(px, 2, pz, a.color, 70, rad * .45, .65);
-      emit(px, 2, pz, a.color, 55, rad * .75, .85);
-      emit(px, 2, pz, a.color, 40, rad, 1.05);
     }
     else if (id === 'push') {
       const rad = a.radius * pw;
@@ -5013,7 +5023,11 @@ body.menu-bg .menu-backdrop { display: block; }
     for (const f of [...xfx]) {
       f.t -= dt;
       const foes = foesOf(f.o), main = f.o.cells.length ? mainOf(f.o) : null;
-      if (f.id === 'x_hole') {
+      if (f.id === 'slowwave') {
+        const progress = Math.min(1, Math.max(0, 1 - f.t / f.life));
+        f.mesh.scale.setScalar(f.rad * (.08 + .92 * progress));
+        f.mesh.material.opacity = .95 * (1 - progress);
+      } else if (f.id === 'x_hole') {
         pullFood(f.x, f.z, f.a.radius, 26);
         for (const e of ejects) { const dx = f.x - e.x, dz = f.z - e.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius) { e.vx += dx / d * 80 * dt; e.vz += dz / d * 80 * dt; } }
         f.mesh.rotation.y += dt * 4;

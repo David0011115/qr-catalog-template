@@ -2113,7 +2113,7 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 18, dist: 16, desc: 'Мгновенный перенос вперёд; на старом месте на 1 с остаётся тень, за которой гонятся боты' },
     { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 3, radius: 36, force: 24, desc: 'Расходящаяся волна замедляет соперников на 3 с и слегка отталкивает их' },
     { id: 'cloak',  name: 'Маскировка',        sh: 'Маскир.', icon: '◌', color: '#c9c2ff', price: 30000, cd: 28, dur: 4,  desc: '4 с боты тебя не видят; первая капля, съеденная из маскировки, даёт +15% массы' },
-    { id: 'push',   name: 'Отражение',         sh: 'Отраж.',  icon: '⤺', color: '#ff9a3d', price: 22000, cd: 22, radius: 29, force: 70, stun: .6, desc: 'Мощно отбрасывает ближайших соперников и прерывает их атаку' },
+    { id: 'push',   name: 'Отражение',         sh: 'Отраж.',  icon: '⤺', color: '#ff9a3d', price: 22000, cd: 22, radius: 29, force: 100, stun: .6, desc: 'Мощно отбрасывает соперников в радиусе действия; крупные капли отбрасываются с повышенной силой' },
     { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 24, dur: 4, size: .3, desc: '4 с: на 30% меньше, на 25% быстрее, шипы не режут. Масса та же, есть можно только еду' },
     { id: 'decoy',  name: 'Клон',              sh: 'Клон',    icon: '◎', color: '#ff6ad5', price: 28000, cd: 28, dur: 5,  desc: 'Клон бежит туда, куда ты смотришь; если его схватят — рассыпается крошками и замедляет схватившего' },
     { id: 'trap',   name: 'Ловушка',           sh: 'Ловушка', icon: '✳', color: '#3dff6e', price: 35000, cd: 32, dur: 10, desc: 'Мина-шип на 10 с: срабатывает от крупной чужой капли и разрывает её на части. Тебя и союзников не трогает, не больше 2 сразу' },
@@ -4903,7 +4903,7 @@ body.menu-bg .menu-backdrop { display: block; }
       const rad = a.radius * pw;
       for (const x of foesOf(o)) for (const c of x.cells) {
         const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1, edge = d - cellR(c);
-        if (edge < rad + Math.sqrt(total(o)) * .4) { const f = a.force * pw * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; if (x.kind !== 'boss') x.freezeT = Math.max(x.freezeT || 0, a.stun); }
+        if (edge < rad + Math.sqrt(total(o)) * .4) { const massBoost = Math.min(1.6, Math.pow(Math.max(1, c.mass / 25), .12)); const f = a.force * pw * massBoost * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; if (x.kind !== 'boss') x.freezeT = Math.max(x.freezeT || 0, a.stun); }
       }
       emit(px, 2, pz, a.color, 70, rad, .7);
     } else if (id === 'shrink' || id === 'cloak') { o.abT[id] = a.dur * pw; if (id === 'cloak') { o.cloakBonus = true; owners.forEach(x => { if (x.target && x.target.owner === o) x.target = null; }); } }

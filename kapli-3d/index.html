@@ -5846,7 +5846,21 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     rebuildCells();
 
-    for (const c of cells) { const cap = c.owner.kind === 'boss' && (mode === 'survival' || mode === 'raid') ? SURV_BOSS_CAP : MAX_MASS; if (c.mass > cap) c.mass = cap; }
+    for (const c of cells) {
+      const cap = c.owner.isPlayer ? MAX_MASS
+        : c.owner.kind === 'bot' ? BOT_MASS_CAP
+        : c.owner.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP)
+        : MAX_MASS;
+      if (c.mass > cap) c.mass = cap;
+    }
+    // The regular bot limit is shared by all of its parts, not repeated per part.
+    for (const o of bots) {
+      const mass = total(o);
+      if (mass > BOT_MASS_CAP) {
+        const scale = BOT_MASS_CAP / mass;
+        for (const c of o.cells) c.mass *= scale;
+      }
+    }
     updateEjects(dt);
     updateViruses(dt);
     updateEvent(dt);

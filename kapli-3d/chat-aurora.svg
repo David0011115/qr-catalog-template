@@ -1,90 +1,65 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid slice">
 <defs>
- <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#020713"/><stop offset=".42" stop-color="#081a2c"/><stop offset=".78" stop-color="#102d3c"/><stop offset="1" stop-color="#071624"/></linearGradient>
- <radialGradient id="air"><stop stop-color="#55e8d2" stop-opacity=".3"/><stop offset=".55" stop-color="#397f9c" stop-opacity=".12"/><stop offset="1" stop-color="#071624" stop-opacity="0"/></radialGradient>
- <linearGradient id="curtain" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#54ffd5" stop-opacity="0"/><stop offset=".2" stop-color="#69ffda" stop-opacity=".22"/><stop offset=".42" stop-color="#54e9e5" stop-opacity=".68"/><stop offset=".62" stop-color="#78baff" stop-opacity=".43"/><stop offset=".82" stop-color="#b38cff" stop-opacity=".27"/><stop offset="1" stop-color="#64ffe0" stop-opacity="0"/></linearGradient>
- <linearGradient id="curtainBright" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#a6ffe9" stop-opacity="0"/><stop offset=".23" stop-color="#9dffe9" stop-opacity=".06"/><stop offset=".5" stop-color="#9dffe9" stop-opacity=".72"/><stop offset=".72" stop-color="#5dd8e9" stop-opacity=".3"/><stop offset="1" stop-color="#5dd8e9" stop-opacity="0"/></linearGradient>
- <linearGradient id="mountainFar" x2="0" y2="1"><stop stop-color="#718b9b"/><stop offset=".24" stop-color="#344f64"/><stop offset="1" stop-color="#0b1d30"/></linearGradient>
- <linearGradient id="mountainNear" x2=".1" y2="1"><stop stop-color="#29475b"/><stop offset=".35" stop-color="#132d42"/><stop offset="1" stop-color="#04111f"/></linearGradient>
- <linearGradient id="snow" x2=".2" y2="1"><stop stop-color="#f0ffff"/><stop offset=".32" stop-color="#a9cbd4"/><stop offset="1" stop-color="#416477"/></linearGradient>
- <linearGradient id="water" x2="0" y2="1"><stop stop-color="#17465a"/><stop offset=".24" stop-color="#0b2c42"/><stop offset="1" stop-color="#020914"/></linearGradient>
- <linearGradient id="waterGlow" x2="0" y2="1"><stop stop-color="#8affdf" stop-opacity=".4"/><stop offset=".25" stop-color="#6de2e8" stop-opacity=".18"/><stop offset="1" stop-color="#6de2e8" stop-opacity="0"/></linearGradient>
- <linearGradient id="mist" x2="0" y2="1"><stop stop-color="#a4fff0" stop-opacity="0"/><stop offset=".5" stop-color="#a4fff0" stop-opacity=".12"/><stop offset="1" stop-color="#a4fff0" stop-opacity="0"/></linearGradient>
- <filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="24"/></filter>
- <filter id="haze" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="10"/></filter>
- <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>
- <pattern id="stars" width="173" height="137" patternUnits="userSpaceOnUse"><circle cx="11" cy="19" r="1.2" fill="#e5ffff"/><circle cx="69" cy="55" r=".8" fill="#d6eeff"/><circle cx="142" cy="15" r="1.1" fill="#fff"/><circle cx="157" cy="104" r=".7" fill="#cafff0"/><circle cx="39" cy="119" r=".9" fill="#fff"/><circle cx="112" cy="82" r=".55" fill="#fff"/></pattern>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#020611"/><stop offset=".45" stop-color="#0a1d32"/><stop offset="1" stop-color="#071522"/></linearGradient>
+<radialGradient id="horizon"><stop stop-color="#72f6d9" stop-opacity=".35"/><stop offset="1" stop-color="#071522" stop-opacity="0"/></radialGradient>
+<linearGradient id="veil" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#53fbd7" stop-opacity="0"/><stop offset=".35" stop-color="#65f5d6" stop-opacity=".62"/><stop offset=".58" stop-color="#80c9ff" stop-opacity=".42"/><stop offset=".8" stop-color="#c19aff" stop-opacity=".2"/><stop offset="1" stop-color="#53fbd7" stop-opacity="0"/></linearGradient>
+<linearGradient id="ridge" x2="0" y2="1"><stop stop-color="#7895a5"/><stop offset=".25" stop-color="#304b61"/><stop offset="1" stop-color="#0a1c2c"/></linearGradient>
+<linearGradient id="snow" x2=".2" y2="1"><stop stop-color="#f0ffff"/><stop offset=".4" stop-color="#a9cbd5"/><stop offset="1" stop-color="#496a7e"/></linearGradient>
+<linearGradient id="forest" x2="0" y2="1"><stop stop-color="#153747"/><stop offset="1" stop-color="#020b15"/></linearGradient>
+<linearGradient id="lake" x2="0" y2="1"><stop stop-color="#28566a"/><stop offset=".25" stop-color="#102f43"/><stop offset="1" stop-color="#020812"/></linearGradient>
+<radialGradient id="warm"><stop stop-color="#ffc878" stop-opacity=".8"/><stop offset="1" stop-color="#ffb45c" stop-opacity="0"/></radialGradient>
+<filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="26"/></filter>
+<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+<pattern id="stars" width="181" height="143" patternUnits="userSpaceOnUse"><circle cx="13" cy="22" r="1.1" fill="#e9ffff"/><circle cx="76" cy="61" r=".7" fill="#d6edff"/><circle cx="151" cy="17" r="1" fill="#fff"/><circle cx="164" cy="111" r=".7" fill="#cafff0"/><circle cx="39" cy="126" r=".8" fill="#fff"/></pattern>
 </defs>
-<!-- cold polar night and distant atmospheric glow -->
-<rect width="1200" height="900" fill="url(#sky)"/>
-<rect width="1200" height="530" fill="url(#stars)" opacity=".78"/>
-<ellipse cx="610" cy="420" rx="670" ry="390" fill="url(#air)"/>
-<ellipse cx="600" cy="480" rx="540" ry="150" fill="#4debd0" opacity=".08" filter="url(#bloom)"/>
-<!-- distant diffuse aurora behind the main curtains -->
-<path d="M-100 110Q110 10 270 150T570 115T900 120T1310 60L1300 465Q1080 365 900 430T560 410T210 445T-100 390Z" fill="#50d9ce" opacity=".22" filter="url(#bloom)"/>
-<!-- broad, translucent three-dimensional aurora veils -->
-<path d="M-100-90C110 35 210 180 250 340C285 470 245 560 195 675C350 510 390 345 360 190C340 65 230-40 120-100Z" fill="url(#curtain)" opacity=".78" filter="url(#haze)"/>
-<path d="M110-100C310 20 405 175 435 340C465 500 405 585 360 680C520 500 555 330 520 180C490 40 380-65 280-110Z" fill="url(#curtain)" opacity=".84"/>
-<path d="M365-100C545 30 640 180 665 350C690 500 630 600 585 700C755 510 780 335 745 175C715 30 615-70 520-110Z" fill="url(#curtain)" opacity=".78"/>
-<path d="M625-100C815 30 900 185 925 350C950 500 895 600 845 690C1015 505 1045 335 1010 175C980 30 880-70 780-110Z" fill="url(#curtain)" opacity=".8"/>
-<path d="M875-100C1050 20 1140 175 1165 340C1190 485 1145 570 1095 660C1260 490 1290 315 1250 160C1215 20 1120-75 1020-110Z" fill="url(#curtain)" opacity=".74"/>
-<!-- luminous inner folds: thin irregular ribbons create depth and motion -->
+<!-- A remote arctic night, not the former fjord landscape -->
+<rect width="1200" height="900" fill="url(#sky)"/><rect width="1200" height="570" fill="url(#stars)" opacity=".8"/>
+<ellipse cx="610" cy="430" rx="760" ry="380" fill="url(#horizon)"/>
+<path d="M-100 150Q130 15 320 130T680 105T1030 85T1320 145L1320 440Q1070 350 850 420T440 405T-100 430Z" fill="#5ce8d3" opacity=".18" filter="url(#glow)"/>
+<!-- Tall, layered curtains of the aurora -->
+<path d="M-100-100C110 5 240 145 270 300S230 535 175 640C360 475 400 300 360 150S210-75 90-120Z" fill="url(#veil)" opacity=".72" filter="url(#soft)"/>
+<path d="M130-120C330 5 440 155 470 315S425 555 370 665C565 475 605 305 560 145S400-90 285-135Z" fill="url(#veil)" opacity=".86"/>
+<path d="M430-120C615 10 710 165 735 325S695 565 640 675C820 480 860 305 820 145S665-90 555-135Z" fill="url(#veil)" opacity=".8"/>
+<path d="M730-120C905 0 1000 155 1025 315S990 550 930 660C1110 470 1150 300 1110 140S960-90 850-135Z" fill="url(#veil)" opacity=".78"/>
 <g fill="none" stroke-linecap="round">
- <path d="M-15-20C145 100 235 245 245 390S225 565 195 625" stroke="#b7ffed" stroke-width="15" opacity=".14" filter="url(#soft)"/>
- <path d="M38-35C190 105 270 250 275 390S250 555 230 610" stroke="#a3ffe8" stroke-width="3" opacity=".64"/>
- <path d="M175-25C330 115 410 265 420 410S390 565 365 635" stroke="#d0fff1" stroke-width="10" opacity=".12" filter="url(#soft)"/>
- <path d="M220-25C360 115 435 260 440 405S410 560 385 630" stroke="#a7fff0" stroke-width="3.5" opacity=".7"/>
- <path d="M300-35C445 110 515 260 525 405S500 565 475 650" stroke="#6effdc" stroke-width="2" opacity=".52"/>
- <path d="M445-30C585 105 665 260 675 410S650 570 620 655" stroke="#c6fff2" stroke-width="11" opacity=".13" filter="url(#soft)"/>
- <path d="M485-25C620 115 690 260 700 405S675 570 650 640" stroke="#a9fff0" stroke-width="3.5" opacity=".66"/>
- <path d="M570-25C715 120 785 270 790 420S760 570 740 650" stroke="#63f8dc" stroke-width="2.5" opacity=".48"/>
- <path d="M705-25C850 105 925 260 935 410S905 565 875 640" stroke="#d6d1ff" stroke-width="10" opacity=".12" filter="url(#soft)"/>
- <path d="M750-25C885 115 960 260 965 410S940 565 915 630" stroke="#c1fff0" stroke-width="3" opacity=".64"/>
- <path d="M980-25C1100 110 1175 250 1185 390S1160 545 1135 620" stroke="#9affdf" stroke-width="3" opacity=".55"/>
+<path d="M82-40C235 105 315 245 320 390S280 540 245 610" stroke="#cafff0" stroke-width="3" opacity=".72"/>
+<path d="M340-35C480 110 550 260 555 405S520 555 485 635" stroke="#baffed" stroke-width="3.5" opacity=".7"/>
+<path d="M640-35C770 110 835 260 840 405S805 555 770 640" stroke="#baffed" stroke-width="3" opacity=".68"/>
+<path d="M940-35C1060 105 1125 250 1130 390S1095 540 1060 615" stroke="#baffed" stroke-width="3" opacity=".66"/>
+<path d="M45-30C210 100 295 245 300 385S255 545 215 620" stroke="#c5fff0" stroke-width="14" opacity=".15" filter="url(#soft)"/>
+<path d="M600-35C735 105 805 255 810 400S775 555 740 645" stroke="#d8fff3" stroke-width="14" opacity=".13" filter="url(#soft)"/>
 </g>
-<!-- soft shafts of reflected light within the curtains -->
-<path d="M270 20Q390 185 425 390T380 620L350 620Q405 420 355 235Z" fill="url(#curtainBright)" opacity=".52"/>
-<path d="M535 0Q665 185 700 400T650 650L620 650Q675 420 620 235Z" fill="url(#curtainBright)" opacity=".48"/>
-<path d="M800 0Q930 185 965 400T915 640L885 640Q940 420 885 235Z" fill="url(#curtainBright)" opacity=".44"/>
-<!-- far mountain silhouettes and snow peaks -->
-<path d="M0 590L105 470 175 535 300 285 405 470 510 370 650 565 790 300 925 510 1055 355 1200 565V900H0Z" fill="url(#mountainFar)"/>
-<path d="M300 285L260 365 291 348 310 382 330 340 367 420 405 470 350 438 329 397 306 414 285 382 260 408Z" fill="url(#snow)" opacity=".95"/>
-<path d="M790 300L744 385 780 365 801 399 824 360 865 435 925 510 866 469 834 418 807 439 783 402 748 428Z" fill="url(#snow)" opacity=".96"/>
-<path d="M1055 355L1015 425 1047 407 1068 438 1090 405 1120 462 1200 565 1137 510 1100 464 1072 482 1048 449 1018 470Z" fill="url(#snow)" opacity=".82"/>
-<path d="M95 470L120 505 165 535 137 526 105 513Z" fill="#c4e0e5" opacity=".24"/>
-<!-- nearer, darker mountain walls -->
-<path d="M0 620L135 535 245 615 405 510 525 620 650 555 795 635 930 520 1060 620 1200 555V900H0Z" fill="url(#mountainNear)"/>
-<path d="M135 535L112 590 155 570 190 615 245 615 190 600 158 560Z" fill="#8aaab6" opacity=".25"/>
-<path d="M405 510L365 570 407 552 440 590 480 602 438 570 414 540Z" fill="#b6d5dc" opacity=".22"/>
-<path d="M930 520L890 580 934 560 972 602 1010 610 968 575 940 548Z" fill="#a9cbd4" opacity=".2"/>
-<!-- dark tree line, varied heights and silhouettes -->
-<path d="M0 665Q160 610 290 675T570 660T850 680T1200 650V900H0Z" fill="#041321"/>
-<g fill="#03101c" opacity=".96">
- <path d="M24 682l30-106 30 106H67l27 49H16l27-49Z"/><path d="M94 700l23-82 23 82h-14l22 39H86l22-39Z"/>
- <path d="M165 692l32-112 32 112h-20l29 51h-82l29-51Z"/><path d="M1015 690l35-122 35 122h-22l31 55h-88l31-55Z"/>
- <path d="M1090 700l25-90 25 90h-15l24 43h-68l24-43Z"/><path d="M1160 685l28-100 28 100h-18l27 49h-74l27-49Z"/>
- <path d="M890 700l24-84 24 84h-15l23 40h-64l23-40Z"/>
+<!-- Distant mountain amphitheatre -->
+<path d="M0 600L105 485 185 540 315 310 430 480 545 390 665 555 810 295 945 500 1060 350 1200 555V900H0Z" fill="url(#ridge)"/>
+<path d="M315 310L270 390 305 365 325 405 348 360 390 435 430 480 375 445 350 410 325 430 300 400Z" fill="url(#snow)"/>
+<path d="M810 295L760 385 795 360 820 405 845 355 885 430 945 500 885 460 852 415 825 440 800 405Z" fill="url(#snow)"/>
+<path d="M1060 350L1020 425 1050 405 1075 445 1095 400 1130 465 1200 555 1145 510 1105 470 1078 490Z" fill="url(#snow)" opacity=".84"/>
+<!-- Frozen lake with subtle ice fractures -->
+<path d="M0 625Q180 600 340 630T650 625T950 630T1200 615V900H0Z" fill="url(#lake)"/>
+<path d="M260 640Q590 605 940 640L1200 900H0Z" fill="#82f5e4" opacity=".08"/>
+<g fill="none" stroke-linecap="round" opacity=".28"><path d="M260 690q150 13 290 0m-220 32q190 12 390 0m-330 43q160 10 330 0m-250 48q135 8 270 0" stroke="#75e8dc" stroke-width="3"/><path d="M670 700q110 9 230 0m-185 42q140 10 275 0m-230 47q125 8 250 0" stroke="#b5caff" stroke-width="2.5"/><path d="M430 665l-45 42 68 25-34 38m250-92 42 34-38 31 55 32" stroke="#b5fff0" stroke-width="1.6"/></g>
+<!-- Dark taiga forms a layered frame around the lake -->
+<path d="M0 585Q160 555 300 600T590 590T900 600T1200 575V900H0Z" fill="#071a28"/>
+<g fill="url(#forest)">
+<path d="M-30 720l52-205 52 205H47l49 85H-23l49-85Z"/><path d="M65 745l42-165 42 165h-29l39 67H54l39-67Z"/><path d="M155 725l58-225 58 225h-35l54 92H136l54-92Z"/><path d="M260 750l44-170 44 170h-29l42 70H245l42-70Z"/><path d="M345 728l52-205 52 205h-32l48 84H330l48-84Z"/><path d="M445 750l43-170 43 170h-28l40 70H430l40-70Z"/><path d="M850 740l50-195 50 195h-31l47 85H834l47-85Z"/><path d="M955 720l60-230 60 230h-37l55 95H936l55-95Z"/><path d="M1065 750l44-170 44 170h-29l42 70h-114l42-70Z"/><path d="M1140 720l52-200 52 200h-32l48 85h-136l48-85Z"/>
 </g>
-<!-- fjord surface and its long, broken reflections -->
-<path d="M0 650Q170 622 330 650T650 645T950 652T1200 640V900H0Z" fill="url(#water)"/>
-<path d="M430 650Q600 625 790 650T1110 650L1200 900H250Z" fill="url(#waterGlow)" opacity=".7"/>
-<ellipse cx="700" cy="658" rx="390" ry="36" fill="#65f6d7" opacity=".14" filter="url(#bloom)"/>
-<g fill="none" stroke-linecap="round">
- <path d="M390 660Q550 670 720 660T1010 662" stroke="#a2ffe9" stroke-width="8" opacity=".2" filter="url(#soft)"/>
- <path d="M445 666q110 8 225 0m-285 23q170 10 340 0m-270 30q150 9 300 0m-210 34q120 8 245 0" stroke="#6ef5df" stroke-width="3" opacity=".35"/>
- <path d="M720 676q100 8 205 0m-175 34q115 8 225 0m-270 40q145 9 290 0" stroke="#9aaeff" stroke-width="2.5" opacity=".3"/>
- <path d="M500 785q90 5 180 0m-120 35q110 6 220 0" stroke="#58cbd5" stroke-width="2" opacity=".22"/>
-</g>
-<!-- low drifting mist separates the water from the mountains -->
-<path d="M0 635Q180 610 350 638T700 632T1050 640T1200 625V700Q1000 680 820 700T450 690T0 705Z" fill="url(#mist)" opacity=".8" filter="url(#haze)"/>
-<!-- foreground ice shelves with dimensional edges -->
-<path d="M0 765Q95 720 205 754L330 900H0Z" fill="#0a2639"/>
-<path d="M0 765L88 730 145 744 103 755 175 775 75 770Z" fill="#a8d2d9" opacity=".38"/>
-<path d="M0 780L115 766 205 790" fill="none" stroke="#c4f2ef" stroke-width="2" opacity=".16"/>
-<path d="M930 770Q1050 720 1200 758V900H1000Z" fill="#092338"/>
-<path d="M1000 762L1075 732 1140 748 1095 760 1178 778 1050 776Z" fill="#b5dce0" opacity=".3"/>
-<path d="M1020 790L1110 775 1200 795" fill="none" stroke="#c4f2ef" stroke-width="2" opacity=".14"/>
-<!-- tiny distant stars and ice glints -->
-<g fill="#e3fff8" opacity=".8"><circle cx="250" cy="690" r="1.5"/><circle cx="355" cy="742" r="1.1"/><circle cx="825" cy="700" r="1.6"/><circle cx="950" cy="735" r="1.1"/><circle cx="620" cy="785" r="1.2"/></g>
-<path d="M0 870Q220 835 430 870T850 865T1200 870V900H0Z" fill="#020812" opacity=".72"/>
+<g fill="#c0e4e3" opacity=".42"><path d="M18 548l4-33 7 34 22 22-27-9-22 12 13-26Z"/><path d="M187 532l25-32 25 32-25-10Z"/><path d="M974 535l41-45 41 45-41-14Z"/></g>
+<!-- Polar research station: warm light against the cold landscape -->
+<ellipse cx="690" cy="612" rx="180" ry="90" fill="url(#warm)" filter="url(#glow)"/>
+<path d="M610 590L650 548 738 548 778 590V645H610Z" fill="#122b39" stroke="#9cc6c7" stroke-opacity=".4" stroke-width="2"/>
+<path d="M650 548L690 520 738 548Z" fill="#294b58"/><path d="M610 590L690 570 778 590" fill="none" stroke="#b7d6d4" stroke-opacity=".4" stroke-width="3"/>
+<rect x="635" y="590" width="29" height="34" rx="2" fill="#ffc77b" opacity=".9"/><rect x="678" y="584" width="39" height="61" rx="2" fill="#ffbd68" opacity=".82"/><rect x="730" y="590" width="27" height="34" rx="2" fill="#ffd18b" opacity=".86"/>
+<path d="M698 520V455M684 475L698 455 712 475M698 455V438" stroke="#9dbfc9" stroke-width="3" fill="none"/><circle cx="698" cy="438" r="4" fill="#d8fff4"/><path d="M698 438L730 425" stroke="#9dbfc9" stroke-width="2"/>
+<path d="M900 620l30-30h54l29 30v31H900Z" fill="#132d3b" stroke="#8caeb9" stroke-opacity=".3"/><path d="M930 590l27-18 27 18Z" fill="#345361"/><rect x="920" y="620" width="16" height="18" fill="#ffc477" opacity=".8"/><rect x="950" y="617" width="18" height="22" fill="#ffc477" opacity=".7"/>
+<!-- Warm reflections on the ice -->
+<path d="M675 646L650 790 735 790 710 646Z" fill="#ffbd70" opacity=".1" filter="url(#soft)"/>
+<g stroke="#ffc77c" stroke-linecap="round" fill="none" opacity=".3"><path d="M655 680q35 5 70 0m-84 28q48 6 96 0m-80 30q33 4 66 0" stroke-width="3"/><path d="M900 670q28 4 55 0m-42 24q24 4 48 0" stroke-width="2"/></g>
+<!-- Snowbanks in the immediate foreground -->
+<path d="M0 780Q110 715 225 760L340 900H0Z" fill="#0a2638"/><path d="M0 780L90 738 150 750 112 765 205 790 75 786Z" fill="#b8e1e3" opacity=".32"/>
+<path d="M920 790Q1060 715 1200 770V900H1010Z" fill="#092337"/><path d="M1000 780L1080 740 1150 758 1105 775 1190 795 1050 794Z" fill="#b5dce0" opacity=".28"/>
+<!-- Meteor trails and crisp glints -->
+<path d="M930 120L1010 88" stroke="#d9fff8" stroke-width="2" opacity=".65"/><path d="M1010 88l-18 2 10 10" fill="none" stroke="#d9fff8" stroke-width="1.5" opacity=".5"/>
+<path d="M180 205L225 188" stroke="#d9eaff" stroke-width="1.4" opacity=".4"/>
+<g fill="#e6fff9" opacity=".8"><circle cx="245" cy="690" r="1.4"/><circle cx="365" cy="744" r="1.1"/><circle cx="825" cy="705" r="1.5"/><circle cx="1010" cy="735" r="1.1"/><circle cx="565" cy="790" r="1.1"/></g>
+<path d="M0 870Q220 835 430 870T850 865T1200 870V900H0Z" fill="#020812" opacity=".7"/>
 </svg>

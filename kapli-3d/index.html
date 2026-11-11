@@ -145,6 +145,74 @@ img { max-width: 100%; }
   .chat-list li{max-width:88%;padding:7px 10px}
 }
 
+
+/* Chat layout repair: give the conversation the available screen height and keep the title clear. */
+#chatCard{
+  width:min(900px,calc(100vw - 24px)) !important;
+  max-width:900px !important;
+  height:calc(100dvh - 24px) !important;
+  max-height:calc(100dvh - 24px) !important;
+  min-height:0 !important;
+  box-sizing:border-box !important;
+  padding:16px clamp(12px,2.8vw,24px) 12px !important;
+  gap:10px !important;
+  overflow:hidden !important;
+  display:flex;
+  flex-direction:column;
+}
+#chatCard > .card-back{display:none !important}
+#chatCard .chat-topline{
+  flex:0 0 46px;
+  min-height:46px;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  margin:0;
+}
+#chatCard .chat-topline h1{
+  display:block;
+  width:100%;
+  margin:0 !important;
+  padding:0 52px !important;
+  text-align:center !important;
+  line-height:1.15;
+  font-size:clamp(1.2rem,4vw,1.55rem) !important;
+  transform:none !important;
+}
+#chatCard #chatThemeGear{right:0;top:50%;transform:translateY(-50%);z-index:3}
+#chatCard .chat-tabs{flex:0 0 auto;width:100%;margin:0}
+#chatCard #chatThemePanel{flex:0 0 auto;max-height:36dvh;overflow-y:auto}
+#chatCard #chatClan{flex:1 1 0;min-height:0;overflow-y:auto}
+#chatCard .chat-list{
+  flex:1 1 0 !important;
+  height:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  width:100% !important;
+  box-sizing:border-box;
+  margin:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+#chatCard .chat-form{flex:0 0 auto;width:100%;margin:0;box-sizing:border-box}
+#chatCard #chatNote{flex:0 0 auto;margin:0}
+#chatCard #chatBack{flex:0 0 auto;width:100%;margin:0}
+#chatCard .chat-emoji-picker{flex:0 0 auto;max-height:18dvh;overflow:auto}
+@media(max-width:600px){
+  #chatCard{width:calc(100vw - 16px) !important;height:calc(100dvh - 16px) !important;max-height:calc(100dvh - 16px) !important;padding:12px 10px 10px !important;gap:8px !important}
+  #chatCard .chat-topline{flex-basis:42px;min-height:42px}
+  #chatCard .chat-topline h1{font-size:1.22rem !important;padding-inline:48px !important}
+  #chatCard .chat-list{padding:8px;gap:8px}
+  #chatCard .chat-list li{max-width:90%}
+}
+@media(orientation:landscape) and (min-width:700px){
+  #chatCard{width:min(960px,calc(100vw - 28px)) !important;height:calc(100dvh - 24px) !important}
+  #chatCard .chat-topline{flex-basis:42px;min-height:42px}
+  #chatCard .chat-list{max-height:none !important}
+}
+@media(prefers-reduced-motion:reduce){#chatCard *{scroll-behavior:auto}}
 </style>
 <title>Капли 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">

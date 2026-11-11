@@ -2096,8 +2096,163 @@ body.menu-bg .menu-backdrop { display: block; }
   #chatCard #chatThemePanel{max-height:none}
 }
 </style>
+<style id="chat-emotes-v2">
+/* «Капли 3D» chat emotes — every part animates once when shown (.emo-play) and again on tap; still otherwise */
+.emo{display:block;width:100%;height:100%;overflow:visible}
+.emo *{transform-box:fill-box;transform-origin:50% 50%}
+.emo .e-body{transform-origin:50% 100%}
+.emo-play .emo .e-body{animation:emoSquish .7s cubic-bezier(.3,1.6,.5,1) both}
+.emo-play .emo .e-eyes{animation:emoBlink .32s ease-in-out .9s both}
+/* per-emote moves */
+.emo-play[data-emote=":smile:"] .emo .e-body{animation:emoSquish .7s cubic-bezier(.3,1.6,.5,1) both,emoHop .55s ease-out .7s both}
+.emo-play[data-emote=":sad:"] .emo .e-body{animation:emoSag 1.3s ease-in-out both}
+.emo-play[data-emote=":sad:"] .emo .e-tear{animation:emoTear 1.3s ease-in .25s both}
+.emo-play[data-emote=":angry:"] .emo .e-body{animation:emoSquish .5s cubic-bezier(.3,1.6,.5,1) both,emoShake .5s linear .45s 2 both}
+.emo-play[data-emote=":angry:"] .emo path[fill="url(#emoangryG)"]{animation:emoRed 1.4s ease-in-out both}
+.emo-play[data-emote=":laugh:"] .emo .e-body{animation:emoLaugh 1.2s ease-in-out both}
+.emo-play[data-emote=":laugh:"] .emo .e-tears{animation:emoJoyTears 1.2s ease-out .2s both}
+.emo-play[data-emote=":love:"] .emo .e-hp{animation:emoBeat .5s ease-in-out .2s 3 both}
+.emo-play[data-emote=":love:"] .emo .e-body{animation:emoSquish .7s cubic-bezier(.3,1.6,.5,1) both,emoSway 1.4s ease-in-out .3s both}
+.emo-play[data-emote=":wow:"] .emo .e-body{animation:emoJump .8s cubic-bezier(.2,.9,.3,1.2) both}
+.emo-play[data-emote=":wow:"] .emo .e-eyes{animation:emoBig .8s ease-out both}
+.emo-play[data-emote=":wow:"] .emo .e-mouth{animation:emoO .8s ease-out both}
+.emo-play[data-emote=":cool:"] .emo .e-glasses{animation:emoShades .9s cubic-bezier(.3,1.4,.5,1) both}
+.emo-play[data-emote=":wink:"] .emo .e-eyes{animation:none}
+.emo-play[data-emote=":wink:"] .emo .e-wink{animation:emoWink .7s ease-in-out .25s both}
+.emo-play[data-emote=":wink:"] .emo .e-star{animation:emoStar .9s ease-out .5s both}
+.emo-play[data-emote=":king:"] .emo .e-crown{animation:emoCrown .9s cubic-bezier(.3,1.5,.5,1) both}
+.emo-play[data-emote=":king:"] .emo .e-eyes{animation:none}
+.emo-play[data-emote=":yum:"] .emo .e-food{animation:emoEat 1.1s ease-in both}
+.emo-play[data-emote=":yum:"] .emo .e-mouth{animation:emoChomp .34s ease-in-out .75s 2 both}
+.emo-play[data-emote=":yum:"] .emo .e-tongue{animation:emoLick 1s ease-in-out 1.2s both}
+.emo-play[data-emote=":splat:"] .emo .e-body{animation:emoSplat .8s cubic-bezier(.3,1.5,.5,1) both}
+.emo-play[data-emote=":splat:"] .emo .e-drips{animation:emoDrips .8s ease-out .1s both}
+.emo-play[data-emote=":splat:"] .emo .e-eyes{animation:emoSpin .7s ease-out .3s both}
+.emo-play[data-emote=":gg:"] .emo .e-cup{animation:emoCup .9s cubic-bezier(.3,1.5,.5,1) both}
+.emo-play[data-emote=":gg:"] .emo .e-confetti{animation:emoConf 1.3s ease-out .3s both}
+.emo-play[data-emote=":gg:"] .emo .e-eyes{animation:none}
+@keyframes emoSquish{0%{transform:scale(.4,.4);opacity:.3}45%{transform:scale(1.14,.86);opacity:1}70%{transform:scale(.94,1.07)}100%{transform:none}}
+@keyframes emoBlink{0%,100%{transform:none}50%{transform:scaleY(.1)}}
+@keyframes emoHop{0%,100%{transform:none}40%{transform:translateY(-12%) scale(.96,1.05)}75%{transform:scale(1.06,.94)}}
+@keyframes emoSag{0%{transform:scale(.5);opacity:.3}25%{transform:none;opacity:1}55%{transform:scale(1.07,.9)}100%{transform:scale(1.03,.96)}}
+@keyframes emoTear{0%{opacity:0;transform:translateY(-70%) scale(.4)}30%{opacity:1;transform:translateY(-50%) scale(1)}100%{opacity:1;transform:none}}
+@keyframes emoShake{0%,100%{transform:none}25%{transform:translateX(-6%) rotate(-4deg)}75%{transform:translateX(6%) rotate(4deg)}}
+@keyframes emoRed{0%,100%{filter:none}50%{filter:brightness(1.25) saturate(1.4)}}
+@keyframes emoLaugh{0%{transform:scale(.4);opacity:.3}20%{transform:none;opacity:1}35%{transform:rotate(-8deg) translateY(-6%)}50%{transform:rotate(7deg)}65%{transform:rotate(-6deg) translateY(-4%)}80%{transform:rotate(4deg)}100%{transform:none}}
+@keyframes emoJoyTears{0%{opacity:0;transform:scale(.4)}30%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:none}}
+@keyframes emoBeat{0%,100%{transform:none}50%{transform:scale(1.35)}}
+@keyframes emoSway{0%,100%{transform:none}30%{transform:rotate(-6deg)}70%{transform:rotate(6deg)}}
+@keyframes emoJump{0%{transform:scale(.4);opacity:.3}35%{transform:translateY(-16%) scale(.9,1.15);opacity:1}65%{transform:scale(1.1,.9)}100%{transform:none}}
+@keyframes emoBig{0%{transform:scale(.6)}40%{transform:scale(1.25)}100%{transform:none}}
+@keyframes emoO{0%{transform:scale(.2)}45%{transform:scale(1.3,1.4)}100%{transform:none}}
+@keyframes emoShades{0%{transform:translateY(-120%) rotate(-12deg);opacity:0}60%{transform:translateY(8%);opacity:1}80%{transform:translateY(-4%)}100%{transform:none}}
+@keyframes emoWink{0%,100%{transform:none}50%{transform:scaleY(.35)}}
+@keyframes emoStar{0%{opacity:0;transform:scale(.2) rotate(0)}40%{opacity:1;transform:scale(1.3) rotate(90deg)}100%{opacity:1;transform:rotate(180deg)}}
+@keyframes emoCrown{0%{transform:translateY(-140%) rotate(-20deg);opacity:0}55%{transform:translateY(6%) rotate(4deg);opacity:1}78%{transform:translateY(-6%) rotate(-2deg)}100%{transform:none}}
+@keyframes emoEat{0%{transform:translate(60%,-40%) scale(1.2);opacity:0}25%{opacity:1}70%{transform:none;opacity:1}100%{transform:translate(-210%,0) scale(.3);opacity:0}}
+@keyframes emoChomp{0%,100%{transform:none}50%{transform:scaleY(.25)}}
+@keyframes emoLick{0%,100%{opacity:1;transform:none}50%{transform:translateX(-14%) rotate(-10deg)}}
+@keyframes emoSplat{0%{transform:translateY(-60%) scale(.5,1.4);opacity:.4}40%{transform:scale(1.35,.55);opacity:1}65%{transform:scale(.92,1.1)}100%{transform:none}}
+@keyframes emoDrips{0%{opacity:0;transform:scale(.2)}35%{opacity:1;transform:scale(1.4)}100%{opacity:1;transform:none}}
+@keyframes emoSpin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes emoCup{0%{transform:translateY(60%) scale(.3);opacity:0}55%{transform:translateY(-14%) rotate(-8deg) scale(1.1);opacity:1}100%{transform:none}}
+@keyframes emoConf{0%{opacity:0;transform:translateY(20%) scale(.4)}35%{opacity:1;transform:translateY(-10%) scale(1.15)}100%{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.emo-play .emo *{animation:none!important}}
+
+.chat-emoji-option .emo-w{display:block;width:46px;height:46px;pointer-events:none}
+.chat-emoji-picker{gap:6px}
+.chat-inline-emoji{cursor:pointer}
+.chat-list li p .chat-inline-emoji,.dm-list li p .chat-inline-emoji{display:inline-block;width:2.2em;height:2.2em;vertical-align:-.6em;margin:0 .05em}
+.chat-list li.emo-only,.dm-list li.emo-only{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.chat-list li.emo-only p .chat-inline-emoji,.dm-list li.emo-only p .chat-inline-emoji{width:3.8em;height:3.8em;vertical-align:middle}
+.chat-emoji-option .emo-w .emo{filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+</style>
 </head>
 <body>
+<script>
+/* «Капли 3D» chat emotes: glossy drops with the game's eyes. One file shared by the sample page and the game. */
+(function (root) {
+  const INK = '#1a0b2e';
+  const DROP = 'M32 5C38.5 12 54 22.5 54 37.5A22 22 0 0 1 10 37.5C10 22.5 25.5 12 32 5Z';
+  const E = {
+    ':smile:': { n: 'Радость', c: ['#d4fcff', '#22e6ff', '#0a6f8a'] },
+    ':sad:':   { n: 'Грусть',  c: ['#d8e4ff', '#4d7cff', '#18287a'] },
+    ':angry:': { n: 'Злость',  c: ['#ffd3da', '#ff3b5c', '#7a0a20'] },
+    ':laugh:': { n: 'Смех',    c: ['#ffe6c8', '#ff9a3d', '#97400a'] },
+    ':love:':  { n: 'Любовь',  c: ['#ffd9f5', '#ff4fd8', '#7f1468'] },
+    ':wow:':   { n: 'Удивление', c: ['#eddcff', '#b26bff', '#45188a'] },
+    ':cool:':  { n: 'Круто',   c: ['#d6ffec', '#3dffa2', '#0d6e44'] },
+    ':wink:':  { n: 'Подмигивание', c: ['#fff7cc', '#ffd23f', '#8f6200'] },
+    ':king:':  { n: 'Король',  c: ['#e0dbff', '#6d5bff', '#24127a'] },
+    ':yum:':   { n: 'Ням',     c: ['#f1ffcc', '#b9ff3d', '#4a7300'] },
+    ':splat:': { n: 'Съели',   c: ['#e6f7ff', '#5cc8ff', '#13508a'] },
+    ':gg:':    { n: 'GG',      c: ['#cffff7', '#2ec4b6', '#0a5a52'] }
+  };
+  const ORDER = Object.keys(E);
+  const id = k => 'emo' + k.replace(/:/g, '');
+
+  // shared gradients (inserted once into the page; never inside display:none, so every emote can reference them)
+  function defs() {
+    let g = '';
+    for (const k of ORDER) { const [l, m, d] = E[k].c;
+      g += `<radialGradient id="${id(k)}G" cx=".36" cy=".34" r=".78"><stop offset="0" stop-color="${l}"/><stop offset=".45" stop-color="${m}"/><stop offset="1" stop-color="${d}"/></radialGradient>`; }
+    g += '<linearGradient id="emoGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a8"/><stop offset=".5" stop-color="#ffc21f"/><stop offset="1" stop-color="#b8740a"/></linearGradient>';
+    return `<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs>${g}</defs></svg>`;
+  }
+
+  // eyes in the game style: white ovals, dark pupils with a tiny glint
+  const eye = (x, y, rx = 4.4, ry = 5.6, px = .6, py = .9, pr = 2.5) =>
+    `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#fff"/><circle cx="${x + px}" cy="${y + py}" r="${pr}" fill="${INK}"/><circle cx="${x + px - .9}" cy="${y + py - 1}" r=".8" fill="#fff"/>`;
+  const eyes = (o = {}) => `<g class="e-eyes">${eye(25, 35, o.rx, o.ry, o.px, o.py, o.pr)}${eye(39, 35, o.rx, o.ry, o.px, o.py, o.pr)}</g>`;
+  const happyEyes = '<g class="e-eyes" fill="none" stroke="' + INK + '" stroke-width="2.6" stroke-linecap="round"><path d="M21 37Q25 31 29 37"/><path d="M35 37Q39 31 43 37"/></g>';
+  const blush = (o = .45) => `<ellipse cx="19.5" cy="43" rx="3.6" ry="2.2" fill="#ff6fae" opacity="${o}"/><ellipse cx="44.5" cy="43" rx="3.6" ry="2.2" fill="#ff6fae" opacity="${o}"/>`;
+  const line = (d, w = 2.6) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const heart = (x, y, s, f = '#ff2d7a') => `<g transform="translate(${x} ${y}) scale(${s})"><path class="e-hp" d="M0 3C-4-1-4-5 0-3 4-5 4-1 0 3Z" fill="${f}" stroke="#fff" stroke-width=".35"/></g>`;
+
+  const FACE = {
+    ':smile:': () => eyes() + blush() + line('M24.5 44.5Q32 51.5 39.5 44.5'),
+    ':sad:': () => line('M20.5 28.5L27.5 26.5', 2.2) + line('M43.5 28.5L36.5 26.5', 2.2) + eyes({ py: 2, ry: 5.2 }) + line('M25.5 49Q32 43.5 38.5 49')
+      + '<path class="e-tear" d="M23 41.5C23 41.5 20.5 45 20.5 46.6A2.5 2.5 0 0 0 25.5 46.6C25.5 45 23 41.5 23 41.5Z" fill="#9fe8ff" stroke="#fff" stroke-width=".6"/>',
+    ':angry:': () => eyes({ ry: 4, py: 1.2 }) + `<path d="M19 28.5L29 32.5M45 28.5L35 32.5" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/>`
+      + `<path d="M25 47.5Q32 43 39 47.5" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>`,
+    ':laugh:': () => happyEyes + `<path d="M22.5 42H41.5Q41 53.5 32 53.5Q23 53.5 22.5 42Z" fill="${INK}"/><path d="M26.5 50Q32 46.5 37.5 50Q35 53 32 53Q29 53 26.5 50Z" fill="#ff5f8f"/><path d="M23.5 42.2H40.5V44.4H23.5Z" fill="#fff"/>`
+      + '<g class="e-tears"><path d="M17 36C17 36 14.5 39.5 14.5 41A2.5 2.5 0 0 0 19.5 41C19.5 39.5 17 36 17 36Z" fill="#9fe8ff"/><path d="M47 36C47 36 44.5 39.5 44.5 41A2.5 2.5 0 0 0 49.5 41C49.5 39.5 47 36 47 36Z" fill="#9fe8ff"/></g>',
+    ':love:': () => `<g class="e-eyes">${heart(25, 34, 1.75, '#ff1f6e')}${heart(39, 34, 1.75, '#ff1f6e')}<circle cx="23" cy="32" r="1" fill="#fff"/><circle cx="37" cy="32" r="1" fill="#fff"/></g>` + blush(.55) + line('M25 45Q32 51 39 45'),
+    ':wow:': () => line('M20.5 25.5Q25 22.5 29.5 25', 2.2) + line('M34.5 25Q39 22.5 43.5 25.5', 2.2) + eyes({ rx: 5.4, ry: 6.4, px: 0, py: 0, pr: 2 })
+      + `<ellipse class="e-mouth" cx="32" cy="48" rx="3.6" ry="4.6" fill="${INK}"/>`,
+    ':cool:': () => `<g class="e-glasses"><path d="M16 31.5H48V34.5Q47.5 41 40.5 41Q34 41 33.2 35H30.8Q30 41 23.5 41Q16.5 41 16 34.5Z" fill="${INK}"/><path d="M19.5 34L24 34" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/><path d="M36.5 34L41 34" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g>`
+      + line('M25.5 46.5Q33.5 50 39.5 44'),
+    ':wink:': () => `<g class="e-eyes">${eye(25, 35)}<path class="e-wink" d="M35 36.5Q39 32 43 36.5" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/></g>` + blush()
+      + `<path d="M24.5 44Q32 51 39.5 44" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/><path d="M33.5 47.5Q35.5 52.5 38.5 49" fill="#ff5f8f" stroke="${INK}" stroke-width="1.4"/>`
+      + '<path class="e-star" d="M49 22L50.3 25.2 53.5 26.5 50.3 27.8 49 31 47.7 27.8 44.5 26.5 47.7 25.2Z" fill="#fff6c8"/>',
+    ':king:': () => `<g class="e-eyes" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"><path d="M21 35.5Q25 38.5 29 35.5"/><path d="M35 35.5Q39 38.5 43 35.5"/></g>` + blush(.35) + line('M25 44.5Q32 50 39 44.5')
+      + '<g class="e-crown"><path d="M18.5 19.5L22.5 6.5 28 14.5 32 4 36 14.5 41.5 6.5 45.5 19.5Z" fill="url(#emoGold)" stroke="#8a5200" stroke-width="1.2" stroke-linejoin="round"/><rect x="18.5" y="18" width="27" height="4.4" rx="1.6" fill="url(#emoGold)" stroke="#8a5200" stroke-width="1.2"/><circle cx="32" cy="12.5" r="2" fill="#ff2d7a"/><circle cx="24.5" cy="14.8" r="1.4" fill="#22e6ff"/><circle cx="39.5" cy="14.8" r="1.4" fill="#3dffa2"/></g>',
+    ':yum:': () => happyEyes + blush() + `<path class="e-mouth" d="M24 44Q32 53 40 44Q32 47 24 44Z" fill="${INK}"/><path class="e-tongue" d="M35 47Q40 50 41.5 45.5" fill="none" stroke="#ff5f8f" stroke-width="3" stroke-linecap="round"/>`
+      + '<g class="e-food"><circle cx="50" cy="45" r="4.6" fill="#ffd23f" stroke="#fff6c8" stroke-width="1"/><circle cx="48.6" cy="43.6" r="1.3" fill="#fff"/></g>',
+    ':splat:': () => '',   // custom body below
+    ':gg:': () => happyEyes + blush(.4) + line('M26 44Q32 49 38 44')
+      + '<g class="e-cup"><path d="M41 38H55V41Q55 49 48 50Q41 49 41 41Z" fill="url(#emoGold)" stroke="#8a5200" stroke-width="1.1"/><path d="M41 40.5Q37 40.5 37.5 44Q38.2 47 41.6 46.5M55 40.5Q59 40.5 58.5 44Q57.8 47 54.4 46.5" fill="none" stroke="#ffc21f" stroke-width="1.6"/><rect x="46.6" y="50" width="2.8" height="4" fill="#ffc21f"/><rect x="43" y="53.5" width="10" height="3" rx="1" fill="url(#emoGold)" stroke="#8a5200" stroke-width=".9"/><path d="M44 40.5V45" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".7"/></g>'
+      + '<g class="e-confetti"><rect x="10" y="16" width="3" height="3" rx=".6" fill="#ff4fd8" transform="rotate(20 11.5 17.5)"/><rect x="50" y="12" width="3" height="3" rx=".6" fill="#22e6ff" transform="rotate(-25 51.5 13.5)"/><circle cx="16" cy="9" r="1.6" fill="#ffd23f"/><circle cx="45" cy="6" r="1.4" fill="#3dffa2"/></g>'
+  };
+
+  function body(k) {
+    const g = `url(#${id(k)}G)`, d = E[k].c[2];
+    if (k === ':splat:') return `<g transform="translate(-3.2 -11) scale(1.1)"><g class="e-body"><path d="M5 50C4.5 45.5 11 44 15.5 45.5C17 41.5 24 41.5 27.5 43C30.5 39.5 38 39.5 41 43C45.5 41 53 42.5 52 46.5C58 46.5 60 51.5 55.5 54C52.5 58 40 57.5 32 57.5C22 58.5 10 57.5 8 54.5C4.5 53.5 5 51.5 5 50Z" fill="${g}" stroke="${d}" stroke-width="1.2"/>`
+      + '<ellipse cx="17" cy="47.5" rx="4" ry="1.6" fill="#fff" opacity=".75" transform="rotate(-10 17 47.5)"/>'
+      + `<g class="e-eyes" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"><path d="M22 46L27 51M27 46L22 51"/><path d="M37 46L42 51M42 46L37 51"/></g>`
+      + line('M29 54.5Q32 52.8 35 54.5', 2) + '</g>'
+      + `<g class="e-drips"><circle cx="10" cy="36" r="2.8" fill="${g}"/><circle cx="55" cy="35" r="2.2" fill="${g}"/><circle cx="31" cy="31" r="2.4" fill="${g}"/><circle cx="44" cy="30" r="1.5" fill="${g}"/><circle cx="20" cy="32" r="1.4" fill="${g}"/></g></g>`;
+    return `<g class="e-body"><path d="${DROP}" fill="${g}" stroke="${d}" stroke-width="1.2"/>`
+      + '<ellipse cx="22.5" cy="24" rx="5.2" ry="2.8" fill="#fff" opacity=".78" transform="rotate(-38 22.5 24)"/><path d="M45 47Q43 54 35 56.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".28"/>'
+      + FACE[k]() + '</g>';
+  }
+  const svg = k => `<svg class="emo" viewBox="0 0 64 64" aria-hidden="true">${body(k)}</svg>`;
+
+  root.KapliEmo = { E, ORDER, defs, svg };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+{ const put = () => document.body.insertAdjacentHTML('afterbegin', KapliEmo.defs()); if (document.body) put(); else document.addEventListener('DOMContentLoaded', put); }
+</script>
 
 
 <div id="stage"></div>
@@ -2263,14 +2418,6 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="chat-clan" id="chatClan" hidden><b>🛡 Клановый чат появится вместе с кланами</b><p>Здесь будут общаться только участники твоего клана, а глава сможет закреплять объявления.</p><button class="btn ghost" type="button" id="chatClanMore">Что будет в кланах</button></div>
     <ul class="chat-list" id="chatList" aria-live="polite"></ul>
     <div class="chat-emoji-picker" id="chatEmojiPicker" aria-label="Смайлики" hidden>
-      <button class="chat-emoji-option" type="button" data-emote=":smile:" aria-label="Радость" title="Радость"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#22e6ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 18.5q5.5 6 11 0"/></svg></button>
-      <button class="chat-emoji-option" type="button" data-emote=":sad:" aria-label="Грусть" title="Грусть"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#62a8ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 22q5.5-6 11 0"/></svg></button>
-      <button class="chat-emoji-option" type="button" data-emote=":angry:" aria-label="Злость" title="Злость"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff5b75" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="m9 12 5 2m9-2-5 2M11 22q5-5 10 0"/></svg></button>
-      <button class="chat-emoji-option" type="button" data-emote=":laugh:" aria-label="Смех" title="Смех"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#b58aff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13q2 2 4 0m4 0q2 2 4 0M10 18q6 9 12 0z"/></svg></button>
-      <button class="chat-emoji-option" type="button" data-emote=":love:" aria-label="Любовь" title="Любовь"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff65c8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M10 13c0-3 4-4 6-1 2-3 6-2 6 1 0 3-6 7-6 7s-6-4-6-7z"/></svg></button>
-      <button class="chat-emoji-option" type="button" data-emote=":wow:" aria-label="Удивление" title="Удивление"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1"/><ellipse cx="16" cy="21" rx="2.5" ry="3.2"/></svg></button>
-      <button class="chat-emoji-option" type="button" data-emote=":cool:" aria-label="Круто" title="Круто"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#3dffa2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M8 13h7l-1 4H9zm9 0h7l-1 4h-5zM11 22q5 3 10 0"/></svg></button>
-      <button class="chat-emoji-option" type="button" data-emote=":wink:" aria-label="Подмигивание" title="Подмигивание"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ffd23f" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13h.1M18 14q2 2 4 0M11 20q5 5 10 0"/></svg></button>
     </div><form class="chat-form" id="chatForm" novalidate><button class="btn ghost chat-emoji-btn" id="chatEmojiBtn" type="button" aria-label="Открыть смайлики" title="Смайлики" disabled>☺</button><input id="chatIn" maxlength="200" placeholder="Сообщение…" autocomplete="off" aria-label="Сообщение"><button class="btn" id="chatSend" type="submit" aria-label="Отправить">➤</button></form>
     <p class="hint" id="chatNote"></p>
     <button class="btn ghost" id="chatBack" type="button">Назад</button>
@@ -10630,27 +10777,29 @@ body.menu-bg .menu-backdrop { display: block; }
     // ---------- chat ----------
     let chatCh = null, chatPoll = null, chatLast = 0; const chatIds = new Set();
     const hhmm = t => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    const CHAT_EMOTES = {
-      ':smile:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#22e6ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 18.5q5.5 6 11 0"/></svg>',
-      ':sad:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#62a8ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 22q5.5-6 11 0"/></svg>',
-      ':angry:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff5b75" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="m9 12 5 2m9-2-5 2M11 22q5-5 10 0"/></svg>',
-      ':laugh:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#b58aff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13q2 2 4 0m4 0q2 2 4 0M10 18q6 9 12 0z"/></svg>',
-      ':love:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff65c8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M10 13c0-3 4-4 6-1 2-3 6-2 6 1 0 3-6 7-6 7s-6-4-6-7z"/></svg>',
-      ':wow:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1"/><ellipse cx="16" cy="21" rx="2.5" ry="3.2"/></svg>',
-      ':cool:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#3dffa2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M8 13h7l-1 4H9zm9 0h7l-1 4h-5zM11 22q5 3 10 0"/></svg>',
-      ':wink:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ffd23f" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13h.1M18 14q2 2 4 0M11 20q5 5 10 0"/></svg>'
-    };
-    function chatBodyHtml(body) {
-      let html = escHtml(String(body || ''));
-      for (const [token, svg] of Object.entries(CHAT_EMOTES)) html = html.split(token).join('<span class="chat-inline-emoji" data-emote="'+token+'" role="img" aria-label="'+token.slice(1,-1)+'">'+svg+'</span>');
-      return html;
+    // chat emotes: glossy drops (KapliEmo); a fresh message plays its emote once, older ones stay still; tap replays
+    const EMO_RE = /:[a-z]+:/g;
+    function chatBodyHtml(body, play) {
+      return escHtml(String(body || '')).replace(EMO_RE, t => KapliEmo.E[t] ? `<span class="chat-inline-emoji ${play ? 'emo-play' : ''}" data-emote="${t}" role="img" aria-label="${KapliEmo.E[t].n}">${KapliEmo.svg(t)}</span>` : t);
     }
+    const emoOnly = body => { const t = String(body || '').match(EMO_RE) || []; return t.length > 0 && t.length <= 6 && t.every(x => KapliEmo.E[x]) && !String(body).replace(EMO_RE, '').trim(); };
+    const emoFresh = m => Date.now() - new Date(m.created_at).getTime() < 30000;
+    const emoReplay = el => { el.classList.remove('emo-play'); void el.offsetWidth; el.classList.add('emo-play'); };
+    const EMO_RECENT = 'kapli3d-emo-recent';
+    function renderEmojiPicker() {
+      let rec = []; try { rec = JSON.parse(localStorage.getItem(EMO_RECENT) || '[]').filter(k => KapliEmo.E[k]); } catch (e) {}
+      const order = [...rec, ...KapliEmo.ORDER.filter(k => !rec.includes(k))];
+      $('chatEmojiPicker').innerHTML = order.map(k => `<button class="chat-emoji-option" type="button" data-emote="${k}" aria-label="${KapliEmo.E[k].n}" title="${KapliEmo.E[k].n}"><span class="emo-w emo-play" data-emote="${k}">${KapliEmo.svg(k)}</span></button>`).join('');
+    }
+    function emoUsed(k) { try { const rec = JSON.parse(localStorage.getItem(EMO_RECENT) || '[]').filter(x => x !== k); rec.unshift(k); localStorage.setItem(EMO_RECENT, JSON.stringify(rec.slice(0, 4))); } catch (e) {} }
+    renderEmojiPicker();
     function chatAdd(m, atEnd = true) {
       if (chatIds.has(m.id)) return; chatIds.add(m.id); chatLast = Math.max(chatLast, m.id);
       const list = $('chatList'); list.querySelectorAll('.empty-box, .empty-note, .skel, .sr-only').forEach(x => x.remove());
       const me = Net.nick && m.nickname === Net.nick, near = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
       const li = document.createElement('li'); if (me) li.className = 'me';
-      li.innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(m.nickname)}" data-who="${escHtml(m.nickname)}" aria-label="Профиль игрока ${escHtml(m.nickname)}"><b>${escHtml(m.nickname)}</b></button><time>${hhmm(m.created_at)}</time>${!me && sess ? `<button class="rep" data-rep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : ''}<p>${chatBodyHtml(m.body)}</p>`;
+      li.innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(m.nickname)}" data-who="${escHtml(m.nickname)}" aria-label="Профиль игрока ${escHtml(m.nickname)}"><b>${escHtml(m.nickname)}</b></button><time>${hhmm(m.created_at)}</time>${!me && sess ? `<button class="rep" data-rep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : ''}<p>${chatBodyHtml(m.body, emoFresh(m))}</p>`;
+      if (emoOnly(m.body)) li.classList.add('emo-only');
       if (atEnd) list.appendChild(li); else list.prepend(li);
       while (list.children.length > 120) list.firstChild.remove();
       if (near || me) list.scrollTop = list.scrollHeight;
@@ -10693,6 +10842,7 @@ body.menu-bg .menu-backdrop { display: block; }
     });
     $('chatEmojiBtn').addEventListener('click', () => {
       if (!sess) return;
+      if ($('chatEmojiPicker').hidden) renderEmojiPicker();
       $('chatEmojiPicker').hidden = !$('chatEmojiPicker').hidden;
     });
     $('chatEmojiPicker').addEventListener('click', e => {
@@ -10701,9 +10851,10 @@ body.menu-bg .menu-backdrop { display: block; }
       const start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? input.value.length;
       input.value = input.value.slice(0, start) + token + input.value.slice(end);
       const pos = start + token.length; input.focus(); input.setSelectionRange(pos, pos);
-      $('chatEmojiPicker').hidden = true;
+      emoUsed(token); $('chatEmojiPicker').hidden = true;
     });
     $('chatList').addEventListener('click', async e => {
+      const emo = e.target.closest('.chat-inline-emoji'); if (emo) { emoReplay(emo); return; }
       const who = e.target.closest('[data-pc]'); if (who) { openPlayerCard(who.dataset.pc); return; }
       const b = e.target.closest('[data-rep]'); if (!b || !sess) return;
       b.disabled = true; const { error } = await sb.rpc('kapli_chat_report', { p_message: +b.dataset.rep }).then(r => r, er => ({ error: er }));
@@ -10929,7 +11080,7 @@ body.menu-bg .menu-backdrop { display: block; }
       const near = list.scrollHeight - list.scrollTop - list.clientHeight < 60, li = document.createElement('li');
       li.dataset.dm = m.id; if (m.mine) li.className = 'me';
       li.innerHTML = `<b>${m.mine ? 'Ты' : escHtml(FR.dm)}</b><time>${hhmm(m.created_at)}${m.mine ? ` <span class="dm-rd" title="${m.read_at ? 'Прочитано' : 'Доставлено'}">${m.read_at ? '✓✓' : '✓'}</span>` : ''}</time>` +
-        (!m.mine ? `<button class="rep" data-dmrep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : '') + `<p>${escHtml(m.body)}</p>`;
+        (!m.mine ? `<button class="rep" data-dmrep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : '') + `<p>${chatBodyHtml(m.body, emoFresh(m))}</p>`; if (emoOnly(m.body)) li.classList.add('emo-only');
       list.appendChild(li); while (list.children.length > 200) list.firstChild.remove();
       if (near || m.mine) list.scrollTop = list.scrollHeight;
     }
@@ -10967,6 +11118,7 @@ body.menu-bg .menu-backdrop { display: block; }
     $('dmBack').addEventListener('click', closeDm);
     $('dmHead').addEventListener('click', e => { const w = e.target.closest('[data-pc]'); if (w) openPlayerCard(w.dataset.pc); });
     $('dmList').addEventListener('click', async e => {
+      { const emo = e.target.closest('.chat-inline-emoji'); if (emo) { emoReplay(emo); return; } }
       const b = e.target.closest('[data-dmrep]'); if (!b) return;
       b.disabled = true;
       try { await frRpc('kapli_dm_report', { p_message: +b.dataset.dmrep }); toast('Жалоба отправлена, спасибо. Игрока можно заблокировать в его профиле.'); b.remove(); }

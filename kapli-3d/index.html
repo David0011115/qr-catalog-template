@@ -9992,7 +9992,7 @@ body.menu-bg .menu-backdrop { display: block; }
   const modal = document.getElementById('birthdayModal');
   const close = document.getElementById('birthdayClose');
   if (!modal || !close) return;
-  const test = new URLSearchParams(location.search).get('birthdayTest') === '1';
+  const test = true; // TEMPORARY: force the preview on every launch until the user confirms it works.
   const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const inSchedule = date >= '2026-11-15' && date <= '2026-11-20';
   const seenKey = 'kapli3d-birthday-notice-2026';
@@ -10013,7 +10013,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '219';
+const APP_VER = '220';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

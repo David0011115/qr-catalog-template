@@ -1559,6 +1559,32 @@ body.menu-bg .menu-backdrop { display: block; }
 .privacy-consent a,.privacy-settings-link{color:var(--accent);text-underline-offset:3px}
 .privacy-settings-link{display:block;width:max-content;max-width:100%;margin:0 auto 14px;font-size:13px}
 </style>
+
+<style>
+/* Compact chat layout: fit more conversation without shrinking readability. */
+@media(max-width:600px){
+  #chatCard{
+    height:calc(100dvh - 8px) !important;
+    max-height:calc(100dvh - 8px) !important;
+    padding:8px 8px 7px !important;
+    gap:6px !important;
+  }
+  #chatCard .chat-topline{flex-basis:36px;min-height:36px}
+  #chatCard .chat-topline h1{font-size:1.12rem !important}
+  #chatCard .chat-tabs .tab{min-height:34px;padding:6px 9px;font-size:.82rem}
+  #chatCard .chat-list{padding:5px;gap:5px}
+  #chatCard .chat-list li{padding:5px 8px;max-width:92%;font-size:.82rem;line-height:1.28}
+  #chatCard .chat-list li p{line-height:1.3;margin-top:1px}
+  #chatCard .chat-list li .ch-who b{font-size:.72rem}
+  #chatCard .chat-form{gap:6px}
+  #chatCard .chat-form input{padding:8px 10px;font-size:.92rem}
+  #chatCard .chat-form .btn{min-height:36px;padding:7px 11px}
+  #chatCard .chat-emoji-btn{flex-basis:36px;width:36px !important;height:36px}
+  #chatCard #chatNote{font-size:.72rem;line-height:1.2}
+  #chatCard #chatBack{width:auto;min-height:32px;align-self:center;padding:6px 18px;margin:0}
+}
+</style>
+
 </head>
 <body>
 

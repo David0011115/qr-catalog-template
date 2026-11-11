@@ -2018,6 +2018,17 @@ body.menu-bg .menu-backdrop { display: block; }
  #chaosCard .lg-reward-chip:after{content:" ◉";font-size:.58rem;opacity:.75}
 }
 </style>
+<style id="chaos-league-tiers-fix-v1">
+/* Chaos League tiers: the same row and chip look as the League (name left, points right, outlined chips) */
+#chaosCard .lg-fold .lg-table{display:grid;grid-template-columns:1fr;gap:5px;margin-top:6px}
+#chaosCard .lg-rank-line{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+#chaosCard .lg-rank-line .rk-name{display:flex;align-items:center;gap:6px;white-space:nowrap}
+#chaosCard .lg-fold .lg-table>li{grid-template-columns:auto minmax(0,1fr);align-items:center}
+#chaosCard .lg-rank-line>span{color:var(--muted);text-align:right;white-space:nowrap}
+#chaosCard .lg-reward-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+#chaosCard .lg-reward-chip{width:auto;margin:0;border-radius:999px;border:1px solid color-mix(in srgb,var(--lc) 55%,transparent);background:color-mix(in srgb,var(--lc) 12%,rgba(12,10,32,.8));color:var(--fg);line-height:1.2}
+#chaosCard .lg-reward-chip:active{transform:scale(.97)}
+</style>
 <style id="chaos-league-layout-fix-v2">
 /* Keep the current rank label in its own flexible column on narrow screens. */
 #chaosCard .league-current-head{display:grid!important;grid-template-columns:clamp(46px,14vw,64px) minmax(0,1fr)!important;align-items:center!important;justify-content:stretch!important;gap:10px!important;width:100%;min-width:0}
@@ -9013,10 +9024,10 @@ body.menu-bg .menu-backdrop { display: block; }
     $('chaosTable').innerHTML = CHAOS_TIERS.map((l, i) => {
       const chips = chaosRewardItems(i, C.id).map(item => {
         const n = chaosPreviewItems.push(item) - 1;
-        const label = item.kind === 'coins' ? '◆ ' + item.name.replace(' ◆','') : item.kind === 'skin' ? 'Скин' : item.kind === 'frame' ? 'Рамка' : item.kind === 'title' ? 'Титул' : item.kind === 'abil' ? 'Способность' : item.kind === 'look' ? 'Облик' : item.name;
+        const label = item.kind === 'coins' ? '◆ ' + item.name.replace(' ◆','') : item.kind === 'badge' || /^Значок/.test(item.name) ? 'Значок' : item.kind === 'skin' ? 'Скин' : item.kind === 'frame' ? 'Рамка' : item.kind === 'title' ? 'Титул' : item.kind === 'abil' ? 'Способность' : item.kind === 'look' ? 'Облик' : item.name;
         return `<button type="button" class="lg-reward-chip" data-chaos-preview="${n}">${label}</button>`;
       }).join('');
-      return `<li class="${i === ti ? 'cur' : i > ti ? 'lock' : ''}" style="--lc:${l.color}"><div class="lg-rank-line"><b class="rk-name">${chaosEmblem(i, 27, { still: i !== ti })}${l.icon} ${l.name}</b><span>от ${CHAOS_CFG.pts[i].toLocaleString('ru-RU')} очков${i === ti ? ' · ты здесь' : ''}${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span></div>${CHAOS_CFG.tierLevel[i] ? `<small class="hint">Открывается с ${CHAOS_CFG.tierLevel[i]} уровня</small>` : ''}<div class="lg-reward-chips">${chips}</div></li>`;
+      return `<li class="${i === ti ? 'cur' : i > ti ? 'lock' : ''}" style="--lc:${l.color}"><div class="lg-rank-line"><b class="rk-name">${chaosEmblem(i, 27, { still: i !== ti })}${l.icon} ${l.name}</b><span>от ${CHAOS_CFG.pts[i].toLocaleString('ru-RU')} очков${i === ti ? ' · ты здесь' : ''}${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}${CHAOS_CFG.tierLevel[i] ? ` · с ${CHAOS_CFG.tierLevel[i]} ур.` : ''}</span></div><div class="lg-reward-chips">${chips}</div></li>`;
     }).join('');
     $('chaosXa').innerHTML = XA_ABIL.map(a => `<div class="ab-row ${save.abil.xa.includes(a.id) ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.abil.xa.includes(a.id) ? ' <span class="badge-ex">получена</span>' : ''}</b><small>${a.desc}. Перезарядка ${a.cd} с.</small></div></div>`).join('');
   }

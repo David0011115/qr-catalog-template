@@ -1766,6 +1766,79 @@ body.menu-bg .menu-backdrop { display: block; }
 }
 </style>
 
+
+<style id="league-compact-preview-v2">
+/* Dense league layout: keep the important status and actions visible on phone screens. */
+#leagueCard.league-screen{gap:6px!important;padding:9px!important;max-height:calc(100dvh - 10px)!important}
+#leagueCard .league-screen-head{padding-bottom:5px;min-height:34px}
+#leagueCard .league-eyebrow{font-size:.55rem;margin-bottom:1px}
+#leagueCard .league-screen-head h1{font-size:1.25rem}
+#leagueCard .league-screen-head .tab-info-btn{padding:5px 8px;font-size:.68rem}
+#leagueCard .league-main{gap:5px}
+#leagueCard .league-current{gap:5px;padding:8px 10px;border-radius:15px}
+#leagueCard .league-current-head{gap:8px}
+#leagueCard .league-current-emblem{width:48px;height:48px}
+#leagueCard .league-current-copy{gap:1px}
+#leagueCard .league-current-copy small{font-size:.53rem}
+#leagueCard .league-current-copy>b{font-size:1.22rem;line-height:1}
+#leagueCard .league-current-copy>span{font-size:.66rem}
+#leagueCard .league-points{padding:4px 0 5px;gap:5px}
+#leagueCard .league-points strong{font-size:1.65rem}
+#leagueCard .league-points span{font-size:.58rem}
+#leagueCard .league-progress-area{gap:4px}
+#leagueCard .league-progress-title{font-size:.7rem}
+#leagueCard .league-progress-track{height:7px}
+#leagueCard .league-progress-labels{font-size:.58rem}
+#leagueCard .league-path-label{font-size:.52rem;margin:0}
+#leagueCard .league-steps{padding:3px 0 0;gap:2px}
+#leagueCard .league-step{gap:1px}
+#leagueCard .league-step svg{width:21px;height:21px}
+#leagueCard .league-step span{font-size:.48rem}
+#leagueCard .league-to-go{padding:4px 7px;font-size:.68rem}
+#leagueCard .league-season-line{font-size:.59rem;line-height:1.2;padding:0}
+#leagueCard .lg-last{padding:5px 8px;border-radius:9px}
+#leagueCard .lg-last b{font-size:.69rem}
+#leagueCard .lg-last b strong{font-size:.78rem}
+#leagueCard .lg-last small{font-size:.59rem;line-height:1.2;margin-top:1px}
+#leagueCard .league-play-block{gap:3px}
+#leagueCard #leaguePlay{min-height:39px;padding:8px 12px;font-size:.88rem}
+#leagueCard #leaguePlayNote{font-size:.63rem;line-height:1.2}
+#leagueCard .league-rules-note{display:none}
+#leagueCard .league-season-block{gap:4px;padding:6px 8px;border-radius:12px}
+#leagueCard .league-section-kicker{font-size:.55rem}
+#leagueCard .season-skin{gap:7px}
+#leagueCard .season-skin .sw{width:38px;height:38px;flex:none}
+#leagueCard .season-skin b{font-size:.72rem}
+#leagueCard .season-skin small{font-size:.61rem;line-height:1.2}
+#leagueCard .badge-info{gap:6px;padding-top:3px}
+#leagueCard .badge-info svg{width:38px;height:38px}
+#leagueCard .badge-info b{font-size:.68rem}
+#leagueCard .badge-info p,#leagueCard .badge-info small{font-size:.59rem;line-height:1.2}
+#leagueCard .league-more{gap:4px}
+#leagueCard .lg-fold>summary{padding:6px 9px}
+#leagueCard .lg-fold>summary span{font-size:.75rem}
+#leagueCard .lg-fold>summary small{font-size:.61rem}
+#leagueCard .lg-fold .lg-table>li{padding:5px 7px;gap:3px}
+#leagueCard .lg-rank-line .rk-name{font-size:.72rem}
+#leagueCard .lg-rank-line .rk-name svg{width:21px;height:21px}
+#leagueCard .lg-rank-line>span{font-size:.59rem}
+#leagueCard .lg-reward-chips{gap:4px}
+#leagueCard .lg-reward-chip{padding:4px 7px;font-size:.62rem;cursor:pointer}
+#leagueCard .lg-reward-chip:after{content:" · просмотр";font-size:.55rem;opacity:.68}
+#leagueCard #leagueBack{min-height:34px;padding:6px 10px;font-size:.78rem}
+#leagueRewardPreview .lrp-visual{height:150px}
+#leagueRewardPreview .lrp-card{max-height:calc(100dvh - 36px);overflow-y:auto}
+@media(max-width:420px){
+ #leagueCard.league-screen{gap:5px!important;padding:7px!important;max-height:calc(100dvh - 8px)!important}
+ #leagueCard .league-current{padding:7px 8px;gap:4px}
+ #leagueCard .league-current-emblem{width:43px;height:43px}
+ #leagueCard .league-current-copy>b{font-size:1.1rem}
+ #leagueCard .league-step span{font-size:.43rem}
+ #leagueCard .league-step svg{width:19px;height:19px}
+ #leagueCard .league-season-block{padding:5px 7px}
+ #leagueCard .lg-reward-chip:after{content:""}
+}
+</style>
 </head>
 <body>
 
@@ -2126,7 +2199,7 @@ body.menu-bg .menu-backdrop { display: block; }
     </section>
     <section class="league-more">
       <details class="lg-fold lg-rewards">
-        <summary><span>Ступени и награды</span><small>6 ступеней сезона</small></summary>
+        <summary><span>Ступени и награды</span><small>Награды по рангам</small></summary>
         <ul class="lg-table" id="lgTable"></ul>
       </details>
       <details class="lg-fold lg-upcoming">

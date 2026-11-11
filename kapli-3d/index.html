@@ -804,6 +804,17 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .chat-list li .rep { grid-column: 2; grid-row: 1; justify-self: end; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: .75rem; padding: 0 2px; }
 .chat-list .empty-note { margin: auto; }
 .chat-form { display: flex; gap: 8px; } .chat-form input { flex: 1; } .chat-form .btn { width: auto; margin: 0; padding: 10px 16px; }
+.chat-form { position: relative; align-items: center; }
+.chat-emoji-btn { flex: 0 0 40px; width: 40px !important; height: 40px; padding: 0 !important; display: grid; place-items: center; font-size: 1.15rem; color: var(--neon-c); border: 1px solid rgba(34,230,255,.35); background: rgba(34,230,255,.07); }
+.chat-emoji-btn:disabled { opacity: .4; }
+.chat-emoji-picker { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px; margin: 0 0 8px; border: 1px solid rgba(34,230,255,.22); border-radius: var(--r-md); background: rgba(8,10,28,.96); box-shadow: 0 0 18px rgba(34,230,255,.1); }
+.chat-emoji-picker[hidden] { display: none; }
+.chat-emoji-option { width: 40px; height: 40px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--row); cursor: pointer; }
+.chat-emoji-option:hover, .chat-emoji-option:focus-visible { border-color: var(--neon-c); box-shadow: 0 0 12px rgba(34,230,255,.2); outline: none; }
+.chat-emoji-svg { width: 28px; height: 28px; display: block; overflow: visible; filter: drop-shadow(0 0 3px currentColor); }
+.chat-list li p .chat-inline-emoji { display: inline-block; width: 1.35em; height: 1.35em; vertical-align: -0.28em; margin: 0 .06em; }
+.chat-list li p .chat-inline-emoji .chat-emoji-svg { width: 100%; height: 100%; }
+
 .rank-modes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .rank-modes button { background: var(--row); border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font: 600 .78rem var(--body); padding: 6px 10px; cursor: pointer; }
 .rank-modes button[aria-pressed="true"] { color: var(--food); border-color: var(--neon-c); box-shadow: 0 0 10px rgba(34, 230, 255, .35); }
@@ -1480,7 +1491,16 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="tabs chat-tabs" id="chatTabs" role="tablist" aria-label="Чаты"><button class="tab" role="tab" data-ct="all" aria-selected="true">💬 Общий</button><button class="tab" role="tab" data-ct="clan" aria-selected="false">🛡 Клановый <i class="soon-tag">скоро</i></button></div>
     <div class="chat-clan" id="chatClan" hidden><b>🛡 Клановый чат появится вместе с кланами</b><p>Здесь будут общаться только участники твоего клана, а глава сможет закреплять объявления.</p><button class="btn ghost" type="button" id="chatClanMore">Что будет в кланах</button></div>
     <ul class="chat-list" id="chatList" aria-live="polite"></ul>
-    <form class="chat-form" id="chatForm" novalidate><input id="chatIn" maxlength="200" placeholder="Сообщение…" autocomplete="off" aria-label="Сообщение"><button class="btn" id="chatSend" type="submit" aria-label="Отправить">➤</button></form>
+    <div class="chat-emoji-picker" id="chatEmojiPicker" aria-label="Смайлики" hidden>
+      <button class="chat-emoji-option" type="button" data-emote=":smile:" aria-label="Радость" title="Радость"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#22e6ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 18.5q5.5 6 11 0"/></svg></button>
+      <button class="chat-emoji-option" type="button" data-emote=":sad:" aria-label="Грусть" title="Грусть"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#62a8ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 22q5.5-6 11 0"/></svg></button>
+      <button class="chat-emoji-option" type="button" data-emote=":angry:" aria-label="Злость" title="Злость"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff5b75" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="m9 12 5 2m9-2-5 2M11 22q5-5 10 0"/></svg></button>
+      <button class="chat-emoji-option" type="button" data-emote=":laugh:" aria-label="Смех" title="Смех"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#b58aff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13q2 2 4 0m4 0q2 2 4 0M10 18q6 9 12 0z"/></svg></button>
+      <button class="chat-emoji-option" type="button" data-emote=":love:" aria-label="Любовь" title="Любовь"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff65c8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M10 13c0-3 4-4 6-1 2-3 6-2 6 1 0 3-6 7-6 7s-6-4-6-7z"/></svg></button>
+      <button class="chat-emoji-option" type="button" data-emote=":wow:" aria-label="Удивление" title="Удивление"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1"/><ellipse cx="16" cy="21" rx="2.5" ry="3.2"/></svg></button>
+      <button class="chat-emoji-option" type="button" data-emote=":cool:" aria-label="Круто" title="Круто"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#3dffa2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M8 13h7l-1 4H9zm9 0h7l-1 4h-5zM11 22q5 3 10 0"/></svg></button>
+      <button class="chat-emoji-option" type="button" data-emote=":wink:" aria-label="Подмигивание" title="Подмигивание"><svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ffd23f" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13h.1M18 14q2 2 4 0M11 20q5 5 10 0"/></svg></button>
+    </div><form class="chat-form" id="chatForm" novalidate><button class="btn ghost chat-emoji-btn" id="chatEmojiBtn" type="button" aria-label="Открыть смайлики" title="Смайлики" disabled>☺</button><input id="chatIn" maxlength="200" placeholder="Сообщение…" autocomplete="off" aria-label="Сообщение"><button class="btn" id="chatSend" type="submit" aria-label="Отправить">➤</button></form>
     <p class="hint" id="chatNote"></p>
     <button class="btn ghost" id="chatBack" type="button">Назад</button>
   </div>
@@ -9674,12 +9694,27 @@ body.menu-bg .menu-backdrop { display: block; }
     // ---------- chat ----------
     let chatCh = null, chatPoll = null, chatLast = 0; const chatIds = new Set();
     const hhmm = t => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const CHAT_EMOTES = {
+      ':smile:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#22e6ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 18.5q5.5 6 11 0"/></svg>',
+      ':sad:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#62a8ff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1M10.5 22q5.5-6 11 0"/></svg>',
+      ':angry:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff5b75" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="m9 12 5 2m9-2-5 2M11 22q5-5 10 0"/></svg>',
+      ':laugh:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#b58aff" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13q2 2 4 0m4 0q2 2 4 0M10 18q6 9 12 0z"/></svg>',
+      ':love:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ff65c8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M10 13c0-3 4-4 6-1 2-3 6-2 6 1 0 3-6 7-6 7s-6-4-6-7z"/></svg>',
+      ':wow:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M11 13h.1M21 13h.1"/><ellipse cx="16" cy="21" rx="2.5" ry="3.2"/></svg>',
+      ':cool:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#3dffa2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="12"/><path d="M8 13h7l-1 4H9zm9 0h7l-1 4h-5zM11 22q5 3 10 0"/></svg>',
+      ':wink:':'<svg class="chat-emoji-svg" viewBox="0 0 32 32" fill="none" stroke="#ffd23f" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="12"/><path d="M10 13h.1M18 14q2 2 4 0M11 20q5 5 10 0"/></svg>'
+    };
+    function chatBodyHtml(body) {
+      let html = escHtml(String(body || ''));
+      for (const [token, svg] of Object.entries(CHAT_EMOTES)) html = html.split(token).join('<span class="chat-inline-emoji" role="img" aria-label="'+token.slice(1,-1)+'">'+svg+'</span>');
+      return html;
+    }
     function chatAdd(m, atEnd = true) {
       if (chatIds.has(m.id)) return; chatIds.add(m.id); chatLast = Math.max(chatLast, m.id);
       const list = $('chatList'); list.querySelectorAll('.empty-box, .empty-note, .skel, .sr-only').forEach(x => x.remove());
       const me = Net.nick && m.nickname === Net.nick, near = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
       const li = document.createElement('li'); if (me) li.className = 'me';
-      li.innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(m.nickname)}" data-who="${escHtml(m.nickname)}" aria-label="Профиль игрока ${escHtml(m.nickname)}"><b>${escHtml(m.nickname)}</b></button><time>${hhmm(m.created_at)}</time>${!me && sess ? `<button class="rep" data-rep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : ''}<p>${escHtml(m.body)}</p>`;
+      li.innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(m.nickname)}" data-who="${escHtml(m.nickname)}" aria-label="Профиль игрока ${escHtml(m.nickname)}"><b>${escHtml(m.nickname)}</b></button><time>${hhmm(m.created_at)}</time>${!me && sess ? `<button class="rep" data-rep="${m.id}" title="Пожаловаться" aria-label="Пожаловаться на сообщение">⚑</button>` : ''}<p>${chatBodyHtml(m.body)}</p>`;
       if (atEnd) list.appendChild(li); else list.prepend(li);
       while (list.children.length > 120) list.firstChild.remove();
       if (near || me) list.scrollTop = list.scrollHeight;
@@ -9695,7 +9730,7 @@ body.menu-bg .menu-backdrop { display: block; }
       { const t = $('chatTabs').querySelector('[data-ct="all"]'); if (t && t.getAttribute('aria-selected') !== 'true') t.click(); }
       showCard('chatCard'); const list = $('chatList'); list.innerHTML = skelHTML(6); chatIds.clear(); chatLast = 0;
       $('chatNote').textContent = sess ? 'Не больше одного сообщения в 3 секунды. Будь вежлив: ⚑ — пожаловаться.' : 'Читать могут все. Чтобы писать, войди в аккаунт.';
-      $('chatIn').disabled = $('chatSend').disabled = !sess; $('chatIn').placeholder = sess ? 'Сообщение…' : 'Войди в аккаунт, чтобы писать';
+      $('chatIn').disabled = $('chatSend').disabled = $('chatEmojiBtn').disabled = !sess; $('chatEmojiPicker').hidden = true; $('chatIn').placeholder = sess ? 'Сообщение…' : 'Войди в аккаунт, чтобы писать';
       try {
         await ensureClient(); await chatFetch(false); list.querySelectorAll('.skel, .sr-only').forEach(x => x.remove());
         if (!list.children.length) list.innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep');
@@ -9718,6 +9753,18 @@ body.menu-bg .menu-backdrop { display: block; }
         const m = String((er && er.message) || '');
         toast(/chat_too_fast/.test(m) ? 'Не так быстро — подожди пару секунд' : /chat_forbidden/.test(m) ? 'В сообщении есть запрещённые слова' : /no_profile/.test(m) ? 'У аккаунта нет ника' : netErr(er) ? 'Нет связи с сервером' : 'Сообщение не отправлено');
       } finally { chatBusy = false; $('chatSend').disabled = !sess; $('chatIn').focus(); }
+    });
+    $('chatEmojiBtn').addEventListener('click', () => {
+      if (!sess) return;
+      $('chatEmojiPicker').hidden = !$('chatEmojiPicker').hidden;
+    });
+    $('chatEmojiPicker').addEventListener('click', e => {
+      const btn = e.target.closest('[data-emote]'); if (!btn || !sess) return;
+      const input = $('chatIn'), token = btn.dataset.emote;
+      const start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? input.value.length;
+      input.value = input.value.slice(0, start) + token + input.value.slice(end);
+      const pos = start + token.length; input.focus(); input.setSelectionRange(pos, pos);
+      $('chatEmojiPicker').hidden = true;
     });
     $('chatList').addEventListener('click', async e => {
       const who = e.target.closest('[data-pc]'); if (who) { openPlayerCard(who.dataset.pc); return; }

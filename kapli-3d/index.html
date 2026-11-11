@@ -809,9 +809,11 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .chat-emoji-btn:disabled { opacity: .4; }
 .chat-emoji-picker { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px; margin: 0 0 8px; border: 1px solid rgba(34,230,255,.22); border-radius: var(--r-md); background: rgba(8,10,28,.96); box-shadow: 0 0 18px rgba(34,230,255,.1); }
 .chat-emoji-picker[hidden] { display: none; }
-.chat-emoji-option { width: 44px; height: 44px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--row); cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
-.chat-emoji-option:hover, .chat-emoji-option:focus-visible { border-color: var(--neon-c); box-shadow: 0 0 12px rgba(34,230,255,.2); outline: none; transform: translateY(-1px); }
-.chat-emoji-svg { width: 34px; height: 34px; display: block; overflow: visible; filter: drop-shadow(0 0 3px currentColor); }
+.chat-emoji-option { width: 56px; height: 56px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--line); border-radius: 13px; background: linear-gradient(145deg, rgba(34,230,255,.12), var(--row) 58%, rgba(123,61,255,.12)); cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.chat-emoji-option:hover, .chat-emoji-option:focus-visible { border-color: var(--neon-c); box-shadow: 0 0 16px rgba(34,230,255,.3), inset 0 0 10px rgba(34,230,255,.1); outline: none; transform: translateY(-2px) scale(1.03); }
+.chat-emoji-svg { width: 44px; height: 44px; display: block; overflow: visible; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)) drop-shadow(0 0 5px currentColor); }
+.chat-emoji-svg circle { fill: currentColor; fill-opacity: .2; stroke-width: 1.7; }
+.chat-emoji-svg path { filter: drop-shadow(0 0 1px currentColor); }
 .chat-emoji-option .chat-emoji-svg { animation: chat-emoji-pop .65s cubic-bezier(.2,.8,.25,1) both, chat-emoji-bob 2.8s ease-in-out .65s infinite; }
 .chat-emoji-option:nth-child(2) .chat-emoji-svg { animation-delay: .025s, .675s; }
 .chat-emoji-option:nth-child(3) .chat-emoji-svg { animation-delay: .05s, .7s; }
@@ -820,7 +822,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .chat-emoji-option:nth-child(6) .chat-emoji-svg { animation-delay: .125s, .775s; }
 .chat-emoji-option:nth-child(7) .chat-emoji-svg { animation-delay: .15s, .8s; }
 .chat-emoji-option:nth-child(8) .chat-emoji-svg { animation-delay: .175s, .825s; }
-.chat-list li p .chat-inline-emoji { display: inline-block; width: 1.55em; height: 1.55em; vertical-align: -0.34em; margin: 0 .06em; }
+.chat-list li p .chat-inline-emoji { display: inline-block; width: 2.2em; height: 2.2em; vertical-align: -0.55em; margin: 0 .08em; }
 .chat-list li p .chat-inline-emoji .chat-emoji-svg { width: 100%; height: 100%; }
 .chat-inline-emoji[data-emote=":smile:"] .chat-emoji-svg { animation: chat-emoji-bob 2.6s ease-in-out infinite; }
 .chat-inline-emoji[data-emote=":sad:"] .chat-emoji-svg { animation: chat-emoji-sad 3.2s ease-in-out infinite; }

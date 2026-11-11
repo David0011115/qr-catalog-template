@@ -66,6 +66,41 @@ img { max-width: 100%; }
 @keyframes chatThemeFall{0%{transform:translate3d(-2%,-12%,0)}100%{transform:translate3d(4%,14%,0)}}
 @keyframes chatAuroraWave{0%{background-position:0% 50%;transform:skewX(-7deg)}100%{background-position:100% 50%;transform:skewX(7deg)}}
 @media(prefers-reduced-motion:reduce){.chat-card.chat-themed:before,.chat-card.chat-themed:after,.theme-thumb:after,.theme-live-preview:after{animation:none!important}}
+/* Full-screen chat theme preview, modeled after the arena eye-preview. */
+.theme-option{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:5px;min-width:0;align-items:stretch}
+.theme-option .theme-preview{width:100%;height:100%}
+.theme-eye{width:38px;min-height:82px;border:1px solid rgba(190,180,255,.24);border-radius:10px;background:rgba(255,255,255,.055);color:#e9ddff;font-size:1.1rem;cursor:pointer;display:grid;place-items:center}
+.theme-eye:active{transform:scale(.95)}
+.theme-eye:focus-visible,.theme-full-close:focus-visible,.theme-full-actions .btn:focus-visible{outline:2px solid var(--food);outline-offset:2px}
+.theme-full-preview{position:fixed;inset:0;z-index:120;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;background:#05040f;color:#fff;isolation:isolate}
+.theme-full-preview[hidden]{display:none}
+.theme-full-top{position:relative;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:max(12px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(4,4,16,.78),rgba(4,4,16,.12))}
+.theme-full-top small{font-size:.65rem;letter-spacing:.16em;color:#d2c8f7}
+.theme-full-top h2{margin:3px 0 0;font-family:var(--display);font-size:clamp(1.05rem,3vw,1.55rem);font-weight:400;text-shadow:0 2px 14px #000}
+.theme-full-close{width:42px;height:42px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(5,5,20,.58);color:#fff;font-size:1.25rem;cursor:pointer}
+.theme-full-scene{position:absolute;inset:0;z-index:0;background-position:center;background-size:cover;background-repeat:no-repeat;overflow:hidden}
+.theme-full-scene:before,.theme-full-scene:after{content:"";position:absolute;inset:-20%;pointer-events:none}
+.theme-full-scene:before{background:linear-gradient(180deg,rgba(2,3,15,.1),rgba(2,3,15,.04) 48%,rgba(2,3,15,.42));z-index:1}
+.theme-full-scene[data-theme-preview="cosmos"]{background-image:url("chat-cosmos.svg")}
+.theme-full-scene[data-theme-preview="aurora"]{background-image:url("chat-aurora.svg")}
+.theme-full-scene[data-theme-preview="sakura"]{background-image:url("chat-sakura.svg")}
+.theme-full-scene[data-theme-preview="default"]{background-image:linear-gradient(135deg,#17172b,#292943)}
+.theme-full-scene[data-theme-preview="cosmos"]:after{background-image:radial-gradient(2px 2px at 8% 18%,#fff 55%,transparent 70%),radial-gradient(1.5px 1.5px at 34% 62%,#a9eaff 55%,transparent 70%),radial-gradient(2px 2px at 78% 32%,#fff 55%,transparent 70%),radial-gradient(1px 1px at 62% 82%,#d8aaff 55%,transparent 70%);background-size:240px 210px;animation:themeStarDrift 26s linear infinite}
+.theme-full-scene[data-theme-preview="aurora"]:after{background:linear-gradient(115deg,transparent 18%,rgba(70,255,205,.28) 38%,rgba(128,110,255,.22) 56%,transparent 76%);background-size:220% 100%;filter:blur(12px);animation:themeAuroraFlow 12s ease-in-out infinite alternate}
+.theme-full-scene[data-theme-preview="sakura"]:after{background-image:radial-gradient(ellipse 6px 10px at 8% 18%,rgba(255,190,225,.95) 45%,transparent 72%),radial-gradient(ellipse 5px 8px at 38% 46%,rgba(255,130,195,.92) 45%,transparent 72%),radial-gradient(ellipse 5px 9px at 72% 25%,rgba(255,225,240,.95) 45%,transparent 72%),radial-gradient(ellipse 4px 7px at 88% 68%,rgba(255,155,210,.9) 45%,transparent 72%);background-size:310px 260px;animation:themePetalDrift 14s linear infinite}
+.theme-demo-chat{position:absolute;z-index:2;left:clamp(14px,5vw,56px);right:clamp(14px,5vw,56px);bottom:clamp(18px,6vh,58px);display:grid;gap:9px;max-width:540px;margin:auto}
+.theme-demo-msg{width:fit-content;max-width:min(86%,420px);padding:10px 14px;border:1px solid rgba(255,255,255,.2);border-radius:14px 14px 14px 4px;background:rgba(5,5,22,.62);box-shadow:0 8px 24px rgba(0,0,0,.2);backdrop-filter:blur(7px);display:grid;gap:3px}
+.theme-demo-msg b{font-size:.72rem;color:#9cecff}
+.theme-demo-msg span{font-size:.9rem;line-height:1.35}
+.theme-demo-msg.mine{justify-self:end;border-radius:14px 14px 4px 14px;background:rgba(74,39,112,.68)}
+.theme-demo-msg.mine b{color:#ffc2e9}
+.theme-full-actions{position:relative;z-index:3;display:flex;gap:10px;padding:12px max(14px,env(safe-area-inset-right,0px)) max(14px,env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));background:linear-gradient(0deg,rgba(4,4,16,.88),rgba(4,4,16,.08))}
+.theme-full-actions .btn{flex:1;margin:0;min-height:48px}
+.theme-full-actions #themeFullApply{background:linear-gradient(100deg,#8d55ed,#d34cae);color:#fff}
+@keyframes themeStarDrift{from{transform:translate3d(-1%,-2%,0)}to{transform:translate3d(3%,4%,0)}}
+@keyframes themeAuroraFlow{from{background-position:0% 50%;transform:translateX(-2%) skewX(-5deg)}to{background-position:100% 50%;transform:translateX(2%) skewX(5deg)}}
+@keyframes themePetalDrift{from{transform:translate3d(-2%,-8%,0) rotate(-3deg)}to{transform:translate3d(4%,12%,0) rotate(5deg)}}
+@media(prefers-reduced-motion:reduce){.theme-full-scene:after{animation:none!important}}
 </style>
 <title>Капли 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1570,11 +1605,11 @@ body.menu-bg .menu-backdrop { display: block; }
     <section class="theme-panel" id="chatThemePanel" aria-label="Оформление общего чата" hidden>
       <div class="theme-panel-head"><b>Выбери оформление</b><button class="btn ghost" id="chatThemeClose" type="button" aria-label="Закрыть">✕</button></div>
       <div class="theme-preview-grid">
-        <button class="theme-preview" data-theme-choice="cosmos" data-theme="cosmos" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌌 Космос</span></button>
-        <button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button>
-        <button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="cosmos" data-theme="cosmos" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌌 Космос</span></button><button class="theme-eye" data-theme-eye="cosmos" type="button" aria-label="Полный просмотр: Космос" title="Полный просмотр">👁</button></div>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button><button class="theme-eye" data-theme-eye="aurora" type="button" aria-label="Полный просмотр: Аврора" title="Полный просмотр">👁</button></div>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button><button class="theme-eye" data-theme-eye="sakura" type="button" aria-label="Полный просмотр: Сакура" title="Полный просмотр">👁</button></div>
       </div>
-      <div class="theme-live-preview" id="chatThemeLivePreview" data-theme-preview="default" role="img" aria-label="Предпросмотр выбранного фона"></div>
+      
       <div class="theme-panel-actions"><button class="btn ghost" id="chatThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="chatThemeApply" type="button">Применить</button></div>
     </section>
     <div class="tabs chat-tabs" id="chatTabs" role="tablist" aria-label="Чаты"><button class="tab" role="tab" data-ct="all" aria-selected="true">💬 Общий</button><button class="tab" role="tab" data-ct="clan" aria-selected="false">🛡 Клановый <i class="soon-tag">скоро</i></button></div>
@@ -1633,11 +1668,11 @@ body.menu-bg .menu-backdrop { display: block; }
     <section class="theme-panel" id="dmThemePanel" aria-label="Оформление личной переписки" hidden>
       <div class="theme-panel-head"><b>Оформление переписки</b><button class="btn ghost" id="dmThemeClose" type="button" aria-label="Закрыть">✕</button></div>
       <div class="theme-preview-grid">
-        <button class="theme-preview" data-theme-choice="cosmos" data-theme="cosmos" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌌 Космос</span></button>
-        <button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button>
-        <button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="cosmos" data-theme="cosmos" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌌 Космос</span></button><button class="theme-eye" data-theme-eye="cosmos" type="button" aria-label="Полный просмотр: Космос" title="Полный просмотр">👁</button></div>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button><button class="theme-eye" data-theme-eye="aurora" type="button" aria-label="Полный просмотр: Аврора" title="Полный просмотр">👁</button></div>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button><button class="theme-eye" data-theme-eye="sakura" type="button" aria-label="Полный просмотр: Сакура" title="Полный просмотр">👁</button></div>
       </div>
-      <div class="theme-live-preview" id="dmThemeLivePreview" data-theme-preview="default" role="img" aria-label="Предпросмотр выбранного фона"></div>
+      
       <div class="theme-panel-actions"><button class="btn ghost" id="dmThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="dmThemeApply" type="button">Применить</button></div>
     </section>
     <ul class="chat-list" id="dmList" aria-live="polite"></ul>
@@ -2097,6 +2132,17 @@ body.menu-bg .menu-backdrop { display: block; }
   <div class="apv-touch" id="apvTouch" aria-hidden="true"></div>
   <div class="apv-top"><p class="apv-hint">Свайп — повернуть · щипок или колесо — приблизить</p><button class="apv-x" id="apvClose" aria-label="Закрыть предпросмотр">✕</button></div>
   <div class="apv-panel"><button class="apv-nav" id="apvPrev" aria-label="Предыдущая арена">‹</button><div class="apv-card" id="apvCard" aria-live="polite"></div><button class="apv-nav" id="apvNext" aria-label="Следующая арена">›</button></div>
+</div>
+<div class="theme-full-preview" id="themeFullPreview" hidden role="dialog" aria-modal="true" aria-labelledby="themeFullTitle">
+  <div class="theme-full-top"><div><small>ПОЛНЫЙ ПРОСМОТР</small><h2 id="themeFullTitle">🌌 Космос</h2></div><button class="theme-full-close" id="themeFullBack" type="button" aria-label="Назад к выбору оформления">✕</button></div>
+  <div class="theme-full-scene" id="themeFullScene" data-theme-preview="cosmos" aria-hidden="true">
+    <div class="theme-demo-chat">
+      <div class="theme-demo-msg"><b>Капля</b><span>Привет! Как тебе новый фон?</span></div>
+      <div class="theme-demo-msg mine"><b>Ты</b><span>Очень красиво ✨</span></div>
+      <div class="theme-demo-msg"><b>Капля</b><span>Анимация работает прямо здесь.</span></div>
+    </div>
+  </div>
+  <div class="theme-full-actions"><button class="btn ghost" id="themeFullBackBottom" type="button">Назад</button><button class="btn" id="themeFullApply" type="button">Применить фон</button></div>
 </div>
 <div class="modal" id="itemModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="imName">
@@ -10034,19 +10080,46 @@ body.menu-bg .menu-backdrop { display: block; }
     // Theme chooser: preview is temporary until Apply; settings are local to this device.
     function readChatTheme(key) { let t='default'; try { t=localStorage.getItem(key)||'default'; } catch(e) {} return ['default','cosmos','aurora','sakura'].includes(t)?t:'default'; }
     function paintChatTheme(cardId, theme) { const card=$(cardId); if(!card)return; card.classList.toggle('chat-themed',theme!=='default'); card.dataset.chatTheme=theme; }
+    let activeThemePreview = null;
+    const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', default: 'Стандартный фон' };
+    const themeFull = $('themeFullPreview'), themeFullScene = $('themeFullScene'), themeFullTitle = $('themeFullTitle');
+    const themeFullApply = $('themeFullApply'), themeFullBack = $('themeFullBack'), themeFullBackBottom = $('themeFullBackBottom');
+    function closeThemeFullPreview() { if (!activeThemePreview) return; themeFull.hidden = true; activeThemePreview = null; }
+    function openThemeFullPreview(ctx, theme) {
+      activeThemePreview = { ...ctx, pending: theme };
+      themeFullScene.dataset.themePreview = theme;
+      themeFullTitle.textContent = themeNames[theme] || 'Оформление';
+      themeFull.hidden = false;
+      themeFullApply.focus();
+    }
+    function commitTheme(ctx, theme) {
+      const key = ctx.keyFn();
+      try { if (theme === 'default') localStorage.removeItem(key); else localStorage.setItem(key, theme); } catch (e) {}
+      paintChatTheme(ctx.cardId, theme);
+      ctx.saved = theme;
+      ctx.pending = theme;
+      ctx.dismiss(false);
+      closeThemeFullPreview();
+    }
+    themeFullBack.addEventListener('click', closeThemeFullPreview);
+    themeFullBackBottom.addEventListener('click', closeThemeFullPreview);
+    themeFullApply.addEventListener('click', () => { if (activeThemePreview) commitTheme(activeThemePreview, activeThemePreview.pending); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && activeThemePreview) closeThemeFullPreview(); });
     function setupThemePicker(prefix, cardId, keyFn) {
-      const panel=$(prefix+'ThemePanel'), gear=$(prefix+'ThemeGear'), close=$(prefix+'ThemeClose'), reset=$(prefix+'ThemeReset'), apply=$(prefix+'ThemeApply'), live=$(prefix+'ThemeLivePreview');
+      const panel=$(prefix+'ThemePanel'), gear=$(prefix+'ThemeGear'), close=$(prefix+'ThemeClose'), reset=$(prefix+'ThemeReset'), apply=$(prefix+'ThemeApply');
       if(!panel||!gear||!close||!reset||!apply)return;
-      let saved='default', pending='default';
+      const ctx = { cardId, keyFn, saved:'default', pending:'default', dismiss:null };
       const choices=[...panel.querySelectorAll('[data-theme-choice]')];
-      const mark=()=>{choices.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===pending)));if(live)live.dataset.themePreview=pending;};
-      const open=()=>{saved=readChatTheme(keyFn());pending=saved;paintChatTheme(cardId,pending);mark();panel.hidden=false;gear.setAttribute('aria-expanded','true');};
-      const dismiss=restore=>{if(restore)paintChatTheme(cardId,saved);panel.hidden=true;gear.setAttribute('aria-expanded','false');};
+      const mark=()=>choices.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===ctx.pending)));
+      const dismiss=restore=>{if(restore)paintChatTheme(cardId,ctx.saved);panel.hidden=true;gear.setAttribute('aria-expanded','false');};
+      ctx.dismiss=dismiss;
+      const open=()=>{ctx.saved=readChatTheme(keyFn());ctx.pending=ctx.saved;paintChatTheme(cardId,ctx.pending);mark();panel.hidden=false;gear.setAttribute('aria-expanded','true');};
       gear.setAttribute('aria-expanded','false');gear.addEventListener('click',()=>panel.hidden?open():dismiss(true));
       close.addEventListener('click',()=>dismiss(true));
-      choices.forEach(b=>b.addEventListener('click',()=>{pending=b.dataset.themeChoice;paintChatTheme(cardId,pending);mark();}));
-      reset.addEventListener('click',()=>{pending='default';paintChatTheme(cardId,pending);mark();});
-      apply.addEventListener('click',()=>{const key=keyFn();try{if(pending==='default')localStorage.removeItem(key);else localStorage.setItem(key,pending);}catch(e){}saved=pending;paintChatTheme(cardId,saved);dismiss(false);});
+      choices.forEach(b=>b.addEventListener('click',()=>{ctx.pending=b.dataset.themeChoice;paintChatTheme(cardId,ctx.pending);mark();}));
+      panel.querySelectorAll('[data-theme-eye]').forEach(b=>b.addEventListener('click',()=>openThemeFullPreview(ctx,b.dataset.themeEye)));
+      reset.addEventListener('click',()=>{ctx.pending='default';paintChatTheme(cardId,ctx.pending);mark();});
+      apply.addEventListener('click',()=>commitTheme(ctx,ctx.pending));
     }
     function applySavedChatTheme(cardId,key) { paintChatTheme(cardId,readChatTheme(key)); }
     setupThemePicker('chat','chatCard',()=> 'kapli3d-chat-theme');

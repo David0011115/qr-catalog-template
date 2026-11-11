@@ -1839,6 +1839,22 @@ body.menu-bg .menu-backdrop { display: block; }
  #leagueCard .lg-reward-chip:after{content:" ◉";font-size:.58rem;opacity:.75}
 }
 </style>
+
+<style id="league-layout-preview-fix-v1">
+/* Keep the current rank label in its own flexible column on narrow screens. */
+#leagueCard .league-current-head{display:grid!important;grid-template-columns:clamp(46px,14vw,64px) minmax(0,1fr)!important;align-items:center!important;justify-content:stretch!important;gap:10px!important;width:100%;min-width:0}
+#leagueCard .league-current-emblem{width:clamp(46px,14vw,64px)!important;height:clamp(46px,14vw,64px)!important;min-width:0}
+#leagueCard .league-current-emblem svg{width:100%!important;height:100%!important}
+#leagueCard .league-current-copy{min-width:0!important;width:100%;overflow:hidden;gap:2px!important}
+#leagueCard .league-current-copy>b{display:block;max-width:100%;font-size:clamp(1.05rem,5.4vw,1.65rem)!important;line-height:1.12!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+#leagueCard .league-current-copy small,#leagueCard .league-current-copy>span{white-space:normal!important;overflow-wrap:anywhere}
+#leagueRewardPreview .lrp-visual .lrp-skin-preview{display:block!important;flex:none!important;min-width:112px;min-height:112px;background-color:#33235f}
+@media(max-width:420px){
+ #leagueCard .league-current-head{grid-template-columns:46px minmax(0,1fr)!important;gap:8px!important}
+ #leagueCard .league-current-emblem{width:46px!important;height:46px!important}
+ #leagueCard .league-current-copy>b{font-size:clamp(1rem,5vw,1.35rem)!important}
+}
+</style>
 </head>
 <body>
 
@@ -8680,15 +8696,28 @@ body.menu-bg .menu-backdrop { display: block; }
       document.addEventListener('keydown', e => { if (e.key === 'Escape' && leaguePreviewOverlay && !leaguePreviewOverlay.hidden) leaguePreviewOverlay.hidden = true; });
     }
     const visual = $('lrpVisual');
-    let art = '';
-    if (item.kind === 'badge') art = badgeSVG({id:save.season.id,league:item.league,pts:save.season.pts,name:seasonData(save.season.id).name,holiday:seasonData(save.season.id).holiday});
-    else if (item.kind === 'skin') art = '<div class="sw" style="' + swatch(item) + '"></div>';
-    else if (item.kind === 'fx') art = '<div class="sw" style="background:radial-gradient(circle at 35% 35%,#fff,' + (item.color || '#ff4fd8') + ' 42%,#09051c);--lrp-color:' + (item.color || '#ff4fd8') + '"></div>';
-    else if (item.kind === 'pet') art = '<div style="font-size:76px;filter:drop-shadow(0 0 18px #9b8cff)">🐾</div>';
-    else if (item.kind === 'coins') art = '<div style="font-size:66px;color:#ffd23f;text-shadow:0 0 24px #ffd23f">◆</div>';
-    else if (item.kind === 'frame') art = '<div style="width:90px;height:90px;border:8px double #b58aff;border-radius:28px;box-shadow:0 0 24px #9b70ff"></div>';
-    else if (item.kind === 'title') art = '<div style="font-size:26px;font-weight:900;color:#ffd36a;text-shadow:0 0 18px #ffb52e">ТИТУЛ</div>';
-    visual.innerHTML = art;
+    visual.replaceChildren();
+    if (item.kind === 'badge') visual.innerHTML = badgeSVG({id:save.season.id,league:item.league,pts:save.season.pts,name:seasonData(save.season.id).name,holiday:seasonData(save.season.id).holiday});
+    else if (item.kind === 'skin' || item.id && SKINS.some(s => s.id === item.id)) {
+      // Render the skin swatch through the DOM style API: complex pattern textures
+      // (including generated data-URL textures) are not safe to interpolate into HTML.
+      const sw = document.createElement('div');
+      sw.className = 'sw lrp-skin-preview';
+      const skin = item.kind === 'skin' ? item : SKINS.find(s => s.id === item.id);
+      try { sw.style.cssText = swatch(skin); } catch (_) {}
+      if (!sw.style.background && !sw.style.backgroundImage && !sw.style.backgroundColor) {
+        sw.style.background = `radial-gradient(circle at 32% 25%,#fff9,transparent 24%),linear-gradient(145deg,${skin.accent || '#ffffff'},${skin.color || '#7b3dff'} 58%,#09051c)`;
+      }
+      sw.style.width = '112px'; sw.style.height = '112px'; sw.style.borderRadius = '50%';
+      sw.style.border = '3px solid rgba(255,255,255,.62)';
+      sw.style.boxShadow = `0 0 30px ${skin.accent || skin.color || '#8e7aff'}`;
+      visual.appendChild(sw);
+    }
+    else if (item.kind === 'fx') visual.innerHTML = '<div class="sw" style="background:radial-gradient(circle at 35% 35%,#fff,' + (item.color || '#ff4fd8') + ' 42%,#09051c);--lrp-color:' + (item.color || '#ff4fd8') + '"></div>';
+    else if (item.kind === 'pet') visual.innerHTML = '<div style="font-size:76px;filter:drop-shadow(0 0 18px #9b8cff)">🐾</div>';
+    else if (item.kind === 'coins') visual.innerHTML = '<div style="font-size:66px;color:#ffd23f;text-shadow:0 0 24px #ffd23f">◆</div>';
+    else if (item.kind === 'frame') visual.innerHTML = '<div style="width:90px;height:90px;border:8px double #b58aff;border-radius:28px;box-shadow:0 0 24px #9b70ff"></div>';
+    else if (item.kind === 'title') visual.innerHTML = '<div style="font-size:26px;font-weight:900;color:#ffd36a;text-shadow:0 0 18px #ffb52e">ТИТУЛ</div>';
     $('lrpTitle').textContent = item.name || 'Награда сезона';
     $('lrpDescription').textContent = item.description || 'Награда за достижение соответствующей ступени лиги.';
     leaguePreviewOverlay.hidden = false;

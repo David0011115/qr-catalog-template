@@ -119,6 +119,32 @@ img { max-width: 100%; }
 .chat-card[data-chat-theme] .chat-form{background:rgba(5,5,18,.34);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(5px)}
 @media(max-width:420px){.theme-full-actions{gap:7px}.theme-full-actions .btn{min-height:40px;padding:8px 12px;font-size:.82rem}.theme-full-actions #themeFullApply{min-width:126px}}
 @media(prefers-reduced-motion:reduce){.theme-full-scene:after{animation:none!important}}
+
+/* Messenger-style chat bubbles: compact outline follows message width. */
+.chat-list{align-items:stretch;gap:9px;padding:10px}
+.chat-list li{
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-self:flex-start;
+  width:fit-content;max-width:min(84%,560px);min-width:0;box-sizing:border-box;
+  padding:8px 11px;border:1px solid rgba(154,174,255,.30);
+  border-radius:16px 16px 16px 5px;background:rgba(18,22,48,.82);
+  box-shadow:0 4px 14px rgba(0,0,0,.16);gap:3px 8px;
+}
+.chat-list li.me{
+  align-self:flex-end;background:linear-gradient(135deg,rgba(74,39,112,.88),rgba(38,38,91,.88));
+  border-color:rgba(255,112,220,.48);border-radius:16px 16px 5px 16px;
+}
+.chat-list li .ch-who{justify-self:start;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-list li time{grid-column:2;grid-row:1;align-self:center;white-space:nowrap}
+.chat-list li .rep{grid-column:3;grid-row:1;justify-self:end;align-self:center;padding:0 2px}
+.chat-list li p{grid-column:1/-1;min-width:0;margin:2px 0 0;line-height:1.42;overflow-wrap:anywhere;white-space:pre-wrap}
+.chat-list li.me p{text-align:left}
+.chat-list li .ch-who b{font-size:.76rem}
+.chat-list li.me .ch-who b{color:#ffc0ec}
+@media(max-width:420px){
+  .chat-list{padding:8px;gap:8px}
+  .chat-list li{max-width:88%;padding:7px 10px}
+}
+
 </style>
 <title>Капли 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">

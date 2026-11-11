@@ -1,65 +1,158 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid slice">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<!-- «Аврора»: фиолетовая полярная ночь — живые занавесы сияния над горами и их отражение в зеркальном озере -->
 <defs>
-<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#020611"/><stop offset=".45" stop-color="#0a1d32"/><stop offset="1" stop-color="#071522"/></linearGradient>
-<radialGradient id="horizon"><stop stop-color="#72f6d9" stop-opacity=".35"/><stop offset="1" stop-color="#071522" stop-opacity="0"/></radialGradient>
-<linearGradient id="veil" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#53fbd7" stop-opacity="0"/><stop offset=".35" stop-color="#65f5d6" stop-opacity=".62"/><stop offset=".58" stop-color="#80c9ff" stop-opacity=".42"/><stop offset=".8" stop-color="#c19aff" stop-opacity=".2"/><stop offset="1" stop-color="#53fbd7" stop-opacity="0"/></linearGradient>
-<linearGradient id="ridge" x2="0" y2="1"><stop stop-color="#7895a5"/><stop offset=".25" stop-color="#304b61"/><stop offset="1" stop-color="#0a1c2c"/></linearGradient>
-<linearGradient id="snow" x2=".2" y2="1"><stop stop-color="#f0ffff"/><stop offset=".4" stop-color="#a9cbd5"/><stop offset="1" stop-color="#496a7e"/></linearGradient>
-<linearGradient id="forest" x2="0" y2="1"><stop stop-color="#153747"/><stop offset="1" stop-color="#020b15"/></linearGradient>
-<linearGradient id="lake" x2="0" y2="1"><stop stop-color="#28566a"/><stop offset=".25" stop-color="#102f43"/><stop offset="1" stop-color="#020812"/></linearGradient>
-<radialGradient id="warm"><stop stop-color="#ffc878" stop-opacity=".8"/><stop offset="1" stop-color="#ffb45c" stop-opacity="0"/></radialGradient>
-<filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="26"/></filter>
-<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
-<pattern id="stars" width="181" height="143" patternUnits="userSpaceOnUse"><circle cx="13" cy="22" r="1.1" fill="#e9ffff"/><circle cx="76" cy="61" r=".7" fill="#d6edff"/><circle cx="151" cy="17" r="1" fill="#fff"/><circle cx="164" cy="111" r=".7" fill="#cafff0"/><circle cx="39" cy="126" r=".8" fill="#fff"/></pattern>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#05021a"/><stop offset=".35" stop-color="#170a44"/><stop offset=".62" stop-color="#2a1260"/><stop offset=".75" stop-color="#1a2a5c"/><stop offset="1" stop-color="#0a1234"/>
+  </linearGradient>
+  <!-- curtains: bright lower hem, colour fading upward -->
+  <linearGradient id="curG" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d8fff4" stop-opacity="0"/><stop offset=".05" stop-color="#b8fff0" stop-opacity="1"/><stop offset=".25" stop-color="#3dffb0" stop-opacity=".85"/>
+    <stop offset=".5" stop-color="#22e6ff" stop-opacity=".5"/><stop offset=".78" stop-color="#b26bff" stop-opacity=".35"/><stop offset="1" stop-color="#ff4fd8" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="curV" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#ffd6f6" stop-opacity="0"/><stop offset=".07" stop-color="#ff8ae6" stop-opacity=".95"/><stop offset=".35" stop-color="#c06bff" stop-opacity=".7"/>
+    <stop offset=".75" stop-color="#6a4dff" stop-opacity=".3"/><stop offset="1" stop-color="#6a4dff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="curB" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#c8f6ff" stop-opacity="0"/><stop offset=".08" stop-color="#7fe8ff" stop-opacity=".75"/><stop offset=".4" stop-color="#3d8bff" stop-opacity=".35"/><stop offset="1" stop-color="#3d8bff" stop-opacity="0"/>
+  </linearGradient>
+  <!-- vertical rays inside the curtains -->
+  <pattern id="rays" width="26" height="900" patternUnits="userSpaceOnUse">
+    <rect width="26" height="900" fill="#9a9a9a"/><rect x="2" width="5" height="900" fill="#fff"/><rect x="14" width="2" height="900" fill="#e0e0e0"/><rect x="20" width="3" height="900" fill="#6a6a6a"/>
+    <animateTransform attributeName="patternTransform" type="translate" values="0 0;26 0" dur="11s" repeatCount="indefinite"/>
+  </pattern>
+  <filter id="raySoft"><feGaussianBlur stdDeviation="1.6 0"/></filter>
+  <mask id="rayMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900"><rect width="1600" height="900" fill="url(#rays)" filter="url(#raySoft)"/></mask>
+  <linearGradient id="edgeFade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000"/><stop offset=".12" stop-color="#fff"/><stop offset=".88" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
+  <mask id="lakeFade" maskUnits="userSpaceOnUse" x="0" y="690" width="1600" height="210"><rect y="690" width="1600" height="210" fill="url(#edgeFade)"/></mask>
+  <filter id="soft" filterUnits="userSpaceOnUse" x="-200" y="-100" width="2000" height="1100"><feGaussianBlur stdDeviation="7"/></filter>
+  <filter id="soft2" filterUnits="userSpaceOnUse" x="-200" y="-100" width="2000" height="1100"><feGaussianBlur stdDeviation="16"/></filter>
+  <filter id="glowf" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+  <radialGradient id="horizonGlow" cx=".5" cy="1" r=".7"><stop offset="0" stop-color="#b26bff" stop-opacity=".35"/><stop offset="1" stop-color="#3dffa2" stop-opacity="0"/></radialGradient>
+  <linearGradient id="farMt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a5aa8"/><stop offset="1" stop-color="#1c1f52"/></linearGradient>
+  <linearGradient id="nearMt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f3070"/><stop offset="1" stop-color="#0d0f30"/></linearGradient>
+  <linearGradient id="snowCap" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#f4f0ff"/><stop offset=".55" stop-color="#b9b4f0"/><stop offset="1" stop-color="#b9b4f0" stop-opacity="0"/></linearGradient>
+  <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c1a58"/><stop offset=".4" stop-color="#0e0c34"/><stop offset="1" stop-color="#05041a"/></linearGradient>
+  <linearGradient id="refl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3dffa2" stop-opacity=".35"/><stop offset="1" stop-color="#3dffa2" stop-opacity="0"/></linearGradient>
+  <radialGradient id="warm"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".9"/><stop offset=".4" stop-color="#ff9a3d" stop-opacity=".35"/><stop offset="1" stop-color="#ff9a3d" stop-opacity="0"/></radialGradient>
+  <symbol id="pine" viewBox="0 0 40 100"><path d="M20 0 L28 22 L24 22 L33 44 L27 44 L38 70 L23 70 L23 100 L17 100 L17 70 L2 70 L13 44 L7 44 L16 22 L12 22 Z"/></symbol>
 </defs>
-<!-- A remote arctic night, not the former fjord landscape -->
-<rect width="1200" height="900" fill="url(#sky)"/><rect width="1200" height="570" fill="url(#stars)" opacity=".8"/>
-<ellipse cx="610" cy="430" rx="760" ry="380" fill="url(#horizon)"/>
-<path d="M-100 150Q130 15 320 130T680 105T1030 85T1320 145L1320 440Q1070 350 850 420T440 405T-100 430Z" fill="#5ce8d3" opacity=".18" filter="url(#glow)"/>
-<!-- Tall, layered curtains of the aurora -->
-<path d="M-100-100C110 5 240 145 270 300S230 535 175 640C360 475 400 300 360 150S210-75 90-120Z" fill="url(#veil)" opacity=".72" filter="url(#soft)"/>
-<path d="M130-120C330 5 440 155 470 315S425 555 370 665C565 475 605 305 560 145S400-90 285-135Z" fill="url(#veil)" opacity=".86"/>
-<path d="M430-120C615 10 710 165 735 325S695 565 640 675C820 480 860 305 820 145S665-90 555-135Z" fill="url(#veil)" opacity=".8"/>
-<path d="M730-120C905 0 1000 155 1025 315S990 550 930 660C1110 470 1150 300 1110 140S960-90 850-135Z" fill="url(#veil)" opacity=".78"/>
-<g fill="none" stroke-linecap="round">
-<path d="M82-40C235 105 315 245 320 390S280 540 245 610" stroke="#cafff0" stroke-width="3" opacity=".72"/>
-<path d="M340-35C480 110 550 260 555 405S520 555 485 635" stroke="#baffed" stroke-width="3.5" opacity=".7"/>
-<path d="M640-35C770 110 835 260 840 405S805 555 770 640" stroke="#baffed" stroke-width="3" opacity=".68"/>
-<path d="M940-35C1060 105 1125 250 1130 390S1095 540 1060 615" stroke="#baffed" stroke-width="3" opacity=".66"/>
-<path d="M45-30C210 100 295 245 300 385S255 545 215 620" stroke="#c5fff0" stroke-width="14" opacity=".15" filter="url(#soft)"/>
-<path d="M600-35C735 105 805 255 810 400S775 555 740 645" stroke="#d8fff3" stroke-width="14" opacity=".13" filter="url(#soft)"/>
+
+<rect width="1600" height="900" fill="url(#sky)"/>
+
+<!-- stars -->
+<g fill="#fff">
+  <circle cx="90" cy="60" r="1.3"><animate attributeName="opacity" values=".3;1;.3" dur="3.1s" repeatCount="indefinite"/></circle>
+  <circle cx="240" cy="140" r="1"/><circle cx="380" cy="40" r="1.6"><animate attributeName="opacity" values="1;.3;1" dur="4.2s" repeatCount="indefinite"/></circle>
+  <circle cx="520" cy="110" r="1"/><circle cx="660" cy="30" r="1.2"/><circle cx="790" cy="90" r="1.5"><animate attributeName="opacity" values=".4;1;.4" dur="2.6s" repeatCount="indefinite"/></circle>
+  <circle cx="930" cy="50" r="1"/><circle cx="1060" cy="130" r="1.3"/><circle cx="1190" cy="35" r="1.7"><animate attributeName="opacity" values="1;.35;1" dur="3.6s" repeatCount="indefinite"/></circle>
+  <circle cx="1320" cy="100" r="1"/><circle cx="1460" cy="55" r="1.4"/><circle cx="1550" cy="160" r="1"/><circle cx="160" cy="220" r=".9"/><circle cx="1400" cy="230" r=".9"/>
+  <circle cx="700" cy="200" r=".8"/><circle cx="1000" cy="240" r=".8"/><circle cx="330" cy="260" r=".8"/>
 </g>
-<!-- Distant mountain amphitheatre -->
-<path d="M0 600L105 485 185 540 315 310 430 480 545 390 665 555 810 295 945 500 1060 350 1200 555V900H0Z" fill="url(#ridge)"/>
-<path d="M315 310L270 390 305 365 325 405 348 360 390 435 430 480 375 445 350 410 325 430 300 400Z" fill="url(#snow)"/>
-<path d="M810 295L760 385 795 360 820 405 845 355 885 430 945 500 885 460 852 415 825 440 800 405Z" fill="url(#snow)"/>
-<path d="M1060 350L1020 425 1050 405 1075 445 1095 400 1130 465 1200 555 1145 510 1105 470 1078 490Z" fill="url(#snow)" opacity=".84"/>
-<!-- Frozen lake with subtle ice fractures -->
-<path d="M0 625Q180 600 340 630T650 625T950 630T1200 615V900H0Z" fill="url(#lake)"/>
-<path d="M260 640Q590 605 940 640L1200 900H0Z" fill="#82f5e4" opacity=".08"/>
-<g fill="none" stroke-linecap="round" opacity=".28"><path d="M260 690q150 13 290 0m-220 32q190 12 390 0m-330 43q160 10 330 0m-250 48q135 8 270 0" stroke="#75e8dc" stroke-width="3"/><path d="M670 700q110 9 230 0m-185 42q140 10 275 0m-230 47q125 8 250 0" stroke="#b5caff" stroke-width="2.5"/><path d="M430 665l-45 42 68 25-34 38m250-92 42 34-38 31 55 32" stroke="#b5fff0" stroke-width="1.6"/></g>
-<!-- Dark taiga forms a layered frame around the lake -->
-<path d="M0 585Q160 555 300 600T590 590T900 600T1200 575V900H0Z" fill="#071a28"/>
-<g fill="url(#forest)">
-<path d="M-30 720l52-205 52 205H47l49 85H-23l49-85Z"/><path d="M65 745l42-165 42 165h-29l39 67H54l39-67Z"/><path d="M155 725l58-225 58 225h-35l54 92H136l54-92Z"/><path d="M260 750l44-170 44 170h-29l42 70H245l42-70Z"/><path d="M345 728l52-205 52 205h-32l48 84H330l48-84Z"/><path d="M445 750l43-170 43 170h-28l40 70H430l40-70Z"/><path d="M850 740l50-195 50 195h-31l47 85H834l47-85Z"/><path d="M955 720l60-230 60 230h-37l55 95H936l55-95Z"/><path d="M1065 750l44-170 44 170h-29l42 70h-114l42-70Z"/><path d="M1140 720l52-200 52 200h-32l48 85h-136l48-85Z"/>
+<!-- a shooting star now and then -->
+<line x1="0" y1="0" x2="70" y2="18" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0">
+  <animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;.86;.9;.95;1" dur="11s" repeatCount="indefinite"/>
+  <animateTransform attributeName="transform" type="translate" values="1250 60;1250 60;1050 120;950 150;950 150" keyTimes="0;.86;.9;.95;1" dur="11s" repeatCount="indefinite"/>
+</line>
+
+<!-- aurora: a wide soft glow, then three curtains that sway and breathe -->
+<rect width="1600" height="900" fill="url(#horizonGlow)"/>
+<g filter="url(#soft2)" opacity=".55">
+  <path fill="url(#curG)" d="M-50 520 C250 380 450 470 700 380 S1150 300 1650 420 L1650 60 L-50 60 Z">
+    <animate attributeName="d" dur="16s" repeatCount="indefinite" values="M-50 520 C250 380 450 470 700 380 S1150 300 1650 420 L1650 60 L-50 60 Z;M-50 480 C220 420 480 400 720 430 S1180 340 1650 380 L1650 60 L-50 60 Z;M-50 520 C250 380 450 470 700 380 S1150 300 1650 420 L1650 60 L-50 60 Z"/>
+  </path>
 </g>
-<g fill="#c0e4e3" opacity=".42"><path d="M18 548l4-33 7 34 22 22-27-9-22 12 13-26Z"/><path d="M187 532l25-32 25 32-25-10Z"/><path d="M974 535l41-45 41 45-41-14Z"/></g>
-<!-- Polar research station: warm light against the cold landscape -->
-<ellipse cx="690" cy="612" rx="180" ry="90" fill="url(#warm)" filter="url(#glow)"/>
-<path d="M610 590L650 548 738 548 778 590V645H610Z" fill="#122b39" stroke="#9cc6c7" stroke-opacity=".4" stroke-width="2"/>
-<path d="M650 548L690 520 738 548Z" fill="#294b58"/><path d="M610 590L690 570 778 590" fill="none" stroke="#b7d6d4" stroke-opacity=".4" stroke-width="3"/>
-<rect x="635" y="590" width="29" height="34" rx="2" fill="#ffc77b" opacity=".9"/><rect x="678" y="584" width="39" height="61" rx="2" fill="#ffbd68" opacity=".82"/><rect x="730" y="590" width="27" height="34" rx="2" fill="#ffd18b" opacity=".86"/>
-<path d="M698 520V455M684 475L698 455 712 475M698 455V438" stroke="#9dbfc9" stroke-width="3" fill="none"/><circle cx="698" cy="438" r="4" fill="#d8fff4"/><path d="M698 438L730 425" stroke="#9dbfc9" stroke-width="2"/>
-<path d="M900 620l30-30h54l29 30v31H900Z" fill="#132d3b" stroke="#8caeb9" stroke-opacity=".3"/><path d="M930 590l27-18 27 18Z" fill="#345361"/><rect x="920" y="620" width="16" height="18" fill="#ffc477" opacity=".8"/><rect x="950" y="617" width="18" height="22" fill="#ffc477" opacity=".7"/>
-<!-- Warm reflections on the ice -->
-<path d="M675 646L650 790 735 790 710 646Z" fill="#ffbd70" opacity=".1" filter="url(#soft)"/>
-<g stroke="#ffc77c" stroke-linecap="round" fill="none" opacity=".3"><path d="M655 680q35 5 70 0m-84 28q48 6 96 0m-80 30q33 4 66 0" stroke-width="3"/><path d="M900 670q28 4 55 0m-42 24q24 4 48 0" stroke-width="2"/></g>
-<!-- Snowbanks in the immediate foreground -->
-<path d="M0 780Q110 715 225 760L340 900H0Z" fill="#0a2638"/><path d="M0 780L90 738 150 750 112 765 205 790 75 786Z" fill="#b8e1e3" opacity=".32"/>
-<path d="M920 790Q1060 715 1200 770V900H1010Z" fill="#092337"/><path d="M1000 780L1080 740 1150 758 1105 775 1190 795 1050 794Z" fill="#b5dce0" opacity=".28"/>
-<!-- Meteor trails and crisp glints -->
-<path d="M930 120L1010 88" stroke="#d9fff8" stroke-width="2" opacity=".65"/><path d="M1010 88l-18 2 10 10" fill="none" stroke="#d9fff8" stroke-width="1.5" opacity=".5"/>
-<path d="M180 205L225 188" stroke="#d9eaff" stroke-width="1.4" opacity=".4"/>
-<g fill="#e6fff9" opacity=".8"><circle cx="245" cy="690" r="1.4"/><circle cx="365" cy="744" r="1.1"/><circle cx="825" cy="705" r="1.5"/><circle cx="1010" cy="735" r="1.1"/><circle cx="565" cy="790" r="1.1"/></g>
-<path d="M0 870Q220 835 430 870T850 865T1200 870V900H0Z" fill="#020812" opacity=".7"/>
+<g mask="url(#rayMask)">
+  <g filter="url(#soft)">
+    <!-- green main curtain -->
+    <path fill="url(#curG)" d="M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340 L1660 80 C1300 40 900 120 600 60 S100 140 -40 120 Z">
+      <animate attributeName="d" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340 L1660 80 C1300 40 900 120 600 60 S100 140 -40 120 Z;
+                M-40 430 C190 380 360 360 560 380 S900 290 1110 300 S1430 320 1660 300 L1660 80 C1300 60 900 90 600 80 S100 110 -40 120 Z;
+                M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340 L1660 80 C1300 40 900 120 600 60 S100 140 -40 120 Z"/>
+      <animate attributeName="opacity" values=".85;1;.7;.85" dur="7s" repeatCount="indefinite"/>
+    </path>
+    <!-- violet curtain behind on the right -->
+    <path fill="url(#curV)" opacity=".75" d="M560 300 C640 330 720 360 800 350 C930 280 1080 330 1230 260 S1500 230 1660 270 L1660 40 C1450 30 1250 80 1050 40 S760 40 560 300 Z">
+      <animate attributeName="d" dur="15s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M560 300 C640 330 720 360 800 350 C930 280 1080 330 1230 260 S1500 230 1660 270 L1660 40 C1450 30 1250 80 1050 40 S760 40 560 300 Z;
+                M540 280 C630 300 700 320 780 320 C940 320 1090 280 1250 300 S1490 250 1660 240 L1660 40 C1450 50 1250 60 1050 60 S760 50 540 280 Z;
+                M560 300 C640 330 720 360 800 350 C930 280 1080 330 1230 260 S1500 230 1660 270 L1660 40 C1450 30 1250 80 1050 40 S760 40 560 300 Z"/>
+      <animate attributeName="opacity" values=".55;.85;.55" dur="9s" repeatCount="indefinite"/>
+    </path>
+    <!-- cyan ribbon on the left -->
+    <path fill="url(#curB)" opacity=".7" d="M-40 360 C80 300 200 340 330 270 S560 230 760 280 C820 300 880 290 900 270 C860 200 820 120 760 70 C480 60 300 100 150 70 S0 90 -40 90 Z">
+      <animate attributeName="d" dur="10s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M-40 360 C80 300 200 340 330 270 S560 230 760 280 C820 300 880 290 900 270 C860 200 820 120 760 70 C480 60 300 100 150 70 S0 90 -40 90 Z;
+                M-40 320 C100 330 220 290 350 300 S580 270 770 250 C830 240 870 260 900 250 C860 180 820 110 760 80 C480 80 300 80 150 90 S0 80 -40 90 Z;
+                M-40 360 C80 300 200 340 330 270 S560 230 760 280 C820 300 880 290 900 270 C860 200 820 120 760 70 C480 60 300 100 150 70 S0 90 -40 90 Z"/>
+    </path>
+  </g>
+  <!-- the bright lower hems of the curtains -->
+  <g fill="none" stroke-linecap="round" filter="url(#glowf)">
+    <path stroke="#c8ffe9" stroke-width="3" stroke-opacity=".75" d="M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340">
+      <animate attributeName="d" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340;M-40 430 C190 380 360 360 560 380 S900 290 1110 300 S1430 320 1660 300;M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340"/>
+    </path>
+    <path stroke="#ffd0f3" stroke-width="2" stroke-opacity=".55" d="M780 360 C930 280 1080 330 1230 260 S1500 230 1660 270">
+      <animate attributeName="d" dur="15s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M780 360 C930 280 1080 330 1230 260 S1500 230 1660 270;M760 320 C940 320 1090 280 1250 300 S1490 250 1660 240;M780 360 C930 280 1080 330 1230 260 S1500 230 1660 270"/>
+    </path>
+  </g>
+</g>
+
+<!-- far mountains with snow -->
+<path fill="url(#farMt)" d="M0 600 L120 540 L210 565 L330 470 L420 520 L520 450 L640 535 L760 480 L860 520 L980 430 L1100 510 L1220 470 L1330 530 L1450 480 L1600 545 L1600 650 L0 650 Z"/>
+<g fill="url(#snowCap)" opacity=".9">
+  <path d="M330 470 L300 495 L318 492 L330 505 L345 490 L362 498 Z"/><path d="M520 450 L488 478 L505 474 L522 488 L536 472 L556 480 Z"/>
+  <path d="M980 430 L944 462 L963 457 L980 472 L996 456 L1018 466 Z"/><path d="M1220 470 L1190 494 L1207 491 L1222 503 L1236 490 L1254 497 Z"/>
+</g>
+<!-- near mountains -->
+<path fill="url(#nearMt)" d="M0 650 L160 560 L260 600 L400 520 L520 590 L650 560 L780 610 L900 545 L1030 600 L1180 540 L1300 600 L1440 560 L1600 610 L1600 700 L0 700 Z"/>
+<g fill="#d8d2ff" opacity=".7">
+  <path d="M400 520 L372 545 L390 541 L402 553 L416 540 L432 548 Z"/><path d="M900 545 L872 570 L890 566 L903 578 L917 565 L934 573 Z"/><path d="M1180 540 L1150 566 L1168 562 L1182 575 L1196 561 L1214 569 Z"/>
+</g>
+
+<!-- frozen lake with the aurora reflection -->
+<rect y="690" width="1600" height="210" fill="url(#lake)"/>
+<g mask="url(#lakeFade)" opacity=".8">
+  <g transform="matrix(1 0 0 -0.46 0 880)" filter="url(#soft)">
+    <path fill="url(#curG)" d="M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340 L1660 80 C1300 40 900 120 600 60 S100 140 -40 120 Z">
+      <animate attributeName="d" dur="12s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340 L1660 80 C1300 40 900 120 600 60 S100 140 -40 120 Z;M-40 430 C190 380 360 360 560 380 S900 290 1110 300 S1430 320 1660 300 L1660 80 C1300 60 900 90 600 80 S100 110 -40 120 Z;M-40 470 C160 330 330 430 520 330 S880 260 1080 330 S1420 260 1660 340 L1660 80 C1300 40 900 120 600 60 S100 140 -40 120 Z"/>
+    </path>
+    <path fill="url(#curV)" opacity=".7" d="M560 300 C640 330 720 360 800 350 C930 280 1080 330 1230 260 S1500 230 1660 270 L1660 40 C1450 30 1250 80 1050 40 S760 40 560 300 Z"/>
+  </g>
+  <rect y="690" width="1600" height="210" fill="#0a0828" opacity=".35">
+    <animate attributeName="opacity" values=".35;.2;.35" dur="7s" repeatCount="indefinite"/>
+  </rect>
+</g>
+<clipPath id="lakeClip"><rect y="690" width="1600" height="210"/></clipPath>
+<g clip-path="url(#lakeClip)" opacity=".55" transform="translate(0 1380) scale(1 -1)">
+  <path fill="#2f3070" d="M0 650 L160 560 L260 600 L400 520 L520 590 L650 560 L780 610 L900 545 L1030 600 L1180 540 L1300 600 L1440 560 L1600 610 L1600 700 L0 700 Z"/>
+</g>
+<g stroke="#bfefff" stroke-opacity=".18" stroke-width="1.5">
+  <line x1="180" y1="742" x2="430" y2="742"/><line x1="620" y1="768" x2="980" y2="768"/><line x1="1100" y1="748" x2="1400" y2="748"/><line x1="300" y1="805" x2="560" y2="805"/><line x1="900" y1="830" x2="1250" y2="830"/>
+</g>
+
+<!-- spruce forest on the shore -->
+<g fill="#07061c">
+  <use href="#pine" x="0" y="560" width="46" height="135"/><use href="#pine" x="36" y="590" width="36" height="105"/><use href="#pine" x="64" y="548" width="52" height="150"/>
+  <use href="#pine" x="108" y="600" width="32" height="95"/><use href="#pine" x="138" y="575" width="42" height="122"/><use href="#pine" x="176" y="610" width="30" height="86"/>
+  <use href="#pine" x="1380" y="580" width="42" height="120"/><use href="#pine" x="1416" y="555" width="50" height="145"/><use href="#pine" x="1460" y="598" width="34" height="100"/>
+  <use href="#pine" x="1490" y="565" width="46" height="132"/><use href="#pine" x="1530" y="600" width="34" height="96"/><use href="#pine" x="1560" y="570" width="44" height="128"/>
+</g>
+<g fill="#0f0d32">
+  <use href="#pine" x="230" y="630" width="26" height="70"/><use href="#pine" x="258" y="640" width="22" height="60"/><use href="#pine" x="1320" y="628" width="26" height="72"/><use href="#pine" x="1346" y="642" width="20" height="58"/>
+</g>
+
+<!-- light snowfall -->
+<g fill="#fff" opacity=".7">
+  <circle cx="200" cy="0" r="1.6"><animate attributeName="cy" values="-10;910" dur="14s" repeatCount="indefinite"/><animate attributeName="cx" values="200;260;200" dur="14s" repeatCount="indefinite"/></circle>
+  <circle cx="520" cy="0" r="1.2"><animate attributeName="cy" values="-10;910" dur="18s" begin="3s" repeatCount="indefinite"/></circle>
+  <circle cx="860" cy="0" r="1.8"><animate attributeName="cy" values="-10;910" dur="15s" begin="6s" repeatCount="indefinite"/><animate attributeName="cx" values="860;820;860" dur="15s" repeatCount="indefinite"/></circle>
+  <circle cx="1180" cy="0" r="1.3"><animate attributeName="cy" values="-10;910" dur="17s" begin="1s" repeatCount="indefinite"/></circle>
+  <circle cx="1450" cy="0" r="1.6"><animate attributeName="cy" values="-10;910" dur="13s" begin="8s" repeatCount="indefinite"/><animate attributeName="cx" values="1450;1500;1450" dur="13s" repeatCount="indefinite"/></circle>
+  <circle cx="680" cy="0" r="1"><animate attributeName="cy" values="-10;910" dur="20s" begin="10s" repeatCount="indefinite"/></circle>
+</g>
 </svg>

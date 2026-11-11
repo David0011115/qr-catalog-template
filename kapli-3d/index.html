@@ -120,6 +120,15 @@ img { max-width: 100%; }
 @media(max-width:420px){.theme-full-actions{gap:7px}.theme-full-actions .btn{min-height:40px;padding:8px 12px;font-size:.82rem}.theme-full-actions #themeFullApply{min-width:126px}}
 @media(prefers-reduced-motion:reduce){.theme-full-scene:after{animation:none!important}}
 
+/* Chat theme preview fix: the scene fills the screen (cover, not stretched); top bar, chat and buttons keep their rows */
+.theme-full-scene{background-size:cover!important;background-position:center!important}
+.theme-full-preview .theme-full-top{grid-row:1}
+.theme-full-preview .theme-full-actions{grid-row:3;align-self:end}
+.theme-full-preview .theme-demo-chat{bottom:calc(74px + env(safe-area-inset-bottom,0px));top:auto;max-height:calc(100% - 170px);overflow:hidden}
+@media(orientation:landscape){.theme-full-preview .theme-demo-chat{left:max(18px,env(safe-area-inset-left,0px));right:auto;width:min(46%,420px);margin:0}}
+.theme-full-scene[data-theme-preview="aurora"]:after,.chat-card[data-chat-theme="aurora"]:before,.theme-preview[data-theme="aurora"] .theme-thumb:after,.theme-live-preview[data-theme-preview="aurora"]:after{opacity:0!important;animation:none!important;background:none!important}
+.theme-thumb,.theme-live-preview{background-size:cover!important;background-position:center!important}
+
 /* Messenger-style chat bubbles: compact outline follows message width. */
 .chat-list{align-items:stretch;gap:9px;padding:10px}
 .chat-list li{
@@ -8421,7 +8430,7 @@ body.menu-bg .menu-backdrop { display: block; }
       if (k.chest || k.lchest) rows.push(['Звёзды', `${'★'.repeat(st)}${'☆'.repeat(3 - st)} — ${st ? STAR_TEXT[st] + `; бонус, пока скин надет: ${starBonusOf(k).text(st)}` : `пока нет; звёзды этого скина дадут: ${STAR_BONUS[k.chest || k.lchest].text(1)} за каждую`}${st < 3 ? `. Следующая за повтор из сундука: ${STAR_TEXT[st + 1]}` : ''}`]);
       const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
       if (save.hat) rows.push(['Сейчас надето', `${HATS[save.hat].name} вместо предмета скина`]);
-      act = !save.skins.includes(id) ? '<button class="btn ghost" disabled>Купить можно в магазине</button>' : save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
+      act = !save.skins.includes(id) ? `<button class="btn ghost" disabled>${buyable(k) ? 'Купить можно в магазине' : 'Ещё не получен'}</button>` : save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
     } else if (kind === 'fx') {
       const f = FX.find(x => x.id === id), on = save.fx[f.slot] === id;
       name = f.name; tag = rarTag(f.chest || f.lchest) + `<span class="badge-ex">${SLOT_NAME[f.slot]}</span>`;
@@ -8429,7 +8438,7 @@ body.menu-bg .menu-backdrop { display: block; }
       const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
       if (f.slot === 'aura') { const sc = skin().color; imVis = previewBlob(skin(), 0, save.hat); imObj = imVis.mesh; imVis.look = skin(); setAura(imVis, id, sc); }
       else { imVis = previewBlob(skin(), 0, save.hat); imObj = imVis.mesh; imVis.look = skin(); imFxSlot = f.slot; }
-      act = !save.fxOwned.includes(id) ? '<button class="btn ghost" disabled>Купить можно в магазине</button>' : `<button class="btn ${on ? 'ghost' : ''}" data-act="fx-${id}">${on ? 'Снять' : 'Надеть'}</button>`;
+      act = !save.fxOwned.includes(id) ? `<button class="btn ghost" disabled>${buyable(f) ? 'Купить можно в магазине' : 'Ещё не получен'}</button>` : `<button class="btn ${on ? 'ghost' : ''}" data-act="fx-${id}">${on ? 'Снять' : 'Надеть'}</button>`;
     } else if (kind === 'pet') {
       const pt = petById(id), own = save.pets.includes(id), on = save.pet === id, B = PET_BONUS[pt.bonus];
       name = pt.name; tag = rarTag(pt.chest || pt.lchest) + (pt.tier ? `<span class="badge-ex">${pt.tier}</span>` : '');
@@ -8448,8 +8457,8 @@ body.menu-bg .menu-backdrop { display: block; }
       name = d.name; tag = rarTag(decoRarity(d)) + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
       flat = decoPreview(d);
       rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
-        ['Откуда', d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : `сундук · ${RARITY[d.chest].name.toLowerCase()}`]);
-      act = `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>`;
+        ['Откуда', d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : d.chest ? `сундук · ${RARITY[d.chest].name.toLowerCase()}` : decoSource(d).replace(/\.$/, '')]);
+      act = save.decor.includes(id) ? `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>` : '<button class="btn ghost" disabled>Ещё не получена</button>';
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
       name = a.name; tag = '<span class="badge-ex">тема арены</span>' + (a.exclusive ? '<span class="badge-ex badge-legend">эксклюзив</span>' : '');
@@ -8896,6 +8905,11 @@ body.menu-bg .menu-backdrop { display: block; }
   let leaguePreviewOverlay = null;
   function showLeagueRewardPreview(item) {
     if (!item) return;
+    // skins, pets, effects, frames and titles open the full item window (3D model, what it gives, where it comes from)
+    { const id = item.id, ref = !id ? null : (item.kind === 'skin' || (!item.kind && SKINS.some(s => s.id === id))) && SKINS.some(s => s.id === id) ? 'skin:' + id
+        : item.kind === 'pet' && petById(id) ? 'pet:' + id : item.kind === 'fx' && FX.some(f => f.id === id) ? 'fx:' + id
+        : (item.kind === 'frame' || item.kind === 'title') && decorById(id) ? 'deco:' + id : null;
+      if (ref) { if (leaguePreviewOverlay) leaguePreviewOverlay.hidden = true; openItem(ref); return; } }
     if (!leaguePreviewOverlay) {
       leaguePreviewOverlay = document.createElement('div');
       leaguePreviewOverlay.id = 'leagueRewardPreview';
@@ -9105,7 +9119,7 @@ body.menu-bg .menu-backdrop { display: block; }
         `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({kind:'coins',name:`${l.coins} ◆`,description:'Монеты за достижение этой лиги по итогам сезона.'})}">◆ ${l.coins}</button>`,
         `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({kind:'badge',name:'Значок сезона',description:`Значок с эмблемой лиги «${l.name}» и номером сезона.`,league:i})}">Значок</button>`,
         ...rewards.map(r => `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({...r,description:r.kind==='skin'?'Сезонный облик капли.':r.kind==='fx'?'Эффект оформления капли.':r.kind==='pet'?'Питомец, который сопровождает игрока.':'Награда сезона.'})}">${r.kind==='skin'?'Скин':r.kind==='fx'?'Эффект':r.kind==='pet'?'Питомец':r.name}</button>`),
-        ...decor.map(id => `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({kind:id.startsWith('fr_')?'frame':'title',name:id.startsWith('fr_')?'Рамка сезона':'Титул сезона',description:'Дополнительная награда за высокий ранг в сезоне.'})}">${id.startsWith('fr_')?'Рамка':'Титул'}</button>`)
+        ...decor.map(id => `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({id,kind:id.startsWith('fr_')?'frame':'title',name:id.startsWith('fr_')?'Рамка сезона':'Титул сезона',description:'Дополнительная награда за высокий ранг в сезоне.'})}">${id.startsWith('fr_')?'Рамка':'Титул'}</button>`)
       ].join('');
       return `<li class="${i === li ? 'cur' : i > li ? 'lock' : ''}" style="--lc:${l.color}"><div class="lg-rank-line"><b class="rk-name">${rankEmblem(i, 27, { still: i !== li })}${l.name}</b><span>от ${l.pts} очков${i === li ? ' · ты здесь' : ''}</span></div><div class="lg-reward-chips">${chips}</div></li>`;
     }).join('');

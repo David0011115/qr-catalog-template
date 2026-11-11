@@ -24,7 +24,7 @@ img { max-width: 100%; }
 .chat-topline h1{margin:0}
 .theme-gear{position:absolute;right:0;top:50%;transform:translateY(-50%);width:40px;height:40px;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;background:rgba(15,14,38,.78);color:var(--fg);font-size:1.25rem;display:grid;place-items:center;cursor:pointer}
 .theme-gear:active{transform:translateY(-50%) scale(.95)}
-.dm-head .theme-gear{position:static;transform:none;flex:none}
+.dm-head-wrap{display:flex;align-items:center;gap:8px}.dm-head-wrap .dm-head{flex:1;min-width:0}.dm-head-wrap .theme-gear{position:static;transform:none;flex:none}
 .theme-panel{width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(9,8,27,.94);box-shadow:0 12px 32px rgba(0,0,0,.28);display:grid;gap:10px}
 .theme-panel[hidden]{display:none}
 .theme-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -1620,7 +1620,7 @@ body.menu-bg .menu-backdrop { display: block; }
   </div>
 
   <div class="card chat-card dm-card" id="dmCard" hidden>
-    <div class="dm-head" id="dmHead"></div>
+    <div class="dm-head-wrap"><div class="dm-head" id="dmHead"></div><button class="theme-gear" id="dmThemeGear" type="button" aria-label="Оформление переписки" title="Оформление" aria-expanded="false">⚙</button></div>
     <section class="theme-panel" id="dmThemePanel" aria-label="Оформление личной переписки" hidden>
       <div class="theme-panel-head"><b>Оформление переписки</b><button class="btn ghost" id="dmThemeClose" type="button" aria-label="Закрыть">✕</button></div>
       <div class="theme-preview-grid">

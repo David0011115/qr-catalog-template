@@ -56,8 +56,8 @@ img { max-width: 100%; }
 .chat-card[data-chat-theme="cosmos"]{background-image:url("chat-cosmos.svg")}
 .chat-card[data-chat-theme="aurora"]{background-image:url("chat-aurora.svg")}
 .chat-card[data-chat-theme="sakura"]{background-image:url("chat-sakura.svg")}
-.chat-card[data-chat-theme] .chat-list{background:rgba(5,5,18,.42);border-radius:12px}
-.chat-card[data-chat-theme] .chat-form{background:rgba(5,5,18,.56);border-radius:12px;padding:5px}
+.chat-card[data-chat-theme] .chat-list{background:none;border-radius:12px}
+.chat-card[data-chat-theme] .chat-form{background:none;border-radius:12px;padding:5px}
 @keyframes chatSceneDrift{0%{background-position:0% 0%,center}100%{background-position:100% 100%,center}}
 @keyframes chatThemeFall{0%{transform:translate3d(-2%,-12%,0)}100%{transform:translate3d(4%,14%,0)}}
 @keyframes chatAuroraWave{0%{background-position:0% 50%;transform:skewX(-7deg)}100%{background-position:100% 50%;transform:skewX(7deg)}}
@@ -97,7 +97,7 @@ img { max-width: 100%; }
 
 /* Theme preview polish: compact controls, stronger scenery, lighter chat surfaces. */
 .theme-full-scene{background-size:100% 100%;background-position:center}
-.theme-full-scene:before{background:linear-gradient(180deg,rgba(2,3,15,.02),rgba(2,3,15,0) 48%,rgba(2,3,15,.18))}
+.theme-full-scene:before{background:none}
 .theme-full-top{background:linear-gradient(180deg,rgba(4,4,16,.52),rgba(4,4,16,0))}
 .theme-full-actions{justify-content:flex-end;align-items:center;gap:8px;background:linear-gradient(0deg,rgba(4,4,16,.62),rgba(4,4,16,0));padding-top:8px}
 .theme-full-actions .btn{flex:0 0 auto;width:auto;min-width:104px;min-height:42px;padding:9px 16px;font-size:.88rem}
@@ -105,8 +105,6 @@ img { max-width: 100%; }
 .theme-full-actions #themeFullBack{min-width:82px}
 .theme-demo-msg{background:rgba(5,5,22,.43);border-color:rgba(255,255,255,.28);backdrop-filter:blur(4px)}
 .theme-demo-msg.mine{background:rgba(74,39,112,.48)}
-.chat-card[data-chat-theme] .chat-list{background:rgba(5,5,18,.20);border:1px solid rgba(255,255,255,.07)}
-.chat-card[data-chat-theme] .chat-form{background:rgba(5,5,18,.34);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(5px)}
 @media(max-width:420px){.theme-full-actions{gap:7px}.theme-full-actions .btn{min-height:40px;padding:8px 12px;font-size:.82rem}.theme-full-actions #themeFullApply{min-width:126px}}
 @media(prefers-reduced-motion:reduce){.theme-full-scene:after{animation:none!important}}
 

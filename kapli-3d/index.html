@@ -1855,59 +1855,185 @@ body.menu-bg .menu-backdrop { display: block; }
  #leagueCard .league-current-copy>b{font-size:clamp(1rem,5vw,1.35rem)!important}
 }
 </style>
-<style id="chaos-league-compact-preview-v1">
-#chaosCard.chaos-screen{box-sizing:border-box!important;display:flex!important;flex-direction:column!important;width:min(760px,calc(100vw - 24px))!important;max-width:760px!important;max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overflow-x:hidden!important;gap:10px!important;padding:14px!important;margin:auto!important;overscroll-behavior:contain;scrollbar-width:thin}
+<style id="chaos-league-shared-redesign-v2">
+/* Complete league screen redesign: one clear vertical flow on every device. */
+#chaosCard.league-screen{
+  box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+  width:min(760px,calc(100vw - 24px))!important;max-width:760px!important;
+  max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overflow-x:hidden!important;
+  gap:16px!important;padding:clamp(14px,3.5vw,24px)!important;margin:auto!important;
+  overscroll-behavior:contain;scrollbar-width:thin;
+}
+#chaosCard .league-screen-head{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding-bottom:12px;border-bottom:1px solid var(--line)}
+#chaosCard .league-screen-head>div{min-width:0}
+#chaosCard .league-eyebrow{display:block;color:var(--muted);font-size:.65rem;font-weight:800;letter-spacing:.16em;margin-bottom:3px}
+#chaosCard .league-screen-head h1{margin:0;text-align:left;font-size:clamp(1.5rem,5vw,2rem)}
+#chaosCard .league-screen-head .tab-info-btn{width:auto;max-width:150px;margin:0;padding:8px 10px;white-space:nowrap;font-size:.75rem}
+#chaosCard .league-main{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;width:100%;min-width:0}
+#chaosCard #leaguePanel{box-sizing:border-box;width:100%;min-width:0;margin:0;padding:0;background:transparent;border:0;display:block}
+#chaosCard .league-current{--rc:var(--neon-c);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:15px;padding:clamp(15px,4vw,24px);border:1px solid color-mix(in srgb,var(--rc) 55%,transparent);border-radius:22px;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--rc) 22%,transparent),transparent 58%),linear-gradient(155deg,rgba(30,23,65,.96),rgba(9,9,25,.98));box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.06)}
+#chaosCard .league-current-head{display:flex;align-items:center;justify-content:center;gap:18px;min-width:0}
+#chaosCard .league-current-emblem{display:grid;place-items:center;flex:none;width:104px;height:104px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--rc) 24%,transparent),transparent 70%);filter:drop-shadow(0 0 15px color-mix(in srgb,var(--rc) 50%,transparent))}
+#chaosCard .league-current-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+#chaosCard .league-current-copy small{font-size:.65rem;font-weight:800;letter-spacing:.14em;color:var(--muted)}
+#chaosCard .league-current-copy>b{font-family:var(--display);font-size:clamp(1.65rem,7vw,2.45rem);font-weight:400;line-height:1.08;color:var(--rc)}
+#chaosCard .league-current-copy>span{font-size:.8rem;color:var(--muted)}
+#chaosCard .league-points{display:flex;align-items:baseline;justify-content:center;gap:8px;padding:9px 0 12px;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
+#chaosCard .league-points strong{font-family:var(--display);font-size:clamp(2rem,8vw,2.8rem);font-weight:400;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+#chaosCard .league-points span{font-size:.68rem;font-weight:800;letter-spacing:.13em;color:var(--muted)}
+#chaosCard .league-progress-area{display:grid;gap:9px}
+#chaosCard .league-progress-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.83rem}
+#chaosCard .league-progress-title b{font-weight:700}
+#chaosCard .league-progress-title span{font-weight:900;color:var(--rc);font-variant-numeric:tabular-nums}
+#chaosCard .league-progress-track{height:15px;border-radius:99px;overflow:hidden;background:rgba(125,135,170,.2);box-shadow:inset 0 2px 5px rgba(0,0,0,.35)}
+#chaosCard .league-progress-fill{height:100%;border-radius:inherit;box-shadow:0 0 13px var(--rc);transition:width .45s ease}
+#chaosCard .league-progress-labels{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--muted)}
+#chaosCard .league-progress-labels b{color:var(--fg);text-align:right}
+#chaosCard .league-path-label{font-size:.64rem;font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:-8px}
+#chaosCard .league-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding:9px 0 2px}
+#chaosCard .league-step{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;opacity:.32;filter:grayscale(1)}
+#chaosCard .league-step.passed{opacity:.7;filter:none}
+#chaosCard .league-step.current{opacity:1;filter:none}
+#chaosCard .league-step.current .rk{filter:drop-shadow(0 0 7px var(--lc))}
+#chaosCard .league-step span{font-size:clamp(.53rem,1.7vw,.7rem);font-weight:700;color:var(--muted);white-space:nowrap}
+#chaosCard .league-step.current span{color:var(--lc)}
+#chaosCard .league-to-go{text-align:center;font-size:.82rem;color:var(--muted);padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.045)}
+#chaosCard .league-to-go b{color:var(--rc)}
+#chaosCard .league-season-line{font-size:.72rem;line-height:1.45;text-align:center;color:var(--muted);padding-top:2px}
+#chaosCard .lg-last{margin:0;padding:11px 13px;border-radius:13px;background:rgba(61,255,162,.07);border:1px solid rgba(61,255,162,.22)}
+#chaosCard .lg-last b{display:flex;justify-content:space-between;gap:10px;font-size:.85rem}
+#chaosCard .lg-last b strong{color:var(--prey);font-size:1rem}
+#chaosCard .lg-last small{display:block;margin-top:3px;font-size:.72rem;line-height:1.4;color:var(--muted)}
+#chaosCard .lg-last.neg{background:rgba(255,61,110,.07);border-color:rgba(255,61,110,.25)}
+#chaosCard .league-play-block{display:grid;gap:8px;padding:0 2px}
+#chaosCard #chaosPlay{width:100%;min-height:54px;margin:0;font-size:1rem;letter-spacing:.01em}
+#chaosCard #chaosNote{margin:0;text-align:center;font-size:.76rem;line-height:1.4}
+#chaosCard .league-rules-note{margin:0;text-align:center;color:var(--muted);font-size:.7rem;line-height:1.4}
+#chaosCard .league-season-block{display:grid;gap:9px;padding:14px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.025)}
+#chaosCard .league-section-kicker{font-size:.65rem;font-weight:900;letter-spacing:.14em;color:var(--muted)}
+#chaosCard .season-skin,#chaosCard .badge-info{box-sizing:border-box;width:100%;min-width:0;margin:0;background:var(--row);border-radius:12px;padding:11px}
+#chaosCard .season-skin{gap:12px}
+#chaosCard .season-skin>div:last-child{min-width:0;font-size:.86rem;line-height:1.4}
+#chaosCard .season-skin small{font-size:.73rem;line-height:1.4}
+#chaosCard .badge-info{grid-template-columns:64px minmax(0,1fr);gap:12px}
+#chaosCard .badge-info svg{width:64px;height:64px}
+#chaosCard .badge-info>div{min-width:0}
+#chaosCard .badge-info p{font-size:.75rem;line-height:1.4}
+#chaosCard .league-more{display:grid;gap:9px;width:100%}
+#chaosCard .lg-fold{width:100%;min-width:0;margin:0}
+#chaosCard .lg-fold>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--row);cursor:pointer}
+#chaosCard .lg-fold>summary::-webkit-details-marker{display:none}
+#chaosCard .lg-fold>summary:after{content:'＋';font-size:1.1rem;color:var(--muted);margin-left:auto}
+#chaosCard .lg-fold[open]>summary:after{content:'−'}
+#chaosCard .lg-fold>summary span{font-weight:800;font-size:.86rem}
+#chaosCard .lg-fold>summary small{font-size:.7rem;color:var(--muted);text-align:right}
+#chaosCard .lg-fold .lg-table,#chaosCard .lg-fold .quests{margin:9px 0 0}
+#chaosCard #chaosBack{width:100%;margin:0;min-height:44px}
+@media(max-width:420px){
+ #chaosCard.league-screen{width:calc(100vw - 14px)!important;max-height:calc(100dvh - 14px)!important;padding:12px!important;gap:12px!important}
+ #chaosCard .league-current{padding:14px 11px;gap:12px}
+ #chaosCard .league-current-head{gap:10px}
+ #chaosCard .league-current-emblem{width:82px;height:82px}
+ #chaosCard .league-step span{font-size:.5rem}
+ #chaosCard .league-steps{gap:1px}
+ #chaosCard .badge-info{grid-template-columns:52px minmax(0,1fr);gap:9px}
+ #chaosCard .badge-info svg{width:52px;height:52px}
+}
+@media(orientation:landscape) and (min-width:700px){
+ #chaosCard.league-screen{display:flex!important;max-width:760px!important;max-height:calc(100dvh - 20px)!important;overflow-y:auto!important}
+}
+@media(prefers-reduced-motion:reduce){#chaosCard .league-progress-fill{transition:none}}
+/* Keep the league panel hidden until the existing navigation opens it. */
 #chaosCard[hidden]{display:none!important}
-#chaosCard .chaos-screen-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding-bottom:8px;border-bottom:1px solid var(--line)}
-#chaosCard .chaos-screen-head h1{margin:3px 0 0;font-size:clamp(1.2rem,4vw,1.6rem)}
-#chaosCard .chaos-screen-head .tab-info-btn{width:auto;flex:none;margin:0;padding:7px 10px;font-size:.76rem}
-#chaosCard .chaos-main{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
-#chaosCard #chaosPanel{box-sizing:border-box;width:100%;min-width:0;margin:0;padding:12px;display:grid;gap:8px;border:1px solid color-mix(in srgb,var(--rc,#ff4fd8) 45%,var(--line));border-radius:15px;background:linear-gradient(145deg,rgba(31,12,52,.88),rgba(8,7,25,.94))}
-#chaosCard #chaosPanel .league-top{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;justify-content:start;gap:11px;min-width:0}
-#chaosCard #chaosPanel .league-top>.rk{width:64px;height:64px}
-#chaosCard #chaosPanel .rk-txt{display:grid;gap:3px;min-width:0}
-#chaosCard #chaosPanel .rk-txt>b{font-size:clamp(1.05rem,4vw,1.45rem);line-height:1.15;overflow-wrap:anywhere}
-#chaosCard #chaosPanel .rk-txt>span{font-size:.82rem;color:var(--muted)}
-#chaosCard #chaosPanel .track{height:10px;margin:0}
-#chaosCard #chaosPanel>small,#chaosCard #chaosPanel .lg-last small{font-size:.72rem;line-height:1.4;overflow-wrap:anywhere}
-#chaosCard #chaosPanel .season-skin{gap:10px;padding:8px 10px;margin:0}
-#chaosCard .chaos-play-block{display:grid;gap:5px;min-width:0}
-#chaosCard #chaosPlay{width:100%;margin:0;min-height:44px}
-#chaosCard #chaosNote{margin:0;font-size:.72rem;line-height:1.35;text-align:center}
-#chaosCard .chaos-more{display:grid;gap:8px;min-width:0}
-#chaosCard .chaos-fold{width:100%;min-width:0;margin:0}
-#chaosCard .chaos-fold>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--row);cursor:pointer}
-#chaosCard .chaos-fold>summary::-webkit-details-marker{display:none}
-#chaosCard .chaos-fold>summary:after{content:'＋';color:var(--muted);font-size:1.05rem;margin-left:auto}
-#chaosCard .chaos-fold[open]>summary:after{content:'−'}
-#chaosCard .chaos-fold>summary span{font-size:.86rem;font-weight:800}
-#chaosCard .chaos-fold>summary small{font-size:.68rem;color:var(--muted);text-align:right}
-#chaosCard #chaosTable{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:7px 0 0;padding:0;list-style:none}
-#chaosCard #chaosTable>li{display:grid;align-content:start;gap:5px;min-width:0;margin:0;padding:8px;border:1px solid color-mix(in srgb,var(--lc) 38%,var(--line));border-radius:11px;background:rgba(14,10,38,.58)}
-#chaosCard #chaosTable>li.cur{background:color-mix(in srgb,var(--lc) 13%,rgba(14,10,38,.8));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lc) 38%,transparent)}
-#chaosCard .chaos-tier-line{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;min-width:0}
-#chaosCard .chaos-tier-line .rk-name{display:flex;align-items:center;gap:6px;min-width:0;font-size:.84rem}
-#chaosCard .chaos-tier-line .rk-name span{min-width:0;overflow-wrap:anywhere}
-#chaosCard .chaos-tier-line>span{font-size:.66rem;color:var(--muted);overflow-wrap:anywhere}
-#chaosCard .chaos-tier-meta{font-size:.63rem;color:var(--muted)}
-#chaosCard .chaos-tier-rewards{display:flex;flex-wrap:wrap;gap:4px}
-#chaosCard .chaos-reward-chip{min-width:0;margin:0;padding:4px 7px;border:1px solid color-mix(in srgb,var(--lc) 48%,var(--line));border-radius:7px;background:rgba(255,255,255,.055);color:var(--fg);font:600 .66rem system-ui;cursor:pointer}
-#chaosCard .chaos-reward-chip:active{transform:scale(.96)}
-#chaosCard #chaosAbilBtn{width:100%;margin:8px 0 0;padding:8px 10px;font-size:.75rem}
-#chaosCard .chaos-xa-note{margin:6px 0;font-size:.7rem}
-#chaosCard .chaos-xa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:34dvh;overflow:auto;padding-right:2px}
-#chaosCard .chaos-xa .ab-row{min-width:0;padding:7px;gap:7px}
-#chaosCard .chaos-xa .ab-big{font-size:1.35rem}
-#chaosCard .chaos-xa .ab-txt{min-width:0}
-#chaosCard .chaos-xa .ab-txt b{font-size:.76rem}
-#chaosCard .chaos-xa .ab-txt small{font-size:.66rem;line-height:1.3}
-#chaosCard #chaosBack{width:100%;margin:0;min-height:42px}
-#leagueRewardPreview .lrp-chaos-ability{width:104px;height:104px;display:grid;place-items:center;border:2px solid var(--lrp-color,#ff4fd8);border-radius:28px;background:radial-gradient(circle at 35% 25%,#fff7,var(--lrp-color,#ff4fd8) 35%,#10051f 78%);box-shadow:0 0 30px var(--lrp-color,#ff4fd8)}
-#leagueRewardPreview .lrp-chaos-ability span{font-size:58px;color:#fff;text-shadow:0 0 18px var(--lrp-color,#ff4fd8)}
-@media(max-width:520px){#chaosCard.chaos-screen{width:calc(100vw - 14px)!important;max-height:calc(100dvh - 14px)!important;padding:10px!important;gap:8px!important}#chaosCard #chaosTable{grid-template-columns:repeat(2,minmax(0,1fr))}#chaosCard .chaos-xa{grid-template-columns:1fr;max-height:30dvh}#chaosCard #chaosPanel{padding:10px}#chaosCard .chaos-tier-line{grid-template-columns:1fr;align-items:start}#chaosCard .chaos-tier-line>span{text-align:left}}
-@media(orientation:landscape) and (min-width:700px){#chaosCard.chaos-screen{max-width:900px!important;max-height:calc(100dvh - 18px)!important;gap:8px!important;padding:11px!important}#chaosCard .chaos-main{grid-template-columns:minmax(0,1.1fr) minmax(230px,.8fr);align-items:start;gap:10px}#chaosCard .chaos-play-block{align-self:center}#chaosCard #chaosTable{grid-template-columns:repeat(3,minmax(0,1fr))}#chaosCard .chaos-xa{grid-template-columns:repeat(3,minmax(0,1fr));max-height:28dvh}}
-@media(prefers-reduced-motion:reduce){#chaosCard *{scroll-behavior:auto}}
 </style>
+<style id="chaos-league-shared-compact-v2">
+/* Dense league layout: keep the important status and actions visible on phone screens. */
+#chaosCard.league-screen{gap:6px!important;padding:9px!important;max-height:calc(100dvh - 10px)!important}
+#chaosCard .league-screen-head{padding-bottom:5px;min-height:34px}
+#chaosCard .league-eyebrow{font-size:.55rem;margin-bottom:1px}
+#chaosCard .league-screen-head h1{font-size:1.25rem}
+#chaosCard .league-screen-head .tab-info-btn{padding:5px 8px;font-size:.68rem}
+#chaosCard .league-main{gap:5px}
+#chaosCard .league-current{gap:5px;padding:8px 10px;border-radius:15px}
+#chaosCard .league-current-head{gap:8px}
+#chaosCard .league-current-emblem{width:48px;height:48px}
+#chaosCard .league-current-copy{gap:1px}
+#chaosCard .league-current-copy small{font-size:.53rem}
+#chaosCard .league-current-copy>b{font-size:1.22rem;line-height:1}
+#chaosCard .league-current-copy>span{font-size:.66rem}
+#chaosCard .league-points{padding:4px 0 5px;gap:5px}
+#chaosCard .league-points strong{font-size:1.65rem}
+#chaosCard .league-points span{font-size:.58rem}
+#chaosCard .league-progress-area{gap:4px}
+#chaosCard .league-progress-title{font-size:.7rem}
+#chaosCard .league-progress-track{height:7px}
+#chaosCard .league-progress-labels{font-size:.58rem}
+#chaosCard .league-path-label{font-size:.52rem;margin:0}
+#chaosCard .league-steps{padding:3px 0 0;gap:2px}
+#chaosCard .league-step{gap:1px}
+#chaosCard .league-step svg{width:21px;height:21px}
+#chaosCard .league-step span{font-size:.48rem}
+#chaosCard .league-to-go{padding:4px 7px;font-size:.68rem}
+#chaosCard .league-season-line{font-size:.59rem;line-height:1.2;padding:0}
+#chaosCard .lg-last{padding:5px 8px;border-radius:9px}
+#chaosCard .lg-last b{font-size:.69rem}
+#chaosCard .lg-last b strong{font-size:.78rem}
+#chaosCard .lg-last small{font-size:.59rem;line-height:1.2;margin-top:1px}
+#chaosCard .league-play-block{gap:3px}
+#chaosCard #chaosPlay{min-height:39px;padding:8px 12px;font-size:.88rem}
+#chaosCard #chaosNote{font-size:.63rem;line-height:1.2}
+#chaosCard .league-rules-note{display:none}
+#chaosCard .league-season-block{gap:4px;padding:6px 8px;border-radius:12px}
+#chaosCard .league-section-kicker{font-size:.55rem}
+#chaosCard .season-skin{gap:7px}
+#chaosCard .season-skin .sw{width:38px;height:38px;flex:none}
+#chaosCard .season-skin b{font-size:.72rem}
+#chaosCard .season-skin small{font-size:.61rem;line-height:1.2}
+#chaosCard .badge-info{gap:6px;padding-top:3px}
+#chaosCard .badge-info svg{width:38px;height:38px}
+#chaosCard .badge-info b{font-size:.68rem}
+#chaosCard .badge-info p,#chaosCard .badge-info small{font-size:.59rem;line-height:1.2}
+#chaosCard .league-more{gap:4px}
+#chaosCard .lg-fold>summary{padding:6px 9px}
+#chaosCard .lg-fold>summary span{font-size:.75rem}
+#chaosCard .lg-fold>summary small{font-size:.61rem}
+#chaosCard .lg-fold .lg-table>li{padding:5px 7px;gap:3px}
+#chaosCard .lg-rank-line .rk-name{font-size:.72rem}
+#chaosCard .lg-rank-line .rk-name svg{width:21px;height:21px}
+#chaosCard .lg-rank-line>span{font-size:.59rem}
+#chaosCard .lg-reward-chips{gap:4px}
+#chaosCard .lg-reward-chip{padding:4px 7px;font-size:.62rem;cursor:pointer}
+#chaosCard .lg-reward-chip:after{content:" · просмотр";font-size:.55rem;opacity:.68}
+#chaosCard #chaosBack{min-height:34px;padding:6px 10px;font-size:.78rem}
+#leagueRewardPreview .lrp-visual{height:150px}
+#leagueRewardPreview .lrp-card{max-height:calc(100dvh - 36px);overflow-y:auto}
+@media(max-width:420px){
+ #chaosCard.league-screen{gap:5px!important;padding:7px!important;max-height:calc(100dvh - 8px)!important}
+ #chaosCard .league-current{padding:7px 8px;gap:4px}
+ #chaosCard .league-current-emblem{width:43px;height:43px}
+ #chaosCard .league-current-copy>b{font-size:1.1rem}
+ #chaosCard .league-step span{font-size:.43rem}
+ #chaosCard .league-step svg{width:19px;height:19px}
+ #chaosCard .league-season-block{padding:5px 7px}
+ #chaosCard .lg-reward-chip:after{content:" ◉";font-size:.58rem;opacity:.75}
+}
+</style>
+<style id="chaos-league-layout-fix-v2">
+/* Keep the current rank label in its own flexible column on narrow screens. */
+#chaosCard .league-current-head{display:grid!important;grid-template-columns:clamp(46px,14vw,64px) minmax(0,1fr)!important;align-items:center!important;justify-content:stretch!important;gap:10px!important;width:100%;min-width:0}
+#chaosCard .league-current-emblem{width:clamp(46px,14vw,64px)!important;height:clamp(46px,14vw,64px)!important;min-width:0}
+#chaosCard .league-current-emblem svg{width:100%!important;height:100%!important}
+#chaosCard .league-current-copy{min-width:0!important;width:100%;overflow:hidden;gap:2px!important}
+#chaosCard .league-current-copy>b{display:block;max-width:100%;font-size:clamp(1.05rem,5.4vw,1.65rem)!important;line-height:1.12!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+#chaosCard .league-current-copy small,#chaosCard .league-current-copy>span{white-space:normal!important;overflow-wrap:anywhere}
+#leagueRewardPreview .lrp-visual .lrp-skin-preview{display:block!important;flex:none!important;min-width:112px;min-height:112px;background-color:#33235f}
+@media(max-width:420px){
+ #chaosCard .league-current-head{grid-template-columns:46px minmax(0,1fr)!important;gap:8px!important}
+ #chaosCard .league-current-emblem{width:46px!important;height:46px!important}
+ #chaosCard .league-current-copy>b{font-size:clamp(1rem,5vw,1.35rem)!important}
+}
+</style>
+
 </head>
 <body>
 
@@ -2234,27 +2360,33 @@ body.menu-bg .menu-backdrop { display: block; }
     <button class="btn ghost" id="modesBack">Готово</button>
   </div>
 
-  <div class="card chaos-screen" id="chaosCard" hidden>
-    <header class="chaos-screen-head">
+  <div class="card league-screen" id="chaosCard" hidden>
+    <header class="league-screen-head">
       <div><span class="league-eyebrow">РЕЙТИНГОВЫЙ РЕЖИМ</span><h1>Хаос-лига</h1></div>
       <button class="tab-info-btn" id="chaosInfoBtn">ⓘ Информация</button>
     </header>
-    <div class="chaos-main">
-      <div class="league chaos-current" id="chaosPanel"></div>
-      <section class="chaos-play-block">
+    <div class="league-main">
+      <div class="league" id="chaosPanel"></div>
+      <section class="league-play-block">
         <button class="btn" id="chaosPlay">Играть</button>
         <p class="hint" id="chaosNote"></p>
+        <p class="league-rules-note">В начале боя каждый получает 3 случайные способности из 24. У всех равные условия: купленные способности, улучшения и облики не действуют.</p>
       </section>
     </div>
-    <section class="chaos-more">
-      <details class="chaos-fold" open>
-        <summary><span>Ступени и награды</span><small>6 рангов сезона</small></summary>
+    <section class="league-season-block">
+      <div class="league-section-kicker">СЕЗОННАЯ НАГРАДА</div>
+      <div class="season-skin" id="chaosSeasonSkin"></div>
+      <div class="badge-info" id="chaosBadgeInfo"></div>
+    </section>
+    <section class="league-more">
+      <details class="lg-fold lg-rewards" open>
+        <summary><span>Ступени и награды</span><small>Награды по рангам</small></summary>
         <ul class="lg-table" id="chaosTable"></ul>
       </details>
-      <details class="chaos-fold">
-        <summary><span>Эксклюзивные способности</span><small>За «Сингулярность»</small></summary>
+      <details class="lg-fold lg-upcoming">
+        <summary><span>Эксклюзивные способности</span><small>Награды за «Сингулярность»</small></summary>
         <button class="tab-info-btn" id="chaosAbilBtn">ⓘ Все 24 способности</button>
-        <p class="hint chaos-xa-note">По одной новой способности за каждый сезон на высшей ступени.</p>
+        <p class="hint chaos-xa-note">За каждый сезон на высшей ступени можно открыть новую эксклюзивную способность.</p>
         <div class="chaos-xa" id="chaosXa"></div>
       </details>
     </section>
@@ -8854,15 +8986,26 @@ body.menu-bg .menu-backdrop { display: block; }
     const days = Math.max(0, Math.ceil((chaosEnd(C.id) - Date.now()) / 864e5));
     const when = chaosStarted ? `Хаос-сезон ${C.id} · режим «${MODES[seasonMode(C.id)].name}» · до ${fmtDate(chaosEnd(C.id))} (осталось ${days} дн.)` : `Хаос-сезон 1 начнётся ${fmtDate(CHAOS_EPOCH)}. До старта очки не начисляются`;
     const g = C.last, sign = v => (v >= 0 ? '+' : '−') + Math.abs(v);
-    $('chaosPanel').innerHTML = `<div class="league-top rk-head" style="--rc:${L.color}">${chaosEmblem(ti, 64)}<div class="rk-txt"><b style="color:${L.color}">${L.icon} ${L.name}</b><span class="hint">${C.pts} очков</span></div></div>` +
-      `<div class="track"><div class="fill rk-fill" style="width:${pct.toFixed(0)}%;background:linear-gradient(90deg, #22e6ff, ${L.color}, #ff4fd8)"></div></div><small>${when}. ${nextPts !== null ? `До ступени «${ctName(nextI)}»: ${nextPts - C.pts} очков.` : 'Это высшая ступень.'}</small>` +
-      (lockT !== null ? `<span class="notice">${lockT === 4 ? `«Разлом» откроется на ${CHAOS_CFG.tierLevel[4]} уровне, «Сингулярность» — на ${CHAOS_CFG.tierLevel[5]}-м (сейчас ${lv}-й). До этого ступень не выше «Шторма».` : `«Сингулярность» откроется на ${CHAOS_CFG.tierLevel[5]} уровне (сейчас ${lv}-й). До этого ступень не выше «Разлома».`}</span>` : '') +
-      (g ? `<div class="lg-last ${g.net < 0 ? 'neg' : ''}"><b>Последняя игра: ${sign(g.net)} очков</b><small>за игру ${sign(g.gain)}${g.fee ? ` · взнос −${g.fee}` : ''}${g.floor ? ' · счёт остановился на пороге ступени' : ''}${g.capped ? ` · счёт остановился: «${g.capped}» откроется с ${CHAOS_CFG.tierLevel[CHAOS_TIERS.findIndex(t => t.name === g.capped)] || ''} уровня` : ''}</small><small>За сезон: игр ${C.games || 0}${C.fees ? ` · взносов ${C.fees} очков` : ''}</small></div>` : '') +
-      (() => { const nx = chaosNextThird(), top = save.chaosTop || 0, nv = CHAOS_VET.find(v => top < v.n);
-        return `<div class="lg-last"><b>Сезонов в «Сингулярности»: ${top}</b><small>Следующая третья награда: ${nx ? (nx.kind === 'abil' ? `способность «${nx.a.name}»` : `облик «${nx.l.name}»`) : 'всё получено'}.</small>` +
-          `<small>Вехи: ${CHAOS_VET.map(v => `${v.n} — ${v.what}${top >= v.n ? ' ✓' : ''}`).join(' · ')}${nv ? ` · до следующей: ${nv.n - top}` : ''}</small></div>`; })() +
-      (chaosNotice ? `<span class="notice">${chaosNotice}</span>` : '');
-    if (chaosStarted) $('chaosPanel').insertAdjacentHTML('beforeend', `<div class="season-skin"><div style="width:64px;flex:none">${chaosBadgeSVG({ id: C.id, tier: ti })}</div><div><b>Значок сезона: ${L.icon} ${L.name}</b><br><small>В конце сезона значок останется в профиле. Форма и цвет зависят от ступени — поднимись выше, чтобы он стал ярче.</small></div></div>`);
+    const next = nextI !== null ? CHAOS_TIERS[nextI] : null;
+    const steps = CHAOS_TIERS.map((tier, i) => `<div class="league-step ${i < ti ? 'passed' : ''} ${i === ti ? 'current' : ''}" style="--lc:${tier.color}" aria-label="${tier.name}${i === ti ? ', текущая ступень' : ''}">${chaosEmblem(i, 27, { still: i !== ti })}<span>${tier.name}</span></div>`).join('');
+    $('chaosPanel').innerHTML =
+      `<div class="league-current" style="--rc:${L.color}">` +
+        `<div class="league-current-head"><div class="league-current-emblem">${chaosEmblem(ti, 92)}</div><div class="league-current-copy"><small>ТВОЯ ТЕКУЩАЯ СТУПЕНЬ</small><b>${L.icon} ${L.name}</b><span>Очки Хаос-лиги</span></div></div>` +
+        `<div class="league-points"><strong>${C.pts.toLocaleString('ru-RU')}</strong><span>ОЧКОВ</span></div>` +
+        `<div class="league-progress-area"><div class="league-progress-title"><b>${next ? `До следующей ступени — ${next.name}` : 'Достигнута высшая ступень'}</b><span>${Math.max(0,Math.min(100,pct)).toFixed(0)}%</span></div>` +
+        `<div class="league-progress-track" role="progressbar" aria-label="Прогресс до следующей ступени" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.max(0,Math.min(100,pct)).toFixed(0)}"><div class="league-progress-fill" style="width:${Math.max(0,Math.min(100,pct)).toFixed(2)}%;background:linear-gradient(90deg,#22e6ff,${L.color},#ff4fd8)"></div></div>` +
+        `<div class="league-progress-labels"><span>${CHAOS_CFG.pts[ti].toLocaleString('ru-RU')}</span><b>${nextPts !== null ? `${nextPts.toLocaleString('ru-RU')} очков` : 'МАКСИМУМ'}</b></div></div>` +
+        `<div class="league-path-label">ТВОЙ ПУТЬ ПО СТУПЕНЯМ</div><div class="league-steps">${steps}</div>` +
+        `<div class="league-to-go">${nextPts !== null ? `До повышения: <b>${Math.max(0,nextPts-C.pts).toLocaleString('ru-RU')} очков</b>` : 'Ты достиг вершины Хаос-лиги'}</div>` +
+        `<div class="league-season-line">${when}</div>` +
+        (lockT !== null ? `<span class="notice">${lockT === 4 ? `«Разлом» откроется на ${CHAOS_CFG.tierLevel[4]} уровне, «Сингулярность» — на ${CHAOS_CFG.tierLevel[5]}-м (сейчас ${lv}-й). До этого ступень не выше «Шторма».` : `«Сингулярность» откроется на ${CHAOS_CFG.tierLevel[5]} уровне (сейчас ${lv}-й). До этого ступень не выше «Разлома».`}</span>` : '') +
+        (g ? `<div class="lg-last ${g.net < 0 ? 'neg' : ''}"><b>Последняя игра <strong>${sign(g.net)}</strong></b><small>Результат: ${sign(g.gain)}${g.fee ? ` · взнос −${g.fee}` : ''}${g.floor ? ' · достигнут порог ступени' : ''}${g.capped ? ` · счёт остановился: «${g.capped}» откроется с ${CHAOS_CFG.tierLevel[CHAOS_TIERS.findIndex(t => t.name === g.capped)] || ''} уровня` : ''}</small><small>За сезон: ${C.games || 0} игр${C.fees ? ` · ${C.fees} взносов` : ''}</small></div>` : '') +
+        (() => { const nx = chaosNextThird(), top = save.chaosTop || 0, nv = CHAOS_VET.find(v => top < v.n);
+          return `<div class="lg-last"><b>Сезонов в «Сингулярности»: <strong>${top}</strong></b><small>Следующая третья награда: ${nx ? (nx.kind === 'abil' ? `способность «${nx.a.name}»` : `облик «${nx.l.name}»`) : 'всё получено'}.</small><small>Вехи: ${CHAOS_VET.map(v => `${v.n} — ${v.what}${top >= v.n ? ' ✓' : ''}`).join(' · ')}${nv ? ` · до следующей: ${nv.n - top}` : ''}</small></div>`; })() +
+        (chaosNotice ? `<span class="notice">${chaosNotice}</span>` : '') +
+      `</div>`;
+    $('chaosSeasonSkin').innerHTML = `<div class="sw crown">${chaosBadgeSVG({ id:C.id, tier:ti })}</div><div><b>Значок сезона: ${L.icon} ${L.name}</b><br><small>${chaosStarted ? 'В конце сезона значок останется в профиле. Форма и цвет зависят от достигнутой ступени.' : 'Значок будет выдан по итогам первого Хаос-сезона.'}</small></div>`;
+    $('chaosBadgeInfo').innerHTML = `<div>${chaosBadgeSVG({ id:C.id, tier:ti })}</div><div><b>Твой значок Хаос-сезона</b><p>Сезон ${C.id} · ${L.name}. Значок сохраняется в профиле после завершения сезона.</p></div>`;
     $('chaosPlay').disabled = !open;
     $('chaosPlay').textContent = open ? `Играть · ${MODES[seasonMode(C.id)].name}` : `Откроется на ${CHAOS_CFG.entryLevel} уровне`;
     $('chaosNote').textContent = open ? `3 случайные способности на бой (одна — рывок или деление), у всех равные условия. Купленные способности и улучшения не действуют.${CHAOS_CFG.fee[ti] ? ` Взнос за бой: ${CHAOS_CFG.fee[ti]} очков.` : ''}` : `Сейчас у тебя ${lv}-й уровень.`;
@@ -8871,9 +9014,9 @@ body.menu-bg .menu-backdrop { display: block; }
       const chips = chaosRewardItems(i, C.id).map(item => {
         const n = chaosPreviewItems.push(item) - 1;
         const label = item.kind === 'coins' ? '◆ ' + item.name.replace(' ◆','') : item.kind === 'skin' ? 'Скин' : item.kind === 'frame' ? 'Рамка' : item.kind === 'title' ? 'Титул' : item.kind === 'abil' ? 'Способность' : item.kind === 'look' ? 'Облик' : item.name;
-        return `<button type="button" class="chaos-reward-chip" data-chaos-preview="${n}">${label}</button>`;
+        return `<button type="button" class="lg-reward-chip" data-chaos-preview="${n}">${label}</button>`;
       }).join('');
-      return `<li class="${i === ti ? 'cur' : i > ti ? 'lock' : ''}" style="--lc:${l.color}"><div class="chaos-tier-line"><b class="rk-name">${chaosEmblem(i, 28, { still: i !== ti })}<span>${l.icon} ${l.name}</span></b><span>от ${CHAOS_CFG.pts[i].toLocaleString('ru-RU')} очков${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span></div><div class="chaos-tier-meta">${CHAOS_CFG.tierLevel[i] ? `Открывается с ${CHAOS_CFG.tierLevel[i]} уровня` : ''}${i === ti ? ' · Текущая ступень' : ''}</div><div class="chaos-tier-rewards">${chips}</div></li>`;
+      return `<li class="${i === ti ? 'cur' : i > ti ? 'lock' : ''}" style="--lc:${l.color}"><div class="lg-rank-line"><b class="rk-name">${chaosEmblem(i, 27, { still: i !== ti })}${l.icon} ${l.name}</b><span>от ${CHAOS_CFG.pts[i].toLocaleString('ru-RU')} очков${i === ti ? ' · ты здесь' : ''}${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span></div>${CHAOS_CFG.tierLevel[i] ? `<small class="hint">Открывается с ${CHAOS_CFG.tierLevel[i]} уровня</small>` : ''}<div class="lg-reward-chips">${chips}</div></li>`;
     }).join('');
     $('chaosXa').innerHTML = XA_ABIL.map(a => `<div class="ab-row ${save.abil.xa.includes(a.id) ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.abil.xa.includes(a.id) ? ' <span class="badge-ex">получена</span>' : ''}</b><small>${a.desc}. Перезарядка ${a.cd} с.</small></div></div>`).join('');
   }

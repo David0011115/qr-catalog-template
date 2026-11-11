@@ -1632,6 +1632,97 @@ body.menu-bg .menu-backdrop { display: block; }
 }
 </style>
 
+
+<style id="league-redesign-v1">
+/* Complete league screen redesign: one clear vertical flow on every device. */
+#leagueCard.league-screen{
+  box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+  width:min(760px,calc(100vw - 24px))!important;max-width:760px!important;
+  max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overflow-x:hidden!important;
+  gap:16px!important;padding:clamp(14px,3.5vw,24px)!important;margin:auto!important;
+  overscroll-behavior:contain;scrollbar-width:thin;
+}
+#leagueCard .league-screen-head{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding-bottom:12px;border-bottom:1px solid var(--line)}
+#leagueCard .league-screen-head>div{min-width:0}
+#leagueCard .league-eyebrow{display:block;color:var(--muted);font-size:.65rem;font-weight:800;letter-spacing:.16em;margin-bottom:3px}
+#leagueCard .league-screen-head h1{margin:0;text-align:left;font-size:clamp(1.5rem,5vw,2rem)}
+#leagueCard .league-screen-head .tab-info-btn{width:auto;max-width:150px;margin:0;padding:8px 10px;white-space:nowrap;font-size:.75rem}
+#leagueCard .league-main{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;width:100%;min-width:0}
+#leagueCard #leaguePanel{box-sizing:border-box;width:100%;min-width:0;margin:0;padding:0;background:transparent;border:0;display:block}
+#leagueCard .league-current{--rc:var(--neon-c);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:15px;padding:clamp(15px,4vw,24px);border:1px solid color-mix(in srgb,var(--rc) 55%,transparent);border-radius:22px;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--rc) 22%,transparent),transparent 58%),linear-gradient(155deg,rgba(30,23,65,.96),rgba(9,9,25,.98));box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.06)}
+#leagueCard .league-current-head{display:flex;align-items:center;justify-content:center;gap:18px;min-width:0}
+#leagueCard .league-current-emblem{display:grid;place-items:center;flex:none;width:104px;height:104px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--rc) 24%,transparent),transparent 70%);filter:drop-shadow(0 0 15px color-mix(in srgb,var(--rc) 50%,transparent))}
+#leagueCard .league-current-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+#leagueCard .league-current-copy small{font-size:.65rem;font-weight:800;letter-spacing:.14em;color:var(--muted)}
+#leagueCard .league-current-copy>b{font-family:var(--display);font-size:clamp(1.65rem,7vw,2.45rem);font-weight:400;line-height:1.08;color:var(--rc)}
+#leagueCard .league-current-copy>span{font-size:.8rem;color:var(--muted)}
+#leagueCard .league-points{display:flex;align-items:baseline;justify-content:center;gap:8px;padding:9px 0 12px;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
+#leagueCard .league-points strong{font-family:var(--display);font-size:clamp(2rem,8vw,2.8rem);font-weight:400;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+#leagueCard .league-points span{font-size:.68rem;font-weight:800;letter-spacing:.13em;color:var(--muted)}
+#leagueCard .league-progress-area{display:grid;gap:9px}
+#leagueCard .league-progress-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.83rem}
+#leagueCard .league-progress-title b{font-weight:700}
+#leagueCard .league-progress-title span{font-weight:900;color:var(--rc);font-variant-numeric:tabular-nums}
+#leagueCard .league-progress-track{height:15px;border-radius:99px;overflow:hidden;background:rgba(125,135,170,.2);box-shadow:inset 0 2px 5px rgba(0,0,0,.35)}
+#leagueCard .league-progress-fill{height:100%;border-radius:inherit;box-shadow:0 0 13px var(--rc);transition:width .45s ease}
+#leagueCard .league-progress-labels{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--muted)}
+#leagueCard .league-progress-labels b{color:var(--fg);text-align:right}
+#leagueCard .league-path-label{font-size:.64rem;font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:-8px}
+#leagueCard .league-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding:9px 0 2px}
+#leagueCard .league-step{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;opacity:.32;filter:grayscale(1)}
+#leagueCard .league-step.passed{opacity:.7;filter:none}
+#leagueCard .league-step.current{opacity:1;filter:none}
+#leagueCard .league-step.current .rk{filter:drop-shadow(0 0 7px var(--lc))}
+#leagueCard .league-step span{font-size:clamp(.53rem,1.7vw,.7rem);font-weight:700;color:var(--muted);white-space:nowrap}
+#leagueCard .league-step.current span{color:var(--lc)}
+#leagueCard .league-to-go{text-align:center;font-size:.82rem;color:var(--muted);padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.045)}
+#leagueCard .league-to-go b{color:var(--rc)}
+#leagueCard .league-season-line{font-size:.72rem;line-height:1.45;text-align:center;color:var(--muted);padding-top:2px}
+#leagueCard .lg-last{margin:0;padding:11px 13px;border-radius:13px;background:rgba(61,255,162,.07);border:1px solid rgba(61,255,162,.22)}
+#leagueCard .lg-last b{display:flex;justify-content:space-between;gap:10px;font-size:.85rem}
+#leagueCard .lg-last b strong{color:var(--prey);font-size:1rem}
+#leagueCard .lg-last small{display:block;margin-top:3px;font-size:.72rem;line-height:1.4;color:var(--muted)}
+#leagueCard .lg-last.neg{background:rgba(255,61,110,.07);border-color:rgba(255,61,110,.25)}
+#leagueCard .league-play-block{display:grid;gap:8px;padding:0 2px}
+#leagueCard #leaguePlay{width:100%;min-height:54px;margin:0;font-size:1rem;letter-spacing:.01em}
+#leagueCard #leaguePlayNote{margin:0;text-align:center;font-size:.76rem;line-height:1.4}
+#leagueCard .league-rules-note{margin:0;text-align:center;color:var(--muted);font-size:.7rem;line-height:1.4}
+#leagueCard .league-season-block{display:grid;gap:9px;padding:14px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.025)}
+#leagueCard .league-section-kicker{font-size:.65rem;font-weight:900;letter-spacing:.14em;color:var(--muted)}
+#leagueCard .season-skin,#leagueCard .badge-info{box-sizing:border-box;width:100%;min-width:0;margin:0;background:var(--row);border-radius:12px;padding:11px}
+#leagueCard .season-skin{gap:12px}
+#leagueCard .season-skin>div:last-child{min-width:0;font-size:.86rem;line-height:1.4}
+#leagueCard .season-skin small{font-size:.73rem;line-height:1.4}
+#leagueCard .badge-info{grid-template-columns:64px minmax(0,1fr);gap:12px}
+#leagueCard .badge-info svg{width:64px;height:64px}
+#leagueCard .badge-info>div{min-width:0}
+#leagueCard .badge-info p{font-size:.75rem;line-height:1.4}
+#leagueCard .league-more{display:grid;gap:9px;width:100%}
+#leagueCard .lg-fold{width:100%;min-width:0;margin:0}
+#leagueCard .lg-fold>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--row);cursor:pointer}
+#leagueCard .lg-fold>summary::-webkit-details-marker{display:none}
+#leagueCard .lg-fold>summary:after{content:'＋';font-size:1.1rem;color:var(--muted);margin-left:auto}
+#leagueCard .lg-fold[open]>summary:after{content:'−'}
+#leagueCard .lg-fold>summary span{font-weight:800;font-size:.86rem}
+#leagueCard .lg-fold>summary small{font-size:.7rem;color:var(--muted);text-align:right}
+#leagueCard .lg-fold .lg-table,#leagueCard .lg-fold .quests{margin:9px 0 0}
+#leagueCard #leagueBack{width:100%;margin:0;min-height:44px}
+@media(max-width:420px){
+ #leagueCard.league-screen{width:calc(100vw - 14px)!important;max-height:calc(100dvh - 14px)!important;padding:12px!important;gap:12px!important}
+ #leagueCard .league-current{padding:14px 11px;gap:12px}
+ #leagueCard .league-current-head{gap:10px}
+ #leagueCard .league-current-emblem{width:82px;height:82px}
+ #leagueCard .league-step span{font-size:.5rem}
+ #leagueCard .league-steps{gap:1px}
+ #leagueCard .badge-info{grid-template-columns:52px minmax(0,1fr);gap:9px}
+ #leagueCard .badge-info svg{width:52px;height:52px}
+}
+@media(orientation:landscape) and (min-width:700px){
+ #leagueCard.league-screen{display:flex!important;max-width:760px!important;max-height:calc(100dvh - 20px)!important;overflow-y:auto!important}
+}
+@media(prefers-reduced-motion:reduce){#leagueCard .league-progress-fill{transition:none}}
+</style>
+
 </head>
 <body>
 
@@ -1972,29 +2063,34 @@ body.menu-bg .menu-backdrop { display: block; }
     <button class="btn ghost" id="chaosBack">Готово</button>
   </div>
 
-  <div class="card" id="leagueCard" hidden>
-    <h1>Лига</h1>
-    <button class="tab-info-btn" data-infotpl="tplLeague" data-infotitle="Лига">ⓘ Информация · Лига: очки, взнос, сезоны</button>
-    <div class="lg-col lg-now">
-    <div class="league" id="leaguePanel"></div>
-    <button class="btn" id="leaguePlay">Играть в лиге</button>
-    <p class="hint" id="leaguePlayNote"></p>
-    <p class="hint">В рейтинге у всех рывок, деление и выброс: купленные способности, улучшения и облики не действуют.</p>
-    <div class="season-skin" id="seasonSkin"></div>
-    <div class="badge-info" id="curBadge"></div>
+  <div class="card league-screen" id="leagueCard" hidden>
+    <header class="league-screen-head">
+      <div><span class="league-eyebrow">РЕЙТИНГОВЫЙ РЕЖИМ</span><h1>Лига</h1></div>
+      <button class="tab-info-btn" data-infotpl="tplLeague" data-infotitle="Лига" aria-label="Информация о лиге">ⓘ Информация</button>
+    </header>
+    <div class="league-main">
+      <div class="league" id="leaguePanel"></div>
+      <section class="league-play-block">
+        <button class="btn" id="leaguePlay">Играть в лиге</button>
+        <p class="hint" id="leaguePlayNote"></p>
+        <p class="league-rules-note">В рейтинге у всех одинаковые возможности: рывок, деление и выброс. Купленные способности, улучшения и облики не действуют.</p>
+      </section>
     </div>
-    <div class="lg-col lg-ranks">
-    <details class="lg-fold lg-rewards">
-      <summary>Все лиги и награды сезона</summary>
-      <ul class="lg-table" id="lgTable"></ul>
-    </details>
-    </div>
-    <div class="lg-col lg-next">
-    <details class="lg-fold lg-upcoming">
-      <summary>Следующие сезоны</summary>
-      <ul class="quests" id="seasonNext"></ul>
-    </details>
-    </div>
+    <section class="league-season-block">
+      <div class="league-section-kicker">СЕЗОННАЯ НАГРАДА</div>
+      <div class="season-skin" id="seasonSkin"></div>
+      <div class="badge-info" id="curBadge"></div>
+    </section>
+    <section class="league-more">
+      <details class="lg-fold lg-rewards">
+        <summary><span>Ступени и награды</span><small>Все 6 лиг сезона</small></summary>
+        <ul class="lg-table" id="lgTable"></ul>
+      </details>
+      <details class="lg-fold lg-upcoming">
+        <summary><span>Календарь сезонов</span><small>Что будет дальше</small></summary>
+        <ul class="quests" id="seasonNext"></ul>
+      </details>
+    </section>
     <template id="tplLeague"><h3 class="ti-h">Как получать очки</h3>
     <dl class="keys">
       <dt>Масса</dt><dd>чем больше пик массы за раунд, тем больше очков</dd>
@@ -8541,18 +8637,21 @@ body.menu-bg .menu-backdrop { display: block; }
       ? `Сезон ${save.season.id} «${sd.name}»${sd.holiday ? ' · праздничный' : ''} · ${MODES[leagueMode()].name} · до ${fmtDate(seasonEnd(save.season.id))} (ещё ${Math.ceil((seasonEnd(save.season.id) - Date.now()) / 86400000)} дн.)`
       : `Сезон начнётся ${fmtDate(SEASON_EPOCH)} · до старта очки не начисляются`;
     const RA = RANK_ART[li].m;
-    const steps = LEAGUES.map((tier, i) => `<div class="league-step ${i < li ? 'passed' : ''} ${i === li ? 'current' : ''}" style="--lc:${tier.color}" aria-label="${tier.name}${i === li ? ', текущая лига' : ''}">${rankEmblem(i, 25, { still: i !== li })}<span>${tier.name}</span></div>`).join('');
+    const steps = LEAGUES.map((tier, i) => `<div class="league-step ${i < li ? 'passed' : ''} ${i === li ? 'current' : ''}" style="--lc:${tier.color}" aria-label="${tier.name}${i === li ? ', текущая лига' : ''}">${rankEmblem(i, 27, { still: i !== li })}<span>${tier.name}</span></div>`).join('');
     $('leaguePanel').innerHTML =
-      `<div class="league-hero" style="--rc:${L.color}">${rankEmblem(li, 76)}<div class="league-hero-copy"><small>ТВОЯ ТЕКУЩАЯ ЛИГА</small><b>${L.name}</b><strong>${save.season.pts.toLocaleString('ru-RU')} <small>очков</small></strong></div></div>` +
-      `<div class="league-progress-title"><b>${next ? `Путь до «${next.name}»` : 'Максимальная лига'}</b><span>${pct.toFixed(0)}%</span></div>` +
-      `<div class="league-progress-track" role="progressbar" aria-label="Прогресс до следующей лиги" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}"><div class="league-progress-fill" style="width:${pct.toFixed(2)}%;background:linear-gradient(90deg, ${RA[2]}, ${RA[1]}, ${RA[0]})"></div></div>` +
-      `<div class="league-progress-labels"><span>${L.pts.toLocaleString('ru-RU')} очков</span><b>${next ? `${next.pts.toLocaleString('ru-RU')} · ${next.name}` : 'Вершина рейтинга'}</b></div>` +
-      `<div class="league-steps">${steps}</div>` +
-      `<div class="league-season-line">${when}</div>` +
-      (next ? `<div class="league-to-go">До повышения осталось <b>${Math.max(0, next.pts - save.season.pts).toLocaleString('ru-RU')} очков</b></div>` : `<div class="league-to-go">Ты достиг высшей лиги сезона</div>`) +
-      (() => { const g = save.season.last; if (!g) return ''; const sign = v => (v >= 0 ? '+' : '−') + Math.abs(v);
-        return `<div class="lg-last ${g.net < 0 ? 'neg' : ''}"><b>Последняя игра: ${sign(g.net)} очков</b><small>За игру ${sign(g.gain)}${g.fee ? ` · взнос −${g.fee}` : ''}${g.floor ? ` · достигнут порог лиги «${L.name}»` : ''}</small><small>За сезон: игр ${save.season.games || 0}${save.season.fees ? ` · взносов ${save.season.fees}` : ''}</small></div>`; })() +
-      (seasonNotice ? `<span class="notice">${seasonNotice}</span>` : '');
+      `<div class="league-current" style="--rc:${L.color}">` +
+        `<div class="league-current-head"><div class="league-current-emblem">${rankEmblem(li, 92)}</div><div class="league-current-copy"><small>ТВОЙ ТЕКУЩИЙ РАНГ</small><b>${L.name}</b><span>Сезонные очки</span></div></div>` +
+        `<div class="league-points"><strong>${save.season.pts.toLocaleString('ru-RU')}</strong><span>ОЧКОВ</span></div>` +
+        `<div class="league-progress-area"><div class="league-progress-title"><b>${next ? `До следующего ранга — ${next.name}` : 'Достигнута высшая лига'}</b><span>${pct.toFixed(0)}%</span></div>` +
+        `<div class="league-progress-track" role="progressbar" aria-label="Прогресс до следующей лиги" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}"><div class="league-progress-fill" style="width:${pct.toFixed(2)}%;background:linear-gradient(90deg, ${RA[2]}, ${RA[1]}, ${RA[0]})"></div></div>` +
+        `<div class="league-progress-labels"><span>${L.pts.toLocaleString('ru-RU')}</span><b>${next ? `${next.pts.toLocaleString('ru-RU')} очков` : 'МАКСИМУМ'}</b></div></div>` +
+        `<div class="league-path-label">ТВОЙ ПУТЬ ПО ЛИГАМ</div><div class="league-steps">${steps}</div>` +
+        (next ? `<div class="league-to-go">До повышения: <b>${Math.max(0, next.pts - save.season.pts).toLocaleString('ru-RU')} очков</b></div>` : `<div class="league-to-go">Ты достиг вершины рейтинга</div>`) +
+        `<div class="league-season-line">${when}</div>` +
+        (() => { const g = save.season.last; if (!g) return ''; const sign = v => (v >= 0 ? '+' : '−') + Math.abs(v);
+          return `<div class="lg-last ${g.net < 0 ? 'neg' : ''}"><b>Последняя игра <strong>${sign(g.net)}</strong></b><small>Результат: ${sign(g.gain)}${g.fee ? ` · взнос −${g.fee}` : ''}${g.floor ? ` · достигнут порог «${L.name}»` : ''}</small><small>За сезон: ${save.season.games || 0} игр${save.season.fees ? ` · ${save.season.fees} взносов` : ''}</small></div>`; })() +
+        (seasonNotice ? `<span class="notice">${seasonNotice}</span>` : '') +
+      `</div>`;
     if (hk) {
       const top = sd.items[5];
       $('seasonSkin').innerHTML = `<div class="sw crown" style="${swatch(top)}"></div><div><b>Праздничный сезон: ${sd.name}</b><br><small>Лиги обычные, но за каждую — праздничный скин или эффект. Главная награда — «${top.name}» за лигу «Неон».</small></div>`;

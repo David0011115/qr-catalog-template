@@ -6549,11 +6549,16 @@ body.menu-bg .menu-backdrop { display: block; }
     c_druzya: { name: 'Друзья', coins: 1000, c: '#ffd23f', sc: '#fff6a0' },
     c_help3d26: { name: 'HELP3D26', coins: 3000, c: '#22e6ff', sc: '#b8f7ff' }
   };
+  // HELP3D26 is available for one week, until 18 November 2026, 23:59:59 Astana time.
+  const PROMO_EXPIRY = {
+    c_help3d26: new Date('2026-11-18T23:59:59+05:00').getTime()
+  };
   const promoHash = t => { let x = 5381; for (const ch of t) x = (Math.imul(x, 33) ^ ch.charCodeAt(0)) >>> 0; return x; };
   function redeemPromo(raw) {
     const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!code) return { err: 'Введи промокод.' };
     const id = PROMO_CODES[promoHash(code)], b = id && PROMO_BADGES.find(x => x.id === id), cc = id && PROMO_COINS[id];
+    if (id && PROMO_EXPIRY[id] && Date.now() > PROMO_EXPIRY[id]) return { err: 'Срок действия этого промокода истёк.' };
     save.promo = save.promo || []; save.badges = save.badges || {};
     if (cc) {
       if (save.promo.includes(id)) return { err: 'Этот промокод уже активирован.' };
@@ -9965,7 +9970,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '217';
+const APP_VER = '218';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

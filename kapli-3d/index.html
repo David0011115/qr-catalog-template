@@ -19,45 +19,53 @@ img { max-width: 100%; }
 #appVer { margin: 8px 0 0; text-align: center; color: var(--muted); font-size: .78rem; }
 #iosHint { margin: 0; text-align: center; color: var(--muted); font-size: .85rem; }
 
-/* 2.2.0 — chat theme gear and live previews */
+/* 2.2.0 hotfix — illustrated backgrounds, visible layers and live preview */
 .chat-topline{display:flex;align-items:center;justify-content:center;position:relative;min-height:42px}
 .chat-topline h1{margin:0}
-.theme-gear{position:absolute;right:0;top:50%;transform:translateY(-50%);width:40px;height:40px;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;background:rgba(15,14,38,.78);color:var(--fg);font-size:1.25rem;display:grid;place-items:center;cursor:pointer}
+.theme-gear{position:absolute;right:0;top:50%;transform:translateY(-50%);width:40px;height:40px;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;background:rgba(15,14,38,.88);color:var(--fg);font-size:1.25rem;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 16px rgba(76,150,255,.18)}
 .theme-gear:active{transform:translateY(-50%) scale(.95)}
 .dm-head-wrap{display:flex;align-items:center;gap:8px}.dm-head-wrap .dm-head{flex:1;min-width:0}.dm-head-wrap .theme-gear{position:static;transform:none;flex:none}
-.theme-panel{width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(9,8,27,.94);box-shadow:0 12px 32px rgba(0,0,0,.28);display:grid;gap:10px}
+.theme-panel{width:100%;padding:12px;border:1px solid rgba(177,151,255,.34);border-radius:16px;background:rgba(8,7,24,.97);box-shadow:0 14px 36px rgba(0,0,0,.42),0 0 22px rgba(115,75,220,.12);display:grid;gap:10px;position:relative;z-index:5}
 .theme-panel[hidden]{display:none}
 .theme-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .theme-panel-head b{font-size:.9rem}
 .theme-panel-head button{width:auto;margin:0;padding:5px 9px}
 .theme-preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.theme-preview{min-width:0;margin:0;padding:5px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.035);color:var(--fg);cursor:pointer;text-align:center}
-.theme-preview[aria-pressed="true"]{border-color:#b58aff;box-shadow:0 0 0 1px #b58aff,0 0 14px rgba(181,138,255,.22)}
-.theme-thumb{display:block;height:62px;border-radius:7px;margin-bottom:5px;overflow:hidden;position:relative;background:#111}
-.theme-thumb:after{content:"";position:absolute;inset:-30%;background-image:radial-gradient(ellipse 4px 7px at 25px 28px,rgba(255,190,225,.9) 45%,transparent 70%),radial-gradient(1px 1px at 70px 55px,#fff 50%,transparent 70%);background-size:95px 95px;animation:chatThemeFall 12s linear infinite}
-.theme-preview[data-theme="default"] .theme-thumb{background:linear-gradient(135deg,#17172b,#292943)}
-.theme-preview[data-theme="cosmos"] .theme-thumb{background:radial-gradient(ellipse at 20% 35%,#7943c9,transparent 50%),radial-gradient(ellipse at 80% 70%,#1686a9,transparent 45%),linear-gradient(135deg,#08051d,#17102f)}
-.theme-preview[data-theme="aurora"] .theme-thumb{background:radial-gradient(ellipse at 25% 25%,#39dba8,transparent 45%),radial-gradient(ellipse at 80% 35%,#7770ff,transparent 50%),linear-gradient(160deg,#06151d,#101333)}
-.theme-preview[data-theme="sakura"] .theme-thumb{background:radial-gradient(ellipse at 75% 15%,#f45bab,transparent 45%),radial-gradient(ellipse at 18% 75%,#8b3b9e,transparent 48%),linear-gradient(145deg,#17091f,#321333)}
+.theme-preview{min-width:0;margin:0;padding:5px;border:1px solid rgba(190,180,255,.2);border-radius:11px;background:rgba(255,255,255,.045);color:var(--fg);cursor:pointer;text-align:center}
+.theme-preview[aria-pressed="true"]{border-color:#b58aff;box-shadow:0 0 0 1px #b58aff,0 0 16px rgba(181,138,255,.3)}
+.theme-thumb{display:block;height:72px;border-radius:7px;margin-bottom:5px;overflow:hidden;position:relative;background:#111;background-size:cover;background-position:center}
+.theme-thumb:after,.theme-live-preview:after{content:"";position:absolute;inset:-30%;pointer-events:none;background-image:radial-gradient(ellipse 4px 7px at 25px 28px,rgba(255,190,225,.9) 45%,transparent 70%),radial-gradient(1px 1px at 70px 55px,#fff 50%,transparent 70%);background-size:95px 95px;animation:chatThemeFall 12s linear infinite}
+.theme-preview[data-theme="default"] .theme-thumb{background-image:linear-gradient(135deg,#17172b,#292943)}
+.theme-preview[data-theme="cosmos"] .theme-thumb{background-image:linear-gradient(0deg,rgba(3,5,20,.12),rgba(3,5,20,.12)),url("chat-cosmos.svg")}
+.theme-preview[data-theme="aurora"] .theme-thumb{background-image:linear-gradient(0deg,rgba(3,5,20,.08),rgba(3,5,20,.08)),url("chat-aurora.svg")}
+.theme-preview[data-theme="sakura"] .theme-thumb{background-image:linear-gradient(0deg,rgba(3,5,20,.08),rgba(3,5,20,.08)),url("chat-sakura.svg")}
 .theme-preview span:last-child{font-size:.72rem;font-weight:650;display:block;white-space:nowrap}
+.theme-live-preview{height:116px;border-radius:11px;border:1px solid rgba(190,180,255,.24);overflow:hidden;position:relative;background:#111;background-size:cover;background-position:center;box-shadow:inset 0 0 35px rgba(0,0,0,.2)}
+.theme-live-preview:before{content:"Предпросмотр";position:absolute;left:9px;bottom:8px;z-index:1;padding:4px 8px;border-radius:20px;background:rgba(5,5,18,.72);color:#fff;font-size:.7rem;letter-spacing:.02em}
+.theme-live-preview[data-theme-preview="default"]{background-image:linear-gradient(135deg,#17172b,#292943)}
+.theme-live-preview[data-theme-preview="cosmos"]{background-image:url("chat-cosmos.svg")}
+.theme-live-preview[data-theme-preview="aurora"]{background-image:url("chat-aurora.svg")}
+.theme-live-preview[data-theme-preview="sakura"]{background-image:url("chat-sakura.svg")}
 .theme-panel-actions{display:flex;gap:8px}
 .theme-panel-actions button{flex:1;margin:0;padding:9px 8px;font-size:.8rem}
 .theme-panel-actions .theme-apply{background:linear-gradient(100deg,#8d55ed,#d34cae);color:white}
-.chat-card.chat-themed{isolation:isolate;overflow:hidden;background-color:#090817}
-.chat-card.chat-themed:before,.chat-card.chat-themed:after{content:"";position:absolute;inset:-15%;z-index:-1;pointer-events:none;opacity:0;transition:opacity .25s}
-.chat-card.chat-themed:before{background-size:220% 220%;animation:chatThemeDrift 24s ease-in-out infinite alternate}
-.chat-card.chat-themed:after{inset:-30%;background-repeat:repeat;background-size:180px 210px;animation:chatThemeFall 24s linear infinite}
-.chat-card[data-chat-theme="cosmos"]:before{opacity:1;background-image:radial-gradient(ellipse at 18% 25%,rgba(93,54,190,.42),transparent 38%),radial-gradient(ellipse at 80% 70%,rgba(15,126,190,.28),transparent 36%),radial-gradient(2px 2px at 20% 30%,#fff 45%,transparent 60%),radial-gradient(1px 1px at 75% 60%,#b8eaff 45%,transparent 60%),linear-gradient(135deg,#08051d,#11102e 48%,#090719)}
-.chat-card[data-chat-theme="cosmos"]:after{opacity:.55;background-image:radial-gradient(1.5px 1.5px at 22px 35px,#fff 45%,transparent 60%),radial-gradient(1px 1px at 108px 94px,#9beaff 45%,transparent 60%),radial-gradient(1px 1px at 154px 165px,#e9aaff 45%,transparent 60%)}
-.chat-card[data-chat-theme="aurora"]:before{opacity:1;background-image:radial-gradient(ellipse at 25% 20%,rgba(40,255,185,.42),transparent 38%),radial-gradient(ellipse at 75% 30%,rgba(95,85,255,.42),transparent 42%),radial-gradient(ellipse at 50% 75%,rgba(16,155,180,.3),transparent 48%),linear-gradient(160deg,#06151d,#101333 65%,#061018)}
-.chat-card[data-chat-theme="aurora"]:after{opacity:.22;background-image:linear-gradient(115deg,transparent 30%,rgba(78,255,204,.2) 48%,transparent 65%);background-size:220% 100%;animation:chatAuroraWave 13s ease-in-out infinite alternate}
-.chat-card[data-chat-theme="sakura"]:before{opacity:1;background-image:radial-gradient(ellipse at 75% 15%,rgba(255,91,190,.35),transparent 35%),radial-gradient(ellipse at 18% 70%,rgba(118,55,165,.3),transparent 42%),linear-gradient(145deg,#17091f,#27112f 55%,#100d27)}
-.chat-card[data-chat-theme="sakura"]:after{opacity:.62;background-image:radial-gradient(ellipse 5px 9px at 25px 28px,rgba(255,170,220,.95) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 115px 115px,rgba(255,115,190,.82) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 165px 55px,rgba(255,210,235,.85) 45%,transparent 70%);background-size:190px 190px}
-.chat-card[data-chat-theme] .chat-list{background:rgba(5,5,18,.24);border-radius:12px}
-@keyframes chatThemeDrift{0%{background-position:0% 0%}100%{background-position:100% 100%}}
-@keyframes chatThemeFall{0%{transform:translate3d(-2%,-8%,0)}100%{transform:translate3d(4%,10%,0)}}
-@keyframes chatAuroraWave{0%{background-position:0% 50%;transform:skewX(-8deg)}100%{background-position:100% 50%;transform:skewX(8deg)}}
-@media(prefers-reduced-motion:reduce){.chat-card.chat-themed:before,.chat-card.chat-themed:after,.theme-thumb:after{animation:none!important}}
+.chat-card.chat-themed{isolation:isolate;overflow:hidden;color:#fff;background-color:#080817;background-size:cover;background-position:center;background-repeat:no-repeat;position:relative}
+.chat-card.chat-themed:before,.chat-card.chat-themed:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
+.chat-card.chat-themed:before{z-index:0;background:linear-gradient(180deg,rgba(5,5,20,.12),rgba(5,5,20,.28));animation:chatSceneDrift 32s ease-in-out infinite alternate}
+.chat-card.chat-themed:after{z-index:0;inset:-25%;background-repeat:repeat;background-size:180px 210px;animation:chatThemeFall 22s linear infinite}
+.chat-card.chat-themed>*{position:relative;z-index:1}
+.chat-card[data-chat-theme="cosmos"]{background-image:linear-gradient(180deg,rgba(4,5,24,.28),rgba(4,5,24,.38)),url("chat-cosmos.svg")}
+.chat-card[data-chat-theme="aurora"]{background-image:linear-gradient(180deg,rgba(4,12,24,.24),rgba(4,12,24,.38)),url("chat-aurora.svg")}
+.chat-card[data-chat-theme="sakura"]{background-image:linear-gradient(180deg,rgba(20,7,27,.2),rgba(20,7,27,.4)),url("chat-sakura.svg")}
+.chat-card[data-chat-theme="cosmos"]:after{opacity:.38;background-image:radial-gradient(1.5px 1.5px at 22px 35px,#fff 45%,transparent 60%),radial-gradient(1px 1px at 108px 94px,#9beaff 45%,transparent 60%),radial-gradient(1px 1px at 154px 165px,#e9aaff 45%,transparent 60%)}
+.chat-card[data-chat-theme="aurora"]:before{opacity:1;background-image:linear-gradient(115deg,transparent 18%,rgba(78,255,204,.18) 38%,rgba(115,105,255,.14) 56%,transparent 76%);background-size:220% 100%;animation:chatAuroraWave 13s ease-in-out infinite alternate}
+.chat-card[data-chat-theme="sakura"]:after{opacity:.65;background-image:radial-gradient(ellipse 5px 9px at 25px 28px,rgba(255,170,220,.95) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 115px 115px,rgba(255,115,190,.82) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 165px 55px,rgba(255,210,235,.85) 45%,transparent 70%);background-size:190px 190px}
+.chat-card[data-chat-theme] .chat-list{background:rgba(5,5,18,.42);border-radius:12px}
+.chat-card[data-chat-theme] .chat-form{background:rgba(5,5,18,.56);border-radius:12px;padding:5px}
+@keyframes chatSceneDrift{0%{background-position:0% 0%,center}100%{background-position:100% 100%,center}}
+@keyframes chatThemeFall{0%{transform:translate3d(-2%,-12%,0)}100%{transform:translate3d(4%,14%,0)}}
+@keyframes chatAuroraWave{0%{background-position:0% 50%;transform:skewX(-7deg)}100%{background-position:100% 50%;transform:skewX(7deg)}}
+@media(prefers-reduced-motion:reduce){.chat-card.chat-themed:before,.chat-card.chat-themed:after,.theme-thumb:after,.theme-live-preview:after{animation:none!important}}
 </style>
 <title>Капли 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1566,6 +1574,7 @@ body.menu-bg .menu-backdrop { display: block; }
         <button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button>
         <button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button>
       </div>
+      <div class="theme-live-preview" id="chatThemeLivePreview" data-theme-preview="default" role="img" aria-label="Предпросмотр выбранного фона"></div>
       <div class="theme-panel-actions"><button class="btn ghost" id="chatThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="chatThemeApply" type="button">Применить</button></div>
     </section>
     <div class="tabs chat-tabs" id="chatTabs" role="tablist" aria-label="Чаты"><button class="tab" role="tab" data-ct="all" aria-selected="true">💬 Общий</button><button class="tab" role="tab" data-ct="clan" aria-selected="false">🛡 Клановый <i class="soon-tag">скоро</i></button></div>
@@ -1628,6 +1637,7 @@ body.menu-bg .menu-backdrop { display: block; }
         <button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button>
         <button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button>
       </div>
+      <div class="theme-live-preview" id="dmThemeLivePreview" data-theme-preview="default" role="img" aria-label="Предпросмотр выбранного фона"></div>
       <div class="theme-panel-actions"><button class="btn ghost" id="dmThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="dmThemeApply" type="button">Применить</button></div>
     </section>
     <ul class="chat-list" id="dmList" aria-live="polite"></ul>
@@ -10025,11 +10035,11 @@ body.menu-bg .menu-backdrop { display: block; }
     function readChatTheme(key) { let t='default'; try { t=localStorage.getItem(key)||'default'; } catch(e) {} return ['default','cosmos','aurora','sakura'].includes(t)?t:'default'; }
     function paintChatTheme(cardId, theme) { const card=$(cardId); if(!card)return; card.classList.toggle('chat-themed',theme!=='default'); card.dataset.chatTheme=theme; }
     function setupThemePicker(prefix, cardId, keyFn) {
-      const panel=$(prefix+'ThemePanel'), gear=$(prefix+'ThemeGear'), close=$(prefix+'ThemeClose'), reset=$(prefix+'ThemeReset'), apply=$(prefix+'ThemeApply');
+      const panel=$(prefix+'ThemePanel'), gear=$(prefix+'ThemeGear'), close=$(prefix+'ThemeClose'), reset=$(prefix+'ThemeReset'), apply=$(prefix+'ThemeApply'), live=$(prefix+'ThemeLivePreview');
       if(!panel||!gear||!close||!reset||!apply)return;
       let saved='default', pending='default';
       const choices=[...panel.querySelectorAll('[data-theme-choice]')];
-      const mark=()=>choices.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===pending)));
+      const mark=()=>{choices.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===pending)));if(live)live.dataset.themePreview=pending;};
       const open=()=>{saved=readChatTheme(keyFn());pending=saved;paintChatTheme(cardId,pending);mark();panel.hidden=false;gear.setAttribute('aria-expanded','true');};
       const dismiss=restore=>{if(restore)paintChatTheme(cardId,saved);panel.hidden=true;gear.setAttribute('aria-expanded','false');};
       gear.setAttribute('aria-expanded','false');gear.addEventListener('click',()=>panel.hidden?open():dismiss(true));
@@ -10172,7 +10182,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '221';
+const APP_VER = '222';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = '2.2.0'; // Public release version.
 if ('serviceWorker' in navigator) {

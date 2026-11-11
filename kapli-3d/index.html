@@ -18,6 +18,27 @@ body { margin: 0; font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
 img { max-width: 100%; }
 #appVer { margin: 8px 0 0; text-align: center; color: var(--muted); font-size: .78rem; }
 #iosHint { margin: 0; text-align: center; color: var(--muted); font-size: .85rem; }
+
+/* 2.2.0 — personal animated chat themes */
+.chat-theme-tools{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;margin:-4px 0 0}
+.chat-theme-tools label{font-size:.76rem;color:var(--muted)}
+.chat-theme-tools select{max-width:170px;min-width:130px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:rgba(8,7,24,.82);color:var(--fg);font:inherit;font-size:.78rem}
+.chat-theme-tools button{width:auto;margin:0;padding:7px 9px;font-size:.74rem}
+.chat-card.chat-themed{isolation:isolate;overflow:hidden;background-color:#090817}
+.chat-card.chat-themed::before,.chat-card.chat-themed::after{content:"";position:absolute;inset:-15%;z-index:-1;pointer-events:none;opacity:0;transition:opacity .25s}
+.chat-card.chat-themed::before{background-size:220% 220%;animation:chatThemeDrift 24s ease-in-out infinite alternate}
+.chat-card.chat-themed::after{inset:-30%;background-repeat:repeat;background-size:180px 210px;animation:chatThemeFall 24s linear infinite}
+.chat-card[data-chat-theme="cosmos"]::before{opacity:1;background-image:radial-gradient(ellipse at 18% 25%,rgba(93,54,190,.42),transparent 38%),radial-gradient(ellipse at 80% 70%,rgba(15,126,190,.28),transparent 36%),radial-gradient(2px 2px at 20% 30%,#fff 45%,transparent 60%),radial-gradient(1px 1px at 75% 60%,#b8eaff 45%,transparent 60%),linear-gradient(135deg,#08051d,#11102e 48%,#090719)}
+.chat-card[data-chat-theme="cosmos"]::after{opacity:.55;background-image:radial-gradient(1.5px 1.5px at 22px 35px,#fff 45%,transparent 60%),radial-gradient(1px 1px at 108px 94px,#9beaff 45%,transparent 60%),radial-gradient(1px 1px at 154px 165px,#e9aaff 45%,transparent 60%)}
+.chat-card[data-chat-theme="aurora"]::before{opacity:1;background-image:radial-gradient(ellipse at 25% 20%,rgba(40,255,185,.42),transparent 38%),radial-gradient(ellipse at 75% 30%,rgba(95,85,255,.42),transparent 42%),radial-gradient(ellipse at 50% 75%,rgba(16,155,180,.3),transparent 48%),linear-gradient(160deg,#06151d,#101333 65%,#061018)}
+.chat-card[data-chat-theme="aurora"]::after{opacity:.22;background-image:linear-gradient(115deg,transparent 30%,rgba(78,255,204,.2) 48%,transparent 65%);background-size:220% 100%;animation:chatAuroraWave 13s ease-in-out infinite alternate}
+.chat-card[data-chat-theme="sakura"]::before{opacity:1;background-image:radial-gradient(ellipse at 75% 15%,rgba(255,91,190,.35),transparent 35%),radial-gradient(ellipse at 18% 70%,rgba(118,55,165,.3),transparent 42%),linear-gradient(145deg,#17091f,#27112f 55%,#100d27)}
+.chat-card[data-chat-theme="sakura"]::after{opacity:.62;background-image:radial-gradient(ellipse 5px 9px at 25px 28px,rgba(255,170,220,.95) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 115px 115px,rgba(255,115,190,.82) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 165px 55px,rgba(255,210,235,.85) 45%,transparent 70%);background-size:190px 190px}
+.chat-card[data-chat-theme="cosmos"] .chat-list,.chat-card[data-chat-theme="aurora"] .chat-list,.chat-card[data-chat-theme="sakura"] .chat-list{background:rgba(5,5,18,.24);border-radius:12px}
+@keyframes chatThemeDrift{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+@keyframes chatThemeFall{0%{transform:translate3d(-2%,-8%,0)}100%{transform:translate3d(4%,10%,0)}}
+@keyframes chatAuroraWave{0%{background-position:0% 50%;transform:skewX(-8deg)}100%{background-position:100% 50%;transform:skewX(8deg)}}
+@media(prefers-reduced-motion:reduce){.chat-card.chat-themed::before,.chat-card.chat-themed::after{animation:none!important}}
 </style>
 <title>Капли 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1519,6 +1540,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
   <div class="card chat-card" id="chatCard" hidden>
     <h1>Чат</h1>
+    <div class="chat-theme-tools"><label for="chatThemeSelect">Оформление</label><select id="chatThemeSelect" aria-label="Фон общего чата"><option value="default">Стандартный</option><option value="cosmos">Космос</option><option value="aurora">Аврора</option><option value="sakura">Сакура</option></select><button class="btn ghost" id="chatThemeReset" type="button">Сбросить</button></div>
     <div class="tabs chat-tabs" id="chatTabs" role="tablist" aria-label="Чаты"><button class="tab" role="tab" data-ct="all" aria-selected="true">💬 Общий</button><button class="tab" role="tab" data-ct="clan" aria-selected="false">🛡 Клановый <i class="soon-tag">скоро</i></button></div>
     <div class="chat-clan" id="chatClan" hidden><b>🛡 Клановый чат появится вместе с кланами</b><p>Здесь будут общаться только участники твоего клана, а глава сможет закреплять объявления.</p><button class="btn ghost" type="button" id="chatClanMore">Что будет в кланах</button></div>
     <ul class="chat-list" id="chatList" aria-live="polite"></ul>
@@ -1572,6 +1594,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
   <div class="card chat-card dm-card" id="dmCard" hidden>
     <div class="dm-head" id="dmHead"></div>
+    <div class="chat-theme-tools"><label for="dmThemeSelect">Оформление</label><select id="dmThemeSelect" aria-label="Фон этой переписки"><option value="default">Стандартный</option><option value="cosmos">Космос</option><option value="aurora">Аврора</option><option value="sakura">Сакура</option></select><button class="btn ghost" id="dmThemeReset" type="button">Сбросить</button></div>
     <ul class="chat-list" id="dmList" aria-live="polite"></ul>
     <form class="chat-form" id="dmForm" novalidate><input id="dmIn" maxlength="300" placeholder="Сообщение…" autocomplete="off" aria-label="Личное сообщение"><button class="btn" id="dmSend" type="submit" aria-label="Отправить">➤</button></form>
     <p class="hint" id="dmNote"></p>
@@ -9758,6 +9781,7 @@ body.menu-bg .menu-backdrop { display: block; }
       (newer ? data : data.reverse()).forEach(m => chatAdd(m));
     }
     async function openChat() {
+      applyChatTheme('chatCard', 'chatThemeSelect', 'kapli3d-chat-theme');
       { const t = $('chatTabs').querySelector('[data-ct="all"]'); if (t && t.getAttribute('aria-selected') !== 'true') t.click(); }
       showCard('chatCard'); const list = $('chatList'); list.innerHTML = skelHTML(6); chatIds.clear(); chatLast = 0;
       $('chatNote').textContent = sess ? 'Не больше одного сообщения в 3 секунды. Будь вежлив: ⚑ — пожаловаться.' : 'Читать могут все. Чтобы писать, войди в аккаунт.';
@@ -9962,6 +9986,23 @@ body.menu-bg .menu-backdrop { display: block; }
       await frAct(b.dataset.fa, nick); if (box.isConnected && !$('pcModal').hidden) pcSocial(nick, box);
     }
 
+    // Personal animated backgrounds: saved locally on this device; DM choice is per conversation.
+    function applyChatTheme(cardId, selectId, key) {
+      let theme = 'default'; try { theme = localStorage.getItem(key) || 'default'; } catch (e) {}
+      if (!['default','cosmos','aurora','sakura'].includes(theme)) theme = 'default';
+      const card = $(cardId), select = $(selectId); if (!card || !select) return;
+      card.classList.toggle('chat-themed', theme !== 'default');
+      card.dataset.chatTheme = theme; select.value = theme;
+    }
+    function bindChatTheme(selectId, resetId, cardId, keyFn) {
+      const select = $(selectId), reset = $(resetId); if (!select || !reset) return;
+      const save = theme => { const key = keyFn(); try { if (theme === 'default') localStorage.removeItem(key); else localStorage.setItem(key, theme); } catch (e) {} applyChatTheme(cardId, selectId, key); };
+      select.addEventListener('change', () => save(select.value));
+      reset.addEventListener('click', () => { select.value = 'default'; save('default'); });
+    }
+    bindChatTheme('chatThemeSelect','chatThemeReset','chatCard',() => 'kapli3d-chat-theme');
+    bindChatTheme('dmThemeSelect','dmThemeReset','dmCard',() => 'kapli3d-dm-theme:' + encodeURIComponent((FR.dm || '').toLowerCase()));
+
     // ---- one private conversation ----
     function dmAdd(m) {
       const list = $('dmList'); if (list.querySelector(`[data-dm="${m.id}"]`)) return;
@@ -9983,6 +10024,7 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     async function openDm(nick) {
       FR.dm = nick; FR.dmLast = 0; showCard('dmCard');
+      applyChatTheme('dmCard', 'dmThemeSelect', 'kapli3d-dm-theme:' + encodeURIComponent(nick.toLowerCase()));
       const f = FR.list.find(x => x.nickname.toLowerCase() === nick.toLowerCase());
       $('dmHead').innerHTML = `<button type="button" class="ch-who" data-pc="${escHtml(nick)}" data-who="${escHtml(nick)}" aria-label="Профиль игрока ${escHtml(nick)}">${whoHTML(nick, null)}</button>` +
         (f ? `<small class="fr-st ${f.online ? 'on' : ''}">${f.online ? '● в игре' : agoTxt(f.last_seen)}</small>` : '');
@@ -10091,9 +10133,9 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '220';
+const APP_VER = '221';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
-const APP_LABEL = '2.1.9'; // Display version requested; APP_VER remains internal for update management.
+const APP_LABEL = '2.2.0'; // Public release version.
 if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;

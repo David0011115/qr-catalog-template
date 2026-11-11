@@ -1307,6 +1307,12 @@ body.menu-bg .menu-backdrop { display: block; }
 @keyframes rlTurn { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
 @media (orientation: portrait) and (hover: none) and (pointer: coarse) { .rotate-lock { display: grid; } }
 @media (prefers-reduced-motion: reduce) { .rl-phone { animation: none; transform: rotate(-90deg); } }
+
+.privacy-consent{margin:10px 0 14px;font-size:13px;line-height:1.45;color:var(--muted)}
+.privacy-consent label{display:flex;align-items:flex-start;gap:9px}
+.privacy-consent input{flex:0 0 auto;margin:2px 0 0;accent-color:var(--accent)}
+.privacy-consent a,.privacy-settings-link{color:var(--accent);text-underline-offset:3px}
+.privacy-settings-link{display:block;width:max-content;max-width:100%;margin:0 auto 14px;font-size:13px}
 </style>
 </head>
 <body>
@@ -1424,6 +1430,9 @@ body.menu-bg .menu-backdrop { display: block; }
         <label id="fNickWrap" hidden>Ник<input id="fNick" maxlength="16" autocomplete="nickname" autocapitalize="off" spellcheck="false"><small id="fNickHint">3–16 символов: латиница или кириллица (не вместе), цифры и «_». Изменить ник потом нельзя.</small></label>
         <label>Email<input id="fEmail" type="email" autocomplete="email" autocapitalize="off" spellcheck="false"></label>
         <label id="fPassWrap">Пароль<input id="fPass" type="password" autocomplete="current-password"><small id="fPassHint" hidden>Не короче 6 символов</small></label>
+        <div class="privacy-consent" id="privacyConsentWrap" hidden>
+          <label><input type="checkbox" id="privacyConsent" required><span>Я ознакомился(ась) и согласен(на) с <a href="privacy.html" target="_blank" rel="noopener noreferrer">Политикой конфиденциальности</a>.</span></label>
+        </div>
         <p class="acct-msg" id="acctMsg" aria-live="polite"></p>
         <button class="btn" id="acctSubmit" type="submit">Войти</button>
         <button class="link-btn" id="acctForgot" type="button">Забыли пароль?</button>
@@ -1943,6 +1952,7 @@ body.menu-bg .menu-backdrop { display: block; }
         <div class="promo-row"><input type="text" id="promoIn" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="КОД"><button class="btn" id="promoBtn">Активировать</button></div>
         <small class="reset-note" id="promoMsg" aria-live="polite">Каждый промокод активируется один раз.</small></div>
     </div></details>
+    <a class="privacy-settings-link" href="privacy.html" target="_blank" rel="noopener noreferrer">Политика конфиденциальности</a>
     <button class="btn" id="setBack">Готово</button>
   </div>
 </div>
@@ -9441,6 +9451,8 @@ body.menu-bg .menu-backdrop { display: block; }
       av = v; msg('');
       document.querySelectorAll('[data-av]').forEach(b => b.setAttribute('aria-checked', b.dataset.av === (v === 'forgot' ? 'login' : v)));
       $('fNickWrap').hidden = v !== 'reg'; $('fPassWrap').hidden = v === 'forgot'; $('fPassHint').hidden = v !== 'reg';
+      $('privacyConsentWrap').hidden = v !== 'reg'; $('privacyConsent').required = v === 'reg';
+      if (v !== 'reg') $('privacyConsent').checked = false;
       $('fPass').autocomplete = v === 'reg' ? 'new-password' : 'current-password';
       $('acctSubmit').textContent = v === 'reg' ? 'Создать аккаунт' : v === 'forgot' ? 'Отправить письмо для сброса' : 'Войти';
       $('acctForgot').textContent = v === 'forgot' ? '← Назад ко входу' : 'Забыли пароль?'; $('acctForgot').hidden = v === 'reg';
@@ -9488,6 +9500,7 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     $('acctForm').addEventListener('submit', async e => {
       e.preventDefault(); if (busy) return;
+      if (av === 'reg' && !$('privacyConsent').checked) return msg('Для регистрации необходимо принять Политику конфиденциальности');
       const email = $('fEmail').value.trim(), pass = $('fPass').value, nick = $('fNick').value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return msg('Введи корректный Email');
       if (av !== 'forgot' && pass.length < 6) return msg('Пароль — не короче 6 символов');
@@ -9501,7 +9514,12 @@ body.menu-bg .menu-backdrop { display: block; }
         } else if (av === 'reg') {
           const chk = await sb.rpc('kapli_nick_status', { p_nick: nick });
           if (!chk.error && chk.data !== 'ok') throw { message: NICK_ST[chk.data] || 'Ник недопустим', nick: true };
-          const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { nickname: nick } } });
+          const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: {
+            nickname: nick,
+            privacy_policy_accepted: true,
+            privacy_policy_version: '1.0',
+            privacy_policy_accepted_at: new Date().toISOString()
+          } } });
           if (error) throw error;
           if (data.user && data.user.identities && !data.user.identities.length) throw { message: 'already registered' };
           if (!data.session) { msg('Аккаунт создан. Подтверди Email по ссылке из письма и войди', true); setView('login'); }

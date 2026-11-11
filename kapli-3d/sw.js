@@ -1,5 +1,5 @@
 /* Капли 3D: offline mode. Own cache name, never touches the catalog's caches on the same site. */
-const CACHE = "kapli3d-v252";
+const CACHE = "kapli3d-v253";
 const CORE = ["./", "index.html", "three.min.js", "supabase.js", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "chat-cosmos.svg", "chat-aurora.svg", "chat-sakura.svg"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {
@@ -13,6 +13,17 @@ self.addEventListener("fetch", e => {
     return;
   }
   if (url.origin !== location.origin) return;
+  // opening the app: the saved copy is shown at once if the network is slow (over 2.5 s); the fresh one is still saved for next time
+  if (e.request.mode === "navigate") {
+    const net = fetch(e.request, { cache: "no-cache" }).then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put("index.html", copy)); } return r; });
+    e.waitUntil(net.catch(() => {}));
+    e.respondWith(new Promise(done => {
+      let settled = false; const finish = r => { if (!settled && r) { settled = true; done(r); } };
+      const t = setTimeout(() => caches.match("index.html").then(finish), 2500);
+      net.then(r => { clearTimeout(t); finish(r); }).catch(() => { clearTimeout(t); caches.match("index.html").then(r => finish(r || Response.error())); });
+    }));
+    return;
+  }
   e.respondWith(
     fetch(e.request, { cache: "no-cache" }).then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return r; })
       .catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match("index.html")))

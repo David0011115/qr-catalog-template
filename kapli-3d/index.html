@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#05040f">
 <meta name="description" content="Неоновая 3D-арена: капли, деление, боссы, режимы и испытания.">
 <link rel="manifest" href="manifest.json">
@@ -57,7 +57,11 @@ img { max-width: 100%; }
 .chat-card[data-chat-theme="aurora"]{background-image:url("chat-aurora.svg")}
 .chat-card[data-chat-theme="sakura"]{background-image:url("chat-sakura.svg")}
 .chat-card[data-chat-theme] .chat-list{background:none;border-radius:12px}
+.chat-card.chat-themed .chat-list li,.chat-card.chat-themed .chat-list li button{text-shadow:0 0 3px #000,0 1px 3px #000,0 0 9px rgba(0,0,0,.85)}   /* names and time stay readable over a bright scene */
 .chat-card[data-chat-theme] .chat-form{background:none;border-radius:12px;padding:5px}
+/* The chat scene runs as its own SVG document: the script paces it and holds it still while the list scrolls */
+.chat-card.chat-themed>.chat-bg{position:absolute;inset:0;width:100%;height:100%;max-width:none;z-index:0;border:0;display:block;pointer-events:none;will-change:transform}
+.chat-card.chat-bg-on{background-image:none!important}
 @keyframes chatSceneDrift{0%{background-position:0% 0%,center}100%{background-position:100% 100%,center}}
 @keyframes chatThemeFall{0%{transform:translate3d(-2%,-12%,0)}100%{transform:translate3d(4%,14%,0)}}
 @keyframes chatAuroraWave{0%{background-position:0% 50%;transform:skewX(-7deg)}100%{background-position:100% 50%;transform:skewX(7deg)}}
@@ -242,6 +246,7 @@ img { max-width: 100%; }
 }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
+html { touch-action: pan-x pan-y; }   /* no pinch or double-tap zoom anywhere: a zoomed page cuts the menu off and lets it be dragged */
 body {
   background: var(--bg); color: var(--fg); font-family: var(--body);
   overflow: hidden; user-select: none; -webkit-user-select: none;
@@ -11628,7 +11633,43 @@ body.menu-bg .menu-backdrop { display: block; }
 
     // Theme chooser: preview is temporary until Apply; settings are local to this device.
     function readChatTheme(key) { let t='default'; try { t=localStorage.getItem(key)||'default'; } catch(e) {} return ['default','cosmos','aurora','sakura','drops'].includes(t)?t:'default'; }
-    function paintChatTheme(cardId, theme) { const card=$(cardId); if(!card)return; card.classList.toggle('chat-themed',theme!=='default'); card.dataset.chatTheme=theme; }
+    function paintChatTheme(cardId, theme) { const card=$(cardId); if(!card)return; card.classList.toggle('chat-themed',theme!=='default'); card.dataset.chatTheme=theme; syncChatBg(card, theme); }
+    // Chat scene: an <object> with the theme's SVG, so its animation can be driven from here.
+    // It advances at most CHAT_BG_FPS times a second, stands still while the chat scrolls, and stops when the chat is off screen.
+    // Until the document loads (or if it cannot be scripted) the CSS background of the card shows the same scene.
+    const CHAT_BG_FPS = 30, CHAT_BG_HOLD = 220;
+    const chatBgSeen = new Set(); let chatBgRaf = 0, chatBgLast = 0, chatBgHold = 0;
+    const chatBgIO = 'IntersectionObserver' in window ? new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? chatBgSeen.add(e.target) : chatBgSeen.delete(e.target)); chatBgKick(); }) : null;
+    function chatBgKick() { if (!chatBgRaf && chatBgSeen.size && !document.hidden) { chatBgLast = 0; chatBgRaf = requestAnimationFrame(chatBgTick); } }
+    function chatBgTick(now) {
+      chatBgRaf = 0; if (!chatBgSeen.size || document.hidden) return;
+      chatBgRaf = requestAnimationFrame(chatBgTick);
+      if (!chatBgLast) { chatBgLast = now; return; }
+      if (now < chatBgHold) { chatBgLast = now; return; }
+      const dt = now - chatBgLast; if (dt < 1000 / CHAT_BG_FPS - 2) return;
+      chatBgLast = now;
+      chatBgSeen.forEach(o => { if (!o._svg) return; o._t += Math.min(dt, 120) / 1000; try { o._svg.setCurrentTime(o._t); } catch (e) {} });
+    }
+    document.addEventListener('visibilitychange', chatBgKick);
+    document.addEventListener('gesturestart', e => e.preventDefault());   // iOS ignores user-scalable=no; this stops its pinch zoom
+    function dropChatBg(card, o) { if (chatBgIO) chatBgIO.unobserve(o); chatBgSeen.delete(o); o.remove(); card.classList.remove('chat-bg-on'); }
+    function syncChatBg(card, theme) {
+      let o = card.querySelector(':scope > .chat-bg');
+      if (o && o.dataset.theme === theme) return;
+      if (o) dropChatBg(card, o);
+      if (theme === 'default' || !chatBgIO) return;
+      o = document.createElement('object'); o.className = 'chat-bg'; o.type = 'image/svg+xml'; o.dataset.theme = theme; o.tabIndex = -1; o.setAttribute('aria-hidden', 'true');
+      o.addEventListener('load', () => {
+        let svg = null; try { svg = o.contentDocument && o.contentDocument.documentElement; } catch (e) {}
+        if (!o.isConnected) return;
+        if (!svg || !svg.pauseAnimations || !svg.setCurrentTime) { dropChatBg(card, o); return; }
+        svg.pauseAnimations(); o._svg = svg; o._t = 0; card.classList.add('chat-bg-on'); chatBgIO.observe(o);
+      });
+      o.addEventListener('error', () => { if (o.isConnected) dropChatBg(card, o); });
+      o.data = 'chat-' + theme + '.svg';
+      card.prepend(o);
+      if (!card._chatBgScroll) { card._chatBgScroll = true; card.addEventListener('scroll', () => { chatBgHold = performance.now() + CHAT_BG_HOLD; }, { capture: true, passive: true }); }
+    }
     let activeThemePreview = null;
     const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', drops: '💧 Капли', default: 'Стандартный фон' };
     const themeFull = $('themeFullPreview'), themeFullScene = $('themeFullScene'), themeFullTitle = $('themeFullTitle');

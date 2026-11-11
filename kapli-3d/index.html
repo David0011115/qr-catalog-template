@@ -1448,6 +1448,14 @@ body.menu-bg .menu-backdrop { display: block; }
         <div id="auDelConfirm" class="confirm" hidden><p><b>Точно удалить?</b> Отменить нельзя.</p><button class="btn" id="auDelYes" type="button">Да, удалить</button><button class="btn ghost" id="auDelNo" type="button">Отмена</button></div>
         <button class="btn ghost danger" id="auDelete" type="button">Удалить аккаунт</button></div></details>
     </div>
+    <div id="acctPrivacy" class="pane" hidden>
+      <h2>Обновление политики конфиденциальности</h2>
+      <p class="hint">Чтобы продолжить использование облачного аккаунта и сетевых функций, ознакомься с актуальной <a href="privacy.html" target="_blank" rel="noopener noreferrer">Политикой конфиденциальности (версия 1.0)</a> и подтверди согласие.</p>
+      <div class="privacy-consent"><label><input type="checkbox" id="privacyExistingConsent"><span>Я ознакомился(ась) и согласен(на) с Политикой конфиденциальности.</span></label></div>
+      <p class="acct-msg" id="privacyExistingMsg" aria-live="polite"></p>
+      <button class="btn" id="privacyExistingAccept" type="button">Принять и продолжить</button>
+      <button class="btn ghost" id="privacyExistingLogout" type="button">Выйти из аккаунта</button>
+    </div>
     <div id="acctRecover" class="pane" hidden>
       <form class="acct-form" id="recForm" novalidate>
         <p class="hint">Придумай новый пароль для аккаунта.</p>
@@ -9244,7 +9252,21 @@ body.menu-bg .menu-backdrop { display: block; }
     const META_KEY = SAVE_KEY + '-cloud', APP_SAVE_VER = 170;
     const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'race', 'rbuild', 'hardcore', 'royale'];
     const NICK_RE = [/^[A-Za-z0-9_]{3,16}$/, /^[А-Яа-яЁё0-9_]{3,16}$/];
-    let sb = null, sess = null, canPush = false, pushing = false, pushTimer = null, retryMs = 0, sync = 'guest', pending = null, recoverPending = false, splashOn = true;
+    let sb = null, sess = null, canPush = false, pushing = false, pushTimer = null, retryMs = 0, sync = 'guest', pending = null, recoverPending = false, splashOn = true, privacyPending = false;
+    async function checkPrivacyConsent() {
+      if (!sess) return false;
+      const { data, error } = await withTimeout(sb.rpc('kapli_has_privacy_consent'), 8000);
+      if (error) throw error;
+      privacyPending = data !== true;
+      if (privacyPending) canPush = false;
+      return !privacyPending;
+    }
+    async function acceptPrivacyConsent() {
+      if (!sess) throw new Error('Сначала войди в аккаунт');
+      const { error } = await withTimeout(sb.rpc('kapli_accept_privacy_policy'), 8000);
+      if (error) throw error;
+      privacyPending = false;
+    }
     let meta = {}; try { meta = JSON.parse(localStorage.getItem(META_KEY)) || {}; } catch (e) {}
     meta.recSent = meta.recSent || {};
     const saveMeta = () => { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} };
@@ -9318,6 +9340,7 @@ body.menu-bg .menu-backdrop { display: block; }
     }
     // decides what to do with the local and the cloud save; never merges and never overwrites silently
     async function resolveCloud() {
+      if (privacyPending) { canPush = false; return 'warn'; }
       canPush = false; pending = null;
       const uid = sess.user.id, row = await fetchCloud(), lj = localJson(), lh = hashStr(lj);
       const mine = meta.uid === uid, dirty = mine && lh !== meta.hash;
@@ -9362,7 +9385,7 @@ body.menu-bg .menu-backdrop { display: block; }
     function schedulePush(ms) { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, ms); }
     async function pushNow() {
       clearTimeout(pushTimer);
-      if (!sb || !sess || !canPush || pushing) return;
+      if (!sb || !sess || privacyPending || !canPush || pushing) return;
       const json = localJson(); if (!json) return;
       const h = hashStr(json); if (h === meta.hash) { setSync('ok'); return; }
       pushing = true; setSync('busy');
@@ -9389,7 +9412,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
     // ---------- records ----------
     async function submitRecord(m, score) {
-      if (!sb || !sess || !RANK_MODES.includes(m) || !(score > 0)) return false;
+      if (!sb || !sess || privacyPending || !RANK_MODES.includes(m) || !(score > 0)) return false;
       const { error } = await sb.rpc('kapli_submit_record', { p_mode: m, p_score: Math.round(score) }).then(r => r, e => ({ error: e }));
       if (!error) { meta.recSent[m] = score; saveMeta(); return true; }
       return false;
@@ -9411,9 +9434,13 @@ body.menu-bg .menu-backdrop { display: block; }
           const { data } = await withTimeout(sb.auth.getSession(), 8000); sess = data.session;
           if (sess) {
             await loadProfile().catch(() => setUser(sess.user, meta.nick)); step('acct', 'ok');
-            step('save', 'run', 'Загрузка сохранения…');
-            try { result = await resolveCloud(); step('save', result === 'warn' ? 'warn' : 'ok'); if (result === 'ok') syncBests(); }
-            catch (e) { step('save', 'warn', 'Облако не ответило — играем с сохранением на устройстве'); setSync('err'); }
+            let consentOk = false;
+            try { consentOk = await checkPrivacyConsent(); } catch (e) { privacyPending = true; canPush = false; }
+            if (consentOk) {
+              step('save', 'run', 'Загрузка сохранения…');
+              try { result = await resolveCloud(); step('save', result === 'warn' ? 'warn' : 'ok'); if (result === 'ok') syncBests(); }
+              catch (e) { step('save', 'warn', 'Облако не ответило — прогресс сохранён на устройстве'); setSync('err'); }
+            } else { step('save', 'warn', 'Нужно подтвердить актуальную Политику конфиденциальности'); }
           } else { step('acct', 'skip'); step('save', 'ok', 'Гость — сохранение на устройстве'); }
         } catch (e) { step('net', 'warn'); step('acct', 'skip'); step('save', 'ok', 'Сервер недоступен — играем с сохранением на устройстве'); setSync('off'); }
       }
@@ -9440,7 +9467,7 @@ body.menu-bg .menu-backdrop { display: block; }
       await sleep(fast ? 150 : 600);
       sp.classList.add('out'); splashOn = false;
       setTimeout(() => { sp.hidden = true; }, 650);
-      if (pending) showChoice(); else if (recoverPending) openAccount('recover');
+      if (pending) showChoice(); else if (recoverPending) openAccount('recover'); else if (privacyPending) openAccount('privacy');
       $('startBtn').focus();
     }
 
@@ -9461,11 +9488,11 @@ body.menu-bg .menu-backdrop { display: block; }
     function openAccount(view, ret) {
       if (ret) acctRet = ret; else if ($('accountCard').hidden) acctRet = 'menuCard';
       showCard('accountCard');
-      const rec = view === 'recover' && sess;
-      $('acctRecover').hidden = !rec; $('acctGuest').hidden = !!(sess || rec); $('acctUser').hidden = !sess || rec;
+      const rec = view === 'recover' && sess, privacy = view === 'privacy' && sess;
+      $('acctPrivacy').hidden = !privacy; $('acctRecover').hidden = !rec; $('acctGuest').hidden = !!(sess || rec || privacy); $('acctUser').hidden = !sess || rec || privacy;
       if (sess && !rec) { $('auNick').textContent = Net.nick || 'Без ника'; $('auId').textContent = Net.shortId; $('auEmail').textContent = Net.email || ''; renderChip(); $('auDelConfirm').hidden = true; $('auDelete').hidden = false; }
       if (!sess) setView(view === 'reg' ? 'reg' : 'login');
-      if (rec) { recoverPending = false; $('recPass').focus(); } else $('acctBack').focus();
+      if (privacy) $('privacyExistingAccept').focus(); else if (rec) { recoverPending = false; $('recPass').focus(); } else $('acctBack').focus();
     }
     const ERR = [
       [/invalid login credentials|invalid_credentials/i, 'Неверный Email или пароль'],
@@ -9493,6 +9520,9 @@ body.menu-bg .menu-backdrop { display: block; }
     $('acctForgot').addEventListener('click', () => setView(av === 'forgot' ? 'login' : 'forgot'));
     async function afterSignIn() {
       await loadProfile().catch(() => setUser(sess.user, meta.nick));
+      try {
+        if (!(await checkPrivacyConsent())) { openAccount('privacy'); renderAll(); return; }
+      } catch (e) { privacyPending = true; canPush = false; openAccount('privacy'); $('privacyExistingMsg').textContent = 'Не удалось проверить согласие. Проверь интернет и попробуй ещё раз.'; renderAll(); return; }
       openAccount();
       try { const r = await resolveCloud(); if (r === 'choice') showChoice(); else if (r === 'ok') syncBests(); }
       catch (e) { setSync('err'); toast('Облако не ответило — прогресс сохранён на устройстве'); }
@@ -9523,7 +9553,7 @@ body.menu-bg .menu-backdrop { display: block; }
           if (error) throw error;
           if (data.user && data.user.identities && !data.user.identities.length) throw { message: 'already registered' };
           if (!data.session) { msg('Аккаунт создан. Подтверди Email по ссылке из письма и войди', true); setView('login'); }
-          else { sess = data.session; meta.nick = nick; saveMeta(); $('fPass').value = ''; await afterSignIn(); toast(`Аккаунт «${nick}» создан`); }
+          else { sess = data.session; meta.nick = nick; saveMeta(); $('fPass').value = ''; await acceptPrivacyConsent(); await afterSignIn(); toast(`Аккаунт «${nick}» создан`); }
         } else {
           const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
           if (error) throw error;
@@ -9531,6 +9561,25 @@ body.menu-bg .menu-backdrop { display: block; }
         }
       } catch (er) { msg(er && er.nick ? er.message : errText(er)); }
       finally { busy = false; $('acctSubmit').disabled = false; }
+    });
+    $('privacyExistingAccept').addEventListener('click', async () => {
+      const check = $('privacyExistingConsent'), out = $('privacyExistingMsg'), btn = $('privacyExistingAccept');
+      if (!check.checked) { out.textContent = 'Поставь отметку о согласии, чтобы продолжить.'; out.className = 'acct-msg err'; return; }
+      btn.disabled = true; out.textContent = 'Сохраняем подтверждение…'; out.className = 'acct-msg';
+      try {
+        await acceptPrivacyConsent();
+        out.textContent = 'Согласие сохранено.'; out.className = 'acct-msg ok';
+        await loadProfile().catch(() => setUser(sess.user, meta.nick));
+        openAccount();
+        try { const r = await resolveCloud(); if (r === 'choice') showChoice(); else if (r === 'ok') syncBests(); }
+        catch (e) { setSync('err'); toast('Облако не ответило — прогресс остался на устройстве'); }
+        renderAll(); toast('Политика конфиденциальности принята');
+      } catch (e) { out.textContent = errText(e); out.className = 'acct-msg err'; }
+      finally { btn.disabled = false; }
+    });
+    $('privacyExistingLogout').addEventListener('click', async () => {
+      try { await sb.auth.signOut(); } catch (e) { try { await sb.auth.signOut({ scope: 'local' }); } catch (er) {} }
+      sess = null; privacyPending = false; canPush = false; meta = { recSent: {} }; saveMeta(); setUser(null); openAccount(); renderAll();
     });
     $('recForm').addEventListener('submit', async e => {
       e.preventDefault(); if (busy) return; const p = $('recPass').value;
@@ -9575,7 +9624,7 @@ body.menu-bg .menu-backdrop { display: block; }
       return scCache;
     }
     function pushShowcase() {
-      if (!sess) return; clearTimeout(scTimer);
+      if (!sess || privacyPending) return; clearTimeout(scTimer);
       scTimer = setTimeout(async () => { const d = myShowcase(), js = JSON.stringify(d); if (js === scLast) return;
         try { await ensureClient(); const { error } = await withTimeout(sb.rpc('kapli_set_showcase', { p: d }), 9000); if (!error) scLast = js; } catch (e) {} }, 1500);
     }

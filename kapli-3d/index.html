@@ -1721,6 +1721,8 @@ body.menu-bg .menu-backdrop { display: block; }
  #leagueCard.league-screen{display:flex!important;max-width:760px!important;max-height:calc(100dvh - 20px)!important;overflow-y:auto!important}
 }
 @media(prefers-reduced-motion:reduce){#leagueCard .league-progress-fill{transition:none}}
+/* Keep the league panel hidden until the existing navigation opens it. */
+#leagueCard[hidden]{display:none!important}
 </style>
 
 </head>

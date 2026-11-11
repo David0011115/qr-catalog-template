@@ -8826,7 +8826,7 @@ body.menu-bg .menu-backdrop { display: block; }
   // the lowest tier still closed for this level (null = all open)
   const chaosLockTier = lv => { for (const t of [4, 5]) if (lv < CHAOS_CFG.tierLevel[t]) return t; return null; };
   function chaosRewardItems(ti, seasonId = save.chaos.id) {
-    const items = [{ kind:'coins', name:`${CHAOS_CFG.coins[ti]} ◆`, description:'Монеты за итоговую ступень Хаос-сезона.' }];
+    const items = [{ kind:'coins', name:`${CHAOS_CFG.coins[ti]} ◆`, description:'Монеты за итоговую ступень Хаос-сезона.' }, { kind:'chaosBadge', name:`Значок сезона · ${ctName(ti)}`, description:'Сезонный значок Хаос-лиги. Его форма и цвет соответствуют достигнутой ступени.', tier:ti, seasonId }];
     if (ti >= CHAOS_CFG.topTier) {
       const skin = ensureChaosSkin(seasonId);
       if (skin) items.push({ ...skin, kind:'skin', description:'Эксклюзивный скин Хаос-лиги за достижение ступени «Разлом» или выше.' });

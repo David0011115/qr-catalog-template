@@ -1815,6 +1815,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: каждый 4-й сундук за раунды приносит ещё и сундук осколков. Каждая серия — своя папка со своей темой.</p>
     <div class="ws-top"><div><h2 class="section-title">Твои осколки</h2><div class="ws-bal" id="wsBal"></div></div>
     <div><h2 class="section-title">Обмен: 10 осколков → 1 следующей редкости</h2><div class="ws-ex" id="wsEx"></div></div></div>
+    <p class="hint ws-luck">✨ Удачная ковка: с шансом 10% вернётся четверть потраченных осколков</p>
     <div id="wsList"></div>
     <button class="btn ghost" id="wsBack" type="button">Назад</button>
   </div>
@@ -2193,6 +2194,7 @@ body.menu-bg .menu-backdrop { display: block; }
         <li>Предметы разбиты на <b>серии</b>, у каждой своя тема. Первая серия — «Хронос»: часовой механизм, латунь, шестерни, циферблаты.</li>
         <li><b>Осколки</b> бывают четырёх редкостей: обычные, редкие, эпические и легендарные. Их дают сундуки осколков: каждый 4-й сундук за раунды приносит ещё и сундук осколков (обычный сундук при этом остаётся). Внутри 20–30 осколков: 60% обычные, 27% редкие, 10% эпические, 3% легендарные.</li>
         <li>Цена предмета — осколки его редкости плюс добавка младшими осколками, поэтому в дело идут все виды.</li>
+        <li><b>Удачная ковка</b>: предмет создаётся всегда, а с шансом 10% мастерская ещё и возвращает четверть потраченных осколков каждого вида.</li>
         <li><b>Обмен</b>: 10 осколков → 1 осколок следующей редкости. Это дороже, чем выбить из сундука, — обмен нужен для излишков.</li>
         <li>Способности из мастерской не улучшаются и работают только в обычных режимах — в рейтинге и Хаос-лиге их нет. Ставятся в билд: «Коллекция» → «Способности».</li>
         <li>Сундуки за раунды и сундуки осколков можно открывать по 5 штук за раз — кнопка «×5».</li>
@@ -8568,6 +8570,7 @@ body.menu-bg .menu-backdrop { display: block; }
     return CR_ABIL.map(a => ({ id: a.id, name: a.name, rar: 'legendary', sub: `${a.desc}. Перезарядка ${a.cd} с`, pv: `<span class="ab-big" style="--ac:${a.color}">${a.icon}</span>`, own: save.abil.owned.includes(a.id), give: () => save.abil.owned.push(a.id), info: 'abil:' + a.id }));
   }
   const priceText = id => CR_PRICE[id].map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}" title="${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}">${shardIco(r, 16)}${n}</span>`).join(' ');
+  const WS_LUCK = .1; // «Удачная ковка» chance
   const canPay = id => CR_PRICE[id].every(([r, n]) => save.shards[r] >= n);
   const wsOwned = id => save.skins.includes(id) || save.fxOwned.includes(id) || save.pets.includes(id) || save.decor.includes(id) || (save.pbg || []).includes(id) || save.abil.owned.includes(id);
   function renderWorkshop() {
@@ -8590,8 +8593,14 @@ body.menu-bg .menu-backdrop { display: block; }
     if (ex) { const k = ex.dataset.wsex, nx = RAR_KEYS[RAR_KEYS.indexOf(k) + 1]; if (save.shards[k] < 10) return; save.shards[k] -= 10; save.shards[nx]++; persist(); renderWorkshop(); const b = document.querySelector(`[data-wsex="${k}"]`); if (b && !b.disabled) b.focus(); return; }
     const cb = e.target.closest('[data-wscraft]');
     if (cb) { e.stopPropagation(); const [cat, id] = cb.dataset.wscraft.split(':'), it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) return;
-      CR_PRICE[id].forEach(([r, n]) => { save.shards[r] -= n; }); it.give(); persist(); Sound.play('chest'); buzz(30);
-      toast(`Создано: «${it.name}»${cat === 'abil' ? ' — поставь в билд: Коллекция → Способности' : ''}`); renderWorkshop(); renderAll(); return; }
+      CR_PRICE[id].forEach(([r, n]) => { save.shards[r] -= n; }); it.give();
+      // «Удачная ковка»: with WS_LUCK chance a quarter of every spent shard kind comes back (never a loss, only a bonus)
+      const back = Math.random() < WS_LUCK ? CR_PRICE[id].map(([r, n]) => [r, Math.floor(n / 4)]).filter(([, n]) => n > 0) : [];
+      back.forEach(([r, n]) => { save.shards[r] += n; }); save.wsLucky = (save.wsLucky || 0) + (back.length ? 1 : 0);
+      persist(); Sound.play('chest'); buzz(back.length ? [30, 60, 30] : 30);
+      toast(`Создано: «${it.name}»${cat === 'abil' ? ' — поставь в билд: Коллекция → Способности' : ''}`);
+      if (back.length) setTimeout(() => toast(`✨ Удачная ковка! Вернулось: ${back.map(([r, n]) => `${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}`).join(', ')}`), 1600);
+      renderWorkshop(); renderAll(); return; }
     const t = e.target.closest('[data-info]'); if (t && !e.target.closest('button')) openItem(t.dataset.info);
   }, true);
   $('wsCard').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-info]')) { e.preventDefault(); openItem(e.target.dataset.info); } });

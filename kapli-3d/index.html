@@ -2054,6 +2054,48 @@ body.menu-bg .menu-backdrop { display: block; }
 }
 </style>
 
+<style id="chat-layout-v3">
+/* «Капли» theme */
+.theme-preview[data-theme="drops"] .theme-thumb{background-image:url("chat-drops.svg")}
+.theme-live-preview[data-theme-preview="drops"],.theme-full-scene[data-theme-preview="drops"]{background-image:url("chat-drops.svg")}
+.chat-card[data-chat-theme="drops"]{background-image:linear-gradient(180deg,rgba(8,4,28,.22),rgba(8,4,28,.36)),url("chat-drops.svg")}
+.theme-preview[data-theme="drops"] .theme-thumb:after{opacity:0}
+/* Theme picker: four thumbnails in one row, the eye sits on the thumbnail's corner (no separate column) */
+.theme-preview-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px}
+.theme-option{position:relative;display:block!important}
+.theme-option .theme-preview{width:100%;height:auto}
+.theme-option .theme-eye{position:absolute;top:9px;right:9px;z-index:2;width:30px;min-height:0;height:30px;padding:0;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(6,5,22,.66);backdrop-filter:blur(4px);font-size:.95rem;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.theme-panel{padding:8px 10px;gap:7px}
+.theme-panel-head{gap:6px}
+.theme-panel-head b{margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.theme-panel-head .theme-panel-actions{display:flex;gap:6px;flex:none}
+.theme-panel-head .theme-panel-actions button{flex:none;padding:6px 12px;font-size:.78rem;min-height:32px}
+.theme-panel-head #chatThemeClose,.theme-panel-head #dmThemeClose{min-height:32px}
+.theme-thumb{height:64px}
+@media(max-width:520px){.theme-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.theme-panel-head b{display:none}}
+/* Full preview: flip themes with arrows, like the arena preview */
+.theme-full-actions .theme-full-nav{width:42px;height:42px;flex:none;font-size:1.5rem;line-height:1;padding:0;display:grid;place-items:center}
+.theme-full-n{font-size:.78rem;color:#d2c8f7;min-width:38px;text-align:center}
+.theme-full-actions #themeFullNext{margin-right:auto}
+/* Chat title row: title, tabs and gear share one line in landscape */
+#chatCard .chat-topline{flex-wrap:wrap!important;flex:0 0 auto!important;min-height:0!important;row-gap:8px;box-sizing:border-box}
+#chatCard .chat-topline h1{flex:1 0 100%;min-height:40px;display:flex!important;align-items:center;justify-content:center}
+#chatCard .chat-topline .chat-tabs{order:2;flex:1 0 100%}
+#chatCard #chatThemeGear{top:2px!important;transform:none!important}
+@media(orientation:landscape){
+  #chatCard{padding-top:8px!important;gap:8px!important}
+  #chatCard > .card-back{top:8px}
+  #chatCard .chat-topline{flex-wrap:nowrap!important;gap:12px;min-height:38px!important;padding-left:28px;padding-right:0}
+  #chatCard .chat-topline h1{flex:none;width:auto;min-height:0;padding:0 0 0 6px!important;font-size:1.25rem!important}
+  #chatCard .chat-topline .chat-tabs{order:0;flex:1 1 auto;width:auto!important;max-width:520px;margin:0 auto!important}
+  #chatCard .chat-topline .chat-tabs .tab{min-height:34px;padding:5px 10px;font-size:.84rem}
+  #chatCard #chatThemeGear{position:static!important;transform:none!important;flex:none;width:38px;height:38px}
+  #chatCard #chatNote{display:none}
+  #chatCard .chat-form{padding:4px}
+  #chatCard .theme-thumb{height:54px}
+  #chatCard #chatThemePanel{max-height:none}
+}
+</style>
 </head>
 <body>
 
@@ -2208,18 +2250,16 @@ body.menu-bg .menu-backdrop { display: block; }
   </div>
 
   <div class="card chat-card" id="chatCard" hidden>
-    <div class="chat-topline"><h1>Чат</h1><button class="theme-gear" id="chatThemeGear" type="button" aria-label="Оформление чата" title="Оформление">⚙</button></div>
+    <div class="chat-topline"><h1>Чат</h1><div class="tabs chat-tabs" id="chatTabs" role="tablist" aria-label="Чаты"><button class="tab" role="tab" data-ct="all" aria-selected="true">💬 Общий</button><button class="tab" role="tab" data-ct="clan" aria-selected="false">🛡 Клановый <i class="soon-tag">скоро</i></button></div><button class="theme-gear" id="chatThemeGear" type="button" aria-label="Оформление чата" title="Оформление">⚙</button></div>
     <section class="theme-panel" id="chatThemePanel" aria-label="Оформление общего чата" hidden>
-      <div class="theme-panel-head"><b>Выбери оформление</b><button class="btn ghost" id="chatThemeClose" type="button" aria-label="Закрыть">✕</button></div>
+      <div class="theme-panel-head"><b>Выбери оформление</b><span class="theme-panel-actions"><button class="btn ghost" id="chatThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="chatThemeApply" type="button">Применить</button></span><button class="btn ghost" id="chatThemeClose" type="button" aria-label="Закрыть">✕</button></div>
       <div class="theme-preview-grid">
         <div class="theme-option"><button class="theme-preview" data-theme-choice="cosmos" data-theme="cosmos" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌌 Космос</span></button><button class="theme-eye" data-theme-eye="cosmos" type="button" aria-label="Полный просмотр: Космос" title="Полный просмотр">👁</button></div>
         <div class="theme-option"><button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button><button class="theme-eye" data-theme-eye="aurora" type="button" aria-label="Полный просмотр: Аврора" title="Полный просмотр">👁</button></div>
         <div class="theme-option"><button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button><button class="theme-eye" data-theme-eye="sakura" type="button" aria-label="Полный просмотр: Сакура" title="Полный просмотр">👁</button></div>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="drops" data-theme="drops" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>💧 Капли</span></button><button class="theme-eye" data-theme-eye="drops" type="button" aria-label="Полный просмотр: Капли" title="Полный просмотр">👁</button></div>
       </div>
-      
-      <div class="theme-panel-actions"><button class="btn ghost" id="chatThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="chatThemeApply" type="button">Применить</button></div>
     </section>
-    <div class="tabs chat-tabs" id="chatTabs" role="tablist" aria-label="Чаты"><button class="tab" role="tab" data-ct="all" aria-selected="true">💬 Общий</button><button class="tab" role="tab" data-ct="clan" aria-selected="false">🛡 Клановый <i class="soon-tag">скоро</i></button></div>
     <div class="chat-clan" id="chatClan" hidden><b>🛡 Клановый чат появится вместе с кланами</b><p>Здесь будут общаться только участники твоего клана, а глава сможет закреплять объявления.</p><button class="btn ghost" type="button" id="chatClanMore">Что будет в кланах</button></div>
     <ul class="chat-list" id="chatList" aria-live="polite"></ul>
     <div class="chat-emoji-picker" id="chatEmojiPicker" aria-label="Смайлики" hidden>
@@ -2273,14 +2313,13 @@ body.menu-bg .menu-backdrop { display: block; }
   <div class="card chat-card dm-card" id="dmCard" hidden>
     <div class="dm-head-wrap"><div class="dm-head" id="dmHead"></div><button class="theme-gear" id="dmThemeGear" type="button" aria-label="Оформление переписки" title="Оформление" aria-expanded="false">⚙</button></div>
     <section class="theme-panel" id="dmThemePanel" aria-label="Оформление личной переписки" hidden>
-      <div class="theme-panel-head"><b>Оформление переписки</b><button class="btn ghost" id="dmThemeClose" type="button" aria-label="Закрыть">✕</button></div>
+      <div class="theme-panel-head"><b>Оформление переписки</b><span class="theme-panel-actions"><button class="btn ghost" id="dmThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="dmThemeApply" type="button">Применить</button></span><button class="btn ghost" id="dmThemeClose" type="button" aria-label="Закрыть">✕</button></div>
       <div class="theme-preview-grid">
         <div class="theme-option"><button class="theme-preview" data-theme-choice="cosmos" data-theme="cosmos" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌌 Космос</span></button><button class="theme-eye" data-theme-eye="cosmos" type="button" aria-label="Полный просмотр: Космос" title="Полный просмотр">👁</button></div>
         <div class="theme-option"><button class="theme-preview" data-theme-choice="aurora" data-theme="aurora" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌠 Аврора</span></button><button class="theme-eye" data-theme-eye="aurora" type="button" aria-label="Полный просмотр: Аврора" title="Полный просмотр">👁</button></div>
         <div class="theme-option"><button class="theme-preview" data-theme-choice="sakura" data-theme="sakura" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>🌸 Сакура</span></button><button class="theme-eye" data-theme-eye="sakura" type="button" aria-label="Полный просмотр: Сакура" title="Полный просмотр">👁</button></div>
+        <div class="theme-option"><button class="theme-preview" data-theme-choice="drops" data-theme="drops" type="button" aria-pressed="false"><span class="theme-thumb"></span><span>💧 Капли</span></button><button class="theme-eye" data-theme-eye="drops" type="button" aria-label="Полный просмотр: Капли" title="Полный просмотр">👁</button></div>
       </div>
-      
-      <div class="theme-panel-actions"><button class="btn ghost" id="dmThemeReset" type="button">Сбросить</button><button class="btn theme-apply" id="dmThemeApply" type="button">Применить</button></div>
     </section>
     <ul class="chat-list" id="dmList" aria-live="polite"></ul>
     <form class="chat-form" id="dmForm" novalidate><input id="dmIn" maxlength="300" placeholder="Сообщение…" autocomplete="off" aria-label="Личное сообщение"><button class="btn" id="dmSend" type="submit" aria-label="Отправить">➤</button></form>
@@ -2777,7 +2816,7 @@ body.menu-bg .menu-backdrop { display: block; }
       <div class="theme-demo-msg"><b>Капля</b><span>Анимация работает прямо здесь.</span></div>
     </div>
   </div>
-  <div class="theme-full-actions"><button class="btn ghost" id="themeFullBackBottom" type="button">Назад</button><button class="btn" id="themeFullApply" type="button">Применить фон</button></div>
+  <div class="theme-full-actions"><button class="apv-nav theme-full-nav" id="themeFullPrev" type="button" aria-label="Предыдущий фон">‹</button><span class="theme-full-n" id="themeFullN">1 / 4</span><button class="apv-nav theme-full-nav" id="themeFullNext" type="button" aria-label="Следующий фон">›</button><button class="btn ghost" id="themeFullBackBottom" type="button">Назад</button><button class="btn" id="themeFullApply" type="button">Применить фон</button></div>
 </div>
 <div class="modal" id="itemModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="imName">
@@ -2948,7 +2987,7 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'shield', name: 'Щит',               sh: 'Щит',     icon: '⛨', color: '#9fe8ff', price: 15000, cd: 25, dur: 6,  desc: '6 с тебя нельзя съесть; кто попробует — отлетает и теряет 5% массы. Шипы всё равно рвут крупную каплю' },
     { id: 'pulse',  name: 'Насыщение',         sh: 'Насыщ.',  icon: '✦', color: '#ffd23f', price: 12000, cd: 24, dur: 5,  desc: 'На 5 с обычная еда даёт вдвое больше массы' },
     { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 18, dist: 24, desc: 'Мгновенный перенос вперёд на увеличенную дистанцию; на старом месте на 1 с остаётся тень, за которой гонятся боты' },
-    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 15, radius: 36, desc: 'Волна подавляет подвижность соперников на 15 с: снижает скорость и не даёт использовать резкие ускорения' },
+    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 15, radius: 36, desc: 'Волна вдвое замедляет соперников в радиусе на 15 с — рывки и ускорения тоже работают вполсилы' },
     { id: 'cloak',  name: 'Маскировка',        sh: 'Маскир.', icon: '◌', color: '#c9c2ff', price: 30000, cd: 28, dur: 4,  desc: '4 с боты тебя не видят; первая капля, съеденная из маскировки, даёт +15% массы' },
     { id: 'push',   name: 'Отражение',         sh: 'Отраж.',  icon: '⤺', color: '#ff9a3d', price: 22000, cd: 22, radius: 29, force: 100, stun: .6, desc: 'Мощно отбрасывает соперников в радиусе действия; крупные капли отбрасываются с повышенной силой' },
     { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 24, dur: 4, size: .3, desc: '4 с: на 30% меньше, на 25% быстрее, шипы не режут. Масса та же, есть можно только еду' },
@@ -7080,7 +7119,7 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 184, ver: '2.1.4', date: '9 ноября', title: 'Обновление способностей', kind: 'update',
       lead: 'Переработаны «Насыщение», «Импульс» и «Отражение»: способности получили новые эффекты и визуальные обозначения.', items: [
       '«Магнит» заменён на «Насыщение»: в течение 5 секунд обычная еда даёт вдвое больше массы.',
-      '«Волна» переименована в «Импульс»: круговая волна замедляет и слегка отталкивает ближайших соперников.',
+      '«Волна» переименована в «Импульс»: круговая волна вдвое замедляет соперников в радиусе на 15 секунд.',
       '«Толчок» переименован в «Отражение»: увеличены радиус и сила отбрасывания соперников.'
     ] },
     { id: 183, ver: '2.1.3', date: '9 ноября', title: 'Корректировка баланса массы', kind: 'patch',
@@ -10628,7 +10667,7 @@ body.menu-bg .menu-backdrop { display: block; }
       { const t = $('chatTabs').querySelector('[data-ct="all"]'); if (t && t.getAttribute('aria-selected') !== 'true') t.click(); }
       showCard('chatCard'); const list = $('chatList'); list.innerHTML = skelHTML(6); chatIds.clear(); chatLast = 0;
       $('chatNote').textContent = sess ? 'Не больше одного сообщения в 3 секунды. Будь вежлив: ⚑ — пожаловаться.' : 'Читать могут все. Чтобы писать, войди в аккаунт.';
-      $('chatIn').disabled = $('chatSend').disabled = $('chatEmojiBtn').disabled = !sess; $('chatEmojiPicker').hidden = true; $('chatIn').placeholder = sess ? 'Сообщение…' : 'Войди в аккаунт, чтобы писать';
+      $('chatIn').disabled = $('chatSend').disabled = $('chatEmojiBtn').disabled = !sess; $('chatEmojiPicker').hidden = true; $('chatIn').placeholder = sess ? 'Сообщение… (не чаще раза в 3 с)' : 'Войди в аккаунт, чтобы писать';
       try {
         await ensureClient(); await chatFetch(false); list.querySelectorAll('.skel, .sr-only').forEach(x => x.remove());
         if (!list.children.length) list.innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep');
@@ -10830,17 +10869,22 @@ body.menu-bg .menu-backdrop { display: block; }
     }
 
     // Theme chooser: preview is temporary until Apply; settings are local to this device.
-    function readChatTheme(key) { let t='default'; try { t=localStorage.getItem(key)||'default'; } catch(e) {} return ['default','cosmos','aurora','sakura'].includes(t)?t:'default'; }
+    function readChatTheme(key) { let t='default'; try { t=localStorage.getItem(key)||'default'; } catch(e) {} return ['default','cosmos','aurora','sakura','drops'].includes(t)?t:'default'; }
     function paintChatTheme(cardId, theme) { const card=$(cardId); if(!card)return; card.classList.toggle('chat-themed',theme!=='default'); card.dataset.chatTheme=theme; }
     let activeThemePreview = null;
-    const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', default: 'Стандартный фон' };
+    const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', drops: '💧 Капли', default: 'Стандартный фон' };
     const themeFull = $('themeFullPreview'), themeFullScene = $('themeFullScene'), themeFullTitle = $('themeFullTitle');
     const themeFullApply = $('themeFullApply'), themeFullBack = $('themeFullBack'), themeFullBackBottom = $('themeFullBackBottom');
+    const THEME_ORDER = ['cosmos', 'aurora', 'sakura', 'drops'];
+    const flipThemeFull = d => { if (!activeThemePreview) return; const i = THEME_ORDER.indexOf(activeThemePreview.pending); openThemeFullPreview(activeThemePreview, THEME_ORDER[(i + d + THEME_ORDER.length) % THEME_ORDER.length]); };
+    $('themeFullPrev').addEventListener('click', () => flipThemeFull(-1));
+    $('themeFullNext').addEventListener('click', () => flipThemeFull(1));
     function closeThemeFullPreview() { if (!activeThemePreview) return; themeFull.hidden = true; activeThemePreview = null; }
     function openThemeFullPreview(ctx, theme) {
       activeThemePreview = { ...ctx, pending: theme };
       themeFullScene.dataset.themePreview = theme;
       themeFullTitle.textContent = themeNames[theme] || 'Оформление';
+      const i = THEME_ORDER.indexOf(theme); $('themeFullN').textContent = i < 0 ? '' : `${i + 1} / ${THEME_ORDER.length}`;
       themeFull.hidden = false;
       themeFullApply.focus();
     }
@@ -10856,7 +10900,7 @@ body.menu-bg .menu-backdrop { display: block; }
     themeFullBack.addEventListener('click', closeThemeFullPreview);
     themeFullBackBottom.addEventListener('click', closeThemeFullPreview);
     themeFullApply.addEventListener('click', () => { if (activeThemePreview) commitTheme(activeThemePreview, activeThemePreview.pending); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && activeThemePreview) closeThemeFullPreview(); });
+    document.addEventListener('keydown', e => { if (!activeThemePreview) return; if (e.key === 'Escape') closeThemeFullPreview(); else if (e.key === 'ArrowLeft') flipThemeFull(-1); else if (e.key === 'ArrowRight') flipThemeFull(1); });
     function setupThemePicker(prefix, cardId, keyFn) {
       const panel=$(prefix+'ThemePanel'), gear=$(prefix+'ThemeGear'), close=$(prefix+'ThemeClose'), reset=$(prefix+'ThemeReset'), apply=$(prefix+'ThemeApply');
       if(!panel||!gear||!close||!reset||!apply)return;

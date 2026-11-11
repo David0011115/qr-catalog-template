@@ -2157,6 +2157,12 @@ body.menu-bg .menu-backdrop { display: block; }
 @keyframes emoSpin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 @keyframes emoCup{0%{transform:translateY(60%) scale(.3);opacity:0}55%{transform:translateY(-14%) rotate(-8deg) scale(1.1);opacity:1}100%{transform:none}}
 @keyframes emoConf{0%{opacity:0;transform:translateY(20%) scale(.4)}35%{opacity:1;transform:translateY(-10%) scale(1.15)}100%{opacity:1;transform:none}}
+.emo-play[data-emote=":cake:"] .emo .e-body{animation:emoSquish .7s cubic-bezier(.3,1.6,.5,1) both,emoSway 1.4s ease-in-out .5s both}
+.emo-play[data-emote=":cake:"] .emo .e-flame{animation:emoFlame .35s ease-in-out .3s 5 alternate both}
+.emo-play[data-emote=":cake:"] .emo .e-candles{animation:emoCandles .8s cubic-bezier(.3,1.5,.5,1) both}
+.emo-play[data-emote=":cake:"] .emo .e-eyes{animation:none}
+@keyframes emoFlame{0%{transform:scale(1,1) rotate(-6deg)}100%{transform:scale(.8,1.25) rotate(6deg)}}
+@keyframes emoCandles{0%{transform:translateY(60%);opacity:0}60%{transform:translateY(-8%);opacity:1}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.emo-play .emo *{animation:none!important}}
 
 .chat-emoji-option .emo-w{display:block;width:46px;height:46px;pointer-events:none}
@@ -2166,6 +2172,47 @@ body.menu-bg .menu-backdrop { display: block; }
 .chat-list li.emo-only,.dm-list li.emo-only{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
 .chat-list li.emo-only p .chat-inline-emoji,.dm-list li.emo-only p .chat-inline-emoji{width:3.8em;height:3.8em;vertical-align:middle}
 .chat-emoji-option .emo-w .emo{filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+</style>
+<style id="gift-boxes-v1">
+/* holiday gift box: ribbon and bow on the chest, items fly out one by one */
+.chest.gift{background:linear-gradient(180deg,var(--cb1),var(--cb2))}
+.chest.gift:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:16px;margin-left:-8px;background:linear-gradient(90deg,#fff3a8,var(--cl1),#b8740a);box-shadow:0 0 10px rgba(255,210,63,.6)}
+.chest.gift .lock{top:-34px;width:34px;height:22px;margin-left:-17px;background:none;box-shadow:none;transition:transform .5s}
+.chest.gift .lock:before,.chest.gift .lock:after{content:"";position:absolute;top:2px;width:17px;height:16px;border:4px solid var(--cl1);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;box-shadow:0 0 8px var(--cl1)}
+.chest.gift .lock:before{left:-2px;transform:rotate(-24deg)}.chest.gift .lock:after{right:-2px;transform:rotate(24deg)}
+.chest.gift .lid:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:16px;margin-left:-8px;background:linear-gradient(90deg,#fff3a8,var(--cl1),#b8740a)}
+.chest.gift.open .lid{transform:translateY(-46px) rotate(-22deg)}
+.chest.gift.open .lock{transform:translateY(-30px) rotate(-30deg)}
+.chest-list li.gift-row{background:linear-gradient(100deg,color-mix(in srgb,var(--cb1) 26%,var(--row)),var(--row) 70%);border:1px solid color-mix(in srgb,var(--cb1) 60%,transparent);box-shadow:0 0 16px -6px var(--cb1)}
+.chest-list li.gift-row .ci{background:linear-gradient(90deg,var(--cb1) 40%,var(--cl1) 40% 60%,var(--cb1) 60%);animation:giftPulse 1.6s ease-in-out infinite}
+@keyframes giftPulse{50%{transform:scale(1.12) rotate(-6deg)}}
+.reveal{position:relative;overflow:hidden}
+.gift-confetti{position:absolute;inset:0;pointer-events:none}
+.gift-confetti i{position:absolute;left:var(--x);top:-10px;width:6px;height:10px;border-radius:2px;background:var(--c);animation:giftFall 2.2s ease-in var(--d) both}
+@keyframes giftFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(340px) rotate(540deg);opacity:0}}
+.gift-items{list-style:none;margin:4px 0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%}
+.gift-items li{flex:0 0 116px;box-sizing:border-box;display:grid;justify-items:center;align-content:start;gap:3px;padding:10px 6px;overflow-wrap:anywhere;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);animation:giftItem .55s cubic-bezier(.3,1.5,.5,1) calc(.15s + var(--i) * .18s) both}
+.gift-items .gi{width:58px;height:58px;display:grid;place-items:center}
+.gift-items .gi svg{width:58px;height:58px}
+.gift-items .gi .gift-emo{display:block;width:54px;height:54px}
+.gift-items .gi .gift-bg{width:92px;height:52px;border-radius:8px;object-fit:cover}
+.gift-items .gi .gift-ach{font-size:2.4rem;line-height:1}
+.gift-items b{font-family:inherit;font-size:.8rem!important;font-weight:700;line-height:1.2}
+.gift-items small{font-size:.7rem;line-height:1.25}
+@keyframes giftItem{0%{transform:translateY(24px) scale(.6);opacity:0}100%{transform:none;opacity:1}}
+.bday-card .btn.ghost{margin-top:0}
+.gift-box-pic{position:relative;width:70px;height:56px;margin:4px auto 2px}
+.gift-box-pic .gb-body{position:absolute;left:6px;right:6px;bottom:0;height:38px;border-radius:8px;background:linear-gradient(90deg,var(--gc1,#ff4fd8) 42%,var(--gc2,#ffd23f) 42% 58%,var(--gc1,#ff4fd8) 58%);box-shadow:0 0 18px var(--gc1,#ff4fd8)}
+.gift-box-pic .gb-lid{position:absolute;left:0;right:0;top:6px;height:14px;border-radius:6px;background:linear-gradient(90deg,var(--gc1,#ff4fd8) 42%,var(--gc2,#ffd23f) 42% 58%,var(--gc1,#ff4fd8) 58%);animation:gbLid 1.6s ease-in-out infinite;filter:brightness(1.15)}
+@keyframes gbLid{0%,100%{transform:none}50%{transform:translateY(-6px) rotate(-5deg)}}
+@media(prefers-reduced-motion:reduce){.gift-confetti i,.gift-items li,.gift-box-pic .gb-lid,.chest-list li.gift-row .ci{animation:none!important}}
+@media(orientation:landscape) and (max-height:500px){
+  .bday-card{max-width:600px;display:grid;grid-template-columns:150px minmax(0,1fr);grid-template-areas:"cake title" "cake text" "box btns" "box later";column-gap:20px;row-gap:8px;text-align:left;align-items:center;padding:18px 22px}
+  .bday-card>*{min-width:0}.bday-cake{grid-area:cake;font-size:4.2rem;justify-self:center}.bday-test-label{display:none}
+  .bday-card h2{grid-area:title;font-size:1.3rem}.bday-card p#birthdayText{grid-area:text;font-size:.88rem;line-height:1.4}
+  .gift-box-pic{grid-area:box;margin:0 auto}#birthdayClose{grid-area:btns;margin:0}#birthdayLater{grid-area:later;margin:0}
+}
+.bday-card>*{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -2186,7 +2233,8 @@ body.menu-bg .menu-backdrop { display: block; }
     ':king:':  { n: 'Король',  c: ['#e0dbff', '#6d5bff', '#24127a'] },
     ':yum:':   { n: 'Ням',     c: ['#f1ffcc', '#b9ff3d', '#4a7300'] },
     ':splat:': { n: 'Съели',   c: ['#e6f7ff', '#5cc8ff', '#13508a'] },
-    ':gg:':    { n: 'GG',      c: ['#cffff7', '#2ec4b6', '#0a5a52'] }
+    ':gg:':    { n: 'GG',      c: ['#cffff7', '#2ec4b6', '#0a5a52'] },
+    ':cake:':  { n: 'Торт', c: ['#fff0f8', '#ff9ad5', '#a3346f'], lock: true }   // birthday gift box: only owners can send it
   };
   const ORDER = Object.keys(E);
   const id = k => 'emo' + k.replace(/:/g, '');
@@ -2230,6 +2278,13 @@ body.menu-bg .menu-backdrop { display: block; }
     ':yum:': () => happyEyes + blush() + `<path class="e-mouth" d="M24 44Q32 53 40 44Q32 47 24 44Z" fill="${INK}"/><path class="e-tongue" d="M35 47Q40 50 41.5 45.5" fill="none" stroke="#ff5f8f" stroke-width="3" stroke-linecap="round"/>`
       + '<g class="e-food"><circle cx="50" cy="45" r="4.6" fill="#ffd23f" stroke="#fff6c8" stroke-width="1"/><circle cx="48.6" cy="43.6" r="1.3" fill="#fff"/></g>',
     ':splat:': () => '',   // custom body below
+    ':cake:': () => '<path d="M14.5 29C21 25.5 43 25.5 49.5 29L50.5 32.5Q48 37.5 45 32.6Q42 38.5 38 32.8Q34.5 38.8 30.5 32.8Q27 38.5 23.5 32.6Q20 37.5 17 32.6Q15 34 13.6 32.5Z" fill="#fffaf2" stroke="#e7b8d2" stroke-width=".8"/>'
+      + '<g class="e-sprinkles"><rect x="20" y="44" width="3.4" height="1.4" rx=".7" fill="#22e6ff" transform="rotate(30 21.7 44.7)"/><rect x="41" y="45" width="3.4" height="1.4" rx=".7" fill="#ffd23f" transform="rotate(-25 42.7 45.7)"/><rect x="30" y="54" width="3.4" height="1.4" rx=".7" fill="#3dffa2" transform="rotate(15 31.7 54.7)"/><rect x="46" y="38" width="3" height="1.3" rx=".6" fill="#b26bff"/><rect x="15" y="39" width="3" height="1.3" rx=".6" fill="#ff4f7a"/></g>'
+      + `<g class="e-eyes" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"><path d="M22 41Q25.5 37 29 41"/><path d="M35 41Q38.5 37 42 41"/></g>` + '<ellipse cx="19" cy="46" rx="3.2" ry="2" fill="#ff5f9e" opacity=".5"/><ellipse cx="45" cy="46" rx="3.2" ry="2" fill="#ff5f9e" opacity=".5"/>'
+      + line('M26.5 47.5Q32 53 37.5 47.5')
+      + '<g class="e-candles"><rect x="23.3" y="15" width="3.4" height="11" rx="1" fill="#22e6ff" stroke="#0a6f8a" stroke-width=".6"/><rect x="30.3" y="11" width="3.4" height="15" rx="1" fill="#ffd23f" stroke="#8f6200" stroke-width=".6"/><rect x="37.3" y="15" width="3.4" height="11" rx="1" fill="#3dffa2" stroke="#0d6e44" stroke-width=".6"/>'
+      + '<path class="e-flame" d="M25 7.5C26.8 10 27.4 11.6 25 14 22.6 11.6 23.2 10 25 7.5Z" fill="#ffb020"/><path class="e-flame" d="M32 3.5C33.8 6 34.4 7.6 32 10 29.6 7.6 30.2 6 32 3.5Z" fill="#ffb020"/><path class="e-flame" d="M39 7.5C40.8 10 41.4 11.6 39 14 36.6 11.6 37.2 10 39 7.5Z" fill="#ffb020"/>'
+      + '<circle cx="25" cy="11.6" r="1" fill="#fff6c8"/><circle cx="32" cy="7.6" r="1" fill="#fff6c8"/><circle cx="39" cy="11.6" r="1" fill="#fff6c8"/></g>',
     ':gg:': () => happyEyes + blush(.4) + line('M26 44Q32 49 38 44')
       + '<g class="e-cup"><path d="M41 38H55V41Q55 49 48 50Q41 49 41 41Z" fill="url(#emoGold)" stroke="#8a5200" stroke-width="1.1"/><path d="M41 40.5Q37 40.5 37.5 44Q38.2 47 41.6 46.5M55 40.5Q59 40.5 58.5 44Q57.8 47 54.4 46.5" fill="none" stroke="#ffc21f" stroke-width="1.6"/><rect x="46.6" y="50" width="2.8" height="4" fill="#ffc21f"/><rect x="43" y="53.5" width="10" height="3" rx="1" fill="url(#emoGold)" stroke="#8a5200" stroke-width=".9"/><path d="M44 40.5V45" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".7"/></g>'
       + '<g class="e-confetti"><rect x="10" y="16" width="3" height="3" rx=".6" fill="#ff4fd8" transform="rotate(20 11.5 17.5)"/><rect x="50" y="12" width="3" height="3" rx=".6" fill="#22e6ff" transform="rotate(-25 51.5 13.5)"/><circle cx="16" cy="9" r="1.6" fill="#ffd23f"/><circle cx="45" cy="6" r="1.4" fill="#3dffa2"/></g>'
@@ -3017,8 +3072,10 @@ body.menu-bg .menu-backdrop { display: block; }
     <div class="bday-cake" aria-hidden="true">🎂</div>
     <p class="bday-test-label" id="birthdayTestLabel" hidden>ТЕСТОВЫЙ ПОКАЗ</p>
     <h2 id="birthdayTitle">У разработчика день рождения!</h2>
-    <p>Для игроков «Капли 3D» подготовлен праздничный сюрприз. Загляни в игру и отпразднуй вместе с нами!</p>
-    <button class="btn" id="birthdayClose" type="button">Отлично!</button>
+    <p id="birthdayText"></p>
+    <div class="gift-box-pic" aria-hidden="true"><span class="gb-lid"></span><span class="gb-body"></span></div>
+    <button class="btn" id="birthdayClose" type="button">Открыть коробку</button>
+    <button class="btn ghost" id="birthdayLater" type="button">Позже</button>
   </div>
 </div>
 
@@ -3119,6 +3176,8 @@ body.menu-bg .menu-backdrop { display: block; }
           test: function () { return this.stepOf() >= 6; } };
       })),
   ];
+  // holiday gift boxes: one achievement per edition (given when the box is opened)
+  ACH.push({ id: 'ev_bday2026', name: 'Гость на дне рождения 2026', desc: 'Открой праздничную коробку в день рождения разработчика (15–20 ноября 2026)', coins: 0, hol: true, test: () => (save.gifts || []).includes('bday2026') });
   const SPLIT_CD = 10, BOT_PARTS = 4, DASH_MULT = 3.2;
   // ================= abilities: ALL tunable numbers live in this table =================
   // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
@@ -3704,6 +3763,7 @@ body.menu-bg .menu-backdrop { display: block; }
   DECOR.push({ id: 'fr_beta', kind: 'frame', name: 'Бета-тестер', css: 'border:2px solid #22e6ff', cls: 'fr-beta', promo: true },
     { id: 'fr_creator', kind: 'frame', name: 'Создатель', css: 'border:2px solid #ffd23f', cls: 'fr-creator', promo: true, crown: true },
     { id: 'fr_vet', kind: 'frame', name: 'Ветврач', css: 'border:2px solid #3dffa2', cls: 'fr-vet', promo: true },
+    { id: 'fr_bday2026', kind: 'frame', name: 'Именинник 2026', css: 'border:2px solid #ff4fd8', cls: 'fr-vet', a: '#ff4fd8', b: '#ffd23f', promo: true, gift: 'bday2026' },
     { id: 'tt_beta', kind: 'title', name: 'Бета-тестер', color: '#7cf3ff', cls: 'tt-holo', ico: 'β', promo: true },
     { id: 'tt_ps5', kind: 'title', name: 'Неутомимый', color: '#ffd23f', cls: 'tt-gold', ico: '✦', rar: 'epic', prestige: '★5' },
     { id: 'tt_ps25', kind: 'title', name: 'Звёздный ветеран', color: '#fff6a0', cls: 'tt-gold', ico: '★', rar: 'legendary', prestige: '★25' },
@@ -7526,6 +7586,12 @@ body.menu-bg .menu-backdrop { display: block; }
     else if (b.id === 'creator') body = `<path d="M50 3 L60 30 L89 27 L66 46 L78 74 L50 59 L22 74 L34 46 L11 27 L40 30 Z" fill="url(#${id})" stroke="${b.c}" stroke-width="2"/><circle cx="50" cy="45" r="17" fill="#5a2a00" stroke="#fff6c8" stroke-width="2"/>` +
       `<path d="M38 50 L38 40 L44 45 L50 36 L56 45 L62 40 L62 50 Z" fill="#ffd23f" stroke="#fff6c8" stroke-width="1"/><circle cx="50" cy="35" r="2.2" fill="#fff"/>` +
       `<path d="M30 80 Q50 92 70 80 L66 96 Q50 88 34 96 Z" fill="${b.c}" opacity=".9"/>`;
+    else if (b.id === 'bday2026') body = `<path d="M50 4 C58 14 64 9 70 14 C76 19 72 26 80 31 C88 36 92 44 88 52 C85 60 90 68 82 74 C74 80 72 88 62 89 C55 90 52 96 50 96 C48 96 45 90 38 89 C28 88 26 80 18 74 C10 68 15 60 12 52 C8 44 12 36 20 31 C28 26 24 19 30 14 C36 9 42 14 50 4 Z" fill="url(#${id})" stroke="${b.c}" stroke-width="2"/>` +
+      `<rect x="27" y="50" width="46" height="22" rx="4" fill="#fff0f8" stroke="#a3346f" stroke-width="1.6"/><path d="M27 56 Q31 61 35 56 Q39 61 43 56 Q47 61 51 56 Q55 61 59 56 Q63 61 67 56 Q71 61 73 56 V52 Q73 50 71 50 H29 Q27 50 27 52 Z" fill="#ff9ad5"/>` +
+      `<rect x="31" y="38" width="38" height="13" rx="3" fill="#ff9ad5" stroke="#a3346f" stroke-width="1.4"/><path d="M31 42 Q35 46 39 42 Q43 46 47 42 Q51 46 55 42 Q59 46 63 42 Q67 46 69 42 V40 Q69 38 67 38 H33 Q31 38 31 40 Z" fill="#fff"/>` +
+      `<g><rect x="38.5" y="25" width="4" height="13" rx="1.2" fill="#22e6ff"/><rect x="48" y="22" width="4" height="16" rx="1.2" fill="#ffd23f"/><rect x="57.5" y="25" width="4" height="13" rx="1.2" fill="#3dffa2"/>` +
+      `<path d="M40.5 16 C43 19.5 43 21.5 40.5 24 C38 21.5 38 19.5 40.5 16 Z M50 13 C52.5 16.5 52.5 18.5 50 21 C47.5 18.5 47.5 16.5 50 13 Z M59.5 16 C62 19.5 62 21.5 59.5 24 C57 21.5 57 19.5 59.5 16 Z" fill="#ffb020"><animate attributeName="opacity" values="1;.6;1" dur="1.2s" repeatCount="indefinite"/></path></g>` +
+      `<g fill="#fff" opacity=".9"><circle cx="20" cy="40" r="1.6"/><circle cx="80" cy="42" r="1.6"/><circle cx="24" cy="70" r="1.3"/><circle cx="77" cy="68" r="1.3"/></g>`;
     else body = `<circle cx="50" cy="48" r="42" fill="url(#${id})" stroke="${b.c}" stroke-width="2"/><circle cx="50" cy="48" r="34" fill="none" stroke="#fff" stroke-opacity=".5"/>` +
       `<path d="M43 26 H57 V41 H72 V55 H57 V70 H43 V55 H28 V41 H43 Z" fill="#fff" stroke="#0b5e36" stroke-width="2"/><path d="M50 62 C44 57 40 54 40 50 C40 46 45 45 47 48 L50 51 L53 48 C55 45 60 46 60 50 C60 54 56 57 50 62 Z" fill="#ff4f6d"/>` +
       `<path d="M14 82 L30 82 L35 74 L41 90 L47 80 L86 80" fill="none" stroke="${b.c}" stroke-width="2.5" stroke-linejoin="round"/>`;
@@ -7546,6 +7612,8 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'beta', src: 'промокод', name: 'Бета-тестер', label: 'БЕТА', c: '#22e6ff', c2: '#0a2a6e', glyph: 'β', sc: '#7cf3ff', frame: 'fr_beta', title: 'tt_beta' },
     { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a', frame: 'fr_creator', title: 'tt_creator' },
     { id: 'vet', src: 'промокод', name: 'Ветврач', label: 'ВЕТВРАЧ', c: '#3dffa2', c2: '#0b5e36', glyph: '✚', sc: '#a6ffd4', frame: 'fr_vet', title: 'tt_vet' },
+    // holiday gift boxes (one edition a year): badge + frame
+    { id: 'bday2026', src: 'праздничная коробка «День рождения 2026»', name: 'Именинник 2026', label: '2026', c: '#ff4fd8', c2: '#5a0a48', glyph: '🎂', sc: '#ffc2ec', frame: 'fr_bday2026', gift: true },
   ];
   const PROMO_CODES = { 3528217734: 'beta', 2752792474: 'creator', 1531340868: 'vet', 2337100390: 'c_druzya', 318066375: 'c_help3d26' };
   // one-time coin gifts from update announcements
@@ -8742,15 +8810,54 @@ body.menu-bg .menu-backdrop { display: block; }
   const leagueExcl = () => [...SKINS.filter(k => k.lchest).map(k => ['skin', k]), ...FX.filter(f => f.lchest).map(f => ['fx', f]), ...PETS.filter(pt => pt.lchest).map(pt => ['pet', pt])];
   const ownsTI = ([type, item]) => (type === 'skin' ? save.skins : type === 'pet' ? save.pets : type === 'deco' ? save.decor : save.fxOwned).includes(item.id);
   const RAR_KEYS = Object.keys(RARITY);
-  const chestTotal = () => save.chests + save.special.length;
+  const chestTotal = () => save.chests + save.special.length + (save.giftBoxes || []).length;
+  // ===== holiday gift boxes: a new edition every year; only players with an account get one (the box lives in their cloud save) =====
+  const GIFT_EVENTS = [
+    { id: 'bday2026', from: '2026-11-15', to: '2026-11-20', box: 'Праздничная коробка «День рождения»', cake: '🎂', look: ['#ff4fd8', '#5a0a48', '#ffd23f', '#ff7ad9', 'rgba(255,79,216,.6)'],
+      title: 'У разработчика день рождения!', text: 'В честь праздника каждого игрока с аккаунтом ждёт праздничная коробка с подарками.',
+      give: [{ coins: 5000 }, { emote: ':cake:' }, { badge: 'bday2026' }, { frame: 'fr_bday2026' }, { ach: 'ev_bday2026' }] },
+    { id: 'ny2027', from: '2027-01-01', to: '2027-01-07', box: 'Праздничная коробка «Новый год 2027»', cake: '🎆', look: ['#ff2d55', '#5a0010', '#ffd23f', '#ff7a1a', 'rgba(255,45,85,.6)'],
+      title: 'С Новым годом!', text: 'Под ёлкой у каждого игрока с аккаунтом — праздничная коробка с живым фоном профиля «Год Огненной Лошади».',
+      give: [{ pbg: 'bg_horse26' }] },
+  ];
+  const astanaDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const giftActive = ev => TEST_MODE || (astanaDay() >= ev.from && astanaDay() <= ev.to);
+  function giftCheck(signed) {
+    if (!signed && !TEST_MODE) return;
+    save.gifts = save.gifts || []; save.giftBoxes = save.giftBoxes || []; let n = 0;
+    for (const ev of GIFT_EVENTS) if (giftActive(ev) && !save.gifts.includes(ev.id) && !save.giftBoxes.includes(ev.id)) { save.giftBoxes.push(ev.id); n++; }
+    if (n) { persist(); renderAll(); if (!TEST_MODE) toast('🎁 В «Сундуках» тебя ждёт праздничная коробка!'); }
+  }
+  function giftItems(ev) {
+    return ev.give.map(g => {
+      if (g.coins) return { ico: promoCoinSVG(g.coins), name: `${g.coins.toLocaleString('ru-RU')} ◆`, kind: 'Монеты' };
+      if (g.emote) return { ico: `<span class="gift-emo emo-play" data-emote="${g.emote}">${KapliEmo.svg(g.emote)}</span>`, name: `Смайлик «${KapliEmo.E[g.emote].n}»`, kind: 'Стикер в чате' };
+      if (g.badge) { const b = PROMO_BADGES.find(x => x.id === g.badge); return { ico: specialBadgeSVG(b, true), name: `Значок «${b.name}»`, kind: 'Значок в профиле' }; }
+      if (g.frame) return { ico: pcAvatar({ skin: save.skin, frame: g.frame }, 50), name: `Рамка «${decorById(g.frame).name}»`, kind: 'Рамка аватара' };
+      if (g.ach) { const a = ACH.find(x => x.id === g.ach); return { ico: '<span class="gift-ach">🏅</span>', name: a.name, kind: 'Достижение' }; }
+      if (g.pbg) return { ico: `<img class="gift-bg" alt="" src="${pbgThumb(g.pbg)}">`, name: `Фон «${pbgById(g.pbg).name}»`, kind: 'Живой фон профиля' };
+      return null; }).filter(Boolean);
+  }
+  function giftGive(ev) {
+    save.gifts = save.gifts || []; save.badges = save.badges || {}; save.emo = save.emo || [];
+    for (const g of ev.give) {
+      if (g.coins) save.coins += g.coins;
+      if (g.emote && !save.emo.includes(g.emote)) save.emo.push(g.emote);
+      if (g.badge && !save.badges[g.badge]) save.badges[g.badge] = today;
+      if (g.frame && !save.decor.includes(g.frame)) save.decor.push(g.frame);
+    }
+    save.gifts.push(ev.id); save.giftBoxes = (save.giftBoxes || []).filter(x => x !== ev.id);
+    for (const g of ev.give) if (g.ach && !save.ach.includes(g.ach)) save.ach.push(g.ach);
+    pbgCheck(true);
+  }
   const pickRarity = w => { const tot = w.reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (let i = 0; i < w.length; i++) if ((x -= w[i]) < 0) return RAR_KEYS[i]; return RAR_KEYS[0]; };
   const CHEST_LOOK = {
     normal:    ['#7b3dff', '#3a1580', '#ff4fd8', '#9b3dff', 'rgba(178,107,255,.55)'],
     daily:     ['#22b8ff', '#0a3a6e', '#22e6ff', '#4d7cff', 'rgba(34,230,255,.55)'],
     league:    ['#ffb020', '#7a4a00', '#ffd23f', '#ff9a3d', 'rgba(255,210,63,.6)'],
   };
-  function chestLook(kind, rar) {
-    const L = kind === 'challenge' ? [RARITY[rar].color, '#1a0a3a', RARITY[rar].color, '#3a1580', RARITY[rar].color] : CHEST_LOOK[kind] || CHEST_LOOK.normal;
+  function chestLook(kind, rar, ev) {
+    const L = ev ? ev.look : kind === 'challenge' ? [RARITY[rar].color, '#1a0a3a', RARITY[rar].color, '#3a1580', RARITY[rar].color] : CHEST_LOOK[kind] || CHEST_LOOK.normal;
     return `--cb1:${L[0]};--cb2:${L[1]};--cl1:${L[2]};--cl2:${L[3]};--cg:${L[4]}`;
   }
   // opts: { rar } fixed rarity, or { league } for the exclusive league pool, else normal weights
@@ -8840,6 +8947,7 @@ body.menu-bg .menu-backdrop { display: block; }
     const left = (() => { const t = new Date(); t.setHours(24, 0, 0, 0); const m = Math.ceil((t - Date.now()) / 60000); return `${Math.floor(m / 60)} ч ${m % 60} мин`; })();
     rows.push({ key: 'daily', look: chestLook('daily'), title: 'Ежедневный сундук', sub: daily ? 'Случайная редкость, раз в сутки' : `Следующий через ${left}`, btn: daily ? 'Забрать' : 'Завтра', dis: !daily });
     if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть' });
+    (save.giftBoxes || []).forEach(id => { const ev = GIFT_EVENTS.find(e => e.id === id); if (ev) rows.unshift({ key: 'gift' + id, look: chestLook('gift', null, ev), title: `${ev.cake} ${ev.box}`, sub: 'Подарок от разработчика — открой!', btn: 'Открыть', gift: true }); });
     save.special.forEach((c, i) => rows.push(c.kind === 'league'
       ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть' }
       : { key: 'sp' + i, look: chestLook('challenge', c.rar), title: `Сундук испытания «${c.title}»`, sub: `Редкость: ${RARITY[c.rar].name}`, btn: 'Открыть' }));
@@ -8848,7 +8956,7 @@ body.menu-bg .menu-backdrop { display: block; }
   function renderChest() {
     $('chestCount').textContent = chestTotal();
     const rows = chestRows();
-    $('chestList').innerHTML = rows.map(r => `<li style="${r.look}"><span class="ci"></span><b>${r.title}</b><small>${r.sub}</small>` +
+    $('chestList').innerHTML = rows.map(r => `<li style="${r.look}"${r.gift ? ' class="gift-row"' : ''}><span class="ci"></span><b>${r.title}</b><small>${r.sub}</small>` +
       `<button class="buy" id="ch-${r.key}" data-open="${r.key}" ${r.dis ? 'disabled' : ''}>${r.btn}</button></li>`).join('');
     const tot = Object.values(RARITY).reduce((a, r) => a + r.w, 0);
     $('odds').innerHTML = Object.values(RARITY).map(r => `<li><b style="color:${r.color}">${r.name}</b><span>${Math.round(r.w / tot * 100)}%</span></li>`).join('');
@@ -8856,10 +8964,48 @@ body.menu-bg .menu-backdrop { display: block; }
     $('lgOdds').innerHTML = '<tr><th>Лига</th>' + Object.values(RARITY).map(r => `<th style="color:${r.color}" title="${r.name}">${r.name.slice(0, 5)}.</th>`).join('') + '</tr>' +
       [1, 2, 3, 4, 5].map(k => { const v = lgView(k, holidayOf(save.season.id)); return `<tr><td style="color:${v.color}">${v.name}</td>` + LEAGUE_CHEST_W[k].map(x => `<td>${x ? x + '%' : '—'}</td>`).join('') + '</tr>'; }).join('');
     $('chestBox').classList.toggle('empty', !chestTotal() && save.dailyChestDay === today);
+    { const gb = (save.giftBoxes || [])[0], ev = gb && GIFT_EVENTS.find(e => e.id === gb), box = $('chestBox'); if (ev && !chestBusy && $('reveal').hidden) { box.classList.add('gift'); box.setAttribute('style', chestLook('gift', null, ev)); } }
   }
   let chestBusy = false;
+  // the holiday window: once per edition; with an account it leads straight to the box, a guest is offered to sign in
+  function giftModal() {
+    const ev = GIFT_EVENTS.find(e => giftActive(e) && !(save.giftSeen || []).includes(e.id) && !(save.gifts || []).includes(e.id)); if (!ev) return;
+    // wait until the loading screen is gone and no other window (tutorial, news) is open
+    const sp = $('splash'); if ((sp && !sp.classList.contains('out')) || document.querySelector('.modal:not([hidden]):not(#birthdayModal)') || running || $('overlay').hidden) { setTimeout(giftModal, 1500); return; }
+    const signed = !!Net.uid || TEST_MODE, modal = $('birthdayModal');
+    modal.querySelector('.bday-cake').textContent = ev.cake; $('birthdayTitle').textContent = ev.title;
+    $('birthdayText').textContent = ev.text + (signed ? ' Она уже лежит в «Сундуках».' : ' Войди в аккаунт, и коробка появится в «Сундуках».');
+    modal.style.setProperty('--gc1', ev.look[0]); modal.style.setProperty('--gc2', ev.look[2]);
+    $('birthdayClose').textContent = signed ? '🎁 Открыть коробку' : 'Войти в аккаунт';
+    const done = () => { modal.hidden = true; save.giftSeen = [...(save.giftSeen || []), ev.id]; persist(); };
+    $('birthdayClose').onclick = () => { done(); if (signed) { giftCheck(true); $('chestBtn').click(); } else Net.openAccount(); };
+    $('birthdayLater').onclick = done;
+    modal.onclick = e => { if (e.target === modal) done(); };
+    modal.hidden = false; $('birthdayClose').focus();
+  }
+  setTimeout(() => { if (TEST_MODE) giftCheck(true); giftModal(); }, 1800);
+  function openGiftBox(id) {
+    const ev = GIFT_EVENTS.find(e => e.id === id); if (!ev || chestBusy || !(save.giftBoxes || []).includes(id)) return;
+    chestBusy = true;
+    const box = $('chestBox'); $('reveal').hidden = true; box.setAttribute('style', chestLook('gift', null, ev)); box.classList.add('gift');
+    box.classList.remove('open', 'empty'); void box.offsetWidth; box.classList.add('shake');
+    buzz([40, 60, 40]); Sound.play('chest'); $('overlay').scrollTop = 0;
+    setTimeout(() => {
+      const items = giftItems(ev); giftGive(ev); persist();
+      box.classList.remove('shake'); box.classList.add('open');
+      const el = $('reveal'); el.style.setProperty('--rc', ev.look[0]);
+      el.innerHTML = `<span class="rar">${ev.box}</span><div class="gift-confetti" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => `<i style="--x:${(Math.random() * 100).toFixed(0)}%;--d:${(Math.random() * .6).toFixed(2)}s;--c:${['#ff4fd8', '#ffd23f', '#22e6ff', '#3dffa2', '#b26bff'][i % 5]}"></i>`).join('')}</div>` +
+        `<ul class="gift-items">${items.map((it, i) => `<li style="--i:${i}"><span class="gi">${it.ico}</span><b>${it.name}</b><small>${it.kind}</small></li>`).join('')}</ul>` +
+        `<small>Всё уже у тебя: значки и фоны — в профиле, рамки — в гардеробе, стикер — в чате.</small>`;
+      el.hidden = false; Sound.play('promo');
+      renderChest(); renderAll(); chestBusy = false;
+      setTimeout(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }), 250);
+    }, 900);
+  }
   function openChest(key) {
     if (chestBusy) return;
+    if (key.startsWith('gift')) return openGiftBox(key.slice(4));
+    $('chestBox').classList.remove('gift');
     let opts, look;
     if (key === 'daily') { if (save.dailyChestDay === today) return; save.dailyChestDay = today; opts = {}; look = chestLook('daily'); }
     else if (key === 'normal') { if (!save.chests) return; save.chests--; opts = {}; look = chestLook('normal'); }
@@ -9349,11 +9495,13 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'bg_ps_nova',  name: 'Вспышка сверхновой',  rar: 'legendary', src: 'престиж ✦20',  test: () => psReached(prestigeOf(save.xp), 2, 20) },
     { id: 'bg_ps_gal',   name: 'Галактика',           rar: 'legendary', src: 'престиж ✦25',  test: () => psReached(prestigeOf(save.xp), 2, 25) },
     { id: 'bg_vet',      name: 'Пульс жизни',         rar: 'legendary', promo: true, src: 'промокод «Ветврач»',               test: () => !!(save.badges || {}).vet },
+    { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'праздничная коробка «Новый год 2027»', test: () => (save.gifts || []).includes('ny2027') },
   ];
   const pbgById = id => PBG.find(b => b.id === id) || PBG[0];
   // ---- drawing: every background is a function of (ctx, w, h, t seconds); random layouts are seeded, so a scene is the same every frame ----
   const pbgSeeds = {};
   const pbgPts = (key, n, seed) => pbgSeeds[key] || (pbgSeeds[key] = (() => { let s = seed; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; return Array.from({ length: n }, () => ({ x: r(), y: r(), s: r(), p: r() * 6.28, q: r() })); })());
+  const pbgHorse = {};
   function pbgDraw(x, w, h, id, t) {
     const lin = (stops, x0 = 0, y0 = 0, x1 = 0, y1 = h) => { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
     const glow = (cx, cy, r, col, a = 1) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = a; x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); x.globalAlpha = 1; };
@@ -9522,6 +9670,71 @@ body.menu-bg .menu-backdrop { display: block; }
         glow(0, 0, U * 1.05, 'rgba(178,107,255,.45)'); glow(0, 0, U * .55, 'rgba(255,170,235,.55)'); glow(0, 0, U * .18, 'rgba(255,255,255,.9)');
         for (const q of pbgPts('gx', 160, 73)) { const a = q.p * 6.283 + t * .06 * (1.2 - q.s), rr = (q.x * .9 + .08) * U; x.globalAlpha = .35 + .5 * q.q; x.fillStyle = q.s > .6 ? '#9ff0ff' : '#ffd1f4'; x.fillRect(Math.cos(a) * rr, Math.sin(a) * rr, 1.6, 1.6); }
         x.restore(); x.globalAlpha = 1; break; }
+      case 'bg_horse26': {   // New Year 2027 gift box: the Year of the Fire Horse (丙午, 17 Feb 2026 – 5 Feb 2027) — a neon horse at full gallop
+        const W = w, H = h;
+        x.fillStyle = lin([[0, '#0c0210'], [.62, '#2a0616'], [.63, '#16030b'], [1, '#0a0206']]); x.fillRect(0, 0, W, H);
+        stars(70, 97, 1, '#fff3e6');
+        glow(W * .64, H * .64, W * .45, 'rgba(255,45,85,.22)');
+        x.save(); x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `700 ${H * .42}px "Noto Serif SC", "SimSun", serif`; x.fillStyle = 'rgba(255,210,63,.13)'; x.shadowColor = '#ffd23f'; x.shadowBlur = 30; x.fillText('午', W * .17, H * .4);
+        x.font = `700 ${H * .07}px "Noto Serif SC", "SimSun", serif`; x.fillStyle = 'rgba(255,210,63,.75)'; x.shadowBlur = 12; x.fillText('丙 午', W * .17, H * .72); x.restore();
+        // fireworks: one burst every 3 s, place and colour fixed by the burst number
+        { const n = Math.floor(t / 3), tau = t - n * 3; if (tau < 1.3) { const hs = k => { const v = Math.sin(n * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+          const cx = W * (.35 + hs(1) * .55), cy = H * (.12 + hs(2) * .25), col = ['#ffd23f', '#ff2d55', '#ff7a1a'][Math.floor(hs(3) * 3)], r = H * .28 * (1 - Math.exp(-1.8 * tau)) / 1.8, dy = H * .05 * tau * tau;
+          x.globalAlpha = 1 - tau / 1.3; x.fillStyle = col; for (let i = 0; i < 36; i++) { const a = i / 36 * 6.283; x.fillRect(cx + Math.cos(a) * r, cy + Math.sin(a) * r + dy, 2.2, 2.2); } x.globalAlpha = 1; } }
+        // lanterns on a string
+        x.strokeStyle = 'rgba(255,210,63,.35)'; x.lineWidth = 1; x.beginPath(); x.moveTo(0, H * .05); x.quadraticCurveTo(W * .5, H * .16, W, H * .04); x.stroke();
+        for (let i = 0; i < 6; i++) { const u = (i + .5) / 6, ax = u * W, ay = H * .05 + Math.sin(u * Math.PI) * H * .1 * (1 - Math.abs(u - .5) * .2), sw = Math.sin(t * 1.4 + i) * .12, L = H * .06, lx = ax + Math.sin(sw) * L, ly = ay + Math.cos(sw) * L, R = H * .045;
+          x.strokeStyle = 'rgba(255,210,63,.5)'; x.beginPath(); x.moveTo(ax, ay); x.lineTo(lx, ly - R); x.stroke(); glow(lx, ly, R * 2.6, 'rgba(255,60,40,.45)');
+          x.fillStyle = '#d4182c'; x.beginPath(); x.ellipse(lx, ly, R * .85, R, 0, 0, 6.3); x.fill(); x.fillStyle = '#ffd23f'; x.fillRect(lx - R * .45, ly - R * 1.05, R * .9, R * .18); x.fillRect(lx - R * .45, ly + R * .88, R * .9, R * .18);
+          x.strokeStyle = 'rgba(255,190,90,.6)'; x.beginPath(); x.moveTo(lx, ly - R); x.lineTo(lx, ly + R); x.stroke(); x.beginPath(); x.moveTo(lx, ly + R * 1.1); x.lineTo(lx, ly + R * 1.6); x.stroke(); }
+        // ground: perspective lines and speed streaks running back
+        const gy = H * .63; x.strokeStyle = 'rgba(255,45,85,.45)'; x.lineWidth = 1;
+        for (let i = 0; i < 8; i++) { const k = ((i + (t * 1.6) % 1) / 8) ** 2, yy = gy + k * (H - gy); x.globalAlpha = .25 + k * .6; x.beginPath(); x.moveTo(0, yy); x.lineTo(W, yy); x.stroke(); } x.globalAlpha = 1;
+        for (let i = 0; i < 14; i++) { const yy = gy + 6 + (i * 37 % 100) / 100 * (H - gy - 10), len = W * (.06 + (i % 4) * .03), xx = W - ((t * W * (.9 + (i % 3) * .3) + i * 173) % (W + len)); x.strokeStyle = i % 2 ? 'rgba(255,122,26,.55)' : 'rgba(255,210,63,.4)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(xx, yy); x.lineTo(xx + len, yy); x.stroke(); }
+        // the horse: silhouette 400×260 facing right, jointed legs in a rotary gallop, flame mane and tail
+        const S = Math.min(W * .5, H * .95), hcx = W * .6, hcy = gy - S * .14, k = S / 400, ph = t * 7.5, bob = Math.sin(ph * 2) * 4, pitch = Math.sin(ph * 2 + 1) * .025;
+        const BODY = pbgHorse.body || (pbgHorse.body = new Path2D('M110 95 C150 90 190 98 222 90 C246 84 260 60 274 40 L279 20 L289 37 C302 40 326 58 346 77 C353 84 353 94 345 99 C337 102 326 99 317 97 C305 95 297 91 291 87 C282 101 272 118 264 134 C259 148 252 158 240 163 C210 168 172 167 141 161 C120 157 104 148 96 133 C89 119 95 103 110 95 Z'));
+        const MUSCLE = pbgHorse.mus || (pbgHorse.mus = new Path2D('M222 92 C232 112 236 132 230 150 M130 100 C150 112 156 134 146 156 M262 64 C252 80 246 92 238 104 M300 52 C296 62 294 74 291 86'));
+        x.save(); x.translate(hcx, hcy + bob * k); x.rotate(pitch); x.scale(k, k); x.translate(-200, -130);
+        const leg = (hx, hy, a1, a2, l1, l2, front, near) => {
+          const kx = hx + Math.sin(a1) * l1, ky = hy + Math.cos(a1) * l1, fx = kx + Math.sin(a2) * l2, fy = ky + Math.cos(a2) * l2;
+          x.save(); x.lineCap = 'round'; x.lineJoin = 'round';
+          x.strokeStyle = near ? '#4a0a1c' : '#2a0610'; x.lineWidth = front ? 24 : 30; x.beginPath(); x.moveTo(hx, hy - 6); x.lineTo(kx, ky); x.stroke();
+          x.lineWidth = 13; x.beginPath(); x.moveTo(kx, ky); x.lineTo(fx, fy); x.stroke();
+          x.strokeStyle = near ? '#ff2d55' : 'rgba(255,45,85,.5)'; x.shadowColor = '#ff2d55'; x.shadowBlur = near ? 14 : 6; x.lineWidth = 3;
+          const w1 = front ? 11 : 14; x.beginPath(); x.moveTo(hx - w1, hy - 4); x.lineTo(kx - 6, ky); x.lineTo(fx - 4, fy); x.moveTo(hx + w1, hy - 4); x.lineTo(kx + 6, ky); x.lineTo(fx + 4, fy); x.stroke();
+          x.fillStyle = near ? '#ffd23f' : 'rgba(255,210,63,.5)'; x.shadowColor = '#ffd23f'; x.beginPath(); x.ellipse(fx + Math.sin(a2) * 3, fy + 3, 8, 5.5, a2, 0, 6.3); x.fill(); x.restore(); };
+        const LG = [[118, 140, 0, 0, false], [128, 142, .35, 1, false], [236, 150, .55, 0, true], [246, 152, .85, 1, true]].map(([hx, hy, o, near, front]) => {
+          const c = ph - o * 6.283, sw = Math.sin(c), lift = Math.max(0, Math.cos(c));
+          return front ? [hx, hy, .15 + .6 * sw, .15 + .6 * sw - 1.5 * lift, 46, 52, true, near] : [hx, hy, -.25 + .55 * sw, -.25 + .55 * sw + 1.1 * lift - .2, 48, 56, false, near]; });
+        LG.filter(l => !l[7]).forEach(l => leg(...l));
+        x.save(); x.globalCompositeOperation = 'lighter'; x.lineCap = 'round';
+        for (let i = 0; i < 7; i++) { const wv = Math.sin(t * 6 + i * .9), len = 95 + i * 9, g = x.createLinearGradient(100, 100, 100 - len, 120); g.addColorStop(0, 'rgba(255,230,120,.95)'); g.addColorStop(.5, 'rgba(255,110,30,.7)'); g.addColorStop(1, 'rgba(255,45,85,0)');
+          x.strokeStyle = g; x.lineWidth = 11 - i; x.beginPath(); x.moveTo(104, 100); x.bezierCurveTo(70, 92 + wv * 10, 40, 112 + wv * 18 + i * 3, 104 - len, 104 + wv * 22 + i * 4); x.stroke(); }
+        x.restore();
+        x.fillStyle = lin([[0, '#4a0818'], [.6, '#22040e'], [1, '#3a0614']], 100, 40, 330, 170); x.fill(BODY);
+        x.save(); x.clip(BODY); const ig = x.createRadialGradient(230, 110, 10, 230, 110, 150); ig.addColorStop(0, 'rgba(255,90,40,.28)'); ig.addColorStop(1, 'rgba(255,90,40,0)'); x.fillStyle = ig; x.fillRect(80, 10, 280, 170); x.restore();
+        x.save(); x.strokeStyle = 'rgba(255,140,120,.35)'; x.lineWidth = 2; x.stroke(MUSCLE); x.restore();
+        x.save(); x.strokeStyle = '#ff2d55'; x.lineWidth = 4.5; x.lineJoin = 'round'; x.shadowColor = '#ff2d55'; x.shadowBlur = 22; x.stroke(BODY); x.strokeStyle = '#ffe0e6'; x.lineWidth = 1.5; x.shadowBlur = 5; x.stroke(BODY); x.restore();
+        LG.filter(l => l[7]).forEach(l => leg(...l));
+        x.save(); x.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 9; i++) { const u = i / 8, bx = 222 + u * 56, by = 90 - u * 62, hh = 30 + Math.sin(t * 9 + i * 1.3) * 8 + (1 - Math.abs(u - .5) * 2) * 12;
+          const g = x.createLinearGradient(bx, by, bx - hh, by - hh * .8); g.addColorStop(0, 'rgba(255,230,120,.95)'); g.addColorStop(.6, 'rgba(255,100,30,.6)'); g.addColorStop(1, 'rgba(255,45,85,0)');
+          x.fillStyle = g; x.beginPath(); x.moveTo(bx + 8, by + 4); x.quadraticCurveTo(bx - hh * .3, by - hh * .2, bx - hh, by - hh * .75 + Math.sin(t * 7 + i) * 6); x.quadraticCurveTo(bx - hh * .2, by - hh * .05, bx - 8, by + 8); x.fill(); }
+        x.restore();
+        x.save(); x.fillStyle = '#ffd23f'; x.shadowColor = '#ffd23f'; x.shadowBlur = 12; x.beginPath(); x.ellipse(306, 58, 5, 3.5, .5, 0, 6.3); x.fill();
+        x.fillStyle = '#ff2d55'; x.shadowBlur = 6; x.beginPath(); x.ellipse(340, 86, 3, 2, .6, 0, 6.3); x.fill(); x.restore();
+        x.restore();
+        // sparks blown back from the mane and the tail (each spark loops on its own period)
+        const toS = (px, py) => { const dx = (px - 200) * k, dy = (py - 130) * k; return [hcx + dx * Math.cos(pitch) - dy * Math.sin(pitch), hcy + bob * k + dx * Math.sin(pitch) + dy * Math.cos(pitch)]; };
+        x.save(); x.globalCompositeOperation = 'lighter';
+        for (const p of pbgPts('hs', 46, 131)) { const tail = p.q < .35, life = .4 + p.s * .4, ph2 = ((t + p.p) % life) / life, f = 1 - ph2;
+          const [sx, sy] = tail ? toS(20 - p.x * 20, 110 + p.y * 20) : toS(222 + p.x * 56 - 20, 90 - p.x * 62 - 20);
+          const vx = -(tail ? 60 + p.y * 60 : 30 + p.y * 40) * S / 400, vy = (tail ? (p.s - .3) * 20 : -(10 + p.s * 30)) * S / 400, el = ph2 * life * 2.4;
+          glow(sx + vx * el, sy + vy * el, S * (.006 + p.q * .008) * (1 + f), f > .5 ? 'rgba(255,210,63,.9)' : 'rgba(255,90,30,.8)', f); }
+        x.restore();
+        for (let i = 0; i < 26; i++) { const yy = H - ((t * (25 + i % 5 * 9) + i * 47) % (H * .7)), xx = (i * 97 % 100) / 100 * W + Math.sin(t + i) * 6; glow(xx, yy, 3 + (i % 3), 'rgba(255,122,26,.9)', .7); }
+        break; }
       case 'bg_vet': {
         x.fillStyle = lin([[0, '#001a0e'], [1, '#00100a']]); x.fillRect(0, 0, w, h);
         x.strokeStyle = 'rgba(61,255,162,.1)'; for (let xx = 0; xx < w; xx += 16) { x.beginPath(); x.moveTo(xx, 0); x.lineTo(xx, h); x.stroke(); } for (let yy = 0; yy < h; yy += 16) { x.beginPath(); x.moveTo(0, yy); x.lineTo(w, yy); x.stroke(); }
@@ -9690,9 +9903,9 @@ body.menu-bg .menu-backdrop { display: block; }
   const FRAME_STYLE = { fr_cyan: 'line', fr_glow: 'dots', fr_lv20: 'tech', fr_calendar: 'segments', fr_fire: 'flame', fr_lg3: 'shield', fr_sh1: 'petal', fr_sh2: 'petal',
     fr_cq1: 'shards', fr_cq2: 'shards', fr_cq3: 'shards', fr_cq4: 'shards', fr_q1: 'stars', fr_q2: 'stars', fr_arsenal: 'gear', fr_finish: 'checker', fr_dark: 'thorns',
     fr_ps_orbit: 'psorbit', fr_rainbow: 'prism', fr_lg4: 'crystal', fr_lg5: 'crown', fr_cvet: 'void', fr_sing: 'orbit', fr_lv40: 'star', fr_legend: 'laurel', fr_star: 'starburst',
-    fr_platinum: 'ornate', fr_modes: 'medal', fr_master: 'wings', fr_xarsenal: 'horizon', fr_beta: 'holo', fr_creator: 'creator', fr_vet: 'pulse' };
+    fr_platinum: 'ornate', fr_modes: 'medal', fr_master: 'wings', fr_xarsenal: 'horizon', fr_beta: 'holo', fr_creator: 'creator', fr_vet: 'pulse', fr_bday2026: 'bday' };
   const FRAME_GLYPH = { flame: '♨', shield: '◆', petal: '✿', shards: '◈', stars: '✦', gear: '⚙', checker: '⚑', thorns: '✶', prism: '✧', crystal: '◆', crown: '♛', void: '◉', orbit: '◌',
-    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', pulse: '✚' };
+    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', pulse: '✚', bday: '✦' };
   let foUid = 0;
   function frameOrnSVG(d) {
     if (!d) return '';
@@ -9740,6 +9953,9 @@ body.menu-bg .menu-backdrop { display: block; }
       case 'wings': o = ring(52.5, 2.8) + n(2, (i) => { const sg = i ? 1 : -1; return `<g transform="scale(${sg * 1.25},1.35) translate(-10,0)">` + [0, 1, 2, 3].map(k => `<path d="M52,${-6 + k * 5} C${62 + k * 2},${-18 + k * 7} ${70 - k * 3},${-10 + k * 6} ${68 - k * 4},${-2 + k * 6} C${62},${-1 + k * 5} 58,${1 + k * 4} 52,${2 + k * 5} Z" fill="${G}" opacity="${1 - k * .15}" stroke="#fff" stroke-width=".4" stroke-opacity=".5"/>`).join('') + '</g>'; }); break;
       case 'horizon': o = ring(53, 5, `url(#${id}h)`) + spin(9, arc(58, 200, 330, 1.6, b, .9)) + spin(14, arc(62, 20, 120, 1.2, a, .7), true) + spin(6, arc(56, 90, 150, 2, '#fff', .8)); break;
       case 'holo': o = ring(51, 1, a, .7) + n(18, (i, g) => at(g, 57, `<path d="M0,-3.4 L2.9,-1.7 L2.9,1.7 L0,3.4 L-2.9,1.7 L-2.9,-1.7 Z" fill="none" stroke="${i % 3 ? a : b}" stroke-width=".9">${blink(1.2 + (i % 4) * .3, (i * .09).toFixed(2), '.3;1;.3')}</path>`)); break;
+      case 'bday': o = ring(52.5, 3) + spin(30, n(14, (i, g) => { const [x, y] = P(58, g); const c = ['#22e6ff', '#ffd23f', '#3dffa2', '#ff4fd8', '#b26bff'][i % 5];
+          return i % 2 ? `<rect x="${(+x - 1.8).toFixed(2)}" y="${(+y - .9).toFixed(2)}" width="3.6" height="1.8" rx=".8" fill="${c}" transform="rotate(${g + 30} ${x} ${y})"/>` : `<circle cx="${x}" cy="${y}" r="1.5" fill="${c}">${blink(1.8, (i * .12).toFixed(2))}</circle>`; }))
+          + at(0, 59, `<g transform="translate(0,-3)"><rect x="-8.5" y="-3" width="17" height="7" rx="1.6" fill="#ff9ad5" stroke="#fff" stroke-width=".8"/><path d="M-8.5,-1 Q-6,1.5 -4,-1 Q-2,1.5 0,-1 Q2,1.5 4,-1 Q6,1.5 8.5,-1 V-2 Q8.5,-3 7,-3 H-7 Q-8.5,-3 -8.5,-2 Z" fill="#fff"/><rect x="-5.5" y="-10" width="2" height="7" rx=".6" fill="#22e6ff"/><rect x="-1" y="-11.5" width="2" height="8.5" rx=".6" fill="#ffd23f"/><rect x="3.5" y="-10" width="2" height="7" rx=".6" fill="#3dffa2"/><g fill="#ffb020">${blink(1, 0, '1;.55;1')}<ellipse cx="-4.5" cy="-12" rx="1.3" ry="2"/><ellipse cx="0" cy="-13.6" rx="1.3" ry="2"/><ellipse cx="4.5" cy="-12" rx="1.3" ry="2"/></g></g>`, false); break;
       case 'creator': o = spin(14, ring(57, 1.6, b, .9, 'stroke-dasharray="7 4"')) + ring(52.5, 3.6) + at(0, 58, `<path d="M-15,4 L-15,-9 L-7.5,-2 L0,-15 L7.5,-2 L15,-9 L15,4 Z" fill="${G}" stroke="#fff6c8" stroke-width="1.1" stroke-linejoin="round"/><circle cy="-16.5" r="2.4" fill="#fff"/>`, false)
         + `<g>${at(110, 60, star4(3, '#fff'), false)}${at(250, 60, star4(2.4, '#fff6c8'), false)}${blink(1.4, 0, '.1;1;.1')}</g>`; break;
       case 'pulse': { let d2 = ''; for (let g = 0; g <= 360; g += 3) { const k = g % 60, r = k > 20 && k < 24 ? 52 + 8 : k >= 24 && k < 27 ? 52 - 5 : k >= 27 && k < 30 ? 52 + 3 : 52; const [x, y] = P(r, g); d2 += (g ? 'L' : 'M') + x + ',' + y; }
@@ -10436,6 +10652,7 @@ body.menu-bg .menu-backdrop { display: block; }
       Net.uid = user ? user.id : null; Net.nick = user ? (nick || meta.nick || null) : null;
       Net.shortId = user && publicId != null ? String(publicId).padStart(6, '0') : '';
       Net.email = user ? user.email : '';
+      if (user) setTimeout(() => giftCheck(true), 500);
       if (!user) { canPush = false; setSync('guest'); frStop(); } else { if (!privacyPending) setTimeout(() => pushShowcase(), 3000); if (!privacyPending && Net.uid !== frStart.uid) frStart(); }
       frStart.uid = Net.uid;
       renderChip();
@@ -10786,9 +11003,12 @@ body.menu-bg .menu-backdrop { display: block; }
     const emoFresh = m => Date.now() - new Date(m.created_at).getTime() < 30000;
     const emoReplay = el => { el.classList.remove('emo-play'); void el.offsetWidth; el.classList.add('emo-play'); };
     const EMO_RECENT = 'kapli3d-emo-recent';
+    // gift emotes (lock: true) can be sent only by their owners; everybody sees them in messages
+    const emoCanUse = k => !KapliEmo.E[k].lock || (save.emo || []).includes(k);
+    const emoGuard = t => t.replace(EMO_RE, k => KapliEmo.E[k] && !emoCanUse(k) ? '' : k).trim();
     function renderEmojiPicker() {
       let rec = []; try { rec = JSON.parse(localStorage.getItem(EMO_RECENT) || '[]').filter(k => KapliEmo.E[k]); } catch (e) {}
-      const order = [...rec, ...KapliEmo.ORDER.filter(k => !rec.includes(k))];
+      const order = [...rec, ...KapliEmo.ORDER.filter(k => !rec.includes(k))].filter(emoCanUse);
       $('chatEmojiPicker').innerHTML = order.map(k => `<button class="chat-emoji-option" type="button" data-emote="${k}" aria-label="${KapliEmo.E[k].n}" title="${KapliEmo.E[k].n}"><span class="emo-w emo-play" data-emote="${k}">${KapliEmo.svg(k)}</span></button>`).join('');
     }
     function emoUsed(k) { try { const rec = JSON.parse(localStorage.getItem(EMO_RECENT) || '[]').filter(x => x !== k); rec.unshift(k); localStorage.setItem(EMO_RECENT, JSON.stringify(rec.slice(0, 4))); } catch (e) {} }
@@ -10830,7 +11050,7 @@ body.menu-bg .menu-backdrop { display: block; }
     function closeChat() { clearInterval(chatPoll); chatPoll = null; if (chatCh && sb) { sb.removeChannel(chatCh); chatCh = null; } showCard('menuCard'); $('chatBtn').focus(); }
     let chatBusy = false;
     $('chatForm').addEventListener('submit', async e => {
-      e.preventDefault(); const t = $('chatIn').value.trim(); if (!t || !sess || chatBusy) return;
+      e.preventDefault(); const t = emoGuard($('chatIn').value.trim()); if (!t || !sess || chatBusy) return;
       chatBusy = true; $('chatSend').disabled = true;
       try {
         const { data, error } = await withTimeout(sb.from('kapli_chat').insert({ body: t }).select('id, nickname, body, created_at'), 9000);
@@ -11109,7 +11329,7 @@ body.menu-bg .menu-backdrop { display: block; }
     function closeDm() { clearInterval(FR.dmPoll); FR.dmPoll = null; FR.dm = null; openFriends(true); }
     const DM_ERR = { not_friends: 'Писать можно только друзьям', too_fast: 'Не так быстро — подожди секунду', daily_limit: 'На сегодня лимит сообщений исчерпан', empty: '' };
     $('dmForm').addEventListener('submit', async e => {
-      e.preventDefault(); const t = $('dmIn').value.trim(); if (!t || !FR.dm || FR.dmBusy) return;
+      e.preventDefault(); const t = emoGuard($('dmIn').value.trim()); if (!t || !FR.dm || FR.dmBusy) return;
       FR.dmBusy = true; $('dmSend').disabled = true;
       try { await frRpc('kapli_dm_send', { p_nick: FR.dm, p_body: t }); $('dmIn').value = ''; await dmFetch(true); }
       catch (er) { const k = Object.keys(DM_ERR).find(k => String(er.message || '').includes(k)); toast(k ? DM_ERR[k] || 'Пустое сообщение' : frErr(er)); }
@@ -11176,30 +11396,6 @@ body.menu-bg .menu-backdrop { display: block; }
 </script>
 
 
-<script>
-/* Birthday announcement: ?birthdayTest=1 forces a preview; live schedule is 15–20 Nov, Astana time. */
-(function () {
-  const modal = document.getElementById('birthdayModal');
-  const close = document.getElementById('birthdayClose');
-  if (!modal || !close) return;
-  const test = false; // Birthday notice follows the annual schedule below.
-  const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-  const inSchedule = date >= '2026-11-15' && date <= '2026-11-20';
-  const seenKey = 'kapli3d-birthday-notice-2026';
-  let seen = false;
-  try { seen = localStorage.getItem(seenKey) === '1'; } catch (e) {}
-  if (!test && (!inSchedule || seen)) return;
-  if (test) document.getElementById('birthdayTestLabel').hidden = false;
-  const hide = () => {
-    modal.hidden = true;
-    if (!test) { try { localStorage.setItem(seenKey, '1'); } catch (e) {} }
-  };
-  close.addEventListener('click', hide);
-  modal.addEventListener('click', e => { if (e.target === modal) hide(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) hide(); });
-  window.setTimeout(() => { modal.hidden = false; close.focus(); }, 700);
-})();
-</script>
 
 <script>
 /* installable app: offline cache + install button */

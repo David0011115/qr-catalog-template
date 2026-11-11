@@ -1855,6 +1855,59 @@ body.menu-bg .menu-backdrop { display: block; }
  #leagueCard .league-current-copy>b{font-size:clamp(1rem,5vw,1.35rem)!important}
 }
 </style>
+<style id="chaos-league-compact-preview-v1">
+#chaosCard.chaos-screen{box-sizing:border-box!important;display:flex!important;flex-direction:column!important;width:min(760px,calc(100vw - 24px))!important;max-width:760px!important;max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overflow-x:hidden!important;gap:10px!important;padding:14px!important;margin:auto!important;overscroll-behavior:contain;scrollbar-width:thin}
+#chaosCard[hidden]{display:none!important}
+#chaosCard .chaos-screen-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding-bottom:8px;border-bottom:1px solid var(--line)}
+#chaosCard .chaos-screen-head h1{margin:3px 0 0;font-size:clamp(1.2rem,4vw,1.6rem)}
+#chaosCard .chaos-screen-head .tab-info-btn{width:auto;flex:none;margin:0;padding:7px 10px;font-size:.76rem}
+#chaosCard .chaos-main{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
+#chaosCard #chaosPanel{box-sizing:border-box;width:100%;min-width:0;margin:0;padding:12px;display:grid;gap:8px;border:1px solid color-mix(in srgb,var(--rc,#ff4fd8) 45%,var(--line));border-radius:15px;background:linear-gradient(145deg,rgba(31,12,52,.88),rgba(8,7,25,.94))}
+#chaosCard #chaosPanel .league-top{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;justify-content:start;gap:11px;min-width:0}
+#chaosCard #chaosPanel .league-top>.rk{width:64px;height:64px}
+#chaosCard #chaosPanel .rk-txt{display:grid;gap:3px;min-width:0}
+#chaosCard #chaosPanel .rk-txt>b{font-size:clamp(1.05rem,4vw,1.45rem);line-height:1.15;overflow-wrap:anywhere}
+#chaosCard #chaosPanel .rk-txt>span{font-size:.82rem;color:var(--muted)}
+#chaosCard #chaosPanel .track{height:10px;margin:0}
+#chaosCard #chaosPanel>small,#chaosCard #chaosPanel .lg-last small{font-size:.72rem;line-height:1.4;overflow-wrap:anywhere}
+#chaosCard #chaosPanel .season-skin{gap:10px;padding:8px 10px;margin:0}
+#chaosCard .chaos-play-block{display:grid;gap:5px;min-width:0}
+#chaosCard #chaosPlay{width:100%;margin:0;min-height:44px}
+#chaosCard #chaosNote{margin:0;font-size:.72rem;line-height:1.35;text-align:center}
+#chaosCard .chaos-more{display:grid;gap:8px;min-width:0}
+#chaosCard .chaos-fold{width:100%;min-width:0;margin:0}
+#chaosCard .chaos-fold>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--row);cursor:pointer}
+#chaosCard .chaos-fold>summary::-webkit-details-marker{display:none}
+#chaosCard .chaos-fold>summary:after{content:'＋';color:var(--muted);font-size:1.05rem;margin-left:auto}
+#chaosCard .chaos-fold[open]>summary:after{content:'−'}
+#chaosCard .chaos-fold>summary span{font-size:.86rem;font-weight:800}
+#chaosCard .chaos-fold>summary small{font-size:.68rem;color:var(--muted);text-align:right}
+#chaosCard #chaosTable{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:7px 0 0;padding:0;list-style:none}
+#chaosCard #chaosTable>li{display:grid;align-content:start;gap:5px;min-width:0;margin:0;padding:8px;border:1px solid color-mix(in srgb,var(--lc) 38%,var(--line));border-radius:11px;background:rgba(14,10,38,.58)}
+#chaosCard #chaosTable>li.cur{background:color-mix(in srgb,var(--lc) 13%,rgba(14,10,38,.8));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lc) 38%,transparent)}
+#chaosCard .chaos-tier-line{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;min-width:0}
+#chaosCard .chaos-tier-line .rk-name{display:flex;align-items:center;gap:6px;min-width:0;font-size:.84rem}
+#chaosCard .chaos-tier-line .rk-name span{min-width:0;overflow-wrap:anywhere}
+#chaosCard .chaos-tier-line>span{font-size:.66rem;color:var(--muted);overflow-wrap:anywhere}
+#chaosCard .chaos-tier-meta{font-size:.63rem;color:var(--muted)}
+#chaosCard .chaos-tier-rewards{display:flex;flex-wrap:wrap;gap:4px}
+#chaosCard .chaos-reward-chip{min-width:0;margin:0;padding:4px 7px;border:1px solid color-mix(in srgb,var(--lc) 48%,var(--line));border-radius:7px;background:rgba(255,255,255,.055);color:var(--fg);font:600 .66rem system-ui;cursor:pointer}
+#chaosCard .chaos-reward-chip:active{transform:scale(.96)}
+#chaosCard #chaosAbilBtn{width:100%;margin:8px 0 0;padding:8px 10px;font-size:.75rem}
+#chaosCard .chaos-xa-note{margin:6px 0;font-size:.7rem}
+#chaosCard .chaos-xa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:34dvh;overflow:auto;padding-right:2px}
+#chaosCard .chaos-xa .ab-row{min-width:0;padding:7px;gap:7px}
+#chaosCard .chaos-xa .ab-big{font-size:1.35rem}
+#chaosCard .chaos-xa .ab-txt{min-width:0}
+#chaosCard .chaos-xa .ab-txt b{font-size:.76rem}
+#chaosCard .chaos-xa .ab-txt small{font-size:.66rem;line-height:1.3}
+#chaosCard #chaosBack{width:100%;margin:0;min-height:42px}
+#leagueRewardPreview .lrp-chaos-ability{width:104px;height:104px;display:grid;place-items:center;border:2px solid var(--lrp-color,#ff4fd8);border-radius:28px;background:radial-gradient(circle at 35% 25%,#fff7,var(--lrp-color,#ff4fd8) 35%,#10051f 78%);box-shadow:0 0 30px var(--lrp-color,#ff4fd8)}
+#leagueRewardPreview .lrp-chaos-ability span{font-size:58px;color:#fff;text-shadow:0 0 18px var(--lrp-color,#ff4fd8)}
+@media(max-width:520px){#chaosCard.chaos-screen{width:calc(100vw - 14px)!important;max-height:calc(100dvh - 14px)!important;padding:10px!important;gap:8px!important}#chaosCard #chaosTable{grid-template-columns:1fr}#chaosCard .chaos-xa{grid-template-columns:1fr;max-height:30dvh}#chaosCard #chaosPanel{padding:10px}#chaosCard .chaos-tier-line{grid-template-columns:minmax(0,1fr) auto;align-items:center}#chaosCard .chaos-tier-line>span{text-align:right}}
+@media(orientation:landscape) and (min-width:700px){#chaosCard.chaos-screen{max-width:900px!important;max-height:calc(100dvh - 18px)!important;gap:8px!important;padding:11px!important}#chaosCard .chaos-main{grid-template-columns:minmax(0,1.1fr) minmax(230px,.8fr);align-items:start;gap:10px}#chaosCard .chaos-play-block{align-self:center}#chaosCard #chaosTable{grid-template-columns:repeat(3,minmax(0,1fr))}#chaosCard .chaos-xa{grid-template-columns:repeat(3,minmax(0,1fr));max-height:28dvh}}
+@media(prefers-reduced-motion:reduce){#chaosCard *{scroll-behavior:auto}}
+</style>
 </head>
 <body>
 
@@ -2181,17 +2234,30 @@ body.menu-bg .menu-backdrop { display: block; }
     <button class="btn ghost" id="modesBack">Готово</button>
   </div>
 
-  <div class="card" id="chaosCard" hidden>
-    <h1>Хаос-лига</h1>
-    <button class="tab-info-btn" id="chaosInfoBtn">ⓘ Информация · Хаос-лига</button>
-    <div class="league" id="chaosPanel"></div>
-    <button class="btn" id="chaosPlay">Играть</button>
-    <p class="hint" id="chaosNote"></p>
-    <h2 class="section-title">Ступени и награды сезона</h2>
-    <ul class="lg-table" id="chaosTable"></ul>
-    <button class="tab-info-btn" id="chaosAbilBtn">ⓘ Все 24 способности: что делают и как работают</button>
-    <h2 class="section-title">Эксклюзивные способности · за «Сингулярность», по одной за сезон</h2>
-    <div class="chaos-xa" id="chaosXa"></div>
+  <div class="card chaos-screen" id="chaosCard" hidden>
+    <header class="chaos-screen-head">
+      <div><span class="league-eyebrow">РЕЙТИНГОВЫЙ РЕЖИМ</span><h1>Хаос-лига</h1></div>
+      <button class="tab-info-btn" id="chaosInfoBtn">ⓘ Информация</button>
+    </header>
+    <div class="chaos-main">
+      <div class="league chaos-current" id="chaosPanel"></div>
+      <section class="chaos-play-block">
+        <button class="btn" id="chaosPlay">Играть</button>
+        <p class="hint" id="chaosNote"></p>
+      </section>
+    </div>
+    <section class="chaos-more">
+      <details class="chaos-fold" open>
+        <summary><span>Ступени и награды</span><small>6 рангов сезона</small></summary>
+        <ul class="lg-table" id="chaosTable"></ul>
+      </details>
+      <details class="chaos-fold">
+        <summary><span>Эксклюзивные способности</span><small>За «Сингулярность»</small></summary>
+        <button class="tab-info-btn" id="chaosAbilBtn">ⓘ Все 24 способности</button>
+        <p class="hint chaos-xa-note">По одной новой способности за каждый сезон на высшей ступени.</p>
+        <div class="chaos-xa" id="chaosXa"></div>
+      </details>
+    </section>
     <button class="btn ghost" id="chaosBack">Готово</button>
   </div>
 
@@ -8683,6 +8749,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
   // Interactive reward preview for the League screen.
   let leaguePreviewItems = [];
+  let chaosPreviewItems = [];
   let leaguePreviewOverlay = null;
   function showLeagueRewardPreview(item) {
     if (!item) return;
@@ -8698,6 +8765,9 @@ body.menu-bg .menu-backdrop { display: block; }
     const visual = $('lrpVisual');
     visual.replaceChildren();
     if (item.kind === 'badge') visual.innerHTML = badgeSVG({id:save.season.id,league:item.league,pts:save.season.pts,name:seasonData(save.season.id).name,holiday:seasonData(save.season.id).holiday});
+    else if (item.kind === 'chaosBadge') visual.innerHTML = chaosBadgeSVG({id:item.seasonId || save.chaos.id,tier:item.tier});
+    else if (item.kind === 'abil') visual.innerHTML = '<div class="lrp-chaos-ability"><span>' + (item.icon || '✦') + '</span></div>';
+    else if (item.kind === 'look') visual.innerHTML = '<div class="lrp-chaos-ability" style="--lrp-color:' + (item.color || '#ff4fd8') + '"><span>✧</span></div>';
     else if (item.kind === 'skin' || item.id && SKINS.some(s => s.id === item.id)) {
       // Render the skin swatch through the DOM style API: complex pattern textures
       // (including generated data-URL textures) are not safe to interpolate into HTML.
@@ -8755,12 +8825,24 @@ body.menu-bg .menu-backdrop { display: block; }
   const chaosOpen = () => playerLevel() >= CHAOS_CFG.entryLevel;
   // the lowest tier still closed for this level (null = all open)
   const chaosLockTier = lv => { for (const t of [4, 5]) if (lv < CHAOS_CFG.tierLevel[t]) return t; return null; };
-  function chaosRewardText(ti) {
-    const r = [`${CHAOS_CFG.coins[ti]} ◆`];
-    if (ti >= CHAOS_CFG.topTier) r.push(`скин «${ensureChaosSkin(save.chaos.id).name}»`, `рамка «${decorById('fr_cq' + chaosQ(save.chaos.id)).name}»`);
-    if (ti >= 5) { const nx = chaosNextThird(); r.push(`титул «${decorById('tt_cq' + chaosQ(save.chaos.id)).name}»`, nx ? (nx.kind === 'abil' ? `способность «${nx.a.name}»` : `облик «${nx.l.name}»`) : 'всё уже получено'); }
-    return r.join(' + ');
+  function chaosRewardItems(ti, seasonId = save.chaos.id) {
+    const items = [{ kind:'coins', name:`${CHAOS_CFG.coins[ti]} ◆`, description:'Монеты за итоговую ступень Хаос-сезона.' }];
+    if (ti >= CHAOS_CFG.topTier) {
+      const skin = ensureChaosSkin(seasonId);
+      if (skin) items.push({ ...skin, kind:'skin', description:'Эксклюзивный скин Хаос-лиги за достижение ступени «Разлом» или выше.' });
+      const frame = decorById('fr_cq' + chaosQ(seasonId));
+      if (frame) items.push({ ...frame, kind:'frame', name:frame.name, description:'Квартальная рамка Хаос-лиги за достижение ступени «Разлом» или выше.' });
+    }
+    if (ti >= 5) {
+      const title = decorById('tt_cq' + chaosQ(seasonId));
+      if (title) items.push({ ...title, kind:'title', name:title.name, description:'Квартальный титул за завершение сезона на ступени «Сингулярность».' });
+      const nx = chaosNextThird();
+      if (nx && nx.kind === 'abil') items.push({ ...nx.a, kind:'abil', icon:nx.a.icon, name:nx.a.name, description:nx.a.desc || 'Эксклюзивная способность Хаос-лиги.' });
+      else if (nx) items.push({ ...nx.l, kind:'look', name:nx.l.name, description:'Визуальный облик эксклюзивной способности.' });
+    }
+    return items;
   }
+  function chaosRewardText(ti) { return chaosRewardItems(ti).map(x => x.name).join(' · '); }
   function renderChaosBtn() {
     const ti = chaosOf(save.chaos.pts);
     $('chaosBtn').innerHTML = chaosOpen() ? `Хаос-лига · <b class="rk-name" style="color:${CHAOS_TIERS[ti].color}">${chaosEmblem(ti, 24)}${ctName(ti)}</b> · ${save.chaos.pts}` : `Хаос-лига · 🔒 с ${CHAOS_CFG.entryLevel} уровня`;
@@ -8784,10 +8866,21 @@ body.menu-bg .menu-backdrop { display: block; }
     $('chaosPlay').disabled = !open;
     $('chaosPlay').textContent = open ? `Играть · ${MODES[seasonMode(C.id)].name}` : `Откроется на ${CHAOS_CFG.entryLevel} уровне`;
     $('chaosNote').textContent = open ? `3 случайные способности на бой (одна — рывок или деление), у всех равные условия. Купленные способности и улучшения не действуют.${CHAOS_CFG.fee[ti] ? ` Взнос за бой: ${CHAOS_CFG.fee[ti]} очков.` : ''}` : `Сейчас у тебя ${lv}-й уровень.`;
-    $('chaosTable').innerHTML = CHAOS_TIERS.map((l, i) => `<li class="${i === ti ? 'cur' : i > ti ? 'lock' : ''}" style="--lc:${l.color}"><b class="rk-name">${chaosEmblem(i, 30, { still: i !== ti })}${l.icon} ${l.name}</b><span>от ${CHAOS_CFG.pts[i]} очков${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span>` +
-      `<small>Награда: ${chaosRewardText(i)}${CHAOS_CFG.tierLevel[i] ? ` · с ${CHAOS_CFG.tierLevel[i]} ур.` : ''}${i === ti ? ' · вы здесь' : ''}</small></li>`).join('');
+    chaosPreviewItems = [];
+    $('chaosTable').innerHTML = CHAOS_TIERS.map((l, i) => {
+      const chips = chaosRewardItems(i, C.id).map(item => {
+        const n = chaosPreviewItems.push(item) - 1;
+        const label = item.kind === 'coins' ? '◆ ' + item.name.replace(' ◆','') : item.kind === 'skin' ? 'Скин' : item.kind === 'frame' ? 'Рамка' : item.kind === 'title' ? 'Титул' : item.kind === 'abil' ? 'Способность' : item.kind === 'look' ? 'Облик' : item.name;
+        return `<button type="button" class="chaos-reward-chip" data-chaos-preview="${n}">${label}</button>`;
+      }).join('');
+      return `<li class="${i === ti ? 'cur' : i > ti ? 'lock' : ''}" style="--lc:${l.color}"><div class="chaos-tier-line"><b class="rk-name">${chaosEmblem(i, 28, { still: i !== ti })}<span>${l.icon} ${l.name}</span></b><span>от ${CHAOS_CFG.pts[i].toLocaleString('ru-RU')} очков${CHAOS_CFG.fee[i] ? ` · взнос ${CHAOS_CFG.fee[i]}` : ''}</span></div><div class="chaos-tier-meta">${CHAOS_CFG.tierLevel[i] ? `Открывается с ${CHAOS_CFG.tierLevel[i]} уровня` : ''}${i === ti ? ' · Текущая ступень' : ''}</div><div class="chaos-tier-rewards">${chips}</div></li>`;
+    }).join('');
     $('chaosXa').innerHTML = XA_ABIL.map(a => `<div class="ab-row ${save.abil.xa.includes(a.id) ? 'own' : ''}" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.abil.xa.includes(a.id) ? ' <span class="badge-ex">получена</span>' : ''}</b><small>${a.desc}. Перезарядка ${a.cd} с.</small></div></div>`).join('');
   }
+  $('chaosTable').addEventListener('click', e => {
+    const b = e.target.closest('[data-chaos-preview]');
+    if (b) showLeagueRewardPreview(chaosPreviewItems[Number(b.dataset.chaosPreview)]);
+  });
   $('chaosBtn').addEventListener('click', () => {
     renderChaos(); showCard('chaosCard'); $('chaosBack').focus();
     // first visit after it opens: a short intro to the Chaos League

@@ -812,33 +812,33 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .chat-emoji-option { width: 44px; height: 44px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--row); cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
 .chat-emoji-option:hover, .chat-emoji-option:focus-visible { border-color: var(--neon-c); box-shadow: 0 0 12px rgba(34,230,255,.2); outline: none; transform: translateY(-1px); }
 .chat-emoji-svg { width: 34px; height: 34px; display: block; overflow: visible; filter: drop-shadow(0 0 3px currentColor); }
-.chat-emoji-option .chat-emoji-svg { animation: chat-emoji-pop .38s cubic-bezier(.2,.8,.25,1) both; }
-.chat-emoji-option:nth-child(2) .chat-emoji-svg { animation-delay: .025s; }
-.chat-emoji-option:nth-child(3) .chat-emoji-svg { animation-delay: .05s; }
-.chat-emoji-option:nth-child(4) .chat-emoji-svg { animation-delay: .075s; }
-.chat-emoji-option:nth-child(5) .chat-emoji-svg { animation-delay: .1s; }
-.chat-emoji-option:nth-child(6) .chat-emoji-svg { animation-delay: .125s; }
-.chat-emoji-option:nth-child(7) .chat-emoji-svg { animation-delay: .15s; }
-.chat-emoji-option:nth-child(8) .chat-emoji-svg { animation-delay: .175s; }
+.chat-emoji-option .chat-emoji-svg { animation: chat-emoji-pop .65s cubic-bezier(.2,.8,.25,1) both, chat-emoji-bob 2.8s ease-in-out .65s infinite; }
+.chat-emoji-option:nth-child(2) .chat-emoji-svg { animation-delay: .025s, .675s; }
+.chat-emoji-option:nth-child(3) .chat-emoji-svg { animation-delay: .05s, .7s; }
+.chat-emoji-option:nth-child(4) .chat-emoji-svg { animation-delay: .075s, .725s; }
+.chat-emoji-option:nth-child(5) .chat-emoji-svg { animation-delay: .1s, .75s; }
+.chat-emoji-option:nth-child(6) .chat-emoji-svg { animation-delay: .125s, .775s; }
+.chat-emoji-option:nth-child(7) .chat-emoji-svg { animation-delay: .15s, .8s; }
+.chat-emoji-option:nth-child(8) .chat-emoji-svg { animation-delay: .175s, .825s; }
 .chat-list li p .chat-inline-emoji { display: inline-block; width: 1.55em; height: 1.55em; vertical-align: -0.34em; margin: 0 .06em; }
 .chat-list li p .chat-inline-emoji .chat-emoji-svg { width: 100%; height: 100%; }
-.chat-inline-emoji[data-emote=":smile:"] .chat-emoji-svg { animation: chat-emoji-bob .48s ease-out 1; }
-.chat-inline-emoji[data-emote=":sad:"] .chat-emoji-svg { animation: chat-emoji-sad .48s ease-out 1; }
-.chat-inline-emoji[data-emote=":angry:"] .chat-emoji-svg { animation: chat-emoji-shake .32s ease-in-out 1; }
-.chat-inline-emoji[data-emote=":laugh:"] .chat-emoji-svg { animation: chat-emoji-laugh .48s ease-out 1; }
-.chat-inline-emoji[data-emote=":love:"] .chat-emoji-svg { animation: chat-emoji-heart .55s ease-out 1; }
-.chat-inline-emoji[data-emote=":wow:"] .chat-emoji-svg { animation: chat-emoji-wow .42s ease-out 1; }
-.chat-inline-emoji[data-emote=":cool:"] .chat-emoji-svg { animation: chat-emoji-cool .48s ease-out 1; }
-.chat-inline-emoji[data-emote=":wink:"] .chat-emoji-svg { animation: chat-emoji-wink .42s ease-out 1; }
+.chat-inline-emoji[data-emote=":smile:"] .chat-emoji-svg { animation: chat-emoji-bob 2.6s ease-in-out infinite; }
+.chat-inline-emoji[data-emote=":sad:"] .chat-emoji-svg { animation: chat-emoji-sad 3.2s ease-in-out infinite; }
+.chat-inline-emoji[data-emote=":angry:"] .chat-emoji-svg { animation: chat-emoji-shake 1.8s ease-in-out infinite; }
+.chat-inline-emoji[data-emote=":laugh:"] .chat-emoji-svg { animation: chat-emoji-laugh 2.4s ease-in-out infinite; }
+.chat-inline-emoji[data-emote=":love:"] .chat-emoji-svg { animation: chat-emoji-heart 1.8s ease-in-out infinite; }
+.chat-inline-emoji[data-emote=":wow:"] .chat-emoji-svg { animation: chat-emoji-wow 2.2s ease-in-out infinite; }
+.chat-inline-emoji[data-emote=":cool:"] .chat-emoji-svg { animation: chat-emoji-cool 2.8s ease-in-out infinite; }
+.chat-inline-emoji[data-emote=":wink:"] .chat-emoji-svg { animation: chat-emoji-wink 2.4s ease-in-out infinite; }
 @keyframes chat-emoji-pop { from { opacity: .5; transform: scale(.72); } 75% { opacity: 1; transform: scale(1.1); } to { transform: scale(1); } }
-@keyframes chat-emoji-bob { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-3px); } }
-@keyframes chat-emoji-sad { 0%,100% { transform: rotate(0); } 35% { transform: rotate(-7deg); } 70% { transform: rotate(5deg); } }
-@keyframes chat-emoji-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 50% { transform: translateX(2px); } 75% { transform: translateX(-1px); } }
-@keyframes chat-emoji-laugh { 0%,100% { transform: rotate(0) translateY(0); } 30% { transform: rotate(-6deg) translateY(-2px); } 65% { transform: rotate(6deg) translateY(-1px); } }
-@keyframes chat-emoji-heart { 0%,100% { transform: scale(1); } 35% { transform: scale(1.16); } 65% { transform: scale(.96); } }
-@keyframes chat-emoji-wow { 0%,100% { transform: scale(1); } 45% { transform: scale(1.15); } }
-@keyframes chat-emoji-cool { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-@keyframes chat-emoji-wink { 0%,100% { transform: scaleY(1); } 45% { transform: scaleY(.78); } }
+@keyframes chat-emoji-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes chat-emoji-sad { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-7deg); } 50% { transform: rotate(0); } 75% { transform: rotate(5deg); } }
+@keyframes chat-emoji-shake { 0%,85%,100% { transform: translateX(0); } 88% { transform: translateX(-3px); } 92% { transform: translateX(3px); } 96% { transform: translateX(-2px); } }
+@keyframes chat-emoji-laugh { 0%,100% { transform: rotate(0) translateY(0); } 25% { transform: rotate(-7deg) translateY(-3px); } 50% { transform: rotate(0) translateY(0); } 75% { transform: rotate(7deg) translateY(-2px); } }
+@keyframes chat-emoji-heart { 0%,100% { transform: scale(1); } 35% { transform: scale(1.18); } 65% { transform: scale(.96); } }
+@keyframes chat-emoji-wow { 0%,100% { transform: scale(1); } 45% { transform: scale(1.18); } }
+@keyframes chat-emoji-cool { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes chat-emoji-wink { 0%,100% { transform: scaleY(1); } 45% { transform: scaleY(.72); } }
 @media (prefers-reduced-motion: reduce) {
   .chat-emoji-option .chat-emoji-svg, .chat-inline-emoji .chat-emoji-svg { animation: none !important; }
   .chat-emoji-option { transition: none; }

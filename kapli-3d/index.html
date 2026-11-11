@@ -5824,17 +5824,20 @@ body.menu-bg .menu-backdrop { display: block; }
       }
     }
 
-    // eating — spatial broad phase keeps the original candidate order and exact eat checks.
+    // eating — keep one stable cell snapshot for the entire collision pass.
+    // lostCell() may rebuild the global cells array (for example on an extra life),
+    // but candidate indices must continue to refer to the array used to build eatGrid.
+    const eatCells = cells;
     eatGrid.clear();
     let eatMassTotal = 0;
-    for (let i = 0; i < cells.length; i++) {
-      const c = cells[i]; if (c.gone) continue;
+    for (let i = 0; i < eatCells.length; i++) {
+      const c = eatCells[i]; if (c.gone) continue;
       eatMassTotal += c.mass;
       const gx = Math.floor(c.x / EAT_GRID_SIZE), gz = Math.floor(c.z / EAT_GRID_SIZE), key = eatGridKey(gx, gz);
       let bucket = eatGrid.get(key); if (!bucket) eatGrid.set(key, bucket = []);
       bucket.push(i);
     }
-    for (const a of cells) {
+    for (const a of eatCells) {
       if (dying || a.gone) continue;
       // Upper bound includes all current mass and the maximum temporary hunt/cloak eating bonus.
       const searchR = 0.38 * Math.sqrt(Math.max(0, eatMassTotal * 1.27)) * (a.owner.rs || 1);
@@ -5847,7 +5850,7 @@ body.menu-bg .menu-backdrop { display: block; }
       }
       eatCandidates.sort((x, y) => x - y);
       for (let ci = 0; ci < eatCandidates.length; ci++) {
-      const b = cells[eatCandidates[ci]];
+      const b = eatCells[eatCandidates[ci]];
       if (dying || a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) {

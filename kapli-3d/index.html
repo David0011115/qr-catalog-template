@@ -6246,6 +6246,12 @@ body.menu-bg .menu-backdrop { display: block; }
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 186, ver: '2.1.7', date: '11 ноября', title: 'Техническая поддержка в Telegram', kind: 'update',
+      lead: 'Теперь связаться с разработчиком можно прямо из игры: в настройках появилась кнопка технической поддержки, которая открывает Telegram с готовым текстом обращения.', items: [
+      'Открой «Настройки» и нажми «Написать в поддержку», чтобы сообщить об ошибке, задать вопрос или предложить улучшение.',
+      'В честь появления поддержки всем игрокам доступен подарок — промокод HELP3D26 на 3 000 ◆.',
+      'Введи промокод в «Настройках» → «Промокод». Каждый игрок может активировать его один раз.'
+    ] },
     { id: 185, ver: '2.1.5', date: '9 ноября', title: 'Оптимизация производительности', kind: 'patch',
       lead: 'Ускорена обработка игровых объектов и визуальных эффектов. Оптимизация снижает нагрузку при больших размерах клеток без изменения баланса и основных игровых механик.', items: [
       'Ускорены расчёты поглощения за счёт проверки ближайших клеток вместо полного перебора всех пар.',
@@ -6537,9 +6543,12 @@ body.menu-bg .menu-backdrop { display: block; }
     { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a', frame: 'fr_creator', title: 'tt_creator' },
     { id: 'vet', src: 'промокод', name: 'Ветврач', label: 'ВЕТВРАЧ', c: '#3dffa2', c2: '#0b5e36', glyph: '✚', sc: '#a6ffd4', frame: 'fr_vet', title: 'tt_vet' },
   ];
-  const PROMO_CODES = { 3528217734: 'beta', 2752792474: 'creator', 1531340868: 'vet', 2337100390: 'c_druzya' };
-  // coin codes (2.0.6): a one-time gift of coins, announced in «Обновления»
-  const PROMO_COINS = { c_druzya: { name: 'Друзья', coins: 1000, c: '#ffd23f', sc: '#fff6a0' } };
+  const PROMO_CODES = { 3528217734: 'beta', 2752792474: 'creator', 1531340868: 'vet', 2337100390: 'c_druzya', 318066375: 'c_help3d26' };
+  // one-time coin gifts from update announcements
+  const PROMO_COINS = {
+    c_druzya: { name: 'Друзья', coins: 1000, c: '#ffd23f', sc: '#fff6a0' },
+    c_help3d26: { name: 'HELP3D26', coins: 3000, c: '#22e6ff', sc: '#b8f7ff' }
+  };
   const promoHash = t => { let x = 5381; for (const ch of t) x = (Math.imul(x, 33) ^ ch.charCodeAt(0)) >>> 0; return x; };
   function redeemPromo(raw) {
     const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
@@ -9956,7 +9965,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
 <script>
 /* installable app: offline cache + install button */
-const APP_VER = '216';
+const APP_VER = '217';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
 const APP_LABEL = (n => n >= 100 ? `${Math.floor(n / 100)}.${Math.floor(n / 10) % 10}.${n % 10}` : `1.${Math.floor(n / 10)}.${n % 10}`)(+APP_VER);   // 200 → 2.0.0
 if ('serviceWorker' in navigator) {

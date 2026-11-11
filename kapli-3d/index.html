@@ -34,11 +34,10 @@ img { max-width: 100%; }
 .theme-preview{min-width:0;margin:0;padding:5px;border:1px solid rgba(190,180,255,.2);border-radius:11px;background:rgba(255,255,255,.045);color:var(--fg);cursor:pointer;text-align:center}
 .theme-preview[aria-pressed="true"]{border-color:#b58aff;box-shadow:0 0 0 1px #b58aff,0 0 16px rgba(181,138,255,.3)}
 .theme-thumb{display:block;height:72px;border-radius:7px;margin-bottom:5px;overflow:hidden;position:relative;background:#111;background-size:cover;background-position:center}
-.theme-thumb:after,.theme-live-preview:after{content:"";position:absolute;inset:-30%;pointer-events:none;background-image:radial-gradient(ellipse 4px 7px at 25px 28px,rgba(255,190,225,.9) 45%,transparent 70%),radial-gradient(1px 1px at 70px 55px,#fff 50%,transparent 70%);background-size:95px 95px;animation:chatThemeFall 12s linear infinite}
 .theme-preview[data-theme="default"] .theme-thumb{background-image:linear-gradient(135deg,#17172b,#292943)}
-.theme-preview[data-theme="cosmos"] .theme-thumb{background-image:linear-gradient(0deg,rgba(3,5,20,.12),rgba(3,5,20,.12)),url("chat-cosmos.svg")}
-.theme-preview[data-theme="aurora"] .theme-thumb{background-image:linear-gradient(0deg,rgba(3,5,20,.08),rgba(3,5,20,.08)),url("chat-aurora.svg")}
-.theme-preview[data-theme="sakura"] .theme-thumb{background-image:linear-gradient(0deg,rgba(3,5,20,.08),rgba(3,5,20,.08)),url("chat-sakura.svg")}
+.theme-preview[data-theme="cosmos"] .theme-thumb{background-image:url("chat-cosmos.svg")}
+.theme-preview[data-theme="aurora"] .theme-thumb{background-image:url("chat-aurora.svg")}
+.theme-preview[data-theme="sakura"] .theme-thumb{background-image:url("chat-sakura.svg")}
 .theme-preview span:last-child{font-size:.72rem;font-weight:650;display:block;white-space:nowrap}
 .theme-live-preview{height:116px;border-radius:11px;border:1px solid rgba(190,180,255,.24);overflow:hidden;position:relative;background:#111;background-size:cover;background-position:center;box-shadow:inset 0 0 35px rgba(0,0,0,.2)}
 .theme-live-preview:before{content:"Предпросмотр";position:absolute;left:9px;bottom:8px;z-index:1;padding:4px 8px;border-radius:20px;background:rgba(5,5,18,.72);color:#fff;font-size:.7rem;letter-spacing:.02em}
@@ -54,12 +53,9 @@ img { max-width: 100%; }
 .chat-card.chat-themed:before{z-index:0;background:linear-gradient(180deg,rgba(5,5,20,.12),rgba(5,5,20,.28));animation:chatSceneDrift 32s ease-in-out infinite alternate}
 .chat-card.chat-themed:after{z-index:0;inset:-25%;background-repeat:repeat;background-size:180px 210px;animation:chatThemeFall 22s linear infinite}
 .chat-card.chat-themed>*{position:relative;z-index:1}
-.chat-card[data-chat-theme="cosmos"]{background-image:linear-gradient(180deg,rgba(4,5,24,.28),rgba(4,5,24,.38)),url("chat-cosmos.svg")}
-.chat-card[data-chat-theme="aurora"]{background-image:linear-gradient(180deg,rgba(4,12,24,.24),rgba(4,12,24,.38)),url("chat-aurora.svg")}
-.chat-card[data-chat-theme="sakura"]{background-image:linear-gradient(180deg,rgba(20,7,27,.2),rgba(20,7,27,.4)),url("chat-sakura.svg")}
-.chat-card[data-chat-theme="cosmos"]:after{opacity:.38;background-image:radial-gradient(1.5px 1.5px at 22px 35px,#fff 45%,transparent 60%),radial-gradient(1px 1px at 108px 94px,#9beaff 45%,transparent 60%),radial-gradient(1px 1px at 154px 165px,#e9aaff 45%,transparent 60%)}
-.chat-card[data-chat-theme="aurora"]:before{opacity:1;background-image:linear-gradient(115deg,transparent 18%,rgba(78,255,204,.18) 38%,rgba(115,105,255,.14) 56%,transparent 76%);background-size:220% 100%;animation:chatAuroraWave 13s ease-in-out infinite alternate}
-.chat-card[data-chat-theme="sakura"]:after{opacity:.65;background-image:radial-gradient(ellipse 5px 9px at 25px 28px,rgba(255,170,220,.95) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 115px 115px,rgba(255,115,190,.82) 45%,transparent 70%),radial-gradient(ellipse 4px 7px at 165px 55px,rgba(255,210,235,.85) 45%,transparent 70%);background-size:190px 190px}
+.chat-card[data-chat-theme="cosmos"]{background-image:url("chat-cosmos.svg")}
+.chat-card[data-chat-theme="aurora"]{background-image:url("chat-aurora.svg")}
+.chat-card[data-chat-theme="sakura"]{background-image:url("chat-sakura.svg")}
 .chat-card[data-chat-theme] .chat-list{background:rgba(5,5,18,.42);border-radius:12px}
 .chat-card[data-chat-theme] .chat-form{background:rgba(5,5,18,.56);border-radius:12px;padding:5px}
 @keyframes chatSceneDrift{0%{background-position:0% 0%,center}100%{background-position:100% 100%,center}}
@@ -85,9 +81,6 @@ img { max-width: 100%; }
 .theme-full-scene[data-theme-preview="aurora"]{background-image:url("chat-aurora.svg")}
 .theme-full-scene[data-theme-preview="sakura"]{background-image:url("chat-sakura.svg")}
 .theme-full-scene[data-theme-preview="default"]{background-image:linear-gradient(135deg,#17172b,#292943)}
-.theme-full-scene[data-theme-preview="cosmos"]:after{background-image:radial-gradient(2px 2px at 8% 18%,#fff 55%,transparent 70%),radial-gradient(1.5px 1.5px at 34% 62%,#a9eaff 55%,transparent 70%),radial-gradient(2px 2px at 78% 32%,#fff 55%,transparent 70%),radial-gradient(1px 1px at 62% 82%,#d8aaff 55%,transparent 70%);background-size:240px 210px;animation:themeStarDrift 26s linear infinite}
-.theme-full-scene[data-theme-preview="aurora"]:after{background:linear-gradient(115deg,transparent 18%,rgba(70,255,205,.28) 38%,rgba(128,110,255,.22) 56%,transparent 76%);background-size:220% 100%;filter:blur(12px);animation:themeAuroraFlow 12s ease-in-out infinite alternate}
-.theme-full-scene[data-theme-preview="sakura"]:after{background-image:radial-gradient(ellipse 6px 10px at 8% 18%,rgba(255,190,225,.95) 45%,transparent 72%),radial-gradient(ellipse 5px 8px at 38% 46%,rgba(255,130,195,.92) 45%,transparent 72%),radial-gradient(ellipse 5px 9px at 72% 25%,rgba(255,225,240,.95) 45%,transparent 72%),radial-gradient(ellipse 4px 7px at 88% 68%,rgba(255,155,210,.9) 45%,transparent 72%);background-size:310px 260px;animation:themePetalDrift 14s linear infinite}
 .theme-demo-chat{position:absolute;z-index:2;left:clamp(14px,5vw,56px);right:clamp(14px,5vw,56px);bottom:clamp(18px,6vh,58px);display:grid;gap:9px;max-width:540px;margin:auto}
 .theme-demo-msg{width:fit-content;max-width:min(86%,420px);padding:10px 14px;border:1px solid rgba(255,255,255,.2);border-radius:14px 14px 14px 4px;background:rgba(5,5,22,.62);box-shadow:0 8px 24px rgba(0,0,0,.2);backdrop-filter:blur(7px);display:grid;gap:3px}
 .theme-demo-msg b{font-size:.72rem;color:#9cecff}
@@ -105,9 +98,6 @@ img { max-width: 100%; }
 /* Theme preview polish: compact controls, stronger scenery, lighter chat surfaces. */
 .theme-full-scene{background-size:100% 100%;background-position:center}
 .theme-full-scene:before{background:linear-gradient(180deg,rgba(2,3,15,.02),rgba(2,3,15,0) 48%,rgba(2,3,15,.18))}
-.theme-full-scene[data-theme-preview="cosmos"]:after{opacity:.8;background-size:190px 170px}
-.theme-full-scene[data-theme-preview="aurora"]:after{opacity:.42;background:radial-gradient(ellipse at 48% 28%,rgba(93,255,218,.16),transparent 58%),linear-gradient(115deg,transparent 18%,rgba(70,255,205,.12) 38%,rgba(128,110,255,.10) 56%,transparent 76%);background-size:100% 100%;filter:none;animation:none;transform:none;will-change:auto}
-.theme-full-scene[data-theme-preview="sakura"]:after{opacity:1;background-size:250px 210px}
 .theme-full-top{background:linear-gradient(180deg,rgba(4,4,16,.52),rgba(4,4,16,0))}
 .theme-full-actions{justify-content:flex-end;align-items:center;gap:8px;background:linear-gradient(0deg,rgba(4,4,16,.62),rgba(4,4,16,0));padding-top:8px}
 .theme-full-actions .btn{flex:0 0 auto;width:auto;min-width:104px;min-height:42px;padding:9px 16px;font-size:.88rem}
@@ -115,7 +105,7 @@ img { max-width: 100%; }
 .theme-full-actions #themeFullBack{min-width:82px}
 .theme-demo-msg{background:rgba(5,5,22,.43);border-color:rgba(255,255,255,.28);backdrop-filter:blur(4px)}
 .theme-demo-msg.mine{background:rgba(74,39,112,.48)}
-.chat-card[data-chat-theme] .chat-list{background:rgba(5,5,18,.20);border:1px solid rgba(255,255,255,.07);backdrop-filter:blur(2px)}
+.chat-card[data-chat-theme] .chat-list{background:rgba(5,5,18,.20);border:1px solid rgba(255,255,255,.07)}
 .chat-card[data-chat-theme] .chat-form{background:rgba(5,5,18,.34);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(5px)}
 @media(max-width:420px){.theme-full-actions{gap:7px}.theme-full-actions .btn{min-height:40px;padding:8px 12px;font-size:.82rem}.theme-full-actions #themeFullApply{min-width:126px}}
 @media(prefers-reduced-motion:reduce){.theme-full-scene:after{animation:none!important}}
@@ -126,7 +116,6 @@ img { max-width: 100%; }
 .theme-full-preview .theme-full-actions{grid-row:3;align-self:end}
 .theme-full-preview .theme-demo-chat{bottom:calc(74px + env(safe-area-inset-bottom,0px));top:auto;max-height:calc(100% - 170px);overflow:hidden}
 @media(orientation:landscape){.theme-full-preview .theme-demo-chat{left:max(18px,env(safe-area-inset-left,0px));right:auto;width:min(46%,420px);margin:0}}
-.theme-full-scene[data-theme-preview="aurora"]:after,.chat-card[data-chat-theme="aurora"]:before,.theme-preview[data-theme="aurora"] .theme-thumb:after,.theme-live-preview[data-theme-preview="aurora"]:after{opacity:0!important;animation:none!important;background:none!important}
 .theme-thumb,.theme-live-preview{background-size:cover!important;background-position:center!important}
 
 /* Messenger-style chat bubbles: compact outline follows message width. */
@@ -2091,8 +2080,7 @@ body.menu-bg .menu-backdrop { display: block; }
 /* «Капли» theme */
 .theme-preview[data-theme="drops"] .theme-thumb{background-image:url("chat-drops.svg")}
 .theme-live-preview[data-theme-preview="drops"],.theme-full-scene[data-theme-preview="drops"]{background-image:url("chat-drops.svg")}
-.chat-card[data-chat-theme="drops"]{background-image:linear-gradient(180deg,rgba(8,4,28,.22),rgba(8,4,28,.36)),url("chat-drops.svg")}
-.theme-preview[data-theme="drops"] .theme-thumb:after{opacity:0}
+.chat-card[data-chat-theme="drops"]{background-image:url("chat-drops.svg")}
 /* Theme picker: four thumbnails in one row, the eye sits on the thumbnail's corner (no separate column) */
 .theme-preview-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px}
 .theme-option{position:relative;display:block!important}

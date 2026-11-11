@@ -1725,6 +1725,47 @@ body.menu-bg .menu-backdrop { display: block; }
 #leagueCard[hidden]{display:none!important}
 </style>
 
+
+<style id="league-compact-preview-v1">
+#leagueCard.league-screen{gap:9px!important;padding:12px!important}
+#leagueCard .league-screen-head{padding-bottom:7px}
+#leagueCard .league-main{gap:8px}
+#leagueCard .league-current{gap:8px;padding:12px}
+#leagueCard .league-current-emblem{width:72px;height:72px}
+#leagueCard .league-current-head{gap:10px}
+#leagueCard .league-points{margin:0}
+#leagueCard .league-season-block{padding:9px 11px;gap:6px}
+#leagueCard .league-more{gap:7px}
+#leagueCard .lg-fold>summary{padding:8px 11px}
+#leagueCard .lg-fold .lg-table{display:grid;grid-template-columns:1fr;gap:5px;margin-top:6px}
+#leagueCard .lg-fold .lg-table>li{padding:7px 9px;gap:4px}
+#leagueCard .lg-rank-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#leagueCard .lg-rank-line .rk-name{display:flex;align-items:center;gap:6px}
+#leagueCard .lg-rank-line>span{font-size:.7rem;color:var(--muted);text-align:right}
+#leagueCard .lg-reward-chips{display:flex;flex-wrap:wrap;gap:5px}
+#leagueCard .lg-reward-chip{width:auto;margin:0;padding:4px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--lc) 55%,transparent);background:color-mix(in srgb,var(--lc) 12%,rgba(12,10,32,.8));color:var(--fg);font-size:.68rem;line-height:1.2}
+#leagueCard .lg-reward-chip:active{transform:scale(.97)}
+#leagueCard #seasonSkin{cursor:pointer}
+#leagueRewardPreview{position:fixed;inset:0;z-index:180;display:grid;place-items:center;padding:18px;background:rgba(2,2,12,.78);backdrop-filter:blur(8px)}
+#leagueRewardPreview[hidden]{display:none}
+#leagueRewardPreview .lrp-card{width:min(360px,100%);padding:18px;border:1px solid rgba(160,140,255,.42);border-radius:20px;background:linear-gradient(155deg,#211744,#09091d);box-shadow:0 18px 55px #0009;text-align:center}
+#leagueRewardPreview .lrp-visual{height:132px;display:grid;place-items:center;margin-bottom:10px}
+#leagueRewardPreview .lrp-visual .sw{width:92px;height:92px;border-radius:50%;border:3px solid rgba(255,255,255,.5);box-shadow:0 0 28px var(--lrp-color,#8e7aff)}
+#leagueRewardPreview .lrp-visual svg{width:112px;height:112px}
+#leagueRewardPreview h3{margin:4px 0 7px}
+#leagueRewardPreview p{margin:0 0 14px;color:var(--muted);font-size:.84rem;line-height:1.45}
+#leagueRewardPreview .btn{margin:0}
+@media(max-width:699px){
+ #leagueCard.league-screen{gap:7px!important;padding:10px!important}
+ #leagueCard .league-current{gap:7px;padding:10px}
+ #leagueCard .league-current-emblem{width:64px;height:64px}
+ #leagueCard .league-current-copy>b{font-size:1.3rem}
+ #leagueCard .league-progress-track{height:9px}
+ #leagueCard .league-season-block{padding:8px}
+ #leagueCard .lg-fold .lg-table>li{padding:6px 8px}
+}
+</style>
+
 </head>
 <body>
 
@@ -2085,7 +2126,7 @@ body.menu-bg .menu-backdrop { display: block; }
     </section>
     <section class="league-more">
       <details class="lg-fold lg-rewards">
-        <summary><span>Ступени и награды</span><small>Все 6 лиг сезона</small></summary>
+        <summary><span>Ступени и награды</span><small>6 ступеней сезона</small></summary>
         <ul class="lg-table" id="lgTable"></ul>
       </details>
       <details class="lg-fold lg-upcoming">
@@ -8551,6 +8592,46 @@ body.menu-bg .menu-backdrop { display: block; }
       <p>${fmtDate(st)} – ${fmtDate(st + SEASON_LEN)}<br>Лига: <span>${L.name}</span> · ${x.pts} очков${x.holiday ? `<br>Праздничный сезон: ${HOLIDAYS[x.holiday].name}` : ''}${live ? '<br>Сезон ещё идёт: значок улучшится, если поднимешься в лиге' : ''}</p></div>`;
   }
 
+  // Interactive reward preview for the League screen.
+  let leaguePreviewItems = [];
+  let leaguePreviewOverlay = null;
+  function showLeagueRewardPreview(item) {
+    if (!item) return;
+    if (!leaguePreviewOverlay) {
+      leaguePreviewOverlay = document.createElement('div');
+      leaguePreviewOverlay.id = 'leagueRewardPreview';
+      leaguePreviewOverlay.hidden = true;
+      leaguePreviewOverlay.innerHTML = '<div class="lrp-card" role="dialog" aria-modal="true" aria-labelledby="lrpTitle"><div class="lrp-visual" id="lrpVisual"></div><h3 id="lrpTitle"></h3><p id="lrpDescription"></p><button type="button" class="btn" id="lrpClose">Понятно</button></div>';
+      document.body.appendChild(leaguePreviewOverlay);
+      leaguePreviewOverlay.addEventListener('click', e => { if (e.target === leaguePreviewOverlay || e.target.id === 'lrpClose') leaguePreviewOverlay.hidden = true; });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && leaguePreviewOverlay && !leaguePreviewOverlay.hidden) leaguePreviewOverlay.hidden = true; });
+    }
+    const visual = $('lrpVisual');
+    let art = '';
+    if (item.kind === 'badge') art = badgeSVG({id:save.season.id,league:item.league,pts:save.season.pts,name:seasonData(save.season.id).name,holiday:seasonData(save.season.id).holiday});
+    else if (item.kind === 'skin') art = '<div class="sw" style="' + swatch(item) + '"></div>';
+    else if (item.kind === 'fx') art = '<div class="sw" style="background:radial-gradient(circle at 35% 35%,#fff,' + (item.color || '#ff4fd8') + ' 42%,#09051c);--lrp-color:' + (item.color || '#ff4fd8') + '"></div>';
+    else if (item.kind === 'pet') art = '<div style="font-size:76px;filter:drop-shadow(0 0 18px #9b8cff)">🐾</div>';
+    else if (item.kind === 'coins') art = '<div style="font-size:66px;color:#ffd23f;text-shadow:0 0 24px #ffd23f">◆</div>';
+    else if (item.kind === 'frame') art = '<div style="width:90px;height:90px;border:8px double #b58aff;border-radius:28px;box-shadow:0 0 24px #9b70ff"></div>';
+    else if (item.kind === 'title') art = '<div style="font-size:26px;font-weight:900;color:#ffd36a;text-shadow:0 0 18px #ffb52e">ТИТУЛ</div>';
+    visual.innerHTML = art;
+    $('lrpTitle').textContent = item.name || 'Награда сезона';
+    $('lrpDescription').textContent = item.description || 'Награда за достижение соответствующей ступени лиги.';
+    leaguePreviewOverlay.hidden = false;
+    $('lrpClose').focus();
+  }
+  $('lgTable').addEventListener('click', e => {
+    const b = e.target.closest('[data-league-preview]');
+    if (b) showLeagueRewardPreview(leaguePreviewItems[Number(b.dataset.leaguePreview)]);
+  });
+  $('seasonSkin').addEventListener('click', () => {
+    const sd = seasonData(save.season.id), li = leagueOf(save.season.pts);
+    const item = sd.skin || sd.fx || (sd.items && sd.items[0]) || (sd.pets && sd.pets[0]);
+    if (item) showLeagueRewardPreview({...item,description:'Главная сезонная награда. Условия получения указаны в карточке сезона.'});
+  });
+  $('seasonSkin').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('seasonSkin').click(); } });
+
   // ================= league =================
   // ================= Chaos League: points, window =================
   function chaosApply(gain) {
@@ -8667,9 +8748,21 @@ body.menu-bg .menu-backdrop { display: block; }
       $('curBadge').innerHTML = badgeDesc(cur, true).replace('<b>', '<b>Твой значок: '); }
     const nextIds = [1, 2, 3].map(k => save.season.id + k);
     $('seasonNext').innerHTML = nextIds.map(id => { const d = seasonData(id); return `<li><span>Сезон ${id}: ${d.name}${d.holiday ? ' · праздник, праздничные награды' : ''} · «${MODES[seasonMode(id)].name}»</span><span class="rw">с ${fmtDate(SEASON_EPOCH + (id - 1) * SEASON_LEN)}</span></li>`; }).join('');
-    $('lgTable').innerHTML = LEAGUES.map((_, i) => { const l = lgView(i, hk), rw = leagueRewardText(sd, i);
-      return `<li class="${i === li ? 'cur' : i > li ? 'lock' : ''}" style="--lc:${l.color}"><b class="rk-name">${rankEmblem(i, 30, { still: i !== li })}${l.name}</b><span>от ${l.pts} очков</span>` +
-      `<small>Награда: ${l.coins} ◆${rw ? ` + ${rw}` : ''} + значок сезона${i === li ? ' · вы здесь' : ''}</small></li>`; }).join('');
+    leaguePreviewItems = [];
+    $('lgTable').innerHTML = LEAGUES.map((_, i) => {
+      const l = lgView(i, hk), rewards = seasonRewards(sd, i), decor = seasonDecor(sd, i);
+      const addPreview = (item) => { const n = leaguePreviewItems.push(item) - 1; return n; };
+      const chips = [
+        `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({kind:'coins',name:`${l.coins} ◆`,description:'Монеты за достижение этой лиги по итогам сезона.'})}">◆ ${l.coins}</button>`,
+        `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({kind:'badge',name:'Значок сезона',description:`Значок с эмблемой лиги «${l.name}» и номером сезона.`,league:i})}">Значок</button>`,
+        ...rewards.map(r => `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({...r,description:r.kind==='skin'?'Сезонный облик капли.':r.kind==='fx'?'Эффект оформления капли.':r.kind==='pet'?'Питомец, который сопровождает игрока.':'Награда сезона.'})}">${r.kind==='skin'?'Скин':r.kind==='fx'?'Эффект':r.kind==='pet'?'Питомец':r.name}</button>`),
+        ...decor.map(id => `<button type="button" class="lg-reward-chip" data-league-preview="${addPreview({kind:id.startsWith('fr_')?'frame':'title',name:id.startsWith('fr_')?'Рамка сезона':'Титул сезона',description:'Дополнительная награда за высокий ранг в сезоне.'})}">${id.startsWith('fr_')?'Рамка':'Титул'}</button>`)
+      ].join('');
+      return `<li class="${i === li ? 'cur' : i > li ? 'lock' : ''}" style="--lc:${l.color}"><div class="lg-rank-line"><b class="rk-name">${rankEmblem(i, 27, { still: i !== li })}${l.name}</b><span>от ${l.pts} очков${i === li ? ' · ты здесь' : ''}</span></div><div class="lg-reward-chips">${chips}</div></li>`;
+    }).join('');
+    $('seasonSkin').setAttribute('role','button');
+    $('seasonSkin').setAttribute('tabindex','0');
+    $('seasonSkin').setAttribute('data-season-preview','1');
   }
   $('leagueBtn').addEventListener('click', () => { renderLeague(); showCard('leagueCard'); $('leagueBack').focus(); });
   $('leaguePlay').addEventListener('click', () => { pendingRanked = true; startRound(); });

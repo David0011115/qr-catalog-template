@@ -9300,7 +9300,7 @@ body.menu-bg .menu-backdrop { display: block; }
       Net.uid = user ? user.id : null; Net.nick = user ? (nick || meta.nick || null) : null;
       Net.shortId = user && publicId != null ? String(publicId).padStart(6, '0') : '';
       Net.email = user ? user.email : '';
-      if (!user) { canPush = false; setSync('guest'); frStop(); } else { setTimeout(() => pushShowcase(), 3000); if (Net.uid !== frStart.uid) frStart(); }
+      if (!user) { canPush = false; setSync('guest'); frStop(); } else { if (!privacyPending) setTimeout(() => pushShowcase(), 3000); if (!privacyPending && Net.uid !== frStart.uid) frStart(); }
       frStart.uid = Net.uid;
       renderChip();
     }
@@ -9433,6 +9433,7 @@ body.menu-bg .menu-backdrop { display: block; }
           step('acct', 'run', 'Проверка аккаунта…');
           const { data } = await withTimeout(sb.auth.getSession(), 8000); sess = data.session;
           if (sess) {
+            privacyPending = true; canPush = false;
             await loadProfile().catch(() => setUser(sess.user, meta.nick)); step('acct', 'ok');
             let consentOk = false;
             try { consentOk = await checkPrivacyConsent(); } catch (e) { privacyPending = true; canPush = false; }
@@ -9519,6 +9520,7 @@ body.menu-bg .menu-backdrop { display: block; }
     document.querySelectorAll('[data-av]').forEach(b => b.addEventListener('click', () => setView(b.dataset.av)));
     $('acctForgot').addEventListener('click', () => setView(av === 'forgot' ? 'login' : 'forgot'));
     async function afterSignIn() {
+      privacyPending = true; canPush = false;
       await loadProfile().catch(() => setUser(sess.user, meta.nick));
       try {
         if (!(await checkPrivacyConsent())) { openAccount('privacy'); renderAll(); return; }

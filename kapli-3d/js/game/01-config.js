@@ -128,9 +128,13 @@
     { id: 'x_vamp',    xa: true, name: 'Кровопийца',           sh: 'Кровоп.',  icon: '♆', color: '#c2185b', cd: 40, dur: 5, radius: 12, desc: '5 с соседние капли меньше тебя понемногу теряют массу, а ты её получаешь' },
     { id: 'x_typhoon', xa: true, name: 'Тайфун',               sh: 'Тайфун',   icon: '🌀', color: '#7fe8ff', cd: 35, dur: 3, radius: 18, desc: 'Вихрь вокруг тебя 3 с раскидывает мелкие капли и отбивает выбросы' },
     { id: 'x_phase',   xa: true, name: 'Фазовый скачок',       sh: 'Фаза',     icon: '⇉', color: '#ff4fd8', cd: 28, dist: 14, desc: 'Скачок вперёд, и в течение 2 с — второй, в новом направлении' },
+    // 2.3 workshop «Хронос» (cr): crafted, no price, no upgrades, ordinary modes only
+    { id: 'cr_gearwall', cr: true, name: 'Стена шестерён', sh: 'Стена', icon: '⚙', color: '#e8b05a', cd: 26, dur: 5, dmg: .05, desc: 'Ставит перед тобой стену из вращающихся шестерён на 5 с. Кто врежется — отскакивает и теряет 5% массы' },
+    { id: 'cr_rewind',   cr: true, name: 'Перемотка',      sh: 'Назад', icon: '⟲', color: '#22e6ff', cd: 40, back: 4, desc: 'Возвращает тебя туда, где ты был 4 с назад, и с той массой, если она была больше' },
+    { id: 'cr_swap',     cr: true, name: 'Рокировка',      sh: 'Рокир.', icon: '⇄', color: '#b26bff', cd: 30, radius: 25, desc: 'Меняет тебя местами с ближайшей каплей впереди (в радиусе 25)' },
   ];
   const abilById = id => ABILITIES.find(a => a.id === id);
-  const BASE_ABIL = ABILITIES.filter(a => !a.xa), XA_ABIL = ABILITIES.filter(a => a.xa);
+  const BASE_ABIL = ABILITIES.filter(a => !a.xa && !a.cr), XA_ABIL = ABILITIES.filter(a => a.xa), CR_ABIL = ABILITIES.filter(a => a.cr);
   const abUpCost = (a, lv) => Math.round(a.price * ABIL_CFG.firstLevel * Math.pow(ABIL_CFG.growth, lv) / 50) * 50;   // price of level lv+1   // dash = 3.2x the starting speed, whatever the mass
   const OLD_SPEED = 11, BASE_SPEED = OLD_SPEED * 3;   // everyone moves 3x faster than the first version (shown as 300%)   // split cooldown (s) for everyone, part limit for bots
   const css = getComputedStyle(document.documentElement);
@@ -234,6 +238,14 @@
     // 2.1.0 prestige rewards (not sold, not in chests)
     { id: 'psDust', slot: 'trail', name: 'Звёздная пыль', desc: 'Шлейф белых, розовых и голубых искр', prestige: '✦5' },
     { id: 'psNova', slot: 'eat', name: 'Звёздный взрыв', desc: 'Вспышка звезды и кольцо искр', prestige: '✦10' },
+    // 2.3 workshop «Хронос» (craft only)
+    { id: 'cr_cogs',     slot: 'trail', name: 'Шестерёнки',       desc: 'За каплей катятся и исчезают крупные шестерёнки', craft: 'rare' },
+    { id: 'cr_tick',     slot: 'eat',   name: 'Тик-так',          desc: 'На месте добычи вспыхивает циферблат, стрелка делает круг, и он гаснет', craft: 'rare' },
+    { id: 'cr_marks',    slot: 'trail', name: 'Часовые отметины', desc: 'За каплей на полу остаётся шкала с рисками и цифрами 12…1, она гаснет', craft: 'epic' },
+    { id: 'cr_cogwings', slot: 'aura',  name: 'Шестерни-крылья',  desc: 'По бокам капли парят по две сцепленные шестерни и крутятся навстречу', craft: 'epic' },
+    { id: 'cr_freeze',   slot: 'eat',   name: 'Стоп-кадр',        desc: 'Добыча на миг застывает серым кадром, трескается и осыпается латунным песком', craft: 'legendary' },
+    { id: 'cr_halo',     slot: 'aura',  name: 'Часовой нимб',     desc: 'Над каплей медленно вращается нимб с римскими цифрами', craft: 'legendary' },
+    { id: 'cr_foucault', slot: 'aura',  name: 'Маятник Фуко',     desc: 'Над каплей качается сияющий маятник и рисует на полу переливающуюся розетку', craft: 'legendary' },
   ];
   // older code reads ex / chaos / raid / season flags
   const FX_SLOTS = [['trail', 'След'], ['aura', 'Аура'], ['eat', 'Эффект поедания']];
@@ -309,6 +321,14 @@
     { id: 'tut_student', name: 'Ученик',  color: '#9fe8ff', accent: '#ffd23f', pattern: 'dots', glow: true, head: 'gradcap', tut: true, sig: 'шапочка выпускника' },
     { id: 'sk_virtuoso', name: 'Виртуоз', color: '#22e6ff', accent: '#ff4fd8', pattern: 'zigzag', glow: true, pulse: true, head: 'prism', shine: 'bolt', skill: 'all', sig: 'призма и молния' },
     { id: 'cv_skin',     name: 'Хаосит',  color: '#0a0010', accent: '#ff2dd8', pattern: 'split', anim: 'glitch', head: 'fragments', glow: true, chaosVet: true, sig: 'расслоение цвета и осколки на орбите' },
+    // 2.3 workshop «Хронос»: only crafted from shards (craft = rarity); `live` skins redraw their texture every few frames
+    { id: 'cr_engrave',  name: 'Гравировка',      color: '#3a1a08', accent: '#ffd27a', pattern: 'live', live: 'engrave', craft: 'epic', sig: 'светящиеся гравированные шестерни вращаются' },
+    { id: 'cr_watch',    name: 'Карманные часы',  color: '#e8b05a', accent: '#7a4a12', pattern: 'live', live: 'watch', craft: 'rare', sig: 'циферблат, стрелки идут на макушке' },
+    { id: 'cr_windup',   name: 'Заводная капля',  color: '#e8b05a', accent: '#7a4a12', pattern: 'brass', head: 'windkey', craft: 'rare', sig: 'заводной ключ крутится на ходу' },
+    { id: 'cr_skeleton', name: 'Скелетон',        color: '#e8b05a', accent: '#7a4a12', mat: 'skeleton', craft: 'epic', sig: 'прозрачный корпус, внутри крутится механизм' },
+    { id: 'cr_sandup',   name: 'Время вспять',    color: '#bff8ff', accent: '#ffd27a', mat: 'sandglass', craft: 'epic', sig: 'песок сыплется вверх и копится у макушки' },
+    { id: 'cr_spiral',   name: 'Часовая спираль', color: '#160c30', accent: '#22e6ff', pattern: 'live', live: 'spring', glow: true, craft: 'legendary', sig: 'пульсирует пружина, по ней бежит стрелка' },
+    { id: 'cr_moon',     name: 'Лунная фаза',     color: '#141c5a', accent: '#ffd27a', pattern: 'live', live: 'moon', glow: true, craft: 'legendary', sig: 'окошко с фазами луны, в полнолуние вспышка' },
   ];
   [...SKINS, ...FX].forEach(x => { if (x.ch) x.ex = true; if (x.chaosQ) x.chaos = 'q' + x.chaosQ; if (x.chaosVet) x.chaos = 'vet'; if (x.raidQ) x.raid = true; });
   // rarities for chest loot; a duplicate turns into coins
@@ -464,6 +484,11 @@
   const fr = (id, name, rar, a, b, x = {}) => ({ id, kind: 'frame', name, rar, a, b, ...x });
   const tt = (id, name, rar, a, b, ico, x = {}) => ({ id, kind: 'title', name, rar, a, b, ico, color: a, ...x });
   const DECOR = [
+    // 2.3 workshop «Хронос» frames (craft only)
+    fr('fr_cr_dial', 'Циферблат', 'common', '#e8b05a', '#fff6d8', { craft: 'common' }),
+    fr('fr_cr_roman', 'Римские часы', 'rare', '#e8b05a', '#7a4a12', { craft: 'rare' }),
+    fr('fr_cr_pend', 'Маятник', 'epic', '#e8b05a', '#ffd27a', { craft: 'epic' }),
+    fr('fr_cr_gyro', 'Гироскоп', 'legendary', '#ffd27a', '#e8b05a', { craft: 'legendary' }),
     // chests: one of each rarity
     fr('fr_cyan', 'Неоновая линия', 'common', '#22e6ff', '#7b3dff', { chest: 'common' }),
     fr('fr_glow', 'Сияющая', 'rare', '#3dffa2', '#22e6ff', { chest: 'rare' }),
@@ -785,7 +810,7 @@
 
   // ================= pets (league rewards: Platinum and Neon; holiday pets in holiday seasons) =================
   const PET_SPECIES = { drop: 'Капелька', cat: 'Котик', cube: 'Кубик', pyramid: 'Пирамидка', jelly: 'Медуза', firefly: 'Светлячок', robot: 'Робот', ghost: 'Призрачок',
-    pumpkin: 'Тыковка', bat: 'Летучая мышка', snowman: 'Снеговичок', deer: 'Олешек', heart: 'Сердечко', cupid: 'Амурчик' };
+    pumpkin: 'Тыковка', bat: 'Летучая мышка', snowman: 'Снеговичок', deer: 'Олешек', heart: 'Сердечко', cupid: 'Амурчик', cuckoo: 'Кукушка', mouse: 'Мышка', owl: 'Совёнок' };
   const REG_SPECIES = ['drop', 'cat', 'cube', 'pyramid', 'jelly', 'firefly', 'robot', 'ghost'];
   const PET_BONUS = {
     magnet: { name: 'Сборщик', text: lv => `+${lv} к радиусу сбора крошек` },
@@ -794,6 +819,10 @@
     xp:     { name: 'Умник',   text: lv => `+${5 * lv}% опыта за раунд` },
     shield: { name: 'Страж',   text: lv => `+${2 * lv} с неуязвимости в начале раунда` },
     eater:  { name: 'Обжора',  text: lv => `сам подбирает крошки рядом с собой (радиус ${2 + lv})` },
+    // 2.3 workshop «Хронос» pets: their own skills (not tied to the level)
+    cuckoo: { name: 'Кукушка',    text: () => 'раз в минуту кукует и показывает стрелкой, где ближайший бонус' },
+    windup: { name: 'Завод',      text: () => 'раз в 45 с способности перезаряжаются на 2 с быстрее' },
+    owl:    { name: 'Предсказатель', text: () => 'за 5 с до появления бонуса отмечает это место циферблатом с отсчётом' },
   };
   const BONUS_KEYS = Object.keys(PET_BONUS);
   // ---- extra collections: league set, league seasons by quarter (1–13, 14–26, 27–39, 40–52), holiday sets ----
@@ -868,8 +897,12 @@
     ['lg_starpet', 'Звёздный страж',     'robot', '#fff6a0', '#ff4fd8', 'shield', 3, { legend: 'stars2' }],
     ['lg_pet',     'Хранитель вечности', 'ghost', '#ffd23f', '#ff4fd8', 'coins',  3, { legend: 'time' }],
     ['raid_p',     'Рейдер',             'brute', '#ff2d55', '#ffd23f', 'eater',  2, { raid: true }],
+    // 2.3 workshop «Хронос» (craft only)
+    ['cr_p_cuckoo', 'Кукушка',          'cuckoo', '#e8b05a', '#7a4a12', 'cuckoo', 1, { craft: 'rare' }],
+    ['cr_p_mouse',  'Заводная мышка',   'mouse',  '#d9a45a', '#7a4a12', 'windup', 1, { craft: 'epic' }],
+    ['cr_p_owl',    'Совёнок-часовщик', 'owl',    '#c98a4b', '#5a3010', 'owl',    1, { craft: 'legendary' }],
   ];
-  const PET_TIER = pt => pt.season ? (pt.season % 2 ? 'Сезон · Неон' : 'Сезон') : pt.holiday ? 'Праздник · Платина' : pt.chest ? RARITY[pt.chest].name : pt.lchest ? 'Сундук лиги' : pt.legend ? 'Легенда' : pt.raid ? 'Босс-рейд' : '';
+  const PET_TIER = pt => pt.craft ? 'Мастерская · ' + RARITY[pt.craft].name : pt.season ? (pt.season % 2 ? 'Сезон · Неон' : 'Сезон') : pt.holiday ? 'Праздник · Платина' : pt.chest ? RARITY[pt.chest].name : pt.lchest ? 'Сундук лиги' : pt.legend ? 'Легенда' : pt.raid ? 'Босс-рейд' : '';
   PET_LIST.forEach(([id, name, species, color, accent, bonus, lv, extra]) => { const pt = { id, name, species, color, accent, bonus, lv, ...extra }; pt.tier = PET_TIER(pt); addPet(pt); });
   const seasonPets = i0 => PETS.filter(pt => pt.season === i0 + 1);
   const holidayPets = k => PETS.filter(pt => pt.holiday === k);
@@ -958,7 +991,7 @@
     return { id: `lk_${a.id}_${k}`, ab: a.id, k, name: `${a.name}: ${v.n}`, ...v };
   };
   // reward order: round-robin — the 1st look of every ability, then the 2nd, then the 3rd
-  const allLooks = () => [0, 1, 2].flatMap(k => ABILITIES.map(a => lookOf(a, k)));
+  const allLooks = () => [0, 1, 2].flatMap(k => ABILITIES.filter(a => !a.cr).map(a => lookOf(a, k)));
   const lookById = id => allLooks().find(l => l.id === id);
   function ensureChaosSkin(id) { return SKINS.find(k => k.id === 'cs_q' + chaosQ(id)); }
   const QUESTS = [

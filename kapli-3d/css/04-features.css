@@ -136,3 +136,5 @@
 .lrp-chaos-ability span{font-size:3.6rem;line-height:1;color:#fff;text-shadow:0 0 14px var(--lrp-color,#b26bff),0 0 30px var(--lrp-color,#b26bff)}
 @keyframes lrpAb{50%{transform:scale(1.06);box-shadow:0 0 44px var(--lrp-color,#b26bff),inset 0 0 26px color-mix(in srgb,var(--lrp-color,#b26bff) 60%,transparent)}}
 @media(prefers-reduced-motion:reduce){.lrp-chaos-ability{animation:none}}
+/* ---- error report buttons (Settings) ---- */
+.err-btns{display:flex;flex-wrap:wrap;gap:8px}.err-btns .btn{flex:1 1 auto;width:auto;margin:0}

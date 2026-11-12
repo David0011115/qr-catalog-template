@@ -4,13 +4,14 @@
   function spawnBonus() {
     if (mode === 'hardcore') return;
     if (bonuses.length >= MAX_BONUS) return;
-    const types = Object.keys(BONUS), type = types[Math.floor(Math.random() * types.length)];
+    const types = Object.keys(BONUS), type = (TEST_MODE && testOnlyBonus) || types[Math.floor(Math.random() * types.length)];
     const col = new THREE.Color(BONUS[type].color);
     const mesh = new THREE.Group();
     mesh.add(new THREE.Mesh(bonusCore, new THREE.MeshBasicMaterial({ color: col })));
     mesh.add(new THREE.Mesh(bonusRing, new THREE.MeshBasicMaterial({ color: col })));
     mesh.add(glowSprite(col, 5, .7));
-    const [x, z] = randInArena(8);
+    const near = TEST_MODE && testOnlyBonus && player.cells.length ? (() => { const [cx, cz] = centerOf(player), a = Math.random() * 6.283, d = cellR(mainOf(player)) * .5; return [cx + Math.cos(a) * d, cz + Math.sin(a) * d]; })() : null;   // test: under the drop, picked up at once
+    const [x, z] = near || owlNext || randInArena(8); owlNext = null; owlMark.visible = false;
     mesh.position.set(x, 1.2, z);
     scene.add(mesh);
     bonuses.push({ x, z, type, mesh });
@@ -309,7 +310,7 @@
     abTick(dt);
     trailFx(dt, performance.now());
     if (player.dashT > 0) { const lk = lookFor('dash'); for (const c of player.cells) { const r = cellR(c); emit(c.x - c.hx * r, r * .8, c.z - c.hz * r, lk ? lk.c : cellColor(c), 4, 4, .45); } }
-    if (!stats.tutorial) { bonusTimer -= dt; if (bonusTimer <= 0) { spawnBonus(); bonusTimer = arenaIs('ocean') ? 5.4 : 9; } }
+    if (!stats.tutorial) { bonusTimer -= dt; owlTick(performance.now()); if (bonusTimer <= 0) { spawnBonus(); bonusTimer = arenaIs('ocean') ? 5.4 : 9; } }
     else if (tutTick(dt)) return;
     if (bossesOn()) bossTimer -= dt;
     if (bossTimer <= 0) {

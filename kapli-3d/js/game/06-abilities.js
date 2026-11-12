@@ -23,6 +23,7 @@
   function abReset() {
     owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.abCd = o.isPlayer || o.kind === 'bot' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
+    crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
     if (decoy) { scene.remove(decoy.mesh); decoy = null; }
   }
@@ -103,7 +104,8 @@
     else if (id === 'decoy') {
       if (me) { if (decoy) scene.remove(decoy.mesh); decoy = makeDecoy(o, a, a.dur * pw); }
       else { botDecoys.filter(d => d.src === o).forEach(d => { scene.remove(d.mesh); d.gone = true; }); botDecoys = botDecoys.filter(d => !d.gone); botDecoys.push(makeDecoy(o, a, a.dur)); }
-    } else if (a.xa) { if (!castXa(id, a, px, pz, o)) return false; if (id === 'x_phase') { if (me) abUsed(id); return true; } }
+    } else if (a.cr) { if (!castCr(id, a, px, pz, o)) return false; }
+    else if (a.xa) { if (!castXa(id, a, px, pz, o)) return false; if (id === 'x_phase') { if (me) abUsed(id); return true; } }
     else if (id === 'trap') {
       const mine = viruses.filter(v => v.trap && v.trap.owner === o);
       if (mine.length >= ABIL_CFG.maxTraps) removeVirus(mine[0]);
@@ -116,6 +118,51 @@
     return true;
   }
   // ---- Chaos League exclusives ----
+  // ---- 2.3 workshop «Хронос» abilities ----
+  let crfx = [], crHist = [], crClock = 0, crHistT = 0;
+  function castCr(id, a, px, pz, o) {
+    const me = o === player, main = mainOf(o);
+    if (id === 'cr_gearwall') {
+      const rr = cellR(main), gr = Math.max(2.4, rr * .5), dist = rr + gr + 2, cx = px + main.hx * dist, cz = pz + main.hz * dist, nx = -main.hz, nz = main.hx;
+      const gm = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .8, metalness: .6, roughness: .3 }), grp = new THREE.Group(), segs = [];
+      [-1.9, 0, 1.9].forEach((k, i) => { const x = cx + nx * gr * k, z = cz + nz * gr * k; segs.push({ x, z }); const ge = new THREE.Mesh(gearGeo(gr, 12, .6), gm); ge.position.set(x, gr * .8, z); ge.rotation.order = 'YXZ'; ge.rotation.y = Math.atan2(main.hx, main.hz); ge.rotation.x = -1.05; ge.userData.dir = i % 2 ? -1 : 1; ge.add(glowSprite(a.color, gr * 2.4, .35)); grp.add(ge); emit(x, gr, z, a.color, 16, 6, .5); });
+      scene.add(grp); crfx.push({ id, t: a.dur, segs, gr, o, mesh: grp, hit: new Set() }); return true;
+    }
+    if (id === 'cr_rewind') {
+      if (!me) return false;
+      const want = crClock - a.back; let h = null; for (const e of crHist) if (e.t <= want) h = e;
+      if (!h) { toast('Перемотка: прошло меньше 4 секунд — пока некуда вернуться'); return false; }
+      const dx = h.x - px, dz = h.z - pz, m0 = total(o);
+      emitIcons(px, 3, pz, 'clock', a.color, 4, 1.6); emit(px, 2, pz, a.color, 30, 8, .6);
+      for (const c of o.cells) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (h.m > m0) c.mass *= h.m / m0; }
+      wave(h.x, h.z, a.color, 2, 14, .7); emit(h.x, 2, h.z, '#ffffff', 30, 10, .5); Sound.play('dash'); return true;
+    }
+    if (id === 'cr_swap') {
+      let best = null, bd = a.radius + cellR(main);
+      for (const x of foesOf(o)) { if (x.kind === 'boss' || x.kind === 'minion') continue; for (const c of x.cells) { const dx = c.x - main.x, dz = c.z - main.z, d = Math.hypot(dx, dz); if (d < bd && d > .1 && (dx * main.hx + dz * main.hz) / d > .2) { bd = d; best = c; } } }
+      if (!best) { if (me) toast('Рокировка: впереди в радиусе 25 нет капли'); return false; }
+      const mx = main.x, mz = main.z, dx = best.x - mx, dz = best.z - mz;
+      emit(mx, 2, mz, a.color, 24, 7, .5); emit(best.x, 2, best.z, a.color, 24, 7, .5);
+      for (const c of o.cells) { c.x += dx; c.z += dz; clampArena(c); } best.x = mx; best.z = mz; best.vx = best.vz = 0;
+      wave(mx, mz, a.color, 1, 8, .5); wave(mx + dx, mz + dz, a.color, 1, 8, .5); if (me) Sound.play('dash'); return true;
+    }
+    return false;
+  }
+  function crTick(dt) {
+    crClock += dt; crHistT -= dt;
+    if (crHistT <= 0 && player.cells.length) { crHistT = .1; const [x, z] = centerOf(player); crHist.push({ t: crClock, x, z, m: total(player) }); while (crHist.length && crHist[0].t < crClock - 6) crHist.shift(); }
+    for (const f of crfx) {
+      f.t -= dt; f.mesh.children.forEach(g => { g.rotation.z += dt * 3 * g.userData.dir; });
+      for (const x of foesOf(f.o)) for (const c of x.cells) for (const sg of f.segs) {
+        const dx = c.x - sg.x, dz = c.z - sg.z, d = Math.hypot(dx, dz) || .01, lim = f.gr + cellR(c);
+        if (d >= lim) continue;
+        c.x = sg.x + dx / d * lim; c.z = sg.z + dz / d * lim; c.vx += dx / d * 38; c.vz += dz / d * 38;
+        if (!f.hit.has(c)) { f.hit.add(c); c.mass *= 1 - abilById('cr_gearwall').dmg; if (nearView(c.x, c.z)) emit(c.x, cellR(c), c.z, '#ffd27a', 18, 7, .4); }
+      }
+      if (f.t < .4) f.mesh.scale.setScalar(Math.max(.01, f.t / .4));
+    }
+    crfx = crfx.filter(f => { if (f.t > 0) return true; scene.remove(f.mesh); return false; });
+  }
   let xfx = [];   // timed world effects: hole, meteor, anchor, twin (each remembers its caster)
   function blinkBy(o, d, color) {
     const main = mainOf(o);
@@ -273,12 +320,12 @@
   // «Случайный билд»: 3 random abilities out of the classic ones you own (no Chaos League exclusives); short of 3 → dash, split, eject
   function rbuildDraw() {
     // 2.1.1: any 3 of the 12 regular abilities, bought or not (exclusive ones never drop)
-    const pool = ABILITIES.filter(a => !a.xa).map(a => a.id), out = [];
+    const pool = ABILITIES.filter(a => !a.xa && !a.cr).map(a => a.id), out = [];
     while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
     return out;
   }
   function chaosDraw() {
-    const first = Math.random() < .5 ? 'dash' : 'split', pool = ABILITIES.map(a => a.id).filter(id => id !== first), out = [first];
+    const first = Math.random() < .5 ? 'dash' : 'split', pool = ABILITIES.filter(a => !a.cr).map(a => a.id).filter(id => id !== first), out = [first];
     while (out.length < 3) { const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(id); }
     return out;
   }
@@ -288,7 +335,7 @@
     el.hidden = false; clearTimeout(chaosBanner.t); chaosBanner.t = setTimeout(() => { el.hidden = true; }, CHAOS_CFG.showSec * 1000);
   }
   function abTick(dt) {
-    xaTick(dt);
+    xaTick(dt); crTick(dt); if (TEST_MODE && testEatShow) testEatTick(dt);
     for (const o of owners) {
       if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
       if (o.iceT) o.iceT = Math.max(0, o.iceT - dt);
@@ -386,6 +433,7 @@
       return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
     save.coins += coins; save.xp += xp;
+    if (seasonStarted && save.ss) { const S = save.ss; S.r++; S.t += stats.time; S.m = Math.max(S.m, Math.round(stats.maxMass)); S.w += stats.win ? 1 : 0; S.c += coins; S.x += xp; S.md[mode] = (S.md[mode] || 0) + 1; }
     const t = save.totals;
     t.splits += stats.splits; if (mode === 'timed' && stats.win) t.timedWins++;
     t.time += stats.time; t.bestKills = Math.max(t.bestKills, stats.kills); t.bestWave = Math.max(t.bestWave, stats.wave || 0);
@@ -419,7 +467,7 @@
         if (W.prog[t.id] >= t.n) { W.done.push(t.id);
           weekLine += `<li class="done"><span>📅 Задание недели: ${t.text(t.n)}</span><span class="rw">${W.done.length} / 3</span></li>`; }
       }
-      if (W.done.length === 3 && !W.bonus) { W.bonus = true; coins += WEEK_BONUS; save.special.push({ kind: 'challenge', rar: WEEK_CHEST, title: 'Неделя' }); weekLine += `<li class="done"><span>📅 Все задания недели</span><span class="rw">сундук «${RARITY[WEEK_CHEST].name}»</span></li>`; cExtra.push(['Все задания недели', WEEK_BONUS]); save.coins += WEEK_BONUS; const tk = archTokAdd(ARCH_TOK_WEEK); if (tk) weekLine += `<li class="done"><span>🎟 Жетон архива за задания недели</span><span class="rw">+${tk}</span></li>`; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
+      if (W.done.length === 3 && !W.bonus) { W.bonus = true; save.shardChests += 2; coins += WEEK_BONUS; save.special.push({ kind: 'challenge', rar: WEEK_CHEST, title: 'Неделя' }); weekLine += `<li class="done"><span>📅 Все задания недели</span><span class="rw">сундук «${RARITY[WEEK_CHEST].name}» и 2 сундука осколков</span></li>`; cExtra.push(['Все задания недели', WEEK_BONUS]); save.coins += WEEK_BONUS; const tk = archTokAdd(ARCH_TOK_WEEK); if (tk) weekLine += `<li class="done"><span>🎟 Жетон архива за задания недели</span><span class="rw">+${tk}</span></li>`; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
     const skillLine = checkSkill(stats).map(k => k.all ? '<li class="done skill"><span>🎯 Все мастерские достижения! Рамка «Мастер» и скин «Виртуоз»</span><span class="rw">в гардеробе</span></li>'
       : k.ms ? `<li class="done skill"><span>🎯 ${decorById(k.ms).skillN} мастерских достижений</span><span class="rw">титул «${decorById(k.ms).name}»</span></li>`
       : `<li class="done skill"><span>🎯 Мастерское достижение «${k.name}»</span><span class="rw">+${k.coins} ◆</span></li>`).join('');
@@ -445,8 +493,9 @@
     const chNow = checkChallenges();
     const chestChance = roundChestChance(stats.time / 60, stats.maxMass, stats.win, stats.ranked);
     const gotChest = save.pity >= CHEST_RULE[stats.ranked ? 'ranked' : 'normal'].pity - 1 || Math.random() < chestChance;
-    if (gotChest) { save.chests++; save.pity = 0; } else save.pity++;
-    logRoundChest(stats.ranked, stats.time, gotChest);
+    // 2.3: every 2nd round chest also brings a shard chest (on top, the round chest itself is never replaced)
+    if (gotChest) { save.chests++; save.chestSeq = (save.chestSeq || 0) + 1; if (save.chestSeq % 2 === 0) save.shardChests++; save.pity = 0; } else save.pity++;
+    logRoundChest(stats.ranked, stats.time, gotChest); actLog(stats.time, stats.maxMass);
     let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
     if (mode === 'royale' && stats.finalRank) pts += (13 - stats.finalRank) * 4;
@@ -472,6 +521,10 @@
     save.totals.modeRounds[mode] = (save.totals.modeRounds[mode] || 0) + 1;
     save.history.push({ m: Math.round(stats.maxMass), mode }); if (save.history.length > 30) save.history.shift();
     if (mode === 'classic') save.best = Math.max(save.best, best);
+    // 2.3: three daily goals done within one day bring a shard chest, once a day
+    let shardGoalLine = '';
+    { const qd = save.qDay && save.qDay.d === today ? save.qDay : (save.qDay = { d: today, n: 0, sh: false }); qd.n += doneQuests.size;
+      if (qd.n >= 3 && !qd.sh) { qd.sh = true; save.shardChests++; shardGoalLine = '<li class="done"><span>🎯 Три цели за день</span><span class="rw">сундук осколков</span></li>'; } }
     save.quests = save.quests.filter(id => !doneQuests.has(id));
     fillQuests();
     persist();
@@ -520,7 +573,7 @@
     resCountUp();
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${ch.reward ? rewardName(ch.reward) + ' + ' : ''}сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
-      weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
+      weekLine + shardGoalLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
       (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
       $('resQuests').innerHTML += payLevels(lvAfter); persist();

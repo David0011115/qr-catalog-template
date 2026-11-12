@@ -465,9 +465,83 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'shatter': for (let k = 0; k < 46; k++) { const cx = r() * W, cy = r() * H, rr = 4 + r() * 12; x.beginPath(); for (let i = 0; i < 4 + (k % 3); i++) { const a = i / (4 + (k % 3)) * 6.283 + r(); x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } x.closePath();
         if (emi) { x.strokeStyle = '#ffffff'; x.lineWidth = 1.6; x.stroke(); } else { x.fillStyle = k % 2 ? A : '#ffffff'; x.globalAlpha = .25 + r() * .5; x.fill(); x.globalAlpha = 1; x.strokeStyle = A; x.lineWidth = 1.2; x.stroke(); } } break;
       case 'split': for (let j = 0; j < H; j += 6) { x.fillStyle = '#ff2dd8'; x.globalAlpha = .55; x.fillRect((j * 7) % 23 - 4, j, W, 2.5); x.fillStyle = '#22e6ff'; x.fillRect((j * 11) % 19 + 4, j + 3, W, 2); } x.globalAlpha = 1; for (let k = 0; k < 9; k++) { x.fillStyle = k % 2 ? '#ff2dd8' : '#22e6ff'; x.fillRect(r() * W, r() * H, 20 + r() * 50, 3); } break;
+      case 'brass': grad('#fff0c0', C, A); for (let i = 0; i < W; i += 32) { x.fillStyle = '#7a4a12'; x.globalAlpha = .35; x.fillRect(i, 0, 2, H); x.globalAlpha = 1; for (let j = 18; j < H; j += 30) dot(i + 8, j, 2.2, '#fff6d8', .8); } line([[0, H * .48], [W, H * .48]], 3, A, .8); break;
+      case 'live': liveDraw(x, s, 0); break;
       case 'laurel': grad(C, A); for (let i = 0; i < W; i += 12) { x.fillStyle = '#fff6c8'; x.globalAlpha = .6; x.beginPath(); x.ellipse(i, 64 + Math.sin(i / 20) * 20, 4, 8, .6, 0, Math.PI * 2); x.fill(); } x.globalAlpha = 1; break;
     }
     if (s.pattern2 === 'stars') for (let i = 0; i < 60; i++) dot(r() * W, r() * H, r() < .1 ? 1.8 : .8, '#ffffff', .4 + r() * .6);
+  }
+  // ---- 2.3 «Хронос» live skins: the dial / spring / moon are drawn flat, then wrapped onto the top cap of the sphere
+  // (the camera looks from above and the drop turns to its heading, so the cap is the part that is always seen)
+  const capCv = document.createElement('canvas'); capCv.width = capCv.height = 128; const capX = capCv.getContext('2d');
+  const CAP_RAD = 1.15;   // the cap reaches 66° down from the top
+  let capMap = null;
+  function capWarp(x) {   // copies capCv onto the top rows of the 256×128 texture (polar → equirectangular)
+    const rows = Math.ceil(CAP_RAD / Math.PI * 128), src = capX.getImageData(0, 0, 128, 128).data, img = x.getImageData(0, 0, 256, rows), d = img.data;
+    if (!capMap) { capMap = new Int32Array(256 * rows); for (let y = 0; y < rows; y++) { const rr = (y + .5) / 128 * Math.PI / CAP_RAD * 64; for (let u = 0; u < 256; u++) { const a = (u + .5) / 256 * Math.PI * 2, fx = Math.round(64 + Math.cos(a) * rr), fy = Math.round(64 + Math.sin(a) * rr); capMap[y * 256 + u] = fx >= 0 && fx < 128 && fy >= 0 && fy < 128 ? (fy * 128 + fx) * 4 : -1; } } }
+    for (let i = 0; i < capMap.length; i++) { const k = capMap[i]; if (k < 0) continue; const al = src[k + 3] / 255; if (!al) continue; const o = i * 4; d[o] = d[o] * (1 - al) + src[k] * al; d[o + 1] = d[o + 1] * (1 - al) + src[k + 1] * al; d[o + 2] = d[o + 2] * (1 - al) + src[k + 2] * al; }
+    x.putImageData(img, 0, 0);
+  }
+  const liveState = {};
+  function liveDraw(x, s, t) {
+    const W = 256, H = 128, c = capX, A = s.accent, C = s.color;
+    const gear = (cx, cy, r, n, rot) => { x.beginPath(); for (let i = 0; i <= n * 4; i++) { const a = rot + i / (n * 4) * Math.PI * 2, rr = (i % 4 < 2) ? r : r * .82; x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } x.closePath(); x.stroke(); x.beginPath(); x.arc(cx, cy, r * .45, 0, 6.29); x.stroke(); };
+    const cgear = (cx, cy, r, n, rot) => { c.beginPath(); for (let i = 0; i <= n * 4; i++) { const a = rot + i / (n * 4) * Math.PI * 2, rr = (i % 4 < 2) ? r : r * .82; c.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } c.closePath(); c.stroke(); c.beginPath(); c.arc(cx, cy, r * .45, 0, 6.29); c.stroke(); };
+    const g = x.createLinearGradient(0, 0, 0, H);
+    c.clearRect(0, 0, 128, 128);
+    switch (s.live) {
+      case 'engrave': {   // dark bronze, glowing engraved gears turning all over
+        g.addColorStop(0, '#5a3010'); g.addColorStop(1, '#1e0c04'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        x.strokeStyle = A; x.lineWidth = 1.4; x.shadowColor = A; x.shadowBlur = 4;
+        [[30, 80, 20, 12, 1], [96, 92, 14, 9, -1.4], [150, 74, 22, 13, .8], [212, 96, 16, 10, -1.1], [250, 70, 12, 8, 1.5], [62, 112, 9, 7, 2]].forEach(([gx, gy, r, n, sp]) => gear(gx, gy, r, n, t * sp * .5));
+        x.shadowBlur = 0;
+        c.strokeStyle = A; c.lineWidth = 2; c.shadowColor = A; c.shadowBlur = 5; cgear(64, 64, 34, 16, t * .25); cgear(64, 64, 16, 10, -t * .6); cgear(28, 30, 14, 9, -t * .55); cgear(100, 98, 12, 8, t * .7); c.shadowBlur = 0; break;
+      }
+      case 'watch': {   // gold case, a white dial with hands on top
+        g.addColorStop(0, '#fff0c0'); g.addColorStop(.5, C); g.addColorStop(1, A); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        x.strokeStyle = 'rgba(122,74,18,.45)'; x.lineWidth = 1; for (let i = 0; i < W; i += 8) { x.beginPath(); x.moveTo(i, 60); x.lineTo(i + 4, H); x.stroke(); }
+        c.fillStyle = '#7a4a12'; c.beginPath(); c.arc(64, 64, 63, 0, 6.29); c.fill(); c.fillStyle = '#ffd27a'; c.beginPath(); c.arc(64, 64, 59, 0, 6.29); c.fill();
+        c.fillStyle = '#fff8e6'; c.beginPath(); c.arc(64, 64, 54, 0, 6.29); c.fill();
+        c.strokeStyle = '#2a1a08'; for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2, r0 = i % 5 ? 49 : 44; c.lineWidth = i % 5 ? 1 : 2.6; c.beginPath(); c.moveTo(64 + Math.cos(a) * r0, 64 + Math.sin(a) * r0); c.lineTo(64 + Math.cos(a) * 52, 64 + Math.sin(a) * 52); c.stroke(); }
+        const hand = (a, len, w, col) => { c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round'; c.beginPath(); c.moveTo(64 - Math.cos(a) * 6, 64 - Math.sin(a) * 6); c.lineTo(64 + Math.cos(a) * len, 64 + Math.sin(a) * len); c.stroke(); };
+        hand(t / 40 * Math.PI * 2, 28, 4.5, '#2a1a08'); hand(t / 8 * Math.PI * 2, 40, 3, '#2a1a08'); hand(t * Math.PI / 3, 46, 1.4, '#ff3d6e');
+        c.fillStyle = '#2a1a08'; c.beginPath(); c.arc(64, 64, 4, 0, 6.29); c.fill(); break;
+      }
+      case 'spring': {   // a glowing clock spring pulses, a hand runs along it
+        g.addColorStop(0, '#2a1a50'); g.addColorStop(1, '#06030f'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        for (let i = 0; i < 40; i++) { x.fillStyle = 'rgba(34,230,255,' + (.2 + .3 * Math.abs(Math.sin(t * 2 + i))) + ')'; x.fillRect((i * 53) % W, 50 + (i * 29) % 78, 1.6, 1.6); }
+        const k = .55 + .45 * Math.sin(t * 3); c.strokeStyle = `rgba(34,230,255,${.5 + .5 * k})`; c.lineWidth = 2.6; c.shadowColor = A; c.shadowBlur = 6 + 6 * k;
+        c.beginPath(); for (let a = 0; a < 5.5 * Math.PI * 2; a += .12) { const r = 3 + a * 1.75; c.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } c.stroke(); c.shadowBlur = 0;
+        const p = (t * .35) % 1, a = p * 5.5 * Math.PI * 2, r = 3 + a * 1.75; c.fillStyle = '#ffffff'; c.shadowColor = '#ffffff'; c.shadowBlur = 10; c.beginPath(); c.arc(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 3.4, 0, 6.29); c.fill(); c.shadowBlur = 0;
+        c.fillStyle = '#ffd27a'; c.beginPath(); c.arc(64, 64, 4, 0, 6.29); c.fill(); break;
+      }
+      case 'moon': {   // blue enamel, gold stars, a moon-phase window on top; full moon flashes
+        g.addColorStop(0, '#24308a'); g.addColorStop(1, '#0a0e36'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        for (let i = 0; i < 46; i++) { const tw = .4 + .6 * Math.abs(Math.sin(t * 1.3 + i * 1.7)); x.globalAlpha = tw; x.fillStyle = i % 4 ? '#ffd27a' : '#ffffff'; const sx = (i * 67) % W, sy = 30 + (i * 41) % 96; x.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr = k % 2 ? 1 : 3; x.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr); } x.fill(); } x.globalAlpha = 1;
+        const ph = (t / 12) % 1, full = Math.max(0, 1 - Math.abs(ph - .5) * 8); liveState[s.id] = full;
+        c.save(); c.beginPath(); c.arc(64, 70, 44, Math.PI, 0); c.closePath(); c.clip(); c.fillStyle = '#060a26'; c.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 9; i++) { c.fillStyle = '#fff'; c.globalAlpha = .4 + .6 * Math.abs(Math.sin(t * 2 + i)); c.fillRect(24 + (i * 37) % 80, 34 + (i * 23) % 30, 1.6, 1.6); } c.globalAlpha = 1;
+        const mx = 64 + (ph - .5) * 150; c.fillStyle = '#fff6d8'; c.shadowColor = '#fff6d8'; c.shadowBlur = 8 + 12 * full; c.beginPath(); c.arc(mx, 58, 20, 0, 6.29); c.fill(); c.shadowBlur = 0;
+        c.fillStyle = '#d8cfa8'; c.beginPath(); c.arc(mx - 6, 52, 4, 0, 6.29); c.arc(mx + 7, 63, 3, 0, 6.29); c.fill(); c.restore();
+        c.strokeStyle = A; c.lineWidth = 5; c.beginPath(); c.arc(64, 70, 46, Math.PI, 0); c.stroke(); c.beginPath(); c.moveTo(16, 70); c.lineTo(112, 70); c.stroke();
+        c.fillStyle = A; [[18, 70], [110, 70], [64, 22]].forEach(([px, py]) => { c.beginPath(); c.arc(px, py, 4.5, 0, 6.29); c.fill(); }); break;
+      }
+    }
+    capWarp(x);
+  }
+  // redraw live textures ~12 times a second (one shared texture per skin, so many parts cost nothing extra)
+  function liveTick(s, now) {
+    const st = liveState['_t' + s.id] || 0; if (now - st < 80) return;
+    liveState['_t' + s.id] = now; const tx = skinTex(s); liveDraw(tx.image.getContext('2d'), s, now / 1000); tx.needsUpdate = true;
+  }
+  // a gear outline shape, extruded (Скелетон, Шестерни-крылья, Стена шестерён)
+  const gearGeoCache = {};
+  function gearGeo(r, n, depth = .1) {
+    const key = r + '_' + n + '_' + depth; if (gearGeoCache[key]) return gearGeoCache[key];
+    const sh = new THREE.Shape(); for (let i = 0; i < n * 4; i++) { const a = i / (n * 4) * Math.PI * 2, rr = (i % 4 < 2) ? r : r * .8; i ? sh.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : sh.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } sh.closePath();
+    const hole = new THREE.Path(); hole.absarc(0, 0, r * .3, 0, Math.PI * 2, true); sh.holes.push(hole);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: false }); geo.translate(0, 0, -depth / 2);
+    return (gearGeoCache[key] = geo);
   }
   function skinTex(s) {
     if (!s.pattern) return null;
@@ -489,7 +563,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   const swatchUrlCache = {};
   const swatchUrl = s => swatchUrlCache[s.id] || (swatchUrlCache[s.id] = skinTex(s).image.toDataURL());
   // a glint that sweeps over epic and legendary skins
-  const isShiny = k => k.raid || k.legend || ['epic', 'legendary'].includes(k.chest || k.lchest);
+  const isShiny = k => k.raid || k.legend || ['epic', 'legendary'].includes(k.chest || k.lchest || k.craft);
   const HEAD_SVG = {
     flame: '<path d="M12 2c2 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3-1-3 0-5 0-7z" fill="#ff9a3d"/><path d="M12 11c1 2 3 3 3 5a3 3 0 0 1-6 0c0-1 1-2 1.5-3 .5 1 1 1.5 1.5 1.5-.5-1.5 0-2.5 0-3.5z" fill="#ffd23f"/>',
     antenna: '<path d="M9 23 L6 7 M15 23 L18 7" stroke="#3dffa2" stroke-width="2" fill="none"/><circle cx="6" cy="5" r="3" fill="#b9ff3d"/><circle cx="18" cy="5" r="3" fill="#b9ff3d"/>',
@@ -506,7 +580,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   };
   Object.entries(HATS).forEach(([k, h]) => HEAD_SVG[k] = h.svg);
   const starsOf = k => (save.stars && save.stars[k.id]) || 0;
-  const swClass = k => { const st = starsOf(k); return `sw ${k.crown ? 'crown' : ''} ${isShiny(k) || st >= 2 ? 'shine' + ((k.chest || k.lchest) === 'legendary' ? ' leg' : '') + (k.shine === 'bolt' ? ' bolt' : '') : ''} ${st >= 3 ? 'st3' : ''}`; };
+  const swClass = k => { const st = starsOf(k); return `sw ${k.crown ? 'crown' : ''} ${isShiny(k) || st >= 2 ? 'shine' + ((k.chest || k.lchest || k.craft) === 'legendary' ? ' leg' : '') + (k.shine === 'bolt' ? ' bolt' : '') : ''} ${st >= 3 ? 'st3' : ''}`; };
   const headIcon = k => k.head ? `<i class="hi" aria-hidden="true"><svg viewBox="0 0 24 24">${HEAD_SVG[k.head]}</svg></i>` : '';
   const hatIcon = id => `<svg viewBox="0 0 24 24" aria-hidden="true">${HATS[id].svg}</svg>`;
   const starRow = k => (k.chest || k.lchest) && save.skins.includes(k.id) ? `<span class="stars" title="Звёзды за повторы из сундуков">${'★'.repeat(starsOf(k))}${'☆'.repeat(3 - starsOf(k))}</span>` : '';
@@ -560,7 +634,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     const m = vis.mesh.material;
     if (vis.extra) { vis.mesh.remove(vis.extra); vis.extra = null; }
     vis.mesh.geometry = s.mat === 'crystal' ? crystalGeo : sphereGeo;
-    m.metalness = .1; m.roughness = .22; m.opacity = .9; m.envMap = null; m.flatShading = false;
+    m.metalness = .1; m.roughness = .22; m.opacity = .9; m.envMap = null; m.flatShading = false; m.depthWrite = true;
     if (s.emi) { m.emissiveMap = skinEmi(s); m.emissive.set(s.emiColor || '#ffffff'); }
     const ex = new THREE.Group(); vis.extra = ex; vis.mesh.add(ex);
     switch (s.mat) {
@@ -574,6 +648,17 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'liquid': { m.metalness = 1; m.roughness = .08; m.envMap = silverEnv(); m.emissiveIntensity = .04; const sh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: '#ffffff', metalness: 1, roughness: .05, envMap: silverEnv(), transparent: true, opacity: .35 })); sh.scale.setScalar(1.03); sh.userData.wobble = 1; ex.add(sh); break; }
       case 'pearl': { m.metalness = .25; m.roughness = .12; m.envMap = neonEnv(); m.emissiveIntensity = .3; const sh = new THREE.Mesh(sphereGeo, rimMat('#ff9ef2')); sh.scale.setScalar(1.03); sh.userData.pearl = 1; ex.add(sh); break; }
       case 'matte': m.roughness = .65; m.emissiveIntensity = .3; break;
+      case 'skeleton': {   // see-through amber case, brass gears turning inside
+        m.opacity = .32; m.roughness = .05; m.emissiveIntensity = .18; m.depthWrite = false;
+        const gm = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .7, metalness: .6, roughness: .3 });
+        [[-.28, .1, .1, .5, 14, 1], [.34, .3, -.05, .34, 10, -1.6], [.22, -.36, .15, .26, 8, 2], [-.1, .45, -.2, .2, 7, -2.4]].forEach(([gx, gy, gz, r, n, sp]) => { const ge = new THREE.Mesh(gearGeo(r, n, .08), gm); ge.position.set(gx, gy, gz); ge.rotation.x = -.9; ge.userData.gear = sp; ex.add(ge); });
+        break; }
+      case 'sandglass': {   // clear glass; golden sand rises and piles up under the top
+        m.opacity = .4; m.roughness = .03; m.emissiveIntensity = .35; m.depthWrite = false; ex.add(glowSprite('#bff8ff', 1.8, .5));
+        const sm = new THREE.MeshBasicMaterial({ color: '#ffd27a' });
+        for (let i = 0; i < 16; i++) { const b = new THREE.Mesh(bubbleGeo, sm); b.scale.setScalar(.45); b.userData.sand = i / 16; b.userData.bx = Math.sin(i * 2.4) * .45; b.userData.bz = Math.cos(i * 2.4) * .45; ex.add(b); }
+        const pile = new THREE.Mesh(new THREE.SphereGeometry(.62, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: .9 })); pile.rotation.x = Math.PI; pile.position.y = .88; pile.userData.pile = 1; ex.add(pile);
+        break; }
     }
     if (s.bubbles) for (let i = 0; i < 7; i++) { const b = new THREE.Mesh(bubbleGeo, bubbleMat); b.userData.bub = i / 7; b.userData.bx = Math.sin(i * 2.4) * .55; b.userData.bz = Math.cos(i * 2.4) * .55; ex.add(b); }
     if (s.anim === 'twin') { const tw = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ color: s.accent || '#ffffff', transparent: true, opacity: .3, depthWrite: false })); tw.userData.twin = 1; ex.add(tw); }
@@ -582,6 +667,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   function animateLook(v, now, c) {
     const lk = v.look; if (!lk) return;
     const m = v.mesh.material, t = now / 1000;
+    if (lk.live) { liveTick(lk, now); if (lk.live === 'moon') { const f = liveState[lk.id] || 0; m.emissiveIntensity = .75 + 1.1 * f; v.glow.material.color.set(f > .05 ? '#e8ecff' : lk.color); } }
     if (lk.flow && lk.pattern) { const tx = skinTex(lk); tx.offset.set((t * lk.flow[0]) % 1, (t * lk.flow[1]) % 1); if (lk.emi) skinEmi(lk).offset.copy(tx.offset); }
     switch (lk.anim) {
       case 'breath': m.emissiveIntensity = .38 + .16 * Math.sin(t * 1.6); break;
@@ -597,6 +683,9 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     }
     if (v.extra) v.extra.children.forEach(o => { const u = o.userData;
       if (u.wobble) o.scale.set(1.06 + Math.sin(t * 5) * .035, 1.06 + Math.sin(t * 5 + 1.6) * .045, 1.06 + Math.sin(t * 4 + .7) * .035);
+      else if (u.gear) o.rotation.z = t * u.gear;
+      else if (u.sand !== undefined) { const p = (u.sand + t * .3) % 1; o.position.set(u.bx * (1 - p * .6), -.8 + p * 1.55, u.bz * (1 - p * .6)); o.visible = p < .97; }
+      else if (u.pile) { const p = (t / 9) % 1; o.scale.set(.4 + p * .6, .1 + p * .5, .4 + p * .6); }
       else if (u.bub !== undefined) { const p = (u.bub + t * .22) % 1; o.position.set(u.bx * (1 - p * .5), -.75 + p * 1.5, u.bz * (1 - p * .5)); o.scale.setScalar(.5 + p * .8); }
       else if (u.twin) { o.position.set(Math.sin(t * 13) * .14, Math.sin(t * 7) * .05, Math.cos(t * 9) * .14); o.visible = Math.random() > .35; }
       else if (u.pearl) { o.material.uniforms.uCol.value.setHSL((t * .08) % 1, .9, .7); o.material.uniforms.uK.value = .9; }
@@ -616,7 +705,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     vis.look = s;
     vis.crown.visible = !!s.crown && !hat;
     if (isShiny(s) || stars >= 2) {
-      const mat = shineMat((s.chest || s.lchest) === 'legendary' || !!s.legend, s.shine === 'bolt', !isShiny(s) ? '#' + new THREE.Color(s.accent || s.color).lerp(new THREE.Color('#ffffff'), .35).getHexString() : null);
+      const mat = shineMat((s.chest || s.lchest || s.craft) === 'legendary' || !!s.legend, s.shine === 'bolt', !isShiny(s) ? '#' + new THREE.Color(s.accent || s.color).lerp(new THREE.Color('#ffffff'), .35).getHexString() : null);
       if (!vis.shine) { vis.shine = new THREE.Mesh(shineGeo, mat); vis.mesh.add(vis.shine); }
       vis.shine.material = mat; vis.shine.visible = true;
     } else if (vis.shine) vis.shine.visible = false;
@@ -632,7 +721,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   function buildHead(type) {
     const g = new THREE.Group(); g.userData.type = type;
     // the camera looks from above, so shift items back (they read as "above the head" on screen) and enlarge them
-    if (!['wings', 'helm', 'ring', 'shards', 'swarm', 'portal', 'cuphandles', 'fragments', 'warhelm'].includes(type)) { g.position.set(0, -.1, -.75); g.scale.setScalar(1.3); }
+    if (!['wings', 'helm', 'ring', 'shards', 'swarm', 'portal', 'cuphandles', 'fragments', 'warhelm', 'windkey'].includes(type)) { g.position.set(0, -.1, -.75); g.scale.setScalar(1.3); }
     if (type === 'helm') { g.position.set(0, .05, -.1); g.scale.setScalar(1.15); }
     const M = (geo, mat, x, y, z) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); g.add(o); return o; };
     const basic = c => new THREE.MeshBasicMaterial({ color: c });
@@ -649,6 +738,12 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'cherry': { [-1, 1].forEach(sx => { const b = M(new THREE.SphereGeometry(.17, 14, 10), new THREE.MeshStandardMaterial({ color: '#ff2d55', emissive: '#a0001a', emissiveIntensity: .6, roughness: .25 }), sx * .17, 1.12, 0); b.add(glowSprite('#ff2d55', .8, .4)); const st = M(new THREE.CylinderGeometry(.02, .02, .4, 5), basic('#3dffa2'), sx * .09, 1.38, 0); st.rotation.z = sx * .4; }); break; }
       case 'planet': { const pl = M(new THREE.SphereGeometry(.22, 16, 12), new THREE.MeshStandardMaterial({ color: '#b26bff', emissive: '#5a1fb0', emissiveIntensity: .7 }), 0, 1.45, 0); const ring = new THREE.Mesh(new THREE.TorusGeometry(.38, .03, 6, 40), basic('#ffd23f')); ring.rotation.x = 1.2; pl.add(ring); pl.add(glowSprite('#b26bff', 1.2, .5)); break; }
       case 'snowflake': { const f = new THREE.Group(); f.position.y = 1.45; for (let i = 0; i < 3; i++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(.06, .6, .06), basic('#cfefff')); bar.rotation.z = i * Math.PI / 3; f.add(bar); } f.add(glowSprite('#9fe8ff', 1.3, .6)); g.add(f); break; }
+      case 'windkey': {   // 2.3: a wind-up key sticking out of the back, turns while the drop moves
+        const km = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .55, metalness: .7, roughness: .25 });
+        const k = new THREE.Group(); k.position.set(0, .25, -1.02); k.userData.key = 1; g.add(k);
+        const sh = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .45, 8), km); sh.rotation.x = Math.PI / 2; sh.position.z = -.12; k.add(sh);
+        [-1, 1].forEach(sx => { const loop = new THREE.Mesh(new THREE.TorusGeometry(.16, .05, 8, 18), km); loop.position.set(sx * .2, 0, -.38); loop.rotation.y = Math.PI / 2; k.add(loop); });
+        break; }
       case 'propeller': { M(new THREE.SphereGeometry(.3, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ff4fd8', emissive: '#7b0060', emissiveIntensity: .6 }), 0, .95, 0); M(new THREE.CylinderGeometry(.025, .025, .25, 6), basic('#ffd23f'), 0, 1.3, 0); const bl = M(new THREE.BoxGeometry(.9, .02, .12), basic('#22e6ff'), 0, 1.43, 0); bl.userData.spin = 1; break; }
       case 'tophat': { const mat = new THREE.MeshStandardMaterial({ color: '#1a1033', emissive: '#2a1060', emissiveIntensity: .5, roughness: .4 }); M(new THREE.CylinderGeometry(.48, .48, .05, 24), mat, 0, 1, 0); M(new THREE.CylinderGeometry(.3, .3, .5, 24), mat, 0, 1.26, 0); M(new THREE.CylinderGeometry(.305, .305, .09, 24), basic('#ff4fd8'), 0, 1.08, 0); break; }
       case 'moons': { const core = M(new THREE.SphereGeometry(.12, 12, 8), basic('#ff2d55'), 0, 1.45, 0); core.add(glowSprite('#ff2d55', 1, .7));
@@ -716,6 +811,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'planet': g.children[0].rotation.y = t * 1.2; g.children[0].position.y = 1.45 + Math.sin(t * 2) * .06; break;
       case 'snowflake': g.children[0].rotation.y = t; g.children[0].rotation.z = t * .5; break;
       case 'propeller': g.children.forEach(o => { if (o.userData.spin) o.rotation.y = t * 14; }); break;
+      case 'windkey': { const k = g.children[0], p = v.mesh.position, u = g.userData, d = u.px === undefined ? 0 : Math.hypot(p.x - u.px, p.z - u.pz); u.px = p.x; u.pz = p.z; u.sp = (u.sp || 0) * .9 + Math.min(1, d * 3) * .1; u.a = (u.a || 0) + .03 + u.sp * .5; k.rotation.z = u.a; break; }
       case 'moons': g.children.forEach(o => { if (o.userData.orb !== undefined) { const a = o.userData.orb + t * 1.8; o.position.set(Math.cos(a) * .45, 1.45 + Math.sin(a * 2) * .06, Math.sin(a) * .45); } }); break;
       case 'coins': g.children.forEach(o => { o.rotation.y = t * (1 + o.userData.coin * .3); }); g.position.y = -.1 + Math.sin(t * 2) * .03; break;
       case 'nova': g.children[0].rotation.z = t * 1.5; g.children[0].scale.setScalar(1 + Math.sin(t * 4) * .08); break;
@@ -821,6 +917,38 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     plus1: iconTex(x => { x.font = 'bold 34px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('+1', 32, 34); }),
     arrow: iconTex(x => { x.lineWidth = 5; x.strokeStyle = '#fff'; x.beginPath(); x.moveTo(8, 56); x.lineTo(50, 14); x.stroke(); x.beginPath(); x.moveTo(56, 8); x.lineTo(38, 14); x.lineTo(50, 26); x.fill(); x.beginPath(); x.moveTo(8, 56); x.lineTo(6, 44); x.lineTo(18, 46); x.fill(); }),
   };
+  // 2.3 «Хронос» icons: a gear, a dial, a tick mark, numbers 1…12 and Roman numerals I…XII
+  ICONS.gear = iconTex(x => { x.beginPath(); for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2, r = (i % 4 < 2) ? 28 : 22; x.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } x.fill(); x.globalCompositeOperation = 'destination-out'; x.beginPath(); x.arc(32, 32, 8, 0, 6.29); x.fill(); x.lineWidth = 3; x.beginPath(); x.arc(32, 32, 15, 0, 6.29); x.stroke(); });
+  ICONS.clock = iconTex(x => { x.strokeStyle = '#fff'; x.lineWidth = 4; x.beginPath(); x.arc(32, 32, 25, 0, 6.29); x.stroke(); for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; x.lineWidth = i % 3 ? 2 : 4; x.beginPath(); x.moveTo(32 + Math.cos(a) * 17, 32 + Math.sin(a) * 17); x.lineTo(32 + Math.cos(a) * 22, 32 + Math.sin(a) * 22); x.stroke(); } x.lineWidth = 3; x.beginPath(); x.moveTo(32, 32); x.lineTo(32, 14); x.moveTo(32, 32); x.lineTo(44, 36); x.stroke(); });
+  ICONS.tick = iconTex(x => { x.fillRect(29, 10, 6, 44); });
+  for (let k = 1; k <= 12; k++) { ICONS['n' + k] = iconTex(x => { x.font = 'bold 36px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(k), 32, 34); });
+    ICONS['r' + k] = iconTex(x => { x.font = `bold ${k > 8 || k === 8 ? 22 : 30}px Georgia, serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'][k % 12], 32, 34); }); }
+  // floor marks («Часовые отметины»), flashing dials («Тик-так») and frozen frames («Стоп-кадр») live in small pools
+  const crMarks = Array.from({ length: 36 }, () => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decal(new THREE.MeshBasicMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
+    m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); return { m, life: 0, max: 1 }; });
+  let crMarkNext = 0;
+  function crMark(x, z, icon, size, rot, color) { const d = crMarks[crMarkNext]; crMarkNext = (crMarkNext + 1) % crMarks.length;
+    d.m.material.map = ICONS[icon]; d.m.material.color.set(color); d.m.material.needsUpdate = true; d.m.position.set(x, .06, z); d.m.rotation.z = rot; d.m.scale.setScalar(size); d.life = d.max = 2.4; d.m.visible = true; }
+  const dialTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d'); x.strokeStyle = '#ffd27a'; x.lineWidth = 6; x.shadowColor = '#ffd27a'; x.shadowBlur = 8; x.beginPath(); x.arc(64, 64, 56, 0, 6.29); x.stroke();
+    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; x.lineWidth = i % 3 ? 3 : 6; x.beginPath(); x.moveTo(64 + Math.cos(a) * 40, 64 + Math.sin(a) * 40); x.lineTo(64 + Math.cos(a) * 50, 64 + Math.sin(a) * 50); x.stroke(); } return new THREE.CanvasTexture(cv); })();
+  const crDials = Array.from({ length: 4 }, () => { const g = new THREE.Group(); const face = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: dialTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); g.add(face);
+    const hand = new THREE.Mesh(new THREE.PlaneGeometry(.08, .78), new THREE.MeshBasicMaterial({ color: '#ff4fd8', transparent: true, depthWrite: false, side: THREE.DoubleSide })); hand.geometry.translate(0, .39, 0); g.add(hand);
+    g.visible = false; scene.add(g); return { g, face, hand, life: 0 }; });
+  let crDialNext = 0;
+  function crDial(x, y, z, r) { const d = crDials[crDialNext]; crDialNext = (crDialNext + 1) % crDials.length; d.g.position.set(x, y, z); d.g.scale.setScalar(1.2 + r * .6); d.life = 1; d.g.visible = true; }
+  const crackTex = (() => { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128; const x = cv.getContext('2d'); x.fillStyle = '#8a86a8'; x.fillRect(0, 0, 256, 128); x.strokeStyle = '#ffffff'; x.lineWidth = 2;
+    let s0 = 7; const r = () => (s0 = (s0 * 16807) % 2147483647) / 2147483647; for (let k = 0; k < 12; k++) { let px = r() * 256, py = r() * 128; x.beginPath(); x.moveTo(px, py); for (let i = 0; i < 6; i++) { px += (r() - .5) * 50; py += (r() - .5) * 34; x.lineTo(px, py); } x.stroke(); } return new THREE.CanvasTexture(cv); })();
+  const crFrozen = Array.from({ length: 4 }, () => { const m = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ map: crackTex, color: '#c8c4e8', transparent: true, opacity: .9 })); m.visible = false; scene.add(m); return { m, life: 0, done: true }; });
+  let crFrozenNext = 0;
+  function crFreeze(x, z, r, k = 1) { const d = crFrozen[crFrozenNext]; d.k = k; crFrozenNext = (crFrozenNext + 1) % crFrozen.length; d.m.position.set(x, r * .92, z); d.m.scale.setScalar(r); d.r = r; d.life = .55; d.done = false; d.m.visible = true; }
+  function crFxTick(dt) {
+    for (const d of crMarks) { if (!d.m.visible) continue; d.life -= dt; if (d.life <= 0) { d.m.visible = false; continue; } d.m.material.opacity = Math.min(1, d.life / d.max * 1.8); }
+    for (const d of crDials) { if (!d.g.visible) continue; d.life -= dt; if (d.life <= 0) { d.g.visible = false; continue; } const p = 1 - d.life; d.g.quaternion.copy(camera.quaternion);
+      d.hand.rotation.z = -p * Math.PI * 2.2; d.face.material.opacity = d.hand.material.opacity = p < .15 ? p / .15 : Math.min(1, d.life / .3); }
+    for (const d of crFrozen) { if (!d.m.visible) continue; d.life -= dt; d.m.material.opacity = .9 * Math.min(1, d.life / .15 + .2);
+      if (d.life <= .12 && !d.done) { d.done = true; const p = d.m.position; emit(p.x, p.y, p.z, '#e8b05a', 46, (3 + d.r * .6) * d.k, 1.3, true); emit(p.x, p.y, p.z, '#ffd27a', 20, 2 * d.k, 1.6, true); emit(p.x, p.y, p.z, '#ffffff', 14, 8 * d.k, .3, true); }
+      if (d.life <= 0) d.m.visible = false; }
+  }
   const iconPool = Array.from({ length: 70 }, () => {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     sp.visible = false; scene.add(sp);
@@ -857,6 +985,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     w.m.position.set(x, 0.08, z); w.m.material.color.set(color); w.r0 = r0; w.r1 = r1; w.life = w.max = life; w.m.visible = true;
   }
   function updateFx(dt) {
+    crFxTick(dt);
     for (const d of iconPool) {
       if (!d.sp.visible) continue;
       d.life -= dt;
@@ -888,6 +1017,8 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     const y = fxTarget ? fxTarget.eatY : Math.max(r * 0.9, big * 1.15 + 1.2);   // above the eater, so the burst is not hidden inside the big drop
     switch (id) {
       case 'heartEat': emitIcons(x, y, z, 'heart', '#ff4f9a', 9, 1.4 + r * 0.25); break;
+      case 'cr_tick': if (fxTarget) { emitIcons(x, y, z, 'clock', '#ffd27a', 2, 1.4 + r * .25); wave(x, z, '#ffd27a', r, r * 2.5 + 2, .5); } else { crDial(x, y, z, r * S); emit(x, y, z, '#ffd27a', 10, 6, .4); } break;
+      case 'cr_freeze': if (fxTarget) { emit(x, y, z, '#c8c4e8', 20, 3, .4); emit(x, y, z, '#e8b05a', 30, 4, 1.1); emitIcons(x, y, z, 'square', '#c8c4e8', 3, .8); } else crFreeze(x, z, Math.max(r, S * .9), S); break;
       case 'psNova': emit(x, y, z, '#ffffff', 26, 16, .45); emit(x, y, z, '#ff8ae6', 20, 11, .8); emitIcons(x, y, z, 'star', '#ffffff', 3, 1.6 + r * .25); wave(x, z, '#ff8ae6', r, r * 4.5 + 4, .65); wave(x, z, '#9ff0ff', r * .5, r * 3 + 3, .5); break;
       case 'shockEat': wave(x, z, color, r, r * 4 + 4, .6); wave(x, z, '#ffffff', r * .5, r * 3 + 3, .45); break;
       case 'sf_6': emit(x, y, z, '#ffd23f', 40, 22, .8); emit(x, y, z, '#ff9a3d', 24, 14, 1); emitIcons(x, y, z, 'star', '#fff6a0', 4, 1.2 + r * .2); wave(x, z, '#ffd23f', r, r * 5 + 5, .7); break;
@@ -916,9 +1047,9 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   function dressBot(o) {
     const base = { id: 'bot_' + o.name, color: o.baseColor };
     const pick = list => list[(Math.random() * list.length) | 0];
-    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut)) : base;
+    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft)) : base;
     o.fx = {};
-    for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot && !f.legend)).id;
+    for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot && !f.legend && !f.craft)).id;
     if (o.star) { sk = SKINS.find(k => k.id === o.star.skin) || sk; o.fx = { aura: o.star.aura, trail: o.star.trail, eat: 'supernova' }; }
     o.trailDef = o.fx.trail ? fxById(o.fx.trail) : null;
     const st = o.star ? 3 : sk === base || Math.random() < .5 ? 0 : 1 + ((Math.random() * 3) | 0);
@@ -939,6 +1070,10 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       if (!o.isPlayer && !nearView(x, z)) continue;
       switch (id) {
         case 'sparksTrail': emit(x, r * .5, z, cellColor(c), 2, 2.5, .5); break;
+        case 'cr_cogs': if (Math.random() < .3) trailIcon(x, r * .5, z, 'gear', Math.random() < .6 ? '#ffd27a' : '#e8b05a', 1 + r * .1, .25); break;
+        case 'cr_marks': { o._mkT = (o._mkT || 0) + 1; if (o._mkT % 6) break; o._mkN = ((o._mkN || 0) + 1) % 36; const n = o._mkN, num = n % 3 === 0, rot = Math.atan2(c.hx, c.hz);
+          const icon = num ? 'n' + (12 - (n / 3) % 12) : 'tick', size = (num ? 2.2 : 1.6) + r * .45;
+          if (fxTarget) fxTarget.icons(x, .1, z, icon, '#ffd27a', 1, size, true); else crMark(x, z, icon, size, rot, num ? '#fff6d8' : '#ffd27a'); break; }
         case 'psDust': emit(x, r * .5, z, ['#ffffff', '#ff8ae6', '#b26bff', '#9ff0ff'][(Math.random() * 4) | 0], 3, 1.6, .9); if (Math.random() < .12) emitIcons(x, r * .7, z, 'star', '#ffffff', 1, .7); break;
         case 'bubbleTrail': emit(x, r * .3, z, '#7fe8ff', 1, 1.2, 1.2); break;
         case 'starTrail': emit(x, r * .5, z, '#ffd23f', 2, 1.5, .8); break;
@@ -1022,6 +1157,14 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     if (type === 'sf_22') for (let i = 0; i < 4; i++) { const b = add(new THREE.Mesh(new THREE.BoxGeometry(.05, .05, 5.5), new THREE.MeshBasicMaterial({ color: ['#ff4fd8', '#22e6ff', '#3dffa2', '#ffd23f'][i], transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false })), { a: i / 4 * Math.PI }); b.position.y = .6; }
     if (type === 'hf_newyear') for (let i = 0; i < 14; i++) { const b = add(new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: ['#ff2d55', '#3dff6e', '#ffd23f', '#22e6ff'][i % 4] })), { a: i / 14 * Math.PI * 2, i }); b.add(glowSprite(b.material.color, .7, .8)); }
     if (type === 'lc_starAura') for (let i = 0; i < 10; i++) add(new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.star, color: i % 2 ? '#c0c8e0' : '#4d7cff', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), { a: i / 10 * Math.PI * 2, up: i % 2 }).scale.setScalar(.45);
+    if (type === 'cr_cogwings') { const gm = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .7, metalness: .6, roughness: .3 });
+      [[-1, 1.45, .4, .34, 11, 1], [-1, 1.95, .02, .23, 8, -1.5], [1, 1.45, .4, .34, 11, -1], [1, 1.95, .02, .23, 8, 1.5]].forEach(([sx, d, y, r, n, sp]) => { const ge = add(new THREE.Mesh(gearGeo(r, n, .07), gm), { sp, y }); ge.position.set(sx * d, y, -.1); ge.rotation.x = -.85; }); add(glowSprite('#ffd27a', 4.2, .25)); }
+    if (type === 'cr_halo') { const ring = add(new THREE.Mesh(new THREE.TorusGeometry(.78, .05, 8, 48), new THREE.MeshBasicMaterial({ color: '#ffd27a' })), { ring: 1 }); ring.rotation.x = Math.PI / 2; ring.position.y = 1.45; ring.add(glowSprite('#ffd27a', 2.6, .5));
+      for (let i = 0; i < 12; i++) { const sp = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS['r' + (i || 12)], color: '#fff6d8', transparent: true, depthWrite: false })), { a: i / 12 * Math.PI * 2 }); sp.scale.setScalar(.36); } }
+    if (type === 'cr_foucault') { const arm = add(new THREE.Group(), { arm: 1 }); arm.position.y = 2.6;
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, 1.7, 5), new THREE.MeshBasicMaterial({ color: '#ffd27a' })); rod.position.y = -.85; arm.add(rod);
+      const bob = new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 8), new THREE.MeshBasicMaterial({ color: '#fff6d8' })); bob.position.y = -1.7; bob.add(glowSprite('#ffd27a', 1.3, .9)); arm.add(bob);
+      for (let i = 0; i < 46; i++) { const dt0 = add(glowSprite('#ffd27a', .3, .9), { trail: i }); dt0.visible = false; } }
     if (type === 'galaxyAura') for (let i = 0; i < 22; i++) add(glowSprite(i % 3 ? '#b26bff' : '#ff4fd8', 0.35, .95), { a: Math.random() * Math.PI * 2, r: 1.35 + Math.random() * 0.8, w: 0.6 + Math.random() * 1.2 });
     return grp;
   }
@@ -1064,6 +1207,11 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     if (type === 'sf_22') g.children.forEach((o, i) => { o.rotation.y = o.userData.a + t * (i % 2 ? 1.3 : -1); o.rotation.x = Math.sin(t * 1.5 + i) * .35; o.material.opacity = .5 + .5 * Math.abs(Math.sin(t * 4 + i * 1.3)); });
     if (type === 'hf_newyear') g.children.forEach(o => { const a = o.userData.a + t * .5; o.position.set(Math.cos(a) * 1.45, .15 + Math.sin(a * 3) * .12, Math.sin(a) * 1.45); o.visible = Math.sin(t * 5 + o.userData.i * 1.7) > -.4; });
     if (type === 'lc_starAura') g.children.forEach(o => { const d = o.userData, a = d.a + t * (d.up ? 1 : -.7), r = d.up ? 1.4 : 1.9; o.position.set(Math.cos(a) * r, (d.up ? .8 : -.05), Math.sin(a) * r); o.material.rotation = t; });
+    if (type === 'cr_cogwings') g.children.forEach(o => { const d = o.userData; if (d.sp) { o.rotation.z = t * d.sp * 1.6; o.position.y = d.y + Math.sin(t * 2.2) * .08; } });
+    if (type === 'cr_halo') g.children.forEach(o => { const d = o.userData; if (d.ring) o.position.y = 1.45 + Math.sin(t * 1.8) * .05; else if (d.a !== undefined) { const a = d.a + t * .35; o.position.set(Math.cos(a) * .78, 1.62 + Math.sin(t * 1.8) * .05, Math.sin(a) * .78); } });
+    if (type === 'cr_foucault') { const u = g.userData, arm = g.children[0], th = .62 * Math.sin(t * 2.1), ps = t * .23; arm.rotation.set(0, ps, th);
+      if (!u.lt || now - u.lt > 45) { u.lt = now; u.ti = ((u.ti || 0) + 1) % 46; const d = g.children.find(o => o.userData.trail === u.ti); if (d) { const L = 1.7 * Math.sin(th); d.position.set(-L * Math.cos(ps), -.92, L * Math.sin(ps)); d.visible = true; d.userData.born = now; } }
+      g.children.forEach(o => { const d = o.userData; if (d.trail === undefined || !o.visible) return; const age = (now - d.born) / 2100; if (age > 1) { o.visible = false; return; } o.material.opacity = .9 * (1 - age); o.material.color.setHSL((d.born / 3000 + d.trail * .01) % 1, .9, .62); }); }
     if (type === 'galaxyAura') { g.rotation.x = .45; g.children.forEach(o => { const d = o.userData, a = d.a + t * d.w; o.position.set(Math.cos(a) * d.r, Math.sin(a * 3) * .05, Math.sin(a) * d.r); }); }
   }
 

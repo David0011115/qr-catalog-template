@@ -1,10 +1,16 @@
   // ================= save =================
   let save = { best: 0, coins: 0, xp: 0, up: {}, skin: 'coral', skins: ['coral'], quests: [] };
   UPG.forEach(u => save.up[u.id] = 0);
-  try {
-    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+  let saveRestored = false;
+  {
+    const SAFE = SAVE_KEY + '-safe';
+    let raw = null, s = null, broken = false;
+    try { raw = localStorage.getItem(SAVE_KEY); } catch (e) {}
+    if (raw) { try { s = JSON.parse(raw); if (!s || typeof s !== 'object') throw new Error('save is not an object'); } catch (e) { broken = true; s = null; KapliErr.log(e, 'save-load'); } }
+    if (broken) { try { localStorage.setItem(SAVE_KEY + '-corrupt', raw.slice(0, 400000)); } catch (e) {} }
+    if (!s) { try { const safe = JSON.parse(localStorage.getItem(SAFE)); if (safe && safe.save && typeof safe.save === 'object') { s = safe.save; saveRestored = broken || 'missing'; } } catch (e) {} }
     if (s) save = { ...save, ...s, up: { ...save.up, ...s.up }, skins: s.skins || ['coral'], quests: s.quests || [] };
-  } catch (e) {}
+  }
   // the «Обзор» upgrade was removed (the camera is farther for everyone): refund what was spent on it
   if (save.up.vision) { save.coins += costs(25, 5).slice(0, save.up.vision).reduce((a, b) => a + b, 0); }
   delete save.up.vision;
@@ -71,7 +77,19 @@
   const Net = { uid: null, nick: null, shortId: '', email: '', submitRecord() {}, boot() {}, pushShowcase() {}, getShowcases: async () => new Map(), pcSocial() {}, pcSocialClick() {} };   // filled by the accounts block below
   const escHtml = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   let persistHook = null;   // cloud sync: told about every local save
-  const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} if (persistHook) persistHook(); };
+  // every save also refreshes a safe copy (at most once a minute); a full storage is reported once instead of failing silently
+  let safeAt = 0, storageWarned = false;
+  const persist = () => {
+    try {
+      const json = JSON.stringify(save); localStorage.setItem(SAVE_KEY, json);
+      if (Date.now() - safeAt > 60000) { safeAt = Date.now(); localStorage.setItem(SAVE_KEY + '-safe', JSON.stringify({ at: new Date().toISOString(), save })); }
+    } catch (e) {
+      KapliErr.log(e, 'save-write');
+      if (!storageWarned) { storageWarned = true; setTimeout(() => { try { toast('⚠ Память браузера заполнена — прогресс может не сохраниться. Войди в аккаунт, чтобы он хранился в облаке'); } catch (er) {} }, 0); }
+    }
+    if (persistHook) persistHook();
+  };
+  if (saveRestored) setTimeout(() => { try { toast(saveRestored === 'missing' ? 'Сохранение не нашлось — прогресс восстановлен из резервной копии' : 'Сохранение было повреждено — прогресс восстановлен из резервной копии'); } catch (e) {} }, 2500);
   save.mode = MODES[save.mode] && !REMOVED_MODES.includes(save.mode) ? save.mode : 'classic';
   // ranked (league) battles: only these modes, league points only here, purchased upgrades switched off
   // each league season is played in one mode; they rotate season by season
@@ -97,6 +115,7 @@
   // chest stats for the profile: opened chests by source and rarity (counted from v33), and round chests per hour over the last 7 days
   save.chestStats = save.chestStats || { since: Date.now(), total: 0, src: {} };
   save.chestDays = save.chestDays || [];
+  save.shards = Object.assign({ common: 0, rare: 0, epic: 0, legendary: 0 }, save.shards || {}); save.shardChests = save.shardChests || 0; save.chestSeq = save.chestSeq || 0;
   save.special = save.special || [];   // league / challenge chests: { kind, rar | league, title }
   save.dailyChestDay = save.dailyChestDay || '';
   save.stars = save.stars || {};                       // skin id -> 1..3 stars from chest duplicates
@@ -141,6 +160,9 @@
   save.season = save.season || { id: seasonNow, pts: 0 };
   [...(save.skins || []), ...(save.fxOwned || [])].forEach(id => { const m = /^hf?_(\w+?)_(\d{4})_\d$/.exec(id); if (m && HOLIDAYS[m[1]]) ensureHolidayItems(m[1], +m[2]); });
   save.seasonLog = save.seasonLog || [];
+  save.act = save.act || {};   // 2.2: activity calendar — local date → [rounds, seconds, best mass]
+  save.recaps = save.recaps || [];   // 2.2: season summaries, newest last (kept: 6)
+  const ssNew = id => ({ id, r: 0, t: 0, m: 0, w: 0, c: 0, x: 0, ch: {}, md: {} });
   let seasonNotice = '';
   if (!seasonStarted) save.season = { id: 1, pts: 0 };   // nothing counts before the first season opens
   if (save.season.id !== seasonNow) {
@@ -163,8 +185,15 @@
       if (sd.holiday) { const ky = sd.holiday + '_' + sd.year; save.totals.holLeagueY = save.totals.holLeagueY || {}; save.totals.holLeagueY[ky] = Math.max(save.totals.holLeagueY[ky] ?? 0, li); }
       if (sd.holiday) { save.totals.holLeague = save.totals.holLeague || {}; save.totals.holLeague[sd.holiday] = Math.max(save.totals.holLeague[sd.holiday] || 0, li); }
     }
+    // 2.2: the season's summary, if anything was played in it (league points or not)
+    if (save.ss && save.ss.id === save.season.id && save.ss.r > 0) {
+      const S = save.ss, fav = Object.entries(S.md).sort((a, b) => b[1] - a[1])[0];
+      save.recaps.push({ id: S.id, n: sd.name, r: S.r, t: Math.round(S.t), m: S.m, w: S.w, c: S.c, x: S.x, ch: S.ch, fav: fav || null, lg: save.season.pts > 0 ? li : -1, pts: save.season.pts });
+      save.recaps = save.recaps.slice(-6); save.recapShow = S.id;
+    }
     save.season = { id: seasonNow, pts: 0 };
   }
+  if (!save.ss || save.ss.id !== save.season.id) save.ss = ssNew(save.season.id);
   addExtraCollections();   // after the Chaos League tables: its collections need them
   styleDecor();
   // ---- Chaos League save (schema 3) ----
@@ -298,7 +327,7 @@
     save.pets = PETS.map(pt => pt.id);
     UPG.forEach(u => save.up[u.id] = u.cost.length);
     save.coins = Math.max(save.coins, 999999);
-    save.xp = Math.max(save.xp, 5000000);        // max level: everything (archive, Chaos League) is open
+    if (!save.testInit) { save.xp = Math.max(save.xp, 5000000); save.testInit = true; }   // max level once; the test panel can change it later
     save.abil.owned = [...new Set([...save.abil.owned, ...BASE_ABIL.map(a => a.id)])]; save.abil.xa = XA_ABIL.map(a => a.id);
     save.chests = Math.max(save.chests, 25);
     save.hats = Object.keys(HATS); save.decor = DECOR.map(d => d.id); save.arenas = ARENAS.map(a => a.id);

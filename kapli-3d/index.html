@@ -5010,14 +5010,27 @@ body.menu-bg .menu-backdrop { display: block; }
   const crystalGeo = new THREE.IcosahedronGeometry(1.04, 1);
   const bubbleGeo = new THREE.SphereGeometry(.08, 8, 6), bubbleMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .55, depthWrite: false });
   let envTex = null;
+  // a soft silver studio for liquid metal («Хром»): white sky, cool greys, thin highlight strips — reads as polished silver, not a disco ball
+  let silverTex = null;
+  function silverEnv() {
+    if (silverTex) return silverTex;
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128; const x = cv.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, 128); g.addColorStop(0, '#ffffff'); g.addColorStop(.28, '#e9eef8'); g.addColorStop(.46, '#9aa3b8'); g.addColorStop(.52, '#3a4052'); g.addColorStop(.7, '#c7cfe0'); g.addColorStop(1, '#5d6478');
+    x.fillStyle = g; x.fillRect(0, 0, 256, 128);
+    x.globalAlpha = .85; for (let i = 0; i < 4; i++) { x.fillStyle = i % 2 ? '#ffffff' : '#bfe9ff'; x.fillRect(i * 64 + 20, 18, 10, 46); } x.globalAlpha = 1;
+    const t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping; t.encoding = THREE.sRGBEncoding;
+    return (silverTex = t);
+  }
   function neonEnv() {   // a small neon "room" reflected by chrome and crystal skins
     if (envTex) return envTex;
     const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128; const x = cv.getContext('2d');
     const g = x.createLinearGradient(0, 0, 0, 128); g.addColorStop(0, '#ffffff'); g.addColorStop(.3, '#9b7bff'); g.addColorStop(.5, '#140a2e'); g.addColorStop(.62, '#ff4fd8'); g.addColorStop(1, '#05020f');
     x.fillStyle = g; x.fillRect(0, 0, 256, 128);
     for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? '#22e6ff' : '#ffd23f'; x.fillRect(i * 32 + 6, 36, 5, 34); }
-    const t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping;
-    try { const pm = new THREE.PMREMGenerator(renderer); envTex = pm.fromEquirectangular(t).texture; pm.dispose(); } catch (e) { envTex = t; }
+    // the plain equirect texture: every renderer (arena, menu blob, thumbnails, item window) prepares its own reflections from it.
+    // A PMREM made by the arena renderer cannot be used by the others — metal skins rendered black outside the round.
+    const t = new THREE.CanvasTexture(cv); t.mapping = THREE.EquirectangularReflectionMapping; t.encoding = THREE.sRGBEncoding;
+    envTex = t;
     return envTex;
   }
   const rimMat = col => new THREE.ShaderMaterial({ uniforms: { uCol: { value: new THREE.Color(col) }, uK: { value: 1 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -5038,7 +5051,7 @@ body.menu-bg .menu-backdrop { display: block; }
       case 'rim': { m.emissiveIntensity = .12; const sh = new THREE.Mesh(sphereGeo, rimMat(s.accent || s.color)); sh.scale.setScalar(1.035); sh.userData.rim = 1; ex.add(sh); break; }
       case 'magma': m.roughness = .75; break;
       case 'gold': m.metalness = .9; m.roughness = .22; m.envMap = neonEnv(); m.emissiveIntensity = .22; break;
-      case 'liquid': { m.metalness = 1; m.roughness = .04; m.envMap = neonEnv(); m.emissiveIntensity = .06; const sh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: '#ffffff', metalness: 1, roughness: .05, envMap: neonEnv(), transparent: true, opacity: .35 })); sh.scale.setScalar(1.03); sh.userData.wobble = 1; ex.add(sh); break; }
+      case 'liquid': { m.metalness = 1; m.roughness = .08; m.envMap = silverEnv(); m.emissiveIntensity = .04; const sh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: '#ffffff', metalness: 1, roughness: .05, envMap: silverEnv(), transparent: true, opacity: .35 })); sh.scale.setScalar(1.03); sh.userData.wobble = 1; ex.add(sh); break; }
       case 'pearl': { m.metalness = .25; m.roughness = .12; m.envMap = neonEnv(); m.emissiveIntensity = .3; const sh = new THREE.Mesh(sphereGeo, rimMat('#ff9ef2')); sh.scale.setScalar(1.03); sh.userData.pearl = 1; ex.add(sh); break; }
       case 'matte': m.roughness = .65; m.emissiveIntensity = .3; break;
     }

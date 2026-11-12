@@ -36,6 +36,7 @@
     { id: 'bg_cr_sand',   name: 'Песочные часы',     rar: 'rare',      craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
     { id: 'bg_cr_behind', name: 'За циферблатом',    rar: 'epic',      craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
     { id: 'bg_cr_void',   name: 'Вне времени',       rar: 'legendary', craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
+    { id: 'bg_cr_astro',  name: 'Астролябия',        rar: 'legendary', src: 'награда за всю серию «Хронос» в мастерской', test: () => false },
   ];
   const pbgById = id => PBG.find(b => b.id === id) || PBG[0];
   // ---- drawing: every background is a function of (ctx, w, h, t seconds); random layouts are seeded, so a scene is the same every frame ----
@@ -84,6 +85,14 @@
         for (const p of pbgPts('bd', 24, 71)) { const yy = h - ((t * (6 + p.s * 10) + p.y * h) % h); x.globalAlpha = .3 + .5 * Math.abs(Math.sin(t + p.p)); x.fillStyle = '#fff6d8'; x.fillRect(p.x * w * .8, yy, 1.4, 1.4); } x.globalAlpha = 1;
         const bx = w * .86, by = h * .12, sw = Math.sin(t * 1.6) * .38, BR = U * .16; x.save(); x.translate(bx, by); x.rotate(sw); x.fillStyle = brass(0, BR * 2.2); x.beginPath(); x.moveTo(-BR, BR * 1.9); x.quadraticCurveTo(-BR, 0, 0, 0); x.quadraticCurveTo(BR, 0, BR, BR * 1.9); x.lineTo(BR * 1.2, BR * 2.1); x.lineTo(-BR * 1.2, BR * 2.1); x.closePath(); x.fill(); x.restore();
         for (let i = 0; i < 2; i++) { const k = ((t / 1.96) + i * .5) % 1; x.strokeStyle = `rgba(255,210,122,${(1 - k) * .6})`; x.lineWidth = 2; x.beginPath(); x.arc(bx, by + BR * 1.4, BR * (1 + k * 3), 0, 6.29); x.stroke(); } break;
+      }
+      case 'bg_cr_astro': {   // an orrery: four tilted brass rings, a light travelling along each, a slow pointer
+        x.fillStyle = '#070418'; x.fillRect(0, 0, w, h); glow(w * .5, h * .5, U * .9, 'rgba(90,70,200,.28)'); stars(46, 91, 1.3); glow(w * .5, h * .5, U * .34, 'rgba(255,210,122,.4)');
+        [[.95, .27, -.32, 60, '#ffd27a', '#22e6ff'], [.76, .2, .42, 44, '#e8b05a', '#ff4fd8'], [.55, .16, -.7, 32, '#fff0c0', '#3dffa2'], [.35, .1, .2, 20, '#ffd27a', '#ffd23f']].forEach(([rx, ry, rot, per, col, dot], i) => {
+          x.save(); x.translate(w * .5, h * .5); x.rotate(rot); x.strokeStyle = col; x.globalAlpha = .85; x.lineWidth = i ? 1.4 : 2.2; x.beginPath(); x.ellipse(0, 0, U * rx, U * ry, 0, 0, 6.29); x.stroke();
+          const a = t * 6.283 / per + i * 1.7; x.globalAlpha = 1; x.fillStyle = dot; x.beginPath(); x.arc(Math.cos(a) * U * rx, Math.sin(a) * U * ry, U * (.045 - i * .006), 0, 6.29); x.fill(); x.restore(); });
+        { const a = t * 6.283 / 30; x.strokeStyle = 'rgba(255,243,196,.45)'; x.lineWidth = 1; x.beginPath(); x.moveTo(w * .5, h * .5); x.lineTo(w * .5 + Math.sin(a) * U * 1.1, h * .5 - Math.cos(a) * U * 1.1); x.stroke(); }
+        x.fillStyle = '#fff3c4'; x.beginPath(); x.arc(w * .5, h * .5, U * .07, 0, 6.29); x.fill(); x.strokeStyle = '#ffd27a'; x.lineWidth = 1.4; x.beginPath(); x.arc(w * .5, h * .5, U * .12, 0, 6.29); x.stroke(); break;
       }
       case 'bg_cr_void': {   // dozens of dials drift in the void, each with its own pace, slowly spiralling to the centre
         x.fillStyle = '#06040f'; x.fillRect(0, 0, w, h); glow(w * .5, h * .5, U * .7, 'rgba(255,210,122,.12)'); stars(40, 73, 1.4);
@@ -217,7 +226,7 @@
         x.save(); x.beginPath(); x.rect(0, 0, w, cy); x.clip(); x.translate(cx, cy); x.scale(1, .32); x.globalCompositeOperation = 'lighter'; x.strokeStyle = 'rgba(255,170,240,.5)'; x.lineWidth = 3; x.beginPath(); x.arc(0, 0, R * 1.5, Math.PI, 0); x.stroke(); x.restore();
         for (const p of pbgPts('sp', 24, 79)) { const ph = ((t * (.15 + p.s * .15) + p.q) % 1), a = p.p + ph * 9, d = R * (4 - ph * 2.9); x.globalAlpha = ph; x.fillStyle = '#22e6ff'; x.fillRect(cx + Math.cos(a) * d, cy + Math.sin(a) * d * .45, 1.8, 1.8); } x.globalAlpha = 1; break; }
       // ---- 2.3 workshop «Хронос» ----
-      case 'bg_cr_gears': case 'bg_cr_sand': case 'bg_cr_behind': case 'bg_cr_void': { crBg(x, w, h, id, t, U, lin, glow, stars); break; }
+      case 'bg_cr_gears': case 'bg_cr_sand': case 'bg_cr_behind': case 'bg_cr_void': case 'bg_cr_astro': { crBg(x, w, h, id, t, U, lin, glow, stars); break; }
       case 'bg_rift': {
         x.fillStyle = lin([[0, '#0a0020'], [1, '#1a0030']]); x.fillRect(0, 0, w, h);
         const k = Math.floor(t * 9); let s = k * 31 + 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -501,9 +510,9 @@
     fr_cq1: 'shards', fr_cq2: 'shards', fr_cq3: 'shards', fr_cq4: 'shards', fr_q1: 'stars', fr_q2: 'stars', fr_arsenal: 'gear', fr_finish: 'checker', fr_dark: 'thorns',
     fr_ps_orbit: 'psorbit', fr_rainbow: 'prism', fr_lg4: 'crystal', fr_lg5: 'crown', fr_cvet: 'void', fr_sing: 'orbit', fr_lv40: 'star', fr_legend: 'laurel', fr_star: 'starburst',
     fr_platinum: 'ornate', fr_modes: 'medal', fr_master: 'wings', fr_xarsenal: 'horizon', fr_beta: 'holo', fr_creator: 'creator', fr_vet: 'pulse', fr_bday2026: 'bday',
-    fr_cr_dial: 'crdial', fr_cr_roman: 'crroman', fr_cr_pend: 'crpend', fr_cr_gyro: 'crgyro' };
+    fr_cr_dial: 'crdial', fr_cr_roman: 'crroman', fr_cr_pend: 'crpend', fr_cr_gyro: 'crgyro', fr_cr_tourb: 'crtourb' };
   const FRAME_GLYPH = { flame: '♨', shield: '◆', petal: '✿', shards: '◈', stars: '✦', gear: '⚙', checker: '⚑', thorns: '✶', prism: '✧', crystal: '◆', crown: '♛', void: '◉', orbit: '◌',
-    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', pulse: '✚', bday: '✦', crdial: '◷', crroman: 'Ⅻ', crpend: '⧖', crgyro: '⊛' };
+    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', pulse: '✚', bday: '✦', crdial: '◷', crroman: 'Ⅻ', crpend: '⧖', crgyro: '⊛', crtourb: '⚙' };
   let foUid = 0;
   function frameOrnSVG(d) {
     if (!d) return '';
@@ -565,6 +574,9 @@
         + `<g transform="translate(0,-60)"><g><animateTransform attributeName="transform" type="rotate" values="-16;16;-16" dur="1.6s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/><path d="M-15,3 Q0,-7 15,3 L12,6 Q0,-1 -12,6 Z" fill="${G}"/><path d="M-15,3 l-2.5,5.5 M15,3 l2.5,5.5" stroke="${a}" stroke-width="2.4" stroke-linecap="round"/><circle r="2.6" fill="#ff4fd8"/></g></g>`
         + `<g transform="translate(0,55)"><path d="M-9,13 A15,15 0 0 0 9,13" fill="none" stroke="${a}" stroke-width="2" opacity=".3"/><g><animateTransform attributeName="transform" type="rotate" values="-28;28;-28" dur="3.2s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/><path d="M0,0 L0,9" stroke="${a}" stroke-width="1.6"/><circle cy="11" r="4" fill="${G}" stroke="#fff6d8" stroke-width=".8"/></g></g>`
         + [[-6, 66], [6, 66]].map(([sx, sy], i) => `<circle cx="${sx}" cy="${sy}" r="1.5" fill="#fff6d8" opacity="0"><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.05;.2;1" dur="3.2s" begin="${i * 1.6}s" repeatCount="indefinite"/></circle>`).join(''); break;
+      case 'crtourb': o = ring(52, 3) + spin(60, n(60, (i, g) => at(g, 59, `<path d="M0,${i % 5 ? -1.6 : -3.4} L0,${i % 5 ? 1.6 : 3.4}" stroke="${i % 5 ? a : '#fff3c4'}" stroke-width="${i % 5 ? 1 : 2}" stroke-linecap="round"/>`))) + ring(64.5, 1.4, G, .9)
+        + spin(12, at(0, 59, `<circle r="3.4" fill="#22e6ff" stroke="#fff" stroke-width=".8"/>`, false))
+        + `<g transform="translate(0,58)"><circle r="10" fill="#140c26" stroke="${G}" stroke-width="2.4"/>${spin(3, `<path d="M0,-7 L0,7 M-6.1,-3.5 L6.1,3.5 M-6.1,3.5 L6.1,-3.5" stroke="${G}" stroke-width="1.6" stroke-linecap="round"/><circle r="7.4" fill="none" stroke="${a}" stroke-width="1"/>`)}<circle r="2.4" fill="#ff3d6e"/></g>`; break;
       case 'crgyro': o = ring(51.5, 2) + [[57, 9, 1, 1, a], [62, 6, -1, .55, 'rb'], [66, 4, 1, .32, 'rb']].map(([r, d, dir, k, st], i) => `<g transform="rotate(${i * 60})"><g transform="scale(1,${k})">${spin(d, `<circle r="${r}" fill="none" stroke="${st === 'rb' ? `url(#${id}r)` : G}" stroke-width="${2.6 - i * .5}"/><circle cy="${-r}" r="${3 - i * .5}" fill="#fff"/>`, dir < 0)}</g></g>`).join('')
         + `<linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22e6ff"><animate attributeName="stop-color" values="#22e6ff;#ff4fd8;#ffd23f;#22e6ff" dur="4s" repeatCount="indefinite"/></stop><stop offset="1" stop-color="#ff4fd8"><animate attributeName="stop-color" values="#ff4fd8;#ffd23f;#22e6ff;#ff4fd8" dur="4s" repeatCount="indefinite"/></stop></linearGradient>`; break;
       case 'pulse': { let d2 = ''; for (let g = 0; g <= 360; g += 3) { const k = g % 60, r = k > 20 && k < 24 ? 52 + 8 : k >= 24 && k < 27 ? 52 - 5 : k >= 27 && k < 30 ? 52 + 3 : 52; const [x, y] = P(r, g); d2 += (g ? 'L' : 'M') + x + ',' + y; }

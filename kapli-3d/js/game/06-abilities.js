@@ -1,7 +1,8 @@
   // ================= abilities: runtime =================
   let runBuild = [...ABIL_CFG.oldBuild], decoy = null;
   const abLv = id => stats && stats.ranked ? 0 : save.abil.lv[id] || 0;
-  const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id));
+  const arenaCd = () => arenaIs('chronos') ? .9 : 1;   // arena «Часовой механизм»: every cooldown is 10% shorter
+  const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd();
   const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);
   const abOn = (id, o = player) => !!(o && o.abT && o.abT[id] > 0);
   const abUsed = id => { if (stats && stats.abUsed) { stats.abUsed[id] = 1; stats.abilUses = (stats.abilUses || 0) + 1; } };
@@ -112,7 +113,7 @@
       const v = { x: px, z: pz, vx: 0, vz: 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh(), trap: { ttl: a.dur, owner: o } };
       v.mesh.add(glowSprite(a.color, 4, .7)); viruses.push(v);
     } else return false;
-    o.abCd[id] = me ? abCdOf(id) : a.cd;
+    o.abCd[id] = me ? abCdOf(id) : a.cd * arenaCd();
     if (me) { abUsed(id); abFlash(id, px, pz, a.color, 'bonus'); buzz(15); }
     else if (nearView(px, pz)) emit(px, 2, pz, a.color, 20, 6, .5);
     return true;
@@ -205,7 +206,7 @@
     }
     if (id === 'x_phase') {
       blinkBy(o, a.dist, a.color);
-      if (o.phase2 > 0) { o.phase2 = 0; o.abCd[id] = me ? abCdOf(id) : a.cd; }   // second jump: now the cooldown starts
+      if (o.phase2 > 0) { o.phase2 = 0; o.abCd[id] = me ? abCdOf(id) : a.cd * arenaCd(); }   // second jump: now the cooldown starts
       else o.phase2 = CHAOS_CFG.phase2Sec;
       if (me) Sound.play('dash'); return true;
     }

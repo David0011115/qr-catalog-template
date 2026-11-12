@@ -328,6 +328,7 @@
       `<b class="mb-blob" style="left:${x}%;top:${y}%;width:${r}px;height:${r}px;background:radial-gradient(circle at 35% 30%, #fff, ${c} 45%, transparent 72%);box-shadow:0 0 24px ${c}"></b>`).join('');
   function frame(now) {
     if (sceneryAnim) sceneryAnim(now);
+    lookTick(now);
     trackFps(now);
     const dt = Math.min((now - last) / 1000, 0.05); last = now;
     if (running && !paused && !dying) update(dt);

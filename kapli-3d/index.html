@@ -4832,7 +4832,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   let lookDrift = [0, 0], lookPainted = '';
   function applyArenaLook(A) {
     const L = LOOK[A.id] || LOOK.default, sg = skyCv.getContext('2d'), gr = sg.createLinearGradient(0, 0, 0, 256);
-    gr.addColorStop(0, L.sky[0]); gr.addColorStop(.3, L.sky[1]); gr.addColorStop(.5, L.sky[2]); gr.addColorStop(.57, L.fog); gr.addColorStop(1, L.fog);
+    gr.addColorStop(0, L.sky[0]); gr.addColorStop(.3, L.sky[1]); gr.addColorStop(.5, L.sky[2]); gr.addColorStop(.8, L.fog); gr.addColorStop(1, L.fog);   // below the horizon the glow sinks slowly into the haze
     sg.fillStyle = gr; sg.fillRect(0, 0, 4, 256); skyTex.needsUpdate = true;
     scene.background.set(L.fog); scene.fog.color.set(L.fog);
     if (QUALITY === 'low') { floor.material = floorBasic; lookPainted = ''; return; }   // weak devices keep the plain tile

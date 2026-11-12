@@ -3,6 +3,19 @@
 .theme-preview[data-theme="drops"] .theme-thumb{background-image:url("../chat-drops.svg")}
 .theme-live-preview[data-theme-preview="drops"],.theme-full-scene[data-theme-preview="drops"]{background-image:url("../chat-drops.svg")}
 .chat-card[data-chat-theme="drops"]{background-image:url("../chat-drops.svg")}
+/* crafted chat scenes of the «Хронос» series: shown in the picker for everyone, applied only when crafted in the workshop */
+.theme-preview[data-theme="chronos-workshop"] .theme-thumb{background-image:url("../chat-chronos-workshop.svg")}
+.theme-live-preview[data-theme-preview="chronos-workshop"],.theme-full-scene[data-theme-preview="chronos-workshop"]{background-image:url("../chat-chronos-workshop.svg")}
+.chat-card[data-chat-theme="chronos-workshop"]{background-image:url("../chat-chronos-workshop.svg")}
+.theme-preview[data-theme="chronos-city"] .theme-thumb{background-image:url("../chat-chronos-city.svg")}
+.theme-live-preview[data-theme-preview="chronos-city"],.theme-full-scene[data-theme-preview="chronos-city"]{background-image:url("../chat-chronos-city.svg")}
+.chat-card[data-chat-theme="chronos-city"]{background-image:url("../chat-chronos-city.svg")}
+.theme-preview[data-theme="chronos-heart"] .theme-thumb{background-image:url("../chat-chronos-heart.svg")}
+.theme-live-preview[data-theme-preview="chronos-heart"],.theme-full-scene[data-theme-preview="chronos-heart"]{background-image:url("../chat-chronos-heart.svg")}
+.chat-card[data-chat-theme="chronos-heart"]{background-image:url("../chat-chronos-heart.svg")}
+.theme-preview[data-craft]{border-color:rgba(255,210,122,.45)}
+.theme-preview.locked .theme-thumb{filter:saturate(.55) brightness(.75)}
+.theme-preview.locked>span:last-child::before{content:"🔒 "}
 /* Theme picker: four thumbnails in one row, the eye sits on the thumbnail's corner (no separate column) */
 .theme-preview-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px}
 .theme-option{position:relative;display:block!important}

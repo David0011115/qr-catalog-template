@@ -1608,6 +1608,13 @@ body.menu-bg .menu-backdrop { display: block; }
 @media (prefers-reduced-motion: reduce) { .rl-phone { animation: none; transform: rotate(-90deg); } }
 </style>
 <style>.err-btns{display:flex;flex-wrap:wrap;gap:8px}.err-btns .btn{flex:1 1 auto;width:auto;margin:0}</style>
+<style>
+.ws-exp { grid-template-columns: 1fr !important; gap: 4px !important; align-content: start; }
+.ws-exp > .btn { width: 100%; margin: 0; min-height: 44px; padding: 6px 8px; }
+.ws-exp .sh-ex { justify-content: center; white-space: nowrap; gap: 6px; font-weight: 700; }
+.ws-exp > .btn:disabled { opacity: .42; box-shadow: none; filter: grayscale(.4); }
+.ws-exp .all { min-height: 30px !important; font-size: .72rem !important; padding: 4px 8px !important; color: var(--food); border-color: color-mix(in srgb, var(--food) 55%, transparent); }
+</style>
 </head>
 <body>
 
@@ -1839,7 +1846,7 @@ body.menu-bg .menu-backdrop { display: block; }
 
   <div class="card" id="wsCard" hidden>
     <div class="shop-head"><h1>Мастерская</h1></div>
-    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: его приносит каждый 2-й сундук за раунды, ещё один дают три цели за день и два — все задания недели. Каждая серия — своя папка со своей темой.</p>
+    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки лежат в сундуках осколков: их дают каждый 2-й сундук за раунды, три цели за день (1 сундук) и все задания недели (2 сундука). Каждая серия — своя папка со своей темой.</p>
     <div class="ws-top"><div><h2 class="section-title">Твои осколки</h2><div class="ws-bal" id="wsBal"></div></div>
     <div><h2 class="section-title">Обмен: 10 осколков → 1 следующей редкости</h2><div class="ws-ex" id="wsEx"></div></div></div>
     <p class="hint ws-luck">✨ Удачная ковка: с шансом 10% вернётся четверть потраченных осколков</p>
@@ -8685,8 +8692,8 @@ window.KapliErr = (() => {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wsModal').hidden) wsModalClose(); });
   function renderWorkshop() {
     $('wsBal').innerHTML = RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 34)}<b>${save.shards[k]}</b>${RARITY[k].name}</span>`).join('');
-    $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<span class="ws-exp"><button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'} aria-label=""10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} в 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}"><span class="sh-ex">10 ${shardIco(k, 18)} → 1 ${shardIco(RAR_KEYS[i + 1], 18)}</span></button>` +
-      `<button class="btn ghost all" type="button" data-wsexall="${k}" ${save.shards[k] >= 20 ? '' : 'disabled'} title="Обменять все десятки сразу" aria-label="Обменять все: ${Math.floor(save.shards[k] / 10) * 10} в ${Math.floor(save.shards[k] / 10)}">все ×${Math.floor(save.shards[k] / 10)}</button></span>`).join('');
+    $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<span class="ws-exp"><button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'} aria-label="10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} в 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}"><span class="sh-ex">10 ${shardIco(k, 18)} → 1 ${shardIco(RAR_KEYS[i + 1], 18)}</span></button>` +
+      (save.shards[k] >= 20 ? `<button class="btn ghost all" type="button" data-wsexall="${k}" title="Обменять все десятки сразу" aria-label="Обменять все: ${Math.floor(save.shards[k] / 10) * 10} в ${Math.floor(save.shards[k] / 10)}">обменять все · ×${Math.floor(save.shards[k] / 10)}</button>` : '') + `</span>`).join('');
     { const g = save.wsPin && !wsOwned(save.wsPin) ? wsFind(save.wsPin) : null, el = $('wsGoal'); el.hidden = !g;
       if (g) { const pr = wsProg(g.id); el.style.setProperty('--rc', RARITY[g.rar].color);
         el.innerHTML = `<span><small>Цель</small><br><b>${g.name}</b> <small>${canPay(g.id) ? 'осколков хватает — можно создать' : 'не хватает: ' + wsMiss(g.id).map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 14)}${n}</span>`).join(' ')}</small></span><button class="ws-pin" type="button" data-wspin="${g.id}" aria-pressed="true">снять</button><span class="bar"><i style="width:${(pr * 100).toFixed(0)}%"></i></span>`; } }

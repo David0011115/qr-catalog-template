@@ -1,7 +1,7 @@
   // ================= menus =================
   let shopTab = 'up', shopReturn = 'menuCard';
   function showCard(id) {
-    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard', 'friendsCard', 'dmCard', 'clanCard'].forEach(c => $(c).hidden = c !== id);
+    ['menuCard', 'resultCard', 'shopCard', 'chestCard', 'profileCard', 'settingsCard', 'leagueCard', 'chaosCard', 'modesCard', 'hubLeague', 'hubCol', 'hubRew', 'infoCard', 'pauseCard', 'accountCard', 'chatCard', 'rankCard', 'friendsCard', 'dmCard', 'clanCard', 'wsCard'].forEach(c => $(c).hidden = c !== id);
     $('overlay').scrollTop = 0;
   }
   function openShop() { shopReturn = $('resultCard').hidden ? 'menuCard' : 'resultCard'; showCard('shopCard'); renderShop(); $('backBtn').focus(); }
@@ -90,6 +90,7 @@
     ['hubColBtn', 'Коллекция', 'Гардероб, питомцы, коллекции и твой билд способностей.'],
     ['hubRewBtn', 'Награды', 'Сундуки и достижения — здесь забираешь всё заработанное.'],
     ['shopBtn', 'Магазин', 'Монеты тратятся на скины, эффекты, арены, улучшения и способности.'],
+    ['wsBtn', 'Мастерская', 'Предметы, которых нет ни в магазине, ни в сундуках: они создаются из осколков. Осколки дают сундуки осколков — их приносит каждый 2-й сундук за раунды, три цели за день и все задания недели. Предметы разбиты на серии, у каждой своя тема.'],
     ['infoBtn', 'Информация', 'Справка по всем темам. Здесь же можно повторить обучение и этот тур.'],
     ['newsBtn', 'Обновления', 'Что изменилось в игре. Красная точка — есть новое.'],
     ['chatBtn', 'Чат', 'Общий чат игроков. Писать можно с аккаунтом, читать — всем.'],
@@ -137,6 +138,18 @@
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 188, ver: '2.4.0', date: '12 ноября', title: 'Мастерская «Хронос», новые арены и фоны чата', kind: 'update',
+      lead: 'Открылась мастерская: предметы, которых нет ни в магазине, ни в сундуках, теперь создаются из осколков. Арены и фоны чата перерисованы.', items: [
+      'Мастерская и серия «Хронос»: 28 предметов в стиле часового механизма — 4 фона профиля, 4 рамки, 7 скинов, 7 эффектов, 3 питомца и 3 способности. Плитка «Мастерская» — в главном меню.',
+      'Осколки четырёх редкостей лежат в сундуках осколков. Такой сундук приходит с каждым вторым сундуком за раунды, ещё один — за три цели за день и два — за все задания недели. Открывать можно по 5 штук.',
+      'Создание предмета: окно с ценой и остатком осколков, анимация ковки и «Удачная ковка» — с шансом 10% возвращается четверть осколков.',
+      'В мастерской видно, сколько осколков не хватает; предмет можно сделать целью и следить за прогрессом на плитке меню; обмен 10 → 1 работает и разом на все осколки.',
+      'Арены: у каждой из десяти свой рисунок на весь пол, глубина под стеклянным полом и своё небо. На низкой графике пол остаётся прежним.',
+      'Фоны чата «Космос», «Сакура», «Аврора» и «Капли» перерисованы и ожили: в каждом свои капли-персонажи. При прокрутке чата фон замирает, чтобы не мешать.',
+      'Итоги сезона: окно после конца сезона и архив итогов. Карточкой профиля и итогами можно поделиться картинкой.',
+      'Профиль: календарь активности с сериями дней, новый экран достижений и полка из трёх трофеев.',
+      'Надёжность: игра переживает сбои в раунде, хранит запасную копию сохранения, умеет восстановить графику и собрать отчёт об ошибке для поддержки.'
+    ] },
     { id: 187, ver: '2.3.0', date: '11 ноября', title: 'Смайлики-капли, праздничные коробки и новые сундуки', kind: 'update',
       lead: 'Большое обновление перед днём рождения разработчика: живые смайлики в чате, праздничные коробки с подарками, нарисованные сундуки и много удобств.', items: [
       'Смайлики-капли: 12 анимированных эмоций в стиле игры, среди них новые «Король», «Ням», «Съели» и «GG». Сообщение из одних смайликов показывается крупно.',
@@ -524,6 +537,7 @@
     collection: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.3-1-1.6-1-2.6 0-.9.7-1.4 1.6-1.4H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11.5" r="1.3"/><circle cx="10" cy="7.3" r="1.3"/><circle cx="15" cy="7.6" r="1.3"/>',
     gift: '<rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v8.5h14V12M12 8v12.5M12 8c-1.8-4.2-6.3-4-6-1.3.2 1.3 2.5 1.3 6 1.3zM12 8c1.8-4.2 6.3-4 6-1.3-.2 1.3-2.5 1.3-6 1.3z"/>',
     shop: '<path d="M5 8h14l-1.2 12.5H6.2z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/>',
+    workshop: '<circle cx="9" cy="14" r="4.2"/><circle cx="9" cy="14" r="1.4"/><path d="M9 8.3v1.5M9 18.2v1.5M3.3 14h1.5M13.2 14h1.5M5 10l1 1M12 17l1 1M5 18l1-1M12 11l1-1"/><path d="M14.5 3.5l6 6-2 2-6-6zM15.5 8.5l-3.2 3.2"/>',
     back: '<path d="M15 5l-7 7 7 7"/>'
   };
   const icon = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON_SVG[k]}</svg>`;
@@ -619,11 +633,12 @@
         ? (sw => save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => `<li><span class="g-txt">${q.text}</span>` +
             (sw ? `<button type="button" class="g-swap" data-qswap="${q.id}" title="Заменить эту цель (раз в день)" aria-label="Заменить цель «${q.text}»">↻</button>` : '') +
             `<span class="g-rw"><b>+${qCoins(q)} ◆</b><small>+${qXp(q)} оп.</small></span></li>`).join('') +
-          `<li class="g-note">За один раунд · ${sw ? 'неудобную цель можно заменить ↻ раз в день' : 'замена цели уже использована сегодня'}</li>`)(save.qSwapDay !== today)
+          `<li class="g-note">За один раунд · ${sw ? 'неудобную цель можно заменить ↻ раз в день' : 'замена цели уже использована сегодня'}</li>` +
+          `<li class="g-note">${(q => q && q.sh ? 'Сундук осколков за три цели сегодня получен' : `Три цели за день — сундук осколков: ${q ? Math.min(3, q.n) : 0}/3`)(save.qDay && save.qDay.d === today ? save.qDay : null)}</li>`)(save.qSwapDay !== today)
         : weeklyTasks(W.week).map(t => { const v = Math.min(t.n, W.prog[t.id] || 0), ok = W.done.includes(t.id), R = RARITY[WEEK_RAR[t.tier]];
             return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${t.text(t.n)}<span class="g-bar"><i style="width:${(v / t.n * 100).toFixed(0)}%;background:${R.color}"></i></span></span>` +
               `<span class="g-rw"><b style="color:${R.color}">${TIER[t.tier]}</b><small>${v.toLocaleString('ru-RU')}/${t.n.toLocaleString('ru-RU')}</small></span></li>`; }).join('') +
-          `<li class="g-note">Ещё ${days} дн. · ${W.bonus ? 'награда за неделю получена' : `за все три: сундук «${RARITY[WEEK_CHEST].name}», +${WEEK_BONUS} ◆ и 🎟`}</li>`;
+          `<li class="g-note">Ещё ${days} дн. · ${W.bonus ? 'награда за неделю получена' : `за все три: сундук «${RARITY[WEEK_CHEST].name}», 2 сундука осколков, +${WEEK_BONUS} ◆ и 🎟`}</li>`;
     }
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
@@ -652,6 +667,9 @@
       $('hubColSub').textContent = ready ? `можно забрать: ${ready}` : `коллекций ${save.colDone.length}/${COLLECTIONS.length}`;
       const ch = chestTotal() + (save.dailyChestDay !== today ? 1 : 0);
       $('hubRewSub').textContent = ch ? `сундуков: ${ch}` : `достижений ${save.ach.length}/${ACH.length}`;
+      { const sh = RAR_KEYS.reduce((a, k) => a + (save.shards[k] || 0), 0), can = Object.keys(CR_PRICE).filter(id => canPay(id) && !wsOwned(id)).length;
+        const goal = save.wsPin && CR_PRICE[save.wsPin] && !wsOwned(save.wsPin) ? save.wsPin : null;
+        $('wsSub').textContent = can ? `можно создать: ${can}` : goal ? `цель: ${Math.round(wsProg(goal) * 100)}%` : `осколков: ${sh}`; $('wsX').textContent = can ? '●' : ''; }
       // live tiles: league emblem + progress to the next league, collection progress, chests waiting, new in the shop
       const li = leagueOf(save.season.pts), nx = LEAGUES[li + 1];
       if ($('hubLeagueX').dataset.li !== String(li)) { $('hubLeagueX').dataset.li = li; $('hubLeagueX').innerHTML = rankEmblem(li, 34); }
@@ -671,7 +689,7 @@
         `<small class="lg-when">${seasonStarted ? `сезон ${save.season.id} · до ${fmtDate(seasonEnd(save.season.id))}` : `первый сезон — с ${fmtDate(SEASON_EPOCH)}`} · 14 дней</small></span>`; }
   }
   const OLD_PAT = ['stripes', 'dots', 'stars', 'gradient', 'grid', 'zigzag', 'rings'];
-  const MAT_CSS = { chrome: 'linear-gradient(160deg, rgba(255,255,255,.75), transparent 38%, rgba(255,255,255,.35) 58%, transparent 70%), ',
+  const MAT_CSS = { skeleton: 'radial-gradient(circle at 36% 42%, transparent 0 18%, #ffd27a 19% 25%, transparent 26%), radial-gradient(circle at 66% 64%, transparent 0 10%, #ffd27a 11% 16%, transparent 17%), radial-gradient(circle at 64% 30%, #ffd27a 0 6%, transparent 7%), ', sandglass: 'radial-gradient(ellipse at 50% 12%, #ffd27a 0 28%, transparent 30%), radial-gradient(circle, #ffd27a 0 1.5px, transparent 2px) 0 0/8px 8px, ', chrome: 'linear-gradient(160deg, rgba(255,255,255,.75), transparent 38%, rgba(255,255,255,.35) 58%, transparent 70%), ',
     glass: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,.8) 0 8%, transparent 22%), ', jelly: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,.7) 0 9%, transparent 25%), ',
     crystal: 'conic-gradient(from 30deg, rgba(255,255,255,.45), transparent 15%, rgba(255,255,255,.25) 30%, transparent 45%, rgba(255,255,255,.4) 60%, transparent 75%, rgba(255,255,255,.2) 90%), ',
     rim: '', magma: '', matte: '' };
@@ -864,9 +882,10 @@
     };
     requestAnimationFrame(step);
   }
-  const buyable = x => !x.prestige && !x.raid && x.price > 0 && !x.tut && !x.chaos && !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
+  const buyable = x => !x.craft && !x.prestige && !x.raid && x.price > 0 && !x.tut && !x.chaos && !x.ex && !x.chest && !x.season && !x.lchest && !x.special && !x.legend && !x.skill;
   function sourceBadge(x) {
     if (save.archived && save.archived.includes(x.id)) return '<span class="badge-ex" style="color:#9fd8ff">из архива</span>';
+    if (x.craft) return `<span class="badge-r" style="color:${RARITY[x.craft].color}">Мастерская · ${RARITY[x.craft].name}</span>`;
     if (x.lchest) return `<span class="badge-r" style="color:${RARITY[x.lchest].color}">Сундук лиги · ${RARITY[x.lchest].name}</span>`;
     if (x.chest) return `<span class="badge-r" style="color:${RARITY[x.chest].color}">${RARITY[x.chest].name}</span>`;
     if (x.ex) return '<span class="badge-ex">испытание</span>';
@@ -895,7 +914,7 @@
     else if (lv < f.lvl) { label = `С ур. ${f.lvl}`; dis = 'disabled'; }
     else { label = `${f.price} ◆`; if (save.coins < f.price) dis = 'disabled'; }
     const inf = ` data-info="fx:${f.id}" tabindex="0" role="button" aria-label="Предпросмотр: ${f.name}"`;
-    return `<div class="fxrow ${f.ex || f.chest || f.season ? 'ex' : ''}"${inf}><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
+    return `<div class="fxrow ${f.ex || f.chest || f.season || f.craft ? 'ex' : ''}"${inf}><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
       `<span class="desc">${f.desc}.</span><button class="${cls}" id="fx-${f.id}" data-fx="${f.id}" ${dis}>${label}</button></div>`;
   }
   function renderShop() {
@@ -1067,15 +1086,25 @@
             `<div class="col-foot"><span class="legend-pics">${pics}</span><span class="rw">${legendNames(L)}${done ? ' — получено' : ''}</span></div></div>`;
         }).join('');
     } else if (shopTab === 'ach') {
-      $('shop').innerHTML = ACH.map(a => {
-        const got = save.ach.includes(a.id);
-        if (a.steps && !got) { const t = (save.achT || {})[a.id] || 0;
-          return `<div class="ach ${t ? 'part' : ''}"><span class="ico">${t ? '🏅' : '?'}</span><span class="name">${a.name} <small>· ступень ${t}/${a.steps.length}</small></span>` +
-            `<span class="desc">${a.desc}. Дальше: ${a.steps[t]}${a.title ? ` · за III ступень — титул ${titleTag(a.title)}` : ''}</span><span class="rw">+${a.pay[t]} ◆</span></div>`; }
-        if (a.line) return `<div class="ach got"><span class="ico">🏆</span><span class="name">${a.name} III</span><span class="desc">${a.steps.join(' · ')}${a.title ? ` · ${titleTag(a.title)}` : ''}</span><span class="rw">Получено</span></div>`;
-        return `<div class="ach ${got ? 'got' : ''}"><span class="ico">${got ? '🏆' : '?'}</span><span class="name">${a.name}</span>` +
-          `<span class="desc">${a.desc}</span><span class="rw">${got ? 'Получено' : `+${a.coins} ◆`}</span></div>`;
-      }).join('');
+      const T = achTotals(), B = save.achBest || {}, lines = ACH.filter(a => a.line), hol = ACH.filter(a => a.hol);
+      const cnt = [0, 0, 0, 0]; lines.forEach(a => { const t = achTier(a); for (let k = 1; k <= t; k++) cnt[k]++; });
+      const card = a => {
+        const t = achTier(a), n = a.steps.length, done = t >= n, v = ACH_VAL[a.id], m = achMetal(a, t);
+        const val = v ? v[0](T, B) : null, goal = v && !done ? v[1][t] : null, prev = v && t ? v[1][t - 1] : 0;
+        const pct = goal ? Math.max(0, Math.min(100, (val - prev) / (goal - prev) * 100)) : done ? 100 : 0;
+        const steps = a.steps.map((st, k) => `<li class="${k < t ? 'on' : k === t ? 'next' : ''}"><i>${n <= 3 ? ROM3[k + 1] : k + 1}</i><span>${st}</span></li>`).join('');
+        return `<div class="achc m${m}${done ? ' done' : ''}${a.hol ? ' hol' : ''}" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, t, 62)}<div class="achc-b">` +
+          `<div class="achc-h"><b>${a.name}</b><span class="achc-tier">${t ? (n <= 3 ? `${ROM3[t]} · ${METAL_NAME[m]}` : `${t} из ${n}`) : 'не начато'}</span></div><small class="achc-d">${a.desc}</small>` +
+          `<ol class="achc-steps">${steps}</ol>` +
+          (done ? `<div class="achc-f"><span>✓ Все ступени пройдены</span>${a.title ? titleTag(a.title) : ''}</div>`
+            : `<div class="achc-bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="achc-f"><span>${goal ? `${Math.min(val, goal).toLocaleString('ru-RU')} / ${goal.toLocaleString('ru-RU')}` : `Дальше: ${a.steps[t]}`}</span><span class="rw">+${a.pay[t]} ◆${a.title && t === n - 1 ? ` · титул ${titleTag(a.title)}` : ''}</span></div>`) + '</div></div>';
+      };
+      const holSeen = hol.filter(a => achTier(a) > 0), holNext = hol.filter(a => !achTier(a));
+      $('shop').innerHTML = `<div class="ach-sum"><div><b>${lines.filter(a => achTier(a) >= 3).length}<small>/${lines.length}</small></b><span>линеек на золоте</span></div>` +
+        [1, 2, 3].map(k => `<div class="m${k}">${achEmblem({ id: 'ln_star', steps: ['', '', ''] }, k, 34)}<span><b>${cnt[k]}</b> ${METAL_NAME[k].toLowerCase()}</span></div>`).join('') + '</div>' +
+        `<div class="achc-grid">${lines.map(card).join('')}</div>` +
+        (holSeen.length ? `<h3 class="ach-h">Праздники</h3><div class="achc-grid">${holSeen.map(card).join('')}</div>` : '') +
+        `<details class="res-drawer ach-hol"><summary>Праздничные достижения впереди <small class="cnt">${holNext.length}</small></summary><div class="achc-grid">${holNext.map(card).join('')}</div></details>`;
     } else if (shopTab === 'abil') {
       $('shop').innerHTML = abilShopHtml(lv);
     } else if (shopTab === 'mab') {
@@ -1178,8 +1207,8 @@
     const keys = [...new Set(list.map(keyOf))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
     return keys.map(k => { const part = list.filter(x => keyOf(x) === k); return drawer(prefix + k, `${k} <small class="cnt">${part.length}</small>`, render(part)); }).join('');
   }
-  const PET_SRC = pt => pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
-  const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные'];
+  const PET_SRC = pt => pt.craft ? 'Мастерская' : pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
+  const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные', 'Мастерская'];
   function upRowHtml(u, lv) {
     const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
     const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
@@ -1220,13 +1249,15 @@
   // «Коллекция → Способности»: the build + what you own, split into upgradable and not upgradable
   function myAbilHtml() {
     const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small><small class="now">${extra}</small></div></div>`;
-    const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id));
+    const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id)), crafted = CR_ABIL.filter(a => own.includes(a.id));
     return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +
       `<p class="empty-note">Билд меняется только здесь, между боями. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p>` +
       `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') +
       `<p class="empty-note">Улучшать — в «Магазине» → «Способности». Новые способности тоже там.</p>` +
       `<h3>Без улучшений · ${fixed.length} из ${XA_ABIL.length}</h3>` + (fixed.length ? fixed.map(a => row(a, `эксклюзив Хаос-лиги · перезарядка ${a.cd} с${abLooksText(a)}`)).join('')
-        : '<p class="empty-note">Эксклюзивные способности даёт «Сингулярность» в Хаос-лиге — по одной за сезон.</p>');
+        : '<p class="empty-note">Эксклюзивные способности даёт «Сингулярность» в Хаос-лиге — по одной за сезон.</p>') +
+      `<h3>Из мастерской · ${crafted.length} из ${CR_ABIL.length}</h3>` + (crafted.length ? crafted.map(a => row(a, `создана из осколков · только обычные режимы · перезарядка ${a.cd} с`)).join('')
+        : '<p class="empty-note">Эти способности создаются из осколков в «Мастерской» (плитка в главном меню).</p>');
   }
   // «Магазин → Способности»: buy new ones; upgrades of owned ones in drawers
   function abilShopHtml(lv) {
@@ -1259,7 +1290,7 @@
   });
   // per-tab help: what the tab is for and how its items are earned (opened by the ⓘ button at the top of each tab)
   const TAB_INFO = {
-    chaosAbil: () => ABILITIES.map(a => `<span style="color:${a.color}">${a.icon}</span> <b>${a.name}</b>${a.xa ? ' <small>(эксклюзив)</small>' : ''} — ${a.desc}.${a.cd > 1 ? ` Перезарядка ${a.cd} с.` : a.id === 'dash' ? ' Перезарядка 4 с.' : a.id === 'split' ? ' Перезарядка 10 с, до 10 частей.' : ''}`),
+    chaosAbil: () => ABILITIES.map(a => `<span style="color:${a.color}">${a.icon}</span> <b>${a.name}</b>${a.xa ? ' <small>(эксклюзив)</small>' : a.cr ? ' <small>(мастерская, не в Хаос-лиге)</small>' : ''} — ${a.desc}.${a.cd > 1 ? ` Перезарядка ${a.cd} с.` : a.id === 'dash' ? ' Перезарядка 4 с.' : a.id === 'split' ? ' Перезарядка 10 с, до 10 частей.' : ''}`),
     chaos: () => [`Хаос-лига открывается с ${CHAOS_CFG.entryLevel} уровня. Сезон длится ${CHAOS_CFG.seasonDays} дней, режим боя меняется по кругу, как в основной лиге.`,
       'В начале боя выдаются 3 случайные способности из 24 (12 обычных и 12 эксклюзивных); одна из них всегда рывок или деление. Набор не меняется до конца боя. Купленные способности и улучшения не действуют — у всех равные условия.',
       `Свои ступени: Искра, Помеха, Сбой, Шторм, Разлом, Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос за бой со «Сбоя»: ${CHAOS_CFG.fee.slice(2).join(' / ')}. Ниже порога своей ступени не опустишься. Монеты за бой — как в рейтинге (×1,5).`,
@@ -1306,14 +1337,14 @@
   renderShop = function () { _renderShop(); fillThumbs(); };
   // ---- sorting for wardrobe and pets ----
   const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
-  const SOURCE_ORDER = ['Престиж', 'Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда'];
-  const sourceOf = x => x.prestige ? 'Престиж' : x.tut ? 'Обучение' : x.chaos ? 'Хаос-лига' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  const SOURCE_ORDER = ['Престиж', 'Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда', 'Мастерская'];
+  const sourceOf = x => x.craft ? 'Мастерская' : x.prestige ? 'Престиж' : x.tut ? 'Обучение' : x.chaos ? 'Хаос-лига' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
   // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
   const rarityScore = x => {
     if (x.legend) return 5;
     if (x.skill) return 4.6;
     if (x.special) return 3.85;
-    const r = x.lchest || x.chest; if (r) return RAR_KEYS.indexOf(r) + 1 + (x.lchest ? .5 : 0);
+    const r = x.lchest || x.chest || x.craft; if (r) return RAR_KEYS.indexOf(r) + 1 + (x.lchest ? .5 : 0);
     if (x.raid) return 3.85; if (x.holiday) return 3.9; if (x.season || x.tier) return x.tier === 'Неон' ? 3.8 : 3.7; if (x.ex) return 3.6;
     return (x.price || 0) / 10000;
   };

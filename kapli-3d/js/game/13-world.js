@@ -124,6 +124,20 @@
         [-1, 1].forEach(sx => M(new THREE.BoxGeometry(.12, .12, .05), basicMat('#120820'), sx * .16, .08, .45)); break; }
       case 'brute': M(new THREE.BoxGeometry(.75, .62, .6), mat); M(new THREE.SphereGeometry(.38, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), accMat, 0, .3, 0); M(new THREE.ConeGeometry(.07, .3, 6), basicMat('#ffd23f'), 0, .72, 0);
         [-1, 1].forEach(sx => M(new THREE.SphereGeometry(.17, 10, 8), accMat, sx * .48, -.12, .12)); eyes(.06, .31, .15); break;
+      // ---- 2.3 workshop «Хронос» ----
+      case 'cuckoo': { M(new THREE.SphereGeometry(.4, 16, 12), mat).scale.set(1, .9, 1.15); M(new THREE.SphereGeometry(.27, 14, 10), mat, 0, .32, .3);
+        M(new THREE.ConeGeometry(.08, .26, 8), basicMat('#ffd23f'), 0, .3, .64).rotation.x = Math.PI / 2;
+        { const tail = M(new THREE.ConeGeometry(.16, .5, 6), accMat, 0, .12, -.55); tail.rotation.x = -Math.PI / 2 - .5; tail.userData.tail = 1; }
+        [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.26, 10, 8), accMat, sx * .38, .05, -.05); w.scale.set(.35, .7, 1.1); w.userData.wing = sx; }); eyes(.4, .5, .11); break; }
+      case 'mouse': { M(new THREE.SphereGeometry(.4, 16, 12), mat).scale.set(1, .75, 1.3); [-1, 1].forEach(sx => M(new THREE.SphereGeometry(.17, 12, 8), accMat, sx * .24, .32, .28).scale.set(1, 1, .35));
+        M(new THREE.SphereGeometry(.06, 8, 6), basicMat('#ff8aa8'), 0, .02, .56); { const tail = M(new THREE.TorusGeometry(.22, .025, 6, 16, Math.PI * 1.2), accMat, 0, -.05, -.6); tail.rotation.y = Math.PI / 2; tail.userData.tail = 1; }
+        { const key = new THREE.Group(); key.position.set(0, .34, -.08); key.userData.reel = 1; g.add(key); const km = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .6, metalness: .6, roughness: .3 });
+          const sh = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, .26, 6), km); sh.position.y = .1; key.add(sh); [-1, 1].forEach(sx => { const lp = new THREE.Mesh(new THREE.TorusGeometry(.09, .03, 6, 14), km); lp.position.set(sx * .11, .26, 0); key.add(lp); }); }
+        eyes(.14, .46, .12); break; }
+      case 'owl': { M(new THREE.SphereGeometry(.45, 16, 12), mat).scale.set(1, 1.12, .95); [-1, 1].forEach(sx => { const t2 = M(new THREE.ConeGeometry(.09, .3, 6), accMat, sx * .24, .55, .05); t2.rotation.z = -sx * .4; });
+        M(new THREE.CircleGeometry(.2, 20), basicMat('#fff6d8'), 0, -.12, .44); { const fc = M(new THREE.PlaneGeometry(.38, .38), new THREE.MeshBasicMaterial({ map: ICONS.clock, color: '#2a1a08', transparent: true }), 0, -.12, .445); fc.userData.owlDial = 1; }
+        [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.24, 10, 8), accMat, sx * .44, -.05, -.02); w.scale.set(.3, .75, .9); w.userData.wing = sx; });
+        eyes(.2, .4, .16); { const mono = M(new THREE.TorusGeometry(.13, .025, 6, 20), new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .7, metalness: .7 }), .16, .2, .47); mono.userData.mono = 1; } break; }
       default: M(new THREE.SphereGeometry(.5, 18, 14), mat); eyes(.1, .45);
     }
     g.add(glowSprite(col, 2.2, .45));
@@ -140,6 +154,7 @@
       if (u.seg !== undefined) o.position.x = Math.sin(t * 5 - u.seg * .8) * .18 * (u.seg ? 1 : .3);
       if (u.starSpin) o.material.rotation = t * 1.2;
       if (u.reel) o.rotation.y = t * 6;
+      if (u.owlDial) o.rotation.z = -t * 1.2;
       if (u.blinkTip) o.visible = Math.sin(t * 6 + u.blinkTip) > -.5;
       if (u.disk) o.rotation.z = t * 2.5;
       if (u.squash) { const k = Math.sin(t * 5); o.scale.set(1 + k * .08, .7 - k * .08, 1 + k * .08); }
@@ -171,6 +186,45 @@
       petT = .5; const rr = 2 + petObj.pt.lv, rr2 = rr * rr;
       for (let i = 0; i < FOOD; i++) { const f = foods[i]; if ((f.x - petObj.x) ** 2 + (f.z - petObj.z) ** 2 < rr2) { c.mass += 1; placeFood(i); } }
     }
+    if (running) crPetTick(dt, c, now);
+  }
+  // ---- 2.3 «Хронос» pet skills ----
+  let petCk = 60, petWd = 45, crArrowT = 0, crArrowB = null, owlNext = null;
+  const textSprite = (txt, col) => { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const x = cv.getContext('2d'); x.font = '900 40px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = col; x.shadowColor = col; x.shadowBlur = 10; x.fillText(txt, 128, 34);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false })); sp.scale.set(4, 1, 1); sp.visible = false; scene.add(sp); return sp; };
+  const cuckooTxt = textSprite('Ку-ку!', '#ffd27a'), windTxt = textSprite('−2 с', '#22e6ff'); let txtT = 0, txtSp = null;
+  const crArrow = (() => { const sh = new THREE.Shape(); sh.moveTo(0, 1.6); sh.lineTo(1, .2); sh.lineTo(.36, .2); sh.lineTo(.36, -1.2); sh.lineTo(-.36, -1.2); sh.lineTo(-.36, .2); sh.lineTo(-1, .2); sh.closePath();
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), decal(new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: .9, depthWrite: false, side: THREE.DoubleSide }))); m.rotation.order = 'YXZ'; m.visible = false; scene.add(m); return m; })();
+  const owlMark = (() => { const g = new THREE.Group(); const face = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decal(new THREE.MeshBasicMaterial({ map: dialTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })));
+    face.rotation.x = -Math.PI / 2; face.position.y = .07; g.add(face); const hand = new THREE.Mesh(new THREE.PlaneGeometry(.05, .42), decal(new THREE.MeshBasicMaterial({ color: '#3dffa2', transparent: true, depthWrite: false })));
+    hand.geometry.translate(0, .21, 0); hand.rotation.x = -Math.PI / 2; hand.position.y = .08; g.add(hand); const num = new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.n5, color: '#3dffa2', transparent: true, depthWrite: false })); num.position.y = 3.2; num.scale.setScalar(2.4); g.add(num);
+    g.userData = { hand, num }; g.scale.setScalar(5); g.visible = false; scene.add(g); return g; })();
+  function showTxt(sp) { if (txtSp) txtSp.visible = false; txtSp = sp; txtT = 1.4; sp.visible = true; }
+  function crPetTick(dt, c, now) {
+    const kind = petObj.pt.bonus;
+    if (txtSp) { txtT -= dt; txtSp.position.set(petObj.x, petObj.y + 1.6 + (1.4 - txtT) * .8, petObj.z); txtSp.material.opacity = Math.min(1, txtT * 2); if (txtT <= 0) { txtSp.visible = false; txtSp = null; } }
+    if (kind === 'cuckoo' && petLv('cuckoo')) {
+      petCk -= dt;
+      if (petCk <= 0) { let best = null, bd = Infinity; for (const b of bonuses) { const d = Math.hypot(b.x - c.x, b.z - c.z); if (d < bd) { bd = d; best = b; } }
+        if (best) { petCk = 60; crArrowB = best; crArrowT = 3.5; showTxt(cuckooTxt); Sound.play('bonus'); } else petCk = 5; }
+    }
+    if (crArrowT > 0 && crArrowB && bonuses.includes(crArrowB)) { crArrowT -= dt; const dx = crArrowB.x - c.x, dz = crArrowB.z - c.z, d = Math.hypot(dx, dz) || 1, rr = cellR(c) + 3.5;
+      crArrow.position.set(c.x + dx / d * rr, .1, c.z + dz / d * rr); crArrow.rotation.set(-Math.PI / 2, Math.atan2(-dx, -dz), 0);
+      crArrow.scale.setScalar(1.4 + Math.sin(now / 120) * .15); crArrow.material.opacity = Math.min(.9, crArrowT); crArrow.visible = true; }
+    else { crArrow.visible = false; crArrowT = 0; }
+    if (kind === 'windup' && petLv('windup')) {
+      petWd -= dt;
+      if (petWd <= 0) { petWd = 45; for (const k in player.abCd) player.abCd[k] = Math.max(0, player.abCd[k] - 2); player.dashCd = Math.max(0, (player.dashCd || 0) - 2); player.splitCd = Math.max(0, (player.splitCd || 0) - 2);
+        emitIcons(c.x, cellR(c) * 1.4 + 1, c.z, 'gear', '#ffd27a', 5, 1.2); showTxt(windTxt); Sound.play('bonus'); }
+    }
+  }
+  // «Совёнок-часовщик»: the next bonus spot is chosen 5 s early and marked with a ticking dial
+  function owlTick(now) {
+    if (!(petObj && petObj.pt.bonus === 'owl' && petLv('owl')) || mode === 'hardcore') { owlMark.visible = false; return; }
+    if (!owlNext && bonusTimer <= 5 && bonuses.length < MAX_BONUS) { owlNext = randInArena(8); owlMark.position.set(owlNext[0], 0, owlNext[1]); }
+    if (owlNext) { const left = Math.max(0, bonusTimer), u = owlMark.userData; owlMark.visible = true; u.hand.rotation.z = -(1 - left / 5) * Math.PI * 2; u.num.material.map = ICONS['n' + Math.max(1, Math.ceil(left))]; u.num.position.y = 3.2 + Math.sin(now / 200) * .15; }
+  }
+  function crPetReset() { petCk = 60; petWd = 45; crArrowT = 0; crArrowB = null; crArrow.visible = false; owlNext = null; owlMark.visible = false; if (txtSp) txtSp.visible = false; txtSp = null;
   }
 
   // holiday look for the running season (snow, embers, hearts and a recoloured rim)
@@ -274,7 +328,6 @@
     let h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 2.2 * (camera.aspect < 1 ? 1 + Math.min(.6, (1 - camera.aspect) * 1.1) : 1);   // giants get extra zoom-out; 120% farther for everyone (1.7.0); narrow portrait screens (phones) up to 60% more
     h = Math.min(h, 330);   // never leave the starry sky or lose the far edge of the arena
     fxViewK = h / FX_VIEW_BASE; pMat.size = Math.max(1, fxViewK * .7); eMat.size = 2.6 * Math.max(1, fxViewK * .7);   // particles keep their size on screen when the camera backs off
-    fxViewK = h / FX_VIEW_BASE; pMat.size = Math.max(1, fxViewK * .7); eMat.size = 2.6 * Math.max(1, fxViewK * .7);   // particles keep their size on screen when the camera backs off
     camLook.lerp(tmpV.set(focus.x, 0, focus.z), 0.16);
     camPos.lerp(tmpV.set(focus.x, h, focus.z + h * 0.62), 0.12);
     if (apv) apvCam(now);
@@ -326,19 +379,34 @@
     return `<i style="left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;--c:${c};--t:${(4 + Math.random() * 6).toFixed(1)}s;--dx:${(Math.random() * 60 - 30).toFixed(0)}px;--dy:${(Math.random() * 60 - 30).toFixed(0)}px"></i>`; }).join('') +
     [['#ff4fd8', 8, 70, 46], ['#22e6ff', 86, 24, 34], ['#3dffa2', 74, 82, 22], ['#ffd23f', 14, 18, 16]].map(([c, x, y, r]) =>
       `<b class="mb-blob" style="left:${x}%;top:${y}%;width:${r}px;height:${r}px;background:radial-gradient(circle at 35% 30%, #fff, ${c} 45%, transparent 72%);box-shadow:0 0 24px ${c}"></b>`).join('');
+  // one frame; an error inside never stops the loop (that froze the game before): it is logged, and if a round keeps failing it ends cleanly
+  let frameErrs = 0;
   function frame(now) {
-    if (sceneryAnim) sceneryAnim(now);
-    lookTick(now);
-    trackFps(now);
-    const dt = Math.min((now - last) / 1000, 0.05); last = now;
-    if (running && !paused && !dying) update(dt);
-    else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
-    else if (!running) idle(dt);
-    const mb = !running && !$('overlay').hidden;
-    if (mb !== menuBg) { menuBg = mb; document.body.classList.toggle('menu-bg', mb); }
-    if (!mb) draw(now);
-    updateHud(now);
+    try {
+      if (sceneryAnim) sceneryAnim(now);
+      lookTick(now);
+      trackFps(now);
+      const dt = Math.min((now - last) / 1000, 0.05); last = now;
+      if (running && !paused && !dying) update(dt);
+      else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
+      else if (!running) idle(dt);
+      const mb = !running && !$('overlay').hidden;
+      if (mb !== menuBg) { menuBg = mb; document.body.classList.toggle('menu-bg', mb); }
+      if (!mb) draw(now);
+      updateHud(now);
+      if (frameErrs) frameErrs = Math.max(0, frameErrs - .02);
+    } catch (e) { onFrameError(e, now); }
     requestAnimationFrame(frame);
+  }
+  function onFrameError(e, now) {
+    last = now; KapliErr.log(e, running ? 'round' : 'menu'); frameErrs++;
+    if (frameErrs < 30) return;
+    frameErrs = 0;
+    if (running) {
+      try { if (!dying) finishRound('Раунд завершён из-за сбоя', 0, false); else endRound(); }
+      catch (e2) { KapliErr.log(e2, 'finish'); running = false; dying = false; paused = false; try { $('overlay').hidden = false; showCard('menuCard'); setGameUi(false); } catch (e3) {} }
+      try { toast('Произошёл сбой — раунд завершён, прогресс сохранён. Отчёт: Настройки → Поддержка'); } catch (e4) {}
+    }
   }
   // bots wander behind the menus
   function idle(dt) {

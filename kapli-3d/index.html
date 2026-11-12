@@ -56,7 +56,7 @@
 </div>
 
 <header class="hud">
-  <div class="logo">Капли<span>3D</span> <em class="test-badge" id="testBadge" hidden>ТЕСТ</em></div>
+  <div class="logo">Капли<span>3D</span> <button type="button" class="test-badge" id="testBadge" data-testopen hidden>ТЕСТ ▾</button></div>
   <div class="stats">
     <div class="stat st-side"><small>Скорость</small><b id="speed">0</b><span class="buff" id="buff"></span></div>
     <div class="stat st-side"><small>Место</small><b id="rank">–</b></div>
@@ -126,6 +126,7 @@
       <button class="btn ghost hub-btn hub-live" id="hubColBtn" data-hub="hubCol"><i class="ic" data-ic="collection" style="--ic:#ff4fd8"></i><span class="hb-t">Коллекция<small id="hubColSub"></small></span><span class="hb-x" id="hubColX"></span><i class="hb-bar" aria-hidden="true"><b id="hubColBar"></b></i></button>
       <button class="btn ghost hub-btn hub-live" id="hubRewBtn" data-hub="hubRew"><i class="ic" data-ic="gift" style="--ic:#ff9a3d"></i><span class="hb-t">Награды<small id="hubRewSub"></small></span><span class="hb-x" id="hubRewX"></span></button>
       <button class="btn ghost hub-btn hub-live" id="shopBtn"><i class="ic" data-ic="shop" style="--ic:#22e6ff"></i><span class="hb-t">Магазин<span class="coin" id="menuCoins">0 ◆</span></span><span class="hb-x" id="hubShopX"></span></button>
+      <button class="btn ghost hub-btn hub-live" id="wsBtn"><i class="ic" data-ic="workshop" style="--ic:#ffd27a"></i><span class="hb-t">Мастерская<small id="wsSub"></small></span><span class="hb-x" id="wsX"></span></button>
     </div>
     </div>
     <div class="menu-icons">
@@ -289,6 +290,16 @@
     <button class="btn" id="backBtn">Готово</button>
   </div>
 
+  <div class="card" id="wsCard" hidden>
+    <div class="shop-head"><h1>Мастерская</h1></div>
+    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: его приносит каждый 2-й сундук за раунды, ещё один дают три цели за день и два — все задания недели. Каждая серия — своя папка со своей темой.</p>
+    <div class="ws-top"><div><h2 class="section-title">Твои осколки</h2><div class="ws-bal" id="wsBal"></div></div>
+    <div><h2 class="section-title">Обмен: 10 осколков → 1 следующей редкости</h2><div class="ws-ex" id="wsEx"></div></div></div>
+    <p class="hint ws-luck">✨ Удачная ковка: с шансом 10% вернётся четверть потраченных осколков</p>
+    <div class="ws-goal" id="wsGoal" hidden></div>
+    <div id="wsList"></div>
+    <button class="btn ghost" id="wsBack" type="button">Назад</button>
+  </div>
   <div class="card" id="chestCard" hidden>
     <div class="shop-head"><h1>Сундуки</h1><b class="coin" id="chestCount">0</b></div>
     <div class="chest-stage"><span class="ch-rays" aria-hidden="true"></span><div class="chest" id="chestBox" data-kind="normal"><span class="glow-in"></span><span class="lid"></span><span class="lock"></span><span class="emb"></span></div>
@@ -303,6 +314,8 @@
       <dt>Повышение лиги</dt><dd>сундук лиги: внутри эксклюзивные предметы, которых нет больше нигде. Пока не собраны все 12, повторов не бывает. Чем выше лига, тем реже добыча</dd>
       <dt>Испытание</dt><dd>сундук, редкость зависит от сложности испытания</dd>
       <dt>Ежедневный</dt><dd>раз в сутки, редкость случайная</dd>
+      <dt>Сундук осколков</dt><dd>каждый 2-й сундук за раунды приносит ещё и сундук осколков (сверху, обычный сундук остаётся); ещё один дают три цели за день и два — все задания недели. Внутри 20–30 осколков для «Мастерской»</dd>
+      <dt>Сразу несколько</dt><dd>кнопка «×5» открывает до 5 сундуков за раунды или сундуков осколков за раз</dd>
     </dl>
     <p class="hint">Внутри скины, эффекты и питомцы — чем реже, тем сильнее бонус у питомца. Повторный предмет превращается в монеты.</p>
     </template>
@@ -442,6 +455,7 @@
     <div class="ps-panel g-hide" id="profPs" hidden></div>
     </div><div class="prof-r">
     <div class="prof-head g-hide" id="profHead"></div>
+    <button class="btn ghost g-hide prof-share-btn" id="profShare" type="button">📤 Поделиться карточкой</button>
     <button class="btn ghost g-hide prof-acct-btn" id="profAcct" type="button">☁ Аккаунт</button>
     <div class="g-tiles">
       <button class="btn ghost hub-btn pd-open" data-grp="pDecor">🎨 Оформление профиля<small>фон, рамка, титул, значок</small></button>
@@ -449,6 +463,7 @@
       <button class="btn ghost hub-btn" data-grp="pMastery">🏅 Мастерство и рекорды<small id="ptMastery"></small></button>
       <button class="btn ghost hub-btn" data-grp="pBadges">🎖 Значки<small id="ptBadges"></small></button>
       <button class="btn ghost hub-btn" data-grp="pSeasons">📅 Сезоны<small id="ptSeasons"></small></button>
+      <button class="btn ghost hub-btn" data-grp="pActivity">🔥 Активность<small id="ptActivity"></small></button>
     </div>
     </div></div>
     <div class="g-group prof-secs" data-grpid="pDecor" hidden><h2 class="g-title">🎨 Оформление профиля</h2>
@@ -472,7 +487,11 @@
     <details open class="res-drawer"><summary><span id="chaosBadgeTitle">Значки Хаос-лиги</span></summary><div class="badges" id="profChaosBadges"></div></details>
     <details open class="res-drawer"><summary><span id="badgeTitle">Значки сезонов</span></summary><div class="badge-info" id="badgeInfo" hidden></div><div class="badges" id="profBadges"></div></details>
     <button class="btn ghost" data-grpback>← Профиль</button></div>
+    <div class="g-group prof-secs" data-grpid="pActivity" hidden><h2 class="g-title">🔥 Активность</h2>
+    <div class="actv" id="profAct"></div>
+    <button class="btn ghost" data-grpback>← Профиль</button></div>
     <div class="g-group prof-secs" data-grpid="pSeasons" hidden><h2 class="g-title">📅 Сезоны</h2>
+    <div id="profRecaps"></div>
     <details open class="res-drawer"><summary>Сезоны <small class="cnt" id="psSeasons"></small></summary><ul class="quests" id="profSeasons"></ul></details>
     <button class="btn ghost" data-grpback>← Профиль</button></div>
     <button class="btn" id="profBack">Готово</button>
@@ -497,7 +516,7 @@
       <button class="btn ghost hub-btn" data-grp="iPlay">🎮 Как играть<small>управление, кольца, арена</small></button>
       <button class="btn ghost hub-btn" data-grp="iModes">⚔ Режимы и боссы<small>режимы, боссы, боты, рейд</small></button>
       <button class="btn ghost hub-btn" data-grp="iLeague">🏆 Лиги<small>лига, Хаос-лига, архив</small></button>
-      <button class="btn ghost hub-btn" data-grp="iProg">⭐ Прогресс и награды<small>монеты, способности, сундуки, достижения</small></button>
+      <button class="btn ghost hub-btn" data-grp="iProg">⭐ Прогресс и награды<small>монеты, способности, сундуки, мастерская, достижения</small></button>
       <button class="btn ghost hub-btn" data-grp="iLook">🎨 Внешний вид<small>скины, эффекты, питомцы</small></button>
     </div>
     <div class="g-group" data-grpid="iPlay" hidden><h2 class="g-title">🎮 Как играть</h2>
@@ -678,6 +697,18 @@
         <li>Другие особые значки: «Великий коллекционер» — все коллекции, кроме праздничных; «Мастер режимов» — мастерство «Легенда» во всех режимах; «Первый Неон», «Чемпион Неона» и «Легенда лиги» — 1, 10 и 25 сезонов в высшей лиге; «Покоритель лиг» — высшая ступень в обеих лигах; «Сердце хаоса» — 50 сезонов в «Сингулярности»; «Ветеран сезонов» — 26 значков сезонов. Все особые значки — в профиле.</li>
       </ul>
     </details>
+    <details><summary>Мастерская и осколки</summary>
+      <ul class="info-list">
+        <li><b>Мастерская</b> — отдельная плитка в главном меню. В ней создаются предметы, которых нет ни в магазине, ни в сундуках: фоны профиля, рамки, скины, эффекты, питомцы и способности.</li>
+        <li>Предметы разбиты на <b>серии</b>, у каждой своя тема. Первая серия — «Хронос»: часовой механизм, латунь, шестерни, циферблаты.</li>
+        <li><b>Осколки</b> бывают четырёх редкостей: обычные, редкие, эпические и легендарные. Их дают сундуки осколков: каждый 2-й сундук за раунды приносит ещё и сундук осколков (обычный сундук при этом остаётся), ещё один дают три цели за день и два — все задания недели. Внутри 20–30 осколков: 60% обычные, 27% редкие, 10% эпические, 3% легендарные.</li>
+        <li>Цена предмета — осколки его редкости плюс добавка младшими осколками, поэтому в дело идут все виды.</li>
+        <li><b>Удачная ковка</b>: предмет создаётся всегда, а с шансом 10% мастерская ещё и возвращает четверть потраченных осколков каждого вида.</li>
+        <li><b>Обмен</b>: 10 осколков → 1 осколок следующей редкости. Это дороже, чем выбить из сундука, — обмен нужен для излишков.</li>
+        <li>Способности из мастерской не улучшаются и работают только в обычных режимах — в рейтинге и Хаос-лиге их нет. Ставятся в билд: «Коллекция» → «Способности».</li>
+        <li>Сундуки за раунды и сундуки осколков можно открывать по 5 штук за раз — кнопка «×5».</li>
+      </ul>
+    </details>
     <button class="btn ghost" data-grpback>← Все разделы</button></div>
     <div class="g-group" data-grpid="iLook" hidden><h2 class="g-title">🎨 Внешний вид</h2>
     <details><summary>Внешний вид</summary>
@@ -713,6 +744,9 @@
     <label class="set row" for="setMini"><span>Мини-карта</span><input type="checkbox" id="setMini"></label>
     <div class="set"><span>Размер мини-карты</span>
         <div class="seg" id="setMiniSize" role="radiogroup"><button data-v="s">Маленькая</button><button data-v="m">Средняя</button><button data-v="l">Большая</button><button data-v="xl">Огромная</button></div></div>
+    <div class="set"><span>Если капли пропали или выглядят странно</span>
+        <button class="btn ghost" id="gfxReload" type="button">Перезагрузить графику</button>
+        <small class="reset-note" id="gfxNote" style="margin:0">Игра перезапустится с твоим сохранением. Идущий раунд будет прерван.</small></div>
     </div></details>
     <details class="res-drawer set-drawer"><summary>🔊 Звук</summary><div class="drawer-body">
       <div class="set"><label for="setSfx">Громкость звуков</label><input type="range" id="setSfx" min="0" max="1" step="0.05"></div>
@@ -723,6 +757,11 @@
         <div class="seg" id="setJoy" role="radiogroup"><button data-v="s">Маленький</button><button data-v="m">Средний</button><button data-v="l">Большой</button></div></div>
     <div class="set"><label for="setAlpha">Прозрачность джойстика</label><input type="range" id="setAlpha" min="0.1" max="0.8" step="0.05"></div>
     <label class="set row" for="setVib"><span>Вибрация на телефоне</span><input type="checkbox" id="setVib"></label>
+    </div></details>
+    <details class="res-drawer set-drawer"><summary>🛟 Поддержка и отчёт об ошибках</summary><div class="drawer-body">
+        <p class="hint" id="errSum" style="margin:0"></p>
+        <div class="err-btns"><button class="btn" id="errSend" type="button">Написать в поддержку с отчётом</button><button class="btn ghost" id="errCopy" type="button">Скопировать отчёт</button><button class="btn ghost" id="errClear" type="button">Очистить</button></div>
+        <small class="reset-note" style="margin:0">В отчёт попадают только версия игры, устройство и тексты ошибок — без пароля и почты.</small>
     </div></details>
     <details class="res-drawer set-drawer"><summary>🎁 Промокод</summary><div class="drawer-body">
       <div class="set promo-set"><label for="promoIn">Введи промокод</label>
@@ -775,6 +814,33 @@
     <div class="tour-acts"><button class="btn ghost" id="tourSkip">Пропустить</button><button class="btn" id="tourNext">Далее</button></div>
   </div>
 </div>
+<div class="gfx-bar" id="gfxBar" role="alert" hidden><span>Графика сбоила. Если капли пропали — перезагрузи её.</span><button class="btn" id="gfxBarDo" type="button">Перезагрузить</button><button class="modal-x" id="gfxBarX" type="button" aria-label="Скрыть">×</button></div>
+<div class="modal" id="shareModal" hidden>
+  <div class="modal-card share-card" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <button class="modal-x" id="shareClose" aria-label="Закрыть">×</button>
+    <h2 id="shareTitle">Поделиться</h2>
+    <div class="share-pv" id="sharePv"><p class="empty-note">Рисую картинку…</p></div>
+    <p class="share-note" id="shareNote">Отправь картинку друзьям или сохрани её. На телефоне можно также нажать на картинку и удерживать.</p>
+    <div class="share-acts"><button class="btn" id="shareGo" type="button">📤 Отправить</button><button class="btn ghost" id="shareSave" type="button">⬇ Сохранить</button></div>
+  </div>
+</div>
+<div class="modal" id="recapModal" hidden>
+  <div class="modal-card recap-card" role="dialog" aria-modal="true" aria-label="Итоги сезона">
+    <button class="modal-x" id="recapClose" aria-label="Закрыть">×</button>
+    <div id="recapBody"></div>
+    <div class="recap-acts"><button class="btn ghost" id="recapShare" type="button">📤 Поделиться</button><button class="btn" id="recapOk" type="button">Отлично!</button></div>
+  </div>
+</div>
+<div class="modal" id="testModal" hidden>
+  <div class="modal-card test-card" role="dialog" aria-modal="true" aria-labelledby="testTitle">
+    <button class="modal-x" id="testClose" aria-label="Закрыть">×</button>
+    <h2 id="testTitle">Панель теста</h2>
+    <p class="test-lead">Только в тестовой сборке. Меняет тестовое сохранение — настоящая игра не затрагивается.</p>
+    <div id="testGroups"></div>
+    <p class="test-state" id="testState" aria-live="polite"></p>
+  </div>
+</div>
+<div class="modal" id="wsModal" hidden role="dialog" aria-modal="true" aria-labelledby="wsMTitle"><div class="modal-card ws-mcard" id="wsMCard"></div></div>
 <div class="modal" id="tutModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tutMName">
     <h2 id="tutMName"></h2>
@@ -810,6 +876,7 @@
   </div>
 </div>
 
+<script src="js/errlog.js"></script>
 <script src="three.min.js"></script>
 <script src="js/loader.js"></script>
 

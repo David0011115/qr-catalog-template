@@ -31,12 +31,68 @@
     { id: 'bg_ps_gal',   name: 'Галактика',           rar: 'legendary', src: 'престиж ✦25',  test: () => psReached(prestigeOf(save.xp), 2, 25) },
     { id: 'bg_vet',      name: 'Пульс жизни',         rar: 'legendary', promo: true, src: 'промокод «Ветврач»',               test: () => !!(save.badges || {}).vet },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'праздничная коробка «Новый год 2027»', test: () => (save.gifts || []).includes('ny2027') },
+    // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
+    { id: 'bg_cr_gears',  name: 'Латунные шестерни', rar: 'common',    craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
+    { id: 'bg_cr_sand',   name: 'Песочные часы',     rar: 'rare',      craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
+    { id: 'bg_cr_behind', name: 'За циферблатом',    rar: 'epic',      craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
+    { id: 'bg_cr_void',   name: 'Вне времени',       rar: 'legendary', craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
   ];
   const pbgById = id => PBG.find(b => b.id === id) || PBG[0];
   // ---- drawing: every background is a function of (ctx, w, h, t seconds); random layouts are seeded, so a scene is the same every frame ----
   const pbgSeeds = {};
   const pbgPts = (key, n, seed) => pbgSeeds[key] || (pbgSeeds[key] = (() => { let s = seed; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; return Array.from({ length: n }, () => ({ x: r(), y: r(), s: r(), p: r() * 6.28, q: r() })); })());
   const pbgHorse = {};
+  function crBg(x, w, h, id, t, U, lin, glow, stars) {
+    const gear = (cx, cy, r, n, rot, fill, hole = '#1a1006') => { x.save(); x.translate(cx, cy); x.rotate(rot); x.beginPath(); for (let i = 0; i <= n * 4; i++) { const a = i / (n * 4) * Math.PI * 2, rr = (i % 4 < 2) ? r : r * .82; x.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } x.closePath(); x.fillStyle = fill; x.fill();
+      x.strokeStyle = hole; x.lineWidth = r * .1; x.beginPath(); x.arc(0, 0, r * .55, 0, 6.29); x.stroke(); x.fillStyle = hole; x.beginPath(); x.arc(0, 0, r * .18, 0, 6.29); x.fill(); x.restore(); };
+    const brass = (y0, y1) => lin([[0, '#fff0c0'], [.45, '#e8b05a'], [1, '#7a4a12']], 0, y0, 0, y1);
+    const dial = (cx, cy, r, sp, al = 1, mirror = false) => { x.save(); x.globalAlpha = al; x.translate(cx, cy); x.strokeStyle = '#ffd27a'; x.lineWidth = Math.max(1, r * .08); x.beginPath(); x.arc(0, 0, r, 0, 6.29); x.stroke();
+      for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; x.lineWidth = Math.max(.8, r * (i % 3 ? .03 : .06)); x.beginPath(); x.moveTo(Math.cos(a) * r * .78, Math.sin(a) * r * .78); x.lineTo(Math.cos(a) * r * .92, Math.sin(a) * r * .92); x.stroke(); }
+      const k = mirror ? -1 : 1; x.lineCap = 'round'; x.lineWidth = Math.max(1, r * .08); x.beginPath(); x.moveTo(0, 0); x.lineTo(Math.cos(k * t * sp * .1 - 1.57) * r * .5, Math.sin(k * t * sp * .1 - 1.57) * r * .5); x.stroke();
+      x.strokeStyle = '#ff4fd8'; x.lineWidth = Math.max(.7, r * .035); x.beginPath(); x.moveTo(0, 0); x.lineTo(Math.cos(k * t * sp - 1.57) * r * .8, Math.sin(k * t * sp - 1.57) * r * .8); x.stroke(); x.restore(); };
+    switch (id) {
+      case 'bg_cr_gears': {   // brass gears of different sizes mesh and turn
+        x.fillStyle = lin([[0, '#1e1206'], [1, '#0e0804']]); x.fillRect(0, 0, w, h); glow(w * .5, h * .5, U * .9, 'rgba(232,176,90,.18)');
+        const G = [[.2, .62, .36, 12, 1], [.42, .3, .22, 9, -1], [.78, .7, .42, 14, -1], [.6, .14, .15, 8, 1], [.95, .2, .2, 9, 1]];
+        G.forEach(([gx, gy, r, n, dir]) => gear(gx * w, gy * h, r * U, n, t * dir * 2.4 / n, brass(gy * h - r * U, gy * h + r * U)));
+        x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(0, 0, w, h); stars(16, 61, 1.2, '#ffd27a'); break;
+      }
+      case 'bg_cr_sand': {   // night desert; the hourglass pours, then flips itself
+        x.fillStyle = lin([[0, '#0c0620'], [.7, '#2a1430'], [1, '#3a2010']]); x.fillRect(0, 0, w, h); stars(50, 63, 1, '#fff6d8');
+        x.fillStyle = '#3a2410'; x.beginPath(); x.moveTo(0, h * .8); for (let i = 0; i <= 20; i++) x.lineTo(i / 20 * w, h * (.8 - .07 * Math.sin(i * .7 + 1))); x.lineTo(w, h); x.lineTo(0, h); x.fill();
+        x.fillStyle = '#5a3814'; x.beginPath(); x.moveTo(0, h * .9); for (let i = 0; i <= 20; i++) x.lineTo(i / 20 * w, h * (.9 - .05 * Math.sin(i * .9 + 3))); x.lineTo(w, h); x.lineTo(0, h); x.fill();
+        for (const p of pbgPts('sw', 26, 67)) { const xx = ((p.x * w + t * (30 + p.s * 40)) % (w + 20)) - 10, yy = h * (.78 + p.y * .18); x.globalAlpha = .5 + .5 * Math.sin(t * 3 + p.p); x.fillStyle = '#ffd27a'; x.fillRect(xx, yy, 1.6, 1.6); } x.globalAlpha = 1;
+        const cyc = 7, ph = (t % cyc) / cyc, flow = Math.min(1, ph / .84), fl = ph > .84 ? (ph - .84) / .16 : 0, ease = fl * fl * (3 - 2 * fl), cx = w * .7, cy = h * .46, Hh = U * .32, Ww = U * .2;
+        x.save(); x.translate(cx, cy); x.rotate(ease * Math.PI);
+        x.fillStyle = '#7a4a12'; x.fillRect(-Ww * 1.25, -Hh - 6, Ww * 2.5, 6); x.fillRect(-Ww * 1.25, Hh, Ww * 2.5, 6); x.fillRect(-Ww * 1.15, -Hh, 3, Hh * 2); x.fillRect(Ww * 1.15 - 3, -Hh, 3, Hh * 2);
+        const bulb = () => { x.beginPath(); x.moveTo(-Ww, -Hh); x.lineTo(Ww, -Hh); x.quadraticCurveTo(Ww, -Hh * .3, 3, -2); x.lineTo(3, 2); x.quadraticCurveTo(Ww, Hh * .3, Ww, Hh); x.lineTo(-Ww, Hh); x.quadraticCurveTo(-Ww, Hh * .3, -3, 2); x.lineTo(-3, -2); x.quadraticCurveTo(-Ww, -Hh * .3, -Ww, -Hh); x.closePath(); };
+        bulb(); x.fillStyle = 'rgba(191,248,255,.08)'; x.fill(); x.save(); bulb(); x.clip();
+        const top = (1 - flow) * Hh * .85; x.fillStyle = '#ffd27a'; x.fillRect(-Ww, -top - 2, Ww * 2, top);
+        const pile = flow * Hh * .8; x.beginPath(); x.moveTo(-Ww, Hh); x.quadraticCurveTo(0, Hh - pile * 2, Ww, Hh); x.fill();
+        if (flow < 1) { x.fillRect(-1, 0, 2, Hh); for (let i = 0; i < 6; i++) { x.fillStyle = '#fff6d8'; x.fillRect(-1, ((t * 90 + i * 17) % Hh), 2, 2); } }
+        x.restore(); bulb(); x.strokeStyle = 'rgba(255,246,216,.6)'; x.lineWidth = 1.4; x.stroke(); x.restore(); glow(cx, cy, U * .5, 'rgba(255,210,122,.16)'); break;
+      }
+      case 'bg_cr_behind': {   // inside the clock tower: a back-lit dial, rays, dust, a swinging bell
+        x.fillStyle = '#120a10'; x.fillRect(0, 0, w, h); x.fillStyle = '#1e1418';
+        for (let r = 0; r < 12; r++) for (let c = 0; c < 14; c++) x.fillRect(c * w / 12 - (r % 2) * w / 24, r * h / 10, w / 12 - 3, h / 10 - 3);
+        const cx = w * .42, cy = h * .45, R = U * .38;
+        x.globalCompositeOperation = 'lighter'; for (let i = 0; i < 3; i++) { x.globalAlpha = .08 + .06 * Math.sin(t * .7 + i * 2); x.fillStyle = '#fff6d8'; x.beginPath(); x.moveTo(cx - R * .2 + i * R * .2, cy); x.lineTo(cx - R * 1.6 + i * R * .9, h); x.lineTo(cx - R * .9 + i * R * .9, h); x.fill(); } x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+        glow(cx, cy, R * 1.5, 'rgba(255,240,200,.45)'); x.fillStyle = 'rgba(255,246,216,.85)'; x.beginPath(); x.arc(cx, cy, R, 0, 6.29); x.fill(); x.strokeStyle = '#7a4a12'; x.lineWidth = R * .12; x.stroke();
+        x.save(); x.translate(cx, cy); x.scale(-1, 1); x.fillStyle = 'rgba(42,26,8,.55)'; x.font = `700 ${Math.round(R * .17)}px Georgia, serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+        ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'].forEach((tx, i) => { const a = i / 12 * Math.PI * 2 - Math.PI / 2; x.fillText(tx, Math.cos(a) * R * .75, Math.sin(a) * R * .75); }); x.restore();
+        x.strokeStyle = '#2a1a08'; x.lineCap = 'round'; [[t * -.05, .5, R * .11], [t * -.6, .8, R * .05]].forEach(([a, l, lw]) => { x.lineWidth = lw; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.cos(a - 1.57) * R * l, cy + Math.sin(a - 1.57) * R * l); x.stroke(); });
+        for (const p of pbgPts('bd', 24, 71)) { const yy = h - ((t * (6 + p.s * 10) + p.y * h) % h); x.globalAlpha = .3 + .5 * Math.abs(Math.sin(t + p.p)); x.fillStyle = '#fff6d8'; x.fillRect(p.x * w * .8, yy, 1.4, 1.4); } x.globalAlpha = 1;
+        const bx = w * .86, by = h * .12, sw = Math.sin(t * 1.6) * .38, BR = U * .16; x.save(); x.translate(bx, by); x.rotate(sw); x.fillStyle = brass(0, BR * 2.2); x.beginPath(); x.moveTo(-BR, BR * 1.9); x.quadraticCurveTo(-BR, 0, 0, 0); x.quadraticCurveTo(BR, 0, BR, BR * 1.9); x.lineTo(BR * 1.2, BR * 2.1); x.lineTo(-BR * 1.2, BR * 2.1); x.closePath(); x.fill(); x.restore();
+        for (let i = 0; i < 2; i++) { const k = ((t / 1.96) + i * .5) % 1; x.strokeStyle = `rgba(255,210,122,${(1 - k) * .6})`; x.lineWidth = 2; x.beginPath(); x.arc(bx, by + BR * 1.4, BR * (1 + k * 3), 0, 6.29); x.stroke(); } break;
+      }
+      case 'bg_cr_void': {   // dozens of dials drift in the void, each with its own pace, slowly spiralling to the centre
+        x.fillStyle = '#06040f'; x.fillRect(0, 0, w, h); glow(w * .5, h * .5, U * .7, 'rgba(255,210,122,.12)'); stars(40, 73, 1.4);
+        for (const p of pbgPts('vd', 22, 79)) { const life = ((t * .04 + p.q) % 1), a = p.p + life * 4, d = (1 - life) * U * .95 + U * .05, xx = w * .5 + Math.cos(a) * d * 1.3, yy = h * .5 + Math.sin(a) * d * .8;
+          dial(xx, yy, (6 + p.s * 18) * (.4 + .6 * (1 - life)), (.6 + p.s * 3) * (p.x > .5 ? 1 : -1), Math.min(1, (1 - life) * 3) * .85); }
+        dial(w * .5, h * .5, U * .12, 1.2, 1); break;
+      }
+    }
+  }
   function pbgDraw(x, w, h, id, t) {
     const lin = (stops, x0 = 0, y0 = 0, x1 = 0, y1 = h) => { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
     const glow = (cx, cy, r, col, a = 1) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = a; x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); x.globalAlpha = 1; };
@@ -160,6 +216,8 @@
         x.strokeStyle = `rgba(255,190,255,${.7 + .3 * Math.sin(t * 3)})`; x.lineWidth = 2; x.shadowColor = '#ff4fd8'; x.shadowBlur = 18; x.beginPath(); x.arc(cx, cy, R * 1.08, 0, 6.29); x.stroke(); x.shadowBlur = 0;
         x.save(); x.beginPath(); x.rect(0, 0, w, cy); x.clip(); x.translate(cx, cy); x.scale(1, .32); x.globalCompositeOperation = 'lighter'; x.strokeStyle = 'rgba(255,170,240,.5)'; x.lineWidth = 3; x.beginPath(); x.arc(0, 0, R * 1.5, Math.PI, 0); x.stroke(); x.restore();
         for (const p of pbgPts('sp', 24, 79)) { const ph = ((t * (.15 + p.s * .15) + p.q) % 1), a = p.p + ph * 9, d = R * (4 - ph * 2.9); x.globalAlpha = ph; x.fillStyle = '#22e6ff'; x.fillRect(cx + Math.cos(a) * d, cy + Math.sin(a) * d * .45, 1.8, 1.8); } x.globalAlpha = 1; break; }
+      // ---- 2.3 workshop «Хронос» ----
+      case 'bg_cr_gears': case 'bg_cr_sand': case 'bg_cr_behind': case 'bg_cr_void': { crBg(x, w, h, id, t, U, lin, glow, stars); break; }
       case 'bg_rift': {
         x.fillStyle = lin([[0, '#0a0020'], [1, '#1a0030']]); x.fillRect(0, 0, w, h);
         const k = Math.floor(t * 9); let s = k * 31 + 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -424,7 +482,11 @@
   function myShowcase() {
     const pc = save.pc || {};
     return { bg: pc.bg || 'bg_base', frame: save.frame || '', title: save.title || '', badge: pc.badge || '', skin: save.skin, lvl: playerLevel(),
-      ps: (p => p && (p.s || p.n) ? { s: p.s, n: p.n } : undefined)(prestigeOf(save.xp)), league: save.totals.maxLeague || 0, chaos: save.totals.chaosMax || 0, wins: (save.legend && save.legend.wins) || 0, best: save.bests.classic || 0, ach: save.ach.length };
+      ps: (p => p && (p.s || p.n) ? { s: p.s, n: p.n } : undefined)(prestigeOf(save.xp)),
+      shelf: ((save.pc || {}).shelf || []).map(id => [id, achTier(achById(id))]).filter(([, t]) => t > 0).slice(0, 3),
+      act: (() => { try { return actPublic(); } catch (e) { return undefined; } })(),
+      rc: (save.recaps || []).slice(-1)[0] || undefined,
+      league: save.totals.maxLeague || 0, chaos: save.totals.chaosMax || 0, wins: (save.legend && save.legend.wins) || 0, best: save.bests.classic || 0, ach: save.ach.length };
   }
   const LG_NAMES = ['Бронза', 'Серебро', 'Золото', 'Платина', 'Алмаз', 'Неон'], LG_COLS = ['#cd7f32', '#c0c8e0', '#ffd23f', '#7fe8ff', '#b26bff', '#ff4fd8'];
   // the avatar: the player's drop (skin) inside the avatar frame, the showcased badge at the corner
@@ -438,9 +500,10 @@
   const FRAME_STYLE = { fr_cyan: 'line', fr_glow: 'dots', fr_lv20: 'tech', fr_calendar: 'segments', fr_fire: 'flame', fr_lg3: 'shield', fr_sh1: 'petal', fr_sh2: 'petal',
     fr_cq1: 'shards', fr_cq2: 'shards', fr_cq3: 'shards', fr_cq4: 'shards', fr_q1: 'stars', fr_q2: 'stars', fr_arsenal: 'gear', fr_finish: 'checker', fr_dark: 'thorns',
     fr_ps_orbit: 'psorbit', fr_rainbow: 'prism', fr_lg4: 'crystal', fr_lg5: 'crown', fr_cvet: 'void', fr_sing: 'orbit', fr_lv40: 'star', fr_legend: 'laurel', fr_star: 'starburst',
-    fr_platinum: 'ornate', fr_modes: 'medal', fr_master: 'wings', fr_xarsenal: 'horizon', fr_beta: 'holo', fr_creator: 'creator', fr_vet: 'pulse', fr_bday2026: 'bday' };
+    fr_platinum: 'ornate', fr_modes: 'medal', fr_master: 'wings', fr_xarsenal: 'horizon', fr_beta: 'holo', fr_creator: 'creator', fr_vet: 'pulse', fr_bday2026: 'bday',
+    fr_cr_dial: 'crdial', fr_cr_roman: 'crroman', fr_cr_pend: 'crpend', fr_cr_gyro: 'crgyro' };
   const FRAME_GLYPH = { flame: '♨', shield: '◆', petal: '✿', shards: '◈', stars: '✦', gear: '⚙', checker: '⚑', thorns: '✶', prism: '✧', crystal: '◆', crown: '♛', void: '◉', orbit: '◌',
-    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', pulse: '✚', bday: '✦' };
+    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', pulse: '✚', bday: '✦', crdial: '◷', crroman: 'Ⅻ', crpend: '⧖', crgyro: '⊛' };
   let foUid = 0;
   function frameOrnSVG(d) {
     if (!d) return '';
@@ -493,6 +556,17 @@
           + at(0, 59, `<g transform="translate(0,-3)"><rect x="-8.5" y="-3" width="17" height="7" rx="1.6" fill="#ff9ad5" stroke="#fff" stroke-width=".8"/><path d="M-8.5,-1 Q-6,1.5 -4,-1 Q-2,1.5 0,-1 Q2,1.5 4,-1 Q6,1.5 8.5,-1 V-2 Q8.5,-3 7,-3 H-7 Q-8.5,-3 -8.5,-2 Z" fill="#fff"/><rect x="-5.5" y="-10" width="2" height="7" rx=".6" fill="#22e6ff"/><rect x="-1" y="-11.5" width="2" height="8.5" rx=".6" fill="#ffd23f"/><rect x="3.5" y="-10" width="2" height="7" rx=".6" fill="#3dffa2"/><g fill="#ffb020">${blink(1, 0, '1;.55;1')}<ellipse cx="-4.5" cy="-12" rx="1.3" ry="2"/><ellipse cx="0" cy="-13.6" rx="1.3" ry="2"/><ellipse cx="4.5" cy="-12" rx="1.3" ry="2"/></g></g>`, false); break;
       case 'creator': o = spin(14, ring(57, 1.6, b, .9, 'stroke-dasharray="7 4"')) + ring(52.5, 3.6) + at(0, 58, `<path d="M-15,4 L-15,-9 L-7.5,-2 L0,-15 L7.5,-2 L15,-9 L15,4 Z" fill="${G}" stroke="#fff6c8" stroke-width="1.1" stroke-linejoin="round"/><circle cy="-16.5" r="2.4" fill="#fff"/>`, false)
         + `<g>${at(110, 60, star4(3, '#fff'), false)}${at(250, 60, star4(2.4, '#fff6c8'), false)}${blink(1.4, 0, '.1;1;.1')}</g>`; break;
+      // 2.3 workshop «Хронос»
+      case 'crdial': o = ring(52, 2.6) + n(12, (i, g) => at(g, 56, `<path d="M0,${i % 3 ? -2.5 : -4.5} L0,${i % 3 ? 2.5 : 4.5}" stroke="${G}" stroke-width="${i % 3 ? 1.4 : 2.6}" stroke-linecap="round"/>`))
+        + spin(6, at(0, 62, '<path d="M0,-6 L0,5" stroke="#ff4fd8" stroke-width="2.4" stroke-linecap="round"/><circle cy="5" r="1.8" fill="#ff4fd8"/>')); break;
+      case 'crroman': o = ring(58, 11, G, .95) + ring(52.3, .9, '#fff', .5) + ring(63.6, .9, b, .8)
+        + spin(60, n(12, (i, g) => at(g, 58, `<text y="2.6" text-anchor="middle" font-size="7.4" font-weight="700" font-family="Georgia,serif" fill="${b}">${['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'][i]}</text>`))); break;
+      case 'crpend': o = ring(53, 5, b, .9) + ring(53, 2.6) + n(12, (i, g) => at(g, 53, `<path d="M0,-2 L0,2" stroke="#fff6d8" stroke-width="${i % 3 ? 1.6 : 2.6}" stroke-linecap="round" opacity=".2"><animate attributeName="opacity" values="1;.2;.2" keyTimes="0;.2;1" dur="3.2s" begin="${(i * 3.2 / 12).toFixed(2)}s" repeatCount="indefinite"/></path>`))
+        + `<g transform="translate(0,-60)"><g><animateTransform attributeName="transform" type="rotate" values="-16;16;-16" dur="1.6s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/><path d="M-15,3 Q0,-7 15,3 L12,6 Q0,-1 -12,6 Z" fill="${G}"/><path d="M-15,3 l-2.5,5.5 M15,3 l2.5,5.5" stroke="${a}" stroke-width="2.4" stroke-linecap="round"/><circle r="2.6" fill="#ff4fd8"/></g></g>`
+        + `<g transform="translate(0,55)"><path d="M-9,13 A15,15 0 0 0 9,13" fill="none" stroke="${a}" stroke-width="2" opacity=".3"/><g><animateTransform attributeName="transform" type="rotate" values="-28;28;-28" dur="3.2s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/><path d="M0,0 L0,9" stroke="${a}" stroke-width="1.6"/><circle cy="11" r="4" fill="${G}" stroke="#fff6d8" stroke-width=".8"/></g></g>`
+        + [[-6, 66], [6, 66]].map(([sx, sy], i) => `<circle cx="${sx}" cy="${sy}" r="1.5" fill="#fff6d8" opacity="0"><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.05;.2;1" dur="3.2s" begin="${i * 1.6}s" repeatCount="indefinite"/></circle>`).join(''); break;
+      case 'crgyro': o = ring(51.5, 2) + [[57, 9, 1, 1, a], [62, 6, -1, .55, 'rb'], [66, 4, 1, .32, 'rb']].map(([r, d, dir, k, st], i) => `<g transform="rotate(${i * 60})"><g transform="scale(1,${k})">${spin(d, `<circle r="${r}" fill="none" stroke="${st === 'rb' ? `url(#${id}r)` : G}" stroke-width="${2.6 - i * .5}"/><circle cy="${-r}" r="${3 - i * .5}" fill="#fff"/>`, dir < 0)}</g></g>`).join('')
+        + `<linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22e6ff"><animate attributeName="stop-color" values="#22e6ff;#ff4fd8;#ffd23f;#22e6ff" dur="4s" repeatCount="indefinite"/></stop><stop offset="1" stop-color="#ff4fd8"><animate attributeName="stop-color" values="#ff4fd8;#ffd23f;#22e6ff;#ff4fd8" dur="4s" repeatCount="indefinite"/></stop></linearGradient>`; break;
       case 'pulse': { let d2 = ''; for (let g = 0; g <= 360; g += 3) { const k = g % 60, r = k > 20 && k < 24 ? 52 + 8 : k >= 24 && k < 27 ? 52 - 5 : k >= 27 && k < 30 ? 52 + 3 : 52; const [x, y] = P(r, g); d2 += (g ? 'L' : 'M') + x + ',' + y; }
         o = `<path d="${d2}Z" fill="none" stroke="${G}" stroke-width="1.8" stroke-linejoin="round"><animate attributeName="opacity" values=".55;1;.55" dur="1.3s" repeatCount="indefinite"/></path>` + at(0, 62, `<path d="M-2,-6 h4 v4 h4 v4 h-4 v4 h-4 v-4 h-4 v-4 h4 Z" fill="#fff"/>`, false); break; }
     }
@@ -503,6 +577,12 @@
       `<g style="filter:drop-shadow(0 0 2.5px ${a})">${o}</g></svg>`;
   }
   let pcUid = 0;
+  // 2.2: the shelf — up to 3 achievement emblems the player chose to show
+  function shelfHTML(sh) {
+    const list = (Array.isArray(sh) ? sh : []).map(([id, t]) => [achById(id), Math.max(0, Math.min(6, +t || 0))]).filter(([a, t]) => a && t).slice(0, 3);
+    if (!list.length) return '';
+    return `<div class="pc-shelf">${list.map(([a, t]) => `<span class="pc-tr" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, Math.min(t, a.steps.length), 34)}<span style="min-width:0"><b>${a.name}</b><small>${a.steps.length <= 3 ? `${ROM3[Math.min(t, 3)]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</small></span></span>`).join('')}</div>`;
+  }
   function pcardHTML(d, nick, opt = {}) {
     const lv = Math.max(1, Math.min(50, d.lvl || 1)), li = Math.max(0, Math.min(5, d.league || 0)), ci = Math.max(0, Math.min(5, d.chaos || 0)), bg = pbgById(d.bg);
     const lvInfo = opt.me ? levelInfo(save.xp) : null, pct = lvInfo ? (lvInfo.max ? 100 : lvInfo.into / lvInfo.need * 100) : 100;
@@ -510,7 +590,7 @@
       `<div class="pc-main">${pcAvatar(d, opt.mini ? 64 : 88)}<div class="pc-info"><b class="pc-nick">${escHtml(nick || 'Ты')}</b>${d.title && decorById(d.title) ? `<span class="pc-title">${titleTag(d.title)}</span>` : ''}` +
       `<small class="pc-lg">${rankEmblem(li, 22)}<span style="color:${LG_COLS[li]}">${LG_NAMES[li]}</span>${ci ? ` · ${chaosEmblem(ci, 22)}${ctTag(ci)}` : ''}</small></div>` +
       `<div class="pc-lvl"><svg viewBox="0 0 60 66" aria-hidden="true"><path d="M30 2 L57 17 V49 L30 64 L3 49 V17 Z" fill="rgba(20,10,50,.75)" stroke="url(#pcLvG${++pcUid})" stroke-width="${d.ps ? 3.2 : 2.5}"/><defs><linearGradient id="pcLvG${pcUid}" x1="0" y1="0" x2="1" y2="1">${(st => st.map((c, i) => `<stop offset="${(i / (st.length - 1)).toFixed(2)}" stop-color="${c}"/>`).join(''))(psStops(d.ps))}</linearGradient></defs></svg><small>Уровень</small><b>${lv}</b>${d.ps ? `<span class="ps-mark${d.ps.n ? ' nova' : ''}">${psLabel(d.ps)}</span>` : ''}${lvInfo ? `<i style="--p:${pct.toFixed(0)}%"></i>` : ''}</div></div>` +
-      `<div class="pc-stats"><span><b>${(d.wins || 0).toLocaleString('ru-RU')}</b><small>побед</small></span><span><b>${(d.best || 0).toLocaleString('ru-RU')}</b><small>рекорд «Классики»</small></span><span><b>${d.ach || 0}</b><small>достижений</small></span></div></div>`;
+      `<div class="pc-stats"><span><b>${(d.wins || 0).toLocaleString('ru-RU')}</b><small>побед</small></span><span><b>${(d.best || 0).toLocaleString('ru-RU')}</b><small>рекорд «Классики»</small></span><span><b>${d.ach || 0}</b><small>достижений</small></span></div>` + shelfHTML(d.shelf) + '</div>';
   }
   // unlocks: backgrounds and the Singularity avatar frame are checked against progress; new ones are announced once
   // prestige rewards: granted the moment a step is reached (and at once for players who already have the experience)
@@ -539,7 +619,7 @@
 
   // ---- profile appearance editor: tap anything (even locked) to preview it on the live card ----
   let pdTab = 'bg', pdDraft = null;
-  const PD_TABS = [['bg', 'Фон'], ['frame', 'Рамка'], ['title', 'Титул'], ['badge', 'Значок']];
+  const PD_TABS = [['bg', 'Фон'], ['frame', 'Рамка'], ['title', 'Титул'], ['badge', 'Значок'], ['shelf', 'Витрина']];
   const pdOwned = (k, id) => !id ? true : k === 'bg' ? (save.pbg || []).includes(id) : k === 'badge' ? PB_BADGES().some(b => b.id === id && b.got) : save.decor.includes(id);
   const pdSrc = (k, id) => k === 'bg' ? pbgById(id).src : k === 'badge' ? ((PB_BADGES().find(b => b.id === id) || {}).src || 'особая цель') : decoSource(decorById(id));
   const pdName = (k, id) => !id ? 'нет' : k === 'bg' ? pbgById(id).name : k === 'badge' ? (PB_BADGES().find(b => b.id === id) || {}).name : decorById(id).name;
@@ -561,13 +641,19 @@
       order(DECOR.filter(d => d.kind === 'frame' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('frame', d.id, pcAvatar({ ...pdDraft, frame: d.id, badge: '' }, 58), d.name, d.rar)).join('');
     else if (pdTab === 'title') html = item('title', '', '<span class="pd-tt">—</span>', 'Без титула') +
       order(DECOR.filter(d => d.kind === 'title' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('title', d.id, `<span class="pd-tt">${titleTag(d.id)}</span>`, d.name, d.rar)).join('');
+    else if (pdTab === 'shelf') {
+      const on = (pdDraft.shelf || []).map(x => x[0]);
+      html = `<p class="pd-shelf-note">Выбери до трёх достижений — они встанут на карточку. Показывается ступень, до которой ты дошёл. Выбрано: ${on.length} из 3.</p>` +
+        ACH.filter(a => !a.hol || achTier(a)).map(a => ({ a, t: achTier(a) })).sort((x, y) => (y.t > 0) - (x.t > 0) || achMetal(y.a, y.t) - achMetal(x.a, x.t)).map(({ a, t }) =>
+          `<button class="pd-it pd-sh${t ? '' : ' lock'}" data-shelf="${a.id}" aria-pressed="${on.includes(a.id)}" ${t ? '' : 'disabled'}>${achEmblem(a, t, 52)}<b>${a.name}</b>${t ? `<span class="rr">${a.steps.length <= 3 ? `${ROM3[t]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</span>` : '<small>ещё не начато</small>'}${on.includes(a.id) ? `<span class="pd-cur">${on.indexOf(a.id) + 1}</span>` : ''}</button>`).join('');
+    }
     else html = item('badge', '', '<span class="badge-mini pd-none">—</span>', 'Без значка') +
       PB_BADGES().filter(b => b.got || !b.promo).sort((a, b) => b.got - a.got).map(b => item('badge', b.id, `<span class="badge-mini">${pbBadgeSVG(b.id)}</span>`, b.name)).join('');
     $('pdGrid').innerHTML = html;
   }
   function applyDecor() {
     if (!pdDraft || ['bg', 'frame', 'title', 'badge'].some(k => !pdOwned(k, pdDraft[k]))) return;
-    save.pc = { ...(save.pc || {}), bg: pdDraft.bg, badge: pdDraft.badge || '' }; save.frame = pdDraft.frame || null; save.title = pdDraft.title || null;
+    save.pc = { ...(save.pc || {}), bg: pdDraft.bg, badge: pdDraft.badge || '', shelf: (pdDraft.shelf || []).map(x => x[0]).slice(0, 3) }; save.frame = pdDraft.frame || null; save.title = pdDraft.title || null;
     persist(); Net.pushShowcase(); toast('Оформление профиля сохранено'); renderProfile(); renderDecorEditor();
   }
   // someone else's card (from the ranking or the chat)
@@ -579,12 +665,13 @@
     let d = me ? myShowcase() : null;
     if (!me) { const m = await Net.getShowcases([nick]); d = m.get(nick); }
     if ($('pcModal').hidden) return;
-    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
+    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (d && !me ? actOtherHTML(d.act) + rcOtherHTML(d.rc) : '') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
     pbgMount($('pcBody'));
     if (!me) Net.pcSocial(nick, $('pcSocial'));
   }
   pbgCheck(true);   // what the player already has gets unlocked silently
   const closePlayerCard = () => { $('pcModal').hidden = true; if (pcReturn && pcReturn.isConnected) pcReturn.focus(); };
+  let psOpen = false;   // the full prestige reward list stays folded unless opened
   function renderProfile() {
     const T = save.totals, li = leagueOf(save.season.pts), L = lgView(li, seasonStarted ? holidayOf(save.season.id) : null), lvl = levelInfo(save.xp);
     const mr = T.modeRounds || {}, fav = Object.keys(mr).sort((a, b) => mr[b] - mr[a])[0];
@@ -598,12 +685,17 @@
       $('profAcct').textContent = Net.uid ? '☁ Аккаунт и сохранения' : '👤 Войти или создать аккаунт'; $('profAcct').className = 'btn g-hide prof-acct-btn' + (Net.uid ? ' ghost' : ''); }
     { const p = prestigeOf(save.xp), box = $('profPs'); box.hidden = !p;
       if (p) {
-        const step = ([t, n, kind, id]) => { const got = psReached(p, t, n), nm = kind === 'deco' ? `${decorById(id).kind === 'frame' ? 'рамка' : 'титул'} «${decorById(id).name}»` : kind === 'fx' ? `${FX.find(f => f.id === id).slot === 'trail' ? 'след' : 'эффект'} «${FX.find(f => f.id === id).name}»` : kind === 'pbg' ? `фон «${pbgById(id).name}»` : id;
-          return `<li class="${got ? 'got' : ''}"><b>${t === 1 ? '★' : '✦'}${n}</b><span>${nm}</span></li>`; };
+        const rwName = ([t, n, kind, id]) => kind === 'deco' ? `${decorById(id).kind === 'frame' ? 'рамка' : 'титул'} «${decorById(id).name}»` : kind === 'fx' ? `${FX.find(f => f.id === id).slot === 'trail' ? 'след' : 'эффект'} «${FX.find(f => f.id === id).name}»` : kind === 'pbg' ? `фон «${pbgById(id).name}»` : id;
+;
+        const step = r => { const got = psReached(p, r[0], r[1]), nm = rwName(r); return `<li class="${got ? 'got' : ''}" title="${escHtml(nm)}"><b>${r[0] === 1 ? '★' : '✦'}${r[1]}</b><span>${nm}</span></li>`; };
+        const nextRw = PS_REWARDS.find(r => !psReached(p, r[0], r[1])), gotN = PS_REWARDS.filter(r => psReached(p, r[0], r[1])).length;
         const tier = t => PS_REWARDS.filter(r => r[0] === t);
-        box.innerHTML = `<div class="ps-head"><span class="ps-big${p.tier === 2 ? ' nova' : ''}">${p.label}</span><div><b>Престиж</b><small>Опыт после 50-го уровня копит звёзды: ★ — каждые 10 000, после ★25 — сверхновые ✦ по 20 000. Награды — только внешний вид.</small></div></div>` +
+        box.innerHTML = `<div class="ps-head"><span class="ps-big${p.tier === 2 ? ' nova' : ''}">${p.label}</span><div><b>Престиж</b><small>Опыт после 50-го уровня: ★ за каждые 10&nbsp;000, после ★25 — ✦ за каждые 20&nbsp;000. Награды — только внешний вид.</small></div></div>` +
           `<div class="ps-bar${p.tier === 2 ? ' nova' : ''}"><i style="width:${(p.top ? 100 : p.into / p.need * 100).toFixed(1)}%"></i></div><small class="ps-note">${p.top ? 'Вершина престижа — все награды получены' : `${p.into.toLocaleString('ru-RU')} / ${p.need.toLocaleString('ru-RU')} опыта до ${p.next}`}</small>` +
-          `<div class="ps-tiers"><div><small>Ступень I · ★ Звёзды</small><ul>${tier(1).map(step).join('')}</ul></div><div class="t2"><small>Ступень II · ✦ Сверхновая</small><ul>${tier(2).map(step).join('')}</ul></div></div>`;
+          (nextRw ? `<div class="ps-next"><span>Следующая награда</span><b>${nextRw[0] === 1 ? '★' : '✦'}${nextRw[1]}</b><em>${rwName(nextRw)}</em></div>` : '') +
+          `<details class="ps-all"${psOpen ? ' open' : ''}><summary>Все награды престижа <small>${gotN} из ${PS_REWARDS.length}</small></summary>` +
+          `<div class="ps-tiers"><div><small>Ступень I · ★ Звёзды</small><ul>${tier(1).map(step).join('')}</ul></div><div class="t2"><small>Ступень II · ✦ Сверхновая</small><ul>${tier(2).map(step).join('')}</ul></div></div></details>`;
+        box.querySelector('.ps-all').addEventListener('toggle', e => { psOpen = e.target.open; });
       } }
     $('profHead').innerHTML = [
       ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
@@ -656,6 +748,8 @@
     $('ptMastery').textContent = $('psMastery').textContent.replace(/^· /, '');
     $('ptBadges').textContent = `особых ${$('psSpecial').textContent.replace(/^· /, '')} · сезонов ${save.seasonLog.length + save.chaosLog.length}`;
     $('ptSeasons').textContent = `лига: ${save.seasonLog.length} · Хаос: ${save.chaosLog.length}`;
+    { const st = actStreak(), md = actMonthDays(); $('ptActivity').textContent = st ? `серия ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : `за месяц: ${md} ${plural(md, 'день', 'дня', 'дней')}`; }
+    renderActivity(); renderRecaps();
   }
   function renderProfChests() {
     const S = save.chestStats, sum = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
@@ -722,7 +816,12 @@
   $('profAcct').addEventListener('click', () => Net.openAccount(undefined, 'profileCard'));
   document.querySelector('[data-grp="pDecor"]').addEventListener('click', () => setTimeout(openDecorEditor, 0));
   $('pdTabs').addEventListener('click', e => { const b = e.target.closest('[data-pd]'); if (b) { pdTab = b.dataset.pd; renderDecorEditor(); } });
-  $('pdGrid').addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid }; renderDecorEditor(); const again = document.querySelector(`[data-pk="${b.dataset.pk}"][data-pid="${b.dataset.pid}"]`); if (again) again.focus({ preventScroll: true }); });
+  $('pdGrid').addEventListener('click', e => {
+    const sb = e.target.closest('[data-shelf]');
+    if (sb) { const id = sb.dataset.shelf, cur = (pdDraft.shelf || []).filter(x => x[0] !== id), had = cur.length !== (pdDraft.shelf || []).length;
+      pdDraft = { ...pdDraft, shelf: had ? cur : [...cur, [id, achTier(achById(id))]].slice(-3) }; renderDecorEditor();
+      const again = document.querySelector(`[data-shelf="${id}"]`); if (again) again.focus({ preventScroll: true }); return; }
+    const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid }; renderDecorEditor(); const again = document.querySelector(`[data-pk="${b.dataset.pk}"][data-pid="${b.dataset.pid}"]`); if (again) again.focus({ preventScroll: true }); });
   $('pdApply').addEventListener('click', applyDecor);
   $('pcClose').addEventListener('click', closePlayerCard);
   $('pcBody').addEventListener('click', e => { const box = $('pcSocial'); if (box && box.contains(e.target)) Net.pcSocialClick(e, box); });

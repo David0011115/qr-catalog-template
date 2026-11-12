@@ -1150,6 +1150,8 @@
     frame: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="12" cy="11" r="3.2"/><path d="M7 18c1-2.5 3-3.5 5-3.5s4 1 5 3.5"/>',
     tag: '<path d="M3 12.5 12.5 3H20v7.5L10.5 20z"/><circle cx="16" cy="7" r="1.2"/>',
     image: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/>',
+    chatbg: '<path d="M3.5 5h17v11h-9l-5 4v-4h-3z"/><path d="M3.5 13l4-3.5 3 2.5 3.5-3.5 6.5 5.5"/><circle cx="15.5" cy="8.3" r="1.2"/>',
+    smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14.2c1 1.8 2.4 2.6 4 2.6s3-.8 4-2.6"/><circle cx="9" cy="9.8" r=".9" fill="currentColor"/><circle cx="15" cy="9.8" r=".9" fill="currentColor"/>',
     drop: '<path d="M12 3c4 5 6.5 8 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 11 8 8 12 3z"/>',
     paw: '<circle cx="8" cy="8.5" r="1.8"/><circle cx="16" cy="8.5" r="1.8"/><circle cx="4.8" cy="13" r="1.6"/><circle cx="19.2" cy="13" r="1.6"/><path d="M12 12.5c3 0 5 3.2 5 5.2s-2 2.3-5 2.3-5-.3-5-2.3 2-5.2 5-5.2z"/>',
     crystal: '<path d="M12 2.5l6 6-6 13-6-13zM6 8.5h12M12 2.5v19"/>',
@@ -1174,6 +1176,7 @@
     list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
   };
   const DRAWER_ICONS = [
+    ['фоны чата', 'chatbg', '#ff6ad5'], ['арены', 'hub:arena'], ['эмоции', 'smile', '#ffd23f'],
     ['значки хаос', 'chaos', '#ff4fd8'], ['хаос', 'chaos', '#ff4fd8'], ['значки сезон', 'hex', '#ffd23f'], ['особые значки', 'hex', '#22e6ff'],
     ['мастерские достижения', 'medal', '#3dffa2'], ['легендарные достижения', 'crown', '#ffd23f'], ['праздничные достижения', 'gift', '#ff6ad5'],
     ['мастерство', 'medal', '#3dffa2'], ['мастерская', 'workshop', '#ffd27a'], ['все награды престижа', 'star', '#ffd23f'], ['престиж', 'star', '#ffd23f'],

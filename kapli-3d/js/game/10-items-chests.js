@@ -52,6 +52,7 @@
   }
   const colsWith = id => COLLECTIONS.filter(c => colItems(c).includes(id)).map(c => `«${c.name}» ${colOwned(c)}/${colItems(c).length}${save.colDone.includes(c.id) ? ' ✓' : ''}`).join(', ');
   function openItem(ref) {
+    if (String(ref).startsWith('chatbg:')) { if (Net.previewChatTheme) Net.previewChatTheme(ref.slice(7)); return; }   // chat scenes: the same full-screen preview as in the chat
     const [kind, ...rest] = ref.split(':'), id = rest.join(':');
     imKind = kind; imId = id; imReturn = document.activeElement; imFxT = 0; imFxEat = 0; if (imFx) { imFx.owner = null; imFx.fired = false; }
     if (!imR) imInit();
@@ -501,7 +502,7 @@
   function wsItems(cat) {
     if (cat === 'emo') return CR_EMO.map(([k, rar]) => ({ id: emoId(k), name: KapliEmo.E[k].n, rar, sub: 'эмоция для чата', pv: `<span class="emo-play" data-emote="${k}" style="display:block;width:62px;height:62px">${KapliEmo.svg(k)}</span>`, own: (save.emo || []).includes(k), give: () => { save.emo = save.emo || []; save.emo.push(k); } }));
     if (cat === 'arena') return ARENAS.filter(a => a.craft).map(a => ({ id: a.id, name: a.name, rar: a.craft, sub: 'Особенность: ' + ARENA_FX[a.id], pv: `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`, own: save.arenas.includes(a.id), give: () => save.arenas.push(a.id), info: 'arena:' + a.id }));
-    if (cat === 'chatbg') return CHAT_BG.map(b => ({ id: b.id, name: b.name, rar: b.rar, sub: 'живой фон для общего чата и личных сообщений', pv: `<img src="chat-${b.id}.svg" alt="">`, own: chatBgOwned(b.id), give: () => { save.chatBg = save.chatBg || []; save.chatBg.push(b.id); } }));
+    if (cat === 'chatbg') return CHAT_BG.map(b => ({ id: b.id, name: b.name, rar: b.rar, sub: 'живой фон для общего чата и личных сообщений', info: 'chatbg:' + b.id, pv: `<img src="chat-${b.id}.svg" alt="">`, own: chatBgOwned(b.id), give: () => { save.chatBg = save.chatBg || []; save.chatBg.push(b.id); } }));
     if (cat === 'bg') return PBG.filter(b => b.craft).map(b => ({ id: b.id, name: b.name, rar: b.rar, pv: `<img src="${pbgThumb(b.id)}" alt="">`, own: (save.pbg || []).includes(b.id), give: () => save.pbg.push(b.id), info: 'pbg:' + b.id }));
     if (cat === 'frame') return DECOR.filter(d => d.craft).map(d => ({ id: d.id, name: d.name, rar: d.craft, pv: pcAvatar({ skin: save.skin, frame: d.id }, 56), own: save.decor.includes(d.id), give: () => save.decor.push(d.id), info: 'deco:' + d.id }));
     if (cat === 'skin') return SKINS.filter(k => k.craft).map(k => ({ id: k.id, name: k.name, rar: k.craft, pv: `<div class="${swClass(k)}" style="${swatch(k)}">${headIcon(k)}</div>`, own: save.skins.includes(k.id), give: () => save.skins.push(k.id), info: 'skin:' + k.id }));
@@ -550,8 +551,8 @@
   function renderWorkshop() {
     const sp = wsSeries(); if (sp.got.length) { persist(); sp.got.forEach((t, i) => setTimeout(() => toast('🎁 ' + t), i * 1800)); }
     $('wsBal').innerHTML = RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 34)}<b>${save.shards[k]}</b>${RARITY[k].name}</span>`).join('');
-    $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<span class="ws-exp"><button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'} aria-label=""10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} в 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}"><span class="sh-ex">10 ${shardIco(k, 18)} → 1 ${shardIco(RAR_KEYS[i + 1], 18)}</span></button>` +
-      `<button class="btn ghost all" type="button" data-wsexall="${k}" ${save.shards[k] >= 20 ? '' : 'disabled'} title="Обменять все десятки сразу" aria-label="Обменять все: ${Math.floor(save.shards[k] / 10) * 10} в ${Math.floor(save.shards[k] / 10)}">все ×${Math.floor(save.shards[k] / 10)}</button></span>`).join('');
+    $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<span class="ws-exp"><button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'} aria-label="10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} в 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}"><span class="sh-ex">10 ${shardIco(k, 18)} → 1 ${shardIco(RAR_KEYS[i + 1], 18)}</span></button>` +
+      (save.shards[k] >= 20 ? `<button class="btn ghost all" type="button" data-wsexall="${k}" title="Обменять все десятки сразу" aria-label="Обменять все: ${Math.floor(save.shards[k] / 10) * 10} в ${Math.floor(save.shards[k] / 10)}">обменять все · ×${Math.floor(save.shards[k] / 10)}</button>` : '') + `</span>`).join('');
     { const g = save.wsPin && !wsOwned(save.wsPin) ? wsFind(save.wsPin) : null, el = $('wsGoal'); el.hidden = !g;
       if (g) { const pr = wsProg(g.id); el.style.setProperty('--rc', RARITY[g.rar].color);
         el.innerHTML = `<span><small>Цель</small><br><b>${g.name}</b> <small>${canPay(g.id) ? 'осколков хватает — можно создать' : 'не хватает: ' + wsMiss(g.id).map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 14)}${n}</span>`).join(' ')}</small></span><button class="ws-pin" type="button" data-wspin="${g.id}" aria-pressed="true">снять</button><span class="bar"><i style="width:${(pr * 100).toFixed(0)}%"></i></span>`; } }

@@ -138,3 +138,10 @@
 @media(prefers-reduced-motion:reduce){.lrp-chaos-ability{animation:none}}
 /* ---- error report buttons (Settings) ---- */
 .err-btns{display:flex;flex-wrap:wrap;gap:8px}.err-btns .btn{flex:1 1 auto;width:auto;margin:0}
+
+/* ---- workshop exchange: the trade on top, «обменять все» under it; never squeezed ---- */
+.ws-exp { grid-template-columns: 1fr !important; gap: 4px !important; align-content: start; }
+.ws-exp > .btn { width: 100%; margin: 0; min-height: 44px; padding: 6px 8px; }
+.ws-exp > .btn:disabled { opacity: .42; box-shadow: none; filter: grayscale(.4); }
+.ws-exp .sh-ex { justify-content: center; white-space: nowrap; gap: 6px; font-weight: 700; }
+.ws-exp .all { min-height: 30px !important; font-size: .72rem !important; padding: 4px 8px !important; color: var(--food); border-color: color-mix(in srgb, var(--food) 55%, transparent); }

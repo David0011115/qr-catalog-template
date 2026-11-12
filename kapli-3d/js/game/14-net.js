@@ -741,6 +741,7 @@
       themeFullScene.dataset.themePreview = theme;
       themeFullTitle.textContent = themeNames[theme] || 'Оформление';
       const i = THEME_ORDER.indexOf(theme); $('themeFullN').textContent = i < 0 ? '' : `${i + 1} / ${THEME_ORDER.length}`;
+      themeFullApply.textContent = themeLocked(theme) ? '🔒 Создаётся в мастерской' : 'Применить фон';
       themeFull.hidden = false;
       themeFullApply.focus();
     }
@@ -774,6 +775,8 @@
       reset.addEventListener('click',()=>{ctx.pending='default';paintChatTheme(cardId,ctx.pending);mark();});
       apply.addEventListener('click',()=>commitTheme(ctx,ctx.pending));
     }
+    // full-screen preview of any chat scene from outside the chat (workshop cards): «Применить» sets it for the general chat once crafted
+    Net.previewChatTheme = theme => { const ctx = { cardId: 'chatCard', keyFn: () => 'kapli3d-chat-theme', saved: readChatTheme('kapli3d-chat-theme'), pending: theme, dismiss: () => {} }; openThemeFullPreview(ctx, theme); };
     function applySavedChatTheme(cardId,key) { paintChatTheme(cardId,readChatTheme(key)); }
     setupThemePicker('chat','chatCard',()=> 'kapli3d-chat-theme');
     setupThemePicker('dm','dmCard',()=> 'kapli3d-dm-theme:'+encodeURIComponent((FR.dm||'').toLowerCase()));

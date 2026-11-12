@@ -30,7 +30,8 @@
     { id: 'bg_ps_nova',  name: 'Вспышка сверхновой',  rar: 'legendary', src: 'престиж ✦20',  test: () => psReached(prestigeOf(save.xp), 2, 20) },
     { id: 'bg_ps_gal',   name: 'Галактика',           rar: 'legendary', src: 'престиж ✦25',  test: () => psReached(prestigeOf(save.xp), 2, 25) },
     { id: 'bg_vet',      name: 'Пульс жизни',         rar: 'legendary', promo: true, src: 'промокод «Ветврач»',               test: () => !!(save.badges || {}).vet },
-    { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'праздничная коробка «Новый год 2027»', test: () => (save.gifts || []).includes('ny2027') },
+    { id: 'bg_goat27',   name: 'Год Огненной Козы',   rar: 'legendary', promo: true, src: 'праздничная коробка «Новый год 2027»', test: () => (save.gifts || []).includes('ny2027') },
+    { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
     { id: 'bg_cr_gears',  name: 'Латунные шестерни', rar: 'common',    craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
     { id: 'bg_cr_sand',   name: 'Песочные часы',     rar: 'rare',      craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
@@ -102,6 +103,102 @@
       }
     }
   }
+  // «Год Огненной Козы» (丁未, 6 Feb 2027 – 25 Jan 2028): New Year 2027 gift box background; stateless, drawn by pbgDraw
+  const drawGoatBg = (() => {
+  const seeded = (n, seed) => { let s = seed; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; return Array.from({ length: n }, () => ({ x: r(), y: r(), s: r(), p: r() * 6.28, q: r() })); };
+  const STARS = seeded(70, 211), PETALS = seeded(34, 307), EMB = seeded(24, 401);
+  let BODY, HEAD, HORN, BEARD;
+  const paths = () => {
+    if (BODY) return;
+    // the goat: 400×260 box, facing right, standing on a rock; the head is drawn apart so it can nod
+    BODY = new Path2D('M122 118 C134 98 178 92 216 95 C238 97 254 99 266 94 C272 92 278 94 282 100 C286 112 284 128 278 142 C272 158 262 166 248 168 C214 172 170 172 140 166 C120 162 108 150 110 136 C111 128 115 122 122 118 Z');
+    HEAD = new Path2D('M266 96 C268 80 274 66 286 58 C298 52 312 56 318 68 C324 80 322 92 314 98 C306 104 296 104 288 108 C280 110 270 106 266 96 Z');
+    HORN = new Path2D('M286 60 C280 36 258 26 244 38 C232 48 238 66 252 66 C262 66 266 56 260 50');
+    BEARD = new Path2D('M308 98 C312 108 314 118 310 128 C304 118 300 108 300 100 Z');
+  };
+  const glowDot = (x, cx, cy, r, col, a = 1) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = a; x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); x.globalAlpha = 1; };
+  return function draw(x, w, h, t) {
+    paths();
+    const W = w, H = h, U = Math.min(w, h);
+    // night sky warming to crimson at the horizon
+    const sky = x.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#0b0418'); sky.addColorStop(.55, '#2a0a24'); sky.addColorStop(.78, '#4a1020'); sky.addColorStop(1, '#12040c');
+    x.fillStyle = sky; x.fillRect(0, 0, W, H);
+    for (const s of STARS) { x.globalAlpha = .25 + .65 * Math.abs(Math.sin(t * (.5 + s.s) + s.p)); x.fillStyle = '#fff1e0'; const r = s.s > .9 ? 1.8 : 1; x.fillRect(s.x * W, s.y * H * .5, r, r); } x.globalAlpha = 1;
+    // a big warm moon behind the goat
+    glowDot(x, W * .66, H * .3, U * .42, 'rgba(255,170,90,.18)');
+    const mg = x.createRadialGradient(W * .66 - U * .04, H * .27, U * .02, W * .66, H * .3, U * .17); mg.addColorStop(0, '#fff3d6'); mg.addColorStop(.7, '#ffcf8a'); mg.addColorStop(1, '#ff9a4a');
+    x.fillStyle = mg; x.beginPath(); x.arc(W * .66, H * .3, U * .17, 0, 6.3); x.fill();
+    // fireworks: one burst every 3.2 s, place and colour fixed by the burst number
+    { const n = Math.floor(t / 3.2), tau = t - n * 3.2; if (tau < 1.4) { const hs = k => { const v = Math.sin(n * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+      const cx = W * (.3 + hs(1) * .65), cy = H * (.08 + hs(2) * .22), col = ['#ffd23f', '#ff4f6a', '#ff9a3d', '#ffe6a8'][Math.floor(hs(3) * 4)], r = H * .26 * (1 - Math.exp(-1.8 * tau)) / 1.8, dy = H * .05 * tau * tau;
+      x.globalAlpha = 1 - tau / 1.4; x.fillStyle = col; for (let i = 0; i < 40; i++) { const a = i / 40 * 6.283; x.fillRect(cx + Math.cos(a) * r, cy + Math.sin(a) * r + dy, 2.2, 2.2); } x.globalAlpha = 1; } }
+    // lanterns on a string
+    x.strokeStyle = 'rgba(255,210,63,.35)'; x.lineWidth = 1; x.beginPath(); x.moveTo(0, H * .05); x.quadraticCurveTo(W * .5, H * .16, W, H * .04); x.stroke();
+    for (let i = 0; i < 6; i++) { const u = (i + .5) / 6, ax = u * W, ay = H * .05 + Math.sin(u * Math.PI) * H * .1 * (1 - Math.abs(u - .5) * .2), sw = Math.sin(t * 1.3 + i) * .12, L = H * .06, lx = ax + Math.sin(sw) * L, ly = ay + Math.cos(sw) * L, R = H * .045;
+      x.strokeStyle = 'rgba(255,210,63,.5)'; x.beginPath(); x.moveTo(ax, ay); x.lineTo(lx, ly - R); x.stroke(); glowDot(x, lx, ly, R * 2.6, 'rgba(255,60,40,.45)');
+      x.fillStyle = '#d4182c'; x.beginPath(); x.ellipse(lx, ly, R * .85, R, 0, 0, 6.3); x.fill(); x.fillStyle = '#ffd23f'; x.fillRect(lx - R * .45, ly - R * 1.05, R * .9, R * .18); x.fillRect(lx - R * .45, ly + R * .88, R * .9, R * .18);
+      x.strokeStyle = 'rgba(255,190,90,.6)'; x.beginPath(); x.moveTo(lx, ly - R); x.lineTo(lx, ly + R); x.stroke(); x.beginPath(); x.moveTo(lx, ly + R * 1.1); x.lineTo(lx, ly + R * 1.6); x.stroke(); }
+    // mountains: two layers with neon snow rims
+    const ridge = (base, amp, seed, col, rim) => { x.beginPath(); x.moveTo(0, H); for (let i = 0; i <= 24; i++) { const u = i / 24, v = Math.sin(u * 9.1 + seed) * .5 + Math.sin(u * 23.7 + seed * 2) * .25; x.lineTo(u * W, H * (base - amp * (.5 + v))); } x.lineTo(W, H); x.closePath(); x.fillStyle = col; x.fill();
+      x.save(); x.clip(); x.strokeStyle = rim; x.lineWidth = 1.5; x.shadowColor = rim; x.shadowBlur = 8; x.beginPath(); for (let i = 0; i <= 24; i++) { const u = i / 24, v = Math.sin(u * 9.1 + seed) * .5 + Math.sin(u * 23.7 + seed * 2) * .25; const yy = H * (base - amp * (.5 + v)); i ? x.lineTo(u * W, yy) : x.moveTo(u * W, yy); } x.stroke(); x.restore(); };
+    ridge(.74, .16, 1.3, '#2a0b2c', 'rgba(255,160,200,.55)');
+    ridge(.86, .1, 4.1, '#16061a', 'rgba(255,120,80,.5)');
+    // year glyphs on the left
+    x.save(); x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `700 ${H * .42}px "Noto Serif SC", "SimSun", serif`; x.fillStyle = 'rgba(255,210,63,.13)'; x.shadowColor = '#ffd23f'; x.shadowBlur = 30; x.fillText('未', W * .17, H * .4);
+    x.font = `700 ${H * .07}px "Noto Serif SC", "SimSun", serif`; x.fillStyle = 'rgba(255,210,63,.78)'; x.shadowBlur = 12; x.fillText('丁 未', W * .17, H * .72); x.restore();
+    // the rock the goat stands on
+    const S = Math.min(W * .48, H * .9), gx = W * .62, gy = H * .74, k = S / 400;
+    x.save(); x.translate(gx, gy); x.scale(k, k); x.translate(-200, -230);
+    const rock = new Path2D('M78 236 C96 220 122 210 148 212 C176 214 196 222 226 220 C256 218 292 208 322 216 C340 222 352 232 358 246 L372 262 L366 286 L390 320 L402 360 L30 360 L48 318 L40 292 L62 268 Z');
+    const rg = x.createLinearGradient(0, 205, 0, 360); rg.addColorStop(0, '#3a1430'); rg.addColorStop(1, '#0c0310'); x.fillStyle = rg; x.fill(rock);
+    x.strokeStyle = '#ff7a3d'; x.lineWidth = 3; x.shadowColor = '#ff7a3d'; x.shadowBlur = 14; x.stroke(rock); x.shadowBlur = 0;
+    x.strokeStyle = 'rgba(255,122,61,.35)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(120, 240); x.lineTo(132, 270); x.lineTo(124, 300); x.moveTo(262, 236); x.lineTo(250, 266); x.lineTo(268, 296); x.lineTo(258, 330); x.moveTo(330, 250); x.lineTo(338, 280); x.stroke();
+    // legs (behind) — slight weight shift
+    const shift = Math.sin(t * 1.4) * 1.5;
+    const leg = (lx, top, near) => { x.save(); x.lineCap = 'round'; x.strokeStyle = near ? '#3a0c18' : '#24060e'; x.lineWidth = 13; x.beginPath(); x.moveTo(lx, top); x.lineTo(lx + shift * .3, 214); x.stroke();
+      x.strokeStyle = near ? '#ffb347' : 'rgba(255,179,71,.5)'; x.lineWidth = 2.5; x.shadowColor = '#ffb347'; x.shadowBlur = near ? 10 : 4; x.beginPath(); x.moveTo(lx - 5, top); x.lineTo(lx - 4 + shift * .3, 212); x.moveTo(lx + 5, top); x.lineTo(lx + 4 + shift * .3, 212); x.stroke();
+      x.fillStyle = near ? '#ffd23f' : 'rgba(255,210,63,.5)'; x.shadowColor = '#ffd23f'; x.beginPath(); x.ellipse(lx + shift * .3, 216, 7, 4, 0, 0, 6.3); x.fill(); x.restore(); };
+    leg(140, 158, false); leg(238, 160, false);
+    // body with a soft breath
+    const br = 1 + Math.sin(t * 1.8) * .012;
+    x.save(); x.translate(190, 150); x.scale(1, br); x.translate(-190, -150);
+    const bg = x.createLinearGradient(110, 90, 290, 170); bg.addColorStop(0, '#4a0c1c'); bg.addColorStop(.6, '#250610'); bg.addColorStop(1, '#3a0a18');
+    x.fillStyle = bg; x.fill(BODY);
+    x.save(); x.clip(BODY); const ig = x.createRadialGradient(210, 120, 10, 210, 120, 140); ig.addColorStop(0, 'rgba(255,120,50,.3)'); ig.addColorStop(1, 'rgba(255,120,50,0)'); x.fillStyle = ig; x.fillRect(100, 80, 200, 100); x.restore();
+    // woolly curls on the body
+    x.strokeStyle = 'rgba(255,170,130,.35)'; x.lineWidth = 2; for (let i = 0; i < 9; i++) { const cx = 135 + i * 16, cy = 118 + (i % 2) * 14; x.beginPath(); x.arc(cx, cy, 6, Math.PI * .2, Math.PI * 1.6); x.stroke(); }
+    x.strokeStyle = '#ff8a3d'; x.lineWidth = 4.5; x.lineJoin = 'round'; x.shadowColor = '#ff6a2a'; x.shadowBlur = 20; x.stroke(BODY); x.strokeStyle = '#ffe2c8'; x.lineWidth = 1.5; x.shadowBlur = 5; x.stroke(BODY); x.shadowBlur = 0;
+    x.restore();
+    // tail: a small flame that flicks
+    x.save(); x.globalCompositeOperation = 'lighter'; const fl = Math.sin(t * 7) * 6;
+    const tg = x.createLinearGradient(118, 120, 92, 100); tg.addColorStop(0, 'rgba(255,230,120,.95)'); tg.addColorStop(1, 'rgba(255,60,40,0)');
+    x.fillStyle = tg; for (let j = 0; j < 3; j++) { const f2 = Math.sin(t * 8 + j * 2) * 5; x.beginPath(); x.moveTo(124, 124 + j * 3); x.quadraticCurveTo(100 - j * 4, 110 + fl + f2, 86 - j * 6, 92 + fl + j * 6); x.quadraticCurveTo(106, 108 + j * 2, 120, 118 + j * 3); x.fill(); } x.restore();
+    leg(170, 162, true); leg(268, 156, true);
+    // head: grazes calmly — every 7 s it lowers and lifts again
+    const cyc = (t % 7) / 7, nod = cyc < .55 ? 0 : Math.sin((cyc - .55) / .45 * Math.PI) * .32, ear = Math.sin(t * 3.1) > .96 ? .3 : 0;
+    x.save(); x.translate(270, 100); x.rotate(nod); x.translate(-270, -100);
+    const hg = x.createLinearGradient(266, 56, 322, 108); hg.addColorStop(0, '#4a0c1c'); hg.addColorStop(1, '#250610'); x.fillStyle = hg; x.fill(HEAD);
+    x.strokeStyle = '#ff8a3d'; x.lineWidth = 4; x.shadowColor = '#ff6a2a'; x.shadowBlur = 18; x.stroke(HEAD); x.shadowBlur = 0;
+    x.fillStyle = 'rgba(255,200,170,.25)'; x.fill(BEARD); x.strokeStyle = '#ffd6a8'; x.lineWidth = 2; x.stroke(BEARD);
+    // ear
+    x.save(); x.translate(282, 66); x.rotate(-.5 - ear); x.fillStyle = '#3a0a18'; x.strokeStyle = '#ff8a3d'; x.lineWidth = 2.5; x.beginPath(); x.ellipse(-10, 0, 13, 5, 0, 0, 6.3); x.fill(); x.stroke(); x.restore();
+    // golden horns, glowing
+    x.lineCap = 'round'; x.strokeStyle = '#7a4a12'; x.lineWidth = 10; x.stroke(HORN);
+    x.strokeStyle = '#ffd23f'; x.lineWidth = 4; x.shadowColor = '#ffd23f'; x.shadowBlur = 16; x.stroke(HORN); x.shadowBlur = 0;
+    x.strokeStyle = 'rgba(255,246,200,.8)'; x.lineWidth = 1.2; x.setLineDash([3, 5]); x.stroke(HORN); x.setLineDash([]);
+    // eye and nostril
+    x.fillStyle = '#ffd23f'; x.shadowColor = '#ffd23f'; x.shadowBlur = 10; x.beginPath(); x.ellipse(300, 72, 4.5, 3, .3, 0, 6.3); x.fill();
+    x.fillStyle = '#ff4f6a'; x.shadowBlur = 5; x.beginPath(); x.ellipse(318, 86, 2.4, 1.6, .5, 0, 6.3); x.fill(); x.shadowBlur = 0;
+    x.restore();
+    x.restore();
+    // plum blossom petals drifting down
+    for (const p of PETALS) { const per = 7 + p.s * 6, ph = ((t + p.p * 2) % per) / per, px = (p.x * 1.2 - .1) * W + Math.sin(t * 1.1 + p.p) * 16 + ph * 50, py = ph * (H + 20) - 10, rot = t * (1 + p.q) + p.p;
+      x.save(); x.translate(px, py); x.rotate(rot); x.globalAlpha = .55 + p.q * .4; x.fillStyle = p.q > .5 ? '#ffb3cf' : '#ff7aa8'; x.beginPath(); x.ellipse(0, 0, 3.5, 2, 0, 0, 6.3); x.fill(); x.restore(); }
+    x.globalAlpha = 1;
+    // embers rising from the ground
+    for (const e of EMB) { const yy = H - ((t * (20 + e.s * 30) + e.p * 60) % (H * .7)), xx = e.x * W + Math.sin(t + e.p) * 6; glowDot(x, xx, yy, 2.5 + e.q * 2, 'rgba(255,140,50,.9)', .6); }
+  };
+})();
   function pbgDraw(x, w, h, id, t) {
     const lin = (stops, x0 = 0, y0 = 0, x1 = 0, y1 = h) => { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
     const glow = (cx, cy, r, col, a = 1) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = a; x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); x.globalAlpha = 1; };
@@ -272,6 +369,7 @@
         glow(0, 0, U * 1.05, 'rgba(178,107,255,.45)'); glow(0, 0, U * .55, 'rgba(255,170,235,.55)'); glow(0, 0, U * .18, 'rgba(255,255,255,.9)');
         for (const q of pbgPts('gx', 160, 73)) { const a = q.p * 6.283 + t * .06 * (1.2 - q.s), rr = (q.x * .9 + .08) * U; x.globalAlpha = .35 + .5 * q.q; x.fillStyle = q.s > .6 ? '#9ff0ff' : '#ffd1f4'; x.fillRect(Math.cos(a) * rr, Math.sin(a) * rr, 1.6, 1.6); }
         x.restore(); x.globalAlpha = 1; break; }
+      case 'bg_goat27': drawGoatBg(x, w, h, t); break;
       case 'bg_horse26': {   // New Year 2027 gift box: the Year of the Fire Horse (丙午, 17 Feb 2026 – 5 Feb 2027) — a neon horse at full gallop
         const W = w, H = h;
         x.fillStyle = lin([[0, '#0c0210'], [.62, '#2a0616'], [.63, '#16030b'], [1, '#0a0206']]); x.fillRect(0, 0, W, H);

@@ -202,8 +202,8 @@
       title: 'У разработчика день рождения!', text: 'В честь праздника каждого игрока с аккаунтом ждёт праздничная коробка с подарками.',
       give: [{ coins: 5000 }, { emote: ':cake:' }, { badge: 'bday2026' }, { frame: 'fr_bday2026' }, { ach: 'ev_bday2026' }] },
     { id: 'ny2027', from: '2027-01-01', to: '2027-01-07', box: 'Праздничная коробка «Новый год 2027»', cake: '🎆', look: ['#ff2d55', '#5a0010', '#ffd23f', '#ff7a1a', 'rgba(255,45,85,.6)'],
-      title: 'С Новым годом!', text: 'Под ёлкой у каждого игрока с аккаунтом — праздничная коробка с живым фоном профиля «Год Огненной Лошади».',
-      give: [{ pbg: 'bg_horse26' }] },
+      title: 'С Новым годом!', text: 'Под ёлкой у каждого игрока с аккаунтом — праздничная коробка с живым фоном профиля «Год Огненной Козы».',
+      give: [{ pbg: 'bg_goat27' }] },
   ];
   const astanaDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const giftActive = ev => TEST_MODE || (astanaDay() >= ev.from && astanaDay() <= ev.to);

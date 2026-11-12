@@ -1386,6 +1386,32 @@ body.menu-bg .menu-backdrop { display: block; }
 .ws-top { display: grid; gap: 0 16px; } @media (orientation: landscape) and (min-width: 700px) { .ws-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .ws-top .ws-ex { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ws-top .ws-ex button { font-size: .72rem; padding: 8px 6px; } }
 .ws-ex { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
 .ws-ex button { font-size: .8rem; }
+/* 2.3 workshop: exchange all, what is missing, a pinned goal, confirmation and the forge */
+.ws-exp { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; } .ws-exp .all { padding-inline: 10px; white-space: nowrap; }
+.ws-miss { display: block; color: #ff8aa8 !important; } .ws-miss .sh-pr { font-size: .7rem; }
+.ws-pin { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; font: inherit; font-size: .66rem; padding: 2px 9px; cursor: pointer; }
+.ws-pin[aria-pressed="true"] { color: #ffd27a; border-color: #ffd27a; }
+.ws-goal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 12px; margin: 6px 0; border-radius: var(--r-md); background: var(--row); border: 1px solid #ffd27a; }
+.ws-goal b { font: 400 .95rem var(--display); } .ws-goal small { color: var(--muted); font-size: .72rem; }
+.ws-goal .bar { grid-column: 1 / -1; height: 7px; border-radius: 99px; background: rgba(255, 255, 255, .1); overflow: hidden; } .ws-goal .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #c0822a, #ffd27a); }
+.ws-mcard { display: grid; gap: 10px; justify-items: center; text-align: center; padding: 18px 16px; border-radius: var(--r-lg, 18px); background: linear-gradient(160deg, rgba(40, 24, 70, .98), rgba(14, 9, 32, .98)); border: 1.5px solid color-mix(in srgb, var(--rc, #ffd27a) 60%, transparent); }
+.ws-mcard h2 { font: 400 1.1rem/1.2 var(--display); margin: 0; } .ws-mcard .pv { width: 120px; height: 84px; display: grid; place-items: center; overflow: hidden; border-radius: 12px; background: #0a0620; }
+.ws-mcard .pv img { max-width: 100%; max-height: 84px; } .ws-mcard .pv .sw { width: 64px; height: 64px; } .ws-mcard .pv .ab-big { font-size: 2.4rem; color: var(--ac); }
+.ws-mcard .rows { display: grid; grid-template-columns: auto auto; gap: 4px 14px; font-size: .82rem; text-align: left; } .ws-mcard .rows span:nth-child(odd) { color: var(--muted); }
+.ws-mcard .acts { display: flex; gap: 8px; width: 100%; } .ws-mcard .acts .btn { flex: 1; margin: 0; }
+.ws-anvil { position: relative; width: 150px; height: 96px; }
+.ws-anvil::before { content: ""; position: absolute; left: 22px; right: 22px; bottom: 6px; height: 34px; border-radius: 6px 6px 12px 12px; background: linear-gradient(180deg, #8a8fa6, #3a3e52); clip-path: polygon(0 0, 100% 0, 86% 46%, 100% 100%, 0 100%, 14% 46%); }
+.ws-hammer { position: absolute; left: 78px; top: 2px; width: 12px; height: 62px; border-radius: 4px; background: linear-gradient(90deg, #7a4a26, #c08a52); transform-origin: 50% 100%; transform: rotate(48deg); animation: wsHit .36s cubic-bezier(.6, 0, .9, .4) 3 alternate; }
+.ws-hammer::before { content: ""; position: absolute; left: -15px; top: -8px; width: 42px; height: 24px; border-radius: 5px; background: linear-gradient(180deg, #e8ecff, #7f8fb0); }
+.ws-sparks { position: absolute; left: 50%; bottom: 40px; width: 8px; height: 8px; border-radius: 50%; background: #fff6c8; opacity: 0; box-shadow: -34px -14px 0 -1px var(--rc), 30px -20px 0 -2px #fff, -18px -34px 0 -2px #fff, 20px -40px 0 -1px var(--rc), 44px -4px 0 -3px #ffd27a, -46px 0 0 -3px #ffd27a; animation: wsSpark .72s ease-out 3; }
+.ws-forge .ws-anvil { animation: wsGone .3s ease-in 1.15s both; } .ws-forge .made { display: grid; gap: 6px; justify-items: center; animation: wsMade .5s cubic-bezier(.3, 1.5, .5, 1) 1.3s both; }
+.ws-forge .made .pv { box-shadow: 0 0 34px -4px var(--rc); } .ws-forge .rar { color: var(--rc); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .7rem; }
+.ws-forge .lucky { color: #ffd27a; font-size: .84rem; margin: 0; animation: wsMade .5s ease-out 1.7s both; }
+@keyframes wsHit { 0% { transform: rotate(48deg); } 100% { transform: rotate(-6deg); } }
+@keyframes wsSpark { 0%, 40% { opacity: 0; transform: scale(.3); } 55% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5) translateY(-10px); } }
+@keyframes wsGone { to { opacity: 0; height: 0; transform: scale(.6); } }
+@keyframes wsMade { 0% { opacity: 0; transform: scale(.4); } 100% { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ws-hammer, .ws-sparks, .ws-forge .ws-anvil, .ws-forge .made, .ws-forge .lucky { animation: none; } .ws-forge .ws-anvil { display: none; } }
 .ws-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .ws-it { display: grid; gap: 4px; align-content: start; padding: 8px; border-radius: var(--r-md); background: var(--row); border: 1.5px solid color-mix(in srgb, var(--rc) 55%, transparent); text-align: center; justify-items: center; min-width: 0; }
 .ws-it .pv { width: 100%; height: 70px; display: grid; place-items: center; overflow: hidden; border-radius: 10px; background: #0a0620; }
@@ -1813,10 +1839,11 @@ body.menu-bg .menu-backdrop { display: block; }
 
   <div class="card" id="wsCard" hidden>
     <div class="shop-head"><h1>Мастерская</h1></div>
-    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: каждый 4-й сундук за раунды приносит ещё и сундук осколков. Каждая серия — своя папка со своей темой.</p>
+    <p class="hint" style="margin:0">Предметы, которые нельзя купить или выбить из сундука — только создать из осколков. Осколки дают сундуки осколков: его приносит каждый 2-й сундук за раунды, ещё один дают три цели за день и два — все задания недели. Каждая серия — своя папка со своей темой.</p>
     <div class="ws-top"><div><h2 class="section-title">Твои осколки</h2><div class="ws-bal" id="wsBal"></div></div>
     <div><h2 class="section-title">Обмен: 10 осколков → 1 следующей редкости</h2><div class="ws-ex" id="wsEx"></div></div></div>
     <p class="hint ws-luck">✨ Удачная ковка: с шансом 10% вернётся четверть потраченных осколков</p>
+    <div class="ws-goal" id="wsGoal" hidden></div>
     <div id="wsList"></div>
     <button class="btn ghost" id="wsBack" type="button">Назад</button>
   </div>
@@ -1834,7 +1861,7 @@ body.menu-bg .menu-backdrop { display: block; }
       <dt>Повышение лиги</dt><dd>сундук лиги: внутри эксклюзивные предметы, которых нет больше нигде. Пока не собраны все 12, повторов не бывает. Чем выше лига, тем реже добыча</dd>
       <dt>Испытание</dt><dd>сундук, редкость зависит от сложности испытания</dd>
       <dt>Ежедневный</dt><dd>раз в сутки, редкость случайная</dd>
-      <dt>Сундук осколков</dt><dd>каждый 4-й сундук за раунды приносит ещё и сундук осколков (сверху, обычный сундук остаётся). Внутри 20–30 осколков для «Мастерской»</dd>
+      <dt>Сундук осколков</dt><dd>каждый 2-й сундук за раунды приносит ещё и сундук осколков (сверху, обычный сундук остаётся); ещё один дают три цели за день и два — все задания недели. Внутри 20–30 осколков для «Мастерской»</dd>
       <dt>Сразу несколько</dt><dd>кнопка «×5» открывает до 5 сундуков за раунды или сундуков осколков за раз</dd>
     </dl>
     <p class="hint">Внутри скины, эффекты и питомцы — чем реже, тем сильнее бонус у питомца. Повторный предмет превращается в монеты.</p>
@@ -2193,7 +2220,7 @@ body.menu-bg .menu-backdrop { display: block; }
       <ul class="info-list">
         <li><b>Мастерская</b> — отдельная плитка в главном меню. В ней создаются предметы, которых нет ни в магазине, ни в сундуках: фоны профиля, рамки, скины, эффекты, питомцы и способности.</li>
         <li>Предметы разбиты на <b>серии</b>, у каждой своя тема. Первая серия — «Хронос»: часовой механизм, латунь, шестерни, циферблаты.</li>
-        <li><b>Осколки</b> бывают четырёх редкостей: обычные, редкие, эпические и легендарные. Их дают сундуки осколков: каждый 4-й сундук за раунды приносит ещё и сундук осколков (обычный сундук при этом остаётся). Внутри 20–30 осколков: 60% обычные, 27% редкие, 10% эпические, 3% легендарные.</li>
+        <li><b>Осколки</b> бывают четырёх редкостей: обычные, редкие, эпические и легендарные. Их дают сундуки осколков: каждый 2-й сундук за раунды приносит ещё и сундук осколков (обычный сундук при этом остаётся), ещё один дают три цели за день и два — все задания недели. Внутри 20–30 осколков: 60% обычные, 27% редкие, 10% эпические, 3% легендарные.</li>
         <li>Цена предмета — осколки его редкости плюс добавка младшими осколками, поэтому в дело идут все виды.</li>
         <li><b>Удачная ковка</b>: предмет создаётся всегда, а с шансом 10% мастерская ещё и возвращает четверть потраченных осколков каждого вида.</li>
         <li><b>Обмен</b>: 10 осколков → 1 осколок следующей редкости. Это дороже, чем выбить из сундука, — обмен нужен для излишков.</li>
@@ -2322,6 +2349,7 @@ body.menu-bg .menu-backdrop { display: block; }
     <p class="test-state" id="testState" aria-live="polite"></p>
   </div>
 </div>
+<div class="modal" id="wsModal" hidden role="dialog" aria-modal="true" aria-labelledby="wsMTitle"><div class="modal-card ws-mcard" id="wsMCard"></div></div>
 <div class="modal" id="tutModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tutMName">
     <h2 id="tutMName"></h2>
@@ -5888,7 +5916,7 @@ window.KapliErr = (() => {
         if (W.prog[t.id] >= t.n) { W.done.push(t.id);
           weekLine += `<li class="done"><span>📅 Задание недели: ${t.text(t.n)}</span><span class="rw">${W.done.length} / 3</span></li>`; }
       }
-      if (W.done.length === 3 && !W.bonus) { W.bonus = true; coins += WEEK_BONUS; save.special.push({ kind: 'challenge', rar: WEEK_CHEST, title: 'Неделя' }); weekLine += `<li class="done"><span>📅 Все задания недели</span><span class="rw">сундук «${RARITY[WEEK_CHEST].name}»</span></li>`; cExtra.push(['Все задания недели', WEEK_BONUS]); save.coins += WEEK_BONUS; const tk = archTokAdd(ARCH_TOK_WEEK); if (tk) weekLine += `<li class="done"><span>🎟 Жетон архива за задания недели</span><span class="rw">+${tk}</span></li>`; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
+      if (W.done.length === 3 && !W.bonus) { W.bonus = true; save.shardChests += 2; coins += WEEK_BONUS; save.special.push({ kind: 'challenge', rar: WEEK_CHEST, title: 'Неделя' }); weekLine += `<li class="done"><span>📅 Все задания недели</span><span class="rw">сундук «${RARITY[WEEK_CHEST].name}» и 2 сундука осколков</span></li>`; cExtra.push(['Все задания недели', WEEK_BONUS]); save.coins += WEEK_BONUS; const tk = archTokAdd(ARCH_TOK_WEEK); if (tk) weekLine += `<li class="done"><span>🎟 Жетон архива за задания недели</span><span class="rw">+${tk}</span></li>`; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
     const skillLine = checkSkill(stats).map(k => k.all ? '<li class="done skill"><span>🎯 Все мастерские достижения! Рамка «Мастер» и скин «Виртуоз»</span><span class="rw">в гардеробе</span></li>'
       : k.ms ? `<li class="done skill"><span>🎯 ${decorById(k.ms).skillN} мастерских достижений</span><span class="rw">титул «${decorById(k.ms).name}»</span></li>`
       : `<li class="done skill"><span>🎯 Мастерское достижение «${k.name}»</span><span class="rw">+${k.coins} ◆</span></li>`).join('');
@@ -5914,8 +5942,8 @@ window.KapliErr = (() => {
     const chNow = checkChallenges();
     const chestChance = roundChestChance(stats.time / 60, stats.maxMass, stats.win, stats.ranked);
     const gotChest = save.pity >= CHEST_RULE[stats.ranked ? 'ranked' : 'normal'].pity - 1 || Math.random() < chestChance;
-    // 2.3: every 4th round chest also brings a shard chest (on top, the round chest itself is never replaced)
-    if (gotChest) { save.chests++; save.chestSeq = (save.chestSeq || 0) + 1; if (save.chestSeq % 4 === 0) save.shardChests++; save.pity = 0; } else save.pity++;
+    // 2.3: every 2nd round chest also brings a shard chest (on top, the round chest itself is never replaced)
+    if (gotChest) { save.chests++; save.chestSeq = (save.chestSeq || 0) + 1; if (save.chestSeq % 2 === 0) save.shardChests++; save.pity = 0; } else save.pity++;
     logRoundChest(stats.ranked, stats.time, gotChest); actLog(stats.time, stats.maxMass);
     let pts = !seasonStarted ? 0 : Math.round(Math.sqrt(stats.maxMass) * .8 + stats.kills * 3 + stats.bosses * 10 + stats.minions + (stats.win ? 40 : 0) + (stats.finalRank && stats.finalRank <= 3 ? (4 - stats.finalRank) * 10 : 0));
     if (mode === 'hardcore') pts = Math.round(pts * 1.5);
@@ -5942,6 +5970,10 @@ window.KapliErr = (() => {
     save.totals.modeRounds[mode] = (save.totals.modeRounds[mode] || 0) + 1;
     save.history.push({ m: Math.round(stats.maxMass), mode }); if (save.history.length > 30) save.history.shift();
     if (mode === 'classic') save.best = Math.max(save.best, best);
+    // 2.3: three daily goals done within one day bring a shard chest, once a day
+    let shardGoalLine = '';
+    { const qd = save.qDay && save.qDay.d === today ? save.qDay : (save.qDay = { d: today, n: 0, sh: false }); qd.n += doneQuests.size;
+      if (qd.n >= 3 && !qd.sh) { qd.sh = true; save.shardChests++; shardGoalLine = '<li class="done"><span>🎯 Три цели за день</span><span class="rw">сундук осколков</span></li>'; } }
     save.quests = save.quests.filter(id => !doneQuests.has(id));
     fillQuests();
     persist();
@@ -5990,7 +6022,7 @@ window.KapliErr = (() => {
     resCountUp();
     $('resQuests').innerHTML = questRows + achAll.map(a => `<li class="done"><span>🏆 ${a.name}</span><span class="rw">+${a.coins} ◆</span></li>`).join('') +
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${ch.reward ? rewardName(ch.reward) + ' + ' : ''}сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
-      weekLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
+      weekLine + shardGoalLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
       (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
     if (lvAfter > lvBefore) {
       $('resQuests').innerHTML += payLevels(lvAfter); persist();
@@ -6795,7 +6827,7 @@ window.KapliErr = (() => {
     ['hubColBtn', 'Коллекция', 'Гардероб, питомцы, коллекции и твой билд способностей.'],
     ['hubRewBtn', 'Награды', 'Сундуки и достижения — здесь забираешь всё заработанное.'],
     ['shopBtn', 'Магазин', 'Монеты тратятся на скины, эффекты, арены, улучшения и способности.'],
-    ['wsBtn', 'Мастерская', 'Предметы, которых нет ни в магазине, ни в сундуках: они создаются из осколков. Осколки дают сундуки осколков — их приносит каждый 4-й сундук за раунды. Предметы разбиты на серии, у каждой своя тема.'],
+    ['wsBtn', 'Мастерская', 'Предметы, которых нет ни в магазине, ни в сундуках: они создаются из осколков. Осколки дают сундуки осколков — их приносит каждый 2-й сундук за раунды, три цели за день и все задания недели. Предметы разбиты на серии, у каждой своя тема.'],
     ['infoBtn', 'Информация', 'Справка по всем темам. Здесь же можно повторить обучение и этот тур.'],
     ['newsBtn', 'Обновления', 'Что изменилось в игре. Красная точка — есть новое.'],
     ['chatBtn', 'Чат', 'Общий чат игроков. Писать можно с аккаунтом, читать — всем.'],
@@ -7262,11 +7294,12 @@ window.KapliErr = (() => {
         ? (sw => save.quests.map(id => QUESTS.find(q => q.id === id)).map(q => `<li><span class="g-txt">${q.text}</span>` +
             (sw ? `<button type="button" class="g-swap" data-qswap="${q.id}" title="Заменить эту цель (раз в день)" aria-label="Заменить цель «${q.text}»">↻</button>` : '') +
             `<span class="g-rw"><b>+${qCoins(q)} ◆</b><small>+${qXp(q)} оп.</small></span></li>`).join('') +
-          `<li class="g-note">За один раунд · ${sw ? 'неудобную цель можно заменить ↻ раз в день' : 'замена цели уже использована сегодня'}</li>`)(save.qSwapDay !== today)
+          `<li class="g-note">За один раунд · ${sw ? 'неудобную цель можно заменить ↻ раз в день' : 'замена цели уже использована сегодня'}</li>` +
+          `<li class="g-note">${(q => q && q.sh ? 'Сундук осколков за три цели сегодня получен' : `Три цели за день — сундук осколков: ${q ? Math.min(3, q.n) : 0}/3`)(save.qDay && save.qDay.d === today ? save.qDay : null)}</li>`)(save.qSwapDay !== today)
         : weeklyTasks(W.week).map(t => { const v = Math.min(t.n, W.prog[t.id] || 0), ok = W.done.includes(t.id), R = RARITY[WEEK_RAR[t.tier]];
             return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${t.text(t.n)}<span class="g-bar"><i style="width:${(v / t.n * 100).toFixed(0)}%;background:${R.color}"></i></span></span>` +
               `<span class="g-rw"><b style="color:${R.color}">${TIER[t.tier]}</b><small>${v.toLocaleString('ru-RU')}/${t.n.toLocaleString('ru-RU')}</small></span></li>`; }).join('') +
-          `<li class="g-note">Ещё ${days} дн. · ${W.bonus ? 'награда за неделю получена' : `за все три: сундук «${RARITY[WEEK_CHEST].name}», +${WEEK_BONUS} ◆ и 🎟`}</li>`;
+          `<li class="g-note">Ещё ${days} дн. · ${W.bonus ? 'награда за неделю получена' : `за все три: сундук «${RARITY[WEEK_CHEST].name}», 2 сундука осколков, +${WEEK_BONUS} ◆ и 🎟`}</li>`;
     }
     ['menuCoins', 'resCoins', 'shopCoins'].forEach(id => $(id).textContent = `${save.coins} ◆`);
     $('coins').textContent = save.coins;
@@ -7296,7 +7329,8 @@ window.KapliErr = (() => {
       const ch = chestTotal() + (save.dailyChestDay !== today ? 1 : 0);
       $('hubRewSub').textContent = ch ? `сундуков: ${ch}` : `достижений ${save.ach.length}/${ACH.length}`;
       { const sh = RAR_KEYS.reduce((a, k) => a + (save.shards[k] || 0), 0), can = Object.keys(CR_PRICE).filter(id => canPay(id) && !wsOwned(id)).length;
-        $('wsSub').textContent = can ? `можно создать: ${can}` : `осколков: ${sh}`; $('wsX').textContent = can ? '●' : ''; }
+        const goal = save.wsPin && CR_PRICE[save.wsPin] && !wsOwned(save.wsPin) ? save.wsPin : null;
+        $('wsSub').textContent = can ? `можно создать: ${can}` : goal ? `цель: ${Math.round(wsProg(goal) * 100)}%` : `осколков: ${sh}`; $('wsX').textContent = can ? '●' : ''; }
       // live tiles: league emblem + progress to the next league, collection progress, chests waiting, new in the shop
       const li = leagueOf(save.season.pts), nx = LEAGUES[li + 1];
       if ($('hubLeagueX').dataset.li !== String(li)) { $('hubLeagueX').dataset.li = li; $('hubLeagueX').innerHTML = rankEmblem(li, 34); }
@@ -8617,11 +8651,50 @@ window.KapliErr = (() => {
   const WS_LUCK = .1; // «Удачная ковка» chance
   const canPay = id => CR_PRICE[id].every(([r, n]) => save.shards[r] >= n);
   const wsOwned = id => save.skins.includes(id) || save.fxOwned.includes(id) || save.pets.includes(id) || save.decor.includes(id) || (save.pbg || []).includes(id) || save.abil.owned.includes(id);
+  // what is still missing for a recipe, how far along it is (0…1), and an item by its id
+  const wsMiss = id => CR_PRICE[id].map(([r, n]) => [r, n - save.shards[r]]).filter(([, n]) => n > 0);
+  const wsProg = id => { let have = 0, need = 0; CR_PRICE[id].forEach(([r, n]) => { need += n; have += Math.min(n, save.shards[r]); }); return need ? have / need : 1; };
+  const wsFind = id => { for (const [cat] of WS_CATS) { const it = wsItems(cat).find(x => x.id === id); if (it) return { ...it, cat }; } return null; };
+  // crafting asks first, then plays the forge: three hammer blows, sparks, the item pops out
+  let wsAsk = null;
+  const wsModalClose = () => { $('wsModal').hidden = true; wsAsk = null; };
+  function wsConfirm(cat, id) {
+    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) return;
+    wsAsk = { cat, id }; const c = $('wsMCard'); c.style.setProperty('--rc', RARITY[it.rar].color);
+    c.innerHTML = `<h2 id="wsMTitle">Создать «${it.name}»?</h2><div class="pv">${it.pv}</div><div class="rows"><span>Цена</span><span>${priceText(id)}</span>` +
+      `<span>Останется</span><span>${RAR_KEYS.map(r => { const need = (CR_PRICE[id].find(([k]) => k === r) || [0, 0])[1]; return need ? `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 16)}${save.shards[r] - need}</span>` : ''; }).join(' ')}</span></div>` +
+      `<small style="color:var(--muted)">Осколки спишутся сразу, отменить нельзя.</small><div class="acts"><button class="btn ghost" type="button" id="wsNo">Отмена</button><button class="btn" type="button" id="wsYes">Создать</button></div>`;
+    $('wsModal').hidden = false; $('wsYes').focus();
+  }
+  function wsCraft(cat, id) {
+    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) { wsModalClose(); return; }
+    CR_PRICE[id].forEach(([r, n]) => { save.shards[r] -= n; }); it.give(); if (save.wsPin === id) delete save.wsPin;
+    // «Удачная ковка»: with WS_LUCK chance a quarter of every spent shard kind comes back (never a loss, only a bonus)
+    const back = Math.random() < WS_LUCK ? CR_PRICE[id].map(([r, n]) => [r, Math.floor(n / 4)]).filter(([, n]) => n > 0) : [];
+    back.forEach(([r, n]) => { save.shards[r] += n; }); save.wsLucky = (save.wsLucky || 0) + (back.length ? 1 : 0);
+    persist(); Sound.play('chest'); buzz(back.length ? [30, 60, 30] : 30);
+    const c = $('wsMCard');
+    c.innerHTML = `<div class="ws-forge" style="display:grid;gap:10px;justify-items:center"><div class="ws-anvil"><i class="ws-hammer"></i><span class="ws-sparks"></span></div>` +
+      `<div class="made"><h2 id="wsMTitle">Создано!</h2><div class="pv">${it.pv}</div><span class="rar">${RARITY[it.rar].name}</span><b>${it.name}</b>` +
+      (cat === 'abil' ? '<small style="color:var(--muted)">Поставь в билд: Коллекция → Способности</small>' : '') + `</div>` +
+      (back.length ? `<p class="lucky">✨ Удачная ковка! Вернулось: ${back.map(([r, n]) => `${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}`).join(', ')}</p>` : '') +
+      `<div class="acts"><button class="btn" type="button" id="wsDone">Отлично</button></div></div>`;
+    wsAsk = null; renderWorkshop(); renderAll(); $('wsDone').focus();
+  }
+  $('wsModal').addEventListener('click', e => { if (e.target === $('wsModal') || e.target.id === 'wsNo' || e.target.id === 'wsDone') wsModalClose(); else if (e.target.id === 'wsYes' && wsAsk) wsCraft(wsAsk.cat, wsAsk.id); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wsModal').hidden) wsModalClose(); });
   function renderWorkshop() {
     $('wsBal').innerHTML = RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 34)}<b>${save.shards[k]}</b>${RARITY[k].name}</span>`).join('');
-    $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'} aria-label="10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} в 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}"><span class="sh-ex">10 ${shardIco(k, 18)} → 1 ${shardIco(RAR_KEYS[i + 1], 18)}</span></button>`).join('');
+    $('wsEx').innerHTML = RAR_KEYS.slice(0, 3).map((k, i) => `<span class="ws-exp"><button class="btn ghost" type="button" data-wsex="${k}" ${save.shards[k] >= 10 ? '' : 'disabled'} aria-label=""10 ${RARITY[k].name.toLowerCase().replace(/ый$/, 'ых').replace(/ий$/, 'их')} в 1 ${RARITY[RAR_KEYS[i + 1]].name.toLowerCase()}"><span class="sh-ex">10 ${shardIco(k, 18)} → 1 ${shardIco(RAR_KEYS[i + 1], 18)}</span></button>` +
+      `<button class="btn ghost all" type="button" data-wsexall="${k}" ${save.shards[k] >= 20 ? '' : 'disabled'} title="Обменять все десятки сразу" aria-label="Обменять все: ${Math.floor(save.shards[k] / 10) * 10} в ${Math.floor(save.shards[k] / 10)}">все ×${Math.floor(save.shards[k] / 10)}</button></span>`).join('');
+    { const g = save.wsPin && !wsOwned(save.wsPin) ? wsFind(save.wsPin) : null, el = $('wsGoal'); el.hidden = !g;
+      if (g) { const pr = wsProg(g.id); el.style.setProperty('--rc', RARITY[g.rar].color);
+        el.innerHTML = `<span><small>Цель</small><br><b>${g.name}</b> <small>${canPay(g.id) ? 'осколков хватает — можно создать' : 'не хватает: ' + wsMiss(g.id).map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 14)}${n}</span>`).join(' ')}</small></span><button class="ws-pin" type="button" data-wspin="${g.id}" aria-pressed="true">снять</button><span class="bar"><i style="width:${(pr * 100).toFixed(0)}%"></i></span>`; } }
     const card = x => `<div class="ws-it" style="--rc:${RARITY[x.rar].color}"${x.info ? ` data-info="${x.info}" tabindex="0" role="button" aria-label="Подробнее: ${x.name}"` : ''}><div class="pv">${x.pv}</div><span class="rar">${RARITY[x.rar].name}</span><b>${x.name}</b>${x.sub ? `<small>${x.sub}</small>` : ''}` +
-        (x.info ? '<span class="ws-look">👁 нажми, чтобы посмотреть</span>' : '') + (x.own ? '<span class="own">✓ Создано</span>' : `<small>${priceText(x.id)}</small><button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id) ? '' : 'disabled'}>Создать</button>`) + '</div>';
+        (x.info ? '<span class="ws-look">👁 нажми, чтобы посмотреть</span>' : '') + (x.own ? '<span class="own">✓ Создано</span>' : `<small>${priceText(x.id)}</small>` +
+          (canPay(x.id) ? '' : `<small class="ws-miss">не хватает: ${wsMiss(x.id).map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 14)}${n}</span>`).join(' ')}</small>`) +
+          `<button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id) ? '' : 'disabled'}>Создать</button>` +
+          `<button class="ws-pin" type="button" data-wspin="${x.id}" aria-pressed="${save.wsPin === x.id}" aria-label="${save.wsPin === x.id ? 'Снять цель' : 'Сделать целью'}: ${x.name}">${save.wsPin === x.id ? '★ цель' : '☆ в цель'}</button>`) + '</div>';
     $('wsList').innerHTML = '<h2 class="section-title">Серии</h2>' + PACKS.map(pk => {
       const all = WS_CATS.flatMap(([cat]) => wsItems(cat).filter(x => packOf(x.id) === pk.id).map(x => ({ ...x, cat }))), own = all.filter(x => x.own).length, can = all.filter(x => !x.own && canPay(x.id)).length;
       const body = `<p class="hint" style="margin:0 0 6px">Тема серии: ${pk.desc}.</p>` + WS_CATS.map(([cat, title]) => { const list = all.filter(x => x.cat === cat); if (!list.length) return '';
@@ -8635,16 +8708,12 @@ window.KapliErr = (() => {
   $('wsCard').addEventListener('click', e => {
     const ex = e.target.closest('[data-wsex]');
     if (ex) { const k = ex.dataset.wsex, nx = RAR_KEYS[RAR_KEYS.indexOf(k) + 1]; if (save.shards[k] < 10) return; save.shards[k] -= 10; save.shards[nx]++; persist(); renderWorkshop(); const b = document.querySelector(`[data-wsex="${k}"]`); if (b && !b.disabled) b.focus(); return; }
+    const xa = e.target.closest('[data-wsexall]');
+    if (xa) { const k = xa.dataset.wsexall, nx = RAR_KEYS[RAR_KEYS.indexOf(k) + 1], n = Math.floor(save.shards[k] / 10); if (n < 1) return; save.shards[k] -= n * 10; save.shards[nx] += n; persist(); renderWorkshop(); toast(`Обменяно: ${n * 10} → ${n}`); return; }
+    const pin = e.target.closest('[data-wspin]');
+    if (pin) { e.stopPropagation(); const id = pin.dataset.wspin; if (save.wsPin === id) delete save.wsPin; else save.wsPin = id; persist(); renderWorkshop(); return; }
     const cb = e.target.closest('[data-wscraft]');
-    if (cb) { e.stopPropagation(); const [cat, id] = cb.dataset.wscraft.split(':'), it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) return;
-      CR_PRICE[id].forEach(([r, n]) => { save.shards[r] -= n; }); it.give();
-      // «Удачная ковка»: with WS_LUCK chance a quarter of every spent shard kind comes back (never a loss, only a bonus)
-      const back = Math.random() < WS_LUCK ? CR_PRICE[id].map(([r, n]) => [r, Math.floor(n / 4)]).filter(([, n]) => n > 0) : [];
-      back.forEach(([r, n]) => { save.shards[r] += n; }); save.wsLucky = (save.wsLucky || 0) + (back.length ? 1 : 0);
-      persist(); Sound.play('chest'); buzz(back.length ? [30, 60, 30] : 30);
-      toast(`Создано: «${it.name}»${cat === 'abil' ? ' — поставь в билд: Коллекция → Способности' : ''}`);
-      if (back.length) setTimeout(() => toast(`✨ Удачная ковка! Вернулось: ${back.map(([r, n]) => `${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}`).join(', ')}`), 1600);
-      renderWorkshop(); renderAll(); return; }
+    if (cb) { e.stopPropagation(); const [cat, id] = cb.dataset.wscraft.split(':'); wsConfirm(cat, id); return; }
     const t = e.target.closest('[data-info]'); if (t && !e.target.closest('button')) openItem(t.dataset.info);
   }, true);
   $('wsCard').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-info]')) { e.preventDefault(); openItem(e.target.dataset.info); } });

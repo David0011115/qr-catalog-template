@@ -489,6 +489,8 @@
     fr('fr_cr_roman', 'Римские часы', 'rare', '#e8b05a', '#7a4a12', { craft: 'rare' }),
     fr('fr_cr_pend', 'Маятник', 'epic', '#e8b05a', '#ffd27a', { craft: 'epic' }),
     fr('fr_cr_gyro', 'Гироскоп', 'legendary', '#ffd27a', '#e8b05a', { craft: 'legendary' }),
+    // reward for the whole «Хронос» series (given by the workshop, never crafted)
+    fr('fr_cr_tourb', 'Турбийон', 'legendary', '#ffd27a', '#fff3c4', { series: 'chronos' }),
     // chests: one of each rarity
     fr('fr_cyan', 'Неоновая линия', 'common', '#22e6ff', '#7b3dff', { chest: 'common' }),
     fr('fr_glow', 'Сияющая', 'rare', '#3dffa2', '#22e6ff', { chest: 'rare' }),
@@ -706,6 +708,7 @@
     { id: 'fr_vet', kind: 'frame', name: 'Ветврач', css: 'border:2px solid #3dffa2', cls: 'fr-vet', promo: true },
     { id: 'fr_bday2026', kind: 'frame', name: 'Именинник 2026', css: 'border:2px solid #ff4fd8', cls: 'fr-vet', a: '#ff4fd8', b: '#ffd23f', promo: true, gift: 'bday2026' },
     { id: 'tt_beta', kind: 'title', name: 'Бета-тестер', color: '#7cf3ff', cls: 'tt-holo', ico: 'β', promo: true },
+    { id: 'tt_cr_master', kind: 'title', name: 'Часовых дел мастер', color: '#ffd27a', cls: 'tt-brass', ico: '⚙', rar: 'legendary', series: 'chronos' },
     { id: 'tt_ps5', kind: 'title', name: 'Неутомимый', color: '#ffd23f', cls: 'tt-gold', ico: '✦', rar: 'epic', prestige: '★5' },
     { id: 'tt_ps25', kind: 'title', name: 'Звёздный ветеран', color: '#fff6a0', cls: 'tt-gold', ico: '★', rar: 'legendary', prestige: '★25' },
     { id: 'tt_ps_sn', kind: 'title', name: 'Сверхновая', color: '#ff8ae6', cls: 'tt-holo', ico: '✦', rar: 'legendary', prestige: '✦15' },
@@ -777,6 +780,7 @@
     { id: 'sakura',  name: 'Сад сакуры',      price: 0, exclusive: true, src: 'коллекция «Первое полугодие» (сезоны лиги 1–13)', floor: '#1f0a17', grid: 'rgba(255, 158, 196, .55)', dot: '#ffffff', rim: '#ff9ec4', inner: '#ffd1e8', neb: ['#ff9ec4', '#ff4fd8', '#ffd1e8', '#b26bff'], fx: 'petals', ground: '#1a0b14', desc: 'Цветущие деревья вокруг поля, падают лепестки' },
     { id: 'inferno', name: 'Пекло',           price: 0, exclusive: true, src: 'Хаос-лига: 10 сезонов, законченных в «Разломе» или выше', floor: '#140000', grid: 'rgba(255, 45, 0, .65)', dot: '#ffd23f', rim: '#ff2d00', inner: '#ff9a3d', neb: ['#7b0000', '#ff2d00', '#ff9a3d', '#2a0000'], fx: 'ash', ground: '#0d0000', desc: 'Раскалённый пол, огненные столбы и пепел' },
     { id: 'retro',   name: 'Ретро-волна',     price: 0, exclusive: true, src: 'коллекция «Второе полугодие» (сезоны лиги 14–26)', floor: '#12001f', grid: 'rgba(255, 79, 216, .8)', dot: '#22e6ff', rim: '#ff4fd8', inner: '#ffd23f', neb: ['#ff4fd8', '#ff9a3d', '#7b3dff', '#22e6ff'], fx: 'retro', ground: '#12001f', desc: 'Синтвейв: солнце, неоновые горы и сетка до горизонта' },
+    { id: 'chronos', name: 'Часовой механизм', price: 0, exclusive: true, craft: 'legendary', src: 'мастерская, серия «Хронос»', floor: '#120c07', grid: 'rgba(255, 210, 122, .45)', dot: '#fff6d8', rim: '#ffd27a', inner: '#e8b05a', neb: ['#ffd27a', '#ff9a3d', '#7b3dff', '#22e6ff'], fx: 'gold', ground: '#0c0805', desc: 'Пол — огромный циферблат с идущими стрелками, под стеклом шестерни, вокруг вращаются латунные колёса и стоят часовые башни' },
   ];
   let apvArena = null;   // arena shown in the preview (overrides the chosen one while it is open)
   const arenaDef = () => apvArena || ARENAS.find(a => a.id === save.arena) || ARENAS[0];
@@ -792,6 +796,7 @@
     sakura:  'бонусы действуют на 25% дольше',
     inferno: 'шипов вдвое больше',
     retro:   'монеты за комбо ×2',
+    chronos: 'способности перезаряжаются на 10% быстрее',
   };
   const arenaIs = id => !!(stats && stats.arena === id);
   // ---- weekly boss raid ----

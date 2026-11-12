@@ -15,7 +15,14 @@
     ':yum:':   { n: 'Ням',     c: ['#f1ffcc', '#b9ff3d', '#4a7300'] },
     ':splat:': { n: 'Съели',   c: ['#e6f7ff', '#5cc8ff', '#13508a'] },
     ':gg:':    { n: 'GG',      c: ['#cffff7', '#2ec4b6', '#0a5a52'] },
-    ':cake:':  { n: 'Торт', c: ['#fff0f8', '#ff9ad5', '#a3346f'], lock: true }   // birthday gift box: only owners can send it
+    ':cake:':  { n: 'Торт', c: ['#fff0f8', '#ff9ad5', '#a3346f'], lock: true },   // birthday gift box: only owners can send it
+    // «Хронос» series: four are crafted in the workshop, «Стоп-кадр» and «Ку-ку» come with the series' progress
+    ':tick:':   { n: 'Тик-так',   c: ['#fff0c4', '#e8b05a', '#7a4a12'], lock: true },
+    ':wait:':   { n: 'Жду',       c: ['#e4ecff', '#7f9bd8', '#2a3a7a'], lock: true },
+    ':late:':   { n: 'Опоздал!',  c: ['#ffe0cc', '#ff7a3d', '#8a2a0a'], lock: true },
+    ':windup:': { n: 'Заведён',   c: ['#f4ffd0', '#b9e03d', '#4f6a00'], lock: true },
+    ':freeze:': { n: 'Стоп-кадр', c: ['#f2f2f6', '#a9a9ba', '#4a4a5c'], lock: true },
+    ':cuckoo:': { n: 'Ку-ку',     c: ['#ffe6c8', '#c98a4b', '#5a3010'], lock: true },
   };
   const ORDER = Object.keys(E);
   const id = k => 'emo' + k.replace(/:/g, '');
@@ -66,6 +73,32 @@
       + '<g class="e-candles"><rect x="23.3" y="15" width="3.4" height="11" rx="1" fill="#22e6ff" stroke="#0a6f8a" stroke-width=".6"/><rect x="30.3" y="11" width="3.4" height="15" rx="1" fill="#ffd23f" stroke="#8f6200" stroke-width=".6"/><rect x="37.3" y="15" width="3.4" height="11" rx="1" fill="#3dffa2" stroke="#0d6e44" stroke-width=".6"/>'
       + '<path class="e-flame" d="M25 7.5C26.8 10 27.4 11.6 25 14 22.6 11.6 23.2 10 25 7.5Z" fill="#ffb020"/><path class="e-flame" d="M32 3.5C33.8 6 34.4 7.6 32 10 29.6 7.6 30.2 6 32 3.5Z" fill="#ffb020"/><path class="e-flame" d="M39 7.5C40.8 10 41.4 11.6 39 14 36.6 11.6 37.2 10 39 7.5Z" fill="#ffb020"/>'
       + '<circle cx="25" cy="11.6" r="1" fill="#fff6c8"/><circle cx="32" cy="7.6" r="1" fill="#fff6c8"/><circle cx="39" cy="11.6" r="1" fill="#fff6c8"/></g>',
+    // «Хронос» series: crafted in the workshop or earned by its progress
+    // swings like a pendulum, eyes follow, «тик» and «так» marks pop at the sides
+    ':tick:': () => `<g class="e-look">${eyes({ px: 0, py: .6 })}</g>` + blush(.4) + line('M26 45Q32 49.5 38 45')
+      + '<circle cx="32" cy="52" r="3.6" fill="url(#emoGold)" stroke="#8a5200" stroke-width=".9"/><path d="M32 52V49.8M32 52L33.6 53" stroke="#5a3010" stroke-width=".9" stroke-linecap="round"/>',
+    // bored half-closed eyes, flat mouth; the hourglass beside it turns over
+    ':wait:': () => `<g class="e-eyes">${eye(25, 36, 4.4, 4.6, .6, 1.4, 2.3)}${eye(39, 36, 4.4, 4.6, .6, 1.4, 2.3)}<path d="M19.5 33.5Q25 30.5 30.5 33.5M33.5 33.5Q39 30.5 44.5 33.5" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/><path d="M20 33.2Q25 28 30 33.2ZM34 33.2Q39 28 44 33.2Z" fill="url(#emowaitG)"/></g>` + line('M27 47.5H37')
+      + '<g class="e-glass"><path d="M46.5 39h9M46.5 55h9" stroke="url(#emoGold)" stroke-width="2.2" stroke-linecap="round"/><path d="M47.6 40.2Q47.6 45 51 47Q54.4 45 54.4 40.2ZM47.6 53.8Q47.6 49 51 47Q54.4 49 54.4 53.8Z" fill="#dff4ff" opacity=".85" stroke="#fff" stroke-width=".7"/><path class="e-sandA" d="M48.8 41.2Q49 44.4 51 45.8Q53 44.4 53.2 41.2Z" fill="#ffc21f"/><path d="M49 53.4Q50 51.2 51 50.8Q52 51.2 53 53.4Z" fill="#ffc21f"/></g>',
+    // leans forward and dashes; the alarm clock flies behind, sweat flies off
+    ':late:': () => line('M20 29.5L28 26.5', 2.2) + line('M44 29.5L36 26.5', 2.2) + eyes({ rx: 5, ry: 6, px: 1.4, py: .2, pr: 2.2 }) + `<ellipse class="e-mouth" cx="33" cy="48" rx="4.2" ry="4.6" fill="${INK}"/><path d="M30 50.5Q33 48.5 36 50.5Q34.5 52.4 33 52.4Q31.5 52.4 30 50.5Z" fill="#ff5f8f"/>`
+      + '<g class="e-sweat"><path d="M12 24C12 24 9.8 27.2 9.8 28.6A2.2 2.2 0 0 0 14.2 28.6C14.2 27.2 12 24 12 24Z" fill="#9fe8ff"/><path d="M7 34C7 34 5.4 36.3 5.4 37.3A1.6 1.6 0 0 0 8.6 37.3C8.6 36.3 7 34 7 34Z" fill="#9fe8ff"/></g>'
+      + `<g class="e-alarm"><circle cx="11" cy="12" r="7" fill="#fffdf2" stroke="#ff3b5c" stroke-width="2"/><path d="M11 12V8M11 12L14 13.4" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/><path d="M4.6 6.2A3.2 3.2 0 0 1 8.6 4M13.4 4A3.2 3.2 0 0 1 17.4 6.2" fill="none" stroke="#ff3b5c" stroke-width="2.2" stroke-linecap="round"/><path d="M6.4 18.2L5 20.4M15.6 18.2L17 20.4" stroke="#ff3b5c" stroke-width="1.8" stroke-linecap="round"/></g>`
+      + '<g class="e-speed" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"><path d="M2 44H8M0 50H7M3 56H9"/></g>',
+    // happy, a wind-up key turns on the crown and the drop keeps hopping
+    ':windup:': () => happyEyes + blush(.5) + `<path d="M23.5 43H40.5Q40 52.5 32 52.5Q24 52.5 23.5 43Z" fill="${INK}"/><path d="M27 49.6Q32 46.6 37 49.6Q35 52 32 52Q29 52 27 49.6Z" fill="#ff5f8f"/><path d="M24.4 43.2H39.6V45.2H24.4Z" fill="#fff"/>`
+      + '<g class="e-key"><path d="M32 9V1.5" stroke="url(#emoGold)" stroke-width="2.6" stroke-linecap="round"/><path d="M32 2C26 -4.5 21.5 -1 23.5 2.5C25 5 29.5 4 32 2ZM32 2C38 -4.5 42.5 -1 40.5 2.5C39 5 34.5 4 32 2Z" fill="url(#emoGold)" stroke="#8a5200" stroke-width="1" stroke-linejoin="round"/><circle cx="27" cy="1.4" r="1.5" fill="#5a3a00" opacity=".55"/><circle cx="37" cy="1.4" r="1.5" fill="#5a3a00" opacity=".55"/></g>'
+      + '<g class="e-zap" fill="#fff6c8"><path d="M50 16L51.2 19 54.2 20.2 51.2 21.4 50 24.4 48.8 21.4 45.8 20.2 48.8 19Z"/><path d="M12 20L12.9 22.2 15.1 23.1 12.9 24 12 26.2 11.1 24 8.9 23.1 11.1 22.2Z"/></g>',
+    // freezes mid-jump: the colour drains, a crack runs across, the pause sign pops
+    ':freeze:': () => line('M20.5 25.5Q25 22.5 29.5 25', 2.2) + line('M34.5 25Q39 22.5 43.5 25.5', 2.2) + eyes({ rx: 5.2, ry: 6.2, px: 0, py: 0, pr: 1.8 }) + line('M27.5 47.5H36.5', 2.4)
+      + '<path class="e-crack" d="M14 30L21 34.5L18.5 40.5L26 44L23 51L29.5 56" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/>'
+      + '<g class="e-pause"><circle cx="50" cy="14" r="8.4" fill="#22e6ff" stroke="#fff" stroke-width="1.4"/><path d="M47 10.2V17.8M53 10.2V17.8" stroke="#06283a" stroke-width="2.6" stroke-linecap="round"/></g>',
+    // a little door on the crown: the cuckoo pops out twice with its notes
+    ':cuckoo:': () => eyes({ px: 0, py: -1.4 }) + blush(.4) + `<ellipse class="e-mouth" cx="32" cy="47.5" rx="3" ry="3.4" fill="${INK}"/>`
+      + '<path d="M26.5 22.5V15.5L32 10.5L37.5 15.5V22.5Z" fill="#5a3010" stroke="#3a1c08" stroke-width="1" stroke-linejoin="round"/>'
+      + '<g class="e-bird"><ellipse cx="32" cy="14" rx="5.2" ry="4.4" fill="#ffd23f" stroke="#8f6200" stroke-width=".9"/><circle cx="33.8" cy="12.8" r="1.1" fill="' + INK + '"/><path d="M36.6 13.6L41 15L36.6 16.4Z" fill="#ff7a2a"/><path d="M29 13Q26.4 15.2 28.4 17" fill="none" stroke="#c98a00" stroke-width="1.2" stroke-linecap="round"/></g>'
+      + '<path d="M24 17L32 9.6L40 17" fill="none" stroke="#8a5a2a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
+      + `<g class="e-notes" fill="${INK}" stroke="#fff" stroke-width=".5"><path d="M47 6.5V13.4A2 2 0 1 1 45.6 11.5V5L51.4 3.8V10.4A2 2 0 1 1 50 8.5V6Z"/><path d="M13 9V15A1.7 1.7 0 1 1 11.8 13.4V8L16.4 7V12.4A1.7 1.7 0 1 1 15.2 10.8V8.5Z"/></g>`,
     ':gg:': () => happyEyes + blush(.4) + line('M26 44Q32 49 38 44')
       + '<g class="e-cup"><path d="M41 38H55V41Q55 49 48 50Q41 49 41 41Z" fill="url(#emoGold)" stroke="#8a5200" stroke-width="1.1"/><path d="M41 40.5Q37 40.5 37.5 44Q38.2 47 41.6 46.5M55 40.5Q59 40.5 58.5 44Q57.8 47 54.4 46.5" fill="none" stroke="#ffc21f" stroke-width="1.6"/><rect x="46.6" y="50" width="2.8" height="4" fill="#ffc21f"/><rect x="43" y="53.5" width="10" height="3" rx="1" fill="url(#emoGold)" stroke="#8a5200" stroke-width=".9"/><path d="M44 40.5V45" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".7"/></g>'
       + '<g class="e-confetti"><rect x="10" y="16" width="3" height="3" rx=".6" fill="#ff4fd8" transform="rotate(20 11.5 17.5)"/><rect x="50" y="12" width="3" height="3" rx=".6" fill="#22e6ff" transform="rotate(-25 51.5 13.5)"/><circle cx="16" cy="9" r="1.6" fill="#ffd23f"/><circle cx="45" cy="6" r="1.4" fill="#3dffa2"/></g>'

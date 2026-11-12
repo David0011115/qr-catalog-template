@@ -193,6 +193,16 @@
         T.blob(T.h, T.h, 80, '#ff5a00', .3); T.ring(54, 5, '#ffd23f', .6, 14); T.rings([[.58, 4, '#ff2d00', .4, 16, [60, 40]], [.96, 14, '#ff2d00', .6, 34]]); },
       det(T) { const g = T.g; for (let i = 0; i < 30; i++) { const x = T.rnd() * T.S, y = T.rnd() * T.S, pts = []; for (let k = 0; k < 3; k++) { const a = T.rnd() * TAU, r = 16 + T.rnd() * 30; pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r]); } pts.push(pts[0]); T.wrap(() => T.line(pts, 1.6, '#ff3d1a', .45, 4)); } T.stars(50, ['#ffd23f', '#ff6a00'], 1, 2.6); g.globalAlpha = 1; },
       deep(T) { T.blobs(9, ['#ff2d00', '#a00000'], 70, 160, .12); T.cells(3, 8, '#ff2d00', .6, 16, .9, '#ffb03a'); } } },
+    chronos: { sky: ['#080520', '#2a1630', '#9a5a26'], fog: '#150e08', map: 0.5, det: 0.16, deep: 0.36, depth: 13, drift: [.003, .0015], paint: {
+      map(T) { const g = T.g, h = T.h; T.zones(8, ['#ffd27a', '#ff9a3d'], 120, 240, .045);
+        T.rings([[.96, 10, '#ffd27a', .55, 24], [.9, 3, '#fff0c0', .5, 8], [.8, 3, '#fff0c0', .5, 8], [.56, 2.5, '#ffd27a', .4, 8], [.14, 5, '#ffd27a', .6, 12], [.08, 3, '#fff0c0', .5, 6]]);
+        T.rays(60, .9, .935, 2.2, '#fff0c0', .5, 4); T.rays(12, .8, .935, 7, '#ffd27a', .6, 10); T.rays(12, .14, .2, 5, '#ffd27a', .5, 8, .26);
+        g.font = "700 76px Georgia, 'Times New Roman', serif"; g.textAlign = 'center'; g.textBaseline = 'middle'; g.shadowColor = '#ffb45e'; g.shadowBlur = 12; g.fillStyle = '#ffe2a0'; g.globalAlpha = .6;
+        ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'].forEach((n, i) => { g.save(); g.translate(h, h); g.rotate(i * TAU / 12); g.fillText(n, 0, -h * .68); g.restore(); }); g.shadowBlur = 0; g.globalAlpha = 1;
+        // three small dials, like a chronograph
+        [[0, .36], [TAU / 3, .36], [TAU * 2 / 3, .36]].forEach(([a, f]) => { const x = h + Math.sin(a) * h * f, y = h - Math.cos(a) * h * f; T.ring(58, 3, '#ffd27a', .5, 10, null, x, y); T.ring(46, 1.5, '#fff0c0', .5, 4, [3, 9], x, y); T.line([[x, y], [x + 26, y - 26]], 3, '#fff0c0', .5, 6); T.blob(x, y, 14, '#fff0c0', .6); }); },
+      det(T) { for (let i = 0; i < 11; i++) { const x = T.rnd() * T.S, y = T.rnd() * T.S, r = 20 + T.rnd() * 34; T.near(x, y, r + 14, (px, py) => { T.ring(r, 7, '#ffd27a', .34, 0, [6, 6], px, py); T.ring(r - 7, 1.6, '#fff0c0', .5, 3, null, px, py); T.ring(r * .3, 1.6, '#fff0c0', .5, 3, null, px, py); for (let k = 0; k < 3; k++) { const a = k * TAU / 6; T.line([[px + Math.cos(a) * (r - 8), py + Math.sin(a) * (r - 8)], [px - Math.cos(a) * (r - 8), py - Math.sin(a) * (r - 8)]], 1.6, '#fff0c0', .4, 0); } }); } T.stars(30, ['#fff0c0'], .8, 1.8); },
+      deep(T) { T.blobs(6, ['#c8662a', '#7a3a10'], 90, 170, .12); for (let i = 0; i < 7; i++) { const x = T.rnd() * T.S, y = T.rnd() * T.S, r = 60 + T.rnd() * 70; T.near(x, y, r + 22, (px, py) => { T.ring(r, 18, '#d99a3e', .4, 0, [15, 15], px, py); T.ring(r - 16, 6, '#ffb45e', .45, 8, null, px, py); T.ring(r * .28, 5, '#ffb45e', .45, 6, null, px, py); for (let k = 0; k < 3; k++) { const a = k * TAU / 6 + i; T.line([[px + Math.cos(a) * (r - 18), py + Math.sin(a) * (r - 18)], [px - Math.cos(a) * (r - 18), py - Math.sin(a) * (r - 18)]], 7, '#d99a3e', .4, 0); } }); } } } },
     retro: { sky: ['#0a0020', '#3c0a5c', '#ff4f9a'], fog: '#2a0a44', map: 0.5, det: 0.26, deep: 0.2, depth: 10, drift: [0, .02], paint: {
       map(T) { const g = T.g; T.zones(7, ['#ff4fd8', '#7b3dff', '#22e6ff'], 120, 240, .05); T.rays(32, .3, .96, 3, '#ff4fd8', .4, 10); T.rings([[.3, 5, '#22e6ff', .6, 16], [.62, 3, '#22e6ff', .4, 12], [.96, 10, '#ff4fd8', .5, 26]]);
         const r = T.h * .24, gr = g.createLinearGradient(0, T.h - r, 0, T.h + r); gr.addColorStop(0, '#ffd23f'); gr.addColorStop(.55, '#ff6a3d'); gr.addColorStop(1, '#ff2d95'); g.save(); g.beginPath(); g.arc(T.h, T.h, r, 0, 7); g.clip(); g.globalAlpha = .4; g.fillStyle = gr; for (let i = 0; i < 12; i++) { const y = T.h - r + i * (2 * r / 12); g.fillRect(T.h - r, y, 2 * r, (2 * r / 12) * (.9 - i * .05)); } g.restore(); g.globalAlpha = 1; T.ring(r, 4, '#ffd23f', .5, 18); },
@@ -216,7 +226,7 @@ varying vec2 vUv; varying vec3 vW;
 #include <fog_pars_fragment>
 void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / max(V.y, 1.0);
   vec3 add = (texture2D(tDeep, (p - par * uDepth) / uDeepSize + uOffA).rgb + texture2D(tDeep, (p - par * uDepth * 2.6) / (uDeepSize * 1.7) + uOffB).rgb * .55) * uDeep;
-  add += texture2D(tDet, p / uDetSize).rgb * uDet + texture2D(tMap, p / (2.0 * uR) + .5).rgb * uMap;
+  add += texture2D(tDet, p / uDetSize).rgb * uDet + texture2D(tMap, vec2(p.x, -p.y) / (2.0 * uR) + .5).rgb * uMap;   // flipped so writing on the floor reads the right way from above
   add /= 1.0 + 1.7 * max(add.r, max(add.g, add.b));   // the added light levels off near 0.6, so the floor never outshines food and drops
   gl_FragColor = vec4(texture2D(tTile, vUv * uTileRep).rgb + add, 1.0);
 #include <fog_fragment>
@@ -318,6 +328,33 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
           c.geometry.translate(0, h / 2, 0); c.position.set(x, 0, z); scenery.add(c); pillars.push(c); glow('#ff2d00', 18, .5, x, 2, z); }
         inst(new THREE.DodecahedronGeometry(1, 0), std('#3a0800', '#7a1000', .6, { flatShading: true }), 80, (d, i) => { const [x, z] = ringPos(80, R + 4, R + 50, i); d.position.set(x, 0, z); d.scale.setScalar(1 + rnd() * 3); d.rotation.set(rnd() * 3, rnd() * 3, 0); });
         sceneryAnim = t => pillars.forEach((c, i) => { const k = .8 + .3 * Math.abs(Math.sin(t / 160 + i * 1.3)); c.scale.set(1 / Math.sqrt(k), k, 1 / Math.sqrt(k)); }); break; }
+      case 'chronos': {
+        const brass = std('#c8963c', '#7a4a12', .55, { metalness: .6, roughness: .35 }), gold = std('#ffd27a', '#c0822a', .7, { metalness: .6, roughness: .3 });
+        // a brass wheel lying flat: rim, hub, three spokes and box teeth
+        const mkGear = (r, teeth, mat) => { const g = new THREE.Group(), th = r * .16;
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(r * .82, r * .11, 6, 40), mat); ring.rotation.x = Math.PI / 2; g.add(ring);
+          g.add(new THREE.Mesh(new THREE.CylinderGeometry(r * .2, r * .2, th, 16), mat));
+          for (let k = 0; k < 3; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(r * 1.6, th * .6, r * .12), mat); sp.rotation.y = k * Math.PI / 3; g.add(sp); }
+          const tm = new THREE.InstancedMesh(new THREE.BoxGeometry(r * .2, th, r * .17), mat, teeth), d = new THREE.Object3D();
+          for (let i = 0; i < teeth; i++) { const a = i / teeth * Math.PI * 2; d.position.set(Math.cos(a) * r * .98, 0, Math.sin(a) * r * .98); d.rotation.y = -a; d.updateMatrix(); tm.setMatrixAt(i, d.matrix); }
+          g.add(tm); return g; };
+        const gears = [];
+        for (let i = 0; i < 14; i++) { const [x, z] = ringPos(14, R + 26, R + 54, i), r = 13 + rnd() * 14, g = mkGear(r, Math.round(r * .9), i % 3 ? brass : gold); g.position.set(x, 1.4 + rnd() * 2.5, z); scenery.add(g); gears.push([g, (i % 2 ? 1 : -1) * 9 / r]); }
+        // three great wheels standing on edge, half sunk into the ground
+        for (let i = 0; i < 3; i++) { const a = i * 2.1 + .7, rr = R + 118, g = mkGear(66, 44, brass), tilt = new THREE.Group(), hold = new THREE.Group(); tilt.rotation.x = Math.PI / 2; tilt.add(g); hold.add(tilt); hold.position.set(Math.cos(a) * rr, 8, Math.sin(a) * rr); hold.rotation.y = -a + Math.PI / 2; scenery.add(far(hold)); gears.push([g, (i % 2 ? 1 : -1) * .12]); }
+        // clock towers with a lit dial facing the field
+        const dials = [];
+        for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 + .3, r = R + 84, h = 46 + rnd() * 26, x = Math.cos(a) * r, z = Math.sin(a) * r;
+          const tw = new THREE.Mesh(new THREE.BoxGeometry(13, h, 13), std('#4a2e18', '#22140a', .45)); tw.position.set(x, h / 2, z); tw.rotation.y = -a; scenery.add(tw);
+          const rf = new THREE.Mesh(new THREE.ConeGeometry(12, 18, 4), brass); rf.position.set(x, h + 9, z); rf.rotation.y = -a + Math.PI / 4; scenery.add(rf);
+          dials.push(glow('#ffe7a0', 24, .95, Math.cos(a) * (r - 8), h - 10, Math.sin(a) * (r - 8))); }
+        // the two hands of the floor dial: they go round under the drops, purely for looks
+        const hand = (len, w, c) => { const sh = new THREE.Shape(), r0 = R * .16; sh.moveTo(-w, r0); sh.lineTo(w, r0); sh.lineTo(w * .6, len * .86); sh.lineTo(0, len); sh.lineTo(-w * .6, len * .86); sh.closePath();
+          const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), decal(new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false }))); m.rotation.x = -Math.PI / 2;
+          const piv = new THREE.Group(); piv.add(m); piv.position.y = .04; scenery.add(piv); return piv; };
+        const hMin = hand(R * .86, .9, '#ffd27a'), hHr = hand(R * .56, 1.5, '#ffb45e');
+        sceneryAnim = t => { const s = t * .001; gears.forEach(([g, k]) => { g.rotation.y = s * k; }); hMin.rotation.y = -s * Math.PI * 2 / 60; hHr.rotation.y = -s * Math.PI * 2 / 720 - 1; dials.forEach((d, i) => { d.material.opacity = .8 + .15 * Math.sin(s * 1.3 + i * 2); }); };
+        break; }
       case 'retro': {
         sceneryGround.material.color.set('#12001f');
         const mtn = new THREE.MeshBasicMaterial({ color: '#ff4fd8', wireframe: true, transparent: true, opacity: .8 });

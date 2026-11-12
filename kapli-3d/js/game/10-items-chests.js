@@ -463,7 +463,10 @@
   // the main price is in the item's rarity; every recipe also takes lower shards, so commons and rares never pile up uselessly:
   // rare n → +4n common · epic n → +3n rare +5n common · legendary n → +1n epic +3n rare +7n common (abilities: +90 epic on top)
   const CR_ADD = { rare: { common: 4 }, epic: { rare: 3, common: 5 }, legendary: { epic: 1, rare: 3, common: 7 } };
-  const CR_BASE = { bg_cr_gears: [['common', 30]], bg_cr_sand: [['rare', 30]], bg_cr_behind: [['epic', 30]], bg_cr_void: [['legendary', 20]],
+  // chat scenes of the series: the id is also the file name (chat-<id>.svg) and the chat theme
+  const CHAT_BG = [{ id: 'chronos-workshop', name: 'Мастерская часовщика', rar: 'rare' }, { id: 'chronos-city', name: 'Город башенных часов', rar: 'epic' }, { id: 'chronos-heart', name: 'Сердце механизма', rar: 'legendary' }];
+  const chatBgOwned = id => (save.chatBg || []).includes(id);
+  const CR_BASE = { 'chronos-workshop': [['rare', 30]], 'chronos-city': [['epic', 30]], 'chronos-heart': [['legendary', 20]], bg_cr_gears: [['common', 30]], bg_cr_sand: [['rare', 30]], bg_cr_behind: [['epic', 30]], bg_cr_void: [['legendary', 20]],
     fr_cr_dial: [['common', 30]], fr_cr_roman: [['rare', 30]], fr_cr_pend: [['epic', 30]], fr_cr_gyro: [['legendary', 20]],
     cr_engrave: [['epic', 45]], cr_watch: [['rare', 45]], cr_windup: [['rare', 40]], cr_skeleton: [['epic', 45]], cr_sandup: [['epic', 40]], cr_spiral: [['legendary', 30]], cr_moon: [['legendary', 30]],
     cr_cogs: [['rare', 45]], cr_tick: [['rare', 45]], cr_marks: [['epic', 45]], cr_cogwings: [['epic', 45]], cr_freeze: [['legendary', 30]], cr_halo: [['legendary', 30]], cr_foucault: [['legendary', 30]],
@@ -480,8 +483,9 @@
   const packIco = pk => `<svg class="ws-ico" viewBox="0 0 24 24" aria-hidden="true" style="color:${pk.color}">${pk.ico}</svg>`;
   const CR_PACK = {};
   const packOf = id => CR_PACK[id] || 'chronos';
-  const WS_CATS = [['bg', 'Фоны профиля'], ['frame', 'Рамки'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['pet', 'Питомцы'], ['abil', 'Способности']];
+  const WS_CATS = [['bg', 'Фоны профиля'], ['chatbg', 'Фоны чата'], ['frame', 'Рамки'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['pet', 'Питомцы'], ['abil', 'Способности']];
   function wsItems(cat) {
+    if (cat === 'chatbg') return CHAT_BG.map(b => ({ id: b.id, name: b.name, rar: b.rar, sub: 'живой фон для общего чата и личных сообщений', pv: `<img src="chat-${b.id}.svg" alt="">`, own: chatBgOwned(b.id), give: () => { save.chatBg = save.chatBg || []; save.chatBg.push(b.id); } }));
     if (cat === 'bg') return PBG.filter(b => b.craft).map(b => ({ id: b.id, name: b.name, rar: b.rar, pv: `<img src="${pbgThumb(b.id)}" alt="">`, own: (save.pbg || []).includes(b.id), give: () => save.pbg.push(b.id), info: 'pbg:' + b.id }));
     if (cat === 'frame') return DECOR.filter(d => d.craft).map(d => ({ id: d.id, name: d.name, rar: d.craft, pv: pcAvatar({ skin: save.skin, frame: d.id }, 56), own: save.decor.includes(d.id), give: () => save.decor.push(d.id), info: 'deco:' + d.id }));
     if (cat === 'skin') return SKINS.filter(k => k.craft).map(k => ({ id: k.id, name: k.name, rar: k.craft, pv: `<div class="${swClass(k)}" style="${swatch(k)}">${headIcon(k)}</div>`, own: save.skins.includes(k.id), give: () => save.skins.push(k.id), info: 'skin:' + k.id }));
@@ -492,7 +496,7 @@
   const priceText = id => CR_PRICE[id].map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}" title="${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}">${shardIco(r, 16)}${n}</span>`).join(' ');
   const WS_LUCK = .1; // «Удачная ковка» chance
   const canPay = id => CR_PRICE[id].every(([r, n]) => save.shards[r] >= n);
-  const wsOwned = id => save.skins.includes(id) || save.fxOwned.includes(id) || save.pets.includes(id) || save.decor.includes(id) || (save.pbg || []).includes(id) || save.abil.owned.includes(id);
+  const wsOwned = id => save.skins.includes(id) || save.fxOwned.includes(id) || save.pets.includes(id) || save.decor.includes(id) || (save.pbg || []).includes(id) || (save.chatBg || []).includes(id) || save.abil.owned.includes(id);
   // what is still missing for a recipe, how far along it is (0…1), and an item by its id
   const wsMiss = id => CR_PRICE[id].map(([r, n]) => [r, n - save.shards[r]]).filter(([, n]) => n > 0);
   const wsProg = id => { let have = 0, need = 0; CR_PRICE[id].forEach(([r, n]) => { need += n; have += Math.min(n, save.shards[r]); }); return need ? have / need : 1; };
@@ -518,7 +522,7 @@
     const c = $('wsMCard');
     c.innerHTML = `<div class="ws-forge" style="display:grid;gap:10px;justify-items:center"><div class="ws-anvil"><i class="ws-hammer"></i><span class="ws-sparks"></span></div>` +
       `<div class="made"><h2 id="wsMTitle">Создано!</h2><div class="pv">${it.pv}</div><span class="rar">${RARITY[it.rar].name}</span><b>${it.name}</b>` +
-      (cat === 'abil' ? '<small style="color:var(--muted)">Поставь в билд: Коллекция → Способности</small>' : '') + `</div>` +
+      (cat === 'abil' ? '<small style="color:var(--muted)">Поставь в билд: Коллекция → Способности</small>' : cat === 'chatbg' ? '<small style="color:var(--muted)">Включи его в чате: шестерёнка ⚙ вверху справа</small>' : '') + `</div>` +
       (back.length ? `<p class="lucky">✨ Удачная ковка! Вернулось: ${back.map(([r, n]) => `${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}`).join(', ')}</p>` : '') +
       `<div class="acts"><button class="btn" type="button" id="wsDone">Отлично</button></div></div>`;
     wsAsk = null; renderWorkshop(); renderAll(); $('wsDone').focus();

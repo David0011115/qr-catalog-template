@@ -688,7 +688,7 @@
     }
 
     // Theme chooser: preview is temporary until Apply; settings are local to this device.
-    function readChatTheme(key) { let t='default'; try { t=localStorage.getItem(key)||'default'; } catch(e) {} return ['default','cosmos','aurora','sakura','drops'].includes(t)?t:'default'; }
+    function readChatTheme(key) { let t='default'; try { t=localStorage.getItem(key)||'default'; } catch(e) {} return ['default','cosmos','aurora','sakura','drops'].includes(t)||chatBgOwned(t)?t:'default'; }   // a crafted scene counts only while it is owned
     function paintChatTheme(cardId, theme) { const card=$(cardId); if(!card)return; card.classList.toggle('chat-themed',theme!=='default'); card.dataset.chatTheme=theme; syncChatBg(card, theme); }
     // Chat scene: an <object> with the theme's SVG, so its animation can be driven from here.
     // It advances at most CHAT_BG_FPS times a second, stands still while the chat scrolls, and stops when the chat is off screen.
@@ -727,10 +727,11 @@
       if (!card._chatBgScroll) { card._chatBgScroll = true; card.addEventListener('scroll', () => { chatBgHold = performance.now() + CHAT_BG_HOLD; }, { capture: true, passive: true }); }
     }
     let activeThemePreview = null;
-    const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', drops: '💧 Капли', default: 'Стандартный фон' };
+    const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', drops: '💧 Капли', 'chronos-workshop': '⚙ Мастерская часовщика', 'chronos-city': '🕰 Город башенных часов', 'chronos-heart': '✨ Сердце механизма', default: 'Стандартный фон' };
     const themeFull = $('themeFullPreview'), themeFullScene = $('themeFullScene'), themeFullTitle = $('themeFullTitle');
     const themeFullApply = $('themeFullApply'), themeFullBack = $('themeFullBack'), themeFullBackBottom = $('themeFullBackBottom');
-    const THEME_ORDER = ['cosmos', 'aurora', 'sakura', 'drops'];
+    const THEME_ORDER = ['cosmos', 'aurora', 'sakura', 'drops', ...CHAT_BG.map(b => b.id)];
+    const themeLocked = t => CHAT_BG.some(b => b.id === t) && !chatBgOwned(t);
     const flipThemeFull = d => { if (!activeThemePreview) return; const i = THEME_ORDER.indexOf(activeThemePreview.pending); openThemeFullPreview(activeThemePreview, THEME_ORDER[(i + d + THEME_ORDER.length) % THEME_ORDER.length]); };
     $('themeFullPrev').addEventListener('click', () => flipThemeFull(-1));
     $('themeFullNext').addEventListener('click', () => flipThemeFull(1));
@@ -744,6 +745,7 @@
       themeFullApply.focus();
     }
     function commitTheme(ctx, theme) {
+      if (themeLocked(theme)) { toast('Этот фон создаётся в мастерской, серия «Хронос»'); return; }   // looking is free, applying needs the crafted scene
       const key = ctx.keyFn();
       try { if (theme === 'default') localStorage.removeItem(key); else localStorage.setItem(key, theme); } catch (e) {}
       paintChatTheme(ctx.cardId, theme);
@@ -764,7 +766,7 @@
       const mark=()=>choices.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===ctx.pending)));
       const dismiss=restore=>{if(restore)paintChatTheme(cardId,ctx.saved);panel.hidden=true;gear.setAttribute('aria-expanded','false');};
       ctx.dismiss=dismiss;
-      const open=()=>{ctx.saved=readChatTheme(keyFn());ctx.pending=ctx.saved;paintChatTheme(cardId,ctx.pending);mark();panel.hidden=false;gear.setAttribute('aria-expanded','true');};
+      const open=()=>{ctx.saved=readChatTheme(keyFn());ctx.pending=ctx.saved;paintChatTheme(cardId,ctx.pending);mark();choices.forEach(b=>b.classList.toggle('locked',themeLocked(b.dataset.themeChoice)));panel.hidden=false;gear.setAttribute('aria-expanded','true');};
       gear.setAttribute('aria-expanded','false');gear.addEventListener('click',()=>panel.hidden?open():dismiss(true));
       close.addEventListener('click',()=>dismiss(true));
       choices.forEach(b=>b.addEventListener('click',()=>{ctx.pending=b.dataset.themeChoice;paintChatTheme(cardId,ctx.pending);mark();}));

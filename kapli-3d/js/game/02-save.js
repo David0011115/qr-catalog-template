@@ -115,6 +115,7 @@
   // chest stats for the profile: opened chests by source and rarity (counted from v33), and round chests per hour over the last 7 days
   save.chestStats = save.chestStats || { since: Date.now(), total: 0, src: {} };
   save.chestDays = save.chestDays || [];
+  save.chatBg = save.chatBg || [];   // crafted chat scenes
   save.shards = Object.assign({ common: 0, rare: 0, epic: 0, legendary: 0 }, save.shards || {}); save.shardChests = save.shardChests || 0; save.chestSeq = save.chestSeq || 0;
   save.special = save.special || [];   // league / challenge chests: { kind, rar | league, title }
   save.dailyChestDay = save.dailyChestDay || '';

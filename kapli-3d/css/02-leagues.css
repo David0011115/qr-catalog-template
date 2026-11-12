@@ -1,0 +1,360 @@
+/* ---- league-redesign-v1 ---- */
+/* Complete league screen redesign: one clear vertical flow on every device. */
+#leagueCard.league-screen{
+  box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+  width:min(760px,calc(100vw - 24px))!important;max-width:760px!important;overflow-y:auto!important;overflow-x:hidden!important;margin:auto!important;
+  overscroll-behavior:contain;scrollbar-width:thin;
+}
+#leagueCard .league-screen-head{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border-bottom:1px solid var(--line)}
+#leagueCard .league-screen-head>div{min-width:0}
+#leagueCard .league-eyebrow{display:block;color:var(--muted);font-weight:800;letter-spacing:.16em}
+#leagueCard .league-screen-head h1{margin:0;text-align:left}
+#leagueCard .league-screen-head .tab-info-btn{width:auto;max-width:150px;margin:0;white-space:nowrap}
+#leagueCard .league-main{display:grid;grid-template-columns:minmax(0,1fr);width:100%;min-width:0}
+#leagueCard #leaguePanel{box-sizing:border-box;width:100%;min-width:0;margin:0;padding:0;background:transparent;border:0;display:block}
+#leagueCard .league-current{--rc:var(--neon-c);position:relative;overflow:hidden;display:flex;flex-direction:column;border:1px solid color-mix(in srgb,var(--rc) 55%,transparent);background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--rc) 22%,transparent),transparent 58%),linear-gradient(155deg,rgba(30,23,65,.96),rgba(9,9,25,.98));box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.06)}
+#leagueCard .league-current-emblem{display:grid;place-items:center;flex:none;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--rc) 24%,transparent),transparent 70%);filter:drop-shadow(0 0 15px color-mix(in srgb,var(--rc) 50%,transparent))}
+#leagueCard .league-current-copy{display:flex;flex-direction:column}
+#leagueCard .league-current-copy small{font-weight:800;letter-spacing:.14em;color:var(--muted)}
+#leagueCard .league-current-copy>b{font-family:var(--display);font-weight:400;color:var(--rc)}
+#leagueCard .league-current-copy>span{color:var(--muted)}
+#leagueCard .league-points{display:flex;align-items:baseline;justify-content:center;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
+#leagueCard .league-points strong{font-family:var(--display);font-weight:400;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+#leagueCard .league-points span{font-weight:800;letter-spacing:.13em;color:var(--muted)}
+#leagueCard .league-progress-area{display:grid}
+#leagueCard .league-progress-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#leagueCard .league-progress-title b{font-weight:700}
+#leagueCard .league-progress-title span{font-weight:900;color:var(--rc);font-variant-numeric:tabular-nums}
+#leagueCard .league-progress-track{border-radius:99px;overflow:hidden;background:rgba(125,135,170,.2);box-shadow:inset 0 2px 5px rgba(0,0,0,.35)}
+#leagueCard .league-progress-fill{height:100%;border-radius:inherit;box-shadow:0 0 13px var(--rc);transition:width .45s ease}
+#leagueCard .league-progress-labels{display:flex;justify-content:space-between;gap:8px;color:var(--muted)}
+#leagueCard .league-progress-labels b{color:var(--fg);text-align:right}
+#leagueCard .league-path-label{font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:-8px}
+#leagueCard .league-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+#leagueCard .league-step{display:flex;flex-direction:column;align-items:center;min-width:0;opacity:.32;filter:grayscale(1)}
+#leagueCard .league-step.passed{opacity:.7;filter:none}
+#leagueCard .league-step.current{opacity:1;filter:none}
+#leagueCard .league-step.current .rk{filter:drop-shadow(0 0 7px var(--lc))}
+#leagueCard .league-step span{font-weight:700;color:var(--muted);white-space:nowrap}
+#leagueCard .league-step.current span{color:var(--lc)}
+#leagueCard .league-to-go{text-align:center;color:var(--muted);border-radius:12px;background:rgba(255,255,255,.045)}
+#leagueCard .league-to-go b{color:var(--rc)}
+#leagueCard .league-season-line{text-align:center;color:var(--muted);padding-top:2px}
+#leagueCard .lg-last{margin:0;background:rgba(61,255,162,.07);border:1px solid rgba(61,255,162,.22)}
+#leagueCard .lg-last b{display:flex;justify-content:space-between;gap:10px}
+#leagueCard .lg-last b strong{color:var(--prey)}
+#leagueCard .lg-last small{display:block;color:var(--muted)}
+#leagueCard .lg-last.neg{background:rgba(255,61,110,.07);border-color:rgba(255,61,110,.25)}
+#leagueCard .league-play-block{display:grid;padding:0 2px}
+#leagueCard #leaguePlay{width:100%;margin:0;letter-spacing:.01em}
+#leagueCard #leaguePlayNote{margin:0;text-align:center}
+#leagueCard .league-rules-note{margin:0;text-align:center;color:var(--muted);font-size:.7rem;line-height:1.4}
+#leagueCard .league-season-block{display:grid;border:1px solid var(--line);background:rgba(255,255,255,.025)}
+#leagueCard .league-section-kicker{font-weight:900;letter-spacing:.14em;color:var(--muted)}
+#leagueCard .season-skin,#leagueCard .badge-info{box-sizing:border-box;width:100%;min-width:0;margin:0;background:var(--row);border-radius:12px;padding:11px}
+#leagueCard .season-skin>div:last-child{min-width:0;font-size:.86rem;line-height:1.4}
+#leagueCard .badge-info{grid-template-columns:64px minmax(0,1fr)}
+#leagueCard .badge-info>div{min-width:0}
+#leagueCard .badge-info p{font-size:.75rem;line-height:1.4}
+#leagueCard .league-more{display:grid;width:100%}
+#leagueCard .lg-fold{width:100%;min-width:0;margin:0}
+#leagueCard .lg-fold>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:13px;background:var(--row);cursor:pointer}
+#leagueCard .lg-fold>summary::-webkit-details-marker{display:none}
+#leagueCard .lg-fold>summary:after{content:'＋';font-size:1.1rem;color:var(--muted);margin-left:auto}
+#leagueCard .lg-fold[open]>summary:after{content:'−'}
+#leagueCard .lg-fold>summary span{font-weight:800}
+#leagueCard .lg-fold>summary small{color:var(--muted);text-align:right}
+#leagueCard .lg-fold .lg-table,#leagueCard .lg-fold .quests{margin:9px 0 0}
+#leagueCard #leagueBack{width:100%;margin:0}
+@media(max-width:420px){
+ #leagueCard.league-screen{width:calc(100vw - 14px)!important}
+ #leagueCard .league-steps{gap:1px}
+ #leagueCard .badge-info{grid-template-columns:52px minmax(0,1fr);gap:9px}
+ #leagueCard .badge-info svg{width:52px;height:52px}
+}
+@media(orientation:landscape) and (min-width:700px){
+ #leagueCard.league-screen{display:flex!important;max-width:760px!important;max-height:calc(100dvh - 20px)!important;overflow-y:auto!important}
+}
+@media(prefers-reduced-motion:reduce){#leagueCard .league-progress-fill{transition:none}}
+/* Keep the league panel hidden until the existing navigation opens it. */
+#leagueCard[hidden]{display:none!important}
+
+/* ---- league-compact-preview-v1 ---- */
+#leagueCard .league-points{margin:0}
+#leagueCard .lg-fold .lg-table{display:grid;grid-template-columns:1fr;gap:5px;margin-top:6px}
+#leagueCard .lg-rank-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#leagueCard .lg-rank-line .rk-name{display:flex;align-items:center;gap:6px}
+#leagueCard .lg-rank-line>span{color:var(--muted);text-align:right}
+#leagueCard .lg-reward-chips{display:flex;flex-wrap:wrap}
+#leagueCard .lg-reward-chip{width:auto;margin:0;border-radius:999px;border:1px solid color-mix(in srgb,var(--lc) 55%,transparent);background:color-mix(in srgb,var(--lc) 12%,rgba(12,10,32,.8));color:var(--fg);line-height:1.2}
+#leagueCard .lg-reward-chip:active{transform:scale(.97)}
+#leagueCard #seasonSkin{cursor:pointer}
+#leagueRewardPreview{position:fixed;inset:0;z-index:180;display:grid;place-items:center;padding:18px;background:rgba(2,2,12,.78);backdrop-filter:blur(8px)}
+#leagueRewardPreview[hidden]{display:none}
+#leagueRewardPreview .lrp-card{width:min(360px,100%);padding:18px;border:1px solid rgba(160,140,255,.42);border-radius:20px;background:linear-gradient(155deg,#211744,#09091d);box-shadow:0 18px 55px #0009;text-align:center}
+#leagueRewardPreview .lrp-visual{display:grid;place-items:center;margin-bottom:10px}
+#leagueRewardPreview .lrp-visual .sw{width:92px;height:92px;border-radius:50%;border:3px solid rgba(255,255,255,.5);box-shadow:0 0 28px var(--lrp-color,#8e7aff)}
+#leagueRewardPreview .lrp-visual svg{width:112px;height:112px}
+#leagueRewardPreview h3{margin:4px 0 7px}
+#leagueRewardPreview p{margin:0 0 14px;color:var(--muted);font-size:.84rem;line-height:1.45}
+#leagueRewardPreview .btn{margin:0}
+@media(max-width:699px){
+ #leagueCard.league-screen{gap:7px!important;padding:10px!important}
+ #leagueCard .league-current{gap:7px;padding:10px}
+ #leagueCard .league-current-emblem{width:64px;height:64px}
+ #leagueCard .league-current-copy>b{font-size:1.3rem}
+ #leagueCard .league-progress-track{height:9px}
+ #leagueCard .league-season-block{padding:8px}
+ #leagueCard .lg-fold .lg-table>li{padding:6px 8px}
+}
+
+/* ---- league-compact-preview-v2 ---- */
+/* Dense league layout: keep the important status and actions visible on phone screens. */
+#leagueCard.league-screen{gap:6px!important;padding:9px!important;max-height:calc(100dvh - 10px)!important}
+#leagueCard .league-screen-head{padding-bottom:5px;min-height:34px}
+#leagueCard .league-eyebrow{font-size:.55rem;margin-bottom:1px}
+#leagueCard .league-screen-head h1{font-size:1.25rem}
+#leagueCard .league-screen-head .tab-info-btn{padding:5px 8px;font-size:.68rem}
+#leagueCard .league-main{gap:5px}
+#leagueCard .league-current{gap:5px;padding:8px 10px;border-radius:15px}
+#leagueCard .league-current-copy small{font-size:.53rem}
+#leagueCard .league-current-copy>span{font-size:.66rem}
+#leagueCard .league-points{padding:4px 0 5px;gap:5px}
+#leagueCard .league-points strong{font-size:1.65rem}
+#leagueCard .league-points span{font-size:.58rem}
+#leagueCard .league-progress-area{gap:4px}
+#leagueCard .league-progress-title{font-size:.7rem}
+#leagueCard .league-progress-track{height:7px}
+#leagueCard .league-progress-labels{font-size:.58rem}
+#leagueCard .league-path-label{font-size:.52rem;margin:0}
+#leagueCard .league-steps{padding:3px 0 0;gap:2px}
+#leagueCard .league-step{gap:1px}
+#leagueCard .league-step svg{width:21px;height:21px}
+#leagueCard .league-step span{font-size:.48rem}
+#leagueCard .league-to-go{padding:4px 7px;font-size:.68rem}
+#leagueCard .league-season-line{font-size:.59rem;line-height:1.2;padding:0}
+#leagueCard .lg-last{padding:5px 8px;border-radius:9px}
+#leagueCard .lg-last b{font-size:.69rem}
+#leagueCard .lg-last b strong{font-size:.78rem}
+#leagueCard .lg-last small{font-size:.59rem;line-height:1.2;margin-top:1px}
+#leagueCard .league-play-block{gap:3px}
+#leagueCard #leaguePlay{min-height:39px;padding:8px 12px;font-size:.88rem}
+#leagueCard #leaguePlayNote{font-size:.63rem;line-height:1.2}
+#leagueCard .league-rules-note{display:none}
+#leagueCard .league-season-block{gap:4px;padding:6px 8px;border-radius:12px}
+#leagueCard .league-section-kicker{font-size:.55rem}
+#leagueCard .season-skin{gap:7px}
+#leagueCard .season-skin .sw{width:38px;height:38px;flex:none}
+#leagueCard .season-skin b{font-size:.72rem}
+#leagueCard .season-skin small{font-size:.61rem;line-height:1.2}
+#leagueCard .badge-info{gap:6px;padding-top:3px}
+#leagueCard .badge-info svg{width:38px;height:38px}
+#leagueCard .badge-info b{font-size:.68rem}
+#leagueCard .badge-info p,#leagueCard .badge-info small{font-size:.59rem;line-height:1.2}
+#leagueCard .league-more{gap:4px}
+#leagueCard .lg-fold>summary{padding:6px 9px}
+#leagueCard .lg-fold>summary span{font-size:.75rem}
+#leagueCard .lg-fold>summary small{font-size:.61rem}
+#leagueCard .lg-fold .lg-table>li{padding:5px 7px;gap:3px}
+#leagueCard .lg-rank-line .rk-name{font-size:.72rem}
+#leagueCard .lg-rank-line .rk-name svg{width:21px;height:21px}
+#leagueCard .lg-rank-line>span{font-size:.59rem}
+#leagueCard .lg-reward-chips{gap:4px}
+#leagueCard .lg-reward-chip{padding:4px 7px;font-size:.62rem;cursor:pointer}
+#leagueCard .lg-reward-chip:after{content:" · просмотр";font-size:.55rem;opacity:.68}
+#leagueCard #leagueBack{min-height:34px;padding:6px 10px;font-size:.78rem}
+@media(max-width:420px){
+ #leagueCard.league-screen{gap:5px!important;padding:7px!important;max-height:calc(100dvh - 8px)!important}
+ #leagueCard .league-current{padding:7px 8px;gap:4px}
+ #leagueCard .league-step span{font-size:.43rem}
+ #leagueCard .league-step svg{width:19px;height:19px}
+ #leagueCard .league-season-block{padding:5px 7px}
+ #leagueCard .lg-reward-chip:after{content:" ◉";font-size:.58rem;opacity:.75}
+}
+
+/* ---- league-layout-preview-fix-v1 ---- */
+/* Keep the current rank label in its own flexible column on narrow screens. */
+#leagueCard .league-current-head{display:grid!important;grid-template-columns:clamp(46px,14vw,64px) minmax(0,1fr)!important;align-items:center!important;justify-content:stretch!important;gap:10px!important;width:100%;min-width:0}
+#leagueCard .league-current-emblem{width:clamp(46px,14vw,64px)!important;height:clamp(46px,14vw,64px)!important;min-width:0}
+#leagueCard .league-current-emblem svg{width:100%!important;height:100%!important}
+#leagueCard .league-current-copy{min-width:0!important;width:100%;overflow:hidden;gap:2px!important}
+#leagueCard .league-current-copy>b{display:block;max-width:100%;font-size:clamp(1.05rem,5.4vw,1.65rem)!important;line-height:1.12!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+#leagueCard .league-current-copy small,#leagueCard .league-current-copy>span{white-space:normal!important;overflow-wrap:anywhere}
+@media(max-width:420px){
+ #leagueCard .league-current-head{grid-template-columns:46px minmax(0,1fr)!important;gap:8px!important}
+ #leagueCard .league-current-emblem{width:46px!important;height:46px!important}
+ #leagueCard .league-current-copy>b{font-size:clamp(1rem,5vw,1.35rem)!important}
+}
+
+/* ---- chaos-league-shared-redesign-v2 ---- */
+/* Complete league screen redesign: one clear vertical flow on every device. */
+#chaosCard.league-screen{
+  box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+  width:min(760px,calc(100vw - 24px))!important;max-width:760px!important;overflow-y:auto!important;overflow-x:hidden!important;margin:auto!important;
+  overscroll-behavior:contain;scrollbar-width:thin;
+}
+#chaosCard .league-screen-head{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border-bottom:1px solid var(--line)}
+#chaosCard .league-screen-head>div{min-width:0}
+#chaosCard .league-eyebrow{display:block;color:var(--muted);font-weight:800;letter-spacing:.16em}
+#chaosCard .league-screen-head h1{margin:0;text-align:left}
+#chaosCard .league-screen-head .tab-info-btn{width:auto;max-width:150px;margin:0;white-space:nowrap}
+#chaosCard .league-main{display:grid;grid-template-columns:minmax(0,1fr);width:100%;min-width:0}
+#chaosCard #chaosPanel{box-sizing:border-box;width:100%;min-width:0;margin:0;padding:0;background:transparent;border:0;display:block}
+#chaosCard .league-current{--rc:var(--neon-c);position:relative;overflow:hidden;display:flex;flex-direction:column;border:1px solid color-mix(in srgb,var(--rc) 55%,transparent);background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--rc) 22%,transparent),transparent 58%),linear-gradient(155deg,rgba(30,23,65,.96),rgba(9,9,25,.98));box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.06)}
+#chaosCard .league-current-emblem{display:grid;place-items:center;flex:none;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--rc) 24%,transparent),transparent 70%);filter:drop-shadow(0 0 15px color-mix(in srgb,var(--rc) 50%,transparent))}
+#chaosCard .league-current-copy{display:flex;flex-direction:column}
+#chaosCard .league-current-copy small{font-weight:800;letter-spacing:.14em;color:var(--muted)}
+#chaosCard .league-current-copy>b{font-family:var(--display);font-weight:400;color:var(--rc)}
+#chaosCard .league-current-copy>span{color:var(--muted)}
+#chaosCard .league-points{display:flex;align-items:baseline;justify-content:center;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
+#chaosCard .league-points strong{font-family:var(--display);font-weight:400;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+#chaosCard .league-points span{font-weight:800;letter-spacing:.13em;color:var(--muted)}
+#chaosCard .league-progress-area{display:grid}
+#chaosCard .league-progress-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#chaosCard .league-progress-title b{font-weight:700}
+#chaosCard .league-progress-title span{font-weight:900;color:var(--rc);font-variant-numeric:tabular-nums}
+#chaosCard .league-progress-track{border-radius:99px;overflow:hidden;background:rgba(125,135,170,.2);box-shadow:inset 0 2px 5px rgba(0,0,0,.35)}
+#chaosCard .league-progress-fill{height:100%;border-radius:inherit;box-shadow:0 0 13px var(--rc);transition:width .45s ease}
+#chaosCard .league-progress-labels{display:flex;justify-content:space-between;gap:8px;color:var(--muted)}
+#chaosCard .league-progress-labels b{color:var(--fg);text-align:right}
+#chaosCard .league-path-label{font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:-8px}
+#chaosCard .league-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+#chaosCard .league-step{display:flex;flex-direction:column;align-items:center;min-width:0;opacity:.32;filter:grayscale(1)}
+#chaosCard .league-step.passed{opacity:.7;filter:none}
+#chaosCard .league-step.current{opacity:1;filter:none}
+#chaosCard .league-step.current .rk{filter:drop-shadow(0 0 7px var(--lc))}
+#chaosCard .league-step span{font-weight:700;color:var(--muted);white-space:nowrap}
+#chaosCard .league-step.current span{color:var(--lc)}
+#chaosCard .league-to-go{text-align:center;color:var(--muted);border-radius:12px;background:rgba(255,255,255,.045)}
+#chaosCard .league-to-go b{color:var(--rc)}
+#chaosCard .league-season-line{text-align:center;color:var(--muted);padding-top:2px}
+#chaosCard .lg-last{margin:0;background:rgba(61,255,162,.07);border:1px solid rgba(61,255,162,.22)}
+#chaosCard .lg-last b{display:flex;justify-content:space-between;gap:10px}
+#chaosCard .lg-last b strong{color:var(--prey)}
+#chaosCard .lg-last small{display:block;color:var(--muted)}
+#chaosCard .lg-last.neg{background:rgba(255,61,110,.07);border-color:rgba(255,61,110,.25)}
+#chaosCard .league-play-block{display:grid;padding:0 2px}
+#chaosCard #chaosPlay{width:100%;margin:0;letter-spacing:.01em}
+#chaosCard #chaosNote{margin:0;text-align:center}
+#chaosCard .league-rules-note{margin:0;text-align:center;color:var(--muted);font-size:.7rem;line-height:1.4}
+#chaosCard .league-season-block{display:grid;border:1px solid var(--line);background:rgba(255,255,255,.025)}
+#chaosCard .league-section-kicker{font-weight:900;letter-spacing:.14em;color:var(--muted)}
+#chaosCard .season-skin,#chaosCard .badge-info{box-sizing:border-box;width:100%;min-width:0;margin:0;background:var(--row);border-radius:12px;padding:11px}
+#chaosCard .season-skin>div:last-child{min-width:0;font-size:.86rem;line-height:1.4}
+#chaosCard .badge-info{grid-template-columns:64px minmax(0,1fr)}
+#chaosCard .badge-info>div{min-width:0}
+#chaosCard .badge-info p{font-size:.75rem;line-height:1.4}
+#chaosCard .league-more{display:grid;width:100%}
+#chaosCard .lg-fold{width:100%;min-width:0;margin:0}
+#chaosCard .lg-fold>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:13px;background:var(--row);cursor:pointer}
+#chaosCard .lg-fold>summary::-webkit-details-marker{display:none}
+#chaosCard .lg-fold>summary:after{content:'＋';font-size:1.1rem;color:var(--muted);margin-left:auto}
+#chaosCard .lg-fold[open]>summary:after{content:'−'}
+#chaosCard .lg-fold>summary span{font-weight:800}
+#chaosCard .lg-fold>summary small{color:var(--muted);text-align:right}
+#chaosCard .lg-fold .lg-table,#chaosCard .lg-fold .quests{margin:9px 0 0}
+#chaosCard #chaosBack{width:100%;margin:0}
+@media(max-width:420px){
+ #chaosCard.league-screen{width:calc(100vw - 14px)!important}
+ #chaosCard .league-steps{gap:1px}
+ #chaosCard .badge-info{grid-template-columns:52px minmax(0,1fr);gap:9px}
+ #chaosCard .badge-info svg{width:52px;height:52px}
+}
+@media(orientation:landscape) and (min-width:700px){
+ #chaosCard.league-screen{display:flex!important;max-width:760px!important;max-height:calc(100dvh - 20px)!important;overflow-y:auto!important}
+}
+@media(prefers-reduced-motion:reduce){#chaosCard .league-progress-fill{transition:none}}
+/* Keep the league panel hidden until the existing navigation opens it. */
+#chaosCard[hidden]{display:none!important}
+
+/* ---- chaos-league-shared-compact-v2 ---- */
+/* Dense league layout: keep the important status and actions visible on phone screens. */
+#chaosCard.league-screen{gap:6px!important;padding:9px!important;max-height:calc(100dvh - 10px)!important}
+#chaosCard .league-screen-head{padding-bottom:5px;min-height:34px}
+#chaosCard .league-eyebrow{font-size:.55rem;margin-bottom:1px}
+#chaosCard .league-screen-head h1{font-size:1.25rem}
+#chaosCard .league-screen-head .tab-info-btn{padding:5px 8px;font-size:.68rem}
+#chaosCard .league-main{gap:5px}
+#chaosCard .league-current{gap:5px;padding:8px 10px;border-radius:15px}
+#chaosCard .league-current-copy small{font-size:.53rem}
+#chaosCard .league-current-copy>span{font-size:.66rem}
+#chaosCard .league-points{padding:4px 0 5px;gap:5px}
+#chaosCard .league-points strong{font-size:1.65rem}
+#chaosCard .league-points span{font-size:.58rem}
+#chaosCard .league-progress-area{gap:4px}
+#chaosCard .league-progress-title{font-size:.7rem}
+#chaosCard .league-progress-track{height:7px}
+#chaosCard .league-progress-labels{font-size:.58rem}
+#chaosCard .league-path-label{font-size:.52rem;margin:0}
+#chaosCard .league-steps{padding:3px 0 0;gap:2px}
+#chaosCard .league-step{gap:1px}
+#chaosCard .league-step svg{width:21px;height:21px}
+#chaosCard .league-step span{font-size:.48rem}
+#chaosCard .league-to-go{padding:4px 7px;font-size:.68rem}
+#chaosCard .league-season-line{font-size:.59rem;line-height:1.2;padding:0}
+#chaosCard .lg-last{padding:5px 8px;border-radius:9px}
+#chaosCard .lg-last b{font-size:.69rem}
+#chaosCard .lg-last b strong{font-size:.78rem}
+#chaosCard .lg-last small{font-size:.59rem;line-height:1.2;margin-top:1px}
+#chaosCard .league-play-block{gap:3px}
+#chaosCard #chaosPlay{min-height:39px;padding:8px 12px;font-size:.88rem}
+#chaosCard #chaosNote{font-size:.63rem;line-height:1.2}
+#chaosCard .league-rules-note{display:none}
+#chaosCard .league-season-block{gap:4px;padding:6px 8px;border-radius:12px}
+#chaosCard .league-section-kicker{font-size:.55rem}
+#chaosCard .season-skin{gap:7px}
+#chaosCard .season-skin .sw{width:38px;height:38px;flex:none}
+#chaosCard .season-skin b{font-size:.72rem}
+#chaosCard .season-skin small{font-size:.61rem;line-height:1.2}
+#chaosCard .badge-info{gap:6px;padding-top:3px}
+#chaosCard .badge-info svg{width:38px;height:38px}
+#chaosCard .badge-info b{font-size:.68rem}
+#chaosCard .badge-info p,#chaosCard .badge-info small{font-size:.59rem;line-height:1.2}
+#chaosCard .league-more{gap:4px}
+#chaosCard .lg-fold>summary{padding:6px 9px}
+#chaosCard .lg-fold>summary span{font-size:.75rem}
+#chaosCard .lg-fold>summary small{font-size:.61rem}
+#chaosCard .lg-fold .lg-table>li{padding:5px 7px;gap:3px}
+#chaosCard .lg-rank-line .rk-name{font-size:.72rem}
+#chaosCard .lg-rank-line .rk-name svg{width:21px;height:21px}
+#chaosCard .lg-rank-line>span{font-size:.59rem}
+#chaosCard .lg-reward-chips{gap:4px}
+#chaosCard .lg-reward-chip{padding:4px 7px;font-size:.62rem;cursor:pointer}
+#chaosCard .lg-reward-chip:after{content:" · просмотр";font-size:.55rem;opacity:.68}
+#chaosCard #chaosBack{min-height:34px;padding:6px 10px;font-size:.78rem}
+#leagueRewardPreview .lrp-visual{height:150px}
+#leagueRewardPreview .lrp-card{max-height:calc(100dvh - 36px);overflow-y:auto}
+@media(max-width:420px){
+ #chaosCard.league-screen{gap:5px!important;padding:7px!important;max-height:calc(100dvh - 8px)!important}
+ #chaosCard .league-current{padding:7px 8px;gap:4px}
+ #chaosCard .league-step span{font-size:.43rem}
+ #chaosCard .league-step svg{width:19px;height:19px}
+ #chaosCard .league-season-block{padding:5px 7px}
+ #chaosCard .lg-reward-chip:after{content:" ◉";font-size:.58rem;opacity:.75}
+}
+
+/* ---- chaos-league-tiers-fix-v1 ---- */
+/* Chaos League tiers: the same row and chip look as the League (name left, points right, outlined chips) */
+#chaosCard .lg-fold .lg-table{display:grid;grid-template-columns:1fr;gap:5px;margin-top:6px}
+#chaosCard .lg-rank-line{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+#chaosCard .lg-rank-line .rk-name{display:flex;align-items:center;gap:6px;white-space:nowrap}
+#chaosCard .lg-fold .lg-table>li{grid-template-columns:auto minmax(0,1fr);align-items:center}
+#chaosCard .lg-rank-line>span{color:var(--muted);text-align:right;white-space:nowrap}
+#chaosCard .lg-reward-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+#chaosCard .lg-reward-chip{width:auto;margin:0;border-radius:999px;border:1px solid color-mix(in srgb,var(--lc) 55%,transparent);background:color-mix(in srgb,var(--lc) 12%,rgba(12,10,32,.8));color:var(--fg);line-height:1.2}
+#chaosCard .lg-reward-chip:active{transform:scale(.97)}
+
+/* ---- chaos-league-layout-fix-v2 ---- */
+/* Keep the current rank label in its own flexible column on narrow screens. */
+#chaosCard .league-current-head{display:grid!important;grid-template-columns:clamp(46px,14vw,64px) minmax(0,1fr)!important;align-items:center!important;justify-content:stretch!important;gap:10px!important;width:100%;min-width:0}
+#chaosCard .league-current-emblem{width:clamp(46px,14vw,64px)!important;height:clamp(46px,14vw,64px)!important;min-width:0}
+#chaosCard .league-current-emblem svg{width:100%!important;height:100%!important}
+#chaosCard .league-current-copy{min-width:0!important;width:100%;overflow:hidden;gap:2px!important}
+#chaosCard .league-current-copy>b{display:block;max-width:100%;font-size:clamp(1.05rem,5.4vw,1.65rem)!important;line-height:1.12!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+#chaosCard .league-current-copy small,#chaosCard .league-current-copy>span{white-space:normal!important;overflow-wrap:anywhere}
+#leagueRewardPreview .lrp-visual .lrp-skin-preview{display:block!important;flex:none!important;min-width:112px;min-height:112px;background-color:#33235f}
+@media(max-width:420px){
+ #chaosCard .league-current-head{grid-template-columns:46px minmax(0,1fr)!important;gap:8px!important}
+ #chaosCard .league-current-emblem{width:46px!important;height:46px!important}
+ #chaosCard .league-current-copy>b{font-size:clamp(1rem,5vw,1.35rem)!important}
+}

@@ -240,7 +240,7 @@
       const ranked = owners.filter(o => o.cells.length && o.kind !== 'minion').sort((a, b) => total(b) - total(a));
       const r = ranked.indexOf(player) + 1;
       stats.finalRank = r; stats.timedWin = r === 1;
-      finishRound(`Время вышло: ${r} место`, PLACE_BONUS[r - 1] || 0, r === 1);
+      finishRound(`Время вышло: ${r} место`, ModeX.placeBonus(r), r === 1);
       return true;
     }
     if (mode === 'crown') {
@@ -290,19 +290,20 @@
     stats.time += dt;
     player.ejectCd = Math.max(0, (player.ejectCd || 0) - dt);
     if (modeRules(dt)) return;
+    ModeX.tick(dt);
     for (const o of owners) { o.splitCd = Math.max(0, o.splitCd - dt); if (o.stunT) o.stunT = Math.max(0, o.stunT - dt); for (const c of o.cells) c.mergeT = Math.max(0, c.mergeT - dt); }
     for (const k in effects) effects[k] = Math.max(0, effects[k] - dt);
     player.dashT -= dt; player.dashCd = Math.max(0, player.dashCd - dt);
     abTick(dt);
     trailFx(dt, performance.now());
     if (player.dashT > 0) { const lk = lookFor('dash'); for (const c of player.cells) { const r = cellR(c); emit(c.x - c.hx * r, r * .8, c.z - c.hz * r, lk ? lk.c : cellColor(c), 4, 4, .45); } }
-    if (!stats.tutorial) { bonusTimer -= dt; owlTick(performance.now()); if (bonusTimer <= 0) { spawnBonus(); bonusTimer = arenaIs('ocean') ? 5.4 : 9; } }
+    if (!stats.tutorial) { bonusTimer -= dt; owlTick(performance.now()); if (bonusTimer <= 0) { spawnBonus(); bonusTimer = (arenaIs('ocean') ? 5.4 : 9) * ModeX.bonusK(); } }
     else if (tutTick(dt)) return;
     if (bossesOn()) bossTimer -= dt;
     if (bossTimer <= 0) {
       // survival: a new wave every 15 s, even if the arena is full of bosses
-      if (mode === 'survival') { stats.wave++; spawnBoss(); bossTimer = 15; }
-      else bossTimer = (spawnBoss() ? (dailyIs('bosses') ? 20 : 40) : 5);
+      if (mode === 'survival') { stats.wave++; spawnBoss(); bossTimer = ModeX.survWave(); }
+      else bossTimer = (spawnBoss() ? (dailyIs('bosses') ? 20 : 40 * ModeX.bossK()) : 5);
     }
     for (const o of bossOwners) {
       if (!o.cells.length) continue;
@@ -385,7 +386,7 @@
 
     // food + decay
     const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
-    const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
+    const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * ModeX.gainK();
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const fx2 = c.owner.eff;   // the second player of a match for two keeps their bonuses here
@@ -594,6 +595,7 @@
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
       if (mode === 'territory') { modeChip = DuoM.chip(); if (DuoM.on) timer = DuoM.rules.territory.timer(); }
       if (mode === 'duoback') { modeChip = DuoM.chip(); timer = `⏱ ${fmtTime(stats.time)}`; }
+      { const mx = ModeX.chip(); if (mx) modeChip = modeChip ? `${modeChip} · ${mx}` : mx; }
     }
     const badges = [];
     const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);

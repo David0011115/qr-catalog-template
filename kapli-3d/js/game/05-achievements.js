@@ -149,6 +149,7 @@
       toast(`Рейд: ${b.name}. Подплывай ближе — он делится. Ешь части, чтобы нанести урон`);
     }
     if (!isTut) { spawnBonus(); spawnBonus(); }
+    ModeX.start();
     $('overlay').hidden = true;
     setGameUi(true);
     if (isTut) tutBegin();

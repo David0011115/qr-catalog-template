@@ -397,7 +397,7 @@
     const surviveBonus = mode === 'survival' ? stats.time / 6 : 0;
     // coins for skill: drops eaten and time survived pay more, mass a bit less, Hardcore ×1.6
     const cParts = [['Масса', Math.sqrt(stats.maxMass) * 2.6], ['Съеденные капли', stats.kills * 5], ['Прислужники', stats.minions], ['Боссы и звёзды', stats.bossCoins],
-                    ['Комбо', stats.comboCoins || 0], ['Время в игре', stats.time / 10], ['Бонус режима', placeBonus], ['Выживание', surviveBonus]].map(([k, v]) => [k, Math.round(v)]).filter(([, v]) => v > 0);
+                    ['Комбо', stats.comboCoins || 0], ['Время в игре', stats.time / 10], ['Бонус режима', placeBonus], ['Вехи и арена', stats.modeXCoins || 0], ['Выживание', surviveBonus]].map(([k, v]) => [k, Math.round(v)]).filter(([, v]) => v > 0);
     const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
     if (U.greed) cMul.push([`«Жадность» +${2 * U.greed}%`, 1 + .02 * U.greed]);
     if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);

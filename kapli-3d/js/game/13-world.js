@@ -421,6 +421,7 @@
   // 2.2: the pause screen shows how the round is going and the goals of the day
   function renderPauseInfo() {
     const box = $('pauseInfo'); if (!box || !stats) return;
+    $('quitBtn').textContent = ModeX.quitLabel();
     const now = Math.round(total(player)), cell = (v, l) => `<div><b>${v}</b><small>${l}</small></div>`;
     const tiles = [cell(now.toLocaleString('ru-RU'), 'масса сейчас'), cell(Math.round(stats.maxMass || 0).toLocaleString('ru-RU'), 'лучшая за раунд'), cell($('rank').textContent || '–', 'место'),
       cell((stats.kills || 0).toLocaleString('ru-RU'), 'съедено капель'), cell(fmtTime(stats.time || 0), 'в раунде'), cell((stats.bosses || 0).toLocaleString('ru-RU'), 'боссов')].join('');

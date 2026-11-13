@@ -283,9 +283,9 @@
     const o = pool[Math.floor(Math.random() * pool.length)], b = BOSS_TYPES[o.bossType];
     let mass = b.mass(total(player));
     if (surv) {
-      // every wave is 25% heavier, and always clearly bigger than the player's largest part
+      // 2.5: every wave is 12% heavier (was 25%: a wall after wave 10), and always clearly bigger than the player's largest part
       const biggest = Math.max(0, ...player.cells.map(c => c.mass));
-      mass = Math.min(SURV_BOSS_CAP, Math.max(mass, biggest * 1.4) * Math.pow(1.25, stats.wave - 1));
+      mass = Math.min(SURV_BOSS_CAP, Math.max(mass, biggest * 1.4) * ModeX.survGrow(stats.wave));
     }
     const [x, z] = safeSpot(30);
     addCell(o, x, z, mass, o.free.pop());
@@ -347,7 +347,7 @@
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;
     else v *= (o.star ? 1 : botSkill().speed) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
-    return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1);
+    return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1) * ModeX.botSpeedK(o);
   }
   const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.01 * U.guard : 1.25;
   const canEat = (a, b) => !(b.owner.spawnSh > 0) && !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b) && !DuoM.eatBlock(a, b);

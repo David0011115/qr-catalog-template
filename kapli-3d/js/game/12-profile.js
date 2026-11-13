@@ -815,7 +815,7 @@
     else if (pdTab === 'frame') html = item('frame', '', pcAvatar({ ...pdDraft, frame: '', badge: '' }, 58), 'Без рамки') +
       order(DECOR.filter(d => d.kind === 'frame' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('frame', d.id, pcAvatar({ ...pdDraft, frame: d.id, badge: '' }, 58), d.name, d.rar)).join('');
     else if (pdTab === 'title') html = item('title', '', '<span class="pd-tt">—</span>', 'Без титула') +
-      order(DECOR.filter(d => d.kind === 'title' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('title', d.id, `<span class="pd-tt">${titleTag(d.id)}</span>`, d.name, d.rar)).join('');
+      order(DECOR.filter(d => d.kind === 'title' && ((!d.promo && !d.old) || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('title', d.id, `<span class="pd-tt">${titleTag(d.id)}</span>`, d.name, d.rar)).join('');
     else if (pdTab === 'shelf') {
       const on = (pdDraft.shelf || []).map(x => x[0]);
       html = `<p class="pd-shelf-note">Выбери до трёх достижений — они встанут на карточку. Показывается ступень, до которой ты дошёл. Выбрано: ${on.length} из 3.</p>` +

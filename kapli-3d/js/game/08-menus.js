@@ -150,6 +150,9 @@
       '«Захват короны»: корона переходит только к тому, кто съест владельца. Владелец медленнее, на него охотятся боты и боссы, волны крепчают.',
       '«Хардкор»: длинная защита на старте, маленькие улучшения на 2 000 / 5 000 / 10 000 массы, титул «Несгибаемый» и рамка «Закалка» за серии раундов.',
       '«Босс-рейд»: теперь пара колоссов-близнецов. Пока они рядом, связь гасит половину урона — разведи их. Победы дают постоянные бонусы рейда: урон, монеты, лишняя попытка в неделю.',
+      '«Королевская битва»: зона сужается ступенями и смещается, следующий круг виден заранее, в нём падают бонусы; шторм с каждой ступенью сильнее.',
+      '🔥 Режим дня: каждый день один режим даёт монеты ×1,25 — смотри значок на карточке режима.',
+      'Титулы: их стало меньше и каждый заметнее — легендарные мягко светятся. Убранные из выдачи титулы остаются у тех, кто их уже получил («архивные»). «Несокрушимый» за 20-ю волну теперь «Повелитель волн».',
       'В круге лиги «Выживание» заняло место «Гонки массы».'] },
     { id: 188, ver: '2.4.0', date: '12 ноября', title: 'Мастерская «Хронос», обновлённые арены и фоны чата', kind: 'update',
       lead: 'Открылась мастерская: предметы, которых нет ни в магазине, ни в сундуках, теперь создаются из осколков. Арены и фоны чата перерисованы.', items: [
@@ -1006,7 +1009,7 @@
         return own.length ? own.map(d => { const on = (kind === 'frame' ? save.frame : save.title) === d.id;
           return row(d.kind === 'frame' ? `<span ${frameAttr(d.id)}>Аа</span>` : `<span class="tt-ico ttl ${d.cls || ''}" style="color:${d.color};border-color:${d.color};--a:${d.a};--b:${d.b}">${d.ico || 'Аа'}</span>`, `${d.name} <span class="badge-r" style="color:${RARITY[decoRarity(d)].color}">${RARITY[decoRarity(d)].name}</span>`, decoSource(d), `id="deco-${d.id}" data-deco="${d.id}"`, on, on ? 'Снять' : 'Выбрать', 'deco:' + d.id); }).join('')
           : `<p class="empty-note">Пока нет. ${kind === 'frame' ? 'Рамки выпадают из сундуков, даются за лигу и мастерство режимов' : 'Титулы выпадают из сундуков, даются за лигу, коллекции эффектов и мастерство режимов'}.</p>`; };
-      const cntOf = k => `${DECOR.filter(d => d.kind === k && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === k && (!d.promo || save.decor.includes(d.id))).length}`;
+      const cntOf = k => `${DECOR.filter(d => d.kind === k && save.decor.includes(d.id)).length}/${DECOR.filter(d => d.kind === k && ((!d.promo && !d.old) || save.decor.includes(d.id))).length}`;
       $('shop').innerHTML = drawer('wd_hat', `Над головой <small class="cnt">${save.hats.length}/${Object.keys(HATS).length}${save.hat ? ' · надет: ' + HATS[save.hat].name : ''}</small>`, hats) +
         drawer('wd_frame', `Рамки <small class="cnt">${cntOf('frame')}${save.frame ? ' · выбрана: ' + decorById(save.frame).name : ''}</small>`, decoRows('frame')) +
         drawer('wd_title', `Титулы <small class="cnt">${cntOf('title')}${save.title ? ' · выбран: ' + decorById(save.title).name : ''}</small>`, decoRows('title'));

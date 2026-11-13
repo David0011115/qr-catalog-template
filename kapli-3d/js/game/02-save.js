@@ -274,7 +274,7 @@
     save.mig170 = { replaced, coins: coinsBack };
     persist();
   }
-  const LEVEL_DECOR = { 25: ['fr_lv20', 'tt_lv10'], 50: ['fr_lv40', 'tt_lv50'] };
+  const LEVEL_DECOR = { 25: ['fr_lv20'], 50: ['fr_lv40', 'tt_lv50'] };
   if (!save.arena170) {   // 1.7.0: «Джунгли», «Пустыня», «Полярная ночь» removed without refund (nobody had them yet)
     save.arenas = save.arenas || [];
     save.arenas = save.arenas.filter(id => ARENAS.some(a => a.id === id));

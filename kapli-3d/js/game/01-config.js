@@ -61,8 +61,8 @@
   const psLabel = p => !p ? '' : p.n ? `✦${p.n}` : `★${p.s}`;   // p: {s, n} from a showcase
   const psReached = (p, t, n) => !!p && (t === 1 ? p.s >= n : p.n >= n);
   // [tier, step, kind, id or description]
-  const PS_REWARDS = [[1, 1, 'look', 'Серебряная обводка уровня'], [1, 5, 'deco', 'tt_ps5'], [1, 10, 'look', 'Золотая обводка и звёзды у ника в рейтинге'], [1, 18, 'pbg', 'bg_ps_const'], [1, 25, 'deco', 'tt_ps25'],
-    [2, 1, 'deco', 'fr_ps_orbit'], [2, 5, 'fx', 'psDust'], [2, 10, 'fx', 'psNova'], [2, 15, 'deco', 'tt_ps_sn'], [2, 20, 'pbg', 'bg_ps_nova'], [2, 25, 'deco', 'tt_ps_lg'], [2, 25, 'pbg', 'bg_ps_gal']];
+  const PS_REWARDS = [[1, 1, 'look', 'Серебряная обводка уровня'], [1, 10, 'look', 'Золотая обводка и звёзды у ника в рейтинге'], [1, 18, 'pbg', 'bg_ps_const'], [1, 25, 'deco', 'tt_ps25'],
+    [2, 1, 'deco', 'fr_ps_orbit'], [2, 5, 'fx', 'psDust'], [2, 10, 'fx', 'psNova'], [2, 20, 'pbg', 'bg_ps_nova'], [2, 25, 'deco', 'tt_ps_lg'], [2, 25, 'pbg', 'bg_ps_gal']];
   // level hexagon outline by prestige: none → cyan/pink, ★1 silver, ★10 gold, ✦25 rainbow
   const psStops = p => !p || (!p.s && !p.n) ? ['#22e6ff', '#ff4fd8'] : p.n >= 25 ? ['#ff4fd8', '#ffd23f', '#3dffa2', '#22e6ff', '#b26bff'] : p.s >= 10 ? ['#fff6a0', '#ffd23f', '#ff9a3d'] : ['#ffffff', '#c0c8e0', '#7d86a6'];
   const xpForLevel = L => { let t = 0; for (let k = 1; k < L; k++) t += levelNeed(k); return t; };
@@ -75,12 +75,12 @@
     ...[
       ['ln_hunter', 'Охотник',   'Съешь капли за всё время', ['50 капель', '500 капель', '5 000 капель'], T => [50, 500, 5000].filter(n => T.kills >= n).length],
       ['ln_boss',   'Боссобой',  'Побеждай боссов', ['1 босс', '50 боссов', '500 боссов'], T => [1, 50, 500].filter(n => T.bosses >= n).length, 'tt_ln_boss'],
-      ['ln_star',   'Звездобой', 'Съешь ботов-звёзд', ['1 звезда', '25 звёзд', '250 звёзд'], T => [1, 25, 250].filter(n => T.starKills >= n).length, 'tt_ln_star'],
+      ['ln_star',   'Звездобой', 'Съешь ботов-звёзд', ['1 звезда', '25 звёзд', '250 звёзд'], T => [1, 25, 250].filter(n => T.starKills >= n).length],
       ['ln_giant',  'Исполин',   'Набери массу за один раунд', ['масса 1 500', 'масса 5 000', 'масса 12 000'], (T, B) => [1500, 5000, 12000].filter(n => (B.mass || 0) >= n).length, 'tt_ln_giant'],
       ['ln_combo',  'Комбо',     'Сделай комбо', ['комбо ×5', 'комбо ×10', 'комбо ×15'], T => [5, 10, 15].filter(n => T.bestCombo >= n).length],
       ['ln_surv',   'Выживший',  'Держись в «Выживании»', ['5 минут', '10-я волна', '15-я волна'], (T, B) => ((B.survT || 0) >= 300 ? 1 : 0) + ((B.wave || 0) >= 10 ? 1 : 0) + ((B.wave || 0) >= 15 ? 1 : 0)],
       ['ln_duo',    'Спина к спине', 'Держитесь вдвоём против волн боссов', ['10-я волна', '20-я волна', '30-я волна'], () => [10, 20, 30].filter(n => duoBestWave() >= n).length, 'tt_ln_duo'],
-      ['ln_league', 'Лига',      'Поднимайся в лиге в любом сезоне', ['«Золото»', '«Алмаз»', '«Неон»'], () => [2, 4, 5].filter(n => (save.totals.maxLeague || 0) >= n).length, 'tt_ln_league'],
+      ['ln_league', 'Лига',      'Поднимайся в лиге в любом сезоне', ['«Золото»', '«Алмаз»', '«Неон»'], () => [2, 4, 5].filter(n => (save.totals.maxLeague || 0) >= n).length],
       ['ln_season', 'Сезоны',    'Собирай значки сезонов', ['1 значок', '6 значков', '26 значков (год)'], () => [1, 6, 26].filter(n => save.seasonLog.length >= n).length],
       ['ln_chaos',  'Хаос',      'Покоряй Хаос-лигу', ['первый бой', '«Разлом»', '«Сингулярность»'], () => ((save.totals.chaosGames || 0) >= 1 ? 1 : 0) + [4, 5].filter(n => (save.totals.chaosMax || 0) >= n).length, 'tt_chaos'],
       ['ln_arsenal', 'Арсенал',  'Собирай способности', ['1 способность', 'способность 5 ур.', `все ${BASE_ABIL_N} из магазина`], () => (save.abil.bought.length >= 1 ? 1 : 0) + (Object.values(save.abil.lv).some(l => l >= 5) ? 1 : 0) + (BASE_ABIL_IDS().every(id => save.abil.owned.includes(id)) ? 1 : 0)],
@@ -434,7 +434,7 @@
   }
   function ensureSeasonDecor() {}   // 1.7.0: per-season frames/titles were replaced by two half-year ones
   const seasonHalf = idx => idx > SEASON_YEAR / 2 ? 2 : 1;
-  const seasonDecor = (sd, li) => !sd.idx ? [] : [...(li >= 3 ? ['fr_sh' + seasonHalf(sd.idx)] : []), ...(li >= 5 ? ['tt_sh' + seasonHalf(sd.idx)] : [])];
+  const seasonDecor = (sd, li) => !sd.idx ? [] : [...(li >= 3 ? ['fr_sh' + seasonHalf(sd.idx)] : []), ...(li >= 5 ? ['tt_sh1'] : [])];   // 2.5: one title «Звезда сезонов» for both halves
   function leagueRewardText(sd, i) {
     const p = [];
     if (sd.holiday) {
@@ -516,14 +516,14 @@
     // league seasons: «Платина» in any season of the half-year gives its frame, «Неон» its title
     fr('fr_sh1', 'Платина полугодия I', 'epic', '#3dffa2', '#22e6ff', { half: 1 }),
     fr('fr_sh2', 'Платина полугодия II', 'epic', '#ff4fd8', '#ffd23f', { half: 2 }),
-    tt('tt_sh1', 'Звезда сезонов I', 'legendary', '#3dffa2', '#22e6ff', '⚔', { half: 1 }),
+    tt('tt_sh1', 'Звезда сезонов', 'legendary', '#3dffa2', '#22e6ff', '⚔', { half: 1 }),
     tt('tt_sh2', 'Звезда сезонов II', 'legendary', '#ff4fd8', '#ffd23f', '⚔', { half: 2 }),
     // Chaos League: «Разлом» in a season of the quarter — frame, «Сингулярность» — title
     fr('fr_cq1', 'Эпоха хаоса I', 'epic', '#22e6ff', '#7b3dff', { cq: 1 }),
     fr('fr_cq2', 'Эпоха хаоса II', 'epic', '#3dffa2', '#ff4fd8', { cq: 2 }),
     fr('fr_cq3', 'Эпоха хаоса III', 'epic', '#ff9a3d', '#b26bff', { cq: 3 }),
     fr('fr_cq4', 'Эпоха хаоса IV', 'epic', '#ff4fd8', '#22e6ff', { cq: 4 }),
-    tt('tt_cq1', 'Хаос-чемпион I', 'legendary', '#22e6ff', '#b26bff', '◈', { cq: 1 }),
+    tt('tt_cq1', 'Хаос-чемпион', 'legendary', '#22e6ff', '#b26bff', '◈', { cq: 1 }),
     tt('tt_cq2', 'Хаос-чемпион II', 'legendary', '#3dffa2', '#ff4fd8', '◈', { cq: 2 }),
     tt('tt_cq3', 'Хаос-чемпион III', 'legendary', '#ff9a3d', '#b26bff', '◈', { cq: 3 }),
     tt('tt_cq4', 'Хаос-чемпион IV', 'legendary', '#ff4fd8', '#22e6ff', '◈', { cq: 4 }),
@@ -708,7 +708,7 @@
       test: S => !!S.smallBoss },
   ];
   // 1.7.0: instead of 13 titles — 4 for 3 / 6 / 9 / 13 mastery achievements
-  const SKILL_TT = [[3, 'tt_sk3'], [6, 'tt_sk6'], [9, 'tt_sk9'], [13, 'tt_sk13']];
+  const SKILL_TT = [[6, 'tt_sk6'], [13, 'tt_sk13']];   // 2.5: two titles instead of four
   DECOR.push(tt('tt_sk3', 'Умелец', 'rare', '#7cf3ff', '#ffffff', '✪', { skillN: 3 }), tt('tt_sk6', 'Знаток', 'epic', '#3dffa2', '#22e6ff', '✪', { skillN: 6 }),
     tt('tt_sk9', 'Виртуоз', 'epic', '#ff9a3d', '#ffd23f', '✪', { skillN: 9 }), tt('tt_sk13', 'Гроссмейстер', 'legendary', '#ffd23f', '#ff4fd8', '✪', { skillN: 13 }));
   // promo-code exclusives: frame + title for each code (1.7.0)
@@ -745,7 +745,7 @@
     { id: 'coins',  name: 'Золотой магнат I',   desc: 'Заработай 100 000 монет',              goal: 100000,  reward: ['skin', 'lg_tycoon'] },
     { id: 'coins2', key: 'coins', name: 'Золотой магнат II', desc: 'Заработай 1 000 000 монет — больше, чем стоят все арены вместе', goal: 1000000, reward: [['fx', 'lg_moneyAura'], ['deco', 'fr_platinum'], ['deco', 'tt_millionaire'], ['badge', 'millionaire']], extra: true },
     { id: 'bosses', name: 'Истребитель титанов', desc: 'Победи 10 000 боссов',                goal: 10000,   reward: ['fx', 'lg_titanTrail'] },
-    { id: 'stars1', key: 'stars', name: 'Гроза звёзд I',   desc: 'Съешь 1 000 ботов-звёзд',              goal: 1000,  reward: [['deco', 'fr_star'], ['deco', 'tt_starcatcher']] },
+    { id: 'stars1', key: 'stars', name: 'Гроза звёзд I',   desc: 'Съешь 1 000 ботов-звёзд',              goal: 1000,  reward: [['deco', 'fr_star']] },
     { id: 'stars2', key: 'stars', name: 'Гроза звёзд II',  desc: 'Съешь 5 000 ботов-звёзд',              goal: 5000,  reward: [['skin', 'lg_supernova'], ['pet', 'lg_starpet']], extra: true },
     { id: 'stars3', key: 'stars', name: 'Гроза звёзд III', desc: 'Съешь 10 000 ботов-звёзд',             goal: 10000, reward: [['fx', 'lg_crownAura'], ['deco', 'tt_starstorm']], extra: true },
     { id: 'wins1',  key: 'wins',  name: 'Непобедимый I',   desc: 'Одержи 1 000 побед в любых режимах',   goal: 1000,  reward: ['deco', 'fr_legend'] },
@@ -775,7 +775,7 @@
     if (LEGEND_BASE.every(L => save.legendDone.includes(L.id)) && !save.legendBadge) { save.legendBadge = today; out.push({ badge: true }); }
     return out;
   }
-  const leagueDecor = li => DECOR.filter(d => d.league !== undefined && (d.kind === 'frame' ? d.league === li : d.league <= li));
+  const leagueDecor = li => DECOR.filter(d => d.league !== undefined && !d.old && (d.kind === 'frame' ? d.league === li : d.league <= li));
   // ---- arena themes (shop) ----
   // 1.7.0: 10 arenas, each its own place — scenery around the field (arenaScenery), its own floor and its own rule
   const ARENAS = [
@@ -853,13 +853,13 @@
           if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else { if (sd.skin) out.push(['skin', sd.skin.id]); if (sd.fx) out.push(['fx', sd.fx.id]); }
           sd.pets.forEach(pt => out.push(['pet', pt.id])); } return out; } });
     });
-    DECOR.push(tt('tt_xarsenal', 'Архитектор хаоса', 'legendary', '#22e6ff', '#b26bff', '✦', { col: true }),
+    DECOR.push(tt('tt_xarsenal', 'Архитектор хаоса', 'legendary', '#22e6ff', '#b26bff', '✦', { col: true, old: true }),
       fr('fr_xarsenal', 'Горизонт событий', 'legendary', '#b26bff', '#ff4fd8', { col: true }));
-    COLLECTIONS.push({ id: 'col_xarsenal', group: 'chaos', name: 'Хаос-арсенал', title: 'tt_xarsenal', frame: 'fr_xarsenal', coins: 0, items: () => XA_ABIL.map(a => ['abil', a.id]) });
+    COLLECTIONS.push({ id: 'col_xarsenal', group: 'chaos', name: 'Хаос-арсенал', frame: 'fr_xarsenal', coins: 0, items: () => XA_ABIL.map(a => ['abil', a.id]) });
     DECOR.push(tt('tt_looks', 'Мастер обликов', 'epic', '#c46bff', '#22e6ff', '✦', { col: true }),
-      tt('tt_cvetall', 'Вечный странник хаоса', 'legendary', '#ffd23f', '#ff4fd8', '✦', { col: true }));
+      tt('tt_cvetall', 'Вечный странник хаоса', 'legendary', '#ffd23f', '#ff4fd8', '✦', { col: true, old: true }));
     COLLECTIONS.push({ id: 'col_looks', group: 'chaos', looks: true, name: 'Облики способностей', title: 'tt_looks', coins: 0, items: () => allLooks().map(l => ['look', l.id]) });
-    COLLECTIONS.push({ id: 'col_cvet', group: 'chaos', name: 'Ветераны Хаоса', title: 'tt_cvetall', coins: 0, items: () => CHAOS_VET.map(v => [v.kind, v.id]) });
+    COLLECTIONS.push({ id: 'col_cvet', group: 'chaos', name: 'Ветераны Хаоса', title: 'tt_cvet', coins: 0, items: () => CHAOS_VET.map(v => [v.kind, v.id]) });
     DECOR.push(tt('tt_arsenal', 'Оружейник', 'epic', '#ff9a3d', '#ffd23f', '✦', { col: true }),
       fr('fr_arsenal', 'Оружейная', 'epic', '#ff9a3d', '#ffd23f', { col: true }));
     COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', title: 'tt_arsenal', frame: 'fr_arsenal', coins: ABIL_CFG.arsenalCoins, items: () => BASE_ABIL.map(a => ['abil', a.id]) });
@@ -972,7 +972,7 @@
       const f = decorById('fr_cq' + chaosQ(id)); if (!save.decor.includes(f.id)) { save.decor.push(f.id); out.push(`рамка «${f.name}»`); }
     }
     if (ti >= 5) {
-      const t = decorById('tt_cq' + chaosQ(id)); if (!save.decor.includes(t.id)) { save.decor.push(t.id); out.push(`титул «${t.name}»`); }
+      const t = decorById('tt_cq1');   // 2.5: one «Хаос-чемпион» for every quarter if (!save.decor.includes(t.id)) { save.decor.push(t.id); out.push(`титул «${t.name}»`); }
       save.chaosTop = (save.chaosTop || 0) + 1;   // personal counter of seasons finished in «Сингулярность»
       const nx = chaosNextThird();
       if (nx && nx.kind === 'abil') { save.abil.xa.push(nx.a.id); save.abil.owned.push(nx.a.id); out.push(`способность «${nx.a.name}»`); }
@@ -1056,4 +1056,7 @@
     hunter:     { tag: 'охотник',  sense: 1.3, chase: 1,   flee: 1,   preyK: 1 },
     boss:       { tag: 'босс',     sense: 2,   chase: 1,   flee: 0,   preyK: 1 },
   };
-
+  // 2.5: fewer titles. These are no longer given out; whoever already has one keeps it and can wear it (an «archived» title)
+  const OLD_TITLES = ['tt_crumb', 'tt_tactic', 'tt_storm', 'tt_lord', 'tt_lg3', 'tt_sh2', 'tt_cq2', 'tt_cq3', 'tt_cq4', 'tt_cvetall', 'tt_xarsenal', 'tt_lv10', 'tt_ps5', 'tt_ps_sn', 'tt_starcatcher', 'tt_ln_star', 'tt_ln_league', 'tt_sk3', 'tt_sk9'];
+  OLD_TITLES.forEach(id => { const d = DECOR.find(x => x.id === id); if (d) d.old = true; });
+  { const d = DECOR.find(x => x.id === 'tt_unbreak'); if (d) d.name = 'Повелитель волн'; }   // was «Несокрушимый», too close to «Несокрушимые»

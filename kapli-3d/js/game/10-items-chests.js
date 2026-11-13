@@ -110,7 +110,7 @@
       name = d.name; tag = rarTag(decoRarity(d)) + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
       flat = d.kind === 'frame' ? `<span class="im-frame">${pcAvatar({ skin: save.skin, frame: id }, 110)}${decoPreview(d)}</span>` : decoPreview(d);
       rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
-        ['Откуда', d.src ? decoSource(d).replace(/\.$/, '') : d.craft ? decoSource(d).replace(/\.$/, '') : d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : d.chest ? `сундук · ${RARITY[d.chest].name.toLowerCase()}` : decoSource(d).replace(/\.$/, '')]);
+        ['Откуда', d.old || d.src ? decoSource(d).replace(/\.$/, '') : d.craft ? decoSource(d).replace(/\.$/, '') : d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : d.chest ? `сундук · ${RARITY[d.chest].name.toLowerCase()}` : decoSource(d).replace(/\.$/, '')]);
       act = save.decor.includes(id) ? `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>` : `<button class="btn ghost" disabled>${d.craft ? 'Создаётся в мастерской' : 'Ещё не получена'}</button>`;
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
@@ -281,7 +281,7 @@
         rar = save.legPity >= LEG_PITY ? 'legendary' : pickRarity(Object.values(RARITY).map(r => r.w));
         save.legPity = rar === 'legendary' ? 0 : (save.legPity || 0) + 1;
       }
-      pool = [...SKINS.filter(k => k.chest === rar).map(k => ['skin', k]), ...FX.filter(f => f.chest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.chest === rar).map(pt => ['pet', pt]), ...DECOR.filter(d => d.chest === rar).map(d => ['deco', d])];
+      pool = [...SKINS.filter(k => k.chest === rar).map(k => ['skin', k]), ...FX.filter(f => f.chest === rar).map(f => ['fx', f]), ...PETS.filter(pt => pt.chest === rar).map(pt => ['pet', pt]), ...DECOR.filter(d => d.chest === rar && !d.old).map(d => ['deco', d])];
     }
     const [type, item] = pool[Math.floor(Math.random() * pool.length)];
     const list = type === 'skin' ? save.skins : type === 'pet' ? save.pets : type === 'deco' ? save.decor : save.fxOwned;
@@ -318,6 +318,7 @@
   }
   const RAR_ORDER = { legendary: 0, epic: 1, rare: 2, common: 3 };
   function decoSource(d) {
+    if (d.old) return 'Архивный титул: больше не выдаётся, но остаётся у тех, кто его получил.';
     if (d.src) return d.src;
     if (d.series) return 'Награда за всю серию «Хронос» в мастерской: создай все её предметы.';
     if (d.craft) return `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(d.id)) || PACKS[0]).name}»: создаётся только из осколков.`;
@@ -344,7 +345,7 @@
   }
   const frameAttr = id => { const d = decorById(id); if (!d) return 'class="fr0"'; const g = FRAME_GLYPH[FRAME_STYLE[d.id]];
     return `class="fr fn ${d.cls || ''}" style="${d.css}"${g ? ` data-g="${g}"` : ''}`; };
-  const titleTag = id => { const d = decorById(id); return d ? `<em class="ttl ${d.cls || ''}" style="color:${d.color};--a:${d.a || d.color};--b:${d.b || '#fff'}">${d.ico ? `<i class="tt-i">${d.ico}</i>` : ''}${d.name}</em>` : ''; };
+  const titleTag = id => { const d = decorById(id); return d ? `<em class="ttl ${d.cls || ''} tt-r-${decoRarity(d)}" style="color:${d.color};--a:${d.a || d.color};--b:${d.b || '#fff'}">${d.ico ? `<i class="tt-i">${d.ico}</i>` : ''}${d.name}</em>` : ''; };
   const decoPreview = d => d.kind === 'frame' ? `<span class="deco-pv"><span ${frameAttr(d.id)}>Ты</span></span>` : `<span class="deco-pv">${titleTag(d.id)}</span>`;
   function chestRows() {
     const rows = [];

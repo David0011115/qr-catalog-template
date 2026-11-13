@@ -238,7 +238,7 @@
       if (frame) items.push({ ...frame, kind:'frame', name:frame.name, description:'Квартальная рамка Хаос-лиги за достижение ступени «Разлом» или выше.' });
     }
     if (ti >= 5) {
-      const title = decorById('tt_cq' + chaosQ(seasonId));
+      const title = decorById('tt_cq1');
       if (title) items.push({ ...title, kind:'title', name:title.name, description:'Квартальный титул за завершение сезона на ступени «Сингулярность».' });
       const nx = chaosNextThird();
       if (nx && nx.kind === 'abil') items.push({ ...nx.a, kind:'abil', icon:nx.a.icon, name:nx.a.name, description:nx.a.desc || 'Эксклюзивная способность Хаос-лиги.' });

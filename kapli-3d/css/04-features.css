@@ -198,3 +198,9 @@
 /* «Режим дня»: the mode that pays ×1,25 coins today */
 .day-mark { display: inline-block; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; margin-bottom: 4px; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 800; letter-spacing: .03em;
   color: #1a0b00; background: linear-gradient(90deg, #ffd23f, #ff9a3d); box-shadow: 0 0 12px rgba(255, 154, 61, .45); }
+/* 2.5 titles: rarity shows on the title itself — legendary ones softly glow, epic ones carry a light halo (no animation on low graphics) */
+.ttl.tt-r-legendary:not(.tt-holo):not(.tt-gold) { animation: ttGlow 2.8s ease-in-out infinite; }
+@keyframes ttGlow { 0%, 100% { text-shadow: 0 0 2px var(--a); } 50% { text-shadow: 0 0 6px var(--a); } }
+.ttl.tt-r-epic { text-shadow: 0 0 4px color-mix(in srgb, var(--a) 45%, transparent); }
+.q-low .ttl.tt-r-legendary { animation: none; text-shadow: 0 0 4px var(--a); }
+@media (prefers-reduced-motion: reduce) { .ttl.tt-r-legendary { animation: none !important; } }

@@ -56,6 +56,7 @@
 
     function start() {
       rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0;
+      document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
       crownGround = null; hc = { speed: 0, absorb: 0, cd: 0 }; hcMile = 0; hcOffer = null; hcPanel(null);
       nextRing.visible = false;

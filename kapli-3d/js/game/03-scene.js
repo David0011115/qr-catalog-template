@@ -1105,6 +1105,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     const st = o.star ? 3 : sk === base || Math.random() < .5 ? 0 : 1 + ((Math.random() * 3) | 0);
     o.lvl = o.star ? 40 + ((Math.random() * 11) | 0) : 1 + ((Math.random() * Math.min(45, playerLevel() + 10)) | 0);
     o.frame = o.star ? 'fr_rainbow' : Math.random() < .3 ? DECOR.filter(d => d.kind === 'frame')[(Math.random() * 14) | 0].id : null;
+    o.lookSkin = sk.id; o.lookSt = st;   // a match for two sends the look to the other phone
     o.free.forEach(v => { applySkin(v, sk, st, null); setAura(v, o.fx.aura, sk.color); });
   }
   function trailFx(dt, now) {

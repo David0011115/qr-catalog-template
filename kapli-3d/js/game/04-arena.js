@@ -334,11 +334,12 @@
   function speedOf(c) {
     const o = c.owner;
     let v = BASE_SPEED * Math.pow(c.mass / START_MASS, -0.15);
-    if (o.isPlayer) {
+    if (o.isPlayer || o.kind === 'rival') {   // the second player of a match for two moves exactly like you (no upgrades: they are off in modes for two)
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT * Math.pow(Math.max(1, c.mass / START_MASS), -0.1);   // 1.7.0: a big blob's dash is weaker
-      v *= (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
-      v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
+      if (o.isPlayer) v *= (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
+      else v *= abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1;
+      v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1) * (DuoM.speedK ? DuoM.speedK(c) : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
     }
     else if (o.freezeT > 0) v *= .05;
     else if (o.slowT > 0) v *= ABIL_CFG.slowFactor * (o.kind === 'boss' ? bossInfo(o).speed : 1);
@@ -368,6 +369,7 @@
   const ejectMat = new THREE.MeshStandardMaterial({ roughness: .25, emissiveIntensity: .6 });
   let ejects = [];
   function eject() {
+    if (DuoM.guest) { DuoM.act('eject'); return; }
     if (!running || paused || !player.cells.length || player.ejectCd > 0) return;
     let did = false;
     for (const c of player.cells) {

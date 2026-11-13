@@ -71,6 +71,7 @@
   ABIL_CFG.slotBtn.forEach((bid, i) => $(bid).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSlot(i); }));
 
   function dash() {
+    if (DuoM.guest) { DuoM.act('dash'); return; }
     if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
     player.dashT = 0.35 + 0.035 * U.light; player.dashCd = dashCdBase; stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     { const [x, z] = pCenterXZ(); abFlash('dash', x, z, null, 'dash'); }
@@ -96,6 +97,7 @@
     return did;
   }
   function split() {
+    if (DuoM.guest) { DuoM.act('split'); return; }
     if (dailyIs('dashonly')) return;
     if (!running || paused || !player.cells.length || player.splitCd > 0) return;
     if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; abUsed('split'); rebuildCells(); buzz(20); { const [x, z] = pCenterXZ(); abFlash('split', x, z, null, 'split'); } }
@@ -187,7 +189,7 @@
       const k = Math.min(1, dt * (c.owner.iceT > 0 ? 1.2 : arenaIs('ice') ? 3 : 8));
       c.hx += (dx - c.hx) * k; c.hz += (dz - c.hz) * k;
       const hl = Math.hypot(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl;
-      const v = speedOf(c) * Math.min(1, d / 1.5 + (c.owner.isPlayer ? 0.35 : 1));
+      const v = speedOf(c) * Math.min(1, d / 1.5 + (c.owner.isPlayer || c.owner.kind === 'rival' ? 0.35 : 1));
       c.x += c.hx * v * dt; c.z += c.hz * v * dt;
     }
     if (c.vx || c.vz) {
@@ -292,6 +294,7 @@
   const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatCandidates = [];
   const eatGridKey = (x, z) => ((x & 65535) << 16) | (z & 65535);
   function update(dt) {
+    if (DuoM.guest) { DuoM.guestTick(dt); return; }   // the second phone of a match for two only draws what the host sends
     stats.time += dt;
     player.ejectCd = Math.max(0, (player.ejectCd || 0) - dt);
     if (modeRules(dt)) return;
@@ -371,6 +374,7 @@
     // bots
     for (const o of owners) {
       if (o.isPlayer) continue;
+      if (o.kind === 'rival') { DuoM.steerRival(o, dt); continue; }   // steered by the other phone
       if (!o.cells.length) { if (o.kind === 'bot') { o.respawn -= dt; if (o.respawn <= 0) spawnBot(o); } continue; }
       if (o.spawnSh > 0) o.spawnSh -= dt;
       o.think -= dt;

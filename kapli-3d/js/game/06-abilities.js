@@ -22,7 +22,7 @@
     Sound.play(lk.sfx);
   }
   function abReset() {
-    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.abCd = o.isPlayer || o.kind === 'bot' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
+    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
     crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
@@ -39,6 +39,7 @@
     });
   }
   function useSlot(i) {
+    if (DuoM.guest) { if (running && !dying) DuoM.act('slot', i); return; }
     const id = runBuild[i];
     if (!id || !running || paused || dying || slotBlocked(id)) return;
     if (id === 'dash') dash(); else if (id === 'split') split(); else if (id === 'eject') eject(); else castAbility(id);
@@ -599,6 +600,7 @@
 
   function lostCell(o, lastMass, eater) {
     if (o.cells.length) return;
+    if (DuoM.on && DuoM.lost(o, lastMass, eater)) return;   // a match for two: both players come back instead of ending the round
     if (o.isPlayer) {
       if (lives > 0) {
         lives--;

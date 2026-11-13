@@ -4,7 +4,7 @@
   // Android alike). If the direct link does not come up, messages keep going through the server channel.
   // The entry in Settings shows only after the page was opened once with ?duo=1 (kept in localStorage).
   const Duo = (() => {
-    const ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', DIRECT_MS = 7000, LOST_MS = 6000;
+    const ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', DIRECT_MS = 7000, LOST_MS = 10000;   // a weak phone can stall a few seconds while it builds the match field
     const me = Math.random().toString(36).slice(2, 10);
     let rttLog = [];   // [time, ms] of the last 10 s: the screen shows the average and the worst, not one random ping
     let ch = null, pc = null, dcR = null, dcU = null, role = '', code = '', state = 'idle', why = '', peer = '', rtt = 0, lastSeen = 0, tick = null, helloT = null, directT = null;
@@ -75,7 +75,7 @@
     }
     return { host: () => open('host'), join: c => open('guest', String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5)), leave, send,
       get state() { return state; }, get why() { return why; }, get code() { return code; }, get role() { return role; }, get rtt() { return rtt; }, get rttAvg() { return rttLog.length ? Math.round(rttLog.reduce((s, x) => s + x[1], 0) / rttLog.length) : 0; }, get rttMax() { return rttLog.reduce((m, x) => Math.max(m, x[1]), 0); }, get direct() { return direct(); },
-      on(msg, st) { onMsg = msg; onState = st; } };
+      on(msg, st) { onMsg = msg; onState = st; }, touch() { lastSeen = performance.now(); } };   // touch: a long local pause (building the field) is not a lost link
   })();
 
   // ---- the test screen: both players drag a drop on a small field and see each other's drop move ----
@@ -115,7 +115,7 @@
       };
       raf = requestAnimationFrame(frame);
     }
-    Duo.on(m => { if (m.t === 'p') { theirs.x = m.x; theirs.y = m.y; theirs.seen = 1; } }, () => { if (!$('duoCard').hidden) render(); });
+    Duo.on(m => { if (DuoM.msg(m)) return; if (m.t === 'p') { theirs.x = m.x; theirs.y = m.y; theirs.seen = 1; } }, () => { DuoM.linkState(); if (!$('duoCard').hidden) render(); });   // the match (14c) gets its messages first
     $('duoBtn').addEventListener('click', () => { lobby = null; drawn = ''; $('duoTitle').textContent = 'Игра вдвоём · тест связи'; showCard('duoCard'); render(); });
     $('duoBack').addEventListener('click', () => { Duo.leave(); if (lobby) { showCard('menuCard'); $('startBtn').focus(); } else { showCard('settingsCard'); $('duoBtn').focus(); } });
     $('duoBody').addEventListener('click', e => { const id = e.target.id; if (id === 'duoHost') Duo.host(); else if (id === 'duoJoin') { const c = $('duoCode').value.trim(); if (c.length === 5) Duo.join(c); else { $('duoCode').focus(); toast('В коде комнаты 5 символов'); } } else if (id === 'duoLeave') Duo.leave(); else if (id === 'duoStart') { if (window.duoStartMatch) window.duoStartMatch(lobby); else toast('Сам матч появится на следующем этапе — сейчас проверяется комната'); } });

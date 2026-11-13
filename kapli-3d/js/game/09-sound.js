@@ -103,6 +103,7 @@
   if (portraitLock.addEventListener) portraitLock.addEventListener('change', onPortrait); else if (portraitLock.addListener) portraitLock.addListener(onPortrait);
   function setPause(on) {
     if (!running || dying) return;
+    if (DuoM.on && on) { DuoM.menu(); return; }   // a match for two cannot stop: the menu opens while the round goes on
     paused = on;
     if (on) { renderPauseInfo(); showCard('pauseCard'); $('overlay').hidden = false; setGameUi(false); $('resumeBtn').focus(); }
     else { $('overlay').hidden = true; setGameUi(true); }

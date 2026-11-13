@@ -145,3 +145,12 @@
 .ws-exp > .btn:disabled { opacity: .42; box-shadow: none; filter: grayscale(.4); }
 .ws-exp .sh-ex { justify-content: center; white-space: nowrap; gap: 6px; font-weight: 700; }
 .ws-exp .all { min-height: 30px !important; font-size: .72rem !important; padding: 4px 8px !important; color: var(--food); border-color: color-mix(in srgb, var(--food) 55%, transparent); }
+/* ---- duo: room for two phones (connection test) ---- */
+#duoCard { max-width: min(560px, 100%); }
+.duo-body { display: grid; gap: 10px; margin: 6px 0 10px; }
+.duo-code { font: 400 2.6rem/1 var(--display); letter-spacing: .22em; text-align: center; padding: 14px 8px 14px calc(8px + .22em); border-radius: var(--r-md); background: var(--row); border: 1.5px solid #22e6ff; color: #9ff3ff; user-select: all; }
+.duo-join { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.duo-join input { font: 400 1.3rem var(--display); letter-spacing: .18em; text-transform: uppercase; text-align: center; padding: 10px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--row); color: var(--fg); min-width: 0; }
+.duo-join .btn { margin: 0; width: auto; }
+.duo-pad { width: 100%; height: min(44dvh, 260px); border-radius: var(--r-md); background: radial-gradient(circle at 50% 50%, #1c0f4a, #0a0624); border: 1px solid var(--line); touch-action: none; display: block; }
+.duo-why { margin: 0; color: #ff8aa8; font-size: .86rem; }

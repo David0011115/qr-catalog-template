@@ -53,6 +53,7 @@
       });
       return sb;
     }
+    Net.client = ensureClient;   // the room for two (14b-duo.js) talks to the same server
     function setUser(user, nick, publicId) {
       Net.uid = user ? user.id : null; Net.nick = user ? (nick || meta.nick || null) : null;
       Net.shortId = user && publicId != null ? String(publicId).padStart(6, '0') : '';

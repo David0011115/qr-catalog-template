@@ -32,8 +32,8 @@
     { id: 'bg_vet',      name: 'Пульс жизни',         rar: 'legendary', promo: true, src: 'промокод «Ветврач»',               test: () => !!(save.badges || {}).vet },
     { id: 'bg_goat27',   name: 'Год Огненной Козы',   rar: 'legendary', promo: true, src: 'праздничная коробка «Новый год 2027»', test: () => (save.gifts || []).includes('ny2027') },
     // 2.5 modes for two: 30 games in a mode
-    { id: 'bg_duo_terr', name: 'Делёж поля',      rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
-    { id: 'bg_duo_back', name: 'Спина к спине',   rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
+    { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
+    { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
     { id: 'bg_cr_gears',  name: 'Латунные шестерни', rar: 'common',    craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
@@ -447,60 +447,67 @@
           const age = (head - xx + w + 80) % (w + 80); x.globalAlpha = Math.max(.08, 1 - age / w); x.lineTo(xx, yy); x.stroke(); x.beginPath(); x.moveTo(xx, yy); }
         x.globalAlpha = 1; x.shadowBlur = 0; x.globalCompositeOperation = 'lighter'; glow(head, cy, 24, 'rgba(61,255,162,.6)');
         const cx = w * .82, cs = U * .14; x.fillStyle = 'rgba(61,255,162,.12)'; x.fillRect(cx - cs * .3, h * .3 - cs, cs * .6, cs * 2); x.fillRect(cx - cs, h * .3 - cs * .3, cs * 2, cs * .6); break; }
-      case 'bg_duo_terr': {   // «Захват территории», 30 matches: the field split by a swaying neon border, two drops face each other
-        const drop = (cx, cy, r, col, deep, look) => {
-          x.save(); x.shadowColor = col; x.shadowBlur = r * .9; const g = x.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r);
-          g.addColorStop(0, '#ffffff'); g.addColorStop(.35, col); g.addColorStop(1, deep); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.29); x.fill(); x.restore();
-          for (const s of [-1, 1]) { const ex = cx + s * r * .32 + look * r * .1, ey = cy - r * .08; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .14, r * .17, 0, 0, 6.29); x.fill();
-            x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + look * r * .06, ey + r * .02, r * .07, 0, 6.29); x.fill(); } };
-        x.fillStyle = lin([[0, '#060a22'], [1, '#0c0420']]); x.fillRect(0, 0, w, h);
-        const bx = w * (.5 + Math.sin(t * .35) * .07);
-        x.fillStyle = lin([[0, 'rgba(34,230,255,.02)'], [1, 'rgba(34,230,255,.22)']], 0, 0, bx, 0); x.fillRect(0, 0, bx, h);
-        x.fillStyle = 'rgba(255,61,110,.16)'; x.fillRect(bx, 0, w - bx, h);
-        x.strokeStyle = 'rgba(140,124,255,.16)'; x.lineWidth = 1; const gs = U * .14;
-        for (let xx = 0; xx < w; xx += gs) { x.beginPath(); x.moveTo(xx, 0); x.lineTo(xx, h); x.stroke(); } for (let yy = 0; yy < h; yy += gs) { x.beginPath(); x.moveTo(0, yy); x.lineTo(w, yy); x.stroke(); }
-        x.save(); x.beginPath(); x.rect(bx, 0, w - bx, h); x.clip(); x.strokeStyle = 'rgba(255,61,110,.24)'; x.lineWidth = U * .035; const st = U * .11, off = (t * 10) % st;
-        for (let k = -h; k < w + h; k += st) { x.beginPath(); x.moveTo(k + off, h); x.lineTo(k + off + h * .8, 0); x.stroke(); } x.restore();
-        x.globalCompositeOperation = 'lighter'; glow(bx, h * .5, U * .45, 'rgba(255,255,255,.1)');
-        x.fillStyle = 'rgba(255,255,255,.9)'; x.fillRect(bx - 1.2, 0, 2.4, h);
-        for (let k = 0; k < 3; k++) glow(bx, ((t * .28 + k / 3) % 1) * h, U * .07, 'rgba(255,255,255,.85)');
-        for (const p of pbgPts('dt', 20, 151)) { const xx = p.x * w, yy = p.y * h + Math.sin(t + p.p * 6) * 4; glow(xx, yy, 2.5 + p.s * 3, xx < bx ? 'rgba(34,230,255,.85)' : 'rgba(255,79,216,.85)', .8); }
-        x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
-        drop(bx - U * .5, h * .58 + Math.sin(t * 1.7) * U * .02, U * .17, '#22e6ff', '#0b4a66', 1);
-        drop(bx + U * .5, h * .58 + Math.sin(t * 1.6 + 1) * U * .02, U * .17, '#ff4fd8', '#6a0f55', -1);
-        break; }
-      case 'bg_duo_back': {   // «Спина к спине», 30 runs: two drops back to back under a shield, crowned bosses circle around, meteors fall
-        const drop = (cx, cy, r, col, deep, look) => {
-          x.save(); x.shadowColor = col; x.shadowBlur = r * .7; const g = x.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r);
-          g.addColorStop(0, '#ffffff'); g.addColorStop(.35, col); g.addColorStop(1, deep); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.29); x.fill(); x.restore();
-          for (const s of [0, 1]) { const ex = cx + look * r * (.18 + s * .38), ey = cy - r * .1; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .14, r * .17, 0, 0, 6.29); x.fill();
-            x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + look * r * .06, ey + r * .02, r * .07, 0, 6.29); x.fill(); } };
-        const g0 = x.createRadialGradient(w * .5, h * .62, 0, w * .5, h * .62, U * 1.1); g0.addColorStop(0, '#0d2a2e'); g0.addColorStop(.55, '#081626'); g0.addColorStop(1, '#05040f'); x.fillStyle = g0; x.fillRect(0, 0, w, h);
-        stars(50, 157, .8);
-        const cx = w * .5, cy = h * .6, sr = U * .34 * (1 + Math.sin(t * 2.6) * .025);
-        // bosses on an orbit
-        for (let k = 0; k < 4; k++) {
-          const a = t * .22 + k * Math.PI / 2, bx = cx + Math.cos(a) * w * .4, by = cy + Math.sin(a) * h * .34, br = U * (.07 + (k % 2) * .025);
-          glow(bx, by, br * 2.4, 'rgba(255,61,110,.35)');
-          const g = x.createRadialGradient(bx - br * .35, by - br * .4, br * .1, bx, by, br); g.addColorStop(0, '#ff9ab8'); g.addColorStop(.6, '#c2416b'); g.addColorStop(1, '#3a0618');
-          x.globalAlpha = 1; x.fillStyle = g; x.beginPath(); x.arc(bx, by, br, 0, 6.29); x.fill();
-          x.fillStyle = '#ffd23f'; x.beginPath(); x.moveTo(bx - br * .55, by - br * .8); x.lineTo(bx - br * .4, by - br * 1.35); x.lineTo(bx - br * .15, by - br * 1.0); x.lineTo(bx, by - br * 1.45); x.lineTo(bx + br * .15, by - br * 1.0); x.lineTo(bx + br * .4, by - br * 1.35); x.lineTo(bx + br * .55, by - br * .8); x.closePath(); x.fill();
-          x.strokeStyle = '#2a0412'; x.lineWidth = Math.max(1.5, br * .12); x.lineCap = 'round'; for (const sd of [-1, 1]) { x.beginPath(); x.moveTo(bx + sd * br * .5, by - br * .2); x.lineTo(bx + sd * br * .15, by); x.stroke(); }
+      case 'bg_duo_terr': {   // «Захват территории», 30 matches: a map of hexagons that change sides along a living border; two flags
+        x.fillStyle = lin([[0, '#050816'], [1, '#0a0418']]); x.fillRect(0, 0, w, h);
+        const hs = U * .075, hw = hs * Math.sqrt(3), border = yy => w * (.5 + .16 * Math.sin(t * .4 + yy / h * 3) + .05 * Math.sin(t * 1.1 + yy / h * 7));
+        for (let row = -1, yy = -hs * 1.5; yy < h + hs * 2; row++, yy = row * hs * 1.5) {
+          for (let col = -1; col * hw < w + hw; col++) {
+            const cx = col * hw + (row & 1 ? hw / 2 : 0), cy = yy, d = cx - border(cy), mine = d < 0, near = Math.max(0, 1 - Math.abs(d) / (hw * 1.6));
+            const fl = near > 0 ? .5 + .5 * Math.sin(t * 6 + col * 1.7 + row) : 0;
+            x.beginPath(); for (let k = 0; k < 6; k++) { const an = Math.PI / 6 + k * Math.PI / 3; x.lineTo(cx + Math.cos(an) * hs * .92, cy + Math.sin(an) * hs * .92); } x.closePath();
+            x.globalAlpha = .1 + near * .35 * fl + (mine ? .06 : .04) * (1 + Math.sin(t * .8 + col * .5 + row * .3));
+            x.fillStyle = mine ? '#22e6ff' : '#ff3d6e'; x.fill();
+            x.globalAlpha = .28 + near * .5; x.strokeStyle = mine ? '#22e6ff' : '#ff4fd8'; x.lineWidth = 1; x.stroke();
+          }
         }
-        // a meteor ring every 3 s, then the hit
-        { const n = Math.floor(t / 3), ph = (t % 3) / 3, mx = w * (n % 2 ? .78 + ((n * 37) % 14) / 100 : .08 + ((n * 37) % 14) / 100), my = h * (.15 + ((n * 53) % 25) / 100), mr = U * .1;
-          if (ph < .55) { x.globalAlpha = .4 + .5 * Math.abs(Math.sin(t * 14)); x.strokeStyle = '#ff3d6e'; x.lineWidth = 2.5; x.beginPath(); x.arc(mx, my, mr, 0, 6.29); x.stroke(); }
-          else if (ph < .8) glow(mx, my, mr * (1 + (ph - .55) * 4), 'rgba(255,154,61,.8)', 1 - (ph - .55) * 4); }
         x.globalAlpha = 1;
-        // the shield
-        const sg = x.createRadialGradient(cx, cy, sr * .7, cx, cy, sr); sg.addColorStop(0, 'rgba(61,255,162,0)'); sg.addColorStop(.9, 'rgba(61,255,162,.16)'); sg.addColorStop(1, 'rgba(61,255,162,.5)');
-        x.fillStyle = sg; x.beginPath(); x.arc(cx, cy, sr, 0, 6.29); x.fill();
-        x.save(); x.setLineDash([U * .04, U * .03]); x.lineDashOffset = -t * 20; x.strokeStyle = 'rgba(61,255,162,.55)'; x.lineWidth = 2; x.beginPath(); x.arc(cx, cy, sr, 0, 6.29); x.stroke(); x.restore();
-        const r = U * .13, bob = Math.sin(t * 2) * U * .012;
-        drop(cx - r * .92, cy + bob, r, '#22e6ff', '#0b4a66', -1);
-        drop(cx + r * .92, cy - bob, r, '#3dffa2', '#0a5a3a', 1);
-        x.globalCompositeOperation = 'lighter';
-        for (const p of pbgPts('db', 12, 163)) { const life = (t * .25 + p.q) % 1; glow(cx + (p.x - .5) * sr * 1.4, cy + sr * .6 - life * sr * 1.6, 2 + p.s * 3, 'rgba(200,255,230,.8)', 1 - life); }
+        // the border as a bright seam through the map
+        x.save(); x.globalCompositeOperation = 'lighter'; x.strokeStyle = 'rgba(255,255,255,.75)'; x.lineWidth = 2; x.shadowColor = '#fff'; x.shadowBlur = 10;
+        x.beginPath(); for (let yy = 0; yy <= h; yy += 4) x.lineTo(border(yy), yy); x.stroke(); x.restore();
+        // a flag on each side, waving
+        const flag = (px, py, col) => {
+          const ph = U * .32, fw = U * .2, fh = U * .12;
+          x.strokeStyle = '#d8d2ff'; x.lineWidth = Math.max(2, U * .012); x.beginPath(); x.moveTo(px, py); x.lineTo(px, py - ph); x.stroke();
+          x.save(); x.shadowColor = col; x.shadowBlur = 14; x.fillStyle = col; x.beginPath(); x.moveTo(px, py - ph);
+          for (let k = 0; k <= 10; k++) { const fx = px + fw * k / 10; x.lineTo(fx, py - ph + Math.sin(t * 4 - k * .7) * fh * .12 * k / 10); }
+          for (let k = 10; k >= 0; k--) { const fx = px + fw * k / 10; x.lineTo(fx, py - ph + fh + Math.sin(t * 4 - k * .7) * fh * .12 * k / 10); }
+          x.closePath(); x.fill(); x.restore();
+          glow(px, py, U * .06, col.replace(')', ',.5)').replace('rgb', 'rgba'));
+        };
+        flag(w * .14, h * .86, 'rgb(34,230,255)'); flag(w * .74, h * .5, 'rgb(255,79,216)');
+        break; }
+      case 'bg_duo_back': {   // «Спина к спине», 30 runs: two comets climb in a double spiral through falling crowns of beaten bosses
+        x.fillStyle = lin([[0, '#03070f'], [.6, '#071c22'], [1, '#0b2a26']]); x.fillRect(0, 0, w, h); stars(70, 171, .8);
+        const cx = w * .5, A = U * .32, turns = 2.2;
+        // the gate they come out of
+        x.save(); x.globalCompositeOperation = 'lighter'; glow(cx, h * 1.02, U * .55, 'rgba(61,255,162,.35)');
+        x.strokeStyle = 'rgba(61,255,162,.5)'; x.lineWidth = 2; x.beginPath(); x.ellipse(cx, h * .97, A * 1.2, U * .06, 0, 0, 6.29); x.stroke(); x.restore();
+        // falling crowns
+        for (const p of pbgPts('cr', 9, 173)) {
+          const yy = ((t * (10 + p.s * 14) + p.y * h) % (h + 40)) - 20, xx = p.x * w + Math.sin(t * .8 + p.p * 6) * 10, sz = U * (.025 + p.q * .02), rot = Math.sin(t + p.p * 6) * .5;
+          x.save(); x.translate(xx, yy); x.rotate(rot); x.globalAlpha = .35 + .4 * (1 - yy / h); x.fillStyle = '#ffd23f'; x.shadowColor = '#ffb02e'; x.shadowBlur = 8;
+          x.beginPath(); x.moveTo(-sz, sz * .5); x.lineTo(-sz, -sz * .4); x.lineTo(-sz * .5, 0); x.lineTo(0, -sz * .6); x.lineTo(sz * .5, 0); x.lineTo(sz, -sz * .4); x.lineTo(sz, sz * .5); x.closePath(); x.fill(); x.restore();
+        }
+        x.globalAlpha = 1;
+        // the double spiral: back parts first, then front parts, so the comets wind around each other
+        const pts = [];
+        for (let k = 0; k < 2; k++) for (let i = 0; i < 90; i++) {
+          const sv = i / 89, ang = sv * turns * 6.283 - t * 1.4 + k * Math.PI, yy = h * (1.02 - sv * .86);
+          pts.push({ k, i, sv, x: cx + Math.sin(ang) * A * (.55 + .45 * sv), y: yy, z: Math.cos(ang) });
+        }
+        pts.sort((a, b) => a.z - b.z);
+        x.save(); x.globalCompositeOperation = 'lighter';
+        for (const q of pts) {
+          const pulse = Math.max(0, Math.sin((q.sv - t * .5) * 12)) ** 8, lit = Math.pow(q.sv, 3) * .7 + pulse * .5, r = U * (.006 + .01 * (q.z + 1) / 2) * (1 + lit * 2.2);
+          glow(q.x, q.y, r * 3, q.k ? 'rgba(61,255,162,.75)' : 'rgba(34,230,255,.75)', .25 + .45 * (q.z + 1) / 2 + lit * .3);
+        }
+        x.restore();
+        // the comet heads: where each trail is brightest
+        for (let k = 0; k < 2; k++) {
+          const sv = 1, ang = sv * turns * 6.283 - t * 1.4 + k * Math.PI;
+          const hx = cx + Math.sin(ang) * A * (.55 + .45 * sv), hy = h * (1.02 - sv * .86), r = U * (.035 + .012 * Math.cos(ang));
+          x.save(); x.globalCompositeOperation = 'lighter'; glow(hx, hy, r * 3.2, k ? 'rgba(61,255,162,.6)' : 'rgba(34,230,255,.6)'); glow(hx, hy, r, '#ffffff'); x.restore();
+        }
         break; }
       case 'bg_nebula': {   // volumetric clouds, a ringed planet drifting past, dust
         x.fillStyle = lin([[0, '#06021a'], [1, '#12052c']]); x.fillRect(0, 0, w, h); stars(80, 11, 1.1);

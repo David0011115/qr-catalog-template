@@ -348,7 +348,7 @@
     { id: 'ch_split1000', name: 'Рой разума',         desc: 'Разделись на 10 частей за один раунд',       goal: 10,   prog: () => Math.max(save.totals.bestParts || 0, (save.bests.split || 0) >= 4000 ? 10 : 0), reward: ['skin', 'matrix'] },
     { id: 'ch_crumbs20k', name: 'Ненасытный',         desc: 'Собери 20 000 крошек за всё время',         goal: 20000, prog: () => save.totals.crumbs,   reward: ['skin', 'magma'] },
     { id: 'ch_mass10k',   name: 'Сверхгигант',        desc: 'Набери массу 10 000 в «Классике»',          goal: 10000, prog: () => save.bests.classic || 0, reward: ['skin', 'titan'] },
-    { id: 'ch_race2',     name: 'Гонщик',             desc: 'Выиграй «Гонку массы» быстрее 5 минут',     goal: 1,    prog: () => save.bests.race > 0 && save.bests.race <= 300 ? 1 : 0, reward: ['deco', 'fr_finish'] },
+    { id: 'ch_race2',     name: 'Плечом к плечу',     desc: 'Пройдите 10 волн вдвоём в «Спине к спине»',  goal: 1,    prog: () => (save.bests.race > 0 && save.bests.race <= 300) || duoBestWave() >= 10 ? 1 : 0, reward: ['deco', 'fr_finish'] },
     { id: 'ch_crown5',    name: 'Венценосный',        desc: 'Победи в «Захвате короны» 5 раз',           goal: 5,    prog: () => save.totals.crownWins, reward: ['deco', 'tt_crowned'] },
     { id: 'ch_daily7',    name: 'Постоянство',        desc: 'Выиграй 7 матчей в «Захвате территории»', goal: 7,    prog: () => Math.max(save.totals.dailies || 0, (save.duo && save.duo.territory && save.duo.territory.wins) || 0),   reward: ['deco', 'fr_calendar'] },
     { id: 'ch_giant5',    name: 'Гроза гигантов',     desc: 'Победи босса недели в «Босс-рейде» 2 раза',  goal: 2,    prog: () => Math.max(save.raidWins || 0, Math.floor((save.totals.giantWins || 0) / 2.5)), reward: ['deco', 'tt_giants'] },

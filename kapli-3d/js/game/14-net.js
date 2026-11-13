@@ -5,7 +5,7 @@
     const SB_URL = 'https://kprkslsptcnxajdllwje.supabase.co', SB_KEY = 'sb_publishable_C6dIYs3B1t1tkMYl4AgzzA_hVtZLBaj';
     const SB_LIB = 'supabase.js';
     const META_KEY = SAVE_KEY + '-cloud', APP_SAVE_VER = 170;
-    const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'race', 'rbuild', 'hardcore', 'royale'];
+    const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'rbuild', 'hardcore', 'royale'];
     const NICK_RE = [/^[A-Za-z0-9_]{3,16}$/, /^[А-Яа-яЁё0-9_]{3,16}$/];
     let sb = null, sess = null, canPush = false, pushing = false, pushTimer = null, retryMs = 0, sync = 'guest', pending = null, recoverPending = false, splashOn = true, privacyPending = false;
     async function checkPrivacyConsent() {

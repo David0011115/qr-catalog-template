@@ -131,7 +131,7 @@
           let el = document.getElementById('terrSign');
           if (!el) { el = document.createElement('div'); el.id = 'terrSign'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
           const mine = sd === pHome;
-          el.className = mine ? 'mine' : 'foe';
+          el.className = mine ? 'mine' : 'foe'; el.style.removeProperty('--tc');
           el.innerHTML = mine ? '<b>Твоя территория</b><small>здесь можно есть ботов</small>' : '<b>Чужая территория</b><small>−15% скорости · ботов не съесть</small>';
           void el.offsetWidth; el.classList.add('show');
           clearTimeout(signT); signT = setTimeout(() => el.classList.remove('show'), 1700);

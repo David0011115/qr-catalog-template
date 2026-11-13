@@ -17,6 +17,7 @@
     // crumbs: the host remembers which ones moved, the other phone puts them where the host says
     const placeFood0 = placeFood;
     placeFood = i => { placeFood0(i); if (on && role === 'host') foodDirty.add(i); };
+    foodHook = i => { if (on && role === 'host') foodDirty.add(i); };
     function layout(seed) { const mr = Math.random; Math.random = rng(seed); try { for (let i = 0; i < FOOD; i++) placeFood0(i); } finally { Math.random = mr; } foodDirty.clear(); }
     function setFood(i, x, z) {
       foods[i] = { x, z }; fgSet(i);
@@ -67,21 +68,22 @@
     function startAsHost(id) {
       if (Duo.state !== 'ready' || Duo.role !== 'host') { toast('Сначала дождитесь второго игрока'); return; }
       const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, build: rbuildDraw(), name: Net.nick || 'Игрок', skin: save.skin };
+      if (rules[id] && rules[id].goExtra) Object.assign(g, rules[id].goExtra());
       Duo.send(g); begin('host', g);
     }
     function begin(r, g) {
       const t0 = performance.now();
       role = r; modeId = g.m; on = true; inp = { x: 0, z: 0 }; rl = rules[modeId] || null; bonSig = ''; rival.eff = eff0();
-      if (rl && rl.pre) rl.pre(r);
+      if (rl && rl.pre) rl.pre(r, g);
       save.mode = modeId; persist();
-      setArenaSize(2);
+      setArenaSize(rl && rl.arena ? rl.arena : 2);
       pendingRanked = false;
       startRound();
       if (!running) { cleanup(); return; }
       U = ZERO_UP; lives = 0; stats.duo = true; effects.shield = 3; runBuild = g.build.slice(); abReset(); renderSlots();
       layout(g.seed);
       sideX = { p: (r === 'host' ? -1 : 1) * R * .55, r: (r === 'host' ? 1 : -1) * R * .55 };
-      if (rl && rl.begin) rl.begin(r);
+      if (rl && rl.begin) rl.begin(r, g);
       place(player, homeX(player));
       dress(rival, g.peerSkin || g.skin, g.peerName || g.name);
       if (r === 'host') { place(rival, homeX(rival)); rival.abT = {}; rival.abCd = {}; rival.dashT = 0; rival.dashCd = 0; rival.splitCd = 0; }
@@ -106,11 +108,11 @@
       if (wasRunning) finishRound(title, bonus, win);
     }
     // the host ends the match for both phones. w: 'host' | 'guest' | 'draw'; sh: the host's result (share of the field); why: 'early' | 'time'
-    function result(w, sh, why) {
+    function result(w, sh, why, x) {   // x: extra numbers of the mode (waves, bosses…), the same for both
       if (!on || dying) return;
-      if (role === 'host') Duo.send({ t: 'res', w, sh, why });
-      const me = w === 'draw' ? 'draw' : w === role ? 'win' : 'loss';
-      const out = rl && rl.finish ? rl.finish(me, role === 'host' ? sh : 1 - sh, why) : { title: me === 'win' ? 'Победа!' : me === 'draw' ? 'Ничья' : 'Поражение', bonus: 0 };
+      if (role === 'host') Duo.send({ t: 'res', w, sh, why, x });
+      const me = w === 'coop' ? 'coop' : w === 'draw' ? 'draw' : w === role ? 'win' : 'loss';
+      const out = rl && rl.finish ? rl.finish(me, role === 'host' ? sh : 1 - sh, why, x) : { title: me === 'win' ? 'Победа!' : me === 'draw' ? 'Ничья' : 'Поражение', bonus: 0 };
       endMatch(out.title, me === 'win', false, out.bonus);
     }
 
@@ -167,11 +169,12 @@
     }
     // a player who was eaten comes back at their own side after a short wait (the rules of each mode may change it)
     function lost(o, lastMass, eater) {
-      if (o !== player && o !== rival) return false;
+      if (o !== player && o !== rival) { if (role === 'host' && rl && rl.anyLost) rl.anyLost(o, eater); return false; }
       if (role !== 'host') return true;
       if (rl && rl.lost) rl.lost(o, eater);
-      o.respawnAt = stats.time + RESPAWN_S;
-      toast(o === player ? `Тебя съел ${eater.name}! Возвращение через ${RESPAWN_S} с` : `${o.name} съеден!`);
+      const rs = rl && rl.respawnS ? rl.respawnS(o) : RESPAWN_S;
+      o.respawnAt = stats.time + rs;
+      toast(o === player ? `Тебя съел ${eater.name}! Возвращение через ${Math.round(rs)} с` : `${o.name} съеден!`);
       return true;
     }
 
@@ -247,7 +250,8 @@
       if (m.t === 'a') { act(m.k, m.i); return true; }
       if (m.t === 'hi') { dress(rival, m.skin, m.name); return true; }
       if (m.t === 'dr') { if (role === 'guest') redress(m); return true; }
-      if (m.t === 'res') { if (role === 'guest') result(m.w, +m.sh || 0, m.why); return true; }
+      if (m.t === 'res') { if (role === 'guest') result(m.w, +m.sh || 0, m.why, m.x); return true; }
+      if (rl && rl.msg && rl.msg(m)) return true;
       if (m.t === 'end') { endMatch(`${rival.name} вышел из матча`, true, false); return true; }
       return false;
     }
@@ -258,7 +262,7 @@
     window.duoStartMatch = startAsHost;
 
     return { get on() { return on; }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
-      get mode() { return on ? modeId : ''; }, rules, rivalPick, result,
+      get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, rules, rivalPick, result,
       steerRival, act: (k, i) => { if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
       // a hook in canEat: the rules of the mode may forbid a bite; the second player's shield bonus counts like yours
       eatBlock: (a, b) => on && ((b.owner === rival && role === 'host' && rival.eff.shield > 0) || !!(rl && rl.eatBlock && rl.eatBlock(a, b))),

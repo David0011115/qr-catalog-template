@@ -649,7 +649,7 @@
     { const id = save.mode, a = modeArt(id), ms = modeMastery(id), mb = $('modeBtn');
       mb.classList.add('mt'); mb.style.setProperty('--mc', a.c); mb.style.setProperty('--mc2', a.c2);
       mb.classList.toggle('duo', isDuoMode(id)); mb.innerHTML = `<span class="art">${modeIcon(id)}</span><span class="hd"><span class="k">${isDuoMode(id) ? '👥 Вдвоём · локально' : 'Режим'}</span><b class="n">${MODES[id].name}</b></span><span class="more">все ▸</span>` +
-        (isDuoMode(id) ? (d => `<span class="ln"><span>Победы <b>${d.wins || 0}</b></span><span>Матчей <b>${d.games || 0}</b></span></span>`)((save.duo || {})[id] || {}) : `<span class="ln"><span>Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство <b style="color:#ffd23f">${ms.name ? `«${ms.name}»` : '—'}</b></span></span>`) + `<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>`; }
+        (isDuoMode(id) ? `<span class="ln">${duoLine(id)}</span>` : `<span class="ln"><span>Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство <b style="color:#ffd23f">${ms.name ? `«${ms.name}»` : '—'}</b></span></span>`) + `<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>`; }
     { const plv = playerLevel();
       $('modes').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
         const a = modeArt(id), ms = modeMastery(id), on = save.mode === id;
@@ -659,7 +659,7 @@
         return `<button class="mode mcard${m.duo ? ' duo' : ''}" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
           (on ? '<span class="sel" aria-hidden="true">✓</span>' : '') + (a.isNew && !lock ? '<span class="nw">новый</span>' : '') +
           `<span class="art">${modeIcon(id)}</span><span class="tx">${m.duo ? '<span class="duo-mark">👥 вдвоём · локально</span>' : ''}<b>${m.name}</b><small>${m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${tag}</span>` +
-          (m.duo ? (d => `<span class="ft"><span class="rec">Победы <b>${d.wins || 0}</b></span><span class="rec">Матчей <b>${d.games || 0}</b></span></span>`)((save.duo || {})[id] || {}) : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` «${ms.name}»` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
+          (m.duo ? `<span class="ft">${duoLine(id, 'rec')}</span>` : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` «${ms.name}»` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
           (lock ? `<span class="lk">${lock}</span>` : '') + `</button>`; }).join(''); }
     $('abilCount').textContent = `${save.abil.owned.length}/${ABILITIES.length}`;
     $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;
@@ -1465,3 +1465,9 @@
     const again = $(b.id); if (again) again.focus(); else { const t = document.querySelector('#shopTabs [aria-selected="true"]'); if (t) t.focus(); }
   });
 
+  // the line under a mode for two: wins for «Захват территории», the best wave for «Спина к спине»
+  function duoLine(id, cls = '') {
+    const d = (save.duo || {})[id] || {}, c = cls ? ` class="${cls}"` : '';
+    return id === 'duoback' ? `<span${c}>Лучшая волна <b>${duoBestWave()}</b></span><span${c}>Забегов <b>${d.games || 0}</b></span>`
+      : `<span${c}>Победы <b>${d.wins || 0}</b></span><span${c}>Матчей <b>${d.games || 0}</b></span>`;
+  }

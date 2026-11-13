@@ -13,13 +13,13 @@
     survival: { name: 'Выживание',      desc: 'Волна боссов каждые 15 с, каждая сильнее' },
     split:    { name: 'Только деление', desc: 'Без рывка, деление раз в 3 с, до 10 частей' },
     crown:    { name: 'Захват короны',  desc: 'Корона у самой крупной капли. Держи её дольше всех — матч до поражения' },
-    race:     { name: 'Гонка массы',    desc: 'Кто первым наберёт 4000. Рекорд — лучшее время' },
     rbuild:   { name: 'Случайный билд', desc: 'Каждый раунд — 3 случайные способности из 12 обычных, даже не купленные. Опыт ×1,2', lvl: 10 },
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
     hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Монеты ×1,6' },
     // modes for two phones on one network (a room by code): marked «вдвоём · локально» everywhere; 2.5 — replaces «Испытание дня»
     territory: { name: 'Захват территории', desc: 'Вдвоём, на двух телефонах. Поле разделено границей: ешь ботов на своей половине, расти — и граница ползёт к сопернику. 4 минуты, досрочная победа при 80% поля', duo: true },
+    duoback:  { name: 'Спина к спине', desc: 'Вдвоём, на двух телефонах. Вместе против волн боссов: перерывы с едой, усиления, особый босс каждую 5-ю волну. Три сложности', duo: true },   // 2.5 — replaces «Гонка массы»
     raid:     { name: 'Босс-рейд',      desc: 'Босс недели: урон копится между попытками. 3 попытки в день, за победу — уникальный скин' },
     royale:   { name: 'Королевская битва', desc: 'Арена сужается, боты не возрождаются, побеждает последний. Только в лиге, в свой сезон' },
   };
@@ -69,6 +69,7 @@
   const dailyMod = DAILY[[...today].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % DAILY.length];
   const EJECT_COST = 10, EJECT_MASS = 8, EJECT_MIN = 25, MAX_EJECTS = 60;
   const BASE_ABIL_N = 10, BASE_ABIL_IDS = () => BASE_ABIL.map(a => a.id);
+  const duoBestWave = () => { const d = save.duo && save.duo.duoback; return d ? Math.max(0, ...Object.values(d.best || {})) : 0; };   // «Спина к спине»: best wave on any difficulty
   const ACH = [
     // 1.7.0: 10 lines of 3 steps (I · II · III) — 150 / 400 / 1 000 ◆; III of five hardest lines gives a title. B = save.achBest (per-round bests)
     ...[
@@ -78,6 +79,7 @@
       ['ln_giant',  'Исполин',   'Набери массу за один раунд', ['масса 1 500', 'масса 5 000', 'масса 12 000'], (T, B) => [1500, 5000, 12000].filter(n => (B.mass || 0) >= n).length, 'tt_ln_giant'],
       ['ln_combo',  'Комбо',     'Сделай комбо', ['комбо ×5', 'комбо ×10', 'комбо ×15'], T => [5, 10, 15].filter(n => T.bestCombo >= n).length],
       ['ln_surv',   'Выживший',  'Держись в «Выживании»', ['5 минут', '10-я волна', '15-я волна'], (T, B) => ((B.survT || 0) >= 300 ? 1 : 0) + ((B.wave || 0) >= 10 ? 1 : 0) + ((B.wave || 0) >= 15 ? 1 : 0)],
+      ['ln_duo',    'Спина к спине', 'Держитесь вдвоём против волн боссов', ['10-я волна', '20-я волна', '30-я волна'], () => [10, 20, 30].filter(n => duoBestWave() >= n).length, 'tt_ln_duo'],
       ['ln_league', 'Лига',      'Поднимайся в лиге в любом сезоне', ['«Золото»', '«Алмаз»', '«Неон»'], () => [2, 4, 5].filter(n => (save.totals.maxLeague || 0) >= n).length, 'tt_ln_league'],
       ['ln_season', 'Сезоны',    'Собирай значки сезонов', ['1 значок', '6 значков', '26 значков (год)'], () => [1, 6, 26].filter(n => save.seasonLog.length >= n).length],
       ['ln_chaos',  'Хаос',      'Покоряй Хаос-лигу', ['первый бой', '«Разлом»', '«Сингулярность»'], () => ((save.totals.chaosGames || 0) >= 1 ? 1 : 0) + [4, 5].filter(n => (save.totals.chaosMax || 0) >= n).length, 'tt_chaos'],
@@ -543,6 +545,7 @@
     tt('tt_invincible', 'Непобедимый', 'legendary', '#ffd23f', '#ffffff', '★', { legend: 'wins2' }),
     tt('tt_millionaire', 'Миллионер', 'legendary', '#ffd23f', '#3dffa2', '★', { legend: 'coins2' }),
     // achievement lines, step III
+    tt('tt_ln_duo', 'Несокрушимые', 'epic', '#3dffa2', '#22e6ff', '❖', { line: 'duo' }),
     tt('tt_ln_boss', 'Истребитель', 'epic', '#ff3d6e', '#ffd23f', '❖', { line: 'boss' }),
     tt('tt_ln_star', 'Звездобой', 'epic', '#ffd23f', '#ff4fd8', '❖', { line: 'star' }),
     tt('tt_ln_giant', 'Исполин', 'epic', '#3dffa2', '#22e6ff', '❖', { line: 'giant' }),
@@ -566,10 +569,10 @@
     timed:    { c: '#ffd23f', c2: '#ff9a3d', ic: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M12 13.5l3 2M9.5 2.8h5M12 2.8v3M18.5 6.5l1.5-1.5"/>', tags: ['3 минуты', 'награда за место'] },
     survival: { c: '#ff3d6e', c2: '#7a0030', ic: '<path d="M5 11a7 7 0 0 1 14 0v3l-2 2v3.5H7V16l-2-2z"/><circle cx="9.3" cy="12" r="1.7"/><circle cx="14.7" cy="12" r="1.7"/><path d="M10.5 19.5v-2M13.5 19.5v-2"/>', tags: ['волны боссов', 'каждые 15 с'] },
     crown:    { c: '#ffd23f', c2: '#ff4fd8', ic: '<path d="M3.5 18.5h17L19 8l-4.5 4L12 4.5 9.5 12 5 8z"/><path d="M3.5 21h17"/>', tags: ['до поражения', 'время с короной'] },
-    race:     { c: '#3dffa2', c2: '#0a8f6a', ic: '<path d="M6 21V3.5M6 4h11l-2.5 4L17 12H6"/><path d="M1.5 9h2.5M1 13h3M2 17h2"/>', tags: ['до 4000 массы', 'на скорость'] },
     rbuild:   { c: '#b26bff', c2: '#ff4fd8', ic: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/>', tags: ['3 случайные способности', 'опыт ×1,2'], isNew: true },
     hardcore: { c: '#ff6a00', c2: '#ff2d55', ic: '<path d="M12 2.5c1 4 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.8 1.6-3.8 2.7-5.5.5 2.2 1.5 2.8 2.6 2.8 0-3.2-1-5.3.2-8.3z"/>', tags: ['без бонусов', 'монеты ×1,6'] },
     territory: { c: '#22e6ff', c2: '#ff4fd8', ic: '<circle cx="12" cy="12" r="9"/><path d="M13.5 3.2c-2.5 3-2.5 5.8 0 8.8s2.5 5.8 0 8.8" stroke-dasharray="2.2 1.8"/><circle cx="7.6" cy="12" r="2" fill="currentColor"/><circle cx="17" cy="12" r="1.6"/><path d="M9.8 9.2l1.6-1.5M9.8 14.8l1.6 1.5"/>', tags: ['4 минуты', 'граница поля'], duo: true },
+    duoback:  { c: '#3dffa2', c2: '#22e6ff', ic: '<circle cx="8" cy="12" r="4.5"/><circle cx="16" cy="12" r="4.5"/><path d="M12 4.5v15" stroke-dasharray="2 2"/><path d="M3 5.5l2 2M21 5.5l-2 2M3 18.5l2-2M21 18.5l-2-2"/>', tags: ['волны боссов', 'вдвоём'], duo: true },
     raid:     { c: '#ff2d75', c2: '#7b3dff', ic: '<circle cx="12" cy="13.5" r="6.5"/><path d="M7.2 9L4.5 3.5l4.8 3.3M16.8 9l2.7-5.5-4.8 3.3"/><path d="M9.3 12.5h1.4M13.3 12.5h1.4M9.5 16.3h5"/>', tags: ['босс недели', '3 попытки в день'] },
     royale:   { c: '#ff4fd8', c2: '#22e6ff', ic: '<circle cx="12" cy="12" r="9" stroke-dasharray="3 2.4"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>', tags: ['арена сужается', 'только в лиге'] },
   };
@@ -683,8 +686,8 @@
       test: S => !S.eatenCells && S.maxMass >= 3000, best: S => !S.eatenCells ? Math.round(S.maxMass) : null, unit: 'массы' },
     { id: 'sk_nobonus', name: 'Чистая победа', desc: 'Займи 1-е место в режиме «На время», не подобрав ни одного бонуса', hint: 'Обходи светящиеся бонусы стороной — даже случайно.', coins: 1000, title: ['Честный игрок', '#9fd8ff'],
       test: S => S.mode === 'timed' && S.win && !S.bonuses },
-    { id: 'sk_race', name: 'Стремительный', desc: 'Выиграй «Гонку массы» быстрее чем за 2 минуты', hint: 'Рывок + деление на крупную добычу ускоряют набор массы.', coins: 1500, title: ['Стрела', '#ff9a3d'],
-      test: S => S.mode === 'race' && S.win && S.time <= 120, best: S => S.mode === 'race' && S.win ? Math.floor(S.time) : null, lower: true, unit: 'с' },
+    { id: 'sk_race', name: 'Стремительный', desc: 'В «Спине к спине» победите особого босса 5-й волны быстрее чем за 4 минуты от начала', hint: 'Особый босс теряет здоровье, когда вы едите его осколки: подплывайте вдвоём с разных сторон.', coins: 1500, title: ['Стрела', '#ff9a3d'],
+      test: S => S.mode === 'duoback' && S.duoSpecial5T > 0 && S.duoSpecial5T <= 240, best: S => S.mode === 'duoback' && S.duoSpecial5T > 0 ? Math.floor(S.duoSpecial5T) : null, lower: true, unit: 'с' },
     { id: 'sk_crown', name: 'Король арены', desc: 'В «Захвате короны» удержи корону суммарно 2 минуты за раунд', hint: 'Корона у самой крупной капли: держи массу и не дели её без нужды.', coins: 1500, title: ['Монарх', '#ffd23f'],
       test: S => S.mode === 'crown' && S.crownT >= 120, best: S => S.mode === 'crown' ? Math.floor(S.crownT || 0) : null, unit: 'с' },
     { id: 'sk_royale', name: 'Тихий охотник', desc: 'Победи в «Королевской битве», ни разу не сделав рывок', hint: 'Без рывка важнее позиция: держись ближе к центру безопасной зоны.', coins: 2000, title: ['Невидимка', '#b26bff'],

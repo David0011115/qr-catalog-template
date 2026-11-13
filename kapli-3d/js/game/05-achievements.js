@@ -4,6 +4,7 @@
   const ACH_ART = {
     ln_hunter:  ['#ff3d6e', '<path d="M18.5 8.5A8 8 0 1 0 19 16l-4.5-2 4.5-1.5z"/><circle cx="10" cy="9.6" r="1.2" fill="currentColor"/>'],
     ln_boss:    ['#ff9a3d', '<path d="M5 11a7 7 0 0 1 14 0v3l-2 2v3.5H7V16l-2-2z"/><circle cx="9.3" cy="12" r="1.7"/><circle cx="14.7" cy="12" r="1.7"/><path d="M6.6 6.2L4.2 2.8M17.4 6.2l2.4-3.4"/>'],
+    ln_duo:     ['#3dffa2', '<circle cx="8" cy="12" r="4.5"/><circle cx="16" cy="12" r="4.5"/><path d="M12 4.5v15" stroke-dasharray="2 2"/>'],
     ln_star:    ['#ffd23f', '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.1 1.2 6L12 16.4 6.6 19.4l1.2-6-4.5-4.1 6.1-.7z"/>'],
     ln_giant:   ['#3dffa2', '<circle cx="13.5" cy="14.5" r="6.5"/><circle cx="5" cy="19" r="2"/><path d="M13.5 8V2.5M11 5l2.5-2.5L16 5"/>'],
     ln_combo:   ['#22e6ff', '<path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z"/>'],
@@ -39,7 +40,7 @@
   }
   // numeric progress where a line counts one number; the rest show only the next step
   const ACH_VAL = { ln_hunter: [T => T.kills, [50, 500, 5000]], ln_boss: [T => T.bosses, [1, 50, 500]], ln_star: [T => T.starKills, [1, 25, 250]],
-    ln_giant: [(T, B) => B.mass || 0, [1500, 5000, 12000]], ln_combo: [T => T.bestCombo, [5, 10, 15]], ln_season: [() => save.seasonLog.length, [1, 6, 26]] };
+    ln_giant: [(T, B) => B.mass || 0, [1500, 5000, 12000]], ln_combo: [T => T.bestCombo, [5, 10, 15]], ln_season: [() => save.seasonLog.length, [1, 6, 26]], ln_duo: [() => duoBestWave(), [10, 20, 30]] };
   function achTotals() {
     const t = save.totals;
     return {

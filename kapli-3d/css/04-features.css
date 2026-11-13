@@ -177,3 +177,18 @@
 #terrSign b { font: 400 22px/1.1 'Russo One', sans-serif; color: var(--tc); letter-spacing: .02em; }
 #terrSign small { font-size: 12px; font-weight: 700; color: #e6e0ff; }
 @media (prefers-reduced-motion: reduce) { #terrSign { transition: opacity .2s; transform: translate(-50%, 0); } }
+/* «Спина к спине»: the choice of a boost (the round goes on) and the difficulty in the room */
+#dbPick { position: fixed; left: 50%; top: 96px; transform: translateX(-50%); z-index: 41; width: min(520px, calc(100vw - 32px)); padding: 6px 10px 8px;
+  border-radius: 18px; background: rgba(12, 8, 32, .9); border: 2px solid #3dffa2; box-shadow: 0 0 28px rgba(61, 255, 162, .35); text-align: center; }
+#dbPick p { margin: 0 0 5px; font: 400 14px 'Russo One', sans-serif; color: #3dffa2; }
+.db-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.db-opts button { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 6px; text-align: left; padding: 5px 8px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .2);
+  background: rgba(255, 255, 255, .06); color: #fff; font: inherit; cursor: pointer; min-height: 44px; }
+.db-opts button .ic { font-size: 20px; line-height: 1; grid-row: span 2; }
+.db-opts button b { font-size: 13px; }
+.db-opts button small { font-size: 10.5px; color: #cfc8f5; line-height: 1.2; }
+.db-opts button.both { border-color: #22e6ff; background: rgba(34, 230, 255, .1); }
+.db-opts button:focus-visible { outline: 2px solid #3dffa2; outline-offset: 2px; }
+.db-diff { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.db-df { padding: 8px 14px; min-height: 40px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .06); color: #e6e0ff; font: 700 13px/1 inherit; cursor: pointer; }
+.db-df.on { background: linear-gradient(90deg, #3dffa2, #22e6ff); color: #0b0820; border-color: transparent; }

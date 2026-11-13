@@ -314,12 +314,13 @@
     for (let k = 0; k < 6; k++) emit(x, r + 1, z, k % 2 ? '#4d8dff' : '#bff8ff', 14, 10 + k * 2, .9);
     wave(x, z, '#4d8dff', r, r + 16 + r, .8); wave(x, z, '#bff8ff', r * .6, r + 10 + r * .6, .6);
   }
+  let foodHook = () => {};   // matches for two: the host notes crumbs that moved, to send them to the other phone
   function burstFood(x, z, rad, n, inner = 0) {   // inner: crumbs land in a ring outside this radius (not under the drop)
     for (let k = 0; k < n; k++) {
       const i = Math.floor(Math.random() * FOOD), a = Math.random() * Math.PI * 2, d = inner + Math.sqrt(Math.random()) * (rad - inner);
       const fx = x + Math.cos(a) * d, fz = z + Math.sin(a) * d;
       if (Math.hypot(fx, fz) > R - 1.5) continue;
-      foods[i] = { x: fx, z: fz }; fgSet(i);
+      foods[i] = { x: fx, z: fz }; fgSet(i); foodHook(i);
       dummy.position.set(fx, 0.35, fz); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix);
     }
     foodMesh.instanceMatrix.needsUpdate = true;
@@ -359,10 +360,10 @@
   const fmtBest = (m, v) => {
     if (!v) return LOWER_BETTER[m] ? '–' : m === 'team' ? '0 побед' : m === 'survival' || m === 'crown' ? '0:00' : '0';
     if (m === 'team') return `${v} побед`;
-    return ['survival', 'crown', 'race'].includes(m) ? fmtTime(v) : m === 'raid' ? `${v} урона` : String(v);
+    return ['survival', 'crown'].includes(m) ? fmtTime(v) : m === 'raid' ? `${v} урона` : String(v);
   };
   const dailyIs = id => mode === 'daily' && dailyMod.id === id;
-  const bossesOn = () => !(stats && stats.tutorial) && !['team', 'race', 'royale', 'raid', 'territory'].includes(mode);
+  const bossesOn = () => !(stats && stats.tutorial) && !['team', 'royale', 'raid', 'territory', 'duoback'].includes(mode);
 
   // ================= mass ejection =================
   const ejectGeo = new THREE.SphereGeometry(1, 16, 12);

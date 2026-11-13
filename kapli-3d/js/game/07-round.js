@@ -248,14 +248,6 @@
       if (crownHolder && !abOn('x_ghost', crownHolder)) crownHolder.crownT += dt;   // no crown time while a ghost
       
     }
-    if (mode === 'race') {
-      const winner = contenders.find(o => total(o) >= RACE_GOAL);
-      if (winner) {
-        if (winner.isPlayer) finishRound(`Финиш за ${fmtTime(stats.time)}!`, 50, true);
-        else finishRound(`Первым финишировал ${winner.name}`, 0, false);
-        return true;
-      }
-    }
     if (mode === 'team' && stats.time >= TEAM_LEN) {
       const a = Math.round(teamTotal('A')), b = Math.round(teamTotal('B')); stats.teamA = a; stats.teamB = b;
       finishRound(a >= b ? `Победа синих ${a} : ${b}` : `Победа красных ${b} : ${a}`, a >= b ? 50 : 0, a >= b);
@@ -398,7 +390,7 @@
       const isP = c.owner.isPlayer;
       const fx2 = c.owner.eff;   // the second player of a match for two keeps their bonuses here
       const r = cellR(c) + (isP ? pMagnet : fx2 && fx2.magnet > 0 ? 6 : 0);
-      const gain = (isP ? pGain : fx2 && fx2.double > 0 ? 2 : 1) * (abOn('pulse', c.owner) ? 2 : 1);
+      const gain = (isP ? pGain : fx2 && fx2.double > 0 ? 2 : 1) * (abOn('pulse', c.owner) ? 2 : 1) * (c.owner.dbAbs || 1);
       const gx0 = fgCell(c.x - r), gx1 = fgCell(c.x + r), gz0 = fgCell(c.z - r), gz1 = fgCell(c.z + r);
       for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) { const bucket = fgrid[gx * FGN + gz];
       for (let j = bucket.length - 1; j >= 0; j--) {
@@ -594,14 +586,14 @@
     if (running) {
       const lim = { timed: TIMED_LEN, team: TEAM_LEN, raid: RAID_LEN }[mode];
       if (lim) timer = `⏱ ${fmtTime(Math.max(0, lim - stats.time))}`;
-      else if (['race', 'survival', 'classic', 'rbuild', 'hardcore', 'royale', 'crown'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
+      else if (['survival', 'classic', 'rbuild', 'hardcore', 'royale', 'crown'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
       if (mode === 'royale') modeChip = `Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
       if (mode === 'crown') modeChip = `♛ ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)}`;
-      if (mode === 'race') modeChip = `Гонка ${Math.round(total(player))}/${RACE_GOAL}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span>`;
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
       if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · урон за заход ${Math.round(stats.raidDmg || 0)}/${RAID_ATTEMPT_CAP}`; }
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
       if (mode === 'territory') { modeChip = DuoM.chip(); if (DuoM.on) timer = DuoM.rules.territory.timer(); }
+      if (mode === 'duoback') { modeChip = DuoM.chip(); timer = `⏱ ${fmtTime(stats.time)}`; }
     }
     const badges = [];
     const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);

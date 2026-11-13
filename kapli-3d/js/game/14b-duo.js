@@ -95,6 +95,7 @@
       else if (st === 'joining') b.innerHTML = `<p class="hint" style="margin:0">Ищу комнату <b>${Duo.code}</b>…</p><button class="btn ghost" id="duoLeave" type="button">Отмена</button>`;
       else b.innerHTML = (Duo.why ? `<p class="duo-why" role="status">${Duo.why}</p>` : '') +
         `<button class="btn" id="duoHost" type="button">Создать комнату</button><div class="duo-join"><input id="duoCode" inputmode="latin" autocomplete="off" autocapitalize="characters" maxlength="5" placeholder="Код" aria-label="Код комнаты"><button class="btn ghost" id="duoJoin" type="button">Войти по коду</button></div>` +
+        (lobby && DuoM.rules[lobby] && DuoM.rules[lobby].statsHtml ? DuoM.rules[lobby].statsHtml() : '') +
         `<p class="hint" style="margin:0">Обоим телефонам нужен интернет. В одной сети Wi-Fi связь будет прямой и быстрой; в разных сетях — прямой, если получится, иначе через сервер игры.</p>`;
       drawn = key; if (st !== 'ready') cancelAnimationFrame(raf);
     }

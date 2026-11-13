@@ -456,7 +456,7 @@
     if (mode === 'raid') score = stats.raidDmg || 0;
     if (LOWER_BETTER[mode]) score = stats.win ? Math.max(1, Math.floor(stats.time)) : 0;
     if (mode === 'team') score = prev + (stats.win ? 1 : 0);
-    const record = mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
+    const record = isDuoMode(mode) ? false : mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
     if (record) { save.bests[mode] = score; Net.submitRecord(mode, score); }
     stats.crownT = player.crownT;
     // weekly tasks
@@ -562,8 +562,10 @@
     // 2.0.7 results: a big number on the left, reward tiles sliding in on the right
     const lgHtml = `${chaosR ? ` <span style="color:${CHAOS_TIERS[chaosR.tier].color}">Хаос: ${chaosR.net >= 0 ? '+' : '−'}${Math.abs(chaosR.net)} очков${chaosR.fee ? ` <small>(+${chaosR.gain} − взнос ${chaosR.fee})</small>` : ''}${chaosR.capped ? ` <small>· «${chaosR.capped}» откроется с ${CHAOS_CFG.tierLevel[CHAOS_TIERS.findIndex(t => t.name === chaosR.capped)]} ур.</small>` : ''}</span>` : stats.ranked ? `<span style="color:${lgView(lgAfter, holidayOf(save.season.id)).color}">${pts >= 0 ? '+' : '−'}${Math.abs(pts)} рейтинга${fee ? ` <small>(+${gain} − взнос ${fee})</small>` : ''}</span>` : `<span class="hint">очки лиги — только в рейтинговом бою</span>`}`.trim();
     const lvI = levelInfo(save.xp), lvPct = lvI.max ? 100 : lvI.into / lvI.need * 100;
-    const heroVal = mode === 'raid' ? Math.round(stats.raidDmg || 0) : best, heroLbl = mode === 'raid' ? 'урон боссу' : 'пик массы';
-    const place = stats.finalRank || (stats.bestRank > 50 ? 0 : stats.bestRank);
+    const duoHero = isDuoMode(mode) && stats.duoHero;   // a match for two shows its own main number (share of the field, waves…)
+    const heroVal = duoHero ? duoHero.v : mode === 'raid' ? Math.round(stats.raidDmg || 0) : best, heroLbl = duoHero ? duoHero.l : mode === 'raid' ? 'урон боссу' : 'пик массы';
+    const place = isDuoMode(mode) ? 0 : stats.finalRank || (stats.bestRank > 50 ? 0 : stats.bestRank);
+    $('againBtn').textContent = isDuoMode(mode) ? 'Ещё матч' : 'Ещё раунд';
     $('resHero').innerHTML = (record && mode !== 'team' ? '<span class="rh-rec">новый рекорд</span>' : '') + `<small>${heroLbl}</small><b class="rh-num" data-to="${heroVal}">0</b>` +
       `<div class="rh-chips">${place ? `<span>🏆 ${place}-е место</span>` : ''}<span>⏱ ${fmtTime(stats.time)}</span>${stats.kills ? `<span>🍴 ${stats.kills}</span>` : ''}</div>`;
     $('rewards').innerHTML = upHTML +

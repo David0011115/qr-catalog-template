@@ -1,5 +1,5 @@
 /* Капли 3D: offline mode. Own cache name, never touches the catalog's caches on the same site. */
-const CACHE = "kapli3d-v274";
+const CACHE = "kapli3d-v275";
 const CORE = ["./", "index.html", "three.min.js", "supabase.js", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "chat-cosmos.svg", "chat-aurora.svg", "chat-sakura.svg", "chat-drops.svg", "chat-chronos-workshop.svg", "chat-chronos-city.svg", "chat-chronos-heart.svg", "js/emotes.js", "js/errlog.js", "js/loader.js", "js/game/01-config.js", "js/game/02-save.js", "js/game/03-scene.js", "js/game/04-arena.js", "js/game/05-achievements.js", "js/game/06-abilities.js", "js/game/07-round.js", "js/game/08-menus.js", "js/game/09-sound.js", "js/game/10-items-chests.js", "js/game/11-leagues.js", "js/game/12-profile.js", "js/game/13-world.js", "js/game/14-net.js", "js/game/14b-duo.js", "js/game/14c-duo-match.js", "js/game/14d-territory.js", "js/game/15-boot.js", "js/app.js", "css/01-base.css", "css/02-leagues.css", "css/03-chat.css", "css/04-features.css", "css/05-chat-2.css"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {

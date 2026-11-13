@@ -80,12 +80,20 @@
       on = false; role = ''; rl = null; [...rival.cells].forEach(removeCell); rebuildCells();
       setTimeout(() => { if (!running) setArenaSize(1); }, 1200);
     }
-    function endMatch(title, win, notify) {
+    function endMatch(title, win, notify, bonus = 0) {
       if (!on) return;
       if (notify) Duo.send({ t: 'end' });
       const wasRunning = running && !dying;
       cleanup();
-      if (wasRunning) finishRound(title, 0, win);
+      if (wasRunning) finishRound(title, bonus, win);
+    }
+    // the host ends the match for both phones. w: 'host' | 'guest' | 'draw'; sh: the host's result (share of the field); why: 'early' | 'time'
+    function result(w, sh, why) {
+      if (!on || dying) return;
+      if (role === 'host') Duo.send({ t: 'res', w, sh, why });
+      const me = w === 'draw' ? 'draw' : w === role ? 'win' : 'loss';
+      const out = rl && rl.finish ? rl.finish(me, role === 'host' ? sh : 1 - sh, why) : { title: me === 'win' ? 'Победа!' : me === 'draw' ? 'Ничья' : 'Поражение', bonus: 0 };
+      endMatch(out.title, me === 'win', false, out.bonus);
     }
 
     // ---- host: the second player's drops follow the other phone's controls; snapshots go out 15 times a second ----
@@ -219,6 +227,7 @@
       if (m.t === 'a') { act(m.k, m.i); return true; }
       if (m.t === 'hi') { dress(rival, m.skin, m.name); return true; }
       if (m.t === 'dr') { if (role === 'guest') redress(m); return true; }
+      if (m.t === 'res') { if (role === 'guest') result(m.w, +m.sh || 0, m.why); return true; }
       if (m.t === 'end') { endMatch(`${rival.name} вышел из матча`, true, false); return true; }
       return false;
     }
@@ -229,7 +238,7 @@
     window.duoStartMatch = startAsHost;
 
     return { get on() { return on; }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
-      get mode() { return on ? modeId : ''; }, rules, rivalPick,
+      get mode() { return on ? modeId : ''; }, rules, rivalPick, result,
       steerRival, act: (k, i) => { if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
       // a hook in canEat: the rules of the mode may forbid a bite; the second player's shield bonus counts like yours
       eatBlock: (a, b) => on && ((b.owner === rival && role === 'host' && rival.eff.shield > 0) || !!(rl && rl.eatBlock && rl.eatBlock(a, b))),

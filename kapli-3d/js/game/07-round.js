@@ -600,7 +600,7 @@
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
       if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · урон за заход ${Math.round(stats.raidDmg || 0)}/${RAID_ATTEMPT_CAP}`; }
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
-      if (mode === 'territory') modeChip = DuoM.chip();
+      if (mode === 'territory') { modeChip = DuoM.chip(); if (DuoM.on) timer = DuoM.rules.territory.timer(); }
     }
     const badges = [];
     const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);

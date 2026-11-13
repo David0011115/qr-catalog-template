@@ -375,7 +375,7 @@
   if (save.totals && save.totals.rounds && !save.resetOffer170 && !TEST_MODE) setTimeout(offerReset, 250);
   else { if (!save.resetOffer170) { save.resetOffer170 = true; persist(); } if (save.totals && save.totals.rounds && newsUnseen().length) setTimeout(showNewsNow, 250); }
   if (!(save.totals && save.totals.rounds) && !save.newsSeen) { save.newsSeen = NEWS[0].id; persist(); newsRefresh(); }
-  $('againBtn').addEventListener('click', startRound);
+  $('againBtn').addEventListener('click', () => { if (isDuoMode(save.mode)) openDuoLobby(save.mode); else startRound(); });   // modes for two go back to the room
   $('resDrawer').addEventListener('toggle', () => { if ($('resDrawer').open) requestAnimationFrame(drawGraph); });
   $('rewards').addEventListener('click', e => { const b = e.target.closest('#coinBtn'); if (!b) return; const open = $('coinBreak').hidden; $('coinBreak').hidden = !open; b.setAttribute('aria-expanded', open); });
   $('menuBtn').addEventListener('click', () => { renderAll(); showCard('menuCard'); $('startBtn').focus(); });

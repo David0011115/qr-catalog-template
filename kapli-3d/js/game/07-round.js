@@ -285,15 +285,6 @@
         }
       }
     }
-    if (mode === 'daily' && !stats.dailyDone && stats.maxMass >= DAILY_GOAL) {
-      stats.dailyDone = true;
-      // reaching the goal ends the round as a win; the daily reward is paid once a day
-      if (save.dailyDone !== today) {
-        save.dailyDone = today; save.xp += 150; save.totals.dailies++; persist();
-        finishRound('Испытание дня пройдено!', 100, true);
-      } else finishRound('Цель достигнута (награда за сегодня уже получена)', 0, true);
-      return true;
-    }
     return false;
   }
   let historyT = 0;
@@ -596,13 +587,12 @@
     if (running) {
       const lim = { timed: TIMED_LEN, team: TEAM_LEN, raid: RAID_LEN }[mode];
       if (lim) timer = `⏱ ${fmtTime(Math.max(0, lim - stats.time))}`;
-      else if (['race', 'survival', 'classic', 'rbuild', 'hardcore', 'daily', 'royale', 'crown'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
+      else if (['race', 'survival', 'classic', 'rbuild', 'hardcore', 'royale', 'crown'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
       if (mode === 'royale') modeChip = `Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
       if (mode === 'crown') modeChip = `♛ ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)}`;
       if (mode === 'race') modeChip = `Гонка ${Math.round(total(player))}/${RACE_GOAL}<span class="bar wide"><span style="width:${Math.min(100, total(player) / RACE_GOAL * 100).toFixed(0)}%"></span></span>`;
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
       if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · урон за заход ${Math.round(stats.raidDmg || 0)}/${RAID_ATTEMPT_CAP}`; }
-      if (mode === 'daily') modeChip = `${dailyMod.name} · цель ${Math.min(DAILY_GOAL, Math.round(stats.maxMass))}/${DAILY_GOAL}`;
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
     }
     const badges = [];

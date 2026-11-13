@@ -18,7 +18,7 @@
     { id: 'bg_maple',    name: 'Неоновый клён',       rar: 'epic',      src: 'праздничная коллекция «Хэллоуин»',              test: () => save.colDone.includes('col_hol_halloween') },
     { id: 'bg_lotus',    name: 'Ночной лотос',        rar: 'epic',      src: 'линейка «Выживший», III ступень',               test: () => save.ach.includes('ln_surv') },
     { id: 'bg_fireflies', name: 'Светлячковый лес',   rar: 'epic',      src: 'линейка «Сезоны», III ступень (26 значков)',     test: () => save.ach.includes('ln_season') },
-    { id: 'bg_bamboo',   name: 'Бамбуковая роща',     rar: 'legendary', src: 'мастерство «Легенда» во всех режимах',          test: () => MODE_IDS.every(id => masteryLv((save.mastery || {})[id] || 0) >= MASTERY_LV.length) },
+    { id: 'bg_bamboo',   name: 'Бамбуковая роща',     rar: 'legendary', src: 'мастерство «Легенда» во всех режимах',          test: () => SOLO_MODE_IDS.every(id => masteryLv((save.mastery || {})[id] || 0) >= MASTERY_LV.length) },
     { id: 'bg_colossus', name: 'Логово колосса',      rar: 'epic',      src: 'победа над боссом рейда',                       test: () => (save.raidWins || 0) >= 1 },
     { id: 'bg_neon',     name: 'Неоновый трон',       rar: 'legendary', top: 'league', src: 'лига: дойди до «Неона»',          test: () => (save.totals.maxLeague || 0) >= 5 },
     { id: 'bg_champion', name: 'Зал чемпионов',       rar: 'legendary', top: 'league', src: 'особый значок «Чемпион Неона» (6 сезонов в «Неоне»)', test: () => !!(save.badges || {}).neonchamp },
@@ -820,17 +820,17 @@
     renderProfChests();
     $('psStats').textContent = `· раундов: ${T.rounds}`;
     $('psChests').textContent = `· открыто ${save.chestStats.total}`;
-    $('psMastery').textContent = `· с уровнем ${MODE_IDS.filter(id => masteryLv(save.mastery[id] || 0)).length} из ${MODE_IDS.length}`;
+    $('psMastery').textContent = `· с уровнем ${SOLO_MODE_IDS.filter(id => masteryLv(save.mastery[id] || 0)).length} из ${SOLO_MODE_IDS.length}`;
     $('psSpecial').textContent = `· ${(save.legendBadge ? 1 : 0) + (save.badges && save.badges.millionaire ? 1 : 0) + SPECIAL.filter(b => save.badges && save.badges[b.id]).length + PROMO_BADGES.filter(b => save.badges && save.badges[b.id]).length} из ${2 + SPECIAL.length + PROMO_BADGES.filter(b => save.badges && save.badges[b.id]).length}`;
     $('psSeasons').textContent = `· ${save.seasonLog.length + (seasonStarted ? 1 : 0)}`;
     $('profMastery').innerHTML = '<p class="info-note" style="margin:0">Очки за каждый раунд: больше за победу и рекорд. Бронза +600 ◆, Золото +1 500 ◆, Легенда +2 500 ◆; «Легенда» во всех режимах — рамка «Мастер режимов».</p>' +
-      MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
+      SOLO_MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
         const pts = save.mastery[id] || 0, lv = masteryLv(pts), prev = lv ? MASTERY_LV[lv - 1].pts : 0, nx = MASTERY_LV[lv];
         const pct = nx ? (pts - prev) / (nx.pts - prev) * 100 : 100;
         return `<div class="m-row"><div class="m-top"><b>${m.name}</b><span class="m-lv l${lv}">${lv ? MASTERY_LV[lv - 1].name : 'нет'}</span></div>` +
           `<div class="track"><div class="fill" style="width:${pct.toFixed(0)}%"></div></div><small>${nx ? `${pts} / ${nx.pts} до «${nx.name}» · ${nx.coins ? `+${nx.coins} ◆` : nx.frame ? 'рамка' : 'титул'}` : `${pts} очков · максимум`}</small></div>`;
       }).join('');
-    $('profBests').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
+    $('profBests').innerHTML = SOLO_MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => `<dt>${m.name}</dt><dd>${fmtBest(id, save.bests[id] || 0)}</dd>`).join('');
     { // one wall: legendary-achievement badges (a mark of the achievement) + status badges; locked ones only say where they come from
       const tile = (svg, name, got, src) => `<div class="badge-tile ${got ? '' : 'off'}" title="${name}">${svg}<b>${name}</b><small>${got ? 'получен ' + new Date(got).toLocaleDateString('ru-RU') : src}</small></div>`;
       const B = save.badges || {};

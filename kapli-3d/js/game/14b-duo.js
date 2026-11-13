@@ -6,6 +6,7 @@
   const Duo = (() => {
     const ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', DIRECT_MS = 7000, LOST_MS = 6000;
     const me = Math.random().toString(36).slice(2, 10);
+    let rttLog = [];   // [time, ms] of the last 10 s: the screen shows the average and the worst, not one random ping
     let ch = null, pc = null, dcR = null, dcU = null, role = '', code = '', state = 'idle', why = '', peer = '', rtt = 0, lastSeen = 0, tick = null, helloT = null, directT = null;
     let onMsg = () => {}, onState = () => {};
     const direct = () => !!(dcR && dcR.readyState === 'open');
@@ -18,7 +19,7 @@
       sig('m', { d: s });
     }
     function got(s) { let m; try { m = JSON.parse(s); } catch (e) { return; } lastSeen = performance.now();
-      if (m.t === 'pi') send({ t: 'po', n: m.n }, true); else if (m.t === 'po') { rtt = Math.round(performance.now() - m.n); onState(); } else if (m.t === 'bye') leave('Второй игрок вышел', true); else onMsg(m); }
+      if (m.t === 'pi') send({ t: 'po', n: m.n }, true); else if (m.t === 'po') { const now = performance.now(); rtt = Math.round(now - m.n); rttLog.push([now, rtt]); while (rttLog.length && now - rttLog[0][0] > 10000) rttLog.shift(); onState(); } else if (m.t === 'bye') leave('Второй игрок вышел', true); else onMsg(m); }
     function wire(d) { d.onmessage = e => got(e.data); d.onopen = () => { clearTimeout(directT); onState(); }; d.onclose = () => onState(); if (d.label === 'r') dcR = d; else dcU = d; }
     function newPeer() {
       if (pc) try { pc.close(); } catch (e) {}
@@ -68,12 +69,12 @@
       clearInterval(tick); clearInterval(helloT); clearTimeout(directT);
       if (!quiet && state === 'ready') send({ t: 'bye' });
       if (pc) try { pc.close(); } catch (e) {} pc = dcR = dcU = null;
-      const c = ch; ch = null; peer = ''; rtt = 0;
+      const c = ch; ch = null; peer = ''; rtt = 0; rttLog = [];
       if (c) try { const sb = await Net.client(); await sb.removeChannel(c); } catch (e) {}
       set('idle', reason);
     }
     return { host: () => open('host'), join: c => open('guest', String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5)), leave, send,
-      get state() { return state; }, get why() { return why; }, get code() { return code; }, get role() { return role; }, get rtt() { return rtt; }, get direct() { return direct(); },
+      get state() { return state; }, get why() { return why; }, get code() { return code; }, get role() { return role; }, get rtt() { return rtt; }, get rttAvg() { return rttLog.length ? Math.round(rttLog.reduce((s, x) => s + x[1], 0) / rttLog.length) : 0; }, get rttMax() { return rttLog.reduce((m, x) => Math.max(m, x[1]), 0); }, get direct() { return direct(); },
       on(msg, st) { onMsg = msg; onState = st; } };
   })();
 
@@ -82,10 +83,13 @@
     const on = (() => { try { if (/[?&]duo=1/.test(location.search)) localStorage.setItem('kapli3d-duo', '1'); return localStorage.getItem('kapli3d-duo') === '1'; } catch (e) { return false; } })();
     $('duoBtn').hidden = !on;
     const mine = { x: .3, y: .5 }, theirs = { x: .7, y: .5, seen: 0 }; let raf = 0, sentAt = 0, drawn = '';
+    // the same room screen serves two ways in: the hidden connection test (Settings) and a mode for two (Play with a «вдвоём» mode selected)
+    let lobby = null;   // null = connection test, else the mode id
+    window.openDuoLobby = id => { lobby = id; drawn = ''; $('duoTitle').innerHTML = `${MODES[id].name} <span class="duo-badge">👥 вдвоём · локально</span>`; showCard('duoCard'); render(); };
     function render() {
       const b = $('duoBody'), st = Duo.state, key = st + '|' + Duo.code + '|' + Duo.why;
-      if (st === 'ready') { const info = `Соединено · ${Duo.direct ? 'напрямую' : 'через сервер'} · задержка ${Duo.rtt ? Duo.rtt + ' мс' : '…'}`; if (drawn === key) { $('duoInfo').textContent = info; return; }
-        b.innerHTML = `<p class="hint" id="duoInfo" style="margin:0">${info}</p><p class="hint" style="margin:0">Комната <b>${Duo.code}</b> · ты ${Duo.role === 'host' ? 'создал её' : 'вошёл в неё'}. Веди пальцем по полю — второй игрок видит твою каплю, а ты его.</p><canvas id="duoPad" class="duo-pad"></canvas><button class="btn ghost" id="duoLeave" type="button">Выйти из комнаты</button>`;
+      if (st === 'ready') { const info = `Соединено · ${Duo.direct ? 'напрямую' : 'через сервер'} · задержка ${Duo.rttAvg ? `в среднем ${Duo.rttAvg} мс, худшая ${Duo.rttMax} мс` : '…'}`; if (drawn === key) { $('duoInfo').textContent = info; return; }
+        b.innerHTML = `<p class="hint" id="duoInfo" style="margin:0">${info}</p><p class="hint" style="margin:0">Комната <b>${Duo.code}</b> · ты ${Duo.role === 'host' ? 'создал её' : 'вошёл в неё'}. ${lobby ? 'Пока ждёте, проверьте связь: водите пальцем по полю.' : 'Веди пальцем по полю — второй игрок видит твою каплю, а ты его.'}</p><canvas id="duoPad" class="duo-pad"></canvas>${lobby ? (Duo.role === 'host' ? '<button class="btn" id="duoStart" type="button">▶ Начать матч</button>' : '<p class="hint duo-wait" style="margin:0">Ждём, когда создатель комнаты начнёт матч…</p>') : ''}<button class="btn ghost" id="duoLeave" type="button">Выйти из комнаты</button>`;
         pad(); }
       else if (st === 'waiting') b.innerHTML = `<p class="hint" style="margin:0">Скажи этот код второму игроку:</p><div class="duo-code" aria-label="Код комнаты">${Duo.code}</div><p class="hint" style="margin:0">Жду второй телефон…</p><button class="btn ghost" id="duoLeave" type="button">Отмена</button>`;
       else if (st === 'joining') b.innerHTML = `<p class="hint" style="margin:0">Ищу комнату <b>${Duo.code}</b>…</p><button class="btn ghost" id="duoLeave" type="button">Отмена</button>`;
@@ -112,7 +116,7 @@
       raf = requestAnimationFrame(frame);
     }
     Duo.on(m => { if (m.t === 'p') { theirs.x = m.x; theirs.y = m.y; theirs.seen = 1; } }, () => { if (!$('duoCard').hidden) render(); });
-    $('duoBtn').addEventListener('click', () => { drawn = ''; showCard('duoCard'); render(); });
-    $('duoBack').addEventListener('click', () => { Duo.leave(); showCard('settingsCard'); $('duoBtn').focus(); });
-    $('duoBody').addEventListener('click', e => { const id = e.target.id; if (id === 'duoHost') Duo.host(); else if (id === 'duoJoin') { const c = $('duoCode').value.trim(); if (c.length === 5) Duo.join(c); else { $('duoCode').focus(); toast('В коде комнаты 5 символов'); } } else if (id === 'duoLeave') Duo.leave(); });
+    $('duoBtn').addEventListener('click', () => { lobby = null; drawn = ''; $('duoTitle').textContent = 'Игра вдвоём · тест связи'; showCard('duoCard'); render(); });
+    $('duoBack').addEventListener('click', () => { Duo.leave(); if (lobby) { showCard('menuCard'); $('startBtn').focus(); } else { showCard('settingsCard'); $('duoBtn').focus(); } });
+    $('duoBody').addEventListener('click', e => { const id = e.target.id; if (id === 'duoHost') Duo.host(); else if (id === 'duoJoin') { const c = $('duoCode').value.trim(); if (c.length === 5) Duo.join(c); else { $('duoCode').focus(); toast('В коде комнаты 5 символов'); } } else if (id === 'duoLeave') Duo.leave(); else if (id === 'duoStart') { if (window.duoStartMatch) window.duoStartMatch(lobby); else toast('Сам матч появится на следующем этапе — сейчас проверяется комната'); } });
   }

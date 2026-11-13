@@ -18,7 +18,8 @@
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
     hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Монеты ×1,6' },
-    daily:    { name: 'Испытание дня',  desc: '' },
+    // modes for two phones on one network (a room by code): marked «вдвоём · локально» everywhere; 2.5 — replaces «Испытание дня»
+    territory: { name: 'Захват территории', desc: 'Вдвоём, на двух телефонах. Поле разделено границей: ешь ботов на своей половине, расти — и граница ползёт к сопернику. 4 минуты, досрочная победа при 80% поля', duo: true },
     raid:     { name: 'Босс-рейд',      desc: 'Босс недели: урон копится между попытками. 3 попытки в день, за победу — уникальный скин' },
     royale:   { name: 'Королевская битва', desc: 'Арена сужается, боты не возрождаются, побеждает последний. Только в лиге, в свой сезон' },
   };
@@ -28,6 +29,8 @@
   // v46: «Только деление» and «Охота на Колосса» were removed: «Только деление» lives on as a daily modifier, the Colossus as the weekly raid boss
   const REMOVED_MODES = ['split', 'giant', 'team'];   // 2.1.0: «Командный бой» replaced by «Случайный билд»
   const MODE_IDS = Object.keys(MODES).filter(m => !REMOVED_MODES.includes(m));
+  // modes for two: no mastery, no solo records; achievements «во всех режимах» count the solo ones
+  const isDuoMode = m => !!(MODES[m] && MODES[m].duo), SOLO_MODE_IDS = MODE_IDS.filter(m => !isDuoMode(m));
   const DAILY = [
     { id: 'fog',      name: 'Туман',        desc: 'Видно только ближнее окружение' },
     { id: 'dashonly', name: 'Только рывок', desc: 'Деления нет, рывок раз в секунду' },
@@ -64,7 +67,6 @@
   const psStops = p => !p || (!p.s && !p.n) ? ['#22e6ff', '#ff4fd8'] : p.n >= 25 ? ['#ff4fd8', '#ffd23f', '#3dffa2', '#22e6ff', '#b26bff'] : p.s >= 10 ? ['#fff6a0', '#ffd23f', '#ff9a3d'] : ['#ffffff', '#c0c8e0', '#7d86a6'];
   const xpForLevel = L => { let t = 0; for (let k = 1; k < L; k++) t += levelNeed(k); return t; };
   const dailyMod = DAILY[[...today].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % DAILY.length];
-  MODES.daily.desc = `${dailyMod.name}: ${dailyMod.desc.toLowerCase()}. Цель: масса ${DAILY_GOAL}, награда раз в день`;
   const EJECT_COST = 10, EJECT_MASS = 8, EJECT_MIN = 25, MAX_EJECTS = 60;
   const BASE_ABIL_N = 10, BASE_ABIL_IDS = () => BASE_ABIL.map(a => a.id);
   const ACH = [
@@ -567,7 +569,7 @@
     race:     { c: '#3dffa2', c2: '#0a8f6a', ic: '<path d="M6 21V3.5M6 4h11l-2.5 4L17 12H6"/><path d="M1.5 9h2.5M1 13h3M2 17h2"/>', tags: ['до 4000 массы', 'на скорость'] },
     rbuild:   { c: '#b26bff', c2: '#ff4fd8', ic: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/>', tags: ['3 случайные способности', 'опыт ×1,2'], isNew: true },
     hardcore: { c: '#ff6a00', c2: '#ff2d55', ic: '<path d="M12 2.5c1 4 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.8 1.6-3.8 2.7-5.5.5 2.2 1.5 2.8 2.6 2.8 0-3.2-1-5.3.2-8.3z"/>', tags: ['без бонусов', 'монеты ×1,6'] },
-    daily:    { c: '#22e6ff', c2: '#3dffa2', ic: '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8.5 3v4M15.5 3v4M9.5 15l2 2 3.5-3.5"/>', tags: ['новое каждый день', 'модификатор'] },
+    territory: { c: '#22e6ff', c2: '#ff4fd8', ic: '<circle cx="12" cy="12" r="9"/><path d="M13.5 3.2c-2.5 3-2.5 5.8 0 8.8s2.5 5.8 0 8.8" stroke-dasharray="2.2 1.8"/><circle cx="7.6" cy="12" r="2" fill="currentColor"/><circle cx="17" cy="12" r="1.6"/><path d="M9.8 9.2l1.6-1.5M9.8 14.8l1.6 1.5"/>', tags: ['4 минуты', 'граница поля'], duo: true },
     raid:     { c: '#ff2d75', c2: '#7b3dff', ic: '<circle cx="12" cy="13.5" r="6.5"/><path d="M7.2 9L4.5 3.5l4.8 3.3M16.8 9l2.7-5.5-4.8 3.3"/><path d="M9.3 12.5h1.4M13.3 12.5h1.4M9.5 16.3h5"/>', tags: ['босс недели', '3 попытки в день'] },
     royale:   { c: '#ff4fd8', c2: '#22e6ff', ic: '<circle cx="12" cy="12" r="9" stroke-dasharray="3 2.4"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>', tags: ['арена сужается', 'только в лиге'] },
   };

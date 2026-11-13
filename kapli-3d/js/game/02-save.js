@@ -302,7 +302,7 @@
     save.decor = out;
     for (const [n, id] of SKILL_TT) if ((save.skillDone || []).length >= n && !save.decor.includes(id)) save.decor.push(id);
     for (const [L, ids] of Object.entries(LEVEL_DECOR)) if ((save.lvlPaid || 1) >= +L) ids.forEach(id => { if (!save.decor.includes(id)) save.decor.push(id); });
-    if (MODE_IDS.every(id => masteryLv((save.mastery || {})[id] || 0) >= MASTERY_LV.length) && !save.decor.includes('fr_modes')) save.decor.push('fr_modes');
+    if (SOLO_MODE_IDS.every(id => masteryLv((save.mastery || {})[id] || 0) >= MASTERY_LV.length) && !save.decor.includes('fr_modes')) save.decor.push('fr_modes');
     for (const k of ['frame', 'title']) { if (save[k] && ren[save[k]]) save[k] = ren[save[k]]; if (save[k] && !decorById(save[k])) save[k] = null; }
     save.deco170 = { replaced, coins: 0 };   // no refund: nobody has the removed ones yet
     persist();
@@ -349,7 +349,7 @@
     { id: 'ch_mass10k',   name: 'Сверхгигант',        desc: 'Набери массу 10 000 в «Классике»',          goal: 10000, prog: () => save.bests.classic || 0, reward: ['skin', 'titan'] },
     { id: 'ch_race2',     name: 'Гонщик',             desc: 'Выиграй «Гонку массы» быстрее 5 минут',     goal: 1,    prog: () => save.bests.race > 0 && save.bests.race <= 300 ? 1 : 0, reward: ['deco', 'fr_finish'] },
     { id: 'ch_crown5',    name: 'Венценосный',        desc: 'Победи в «Захвате короны» 5 раз',           goal: 5,    prog: () => save.totals.crownWins, reward: ['deco', 'tt_crowned'] },
-    { id: 'ch_daily7',    name: 'Постоянство',        desc: 'Пройди 7 испытаний дня',                    goal: 7,    prog: () => save.totals.dailies,   reward: ['deco', 'fr_calendar'] },
+    { id: 'ch_daily7',    name: 'Постоянство',        desc: 'Выиграй 7 матчей в «Захвате территории»', goal: 7,    prog: () => Math.max(save.totals.dailies || 0, (save.duo && save.duo.territory && save.duo.territory.wins) || 0),   reward: ['deco', 'fr_calendar'] },
     { id: 'ch_giant5',    name: 'Гроза гигантов',     desc: 'Победи босса недели в «Босс-рейде» 2 раза',  goal: 2,    prog: () => Math.max(save.raidWins || 0, Math.floor((save.totals.giantWins || 0) / 2.5)), reward: ['deco', 'tt_giants'] },
     { id: 'ch_hard1500',  name: 'Тёмная сторона',     desc: 'Набери массу 5000 в «Хардкоре»',            goal: 5000, prog: () => save.bests.hardcore || 0, reward: ['deco', 'fr_dark'] },
     { id: 'ch_surv20',    name: 'Двадцатая волна',    desc: 'Дойди до 20-й волны в «Выживании»',         goal: 20,   prog: () => save.totals.bestWave,  reward: ['deco', 'tt_unbreak'] },

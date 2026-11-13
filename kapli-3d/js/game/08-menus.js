@@ -14,7 +14,7 @@
   $('colBtn').addEventListener('click', () => openView('collections'));
   $('myAbilBtn').addEventListener('click', () => openView('abilities'));
   $('backBtn').addEventListener('click', closeShop);
-  $('startBtn').addEventListener('click', () => { pendingRanked = false; startRound(); });
+  $('startBtn').addEventListener('click', () => { pendingRanked = false; if (isDuoMode(save.mode)) { openDuoLobby(save.mode); return; } startRound(); });
   // ================= tutorial for new players =================
   const TUT_COINS = 500;
   const pCenter = () => { const m = total(player) || 1; return player.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); };
@@ -416,7 +416,7 @@
     { id: 'collector', src: 'все коллекции, кроме праздничных', name: 'Великий коллекционер', label: 'КОЛЛЕКЦИИ', c: '#3dffa2', c2: '#0b6e3e', glyph: '▦',
       prog: () => { const L = COLLECTIONS.filter(c => !c.holiday); return [L.filter(c => save.colDone.includes(c.id)).length, L.length]; }, how: n => `Собери все коллекции, кроме праздничных: ${n[0]} из ${n[1]}.` },
     { id: 'modes', src: 'мастерство «Легенда» во всех режимах', name: 'Мастер режимов', label: 'МАСТЕР', c: '#22e6ff', c2: '#0a3a6e', glyph: '12',
-      prog: () => { const ids = MODE_IDS; return [ids.filter(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length).length, ids.length]; }, how: n => `Мастерство «Легенда» во всех режимах: ${n[0]} из ${n[1]}.` },
+      prog: () => { const ids = SOLO_MODE_IDS; return [ids.filter(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length).length, ids.length]; }, how: n => `Мастерство «Легенда» во всех режимах: ${n[0]} из ${n[1]}.` },
     { id: 'neonchamp', src: '6 сезонов в «Неоне»', name: 'Чемпион Неона', label: 'НЕОН ×6', c: '#ff4fd8', c2: '#5a0a4a', glyph: 'N',
       prog: () => [Math.min(6, save.seasonLog.filter(x => x.league >= 5).length), 6], how: n => `Закончи 6 сезонов в высшей лиге («Неон» или праздничная): ${n[0]} из 6.` },
     { id: 'firstneon', src: 'первый сезон в «Неоне»', name: 'Первый Неон', label: 'НЕОН', c: '#ff4fd8', c2: '#3a0a40', glyph: '1',
@@ -648,18 +648,18 @@
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
     { const id = save.mode, a = modeArt(id), ms = modeMastery(id), mb = $('modeBtn');
       mb.classList.add('mt'); mb.style.setProperty('--mc', a.c); mb.style.setProperty('--mc2', a.c2);
-      mb.innerHTML = `<span class="art">${modeIcon(id)}</span><span class="hd"><span class="k">Режим</span><b class="n">${MODES[id].name}</b></span><span class="more">все ▸</span>` +
-        `<span class="ln"><span>Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство <b style="color:#ffd23f">${ms.name ? `«${ms.name}»` : '—'}</b></span></span><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>`; }
+      mb.classList.toggle('duo', isDuoMode(id)); mb.innerHTML = `<span class="art">${modeIcon(id)}</span><span class="hd"><span class="k">${isDuoMode(id) ? '👥 Вдвоём · локально' : 'Режим'}</span><b class="n">${MODES[id].name}</b></span><span class="more">все ▸</span>` +
+        (isDuoMode(id) ? (d => `<span class="ln"><span>Победы <b>${d.wins || 0}</b></span><span>Матчей <b>${d.games || 0}</b></span></span>`)((save.duo || {})[id] || {}) : `<span class="ln"><span>Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство <b style="color:#ffd23f">${ms.name ? `«${ms.name}»` : '—'}</b></span></span>`) + `<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>`; }
     { const plv = playerLevel();
       $('modes').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
         const a = modeArt(id), ms = modeMastery(id), on = save.mode === id;
         const lock = id === 'royale' && !TEST_MODE ? `<span>🔒</span>Только в лиге<small>сезон ${nextSeasonOf('royale')}</small>` : m.lvl && plv < m.lvl ? `<span>🔒</span>С ${m.lvl} уровня<small>сейчас ${plv}</small>` : '';
         const tag = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })()
           : id === 'royale' ? (TEST_MODE ? `<span class="lg-tag">Открыта для теста · сезон ${nextSeasonOf('royale')}</span>` : '') : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '';
-        return `<button class="mode mcard" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
+        return `<button class="mode mcard${m.duo ? ' duo' : ''}" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
           (on ? '<span class="sel" aria-hidden="true">✓</span>' : '') + (a.isNew && !lock ? '<span class="nw">новый</span>' : '') +
-          `<span class="art">${modeIcon(id)}</span><span class="tx"><b>${m.name}</b><small>${m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${tag}</span>` +
-          `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` «${ms.name}»` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>` +
+          `<span class="art">${modeIcon(id)}</span><span class="tx">${m.duo ? '<span class="duo-mark">👥 вдвоём · локально</span>' : ''}<b>${m.name}</b><small>${m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${tag}</span>` +
+          (m.duo ? (d => `<span class="ft"><span class="rec">Победы <b>${d.wins || 0}</b></span><span class="rec">Матчей <b>${d.games || 0}</b></span></span>`)((save.duo || {})[id] || {}) : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` «${ms.name}»` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
           (lock ? `<span class="lk">${lock}</span>` : '') + `</button>`; }).join(''); }
     $('abilCount').textContent = `${save.abil.owned.length}/${ABILITIES.length}`;
     $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;

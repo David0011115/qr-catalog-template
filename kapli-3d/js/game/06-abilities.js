@@ -487,7 +487,7 @@
       if (L.coins) { save.coins += L.coins; what = `+${L.coins} ◆`; }
       masteryLine += `<li class="done"><span>Мастерство «${MODES[mode].name}»: ${L.name}</span><span class="rw">${what}</span></li>`;
     }
-    if (!save.decor.includes('fr_modes') && MODE_IDS.every(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length)) {
+    if (!save.decor.includes('fr_modes') && SOLO_MODE_IDS.every(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length)) {
       save.decor.push('fr_modes'); masteryLine += '<li class="done"><span>Мастерство «Легенда» во всех режимах</span><span class="rw">рамка «Мастер режимов»</span></li>'; }
     { const lv = masteryLv(save.mastery[mode]), nx = MASTERY_LV[lv];
       masteryLine += `<li><span>Мастерство «${MODES[mode].name}» +${mGain}</span><span class="rw">${nx ? `${save.mastery[mode]}/${nx.pts} до «${nx.name}»` : 'максимум'}</span></li>`; }
@@ -531,7 +531,7 @@
     persist();
     const lvAfter = playerLevel();
 
-    const head = stats.endTitle ? stats.endTitle + (record && mode !== 'team' ? ' · рекорд!' : '') : ['race', 'team', 'daily', 'raid'].includes(mode) ? 'Поражение' : record ? 'Новый рекорд!' : 'Раунд окончен';
+    const head = stats.endTitle ? stats.endTitle + (record && mode !== 'team' ? ' · рекорд!' : '') : ['race', 'team', 'raid'].includes(mode) ? 'Поражение' : record ? 'Новый рекорд!' : 'Раунд окончен';
     $('resTitle').textContent = `${head} · ${MODES[mode].name}`;
     const cellsHtml = [
       ['Время', fmtTime(stats.time)], ['Пик массы', best], ['Лучшее место', stats.bestRank > 50 ? '–' : stats.bestRank],
@@ -547,7 +547,6 @@
     if (mode === 'crown') cellsHtml.push(['С короной', fmtTime(player.crownT)]);
     if (mode === 'raid') cellsHtml.push(['Урон боссу', stats.raidDmg || 0], ['Здоровье босса', `${Math.ceil(stats.raidLeft / RAID_HP * 100)}%`], ['Попыток сегодня', `${RAID_TRIES - raidState().tries} из ${RAID_TRIES}`]);
     if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×1,6']);
-    if (mode === 'daily') cellsHtml.push(['Испытание', stats.dailyDone ? 'пройдено' : `нужно ${DAILY_GOAL}`]);
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     // tap the coins to see what they were made of
     $('coinBreak').innerHTML = cParts.map(([k, v]) => `<li><span>${k}</span><span class="rw">+${v}</span></li>`).join('') +

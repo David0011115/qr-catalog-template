@@ -1135,7 +1135,7 @@
   testAdd('Всё сразу', [['Открыть всё сразу', () => {
     testUnlockAll(); save.xp = xpForPs(2, 25); save.coins = Math.max(save.coins, 999999);
     save.totals.maxLeague = 5; save.totals.chaosMax = 5; save.totals.chaosGames = Math.max(save.totals.chaosGames || 0, 1);
-    MODE_IDS.forEach(id => { save.mastery[id] = Math.max(save.mastery[id] || 0, MASTERY_LV[MASTERY_LV.length - 1].pts); });
+    SOLO_MODE_IDS.forEach(id => { save.mastery[id] = Math.max(save.mastery[id] || 0, MASTERY_LV[MASTERY_LV.length - 1].pts); });
     ACH.forEach(a => { save.achT[a.id] = a.steps.length; if (!save.ach.includes(a.id)) save.ach.push(a.id); });
     return 'всё открыто: престиж ✦25, лиги «Неон», мастерство «Легенда», достижения на III';
   }]]);

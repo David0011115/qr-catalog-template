@@ -154,3 +154,12 @@
 .duo-join .btn { margin: 0; width: auto; }
 .duo-pad { width: 100%; height: min(44dvh, 260px); border-radius: var(--r-md); background: radial-gradient(circle at 50% 50%, #1c0f4a, #0a0624); border: 1px solid var(--line); touch-action: none; display: block; }
 .duo-why { margin: 0; color: #ff8aa8; font-size: .86rem; }
+
+/* ---- modes for two: a clear «вдвоём · локально» mark on the card, the menu tile and the room ---- */
+#modes .mcard.duo { border-style: dashed; border-color: color-mix(in srgb, var(--mc2) 70%, transparent); }
+.duo-mark { justify-self: start; width: fit-content; max-width: 100%; white-space: nowrap; margin-bottom: 2px; padding: 2px 8px; border-radius: 99px; font: 800 .56rem/1.6 var(--body); letter-spacing: .04em; text-transform: uppercase;
+  color: #fff; background: linear-gradient(90deg, #22b8ff, #ff4fd8); box-shadow: 0 0 12px rgba(255, 79, 216, .5); }
+#modeBtn.mt.duo { border-style: dashed; } #modeBtn.mt.duo .k { color: #ff9ae8; }
+.duo-badge { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 2px 10px; border-radius: 99px; font: 800 .6rem/1.7 var(--body); letter-spacing: .06em; text-transform: uppercase;
+  color: #fff; background: linear-gradient(90deg, #22b8ff, #ff4fd8); }
+.duo-wait { text-align: center; color: #ffd27a !important; }

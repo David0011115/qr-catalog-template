@@ -5,6 +5,10 @@
   // «Босс-рейд» perks earned by beating the weekly twins (like skin stars: small, never game-breaking)
   //  every win: +2% damage to the twins (up to +10%) · 1 win («Аура рейдера»): +3% coins in the raid · 3 wins («Шлем рейдера»): one more try a week
   function raidPerk() { const w = save.raidWins || 0; return { dmg: 1 + .02 * Math.min(5, w), coins: w >= 1, tries: w >= 3 }; }
+  // «Режим дня»: one solo mode a day pays ×1,25 coins (the badge moves to another mode every day)
+  const DAY_POOL = ['classic', 'timed', 'survival', 'crown', 'rbuild', 'hardcore'];
+  const dayMode = () => { let h = 7; for (const ch of today) h = (h * 31 + ch.charCodeAt(0)) % 100003; return DAY_POOL[h % DAY_POOL.length]; };
+  const DAY_MARK = '<span class="day-mark">🔥 режим дня · ◆ ×1,25</span>';
   const ModeX = (() => {
     const MILES = [[1000, 30], [3000, 60], [6000, 100], [10000, 160]];
     const ESC_S = 180, ESC_MAX = 4, RUSH_S = 30;
@@ -24,6 +28,29 @@
     const tether = new THREE.Mesh(new THREE.BoxGeometry(1, .35, .35), new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false }));
     tether.visible = false; scene.add(tether);
     const LINK_D = 150;
+    // «Королевская битва»: the zone holds 25 s, then shrinks for 10 s toward a new circle somewhere inside the old one (shown in advance);
+    // crates with bonuses fall into the next circle; the storm hurts more with every step
+    const Z_HOLD = 25, Z_SHRINK = 10, Z_STEPS = [1, .75, .55, .4, .28, .18, .1];
+    let zc = { x: 0, z: 0 }, zst = 0, zph = 'hold', zt = 20, zfrom = null, zto = null;
+    const nextRing = new THREE.Mesh(new THREE.RingGeometry(.99, 1, 160), decal(new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide })));
+    nextRing.rotation.x = -Math.PI / 2; nextRing.position.y = .07; nextRing.visible = false; scene.add(nextRing);
+    function zPlan() {
+      const r2 = Math.max(18, (Z_STEPS[zst + 1] ?? Z_STEPS[Z_STEPS.length - 1]) * R), a = Math.random() * 6.283, d = Math.max(0, zoneR - r2) * Math.sqrt(Math.random()) * .9;
+      let x = zc.x + Math.cos(a) * d, z = zc.z + Math.sin(a) * d; const L = Math.hypot(x, z); if (L + r2 > R) { x *= (R - r2) / L; z *= (R - r2) / L; }
+      zto = { x, z, r: r2 };
+      for (let k = 0; k < 2 && bonuses.length < MAX_BONUS; k++) { const b = Math.random() * 6.283, q = Math.sqrt(Math.random()) * r2 * .8; owlNext = [x + Math.cos(b) * q, z + Math.sin(b) * q]; spawnBonus(); }
+    }
+    function zoneTick(dt) {
+      zt -= dt;
+      if (zph === 'hold' && zt <= 0) { zph = 'shrink'; zt = Z_SHRINK; zfrom = { x: zc.x, z: zc.z, r: zoneR }; if (zto && zto.r < zoneR) toast('Зона сужается!'); }
+      if (zph === 'shrink') {
+        const k = 1 - Math.max(0, zt) / Z_SHRINK;
+        if (zto) { zc = { x: zfrom.x + (zto.x - zfrom.x) * k, z: zfrom.z + (zto.z - zfrom.z) * k }; zoneR = zfrom.r + (zto.r - zfrom.r) * k; }
+        if (zt <= 0) { zst++; zph = 'hold'; zt = Z_HOLD; zPlan(); }
+      }
+      nextRing.visible = running && mode === 'royale' && !!zto && zto.r < zoneR - .5;
+      if (nextRing.visible) { nextRing.position.set(zto.x, .07, zto.z); nextRing.scale.setScalar(zto.r); nextRing.material.opacity = .3 + .25 * Math.abs(Math.sin(stats.time * 3)); }
+    }
     const twinsLinked = () => { if (!colossus.cells.length || !colossus2.cells.length) return false; const a = mainOf(colossus), b = mainOf(colossus2); return Math.hypot(a.x - b.x, a.z - b.z) < LINK_D + cellR(a) + cellR(b); };
     const solo = () => !stats.ranked && !stats.tutorial && !stats.chaos && !DuoM.on;
 
@@ -31,6 +58,8 @@
       rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0;
       stats.modeXCoins = 0; tether.visible = false;
       crownGround = null; hc = { speed: 0, absorb: 0, cd: 0 }; hcMile = 0; hcOffer = null; hcPanel(null);
+      nextRing.visible = false;
+      if (mode === 'royale') { zc = { x: 0, z: 0 }; zst = 0; zph = 'hold'; zt = 20; zoneR = R; zPlan(); }
       if (mode === 'crown') { crownHolder = null; { const an = Math.random() * 6.283; crownGround = { x: Math.cos(an) * R * .4, z: Math.sin(an) * R * .4 }; } [player, ...bots].forEach(o => o.crownT = 0); setTimeout(() => { if (running && mode === 'crown') toast('Корона лежит на поле (♛ на мини-карте) — хватай! Дальше она переходит только к тому, кто съест владельца'); }, 1500); }
       if (mode === 'hardcore') effects.shield = Math.max(effects.shield, 7);   // a longer safe start: one life only
       if (mode === 'timed' && solo()) {
@@ -89,7 +118,7 @@
     function hcPick(id) { if (!hcOffer) return; hc[id]++; hcOffer = null; hcPanel(null); toast(`${HC_BOOST[id][1]} до конца раунда`); }
     // the end of a round: the hardcore series reward
     function end() {
-      hcPanel(null); tether.visible = false;
+      hcPanel(null); tether.visible = false; nextRing.visible = false;
       if (mode !== 'hardcore' || stats.ranked || stats.tutorial) return;
       save.hcStreak = stats.maxMass >= 3000 ? (save.hcStreak || 0) + 1 : 0;
       const give = (id, name, n) => { if (save.hcStreak >= n && !save.decor.includes(id)) { save.decor.push(id); stats.hcReward = name; setTimeout(() => toast(`Серия хардкора ×${n}: награда «${name}»!`), 1200); } };
@@ -126,6 +155,14 @@
       return base + climb;
     }
     return {
+      zoneTick, get zoneC() { return zc; }, zoneDmgK: () => 1 + .35 * zst,
+      zoneChip: () => `Зона ${zst + 1} · ${zph === 'hold' ? `сужение через ${Math.ceil(Math.max(0, zt))} с` : 'сужается!'}`,
+      zoneMini(g, P, s) {
+        const [x, y] = P(zc.x, zc.z); g.strokeStyle = '#ff3d6e'; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, zoneR * s, 0, 6.29); g.stroke();
+        if (zto && zto.r < zoneR - .5) { const [x2, y2] = P(zto.x, zto.z); g.save(); g.setLineDash([3, 3]); g.strokeStyle = '#ffffff'; g.beginPath(); g.arc(x2, y2, zto.r * s, 0, 6.29); g.stroke(); g.restore(); }
+      },
+      dayMode, dayMark: id => (id === dayMode() ? DAY_MARK : ''),
+      dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
       start, tick, end, survWave, survGrow, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder

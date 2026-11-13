@@ -264,7 +264,7 @@
     shineT.value = now / 1000;
     animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
     zoneLine.visible = zoneOut.visible = running && mode === 'royale';
-    if (zoneLine.visible) { zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
+    if (zoneLine.visible) { const Z = ModeX.zoneC; zoneLine.position.set(Z.x, .06, Z.z); zoneOut.position.set(Z.x, .06, Z.z); zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
     for (const c of cells) {
       const r = cellR(c), v = c.vis, animateVisible = nearView(c.x, c.z);

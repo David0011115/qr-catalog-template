@@ -115,7 +115,7 @@
       const t = mainOf(crownHolder), d = Math.hypot(t.x - c.x, t.z - c.z);
       if (canEat(c, t) && d < sense * (o.kind === 'boss' ? 4 : 2.5)) { o.target = t; o.tx = t.x; o.tz = t.z; return; }
     }
-    if (mode === 'royale' && running && Math.hypot(c.x, c.z) > zoneR * .8) { o.tx = c.x * .3; o.tz = c.z * .3; o.target = null; return; }   // run from the storm
+    if (mode === 'royale' && running) { const Z = ModeX.zoneC; if (Math.hypot(c.x - Z.x, c.z - Z.z) > zoneR * .8) { o.tx = Z.x + (c.x - Z.x) * .3; o.tz = Z.z + (c.z - Z.z) * .3; o.target = null; return; } }   // run from the storm
     if (o.bossType === 'hunter' && player.cells.length) {
       let best = null, bd = Infinity;
       if (!abOn('cloak')) for (const t of player.cells) { const d = Math.hypot(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
@@ -223,7 +223,6 @@
   }
   const teamTotal = t => owners.filter(o => o.team === t).reduce((s, o) => s + total(o), 0);
   let crownHolder = null, zoneR = R;
-  const royaleZone = t => t < 20 ? R : Math.max(18, R - (R - 18) * Math.min(1, (t - 20) / 200));
   const zoneLine = new THREE.Mesh(new THREE.RingGeometry(.985, 1, 180), decal(new THREE.MeshBasicMaterial({ color: '#ff3d6e', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
   const zoneOut = new THREE.Mesh(new THREE.RingGeometry(1, 4, 180), decal(new THREE.MeshBasicMaterial({ color: '#ff3d6e', transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide })));
   [zoneLine, zoneOut].forEach(m => { m.rotation.x = -Math.PI / 2; m.position.y = .06; m.visible = false; scene.add(m); });
@@ -231,10 +230,11 @@
     if (dying) return false;
     const contenders = [player, ...bots].filter(o => o.cells.length);
     if (mode === 'royale') {
-      zoneR = royaleZone(stats.time);
+      ModeX.zoneTick(dt);   // 2.5: the zone moves in steps (see 14f-modes.js)
+      const Z = ModeX.zoneC, zk = ModeX.zoneDmgK();
       for (const c of [...cells]) {
-        if (c.gone || c.owner.kind === 'boss' || c.owner.kind === 'minion' || Math.hypot(c.x, c.z) <= zoneR) continue;
-        c.mass -= (c.mass * .06 + 2) * dt;          // the storm outside the zone eats mass
+        if (c.gone || c.owner.kind === 'boss' || c.owner.kind === 'minion' || Math.hypot(c.x - Z.x, c.z - Z.z) <= zoneR) continue;
+        c.mass -= (c.mass * .06 + 2) * zk * dt;          // the storm outside the zone eats mass
         if (c.mass < 6) { const o = c.owner; removeCell(c); rebuildCells(); lostCell(o, 6, { name: 'Зона', cells: [] }); }
       }
       const aliveBots = bots.filter(o => o.cells.length).length;
@@ -593,7 +593,7 @@
       const lim = { timed: TIMED_LEN, team: TEAM_LEN, raid: RAID_LEN }[mode];
       if (lim) timer = `⏱ ${fmtTime(Math.max(0, lim - stats.time))}`;
       else if (['survival', 'classic', 'rbuild', 'hardcore', 'royale', 'crown'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
-      if (mode === 'royale') modeChip = `Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
+      if (mode === 'royale') modeChip = `${ModeX.zoneChip()} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
       if (mode === 'crown') modeChip = ModeX.crownChip();
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
       if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `Близнецы ${Math.ceil(left / RAID_HP * 100)}% · заход ${Math.round(stats.raidDmg || 0).toLocaleString('ru-RU')}/${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')}`; }
@@ -656,6 +656,7 @@
     const P = (x, z) => [size / 2 + x * s, size / 2 + z * s];
     if (mode === 'territory' && DuoM.on) DuoM.rules.territory.mini(mctx, size, s);
     if (mode === 'crown' && running) ModeX.crownMini(mctx, P);
+    if (mode === 'royale' && running) ModeX.zoneMini(mctx, P, s);
     mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const [x, y] = P(v.x, v.z); mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
     if (ev.active === 'meteor' || ev.warn === 'meteor') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 22 * s, 0, Math.PI * 2); mctx.stroke(); }
     for (const b of bonuses) { const [x, y] = P(b.x, b.z); mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }

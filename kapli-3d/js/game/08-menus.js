@@ -661,7 +661,7 @@
     $('best').textContent = fmtBest(save.mode, save.bests[save.mode] || 0);
     { const id = save.mode, a = modeArt(id), ms = modeMastery(id), mb = $('modeBtn');
       mb.classList.add('mt'); mb.style.setProperty('--mc', a.c); mb.style.setProperty('--mc2', a.c2);
-      mb.classList.toggle('duo', isDuoMode(id)); mb.innerHTML = `<span class="art">${modeIcon(id)}</span><span class="hd"><span class="k">${isDuoMode(id) ? '👥 Вдвоём · локально' : 'Режим'}</span><b class="n">${MODES[id].name}</b></span><span class="more">все ▸</span>` +
+      mb.classList.toggle('duo', isDuoMode(id)); mb.innerHTML = `<span class="art">${modeIcon(id)}</span><span class="hd"><span class="k">${isDuoMode(id) ? '👥 Вдвоём · локально' : id === ModeX.dayMode() ? '🔥 Режим дня · ×1,25' : 'Режим'}</span><b class="n">${MODES[id].name}</b></span><span class="more">все ▸</span>` +
         (isDuoMode(id) ? `<span class="ln">${duoLine(id)}</span>` : `<span class="ln"><span>Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство <b style="color:#ffd23f">${ms.name ? `«${ms.name}»` : '—'}</b></span></span>`) + `<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>`; }
     { const plv = playerLevel();
       $('modes').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
@@ -671,7 +671,7 @@
           : id === 'royale' ? (TEST_MODE ? `<span class="lg-tag">Открыта для теста · сезон ${nextSeasonOf('royale')}</span>` : '') : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '';
         return `<button class="mode mcard${m.duo ? ' duo' : ''}" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
           (on ? '<span class="sel" aria-hidden="true">✓</span>' : '') + (a.isNew && !lock ? '<span class="nw">новый</span>' : '') +
-          `<span class="art">${modeIcon(id)}</span><span class="tx">${m.duo ? '<span class="duo-mark">👥 вдвоём · локально</span>' : ''}<b>${m.name}</b><small>${m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${tag}</span>` +
+          `<span class="art">${modeIcon(id)}</span><span class="tx">${m.duo ? '<span class="duo-mark">👥 вдвоём · локально</span>' : ModeX.dayMark(id)}<b>${m.name}</b><small>${m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${tag}</span>` +
           (m.duo ? `<span class="ft">${duoLine(id, 'rec')}</span>` : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` «${ms.name}»` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
           (lock ? `<span class="lk">${lock}</span>` : '') + `</button>`; }).join(''); }
     $('abilCount').textContent = `${save.abil.owned.length}/${ABILITIES.length}`;

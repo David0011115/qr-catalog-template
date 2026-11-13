@@ -195,3 +195,6 @@
 #hcPick { border-color: #ff6a00; box-shadow: 0 0 28px rgba(255, 106, 0, .35); width: min(400px, calc(100vw - 32px)); }
 #hcPick p { color: #ffb36b; }
 .db-opts.two { grid-template-columns: repeat(2, 1fr); }
+/* «Режим дня»: the mode that pays ×1,25 coins today */
+.day-mark { display: inline-block; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; margin-bottom: 4px; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 800; letter-spacing: .03em;
+  color: #1a0b00; background: linear-gradient(90deg, #ffd23f, #ff9a3d); box-shadow: 0 0 12px rgba(255, 154, 61, .45); }

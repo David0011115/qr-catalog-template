@@ -5,7 +5,7 @@
   (() => {
     const BORDER_V = .012, DEAD = .03, JUMP = .06, LIMIT = .9, FOREIGN_K = .85;
     const MATCH_S = 240, OVERTIME_S = 30, WIN_SHARE = .8, TIE = .02;   // 4 minutes; 80% of the field wins at once; within ±2% at the end: +30 s, once
-    let bx = 0, bxView = 0, pHome = -1, mesh = null, mat = null, flash = 0, limit = MATCH_S, ot = false;
+    let lastSide = 0, signT = 0, bx = 0, bxView = 0, pHome = -1, mesh = null, mat = null, flash = 0, limit = MATCH_S, ot = false;
 
     // eight more small bots, used only here: 24 in all, half of them come back on each half of the field
     [['Капелька', 'coward'], ['Росинка', 'farmer'], ['Брызг', 'coward'], ['Ириска', 'farmer'], ['Пузырь', 'normal'], ['Мятка', 'coward'], ['Искорка', 'farmer'], ['Шарик', 'normal']].forEach(([n, p], k) => {
@@ -46,12 +46,13 @@
         fragmentShader: `uniform float uBx, uMe, uT, uR, uF; varying vec2 vP;
           void main(){
             float d = vP.x - uBx, mine = step(0.0, d * uMe);
-            vec3 me = vec3(.13, .9, 1.0), foe = vec3(1.0, .31, .85), tint = mix(foe, me, mine);
+            vec3 me = vec3(.13, .9, 1.0), foe = vec3(1.0, .22, .42), tint = mix(foe, me, mine);
+            float hatch = (1.0 - mine) * step(.72, fract((vP.x + vP.y) * .07));   // the other half: slanted stripes
             float line = exp(-abs(d) * .9), halo = exp(-abs(d) * .07);
             float run = .55 + .45 * sin(vP.y * .35 - uT * 4.0);
             float rim = smoothstep(uR, uR * .9, length(vP));
             vec3 col = mix(tint, vec3(1.0), line * .6);
-            float a = (.07 + halo * .16 + line * (.55 + .35 * run) + uF * halo * .5) * rim;
+            float a = (mix(.17, .12, mine) + hatch * .16 + halo * .14 + line * (.55 + .35 * run) + uF * halo * .5) * rim;
             gl_FragColor = vec4(col, a);
           }` }));
       mesh = new THREE.Mesh(new THREE.CircleGeometry(1, 128), mat);
@@ -59,14 +60,14 @@
     }
 
     DuoM.rules.territory = {
-      pre(role) { bx = bxView = 0; flash = 0; limit = MATCH_S; ot = false; pHome = role === 'host' ? -1 : 1; },
+      pre(role) { lastSide = 0; bx = bxView = 0; flash = 0; limit = MATCH_S; ot = false; pHome = role === 'host' ? -1 : 1; },
       begin() {
         if (!mesh) makeMesh();
         mesh.scale.setScalar(R); mat.uniforms.uR.value = R; mat.uniforms.uMe.value = pHome; mat.uniforms.uBx.value = 0;
         scene.add(mesh);
         setTimeout(() => { if (active()) toast('Ешь ботов на своей (голубой) стороне. Чем ты тяжелее, тем дальше граница'); }, 2400);
       },
-      end() { if (mesh) scene.remove(mesh); },
+      end() { if (mesh) scene.remove(mesh); const el = document.getElementById('terrSign'); if (el) el.classList.remove('show'); },
       // a respawn spot well inside your own half, toward your edge
       spawnX: o => bx + (homeOf(o) * R - bx) * .6,
       tick(dt) {   // host only
@@ -114,6 +115,7 @@
       apply(s) {
         if (s.lim && s.lim !== limit) { const more = s.lim > limit && stats.time > 1; limit = s.lim; if (more && !ot) { ot = true; toast('Почти поровну! Ещё 30 секунд'); Sound.play('level'); } } if (s.bx !== undefined) { if (s.bx * pHome < bx * pHome - JUMP * R * .5 && stats.time > 3) flash = 1; bx = s.bx; } },
       view(dt) {
+        this.cross(dt);
         bxView += (bx - bxView) * Math.min(1, dt * 6); flash = Math.max(0, flash - dt * 1.5);
         if (mat) { mat.uniforms.uBx.value = bxView; mat.uniforms.uT.value = stats.time; mat.uniforms.uF.value = flash; }
       },
@@ -122,9 +124,23 @@
         return !!h && b.owner.kind === 'bot' && sideAt(b.x) !== h;
       },
       speedK(c) { const h = homeOf(c.owner); return h && sideAt(c.x) !== h ? FOREIGN_K : 1; },
+      cross(dt) {   // a short sign in the middle of the screen when your drop crosses the border
+        if (!player.cells.length) { lastSide = 0; return; }
+        const sd = sideAt(centerOf(player)[0]);
+        if (lastSide && sd !== lastSide) {
+          let el = document.getElementById('terrSign');
+          if (!el) { el = document.createElement('div'); el.id = 'terrSign'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+          const mine = sd === pHome;
+          el.className = mine ? 'mine' : 'foe';
+          el.innerHTML = mine ? '<b>Твоя территория</b><small>здесь можно есть ботов</small>' : '<b>Чужая территория</b><small>−15% скорости · ботов не съесть</small>';
+          void el.offsetWidth; el.classList.add('show');
+          clearTimeout(signT); signT = setTimeout(() => el.classList.remove('show'), 1700);
+        }
+        lastSide = sd;
+      },
       chip() {
-        const p = Math.round(myShare() * 100), foe = player.cells.length && sideAt(centerOf(player)[0]) !== pHome;
-        return `Твоя территория ${p}%<span class="bar wide"><span style="width:${p}%"></span></span>${foe ? ' · чужая сторона −15%' : ''}`;
+        const p = Math.round(myShare() * 100);
+        return `Твоя территория ${p}%<span class="bar wide"><span style="width:${p}%"></span></span>`;
       },
       share: myShare,
       dbg(b, l) { if (!TEST_MODE) return; if (b !== undefined) bx = b * R; if (l !== undefined) limit = l; },   // test build only

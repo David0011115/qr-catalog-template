@@ -26,8 +26,26 @@
     const eff0 = () => ({ speed: 0, shield: 0, double: 0, magnet: 0 });
     rival.eff = eff0();
     function place(o, x) { [...o.cells].forEach(removeCell); const c = addCell(o, x, 0, START_MASS, o.free.pop()); c.hx = x > 0 ? -1 : 1; c.hz = 0; o.spawnSh = 3; rebuildCells(); return c; }
+    // the other player's nickname floats above their drop
+    const tagCv = document.createElement('canvas'); tagCv.width = 512; tagCv.height = 96;
+    const tagTex = new THREE.CanvasTexture(tagCv);
+    const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tagTex, transparent: true, depthWrite: false, depthTest: false, fog: false }));
+    tag.renderOrder = 20; tag.visible = false; scene.add(tag);
+    function drawTag(name) {
+      const g = tagCv.getContext('2d'); g.clearRect(0, 0, 512, 96);
+      g.font = '800 56px Manrope, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineWidth = 10; g.strokeStyle = 'rgba(14, 8, 36, .9)'; g.strokeText(name, 256, 50, 500);
+      g.fillStyle = '#ff8ae6'; g.fillText(name, 256, 50, 500); tagTex.needsUpdate = true;
+    }
+    function tagTick() {
+      let c = null; for (const k of rival.cells) if (!c || k.mass > c.mass) c = k;
+      if (!on || !c) { tag.visible = false; return; }
+      const r = cellR(c), w = Math.max(14, r * 3.2);
+      tag.position.set(c.x, r * 2 + 2.2, c.z); tag.scale.set(w, w * 96 / 512, 1); tag.visible = true;
+    }
     function dress(o, skinId, name) {
-      o.name = name || 'Соперник';
+      o.name = String(name || 'Соперник').replace(/[<>&"'`]/g, '').trim().slice(0, 20) || 'Соперник';   // a nickname from the network goes into the page: no markup
+      if (o === rival) drawTag(o.name);
       const s = SKINS.find(k => k.id === skinId);
       if (s) o.free.concat(o.cells.map(c => c.vis)).forEach(v => { try { applySkin(v, s, 0, null); } catch (e) {} });
     }
@@ -77,7 +95,7 @@
     }
     function cleanup() {
       if (rl && rl.end) rl.end();
-      on = false; role = ''; rl = null; [...rival.cells].forEach(removeCell); rebuildCells();
+      on = false; role = ''; rl = null; tag.visible = false; [...rival.cells].forEach(removeCell); rebuildCells();
       setTimeout(() => { if (!running) setArenaSize(1); }, 1200);
     }
     function endMatch(title, win, notify, bonus = 0) {
@@ -105,6 +123,7 @@
       const l = Math.hypot(inp.x, inp.z);
       for (const c of o.cells) { if (l > .1) steer(c, c.x + inp.x / l * 10 * Math.min(1, l), c.z + inp.z / l * 10 * Math.min(1, l), dt); else steer(c, c.x + c.hx * 10, c.z + c.hz * 10, 0); }
       if (!player.cells.length && player.respawnAt !== undefined && stats.time >= player.respawnAt) { delete player.respawnAt; place(player, homeX(player)); effects.shield = Math.max(effects.shield, 3); toast('Ты снова в игре'); }
+      tagTick();
       if (rl && rl.tick) rl.tick(dt);
       if (rl && rl.view) rl.view(dt);
       hostSend();
@@ -216,6 +235,7 @@
       }
       for (const v of viruses) if (v.mesh) v.mesh.position.set(v.x, radius(v.mass) * .9, v.z);
       if (rl && rl.view) rl.view(dt);
+      tagTick();
     }
 
     // ---- messages and the link state ----

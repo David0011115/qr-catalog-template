@@ -168,3 +168,12 @@
 .duo-st-row b { color: #fff; }
 .duo-top { margin: 6px 0 0; padding-left: 20px; font-size: 12px; }
 .duo-top b { color: #22e6ff; }
+/* «Захват территории»: the sign in the middle of the screen when your drop crosses the border */
+#terrSign { position: fixed; left: 50%; top: 62%; z-index: 40; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 22px; border-radius: 18px; background: rgba(12, 8, 32, .78); border: 2px solid var(--tc); box-shadow: 0 0 26px color-mix(in srgb, var(--tc) 55%, transparent);
+  opacity: 0; transform: translate(-50%, -8px) scale(.92); transition: opacity .25s, transform .25s; }
+#terrSign.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+#terrSign.mine { --tc: #22e6ff; } #terrSign.foe { --tc: #ff3d6e; }
+#terrSign b { font: 400 22px/1.1 'Russo One', sans-serif; color: var(--tc); letter-spacing: .02em; }
+#terrSign small { font-size: 12px; font-weight: 700; color: #e6e0ff; }
+@media (prefers-reduced-motion: reduce) { #terrSign { transition: opacity .2s; transform: translate(-50%, 0); } }

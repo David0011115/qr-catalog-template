@@ -550,6 +550,7 @@
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const setText = (id, t) => { const el = $(id); if (el.textContent !== t) el.textContent = t; };
   let boardOpen = false;   // in-battle leaderboard: top 3 + you, «ещё N» shows the top 6
+  const meName = () => DuoM.on && Net.nick ? escHtml(Net.nick) : 'Ты';   // matches for two: your nickname, like the other player sees it
   function updateHud(now) {
     $('mass').textContent = Math.round(total(player));
     if (player.cells.length) {
@@ -584,8 +585,8 @@
     $('leaders').innerHTML = ranked.slice(0, boardOpen ? 6 : 3).map((o, i) => {
       const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
       const fr = o.isPlayer ? save.frame : o.frame, lvl = o.isPlayer ? playerLevel() : o.lvl;
-      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
-    }).join('') + (rank > (boardOpen ? 6 : 3) ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>Ты</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '') +
+      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.isPlayer ? meName() : o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
+    }).join('') + (rank > (boardOpen ? 6 : 3) ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>${meName()}</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '') +
       (ranked.length > 3 ? `<li class="bd-more"><button type="button" id="boardMore" aria-expanded="${boardOpen}">${boardOpen ? '▴ свернуть' : `▾ ещё ${Math.min(ranked.length, 6) - 3}`}</button></li>` : '');
     // ---- in-battle HUD: one short mode line, a separate mode timer with a clock, and round icon badges with a countdown ring ----
     let modeChip = '', timer = '';

@@ -372,10 +372,23 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     nebulae.forEach((n, i) => n.material.color.set(A.neb[i]));
   }
   applyArena();
+  // ---- field size: 1 for the usual modes, 2 for the modes for two. Everything sized by R follows, crumbs are laid out again ----
+  let arenaK = 1;
+  function setArenaSize(k) {
+    if (k === arenaK) return;
+    const was = arenaK; arenaK = k; R = R_BASE * k; FOOD = k > 1 ? FOOD_MAX : FOOD_BASE;
+    [floor, edgeGlow, rim, rimGlow, rimInner, sceneryGround].forEach(m => m.scale.setScalar(k));
+    gridTex.repeat.set(R / 3, R / 3); floorFx.uniforms.uTileRep.value = R / 3; floorFx.uniforms.uR.value = R;
+    stars.scale.setScalar(k); nebulae.forEach(n => n.position.multiplyScalar(k / was));
+    retroSun.sp.position.z = retroSun.halo.position.z = -R - 140;
+    fgrid.forEach(b => { b.length = 0; }); foodKey.fill(-1); foodMesh.count = FOOD; for (let i = 0; i < FOOD; i++) placeFood(i);
+    applyArena();   // the scenery stands around the new rim
+  }
 
   // food
   const foodPalette = ['#22e6ff', '#ffd23f', '#b26bff', '#3dffa2', '#ff4fd8'].map(c => new THREE.Color(c));
-  const foodMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.3, 0), new THREE.MeshBasicMaterial(), FOOD);
+  const foodMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.3, 0), new THREE.MeshBasicMaterial(), FOOD_MAX);
+  foodMesh.count = FOOD;   // only the crumbs of the current field are drawn
   scene.add(foodMesh);
   const foods = [];
   const dummy = new THREE.Object3D();
@@ -384,7 +397,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     return [Math.cos(a) * d, Math.sin(a) * d];
   }
   // 1.7.0: crumbs are kept in an 8×8 grid, so a blob only checks the crumbs around it (not all 5 250)
-  const FG = 8, FGN = Math.ceil(2 * R / FG) + 1, fgrid = Array.from({ length: FGN * FGN }, () => []), foodKey = new Int32Array(FOOD).fill(-1);
+  const FG = 8, FGN = Math.ceil(2 * R_MAX / FG) + 1, fgrid = Array.from({ length: FGN * FGN }, () => []), foodKey = new Int32Array(FOOD_MAX).fill(-1);   // sized for the widest field
   const fgCell = v => Math.max(0, Math.min(FGN - 1, Math.floor((v + R) / FG)));
   function fgSet(i) {
     const f = foods[i], k = fgCell(f.x) * FGN + fgCell(f.z), old = foodKey[i];
@@ -399,7 +412,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix);
     foodMesh.instanceMatrix.needsUpdate = true;
   }
-  for (let i = 0; i < FOOD; i++) { placeFood(i); foodMesh.setColorAt(i, foodPalette[i % foodPalette.length]); }
+  for (let i = 0; i < FOOD_MAX; i++) { if (i < FOOD) placeFood(i); foodMesh.setColorAt(i, foodPalette[i % foodPalette.length]); }
   foodMesh.instanceColor.needsUpdate = true;
 
   // ================= blob visuals =================

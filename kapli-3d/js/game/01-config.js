@@ -1,7 +1,9 @@
   // TEST MODE: everything unlocked, saved under a separate key so real progress is untouched.
   const TEST_MODE = false;   // ВНИМАНИЕ: перед заливкой в репозиторий вернуть false (сборка PWA проверяет это)
   const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';
-  const R = 237.5, FOOD = 5250, START_MASS = 10, MAX_BONUS = 6;
+  // the field's radius and the number of crumbs change with the mode (setArenaSize): modes for two play on a field twice as wide
+  let R = 237.5, FOOD = 5250;
+  const R_BASE = R, FOOD_BASE = FOOD, R_MAX = R * 2, FOOD_MAX = 12000, START_MASS = 10, MAX_BONUS = 6;
   const MAX_MASS = 15000;   // player per-part cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
   const BOSS_MASS_CAP = 12000; // ordinary bosses; survival and raid have separate caps

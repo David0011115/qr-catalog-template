@@ -93,7 +93,8 @@
   save.mode = MODES[save.mode] && !REMOVED_MODES.includes(save.mode) ? save.mode : 'classic';
   // ranked (league) battles: only these modes, league points only here, purchased upgrades switched off
   // each league season is played in one mode; they rotate season by season
-  const LEAGUE_ROT = ['timed', 'crown', 'race', 'hardcore', 'royale'];
+  // 2.5: «Гонка массы» left the game (replaced by the mode for two «Спина к спине»), «Выживание» takes its place in the league circle
+  const LEAGUE_ROT = ['timed', 'crown', 'survival', 'hardcore', 'royale'];
   const seasonMode = id => LEAGUE_ROT[(id - 1) % LEAGUE_ROT.length];
   const leagueMode = () => seasonMode(save.season.id);
   const nextSeasonOf = m => { for (let k = save.season.id; k < save.season.id + 6; k++) if (seasonMode(k) === m) return k; return '?'; };

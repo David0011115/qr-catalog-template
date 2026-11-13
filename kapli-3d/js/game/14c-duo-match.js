@@ -103,6 +103,7 @@
     function begin(r, g) {
       const t0 = performance.now();
       role = r; modeId = g.m; on = true; inp = { x: 0, z: 0 }; rl = rules[modeId] || null; bonSig = ''; rival.eff = eff0();
+      rival.pid = null;
       if (rl && rl.pre) rl.pre(r, g);
       save.mode = modeId; persist();
       setArenaSize(rl && rl.arena ? rl.arena : 2);
@@ -119,7 +120,7 @@
       else {   // the other phone draws, it does not run: no local bonuses, spikes come from the host
         bonuses.forEach(b => scene.remove(b.mesh)); bonuses = [];
         [...rival.cells].forEach(removeCell);
-        Duo.send({ t: 'hi', name: Net.nick || 'Игрок', skin: save.skin });
+        Duo.send({ t: 'hi', name: Net.nick || 'Игрок', skin: save.skin, pid: Net.shortId ? +Net.shortId : null });
       }
       Duo.touch(); if (TEST_MODE) console.log('duo begin ms', Math.round(performance.now() - t0));
       toast(r === 'host' ? 'Матч начался! Ты слева' : 'Матч начался! Ты справа');
@@ -283,7 +284,7 @@
       if (m.t === 's') { if (role === 'guest') apply(m); return true; }
       if (m.t === 'i') { inp = { x: +m.x || 0, z: +m.z || 0 }; return true; }
       if (m.t === 'a') { act(m.k, m.i); return true; }
-      if (m.t === 'hi') { dress(rival, m.skin, m.name); return true; }
+      if (m.t === 'hi') { dress(rival, m.skin, m.name); rival.pid = Number.isFinite(+m.pid) && +m.pid > 0 ? +m.pid : null; return true; }
       if (m.t === 'dr') { if (role === 'guest') redress(m); return true; }
       if (m.t === 'res') { if (role === 'guest') result(m.w, +m.sh || 0, m.why, m.x); return true; }
       if (rl && rl.msg && rl.msg(m)) return true;
@@ -297,7 +298,7 @@
     window.duoStartMatch = startAsHost; window.duoPractice = practice;
 
     return { get on() { return on; }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
-      get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, rules, rivalPick, result,
+      get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, get practice() { return botMate; }, rules, rivalPick, result,
       steerRival, act: (k, i) => { if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
       // a hook in canEat: the rules of the mode may forbid a bite; the second player's shield bonus counts like yours
       eatBlock: (a, b) => on && ((b.owner === rival && role === 'host' && rival.eff.shield > 0) || !!(rl && rl.eatBlock && rl.eatBlock(a, b))),

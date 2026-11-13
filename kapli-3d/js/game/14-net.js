@@ -184,6 +184,15 @@
       if (!error) { meta.recSent[m] = score; saveMeta(); return true; }
       return false;
     }
+    // modes for two (2.5): their own tables on the server (DUO-RECORDS-MIGRATION.sql)
+    async function duoTerritory(result, share) {
+      if (!sb || !sess || privacyPending || !['win', 'loss', 'draw'].includes(result)) return;
+      try { await sb.rpc('kapli_duo_territory_submit', { p_result: result, p_share: Math.round(share) }); } catch (e) {}
+    }
+    async function duoCoop(diff, matePid, waves, time, bosses, bots, respawns) {
+      if (!sb || !sess || privacyPending || !(waves > 0)) return;
+      try { await sb.rpc('kapli_duo_coop_submit', { p_diff: diff, p_mate_pid: matePid || null, p_waves: waves, p_time: Math.max(1, Math.round(time)), p_bosses: bosses, p_bots: bots, p_respawns: respawns }); } catch (e) {}
+    }
     async function syncBests() { for (const m of RANK_MODES) { const v = save.bests[m] || 0; if (v > 0 && meta.recSent[m] !== v) await submitRecord(m, v); } }
 
     // ---------- launch screen ----------
@@ -838,12 +847,31 @@
 
     // ---------- ranking by mode ----------
     let rankMode = 'classic';
-    $('rankModes').innerHTML = RANK_MODES.map(m => `<button type="button" data-rm="${m}" aria-pressed="false">${MODES[m].name}</button>`).join('');
+    let rankDiff = 0;
+    $('rankModes').innerHTML = RANK_MODES.map(m => `<button type="button" data-rm="${m}" aria-pressed="false">${MODES[m].name}</button>`).join('') +
+      ['territory', 'duoback'].map(m => `<button type="button" data-rm="${m}" class="rm-duo" aria-pressed="false">👥 ${MODES[m].name}</button>`).join('');
+    // the ratings of the modes for two: «Захват территории» — most wins; «Спина к спине» — the best pairs on each difficulty
+    async function loadDuoRank(m) {
+      const list = $('rankList');
+      const DF = ['Обычный', 'Сложный', 'Безумие'];
+      const head = m === 'duoback' ? `<li class="rk-diff" role="group" aria-label="Сложность">${DF.map((n, i) => `<button type="button" data-rdf="${i}" aria-pressed="${i === rankDiff}">${n}</button>`).join('')}</li>` : '';
+      const { data, error } = await withTimeout(m === 'territory' ? sb.rpc('kapli_duo_territory_top', { p_limit: 20 }) : sb.rpc('kapli_duo_coop_top', { p_diff: rankDiff, p_limit: 20 }), 9000); if (error) throw error;
+      if (rankMode !== m) return;
+      list.innerHTML = head + (data.length ? data.map(r => m === 'territory'
+        ? `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${r.wins} поб. · ${r.best_share}%</span></li>`
+        : `<li class="${r.is_me ? 'me' : ''} rk-pair"><span class="pl">${r.place}</span><span class="rk-pair-who">${escHtml(r.nickname)} <i>+</i> ${escHtml(r.mate_nickname)}<small>${fmtTime(r.time_s)} · боссов ${r.bosses} · ботов ${r.bots} · возвращений ${r.respawns}</small></span><span class="sc">${r.waves} волн</span></li>`).join('')
+        : `<li class="rk-empty">${emptyHTML(m === 'territory' ? 'Пока никто не выиграл матч — стань первым!' : 'На этой сложности пока нет забегов — пройдите первыми!', 'search')}</li>`);
+      decorateWho(list);
+      if (!sess) { $('rankMe').textContent = 'Войди в аккаунт, чтобы твои матчи попали в рейтинг.'; return; }
+      if (m === 'territory') { const me = await sb.rpc('kapli_duo_territory_me'); const row = me.data && me.data[0]; $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.total} · побед ${row.wins} из ${row.games} · лучшая доля ${row.best_share}%` : 'У тебя пока нет побед в этом режиме.'; }
+      else { const mine = data.find(r => r.is_me); $('rankMe').textContent = mine ? `Ваша лучшая пара: ${mine.place}-е место · ${mine.waves} волн` : 'Рейтинг пар: в него попадает забег, который отправил создатель комнаты.'; }
+    }
     async function loadRank(m) {
       rankMode = m; document.querySelectorAll('[data-rm]').forEach(b => b.setAttribute('aria-pressed', b.dataset.rm === m));
       const list = $('rankList'); list.innerHTML = skelHTML(8); $('rankMe').textContent = '';
       try {
         await ensureClient();
+        if (m === 'territory' || m === 'duoback') { await loadDuoRank(m); return; }
         if (sess) await syncBests();
         const { data, error } = await withTimeout(sb.rpc('kapli_leaderboard', { p_mode: m, p_limit: 20 }), 9000); if (error) throw error;
         if (rankMode !== m) return;
@@ -859,12 +887,13 @@
       }
     }
     $('rankModes').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b) loadRank(b.dataset.rm); });
+    $('rankList').addEventListener('click', e => { const b = e.target.closest('[data-rdf]'); if (b) { e.stopPropagation(); rankDiff = +b.dataset.rdf; loadRank('duoback'); } }, true);
     $('rankList').addEventListener('click', e => { const li = e.target.closest('[data-pc]'); if (li) openPlayerCard(li.dataset.pc); });
     $('rankList').addEventListener('keydown', e => { const li = e.target.closest('[data-pc]'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPlayerCard(li.dataset.pc); } });
-    $('rankBtn').addEventListener('click', () => { showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });
+    $('rankBtn').addEventListener('click', () => { showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) || isDuoMode(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });
     $('rankBack').addEventListener('click', () => { showCard('menuCard'); $('rankBtn').focus(); });
 
-    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
+    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, duoTerritory, duoCoop, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
     renderChip();
   }
 

@@ -96,6 +96,7 @@
         t.top.push({ p, r: me, n: String(DuoM.rival.name || '').slice(0, 24), d: Date.now(), e: why === 'early' ? 1 : 0 });
         t.top.sort((a, b) => b.p - a.p || b.d - a.d); t.top.length = Math.min(5, t.top.length);
         persist(); stats.duoHero = { v: p, l: 'твоя доля поля, %' };
+        if (!DuoM.practice) Net.duoTerritory(me, p);   // the rating of the mode (each player sends their own match)
         return { bonus: me === 'win' ? 60 : me === 'draw' ? 25 : 10,
           title: me === 'win' ? (why === 'early' ? `Досрочная победа: ${p}% поля!` : `Победа! Твоя территория ${p}%`) : me === 'loss' ? `Поражение: у тебя ${p}% поля` : `Ничья: ${p}% на ${100 - p}%` };
       },

@@ -33,6 +33,7 @@
     { id: 'bg_goat27',   name: 'Год Огненной Козы',   rar: 'legendary', promo: true, src: 'праздничная коробка «Новый год 2027»', test: () => (save.gifts || []).includes('ny2027') },
     // 2.5 modes for two: 30 games in a mode
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
+    { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
@@ -475,6 +476,42 @@
           glow(px, py, U * .06, col.replace(')', ',.5)').replace('rgb', 'rgba'));
         };
         flag(w * .14, h * .86, 'rgb(34,230,255)'); flag(w * .74, h * .5, 'rgb(255,79,216)');
+        break; }
+      case 'bg_duo_50': {   // «Спина к спине», all 50 waves: a giant neon wave curls over, two drops ride its golden crest, «50» glows in the sky
+        x.fillStyle = lin([[0, '#02040c'], [.6, '#071a2c'], [1, '#04121a']]); x.fillRect(0, 0, w, h); stars(60, 181, .9);
+        x.save(); x.globalCompositeOperation = 'lighter'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `900 ${h * .55}px "Russo One", sans-serif`;
+        x.fillStyle = 'rgba(255,210,63,.10)'; x.shadowColor = '#ffd23f'; x.shadowBlur = 24 + Math.sin(t * 1.5) * 8; x.fillText('50', w * .22, h * .3); x.restore();
+        const cX = w * (.6 + Math.sin(t * .35) * .02), top = h * .24, base = h * .95;
+        const prof = xx => { const d = xx - cX, sh = d < 0 ? Math.exp(-Math.pow(d / (w * .42), 2)) : Math.exp(-Math.pow(d / (w * .09), 2)); return base - sh * (base - top) + Math.sin(xx / w * 18 - t * 2.4) * h * .008; };
+        // the body of the wave
+        const body = x.createLinearGradient(0, top, 0, base); body.addColorStop(0, '#3dffa2'); body.addColorStop(.25, '#14a88a'); body.addColorStop(.6, '#0a5866'); body.addColorStop(1, '#052233');
+        x.beginPath(); x.moveTo(-10, h + 10); for (let xx = -10; xx <= w + 10; xx += 5) x.lineTo(xx, prof(xx)); x.lineTo(w + 10, h + 10); x.closePath(); x.fillStyle = body; x.fill();
+        // foam lines flowing up the back of the wave
+        x.save(); x.beginPath(); x.moveTo(-10, h + 10); for (let xx = -10; xx <= w + 10; xx += 5) x.lineTo(xx, prof(xx)); x.lineTo(w + 10, h + 10); x.closePath(); x.clip();
+        x.globalCompositeOperation = 'lighter'; x.lineWidth = 1.6;
+        for (let k = 1; k <= 7; k++) { const off = ((k / 7 + t * .06) % 1) * (base - top) * .9; x.strokeStyle = `rgba(160,255,220,${.28 - k * .02})`; x.beginPath();
+          for (let xx = -10; xx <= cX + w * .05; xx += 6) { const yy = prof(xx) + off + Math.sin(xx / 40 + k + t) * 3; xx === -10 ? x.moveTo(xx, yy) : x.lineTo(xx, yy); } x.stroke(); }
+        x.restore();
+        // the lip curling over the front, with foam
+        x.save(); x.globalCompositeOperation = 'lighter';
+        const lx = cX + w * .02, ly = top + h * .01, curl = .9 + Math.sin(t * 2.4) * .08;
+        x.strokeStyle = 'rgba(255,224,140,.95)'; x.lineWidth = Math.max(2, U * .012); x.shadowColor = '#ffd23f'; x.shadowBlur = 12;
+        x.beginPath(); for (let xx = w * .18; xx <= lx; xx += 4) { const yy = prof(xx); xx === w * .18 ? x.moveTo(xx, yy) : x.lineTo(xx, yy); }
+        x.bezierCurveTo(lx + w * .08 * curl, ly - h * .02, lx + w * .12 * curl, ly + h * .12, lx + w * .06 * curl, ly + h * .2); x.stroke();
+        x.fillStyle = 'rgba(200,255,235,.25)'; x.beginPath(); x.moveTo(lx, ly); x.bezierCurveTo(lx + w * .08 * curl, ly - h * .02, lx + w * .12 * curl, ly + h * .12, lx + w * .06 * curl, ly + h * .2); x.quadraticCurveTo(lx + w * .03, ly + h * .1, lx, ly + h * .03); x.closePath(); x.fill();
+        for (const p of pbgPts('w50', 36, 191)) { const life = (t * (.35 + p.s * .3) + p.q) % 1, sx = lx + w * .02 + (p.x - .4) * w * .12 + life * w * .1, sy = ly + h * .02 - Math.sin(life * Math.PI) * h * .16 * (.4 + p.y); glow(sx, sy, 1.5 + p.s * 3, p.q > .5 ? 'rgba(255,220,120,.9)' : 'rgba(190,255,235,.85)', 1 - life); }
+        x.restore();
+        // two drops riding just behind the crest
+        const ride = (xx, col, deep) => {
+          const r = U * .058, cx = xx, cy = prof(xx) - r * .85;
+          x.save(); x.shadowColor = col; x.shadowBlur = r; const g = x.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r); g.addColorStop(0, '#fff'); g.addColorStop(.35, col); g.addColorStop(1, deep);
+          x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.29); x.fill(); x.restore();
+          for (const sd of [-1, 1]) { const ex = cx + sd * r * .3 + r * .12, ey = cy - r * .08; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .15, r * .18, 0, 0, 6.29); x.fill(); x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + r * .06, ey, r * .075, 0, 6.29); x.fill(); }
+        };
+        ride(cX - w * .16, '#22e6ff', '#0b4a66'); ride(cX - w * .06, '#3dffa2', '#0a5a3a');
+        { const kx = cX - w * .11, ky = top - U * .17 + Math.sin(t * 2) * U * .015, kr = U * .045;
+          x.save(); x.fillStyle = '#ffd23f'; x.shadowColor = '#ffb02e'; x.shadowBlur = 14; x.beginPath();
+          x.moveTo(kx - kr, ky + kr * .5); x.lineTo(kx - kr, ky - kr * .4); x.lineTo(kx - kr * .5, ky); x.lineTo(kx, ky - kr * .65); x.lineTo(kx + kr * .5, ky); x.lineTo(kx + kr, ky - kr * .4); x.lineTo(kx + kr, ky + kr * .5); x.closePath(); x.fill(); x.restore(); }
         break; }
       case 'bg_duo_back': {   // «Спина к спине», 30 runs: two comets climb in a double spiral through falling crowns of beaten bosses
         x.fillStyle = lin([[0, '#03070f'], [.6, '#071c22'], [1, '#0b2a26']]); x.fillRect(0, 0, w, h); stars(70, 171, .8);

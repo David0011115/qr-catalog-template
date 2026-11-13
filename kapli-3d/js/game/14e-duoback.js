@@ -37,6 +37,10 @@
     };
     const OWN = ['mass', 'speed', 'armor', 'absorb', 'cd'], SHARED = ['sh_shield', 'sh_feast', 'sh_link'];
     const REG_LIFE = 34, MELT = .014, SPEC_LIFE = 80, SHED_S = 2, CHUNK_LIFE = 12;
+    // the run has an end: wave 50 is the final, clearing it wins the run. From wave 30 the late game: every 5 waves the bosses
+    // are 3% faster and the break 1 s shorter, special bosses come in a stronger version
+    const MAX_WAVE = 50, LATE = 30;
+    const lateStep = () => (wv >= LATE ? Math.floor((wv - LATE) / 5) + 1 : 0);
 
     const bossVis = (color, n) => Array.from({ length: n }, () => { const v = makeVis(new THREE.Color(color)); v.crown.visible = true; v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8; return v; });
     const regOwners = [];
@@ -120,10 +124,11 @@
         [...o.cells].forEach(removeCell);
         const [x, z] = safeSpot(40);
         const main = addCell(o, x, z, Math.min(30000, base * 1.9 * grow), o.free.pop()); main.mergeT = 1e9;
-        spec = { o, d, max: base * 2.4 * D.hp * Math.min(2.5, 1 + .05 * (wv - 5)), dmg: 0, life: SPEC_LIFE, shed: 2, atk: 4, pull: 0, cells: new Map(), split: null, base };
+        spec = { o, d, enh: wv >= LATE, final: wv >= MAX_WAVE, max: base * 2.4 * D.hp * Math.min(3.3, 1 + .05 * (wv - 5)) * (wv >= MAX_WAVE ? 1.3 : 1), dmg: 0, life: SPEC_LIFE, shed: 2, atk: 4, pull: 0, cells: new Map(), split: null, base };
         o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3;
         Sound.play('boss');
         if (wv >= 10) spawnReg(['twins', 'leech', 'wedge', 'weaver'][(Math.random() * 4) | 0], base * grow);
+        if (wv >= MAX_WAVE) spawnReg(['leech', 'wedge', 'weaver'][(Math.random() * 3) | 0], base * grow);   // the final: one more
       } else {
         const n = Math.min(4, 1 + Math.floor((wv - 1) / 2) + (Di === 2 && wv >= 3 ? 1 : 0));
         const types = Object.keys(REG);
@@ -143,7 +148,7 @@
       o.life = REG_LIFE; o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3; o.enr = 0; o.spikeT = 3; o.k = regOwners.filter(x => x.dbType === type && x.cells.length).length - 1;
     }
     function startBreak() {
-      ph = 1; bt = D.brk;
+      ph = 1; bt = Math.max(6, D.brk - lateStep());
       const n = shared.sh_feast ? 180 : 90;
       for (const o of pl()) { const [x, z] = centerOf(o); burstFood(x, z, 70, n, cellR(big(o)) + 4); }
       burstFood(0, 0, R * .6, n);
@@ -170,7 +175,7 @@
         return;
       }
       o.target = t; o.tx = t.x; o.tz = t.z;
-      if ((o.dbType === 'devourer' || o.dbType === 'wedge') && o.dashCd <= 0 && Math.hypot(t.x - c.x, t.z - c.z) < 60) { o.dashT = .6; o.dashCd = o.dbType === 'devourer' ? 6 : 5; }
+      if ((o.dbType === 'devourer' || o.dbType === 'wedge') && o.dashCd <= 0 && Math.hypot(t.x - c.x, t.z - c.z) < 60) { o.dashT = .6; o.dashCd = o.dbType === 'devourer' ? (spec && spec.enh ? 4 : 6) : 5; }
     }
     function tickReg(o, dt) {
       o.dashT -= dt; o.dashCd = Math.max(0, o.dashCd - dt); o.life -= dt;
@@ -211,16 +216,18 @@
       // its own attack
       s.atk -= dt;
       if (s.d.id === 'vortex') {
-        if (s.atk <= 0 && s.pull <= 0) { s.pull = 3; s.atk = 8; toast('Вихрь затягивает!'); }
+        if (s.atk <= 0 && s.pull <= 0) { s.pull = s.enh ? 4 : 3; s.atk = s.enh ? 6 : 8; toast('Вихрь затягивает!'); }
         if (s.pull > 0) {
           s.pull -= dt; if (Math.random() < dt * 3) wave(main.x, main.z, '#22e6ff', rM + 70, rM, .5);
-          for (const p of ps) for (const pc of p.cells) { const dx = main.x - pc.x, dz = main.z - pc.z, d = Math.hypot(dx, dz); if (d < rM + 80 && d > 1) { pc.x += dx / d * 16 * dt; pc.z += dz / d * 16 * dt; } }
+          for (const p of ps) for (const pc of p.cells) { const dx = main.x - pc.x, dz = main.z - pc.z, d = Math.hypot(dx, dz); if (d < rM + 80 && d > 1) { const f = s.enh ? 24 : 16; pc.x += dx / d * f * dt; pc.z += dz / d * f * dt; } }
         }
       }
       if (s.d.id === 'meteor' && s.atk <= 0 && ps.length) {
-        const t = big(ps[(Math.random() * ps.length) | 0]); meteors.push({ x: t.x, z: t.z, r: 14 + cellR(t), t: 1.6 }); s.atk = Math.max(3, 5.5 - wv * .05);
+        const t = big(ps[(Math.random() * ps.length) | 0]); meteors.push({ x: t.x, z: t.z, r: 14 + cellR(t), t: 1.6 });
+        if (s.enh) for (const p of ps) { const q = big(p); if (q !== t) meteors.push({ x: q.x + (Math.random() - .5) * 20, z: q.z + (Math.random() - .5) * 20, r: 14 + cellR(q), t: 1.9 }); else meteors.push({ x: q.x + q.hx * 30, z: q.z + q.hz * 30, r: 16, t: 2 }); }   // stronger: one for each player, and ahead of you s.atk = Math.max(3, 5.5 - wv * .05);
       }
-      if (s.d.id === 'split' && !s.split && s.dmg >= s.max * .5) {
+      if (s.d.id === 'split' && s.enh && s.split && !s.split2 && s.splitT <= 0 && s.dmg >= s.max * .75) { s.split = null; s.split2 = true; }   // stronger: it breaks apart a second time at a quarter
+      if (s.d.id === 'split' && !s.split && s.dmg >= s.max * (s.split2 ? .75 : .5)) {
         s.split = new Map(); toast('Раскол распался! Съешьте четыре части за 10 секунд');
         for (let k = 0; k < 4 && o.free.length; k++) { const a = k * Math.PI / 2, c = addCell(o, main.x + Math.cos(a) * (rM + 8), main.z + Math.sin(a) * (rM + 8), Math.max(14, s.base * .35), o.free.pop()); c.vx = Math.cos(a) * 34; c.vz = Math.sin(a) * 34; c.mergeT = 1e9; c.life = 99; s.cells.set(c, c.mass); s.split.set(c, 1); }
         s.splitT = 10; rebuildCells();
@@ -286,7 +293,10 @@
         if (spec) tickSpec(dt);
         tickMeteors(dt);
         if (ph === 1) { bt -= dt; if (bt <= 0) startWave(); }
-        else if (!spec && !regOwners.some(o => o.cells.length)) startBreak();
+        else if (!spec && !regOwners.some(o => o.cells.length)) {
+          if (wv >= MAX_WAVE && running) { DuoM.result('coop', 0, 'win', { w: MAX_WAVE, t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5, won: 1 }); return; }
+          startBreak();
+        }
         co = makeCo();
         if (!player.cells.length && !rival().cells.length && running) {
           const passed = ph === 1 ? wv : wv - 1;
@@ -312,7 +322,7 @@
       speedK(c) {
         const o = c.owner;
         if (o.db && o.db.speed) return 1 + .08 * o.db.speed;
-        if (o.dbType === 'twins' && o.enr) return 1.35;
+        if (o.dbType) return (o.dbType === 'twins' && o.enr ? 1.35 : 1) * (1 + .03 * lateStep());
         return 1;
       },
       snap(s) {
@@ -336,7 +346,9 @@
         const p = prevCo; prevCo = co;
         if (!p) return;
         if (co[1] !== p[1] && co[0] === 0) {
-          if (co[5] >= 0) { const d = SPEC[co[5]]; sign(`Волна ${co[1]}: ${d.name}`, d.about, d.color); }
+          if (co[1] >= MAX_WAVE) { const d = SPEC[co[5]] || SPEC[0]; sign(`Финальная волна ${MAX_WAVE}: ${d.name}`, 'Сильнейшая версия и ещё два босса. Пройдите её — и забег выигран!', '#ffd23f'); }
+          else if (co[1] === LATE) sign(`Волна ${LATE}: поздняя игра`, 'Боссы быстрее, перерывы короче, особые боссы — в усиленной версии', '#ff9a3d');
+          else if (co[5] >= 0) { const d = SPEC[co[5]]; sign(`Волна ${co[1]}: ${d.name}`, d.about, d.color); }
           else sign(`Волна ${co[1]}`, co[3] === 1 ? 'Один босс' : `Боссов: ${co[3]}`, '#ff3d6e');
         }
         if (co[0] === 1 && p[0] === 0) sign('Волна пройдена!', `Перерыв ${Math.round(co[2])} с: ешьте, пока можно`, '#3dffa2');
@@ -346,8 +358,8 @@
         if (!co) return '';
         const [cph, w, cbt, nb, sp, st, rp, rr] = co, guest = DuoM.role === 'guest';
         const me = guest ? rr : rp, mate = guest ? rp : rr;
-        let t = cph === 1 ? `${w ? 'Перерыв' : 'Старт через'} ${Math.ceil(cbt)} с · далее волна ${w + 1}`
-          : sp >= 0 ? `Волна ${w} · ${SPEC[st].name} ${sp}%<span class="bar wide"><span style="width:${sp}%"></span></span>` : `Волна ${w} · боссов: ${nb}`;
+        let t = cph === 1 ? `${w ? 'Перерыв' : 'Старт через'} ${Math.ceil(cbt)} с · далее волна ${w + 1}/${MAX_WAVE}`
+          : sp >= 0 ? `Волна ${w}/${MAX_WAVE} · ${w >= MAX_WAVE ? 'Финал: ' : ''}${SPEC[st].name} ${sp}%<span class="bar wide"><span style="width:${sp}%"></span></span>` : `Волна ${w}/${MAX_WAVE} · боссов: ${nb}`;
         if (me > 0) t += ` · ты вернёшься через ${Math.ceil(me)} с`;
         else if (mate > 0) t += ` · напарник вернётся через ${Math.ceil(mate)} с — ешь ботов: −1 с`;
         return t;
@@ -364,8 +376,10 @@
         if (!DuoM.practice && DuoM.role === 'host') Net.duoCoop(x.df || 0, rival().pid, w, x.t || 0, (x.b || 0) + (x.s || 0), x.k || 0, x.r || 0);   // the room's creator sends the pair's run
         stats.duoHero = { v: w, l: 'волн пройдено' }; stats.duoWave = w; stats.duoSpecial5T = x.s5 || 0;
         stats.bossCoins = 0; stats.bossXp = Math.round((w * 8 + (x.s || 0) * 30) * df.coins);   // the same reward for both players
-        return { bonus: Math.round((w * 12 + (x.b || 0) * 6 + (x.s || 0) * 60) * df.coins),
-          title: w ? `Пройдено волн: ${w} · ${df.name}` : `Первая волна оказалась сильнее · ${df.name}` };
+        const won = !!x.won;
+        if (won) { t.wins = (t.wins || 0) + 1; persist(); }
+        return { win: won, bonus: Math.round((w * 12 + (x.b || 0) * 6 + (x.s || 0) * 60 + (won ? 300 : 0)) * df.coins),
+          title: won ? `Все ${MAX_WAVE} волн пройдены! · ${df.name}` : w ? `Пройдено волн: ${w} · ${df.name}` : `Первая волна оказалась сильнее · ${df.name}` };
       },
       dbg(cmd, v) {   // test build only
         if (!TEST_MODE) return;

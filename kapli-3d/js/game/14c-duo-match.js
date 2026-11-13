@@ -144,7 +144,7 @@
       modeIdLast = modeId;
       const me = w === 'coop' ? 'coop' : w === 'draw' ? 'draw' : w === role ? 'win' : 'loss';
       const out = rl && rl.finish ? rl.finish(me, role === 'host' ? sh : 1 - sh, why, x) : { title: me === 'win' ? 'Победа!' : me === 'draw' ? 'Ничья' : 'Поражение', bonus: 0 };
-      endMatch(out.title, me === 'win', false, out.bonus);
+      endMatch(out.title, me === 'win' || !!out.win, false, out.bonus);
       // rewards for playing the mode: a chat scene at 20 games (a profile background at 30 comes with the other backgrounds)
       for (const b of CHAT_BG_MODE) if (b.mode === modeIdLast && !chatBgOwned(b.id) && ((((save.duo || {})[b.mode]) || {}).games || 0) >= b.need) {
         save.chatBg = save.chatBg || []; save.chatBg.push(b.id); persist(); setTimeout(() => toast(`Новый фон чата: «${b.name}»`), 1500);

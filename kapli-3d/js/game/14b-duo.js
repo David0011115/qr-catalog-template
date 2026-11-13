@@ -24,7 +24,8 @@
       if (pc) try { pc.close(); } catch (e) {}
       dcR = dcU = null;
       if (!window.RTCPeerConnection) return null;
-      pc = new RTCPeerConnection({ iceServers: [] });   // both phones are on one network: local addresses are enough
+      // a public STUN server tells each phone its outside address, so a direct link can come up across networks too (no media relay: that still goes through the game server)
+      pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }] });
       pc.onicecandidate = e => { if (e.candidate) sig('ice', { c: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }); };
       pc.ondatachannel = e => wire(e.channel);
       return pc;
@@ -90,7 +91,7 @@
       else if (st === 'joining') b.innerHTML = `<p class="hint" style="margin:0">Ищу комнату <b>${Duo.code}</b>…</p><button class="btn ghost" id="duoLeave" type="button">Отмена</button>`;
       else b.innerHTML = (Duo.why ? `<p class="duo-why" role="status">${Duo.why}</p>` : '') +
         `<button class="btn" id="duoHost" type="button">Создать комнату</button><div class="duo-join"><input id="duoCode" inputmode="latin" autocomplete="off" autocapitalize="characters" maxlength="5" placeholder="Код" aria-label="Код комнаты"><button class="btn ghost" id="duoJoin" type="button">Войти по коду</button></div>` +
-        `<p class="hint" style="margin:0">Оба телефона должны быть в одной сети Wi-Fi (или один раздаёт её другому) и в момент входа иметь интернет.</p>`;
+        `<p class="hint" style="margin:0">Обоим телефонам нужен интернет. В одной сети Wi-Fi связь будет прямой и быстрой; в разных сетях — прямой, если получится, иначе через сервер игры.</p>`;
       drawn = key; if (st !== 'ready') cancelAnimationFrame(raf);
     }
     function pad() {

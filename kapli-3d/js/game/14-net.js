@@ -728,11 +728,12 @@
       if (!card._chatBgScroll) { card._chatBgScroll = true; card.addEventListener('scroll', () => { chatBgHold = performance.now() + CHAT_BG_HOLD; }, { capture: true, passive: true }); }
     }
     let activeThemePreview = null;
-    const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', drops: '💧 Капли', 'chronos-workshop': '⚙ Мастерская часовщика', 'chronos-city': '🕰 Город башенных часов', 'chronos-heart': '✨ Сердце механизма', default: 'Стандартный фон' };
+    const themeNames = { cosmos: '🌌 Космос', aurora: '🌠 Аврора', sakura: '🌸 Сакура', drops: '💧 Капли', 'chronos-workshop': '⚙ Мастерская часовщика', 'chronos-city': '🕰 Город башенных часов', 'chronos-heart': '✨ Сердце механизма', 'duo-border': '👥 Граница', 'duo-backtoback': '👥 Плечом к плечу', default: 'Стандартный фон' };
     const themeFull = $('themeFullPreview'), themeFullScene = $('themeFullScene'), themeFullTitle = $('themeFullTitle');
     const themeFullApply = $('themeFullApply'), themeFullBack = $('themeFullBack'), themeFullBackBottom = $('themeFullBackBottom');
-    const THEME_ORDER = ['cosmos', 'aurora', 'sakura', 'drops', ...CHAT_BG.map(b => b.id)];
-    const themeLocked = t => CHAT_BG.some(b => b.id === t) && !chatBgOwned(t);
+    const THEME_ORDER = ['cosmos', 'aurora', 'sakura', 'drops', ...CHAT_BG_ALL.map(b => b.id)];
+    const themeLocked = t => CHAT_BG_ALL.some(b => b.id === t) && !chatBgOwned(t);
+    const lockWhy = t => { const m = CHAT_BG_MODE.find(b => b.id === t); return m ? `${m.need} ${m.unit} в «${MODES[m.mode].name}» (сейчас ${(((save.duo || {})[m.mode] || {}).games || 0)})` : ''; };
     const flipThemeFull = d => { if (!activeThemePreview) return; const i = THEME_ORDER.indexOf(activeThemePreview.pending); openThemeFullPreview(activeThemePreview, THEME_ORDER[(i + d + THEME_ORDER.length) % THEME_ORDER.length]); };
     $('themeFullPrev').addEventListener('click', () => flipThemeFull(-1));
     $('themeFullNext').addEventListener('click', () => flipThemeFull(1));
@@ -742,12 +743,12 @@
       themeFullScene.dataset.themePreview = theme;
       themeFullTitle.textContent = themeNames[theme] || 'Оформление';
       const i = THEME_ORDER.indexOf(theme); $('themeFullN').textContent = i < 0 ? '' : `${i + 1} / ${THEME_ORDER.length}`;
-      themeFullApply.textContent = themeLocked(theme) ? '🔒 Создаётся в мастерской' : 'Применить фон';
+      themeFullApply.textContent = themeLocked(theme) ? (lockWhy(theme) ? `🔒 ${lockWhy(theme)}` : '🔒 Создаётся в мастерской') : 'Применить фон';
       themeFull.hidden = false;
       themeFullApply.focus();
     }
     function commitTheme(ctx, theme) {
-      if (themeLocked(theme)) { toast('Этот фон создаётся в мастерской, серия «Хронос»'); return; }   // looking is free, applying needs the crafted scene
+      if (themeLocked(theme)) { toast(lockWhy(theme) ? `Этот фон — награда: ${lockWhy(theme)}` : 'Этот фон создаётся в мастерской, серия «Хронос»'); return; }   // looking is free, applying needs the crafted scene
       const key = ctx.keyFn();
       try { if (theme === 'default') localStorage.removeItem(key); else localStorage.setItem(key, theme); } catch (e) {}
       paintChatTheme(ctx.cardId, theme);

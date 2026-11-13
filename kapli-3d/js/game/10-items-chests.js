@@ -467,6 +467,9 @@
   const CR_ADD = { rare: { common: 4 }, epic: { rare: 3, common: 5 }, legendary: { epic: 1, rare: 3, common: 7 } };
   // chat scenes of the series: the id is also the file name (chat-<id>.svg) and the chat theme
   const CHAT_BG = [{ id: 'chronos-workshop', name: 'Мастерская часовщика', rar: 'rare' }, { id: 'chronos-city', name: 'Город башенных часов', rar: 'epic' }, { id: 'chronos-heart', name: 'Сердце механизма', rar: 'legendary' }];
+  // 2.5: chat scenes for the modes for two — 20 games in the mode (not in the workshop)
+  const CHAT_BG_MODE = [{ id: 'duo-border', name: 'Граница', rar: 'epic', mode: 'territory', need: 20, unit: 'матчей' }, { id: 'duo-backtoback', name: 'Плечом к плечу', rar: 'epic', mode: 'duoback', need: 20, unit: 'забегов' }];
+  const CHAT_BG_ALL = [...CHAT_BG, ...CHAT_BG_MODE];
   const chatBgOwned = id => (save.chatBg || []).includes(id);
   const CR_BASE = { emo_tick: [['common', 20]], emo_wait: [['common', 20]], emo_late: [['rare', 15]], emo_windup: [['rare', 15]], chronos: [['legendary', 40]], 'chronos-workshop': [['rare', 30]], 'chronos-city': [['epic', 30]], 'chronos-heart': [['legendary', 20]], bg_cr_gears: [['common', 30]], bg_cr_sand: [['rare', 30]], bg_cr_behind: [['epic', 30]], bg_cr_void: [['legendary', 20]],
     fr_cr_dial: [['common', 30]], fr_cr_roman: [['rare', 30]], fr_cr_pend: [['epic', 30]], fr_cr_gyro: [['legendary', 20]],

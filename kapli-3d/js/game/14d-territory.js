@@ -143,6 +143,7 @@
         return `Твоя территория ${p}%<span class="bar wide"><span style="width:${p}%"></span></span>`;
       },
       share: myShare,
+      homeSide: (o, x) => sideAt(x) === homeOf(o),
       dbg(b, l) { if (!TEST_MODE) return; if (b !== undefined) bx = b * R; if (l !== undefined) limit = l; },   // test build only
       mini(g, size, s) {   // the minimap: your half tinted, the border as a bright line
         const x = size / 2 + bxView * s, h = Math.sqrt(Math.max(0, R * R - bxView * bxView)) * s, c = size / 2;

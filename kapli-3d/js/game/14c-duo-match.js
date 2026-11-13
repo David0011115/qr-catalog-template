@@ -10,6 +10,7 @@
     owners.push(rival);
     const RIVAL_I = owners.indexOf(rival), PLAYER_I = owners.indexOf(player);
     const rules = {};   // each mode for two adds its own rules here (see 14d-territory.js)
+    let modeIdLast = '', botMate = false, botT = 0, botGoal = null;   // test build: the second player can be a bot on this phone
     let rl = null, bonSig = '', on = false, role = '', modeId = '', inp = { x: 0, z: 0 }, snapAt = 0, inAt = 0, virAt = 0, foodDirty = new Set(), sideX = { p: 0, r: 0 };
     const rng = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const r1 = v => Math.round(v * 10) / 10;
@@ -65,6 +66,34 @@
     }
 
     // ---- start: the host draws the build and the seed and tells the other phone ----
+    // test build only: a match with a bot as the second player, no second phone and no network
+    function practice(id) {
+      if (!TEST_MODE) return;
+      const sk = SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft);
+      const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, build: rbuildDraw(), name: Net.nick || 'Игрок', skin: save.skin, peerName: id === 'duoback' ? 'Бот-напарник' : 'Бот-соперник', peerSkin: sk[(Math.random() * sk.length) | 0].id };
+      if (rules[id] && rules[id].goExtra) Object.assign(g, rules[id].goExtra());
+      botMate = true; botGoal = null; begin('host', g);
+    }
+    // the bot: run from what can eat it, chase what it can eat, otherwise crumbs; in «Спина к спине» it keeps near you
+    function botInput(o, dt) {
+      const m = o.cells.reduce((a, b) => !a || b.mass > a.mass ? b : a, null); if (!m) return;
+      botT -= dt; if (botT > 0 && botGoal) { aim(m, botGoal); return; }
+      botT = .25; let fx = 0, fz = 0, prey = null, pd = 1e9;
+      for (const c of cells) {
+        if (c.owner === o) continue;
+        const d = Math.hypot(c.x - m.x, c.z - m.z);
+        if (canEat(c, m) && d < cellR(c) + cellR(m) + 45) { fx -= (c.x - m.x) / (d || 1); fz -= (c.z - m.z) / (d || 1); }
+        else if (c.owner !== player || modeId === 'territory') { if (canEat(m, c) && d < 160 && d < pd) { pd = d; prey = c; } }
+      }
+      if (fx || fz) { botGoal = { x: m.x + fx * 40, z: m.z + fz * 40 }; aim(m, botGoal); return; }
+      if (prey) { botGoal = prey; if (pd < 30 && o.dashCd <= 0 && Math.random() < .3) act('dash'); aim(m, botGoal); return; }
+      if (modeId === 'duoback' && player.cells.length) { const [px, pz] = centerOf(player); if (Math.hypot(px - m.x, pz - m.z) > 110) { botGoal = { x: px, z: pz }; aim(m, botGoal); return; } }
+      if (modeId === 'territory' && rl && rl.homeSide && !rl.homeSide(o, m.x)) { botGoal = { x: homeX(o), z: m.z * .5 }; aim(m, botGoal); return; }
+      let best = null, bd = 1e9;
+      for (let k = 0; k < 60; k++) { const i = (Math.random() * FOOD) | 0, f = foods[i]; if (!f) continue; const d = Math.hypot(f.x - m.x, f.z - m.z); if (d < bd && (modeId !== 'territory' || !rl.homeSide || rl.homeSide(o, f.x))) { bd = d; best = f; } }
+      botGoal = best ? { x: best.x, z: best.z } : { x: 0, z: 0 }; aim(m, botGoal);
+    }
+    function aim(m, g) { const dx = g.x - m.x, dz = g.z - m.z, l = Math.hypot(dx, dz) || 1; inp = { x: dx / l, z: dz / l }; }
     function startAsHost(id) {
       if (Duo.state !== 'ready' || Duo.role !== 'host') { toast('Сначала дождитесь второго игрока'); return; }
       const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, build: rbuildDraw(), name: Net.nick || 'Игрок', skin: save.skin };
@@ -97,7 +126,7 @@
     }
     function cleanup() {
       if (rl && rl.end) rl.end();
-      on = false; role = ''; rl = null; tag.visible = false; [...rival.cells].forEach(removeCell); rebuildCells();
+      botMate = false; on = false; role = ''; rl = null; tag.visible = false; [...rival.cells].forEach(removeCell); rebuildCells();
       setTimeout(() => { if (!running) setArenaSize(1); }, 1200);
     }
     function endMatch(title, win, notify, bonus = 0) {
@@ -111,9 +140,14 @@
     function result(w, sh, why, x) {   // x: extra numbers of the mode (waves, bosses…), the same for both
       if (!on || dying) return;
       if (role === 'host') Duo.send({ t: 'res', w, sh, why, x });
+      modeIdLast = modeId;
       const me = w === 'coop' ? 'coop' : w === 'draw' ? 'draw' : w === role ? 'win' : 'loss';
       const out = rl && rl.finish ? rl.finish(me, role === 'host' ? sh : 1 - sh, why, x) : { title: me === 'win' ? 'Победа!' : me === 'draw' ? 'Ничья' : 'Поражение', bonus: 0 };
       endMatch(out.title, me === 'win', false, out.bonus);
+      // rewards for playing the mode: a chat scene at 20 games (a profile background at 30 comes with the other backgrounds)
+      for (const b of CHAT_BG_MODE) if (b.mode === modeIdLast && !chatBgOwned(b.id) && ((((save.duo || {})[b.mode]) || {}).games || 0) >= b.need) {
+        save.chatBg = save.chatBg || []; save.chatBg.push(b.id); persist(); setTimeout(() => toast(`Новый фон чата: «${b.name}»`), 1500);
+      }
     }
 
     // ---- host: the second player's drops follow the other phone's controls; snapshots go out 15 times a second ----
@@ -122,6 +156,7 @@
       o.dashT = Math.max(0, (o.dashT || 0) - dt); o.dashCd = Math.max(0, (o.dashCd || 0) - dt);
       for (const k in o.eff) o.eff[k] = Math.max(0, o.eff[k] - dt);
       if (!o.cells.length && o.respawnAt !== undefined && stats.time >= o.respawnAt) { delete o.respawnAt; place(o, homeX(o)); o.eff.shield = 3; toast(`${o.name} вернулся`); }
+      if (botMate && o.cells.length) botInput(o, dt);
       const l = Math.hypot(inp.x, inp.z);
       for (const c of o.cells) { if (l > .1) steer(c, c.x + inp.x / l * 10 * Math.min(1, l), c.z + inp.z / l * 10 * Math.min(1, l), dt); else steer(c, c.x + c.hx * 10, c.z + c.hz * 10, 0); }
       if (!player.cells.length && player.respawnAt !== undefined && stats.time >= player.respawnAt) { delete player.respawnAt; place(player, homeX(player)); effects.shield = Math.max(effects.shield, 3); toast('Ты снова в игре'); }
@@ -255,11 +290,11 @@
       if (m.t === 'end') { endMatch(`${rival.name} вышел из матча`, true, false); return true; }
       return false;
     }
-    function linkState() { if (on && Duo.state !== 'ready') endMatch('Связь со вторым телефоном потеряна', false, false); }
+    function linkState() { if (on && !botMate && Duo.state !== 'ready') endMatch('Связь со вторым телефоном потеряна', false, false); }
     // the match cannot stop: the pause button opens the menu while the round goes on; «Завершить» leaves the match for both
     function menu() { renderPauseInfo(); showCard('pauseCard'); $('overlay').hidden = false; setGameUi(false); $('resumeBtn').focus(); }
     $('quitBtn').addEventListener('click', () => { if (on) { Duo.send({ t: 'end' }); cleanup(); } }, true);
-    window.duoStartMatch = startAsHost;
+    window.duoStartMatch = startAsHost; window.duoPractice = practice;
 
     return { get on() { return on; }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
       get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, rules, rivalPick, result,

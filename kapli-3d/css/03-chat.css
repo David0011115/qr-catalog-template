@@ -14,6 +14,13 @@
 .theme-live-preview[data-theme-preview="chronos-heart"],.theme-full-scene[data-theme-preview="chronos-heart"]{background-image:url("../chat-chronos-heart.svg")}
 .chat-card[data-chat-theme="chronos-heart"]{background-image:url("../chat-chronos-heart.svg")}
 .theme-preview[data-craft]{border-color:rgba(255,210,122,.45)}
+.theme-preview[data-theme="duo-border"] .theme-thumb{background-image:url("../chat-duo-border.svg")}
+.theme-live-preview[data-theme-preview="duo-border"],.theme-full-scene[data-theme-preview="duo-border"]{background-image:url("../chat-duo-border.svg")}
+.chat-card[data-chat-theme="duo-border"]{background-image:url("../chat-duo-border.svg")}
+.theme-preview[data-theme="duo-backtoback"] .theme-thumb{background-image:url("../chat-duo-backtoback.svg")}
+.theme-live-preview[data-theme-preview="duo-backtoback"],.theme-full-scene[data-theme-preview="duo-backtoback"]{background-image:url("../chat-duo-backtoback.svg")}
+.chat-card[data-chat-theme="duo-backtoback"]{background-image:url("../chat-duo-backtoback.svg")}
+.theme-preview[data-duo]{border-color:rgba(34,230,255,.45)}
 .theme-preview.locked .theme-thumb{filter:saturate(.55) brightness(.75)}
 .theme-preview.locked>span:last-child::before{content:"🔒 "}
 /* Theme picker: four thumbnails in one row, the eye sits on the thumbnail's corner (no separate column) */

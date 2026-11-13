@@ -215,13 +215,19 @@
     v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8;
     return v;
   });
+  // 2.5: the raid boss comes as a pair — the second twin of the week
+  const colossus2 = makeOwner('Колосс-близнец', 'boss', 'boss');
+  colossus2.bossType = 'colossus2'; colossus2.life = 1e9;
+  BOSS_TYPES_EXTRA.colossus2 = { name: 'Колосс-близнец', color: '#7b3dff', speed: .66, life: 1e9, parts: 12, coins: 60, xp: 80, about: 'второй из пары: пока близнецы рядом, их связь гасит половину урона' };
+  colossus2.free = Array.from({ length: 12 }, () => { const v = makeVis(new THREE.Color('#7b3dff')); v.crown.visible = true; v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8; return v; });
+  const raidTwins = [colossus, colossus2];
   const MINION_COLOR = '#c9a7ff';
   const minions = Array.from({ length: 6 }, () => {
     const o = makeOwner('Прислужник', 'minion', 'aggressive');
     o.free = [makeVis(new THREE.Color(MINION_COLOR))];
     return o;
   });
-  const owners = [player, ...bots, ...bossOwners, colossus, ...minions];
+  const owners = [player, ...bots, ...bossOwners, colossus, colossus2, ...minions];
   const bossInfo = o => BOSS_TYPES[o.bossType] || BOSS_TYPES_EXTRA[o.bossType];
   let cells = [];
   const rebuildCells = () => { cells = owners.flatMap(o => o.cells); };
@@ -267,6 +273,7 @@
   const RAID_BOSS_CAP = 20000;   // unchanged: preserve the weekly Colossus raid cap
   function maxBosses() {
     if (dailyIs('bosses')) return 3;
+    if (mode === 'crown') return ModeX.crownMaxBosses();
     if (mode !== 'survival') return 2;
     return stats.wave >= 10 ? 4 : stats.wave >= 5 ? 3 : 2;
   }
@@ -282,6 +289,7 @@
     if (!pool.length) return false;
     const o = pool[Math.floor(Math.random() * pool.length)], b = BOSS_TYPES[o.bossType];
     let mass = b.mass(total(player));
+    if (mode === 'crown') mass = ModeX.crownBossMass(b, mass);
     if (surv) {
       // 2.5: every wave is 12% heavier (was 25%: a wall after wave 10), and always clearly bigger than the player's largest part
       const biggest = Math.max(0, ...player.cells.map(c => c.mass));

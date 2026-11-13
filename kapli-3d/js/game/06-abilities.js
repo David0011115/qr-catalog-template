@@ -389,6 +389,7 @@
 
   function endRound() {
     if (stats.tutorial) { tutExit(false); return; }
+    ModeX.end();
     // «Три в одном»: a won round (not ranked) with 3 different abilities in the build, each used at least once
     if (stats.win && !stats.ranked && runBuild.filter(Boolean).length === 3 && runBuild.every(id => stats.abUsed[id])) stats.threeInOne = true;
     running = false;
@@ -405,6 +406,7 @@
     // П8: every star of the skin you wear gives +1% coins (normal modes only)
     if (starBonus('coins')) cMul.push([`Звёзды скина ${'★'.repeat(starsOf(skin()))}`, 1 + starBonus('coins') / 100]);
     if (stats.ranked) cMul.push(['Рейтинговый бой', 1.5]);
+    if (mode === 'raid' && raidPerk().coins) cMul.push(['«Аура рейдера»', 1.03]);
     if (petLv('coins')) cMul.push([`Питомец +${5 * petLv('coins')}%`, 1 + .05 * petLv('coins')]);
     // 2.0.9: all coin multipliers together give at most ×2
     { const m = cMul.reduce((t, [, x]) => t * x, 1); if (m > COIN_MULT_CAP) cMul.push([`Потолок множителей ×${COIN_MULT_CAP}`, COIN_MULT_CAP / m]); }

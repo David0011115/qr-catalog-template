@@ -344,8 +344,9 @@
     { const fdt = Math.min(0.05, (now - (draw.last || now)) / 1000); updateParticles(fdt); updateFx(fdt); } draw.last = now;
     pMat.size = 0.7 + camDist * 0.015;
     // the crown in «Захват короны» floats over the holder's biggest part
-    crownMesh.visible = running && mode === 'crown' && !!crownHolder && crownHolder.cells.length > 0;
-    if (crownMesh.visible) {
+    crownMesh.visible = running && mode === 'crown' && (!!ModeX.crownGround || (!!crownHolder && crownHolder.cells.length > 0));
+    if (crownMesh.visible && ModeX.crownGround) { const g = ModeX.crownGround; crownMesh.position.set(g.x, 2.2 + Math.sin(now / 300) * .5, g.z); crownMesh.scale.setScalar(4); crownMesh.rotation.y = now / 500; }
+    else if (crownMesh.visible) {
       const top = crownHolder.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(top);
       crownMesh.position.set(top.x, r * 2 + 0.6 + Math.sin(now / 300) * 0.3, top.z);
       crownMesh.scale.setScalar(Math.max(2, r * 1.1)); crownMesh.rotation.y = now / 800;

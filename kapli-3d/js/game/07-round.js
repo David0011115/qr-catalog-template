@@ -111,6 +111,10 @@
   function think(o) {
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.25 + .1), flee: p0.flee * .8 } : p0;
     const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense;
+    if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
+      const t = mainOf(crownHolder), d = Math.hypot(t.x - c.x, t.z - c.z);
+      if (canEat(c, t) && d < sense * (o.kind === 'boss' ? 4 : 2.5)) { o.target = t; o.tx = t.x; o.tz = t.z; return; }
+    }
     if (mode === 'royale' && running && Math.hypot(c.x, c.z) > zoneR * .8) { o.tx = c.x * .3; o.tz = c.z * .3; o.target = null; return; }   // run from the storm
     if (o.bossType === 'hunter' && player.cells.length) {
       let best = null, bd = Infinity;
@@ -244,7 +248,7 @@
       return true;
     }
     if (mode === 'crown') {
-      crownHolder = contenders.reduce((best, o) => !best || total(o) > total(best) ? o : best, null);
+      ModeX.crownRules(dt, contenders);   // 2.5: the crown passes only by eating its holder (it starts in the middle of the field)
       if (crownHolder && !abOn('x_ghost', crownHolder)) crownHolder.crownT += dt;   // no crown time while a ghost
       
     }
@@ -254,7 +258,7 @@
       return true;
     }
     if (mode === 'raid') {
-      if (stats.raidSpawned && !colossus.cells.length) {
+      if (stats.raidSpawned && !colossus.cells.length && !colossus2.cells.length) {
         if (spawnRaidChunk()) toast('Босс собирается снова!');
         else { finishRound(`${colossus.name} повержен!`, 0, true); return true; }
       }
@@ -262,7 +266,7 @@
     }
     if (mode === 'raid') {
       // the colossus splits a part off whenever the player swims close
-      if (colossus.cells.length && colossus.splitCd <= 0 && colossus.cells.length < 12) {
+      for (const colossus of raidTwins) if (colossus.cells.length && colossus.splitCd <= 0 && colossus.cells.length < 12) {
         for (const c of colossus.cells) {
           if (c.mass < 120) continue;
           const rc = cellR(c);
@@ -455,16 +459,17 @@
       const b = eatCells[eatCandidates[ci]];
       if (dying || a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
-        if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && b.owner === colossus) {
-          stats.raidDmg = Math.min(RAID_ATTEMPT_CAP, (stats.raidDmg || 0) + Math.round(b.mass));
+        if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
+          stats.raidDmg = Math.min(RAID_ATTEMPT_CAP, (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK()));
           const raidLeft = RAID_HP - raidState().dmg - stats.raidDmg;
           if (stats.raidDmg >= RAID_ATTEMPT_CAP && raidLeft > 0) {
             toast('Колосс отступает! Урон сохранён для следующей попытки');
-            finishRound('Колосс отступил после 18 000 урона', 0, false);
+            finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
           }
         } }
         a.mass += b.mass * 0.8 * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const victim = b.owner, lastMass = b.mass;
+        if (mode === 'crown') ModeX.crownBite(a, b, victim, lastMass);
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
         removeCell(b);
@@ -589,9 +594,9 @@
       if (lim) timer = `⏱ ${fmtTime(Math.max(0, lim - stats.time))}`;
       else if (['survival', 'classic', 'rbuild', 'hardcore', 'royale', 'crown'].includes(mode)) timer = `⏱ ${fmtTime(stats.time)}`;
       if (mode === 'royale') modeChip = `Зона ${Math.round(zoneR)} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
-      if (mode === 'crown') modeChip = `♛ ${crownHolder ? crownHolder.name : '–'} · твоё время ${fmtTime(player.crownT)}`;
+      if (mode === 'crown') modeChip = ModeX.crownChip();
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
-      if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · урон за заход ${Math.round(stats.raidDmg || 0)}/${RAID_ATTEMPT_CAP}`; }
+      if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `Близнецы ${Math.ceil(left / RAID_HP * 100)}% · заход ${Math.round(stats.raidDmg || 0).toLocaleString('ru-RU')}/${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')}`; }
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
       if (mode === 'territory') { modeChip = DuoM.chip(); if (DuoM.on) timer = DuoM.rules.territory.timer(); }
       if (mode === 'duoback') { modeChip = DuoM.chip(); timer = `⏱ ${fmtTime(stats.time)}`; }
@@ -650,6 +655,7 @@
     mctx.strokeStyle = tok('--line'); mctx.lineWidth = 1; mctx.stroke();
     const P = (x, z) => [size / 2 + x * s, size / 2 + z * s];
     if (mode === 'territory' && DuoM.on) DuoM.rules.territory.mini(mctx, size, s);
+    if (mode === 'crown' && running) ModeX.crownMini(mctx, P);
     mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const [x, y] = P(v.x, v.z); mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
     if (ev.active === 'meteor' || ev.warn === 'meteor') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 22 * s, 0, Math.PI * 2); mctx.stroke(); }
     for (const b of bonuses) { const [x, y] = P(b.x, b.z); mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }

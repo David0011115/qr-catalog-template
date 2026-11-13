@@ -110,7 +110,7 @@
       name = d.name; tag = rarTag(decoRarity(d)) + `<span class="badge-ex">${d.kind === 'frame' ? 'рамка имени' : 'титул'}</span>`;
       flat = d.kind === 'frame' ? `<span class="im-frame">${pcAvatar({ skin: save.skin, frame: id }, 110)}${decoPreview(d)}</span>` : decoPreview(d);
       rows.push(['Где видно', d.kind === 'frame' ? 'рамка вокруг твоего имени в таблице лидеров и в профиле' : 'подпись после твоего имени в таблице лидеров и в профиле'],
-        ['Откуда', d.craft ? decoSource(d).replace(/\.$/, '') : d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : d.chest ? `сундук · ${RARITY[d.chest].name.toLowerCase()}` : decoSource(d).replace(/\.$/, '')]);
+        ['Откуда', d.src ? decoSource(d).replace(/\.$/, '') : d.craft ? decoSource(d).replace(/\.$/, '') : d.chaos ? decoSource(d).replace(/\.$/, '') : d.level ? `${d.level}-й уровень игрока` : d.skill ? (d.skill === 'all' ? 'все мастерские достижения' : `мастерское достижение «${SKILL.find(k => k.id === d.skill).name}»`) : d.legend ? `легендарное достижение «${LEGEND.find(l => l.id === d.legend).name}»` : d.league !== undefined ? 'награда лиги в конце сезона' : d.col ? 'награда за коллекцию эффектов' : d.mastery ? `мастерство режима «${MODES[d.mastery].name}» (${d.kind === 'frame' ? 'уровень «Золото»' : 'уровень «Легенда»'})` : d.chest ? `сундук · ${RARITY[d.chest].name.toLowerCase()}` : decoSource(d).replace(/\.$/, '')]);
       act = save.decor.includes(id) ? `<button class="btn ${on ? 'ghost' : ''}" data-act="deco-${id}">${on ? 'Снять' : 'Выбрать'}</button>` : `<button class="btn ghost" disabled>${d.craft ? 'Создаётся в мастерской' : 'Ещё не получена'}</button>`;
     } else if (kind === 'arena') {
       const a = ARENAS.find(x => x.id === id), on = save.arena === id;
@@ -318,6 +318,7 @@
   }
   const RAR_ORDER = { legendary: 0, epic: 1, rare: 2, common: 3 };
   function decoSource(d) {
+    if (d.src) return d.src;
     if (d.series) return 'Награда за всю серию «Хронос» в мастерской: создай все её предметы.';
     if (d.craft) return `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(d.id)) || PACKS[0]).name}»: создаётся только из осколков.`;
     if (d.prestige) return `Престиж после 50-го уровня: ${d.prestige}.`;

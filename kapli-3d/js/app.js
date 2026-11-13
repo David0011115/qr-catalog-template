@@ -1,7 +1,7 @@
 /* installable app: offline cache + install button */
 const APP_VER = '240';
 // shown to players as 1.5.9 instead of 59 (and 2.0.0 for 200): generation . tens of updates . update within them
-const APP_LABEL = '2.4.0'; // Public release version.
+const APP_LABEL = '2.5.0'; // Public release version.
 // the installed app turns to landscape itself after it has opened (the manifest no longer forces it: a forced turn at launch made Android drop the first taps)
 { const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
   const lock = () => { try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} };

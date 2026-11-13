@@ -78,15 +78,19 @@
   }
 
   function setColossusLook(name, color) {
-    colossus.name = name;
-    for (const v of [...colossus.free, ...colossus.cells.map(c => c.vis)]) { v.mesh.material.color.set(color); v.mesh.material.emissive.set(color); v.glow.material.color.set(color); }
+    const c2 = '#' + new THREE.Color(color).offsetHSL(.5, 0, 0).getHexString();   // the twin: the opposite colour of the week
+    colossus.name = name; colossus2.name = `${name}-близнец`; BOSS_TYPES_EXTRA.colossus2.color = c2;
+    for (const [o, col] of [[colossus, color], [colossus2, c2]]) for (const v of [...o.free, ...o.cells.map(c => c.vis)]) { v.mesh.material.color.set(col); v.mesh.material.emissive.set(col); v.glow.material.color.set(col); }
   }
   function spawnRaidChunk() {
     const r = raidState(), dealt = stats.raidDmg || 0, left = Math.min(RAID_HP - r.dmg - dealt, RAID_ATTEMPT_CAP - dealt);
     if (left <= 0) return false;
-    const [x, z] = safeSpot(45);
-    const c = addCell(colossus, x, z, Math.min(12000, left), colossus.free.pop());
-    c.mergeT = 1e9; colossus.think = 0; colossus.target = null; colossus.splitCd = 0;
+    const [x, z] = safeSpot(45), a = Math.random() * 6.283;
+    raidTwins.forEach((o, k) => {   // the twins come together, side by side
+      [...o.cells].forEach(removeCell);
+      const c = addCell(o, x + Math.cos(a + k * Math.PI) * 30, z + Math.sin(a + k * Math.PI) * 30, Math.min(9000, Math.max(200, left / 2)), o.free.pop());
+      c.mergeT = 1e9; o.think = 0; o.target = null; o.splitCd = 0;
+    });
     rebuildCells(); stats.raidSpawned = true;
     return true;
   }
@@ -96,8 +100,9 @@
     if (!pendingRanked && !pendingTut && save.mode === 'raid') {
       const r = raidState();
       if (r.done) { toast('Босс этой недели уже повержен. Новый — в понедельник'); return; }
-      if (r.tries >= RAID_TRIES) { toast('Попытки на сегодня закончились. Приходи завтра'); return; }
-      r.tries++; persist();
+      const extra = raidPerk().tries && r.bonusWeek !== r.week ? 1 : 0;   // «Шлем рейдера»: one more try a week
+      if (r.tries >= RAID_TRIES + extra) { toast('Попытки на сегодня закончились. Приходи завтра'); return; }
+      r.tries++; if (r.tries > RAID_TRIES) { r.bonusWeek = r.week; toast('Использована недельная попытка «Шлема рейдера»'); } persist();
     }
     const isTut = pendingTut; pendingTut = false; tut = null;
     const isChaos = pendingChaos && pendingRanked; pendingChaos = false;
@@ -108,7 +113,7 @@
     U = pendingRanked || isTut ? ZERO_UP : save.up;
     [...player.cells].forEach(removeCell);
     bots.forEach(o => [...o.cells].forEach(removeCell));
-    [...bossOwners, colossus, ...minions].forEach(o => [...o.cells].forEach(removeCell));
+    [...bossOwners, ...raidTwins, ...minions].forEach(o => [...o.cells].forEach(removeCell));
     rebuildCells();
     effects = { speed: 0, shield: 3, double: 0, magnet: 0 };   // short spawn protection
     addCell(player, 0, 0, (TEST_MODE && testStartMass) || START_MASS + (U.big || 0), freeVis.pop());
@@ -146,7 +151,8 @@
     if (mode === 'raid') {
       const b = raidBoss(raidWeek()); setColossusLook(b.name, b.color);
       stats.raidDmg = 0; spawnRaidChunk();
-      toast(`Рейд: ${b.name}. Подплывай ближе — он делится. Ешь части, чтобы нанести урон`);
+      const pk = raidPerk();
+      toast(`Рейд: ${b.name} и близнец. Разведи их — пока они рядом, связь гасит половину урона${pk.dmg > 1 ? `. Твой бонус: урон +${Math.round((pk.dmg - 1) * 100)}%` : ''}`);
     }
     if (!isTut) { spawnBonus(); spawnBonus(); }
     ModeX.start();

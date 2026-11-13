@@ -136,7 +136,7 @@
     // teams: you + 5 allies (blue) vs 6 rivals (red); the 12th bot sits out
     player.team = mode === 'team' ? 'A' : null;
     const extraOff = mode === 'team' || mode === 'raid' || mode === 'royale' || ranked;
-    bots.forEach((o, i) => { o.team = mode === 'team' ? (i < 5 ? 'A' : 'B') : null; o.disabled = (mode === 'team' && i >= 11) || (extraOff && i >= 12) || isTut; o.crownT = 0;
+    bots.forEach((o, i) => { o.team = mode === 'team' ? (i < 5 ? 'A' : 'B') : null; o.disabled = (mode === 'team' && i >= 11) || (extraOff && i >= 12) || isTut || (o.tExtra && mode !== 'territory'); o.crownT = 0;
       o.jit = .9 + Math.random() * .2; o.spikeBlind = false; o.spikeMemT = 0; });
     player.crownT = 0;
     pickStarBot();

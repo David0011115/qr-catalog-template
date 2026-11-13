@@ -396,8 +396,9 @@
     const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
-      const r = cellR(c) + (isP ? pMagnet : 0);
-      const gain = (isP ? pGain : 1) * (abOn('pulse', c.owner) ? 2 : 1);
+      const fx2 = c.owner.eff;   // the second player of a match for two keeps their bonuses here
+      const r = cellR(c) + (isP ? pMagnet : fx2 && fx2.magnet > 0 ? 6 : 0);
+      const gain = (isP ? pGain : fx2 && fx2.double > 0 ? 2 : 1) * (abOn('pulse', c.owner) ? 2 : 1);
       const gx0 = fgCell(c.x - r), gx1 = fgCell(c.x + r), gz0 = fgCell(c.z - r), gz1 = fgCell(c.z + r);
       for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) { const bucket = fgrid[gx * FGN + gz];
       for (let j = bucket.length - 1; j >= 0; j--) {
@@ -417,6 +418,7 @@
     // bonuses (player only)
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const b = bonuses[i];
+      if (DuoM.rivalPick(b)) { scene.remove(b.mesh); bonuses.splice(i, 1); continue; }
       if (player.cells.some(c => Math.hypot(c.x - b.x, c.z - b.z) < cellR(c) + 1)) {
         // same bonus stacks its time, capped at 30 s
         const stacked = !BONUS[b.type].instant && effects[b.type] > 0;
@@ -522,7 +524,7 @@
     }
     updateEjects(dt);
     updateViruses(dt);
-    updateEvent(dt);
+    if (mode !== 'territory') updateEvent(dt);   // «Захват территории»: no random arena events
     for (const c of player.cells) stats.maxPart = Math.max(stats.maxPart, c.mass);
     stats.maxParts = Math.max(stats.maxParts, player.cells.length);
     const tm = total(player);
@@ -598,6 +600,7 @@
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
       if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `${colossus.name}: ${Math.ceil(left / RAID_HP * 100)}% · урон за заход ${Math.round(stats.raidDmg || 0)}/${RAID_ATTEMPT_CAP}`; }
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
+      if (mode === 'territory') modeChip = DuoM.chip();
     }
     const badges = [];
     const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);
@@ -651,6 +654,7 @@
     mctx.beginPath(); mctx.arc(size / 2, size / 2, R * s, 0, Math.PI * 2); mctx.fill();
     mctx.strokeStyle = tok('--line'); mctx.lineWidth = 1; mctx.stroke();
     const P = (x, z) => [size / 2 + x * s, size / 2 + z * s];
+    if (mode === 'territory' && DuoM.on) DuoM.rules.territory.mini(mctx, size, s);
     mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const [x, y] = P(v.x, v.z); mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
     if (ev.active === 'meteor' || ev.warn === 'meteor') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 22 * s, 0, Math.PI * 2); mctx.stroke(); }
     for (const b of bonuses) { const [x, y] = P(b.x, b.z); mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }

@@ -75,7 +75,7 @@
   addEventListener('resize', resize); resize();
 
   // ================= pet companion =================
-  function petLv(kind) { const pt = petById(save.pet); return pt && pt.bonus === kind && !(stats && stats.ranked) ? pt.lv : 0; }
+  function petLv(kind) { const pt = petById(save.pet); return pt && pt.bonus === kind && !(stats && (stats.ranked || stats.duo)) ? pt.lv : 0; }   // matches for two: no pets, like the leagues
   let petObj = null, petT = 0;
   const basicMat = c => new THREE.MeshBasicMaterial({ color: c });
   function buildPet(pt) {

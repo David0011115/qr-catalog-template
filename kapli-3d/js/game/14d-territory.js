@@ -1,0 +1,109 @@
+  // ================= «Захват территории»: rules of the duo mode =================
+  // The field is split by a straight border. It creeps toward the player with less mass; eating the other player makes it
+  // jump toward the victim. Bots can be eaten only on your own side, and on the other side you are 15% slower.
+  // Coordinates are the host's: the host's half is x < bx. Both phones keep the same bx (the host sends it).
+  (() => {
+    const BORDER_V = .012, DEAD = .03, JUMP = .06, LIMIT = .9, FOREIGN_K = .85;
+    let bx = 0, bxView = 0, pHome = -1, mesh = null, mat = null, flash = 0;
+
+    // eight more small bots, used only here: 24 in all, half of them come back on each half of the field
+    [['Капелька', 'coward'], ['Росинка', 'farmer'], ['Брызг', 'coward'], ['Ириска', 'farmer'], ['Пузырь', 'normal'], ['Мятка', 'coward'], ['Искорка', 'farmer'], ['Шарик', 'normal']].forEach(([n, p], k) => {
+      const o = makeOwner(n, 'bot', p); o.baseColor = BOT_COLORS[(k * 2 + 1) % BOT_COLORS.length]; o.tExtra = true; o.disabled = true;
+      o.free = Array.from({ length: BOT_PARTS }, () => makeVis(new THREE.Color(o.baseColor)));
+      bots.push(o); owners.push(o);
+    });
+
+    const active = () => DuoM.mode === 'territory';
+    const sideAt = x => x < bx ? -1 : 1;
+    const homeOf = o => o === player ? pHome : o === DuoM.rival ? -pHome : 0;
+    const botHome = o => bots.indexOf(o) % 2 ? 1 : -1;
+    // share of the round field left of the line x = b·R
+    const leftShare = () => { const b = Math.max(-1, Math.min(1, bx / R)); return (Math.PI - Math.acos(b) + b * Math.sqrt(1 - b * b)) / Math.PI; };
+    const myShare = () => pHome < 0 ? leftShare() : 1 - leftShare();
+
+    // bots come back on their own half (by count: 12 and 12), wherever the border is now
+    const spawnBot0 = spawnBot, safeSpot0 = safeSpot; let want = 0;
+    safeSpot = d => {
+      if (!want) return safeSpot0(d);
+      for (let t = 0; t < 80; t++) {
+        const [x, z] = randInArena(6);
+        if (sideAt(x) === want && cells.every(c => Math.hypot(c.x - x, c.z - z) > d + cellR(c))) return [x, z];
+      }
+      return [bx + (want * R - bx) * .5, (Math.random() - .5) * R * .6];
+    };
+    spawnBot = o => {
+      if (o.tExtra && mode !== 'territory') return;
+      want = active() && !DuoM.guest ? botHome(o) : 0;
+      try { spawnBot0(o); } finally { want = 0; }
+    };
+
+    // the border on the floor: your half tinted blue, the other pink, a bright moving line between them
+    function makeMesh() {
+      mat = decal(new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+        uniforms: { uBx: { value: 0 }, uMe: { value: -1 }, uT: { value: 0 }, uR: { value: R }, uF: { value: 0 } },
+        vertexShader: 'varying vec2 vP; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vP = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }',
+        fragmentShader: `uniform float uBx, uMe, uT, uR, uF; varying vec2 vP;
+          void main(){
+            float d = vP.x - uBx, mine = step(0.0, d * uMe);
+            vec3 me = vec3(.13, .9, 1.0), foe = vec3(1.0, .31, .85), tint = mix(foe, me, mine);
+            float line = exp(-abs(d) * .9), halo = exp(-abs(d) * .07);
+            float run = .55 + .45 * sin(vP.y * .35 - uT * 4.0);
+            float rim = smoothstep(uR, uR * .9, length(vP));
+            vec3 col = mix(tint, vec3(1.0), line * .6);
+            float a = (.07 + halo * .16 + line * (.55 + .35 * run) + uF * halo * .5) * rim;
+            gl_FragColor = vec4(col, a);
+          }` }));
+      mesh = new THREE.Mesh(new THREE.CircleGeometry(1, 128), mat);
+      mesh.rotation.x = -Math.PI / 2; mesh.position.y = .06; mesh.renderOrder = 2;
+    }
+
+    DuoM.rules.territory = {
+      pre(role) { bx = bxView = 0; flash = 0; pHome = role === 'host' ? -1 : 1; },
+      begin() {
+        if (!mesh) makeMesh();
+        mesh.scale.setScalar(R); mat.uniforms.uR.value = R; mat.uniforms.uMe.value = pHome; mat.uniforms.uBx.value = 0;
+        scene.add(mesh);
+        setTimeout(() => { if (active()) toast('Ешь ботов на своей (голубой) стороне. Чем ты тяжелее, тем дальше граница'); }, 2400);
+      },
+      end() { if (mesh) scene.remove(mesh); },
+      // a respawn spot well inside your own half, toward your edge
+      spawnX: o => bx + (homeOf(o) * R - bx) * .6,
+      tick(dt) {   // host only
+        const a = total(player), b = total(DuoM.rival), s = a + b;
+        if (s > 0) {
+          const rel = (a - b) / s;   // the host's lead: plus pushes the border right (into the other half)
+          if (Math.abs(rel) > DEAD) bx += Math.sign(rel) * Math.min(1, (Math.abs(rel) - DEAD) * 2.5) * BORDER_V * R * dt;
+        }
+        bx = Math.max(-LIMIT * R, Math.min(LIMIT * R, bx));
+      },
+      lost(o, eater) {   // eating the other player: the border jumps toward the one who was eaten
+        if (!eater || (eater !== player && eater !== DuoM.rival) || eater === o) return;
+        bx += (o === player ? -1 : 1) * JUMP * R; bx = Math.max(-LIMIT * R, Math.min(LIMIT * R, bx)); flash = 1;
+        toast(o === player ? 'Граница прыгнула к тебе!' : 'Граница прыгнула вперёд!');
+      },
+      snap(s) { s.bx = Math.round(bx * 10) / 10; },
+      apply(s) { if (s.bx !== undefined) { if (s.bx * pHome < bx * pHome - JUMP * R * .5 && stats.time > 3) flash = 1; bx = s.bx; } },
+      view(dt) {
+        bxView += (bx - bxView) * Math.min(1, dt * 6); flash = Math.max(0, flash - dt * 1.5);
+        if (mat) { mat.uniforms.uBx.value = bxView; mat.uniforms.uT.value = stats.time; mat.uniforms.uF.value = flash; }
+      },
+      eatBlock(a, b) {   // your own bites of bots only count on your side
+        const h = homeOf(a.owner);
+        return !!h && b.owner.kind === 'bot' && sideAt(b.x) !== h;
+      },
+      speedK(c) { const h = homeOf(c.owner); return h && sideAt(c.x) !== h ? FOREIGN_K : 1; },
+      chip() {
+        const p = Math.round(myShare() * 100), foe = player.cells.length && sideAt(centerOf(player)[0]) !== pHome;
+        return `Твоя территория ${p}%<span class="bar wide"><span style="width:${p}%"></span></span>${foe ? ' · чужая сторона −15%' : ''}`;
+      },
+      share: myShare,
+      mini(g, size, s) {   // the minimap: your half tinted, the border as a bright line
+        const x = size / 2 + bxView * s, h = Math.sqrt(Math.max(0, R * R - bxView * bxView)) * s, c = size / 2;
+        g.save(); g.beginPath(); g.arc(c, c, R * s, 0, Math.PI * 2); g.clip();
+        g.fillStyle = 'rgba(34,230,255,.16)'; g.fillRect(pHome < 0 ? 0 : x, 0, pHome < 0 ? x : size - x, size);
+        g.fillStyle = 'rgba(255,79,216,.13)'; g.fillRect(pHome < 0 ? x : 0, 0, pHome < 0 ? size - x : x, size);
+        g.restore();
+        g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, c - h); g.lineTo(x, c + h); g.stroke();
+      },
+    };
+  })();

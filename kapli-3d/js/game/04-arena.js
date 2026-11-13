@@ -307,9 +307,9 @@
     rebuildCells();
   }
   // 2.3 «Фонтан»: crumbs spray out in a ring around the player (more for a bigger drop), with a fountain of particles
-  function fountainBurst() {
-    if (!player.cells.length) return;
-    const [x, z] = centerOf(player), r = cellR(mainOf(player)), n = Math.round(Math.min(160, 60 + total(player) / 40));
+  function fountainBurst(o = player) {
+    if (!o.cells.length) return;
+    const [x, z] = centerOf(o), r = cellR(mainOf(o)), n = Math.round(Math.min(160, 60 + total(o) / 40));
     burstFood(x, z, r * 1.8 + 12, n, r + 1.5);
     for (let k = 0; k < 6; k++) emit(x, r + 1, z, k % 2 ? '#4d8dff' : '#bff8ff', 14, 10 + k * 2, .9);
     wave(x, z, '#4d8dff', r, r + 16 + r, .8); wave(x, z, '#bff8ff', r * .6, r + 10 + r * .6, .6);
@@ -349,7 +349,7 @@
     return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1);
   }
   const eatRatio = c => c.owner.isPlayer ? 1.25 + 0.01 * U.guard : 1.25;
-  const canEat = (a, b) => !(b.owner.spawnSh > 0) && !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b);
+  const canEat = (a, b) => !(b.owner.spawnSh > 0) && !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b) && !DuoM.eatBlock(a, b);
 
   let mode = save.mode;
   const splitRules = () => dailyIs('splitonly');
@@ -362,7 +362,7 @@
     return ['survival', 'crown', 'race'].includes(m) ? fmtTime(v) : m === 'raid' ? `${v} урона` : String(v);
   };
   const dailyIs = id => mode === 'daily' && dailyMod.id === id;
-  const bossesOn = () => !(stats && stats.tutorial) && !['team', 'race', 'royale', 'raid'].includes(mode);
+  const bossesOn = () => !(stats && stats.tutorial) && !['team', 'race', 'royale', 'raid', 'territory'].includes(mode);
 
   // ================= mass ejection =================
   const ejectGeo = new THREE.SphereGeometry(1, 16, 12);

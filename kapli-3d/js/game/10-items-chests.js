@@ -301,7 +301,7 @@
   const STAR_BONUS = { common: { k: 'coins', per: 1, text: n => `+${n}% монет за раунд` }, rare: { k: 'xp', per: 2, text: n => `+${2 * n}% опыта за раунд` },
     epic: { k: 'magnet', per: .2, text: n => `крошки собираются дальше на ${(.2 * n).toFixed(1).replace('.', ',')}` }, legendary: { k: 'bonus', per: 5, text: n => `бонусы действуют на ${5 * n}% дольше` } };
   const starBonusOf = k => { const r = k && (k.chest || k.lchest), n = k ? starsOf(k) : 0; return r && n ? { ...STAR_BONUS[r], n } : null; };
-  const starBonus = kind => { if (!stats || stats.ranked) return 0; const b = starBonusOf(skin()); return b && b.k === kind ? b.per * b.n : 0; };
+  const starBonus = kind => { if (!stats || stats.ranked || stats.duo) return 0; const b = starBonusOf(skin()); return b && b.k === kind ? b.per * b.n : 0; };
   // rarity of a frame or title, by where it comes from
   function decoRarity(d) {
     if (d.rar) return d.rar;

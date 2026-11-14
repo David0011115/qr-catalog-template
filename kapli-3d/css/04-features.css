@@ -413,3 +413,5 @@
 .evo-f.on { border-color: #ffd23f; color: #ffd23f; box-shadow: 0 0 10px rgba(255, 210, 63, .4); }
 .evo-f.lock { cursor: default; opacity: .6; font-size: .72rem; } .evo-f.lock small { font: 600 .56rem var(--body); color: var(--muted); }
 .evo-u { display: block; color: var(--muted); font-size: .7rem; margin-top: 3px; }
+.evo-f.lock { cursor: pointer; } .evo-f.lock.on { opacity: 1; border-color: #ffd23f; }
+.evo-f.worn::after { content: '✓'; font-size: .6rem; color: #3dffa2; }

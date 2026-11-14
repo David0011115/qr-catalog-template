@@ -153,6 +153,16 @@
     duo_shield:  { forms: () => evoSteps(evoDuoBest('hard'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Сложный»', c: '#5affc8', c2: '#2ab8a0', grant: 'Щит союза' },
     duo_const:   { forms: () => evoSteps(evoDuoBest('mad'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Безумие»', c: '#ffe08a', c2: '#b26bff', grant: 'Созвездие' },
   };
+  // their swatches in the wardrobe and the lists (a CSS picture of the body)
+  const EVO_SW = {
+    lg_worlds: 'background:radial-gradient(circle at 50% 50%, #000 0 34%, #ffb070 38%, #ff3d6e 46%, rgba(255,60,110,0) 62%), radial-gradient(ellipse 100% 24% at 50% 52%, #ffd27a 0 30%, #ff3d6e 55%, transparent 70%), #05020c;box-shadow:0 0 14px #ff6a3d;',
+    lg_eternal: 'background:radial-gradient(circle at 35% 30%, #fff 0 12%, transparent 40%), repeating-linear-gradient(125deg, transparent 0 9px, rgba(90,160,255,.75) 9px 10.5px, transparent 10.5px 21px), #e6eeff;box-shadow:0 0 12px #9fd8ff;',
+    hc_berserk: 'background:radial-gradient(circle at 50% 50%, #ff2d2d 0 6%, transparent 7%), conic-gradient(from 0deg, #2a0306 0 6%, #ff1a1a 6% 8%, #2a0306 8% 18%, #ff1a1a 18% 20%, #2a0306 20% 31%, #ff1a1a 31% 33%, #2a0306 33% 45%, #ff1a1a 45% 47%, #2a0306 47% 58%, #ff1a1a 58% 60%, #2a0306 60% 72%, #ff1a1a 72% 74%, #2a0306 74% 86%, #ff1a1a 86% 88%, #2a0306 88%);box-shadow:0 0 14px #ff1a1a;',
+    duo_twin: 'background:radial-gradient(circle at 30% 50%, #3dff9a 0 12%, transparent 13%), radial-gradient(circle at 70% 50%, #22e6ff 0 12%, transparent 13%), linear-gradient(105deg, #22e6ff 0 49%, #fff 49% 51%, #3dff9a 51%);box-shadow:0 0 14px #7affd0;',
+    duo_shield: 'background:radial-gradient(circle, transparent 0 55%, rgba(90,255,200,.9) 56% 58%, transparent 59%) 0 0/14px 14px, radial-gradient(circle at 40% 35%, #1f6a62, #082624);box-shadow:0 0 14px #5affc8;',
+    duo_const: 'background:radial-gradient(circle at 30% 30%, #fff 0 2px, transparent 3px), radial-gradient(circle at 65% 40%, #ffe08a 0 2px, transparent 3px), radial-gradient(circle at 45% 70%, #fff 0 2px, transparent 3px), linear-gradient(35deg, transparent 47%, rgba(154,184,255,.8) 48% 50%, transparent 51%), radial-gradient(circle at 40% 35%, #1a2a6a, #070a24);box-shadow:0 0 14px #8aa8ff;',
+  };
+  let evoPv = {};   // a form looked at in the item window (also a locked one)
   const isEvo = s => !!(s && EVO[s.id]);
   const evoOpen = id => EVO[id] ? Math.min(3, EVO[id].forms()) : 0;
   const evoForm = id => { const n = evoOpen(id); if (!n) return 0; const p = (save.evo || {})[id]; return p && p <= n ? p : n; };
@@ -170,7 +180,7 @@
     if (vis.evo) { vis.mesh.remove(vis.evo); vis.evo = null; vis.evoTick = null; }
     vis.mesh.material.visible = true;
     if (!isEvo(s)) return;
-    const F = mine ? Math.max(1, evoForm(s.id)) : 1, full = mine && QUALITY !== 'low';
+    const F = vis.evoF || (mine ? Math.max(1, evoForm(s.id)) : 1), full = mine && QUALITY !== 'low';
     const g = new THREE.Group(); g.userData.F = F;
     if (EVO_BODY[s.id]) { g.add(new THREE.Mesh(sphereGeo, evoMat(s.id, EVO_BODY[s.id]))); vis.mesh.material.visible = false; }
     if (EVO_RIM[s.id]) g.add(new THREE.Mesh(sphereGeo, evoMat('rim' + s.id + F, () => evoRim(EVO_RIM[s.id], F >= 2 ? 1.6 : 1.1)))).scale.setScalar(1.12);

@@ -65,11 +65,14 @@
       const k = SKINS.find(x => x.id === id), st = starsOf(k);
       name = k.name; tag = rarTag(k.chest || k.lchest || k.craft) + sourceBadge(k).replace(/badge-r[^>]*>[^<]*<\/span>/, '');
       imVis = previewBlob(k, st, null); imObj = imVis.mesh; imVis.look = k;
+      if (EVO[id] && evoPv[id]) { imVis.evoF = evoPv[id]; evoApply(imVis, k, true); }
       const look = k.craft ? k.sig : [k.pattern ? `узор «${PATTERN_NAME[k.pattern] || k.pattern}»` : 'однотонный', k.mat && MAT_NAME[k.mat], k.anim && ANIM_NAME[k.anim], k.flow && 'живой узор', k.glow && 'свечение', k.pulse && 'пульсация', k.holo && 'голограмма (переливается)', k.rainbow && 'радужный перелив', k.crown && 'корона'].filter(Boolean).join(', ');
       rows.push(['Откуда', sourceText(k)], ['Вид', EVO[id] ? k.sig : look]);
       if (EVO[id]) { const E = EVO[id], n = evoOpen(id), cur = evoForm(id);
         if (E.rar) tag = '<span class="badge-r" style="color:#ff3d2d">Хардкор</span>' + tag;
-        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && save.skins.includes(id) ? `<button type="button" class="evo-f${f === cur ? ' on' : ''}" data-evof="${f}">${['', 'I', 'II', 'III'][f]}</button>` : `<span class="evo-f lock" title="${E.need[f - 1]} ${E.unit}">🔒 ${['', 'I', 'II', 'III'][f]}<small>${E.need[f - 1]}</small></span>`).join('')}</span>${E.unit ? `<small class="evo-u">${E.unit}</small>` : ''}`],
+        const shown = evoPv[id] || Math.max(1, cur);
+        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && save.skins.includes(id) ? `<button type="button" class="evo-f${f === shown ? ' on' : ''}${f === cur ? ' worn' : ''}" data-evof="${f}">${['', 'I', 'II', 'III'][f]}</button>` : `<button type="button" class="evo-f lock${f === shown ? ' on' : ''}" data-evopv="${f}" title="Посмотреть форму · ${E.need[f - 1]} ${E.unit}">🔒 ${['', 'I', 'II', 'III'][f]}<small>${E.need[f - 1]}</small></button>`).join('')}</span>` +
+          (evoPv[id] && !(evoPv[id] <= n && save.skins.includes(id)) ? `<small class="evo-u" style="color:#ffd23f">Предпросмотр формы ${['', 'I', 'II', 'III'][evoPv[id]]} — откроется: ${E.need[evoPv[id] - 1]} ${E.unit}</small>` : E.unit ? `<small class="evo-u">${E.unit} · нажми на форму, чтобы посмотреть</small>` : '')],
           ['Свои эффекты', 'след, аура, предмет над головой и эффект поедания — свои и растут с формой; дополнительные не надеваются']); }
       if (k.head) rows.push(['Над головой', HEAD_NAME[k.head] || k.head]);
       if (isShiny(k)) rows.push(['Блик', k.shine === 'bolt' ? 'молния' : 'полоса']);
@@ -169,14 +172,15 @@
     imAnim = requestAnimationFrame(loop);
   }
   function closeItem() {
-    $('itemModal').hidden = true; cancelAnimationFrame(imAnim);
+    $('itemModal').hidden = true; cancelAnimationFrame(imAnim); evoPv = {};
     if (imReturn && imReturn.isConnected) imReturn.focus();
   }
   $('imClose').addEventListener('click', closeItem);
   $('itemModal').addEventListener('click', e => {
     if (e.target === $('itemModal') || e.target.id === 'imOk') { closeItem(); return; }
     const pv = e.target.closest('button[data-apv]'); if (pv) { const ret = imReturn; closeItem(); openArenaPreview(pv.dataset.apv, ret && ret.id); return; }
-    const ef = e.target.closest('button[data-evof]'); if (ef) { save.evo = { ...(save.evo || {}), [imId]: +ef.dataset.evof }; persist(); refreshSkin(); openItem(imKind + ':' + imId); return; }
+    const ef = e.target.closest('button[data-evof]'); if (ef) { evoPv[imId] = +ef.dataset.evof; save.evo = { ...(save.evo || {}), [imId]: +ef.dataset.evof }; persist(); refreshSkin(); openItem(imKind + ':' + imId); return; }
+    const ep = e.target.closest('button[data-evopv]'); if (ep) { evoPv[imId] = +ep.dataset.evopv; openItem(imKind + ':' + imId); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const orig = $(b.dataset.act);
     if (orig && !orig.disabled) orig.click();

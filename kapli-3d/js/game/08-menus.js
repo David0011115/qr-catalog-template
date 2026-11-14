@@ -790,6 +790,7 @@
     crystal: 'conic-gradient(from 30deg, rgba(255,255,255,.45), transparent 15%, rgba(255,255,255,.25) 30%, transparent 45%, rgba(255,255,255,.4) 60%, transparent 75%, rgba(255,255,255,.2) 90%), ',
     rim: '', magma: '', matte: '' };
   function swatch(s) {
+    if (EVO_SW[s.id]) return EVO_SW[s.id];
     if ((s.pattern && !OLD_PAT.includes(s.pattern)) || s.mat) {
       const base = s.pattern ? `url(${swatchUrl(s)}) center/cover` : s.color;
       const rim = s.mat === 'rim' ? `box-shadow:inset 0 0 8px 3px ${s.accent || s.color}, 0 0 14px ${s.accent || s.color};` : s.glow ? `box-shadow:0 0 14px ${s.color};` : '';
@@ -1501,8 +1502,8 @@
   renderShop = function () { _renderShop(); fillThumbs(); };
   // ---- sorting for wardrobe and pets ----
   const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
-  const SOURCE_ORDER = ['Престиж', 'Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда', 'Мастерская'];
-  const sourceOf = x => x.craft ? 'Мастерская' : x.prestige ? 'Престиж' : x.tut ? 'Обучение' : x.chaos ? 'Хаос-лига' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  const SOURCE_ORDER = ['Эволюция', 'Престиж', 'Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда', 'Мастерская'];
+  const sourceOf = x => x.evoSkin ? 'Эволюция' : x.craft ? 'Мастерская' : x.prestige ? 'Престиж' : x.tut ? 'Обучение' : x.chaos ? 'Хаос-лига' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
   // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
   const rarityScore = x => {
     if (x.legend) return 5;

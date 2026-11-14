@@ -212,3 +212,9 @@
 .rank-list li.rk-empty { grid-column: 1 / -1; display: block; background: none; }
 .rk-pair-who { min-width: 0; font-weight: 700; } .rk-pair-who i { color: #3dffa2; font-style: normal; margin: 0 2px; }
 .rk-pair-who small { display: block; font-weight: 600; font-size: 11px; color: #b9b0e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* «Как играть вдвоём» */
+.duo-how { margin: 0; padding-left: 20px; display: grid; gap: 4px; text-align: left; font-size: 13px; line-height: 1.32; color: #d9d3ff; }
+#tutModal .modal-card { max-height: calc(100dvh - 24px); overflow-y: auto; }   /* a long guide still fits a phone held sideways */
+.duo-how b { color: #fff; }
+.duo-how-rules { margin: 8px 0 0; padding: 8px 10px; border-radius: 12px; background: rgba(34, 230, 255, .08); border: 1px solid rgba(34, 230, 255, .25); font-size: 12px; line-height: 1.35; text-align: left; color: #cfc8f5; }
+.duo-how-btn { justify-self: center; font-weight: 700; }

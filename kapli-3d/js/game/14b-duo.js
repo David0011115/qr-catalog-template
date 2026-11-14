@@ -85,7 +85,23 @@
     const mine = { x: .3, y: .5 }, theirs = { x: .7, y: .5, seen: 0 }; let raf = 0, sentAt = 0, drawn = '';
     // the same room screen serves two ways in: the hidden connection test (Settings) and a mode for two (Play with a «вдвоём» mode selected)
     let lobby = null;   // null = connection test, else the mode id
-    window.openDuoLobby = id => { lobby = id; drawn = ''; $('duoTitle').innerHTML = `${MODES[id].name} <span class="duo-badge">👥 вдвоём · локально</span>`; showCard('duoCard'); render(); };
+    window.openDuoLobby = id => { lobby = id; drawn = ''; $('duoTitle').innerHTML = `${MODES[id].name} <span class="duo-badge">👥 вдвоём · локально</span>`; showCard('duoCard'); render();
+      if (!save.duoHowSeen) setTimeout(() => duoHow(id), 350); };
+    // how to connect two phones: shown once on the first visit of a room, and from «Как играть вдвоём?» any time
+    function duoHow(id) {
+      save.duoHowSeen = true; persist();
+      const rules = id === 'duoback' ? 'Вы вместе против 50 волн боссов: держитесь рядом, ешьте ботов, в перерывах выбирайте усиления. Съеденный возвращается по таймеру — напарник ускоряет его, съедая ботов.'
+        : 'Поле поделено границей: ешь ботов на своей (голубой) половине, расти — и граница поползёт к сопернику. На чужой стороне ты медленнее. 4 минуты, 80% поля — досрочная победа.';
+      tutModal('Как играть вдвоём', `<ol class="duo-how">
+        <li><b>Два телефона с интернетом.</b> С аккаунтом результаты попадут в рейтинг.</li>
+        <li><b>Первый игрок</b> выбирает режим, жмёт «Играть» и <b>«Создать комнату»</b> — появится код из 5 символов.</li>
+        <li><b>Второй игрок</b> выбирает тот же режим, жмёт «Играть», вводит код и <b>«Войти по коду»</b>.</li>
+        <li>Когда наверху появится <b>«Соединено»</b>, создатель комнаты жмёт <b>«▶ Начать матч»</b>${id === 'duoback' ? ' (сначала он выбирает сложность)' : ''}.</li>
+        <li>Быстрее всего в одной сети Wi-Fi. Долго «Ищу комнату» — проверьте код и интернет.</li></ol>
+        <p class="duo-how-rules">${rules}</p>`, [['duoHowOk', 'Понятно', 'btn']]);
+      const card = document.querySelector('#tutModal .modal-card'); if (card) requestAnimationFrame(() => { card.scrollTop = 0; });   // start from the title, not from the focused button
+    }
+    $('tutModal').addEventListener('click', e => { if (e.target.id === 'duoHowOk') { $('tutModal').hidden = true; const b = $('duoHost') || $('duoBack'); if (b) b.focus(); } });
     function render() {
       const b = $('duoBody'), st = Duo.state, key = st + '|' + Duo.code + '|' + Duo.why;
       if (st === 'ready') { const info = `Соединено · ${Duo.direct ? 'напрямую' : 'через сервер'} · задержка ${Duo.rttAvg ? `в среднем ${Duo.rttAvg} мс, худшая ${Duo.rttMax} мс` : '…'}`; if (drawn === key) { $('duoInfo').textContent = info; return; }
@@ -97,6 +113,7 @@
         (TEST_MODE && lobby ? (DuoM.rules[lobby] && DuoM.rules[lobby].lobbyHtml ? DuoM.rules[lobby].lobbyHtml('host') : '') + `<button class="btn ghost" id="duoBot" type="button">🤖 Тестовый матч с ботом</button>` : '') +
         `<button class="btn" id="duoHost" type="button">Создать комнату</button><div class="duo-join"><input id="duoCode" inputmode="latin" autocomplete="off" autocapitalize="characters" maxlength="5" placeholder="Код" aria-label="Код комнаты"><button class="btn ghost" id="duoJoin" type="button">Войти по коду</button></div>` +
         (lobby && DuoM.rules[lobby] && DuoM.rules[lobby].statsHtml ? DuoM.rules[lobby].statsHtml() : '') +
+        (lobby ? '<button class="link-btn duo-how-btn" id="duoHowBtn" type="button">❓ Как играть вдвоём?</button>' : '') +
         `<p class="hint" style="margin:0">Обоим телефонам нужен интернет. В одной сети Wi-Fi связь будет прямой и быстрой; в разных сетях — прямой, если получится, иначе через сервер игры.</p>`;
       drawn = key; if (st !== 'ready') cancelAnimationFrame(raf);
     }
@@ -120,5 +137,5 @@
     Duo.on(m => { if (DuoM.msg(m)) return; if (m.t === 'p') { theirs.x = m.x; theirs.y = m.y; theirs.seen = 1; } }, () => { DuoM.linkState(); if (!$('duoCard').hidden) render(); });   // the match (14c) gets its messages first
     $('duoBtn').addEventListener('click', () => { lobby = null; drawn = ''; $('duoTitle').textContent = 'Игра вдвоём · тест связи'; showCard('duoCard'); render(); });
     $('duoBack').addEventListener('click', () => { Duo.leave(); if (lobby) { showCard('menuCard'); $('startBtn').focus(); } else { showCard('settingsCard'); $('duoBtn').focus(); } });
-    $('duoBody').addEventListener('click', e => { const id = e.target.id; if (lobby && DuoM.rules[lobby] && DuoM.rules[lobby].lobbyClick && DuoM.rules[lobby].lobbyClick(e)) return; if (id === 'duoBot') { window.duoPractice(lobby); return; } if (id === 'duoHost') Duo.host(); else if (id === 'duoJoin') { const c = $('duoCode').value.trim(); if (c.length === 5) Duo.join(c); else { $('duoCode').focus(); toast('В коде комнаты 5 символов'); } } else if (id === 'duoLeave') Duo.leave(); else if (id === 'duoStart') { if (window.duoStartMatch) window.duoStartMatch(lobby); else toast('Сам матч появится на следующем этапе — сейчас проверяется комната'); } });
+    $('duoBody').addEventListener('click', e => { const id = e.target.id; if (lobby && DuoM.rules[lobby] && DuoM.rules[lobby].lobbyClick && DuoM.rules[lobby].lobbyClick(e)) return; if (id === 'duoBot') { window.duoPractice(lobby); return; } if (id === 'duoHowBtn') { duoHow(lobby); return; } if (id === 'duoHost') Duo.host(); else if (id === 'duoJoin') { const c = $('duoCode').value.trim(); if (c.length === 5) Duo.join(c); else { $('duoCode').focus(); toast('В коде комнаты 5 символов'); } } else if (id === 'duoLeave') Duo.leave(); else if (id === 'duoStart') { if (window.duoStartMatch) window.duoStartMatch(lobby); else toast('Сам матч появится на следующем этапе — сейчас проверяется комната'); } });
   }

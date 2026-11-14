@@ -477,41 +477,50 @@
         };
         flag(w * .14, h * .86, 'rgb(34,230,255)'); flag(w * .74, h * .5, 'rgb(255,79,216)');
         break; }
-      case 'bg_duo_50': {   // «Спина к спине», all 50 waves: a giant neon wave curls over, two drops ride its golden crest, «50» glows in the sky
-        x.fillStyle = lin([[0, '#02040c'], [.6, '#071a2c'], [1, '#04121a']]); x.fillRect(0, 0, w, h); stars(60, 181, .9);
-        x.save(); x.globalCompositeOperation = 'lighter'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `900 ${h * .55}px "Russo One", sans-serif`;
-        x.fillStyle = 'rgba(255,210,63,.10)'; x.shadowColor = '#ffd23f'; x.shadowBlur = 24 + Math.sin(t * 1.5) * 8; x.fillText('50', w * .22, h * .3); x.restore();
-        const cX = w * (.6 + Math.sin(t * .35) * .02), top = h * .24, base = h * .95;
-        const prof = xx => { const d = xx - cX, sh = d < 0 ? Math.exp(-Math.pow(d / (w * .42), 2)) : Math.exp(-Math.pow(d / (w * .09), 2)); return base - sh * (base - top) + Math.sin(xx / w * 18 - t * 2.4) * h * .008; };
-        // the body of the wave
-        const body = x.createLinearGradient(0, top, 0, base); body.addColorStop(0, '#3dffa2'); body.addColorStop(.25, '#14a88a'); body.addColorStop(.6, '#0a5866'); body.addColorStop(1, '#052233');
-        x.beginPath(); x.moveTo(-10, h + 10); for (let xx = -10; xx <= w + 10; xx += 5) x.lineTo(xx, prof(xx)); x.lineTo(w + 10, h + 10); x.closePath(); x.fillStyle = body; x.fill();
-        // foam lines flowing up the back of the wave
-        x.save(); x.beginPath(); x.moveTo(-10, h + 10); for (let xx = -10; xx <= w + 10; xx += 5) x.lineTo(xx, prof(xx)); x.lineTo(w + 10, h + 10); x.closePath(); x.clip();
-        x.globalCompositeOperation = 'lighter'; x.lineWidth = 1.6;
-        for (let k = 1; k <= 7; k++) { const off = ((k / 7 + t * .06) % 1) * (base - top) * .9; x.strokeStyle = `rgba(160,255,220,${.28 - k * .02})`; x.beginPath();
-          for (let xx = -10; xx <= cX + w * .05; xx += 6) { const yy = prof(xx) + off + Math.sin(xx / 40 + k + t) * 3; xx === -10 ? x.moveTo(xx, yy) : x.lineTo(xx, yy); } x.stroke(); }
-        x.restore();
-        // the lip curling over the front, with foam
-        x.save(); x.globalCompositeOperation = 'lighter';
-        const lx = cX + w * .02, ly = top + h * .01, curl = .9 + Math.sin(t * 2.4) * .08;
-        x.strokeStyle = 'rgba(255,224,140,.95)'; x.lineWidth = Math.max(2, U * .012); x.shadowColor = '#ffd23f'; x.shadowBlur = 12;
-        x.beginPath(); for (let xx = w * .18; xx <= lx; xx += 4) { const yy = prof(xx); xx === w * .18 ? x.moveTo(xx, yy) : x.lineTo(xx, yy); }
-        x.bezierCurveTo(lx + w * .08 * curl, ly - h * .02, lx + w * .12 * curl, ly + h * .12, lx + w * .06 * curl, ly + h * .2); x.stroke();
-        x.fillStyle = 'rgba(200,255,235,.25)'; x.beginPath(); x.moveTo(lx, ly); x.bezierCurveTo(lx + w * .08 * curl, ly - h * .02, lx + w * .12 * curl, ly + h * .12, lx + w * .06 * curl, ly + h * .2); x.quadraticCurveTo(lx + w * .03, ly + h * .1, lx, ly + h * .03); x.closePath(); x.fill();
-        for (const p of pbgPts('w50', 36, 191)) { const life = (t * (.35 + p.s * .3) + p.q) % 1, sx = lx + w * .02 + (p.x - .4) * w * .12 + life * w * .1, sy = ly + h * .02 - Math.sin(life * Math.PI) * h * .16 * (.4 + p.y); glow(sx, sy, 1.5 + p.s * 3, p.q > .5 ? 'rgba(255,220,120,.9)' : 'rgba(190,255,235,.85)', 1 - life); }
-        x.restore();
-        // two drops riding just behind the crest
-        const ride = (xx, col, deep) => {
-          const r = U * .058, cx = xx, cy = prof(xx) - r * .85;
-          x.save(); x.shadowColor = col; x.shadowBlur = r; const g = x.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r); g.addColorStop(0, '#fff'); g.addColorStop(.35, col); g.addColorStop(1, deep);
-          x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.29); x.fill(); x.restore();
-          for (const sd of [-1, 1]) { const ex = cx + sd * r * .3 + r * .12, ey = cy - r * .08; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .15, r * .18, 0, 0, 6.29); x.fill(); x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + r * .06, ey, r * .075, 0, 6.29); x.fill(); }
-        };
-        ride(cX - w * .16, '#22e6ff', '#0b4a66'); ride(cX - w * .06, '#3dffa2', '#0a5a3a');
-        { const kx = cX - w * .11, ky = top - U * .17 + Math.sin(t * 2) * U * .015, kr = U * .045;
-          x.save(); x.fillStyle = '#ffd23f'; x.shadowColor = '#ffb02e'; x.shadowBlur = 14; x.beginPath();
-          x.moveTo(kx - kr, ky + kr * .5); x.lineTo(kx - kr, ky - kr * .4); x.lineTo(kx - kr * .5, ky); x.lineTo(kx, ky - kr * .65); x.lineTo(kx + kr * .5, ky); x.lineTo(kx + kr, ky - kr * .4); x.lineTo(kx + kr, ky + kr * .5); x.closePath(); x.fill(); x.restore(); }
+      case 'bg_duo_50': {   // «Спина к спине», all 50 waves: an arch of 50 marks, one per wave; each drop lights its own half (every 5th mark is a special boss's gem), the halves meet under a golden crown
+        const crownPath = (x, kx, ky, kr) => { x.beginPath(); x.moveTo(kx - kr, ky + kr * .5); x.lineTo(kx - kr, ky - kr * .4); x.lineTo(kx - kr * .5, ky); x.lineTo(kx, ky - kr * .65); x.lineTo(kx + kr * .5, ky); x.lineTo(kx + kr, ky - kr * .4); x.lineTo(kx + kr, ky + kr * .5); x.closePath(); };
+        x.fillStyle = lin([[0, '#04060f'], [.55, '#07121f'], [1, '#0a1f24']]); x.fillRect(0, 0, w, h); stars(50, 201, .8);
+        const R = Math.min(h * 1.15, w * .46), cx = w * .55, cy = h + R * .3, PH = 1.2, BC = ['#22e6ff', '#ff3d6e', '#ff9a3d', '#c2416b'];
+        const cyc = 18, tt = t % cyc, lit = Math.min(1, tt / 11) * 25, done = tt > 11 ? Math.min(1, (tt - 11) / 1.2) : 0, fade = tt > cyc - 1.2 ? (cyc - tt) / 1.2 : 1;
+        const ang = (s, i) => -Math.PI / 2 + s * PH * (1 - i / 25), pt = (a, r) => [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+        const r = U * .1, dy = h * .62, dx = [cx - r * .95, cx + r * .95], SC = ['#22e6ff', '#3dffa2'];
+        // ghosts of the four special bosses in the sky: each flares when its mark is lit
+        [[.1, .3], [.3, .2], [.82, .2], [.96, .34]].forEach(([gx, gy], k) => {
+          const hit = Math.max(0, 1 - Math.abs((lit % 5) - 4.6) * 1.6) * (((lit / 5) | 0) % 4 === k ? 1 : 0), gr = U * .16, px = gx * w, py = gy * h + Math.sin(t * .6 + k * 2) * h * .03;
+          x.save(); x.globalAlpha = (.1 + hit * .45) * fade; x.strokeStyle = BC[k]; x.lineWidth = 1.5; x.shadowColor = BC[k]; x.shadowBlur = 10;
+          x.beginPath(); x.arc(px, py, gr, 0, 6.29); x.stroke(); crownPath(x, px, py - gr * 1.15, gr * .5); x.stroke();
+          x.fillStyle = BC[k]; for (const sd of [-1, 1]) { x.beginPath(); x.moveTo(px + sd * gr * .5, py - gr * .15); x.lineTo(px + sd * gr * .12, py + gr * .02); x.lineTo(px + sd * gr * .5, py + gr * .12); x.fill(); } x.restore();
+        });
+        // floor light and the shock rings the pair sends out
+        x.save(); x.globalCompositeOperation = 'lighter'; glow(cx, dy + r, R * .9, 'rgba(61,255,162,.16)');
+        for (let k = 0; k < 3; k++) { const q = (t * .22 + k / 3) % 1; x.globalAlpha = (1 - q) * .4; x.strokeStyle = '#3dffa2'; x.lineWidth = 1.5; x.beginPath(); x.ellipse(cx, dy + r * .9, q * R * .95, q * R * .28, 0, 0, 6.29); x.stroke(); }
+        x.restore(); x.globalAlpha = 1;
+        // the arch: base line, then 25 marks on each side
+        x.strokeStyle = 'rgba(255,255,255,.12)'; x.lineWidth = 1; x.beginPath(); x.arc(cx, cy, R, -Math.PI / 2 - PH, -Math.PI / 2 + PH); x.stroke();
+        for (const s of [-1, 1]) for (let i = 0; i < 25; i++) {
+          const a = ang(s, i + .5), on = Math.max(0, Math.min(1, lit - i)) * fade, gem = i % 5 === 4, col = gem ? BC[((i / 5) | 0) % 4] : SC[s < 0 ? 0 : 1], [px, py] = pt(a, R);
+          x.save(); x.translate(px, py); x.rotate(a + Math.PI / 2);
+          if (gem) { const g = U * (.03 + on * .012); x.beginPath(); x.moveTo(0, -g); x.lineTo(g * .7, 0); x.lineTo(0, g); x.lineTo(-g * .7, 0); x.closePath(); x.fillStyle = on ? col : 'rgba(255,255,255,.12)'; x.globalAlpha = on ? .35 + on * .65 : 1; x.shadowColor = col; x.shadowBlur = on * 14; x.fill(); x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 1; x.stroke(); }
+          else { x.strokeStyle = on ? col : 'rgba(255,255,255,.2)'; x.globalAlpha = on ? .4 + on * .6 : 1; x.lineWidth = Math.max(1.5, U * .012); x.lineCap = 'round'; x.shadowColor = col; x.shadowBlur = on * 8; x.beginPath(); x.moveTo(0, -U * .028); x.lineTo(0, U * .028); x.stroke(); }
+          x.restore();
+        }
+        // a beam from each drop to the mark it is lighting now
+        if (tt < 11) for (const s of [-1, 1]) { const k = s < 0 ? 0 : 1, [px, py] = pt(ang(s, lit), R); x.save(); x.globalCompositeOperation = 'lighter';
+          const g = x.createLinearGradient(dx[k], dy, px, py); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, SC[k]); x.strokeStyle = g; x.globalAlpha = .7; x.lineWidth = 1.5; x.beginPath(); x.moveTo(dx[k], dy - r * .5); x.lineTo(px, py); x.stroke();
+          glow(px, py, U * .09, k ? 'rgba(61,255,162,.8)' : 'rgba(34,230,255,.8)'); x.restore(); }
+        // the crown over the keystone: an outline until both halves meet, then gold with turning rays
+        { const kx = cx, ky = cy - R - U * .13 + Math.sin(t * 2) * U * .01, kr = U * (.07 + done * .025), d = done * fade;
+          x.save(); x.globalCompositeOperation = 'lighter';
+          if (d > 0) { glow(kx, ky, U * .5, 'rgba(255,210,63,.45)', d); x.fillStyle = 'rgba(255,220,120,.06)'; for (let k = 0; k < 10; k++) { const a = k / 10 * 6.283 + t * .25; x.globalAlpha = d; x.beginPath(); x.moveTo(kx, ky); x.lineTo(kx + Math.cos(a - .07) * U * .9, ky + Math.sin(a - .07) * U * .9); x.lineTo(kx + Math.cos(a + .07) * U * .9, ky + Math.sin(a + .07) * U * .9); x.fill(); }
+            x.globalAlpha = d * .8; x.strokeStyle = '#ffd23f'; x.lineWidth = 2; x.shadowColor = '#ffd23f'; x.shadowBlur = 14; x.beginPath(); x.arc(cx, cy, R, -Math.PI / 2 - PH, -Math.PI / 2 + PH); x.stroke(); }
+          x.restore(); x.save(); crownPath(x, kx, ky, kr); x.globalAlpha = .3 + d * .7; x.strokeStyle = '#ffd23f'; x.lineWidth = 1.5; x.stroke(); if (d > 0) { x.globalAlpha = d; x.fillStyle = '#ffd23f'; x.shadowColor = '#ffb02e'; x.shadowBlur = 16; x.fill(); } x.restore(); }
+        // the pair, back to back, each looking outwards
+        x.save(); x.globalAlpha = .35 + .15 * Math.sin(t * 2.4); x.strokeStyle = '#9fffd0'; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, dy, r * 2.5, Math.PI, 0); x.stroke(); x.restore();
+        [['#22e6ff', '#0b4a66', -1], ['#3dffa2', '#0a5a3a', 1]].forEach(([col, deep, s], k) => {
+          const px = dx[k], py = dy + Math.sin(t * 2 + k) * r * .05;
+          x.save(); x.shadowColor = col; x.shadowBlur = r; const g = x.createRadialGradient(px + s * r * .3, py - r * .4, r * .1, px, py, r); g.addColorStop(0, '#fff'); g.addColorStop(.35, col); g.addColorStop(1, deep); x.fillStyle = g; x.beginPath(); x.arc(px, py, r, 0, 6.29); x.fill(); x.restore();
+          for (const e of [.18, .58]) { const ex = px + s * r * e, ey = py - r * .1; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .14, r * .18, 0, 0, 6.29); x.fill(); x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + s * r * .05, ey, r * .075, 0, 6.29); x.fill(); }
+        });
         break; }
       case 'bg_duo_back': {   // «Спина к спине», 30 runs: two comets climb in a double spiral through falling crowns of beaten bosses
         x.fillStyle = lin([[0, '#03070f'], [.6, '#071c22'], [1, '#0b2a26']]); x.fillRect(0, 0, w, h); stars(70, 171, .8);

@@ -946,7 +946,7 @@
     let html = '';
     if (pdTab === 'bg') html = order(PBG.filter(b => !b.promo || (save.pbg || []).includes(b.id)).map(b => ({ ...b }))).map(b => item('bg', b.id, `<img data-pbgt="${b.id}" ${pbgThumbCache[b.id + 160 + 'x' + 90] ? `src="${pbgThumbCache[b.id + 160 + 'x' + 90]}"` : ''} alt="">`, b.name, b.rar)).join('');
     else if (pdTab === 'frame') html = item('frame', '', pcAvatar({ ...pdDraft, frame: '', badge: '' }, 58), 'Без рамки') +
-      order(DECOR.filter(d => d.kind === 'frame' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('frame', d.id, pcAvatar({ ...pdDraft, frame: d.id, badge: '' }, 58), d.name, d.rar)).join('');
+      order(DECOR.filter(d => d.kind === 'frame' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('frame', d.id, pcAvatar({ ...pdDraft, frame: d.id, badge: '' }, 46), d.name, d.rar)).join('');
     else if (pdTab === 'title') html = item('title', '', '<span class="pd-tt">—</span>', 'Без титула') +
       order(DECOR.filter(d => d.kind === 'title' && ((!d.promo && !d.old) || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('title', d.id, `<span class="pd-tt">${titleTag(d.id)}</span>`, d.name, d.rar)).join('');
     else if (pdTab === 'shelf') {
@@ -963,7 +963,7 @@
       const top = [], groups = new Map();
       nodes.forEach((n, i) => { const [k, id] = cells[i] || []; if (!id) { top.push(n.outerHTML); return; } const c = pdCat(k, id); if (!groups.has(c)) groups.set(c, []); groups.get(c).push([n.outerHTML, pdOwned(k, id), (pdDraft[k] || '') === id]); });
       const order = PD_CAT_ORDER.filter(c => groups.has(c));
-      html = (top.length ? `<div class="pd-grid-in">${top.join('')}</div>` : '') + order.map(c => { const L = groups.get(c), key = 'pd_' + pdTab + '_' + c;
+      html = (top.length ? `<div class="pd-grid-in pd-top">${top.join('')}</div>` : '') + order.map(c => { const L = groups.get(c), key = 'pd_' + pdTab + '_' + c;
         if (L.some(x => x[2]) && !pdDrawersSeen.has(key)) { pdDrawersSeen.add(key); openDrawers.add(key); }
         return `<details class="res-drawer shop-drawer pd-drawer" data-dk="${key}" ${openDrawers.has(key) ? 'open' : ''}><summary>${c} <small class="cnt">${L.filter(x => x[1]).length} / ${L.length}</small></summary><div class="pd-grid-in">${L.map(x => x[0]).join('')}</div></details>`; }).join('');
     }

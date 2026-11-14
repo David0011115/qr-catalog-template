@@ -426,5 +426,20 @@
 .mib-v .r0 { color: #b8b5d6; } .mib-v .r1 { color: #4d7cff; } .mib-v .r2 { color: #b26bff; } .mib-v .r3 { color: #ffd23f; }
 /* 2.7: «Оформление профиля» — items in drawers by source */
 .pd-grid.grouped { display: block; }
-.pd-grid-in { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.pd-grid-in { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; margin-bottom: 8px; }
+/* compact drawers: thin headers, small tiles, no source lines (the source shows under the card and in 👁) */
+.pd-grid.grouped .pd-drawer { padding: 0 8px; margin-bottom: 5px; border-radius: var(--r-md); }
+.pd-grid.grouped .pd-drawer > summary { padding: 7px 0; font-size: .86rem; gap: 8px; background: var(--row); }
+.pd-grid.grouped .pd-drawer > summary .dr-ic { transform: scale(.82); }
+.pd-grid.grouped .pd-it { padding: 5px 4px; gap: 2px; }
+.pd-grid.grouped .pd-it > small { display: none; }
+.pd-grid.grouped .pd-it b { font-size: .66rem; }
+.pd-grid.grouped .pd-it .rr { font-size: .5rem; }
+.pd-grid.grouped .pd-it .pc-av { margin: 4px 0 2px; }
+.pd-grid.grouped .pd-it img { border-radius: 6px; }
+.pd-grid.grouped .pd-eye { width: 24px; height: 24px; left: 4px; top: 4px; font-size: 12px; border-radius: 7px; }
+.pd-grid.grouped .pd-top { grid-template-columns: none; display: flex; margin-bottom: 6px; }
+.pd-grid.grouped .pd-top .pd-it { grid-auto-flow: column; align-items: center; padding: 4px 12px 4px 6px; }
+.pd-grid.grouped .pd-top .pd-it > :first-child { transform: scale(.6); margin: -12px -8px; }
+.pd-grid.grouped .pd-top .pd-it .pd-cur { margin-left: 4px; }
 .pd-drawer > summary { position: sticky; top: 0; z-index: 1; }

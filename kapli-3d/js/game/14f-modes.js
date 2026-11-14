@@ -26,6 +26,8 @@
     // values by rarity (common / rare / epic / legendary); one boost at most HC_CAP times a round
     const HC_MILES = [2000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000];
     const HC_TIER = [[0, .25], [0, .25], [1, .25], [1, .25], [2, .15], [2, .15], [2, .3], [2, .45], [2, .6], [2, .75], [3, 0]];   // [floor, chance of one step higher]
+    // 2.7 after the owner's test (best 18–20k): «Хардкор» melts 25% slower than before (0.003), still twice the other modes
+    const HC_DECAY = .00225;
     const HC_CAP = 3, HC_R = ['common', 'rare', 'epic', 'legendary'], HC_RN = ['Обычное', 'Редкое', 'Эпическое', 'Легендарное'];
     const HC_BOOST = {   // [icon, name, values, kind: '+' adds a percent, '-' multiplies by (1 − percent)]
       speed: ['⚡', 'Скорость', [4, 6, 8, 10], '+'], absorb: ['🍽', 'Поглощение', [4, 6, 8, 10], '+'], cd: ['⏱', 'Перезарядка способностей', [8, 12, 16, 20], '-'],
@@ -151,7 +153,7 @@
     // test build only: what the boosts give and how fast you eat vs how fast you melt
     function hcDebug(dt) {
       let el = document.getElementById('hcDbg'); if (!el) { el = document.createElement('div'); el.id = 'hcDbg'; document.body.appendChild(el); }
-      const m = total(player); let melt = 0; for (const c of player.cells) if (c.mass > 100) melt += c.mass * .003 * Math.pow(c.mass / 100, .25) * (1 - .04 * U.guard) * hcK('melt');
+      const m = total(player); let melt = 0; for (const c of player.cells) if (c.mass > 100) melt += c.mass * HC_DECAY * Math.pow(c.mass / 100, .25) * (1 - .04 * U.guard) * hcK('melt');
       hcDbg.t += dt; if (hcDbg.t >= 1) { hcDbg.gain = hcDbg.gain * .7 + .3 * ((m - hcDbg.m) / hcDbg.t + melt); hcDbg.m = m; hcDbg.t = 0; }
       const list = Object.keys(HC_BOOST).filter(k => hcN[k]).map(k => `${HC_BOOST[k][0]}${HC_BOOST[k][3] === '+' ? '+' + hc[k] : '−' + Math.round((1 - hc[k]) * 100)}%`).join(' ');
       el.textContent = `ТЕСТ · ${Math.round(m)} · тает ${Math.round(melt)}/с · ешь ≈${Math.max(0, Math.round(hcDbg.gain))}/с · ${list || 'улучшений нет'}`;
@@ -220,7 +222,7 @@
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
       // 2.7: what the ⓘ window of «Режимы» tells about each mode
       info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
-      meltK: () => hcK('melt'), hcK, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
+      HC_DECAY, meltK: () => hcK('melt'), hcK, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder

@@ -273,7 +273,7 @@
       if (lk) {
         const crownMode = mode === 'crown' && running;
         v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
-        if (!c.owner.isPlayer) { const show = QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show; if (v.shine) v.shine.visible = show && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
+        if (!c.owner.isPlayer) { const show = QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show; if (v.shine) v.shine.visible = show && !v.evo && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
         if (v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
         if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
         if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');

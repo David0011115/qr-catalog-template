@@ -134,7 +134,7 @@
     $('imActions').innerHTML = act + '<button class="btn ghost" id="imOk">Закрыть</button>';
     $('imFlat').innerHTML = flat; $('imFlat').hidden = !flat; $('imCanvas').hidden = !!flat; if (flat) pbgMount($('imFlat'));
     if (imObj) imScene.add(imObj);
-    const big = kind === 'pet' ? 3.6 : imFxSlot === 'trail' ? 12.5 : imFxSlot ? 10 : imVis && imVis.aura ? 7.4 : 6.4, y = kind === 'pet' ? 0 : imFxSlot ? .4 : .6;
+    const big = kind === 'pet' ? 3.6 : imFxSlot === 'trail' ? 12.5 : imFxSlot ? 10 : imVis && imVis.aura ? 7.4 : imVis && imVis.evo ? 8.4 : 6.4, y = kind === 'pet' ? 0 : imFxSlot ? .4 : .6;
     if (imFxSlot && !imFx) imFx = makePreviewFx(imScene, 1);
     imR.setClearColor(imFxSlot ? '#160c36' : 0x000000, imFxSlot ? 1 : 0);   // glowing particles need a dark backdrop
     imCam.position.set(0, y + big * .28, big); imCam.lookAt(0, y, 0);

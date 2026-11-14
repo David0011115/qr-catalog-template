@@ -401,3 +401,15 @@
 #hcDbg { position: fixed; left: 50%; top: max(6px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 30; pointer-events: none; padding: 3px 10px; border-radius: 8px;
   background: rgba(0, 0, 0, .65); color: #ffe08a; font: 600 .66rem var(--body); white-space: nowrap; max-width: 96vw; overflow: hidden; text-overflow: ellipsis; }
 @media (prefers-reduced-motion: reduce) { #hcPick .hc-card.r3 { animation: none; } }
+/* 2.7: skins with evolution — the form picker in the item window */
+.evo-forms { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.evo-f { min-width: 44px; min-height: 36px; padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .05); color: #fff; font: 400 .9rem var(--display); cursor: pointer; display: grid; justify-items: center; }
+.evo-f.on { border-color: #ffd23f; color: #ffd23f; box-shadow: 0 0 10px rgba(255, 210, 63, .4); }
+.evo-f.lock { cursor: default; opacity: .6; font-size: .72rem; } .evo-f.lock small { font: 600 .56rem var(--body); color: var(--muted); }
+.evo-u { display: block; color: var(--muted); font-size: .7rem; margin-top: 3px; }
+/* 2.7: skins with evolution — the form picker in the item window */
+.evo-forms { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.evo-f { min-width: 44px; min-height: 36px; padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .05); color: #fff; font: 400 .9rem var(--display); cursor: pointer; display: grid; justify-items: center; }
+.evo-f.on { border-color: #ffd23f; color: #ffd23f; box-shadow: 0 0 10px rgba(255, 210, 63, .4); }
+.evo-f.lock { cursor: default; opacity: .6; font-size: .72rem; } .evo-f.lock small { font: 600 .56rem var(--body); color: var(--muted); }
+.evo-u { display: block; color: var(--muted); font-size: .7rem; margin-top: 3px; }

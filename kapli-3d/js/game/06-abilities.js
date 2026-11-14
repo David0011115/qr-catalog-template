@@ -481,6 +481,7 @@
     { const G = save.legend; const add = (k, v) => G[k] = (G[k] || 0) + v;
       add('kills', stats.kills); add('coins', coins); add('bosses', stats.bosses); add('stars', stats.starKills || 0); add('wins', stats.win ? 1 : 0);
       add('time', Math.round(stats.time)); add('crumbs', stats.crumbs); add('lwins', stats.ranked && !stats.chaos && stats.win ? 1 : 0); G.combo = Math.max(G.combo || 0, stats.bestCombo || 0); }
+    evoCheck();
     const legendLine = checkLegend().map(L => L.badge ? '<li class="done legend"><span>👑 Все легендарные достижения! Значок «Легенда Капель»</span><span class="rw">в профиле</span></li>'
       : `<li class="done legend"><span>👑 Легендарное достижение «${L.name}»</span><span class="rw">${legendNames(L)}</span></li>`).join('');
     // mode mastery

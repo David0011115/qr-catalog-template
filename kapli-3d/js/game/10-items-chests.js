@@ -16,7 +16,7 @@
     const glow = glowSprite(s.color, 3.2, .85); mesh.add(glow);
     [-0.35, 0.35].forEach(x => { const e = new THREE.Mesh(eyeGeo, eyeMat); e.position.set(x, 0.35, 0.86); const pu = new THREE.Mesh(pupilGeo, pupilMat); pu.position.set(0, 0, .09); e.add(pu); mesh.add(e); });
     const crown = makeCrown(); crown.visible = false; mesh.add(crown);
-    const v = { mesh, glow, crown, ring: { material: new THREE.MeshBasicMaterial() }, jig: 0 };
+    const v = { mesh, glow, crown, ring: { material: new THREE.MeshBasicMaterial() }, jig: 0, mine: true };
     applySkin(v, s, stars, hat);
     return v;
   }
@@ -30,6 +30,7 @@
   const MAT_NAME = { chrome: 'зеркальный металл', glass: 'стекло', jelly: 'желе', crystal: 'кристалл', rim: 'неоновый контур', magma: 'раскалённый камень', matte: 'матовый камень' };
   const ANIM_NAME = { breath: 'дышит', heartbeat: 'бьётся как сердце', flicker: 'мерцает как неон', glitch: 'сбоит', magma: 'трещины пульсируют', dissolve: 'рассыпается и собирается', chameleon: 'меняет цвет от скорости', twin: 'двоится' };
   function sourceText(x) {
+    if (x.evoSrc) return x.evoSrc;
     if (save.archived && save.archived.includes(x.id)) return 'куплен в архиве сезонов';
     if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
     if (x.skill) return 'все мастерские достижения';
@@ -65,7 +66,11 @@
       name = k.name; tag = rarTag(k.chest || k.lchest || k.craft) + sourceBadge(k).replace(/badge-r[^>]*>[^<]*<\/span>/, '');
       imVis = previewBlob(k, st, null); imObj = imVis.mesh; imVis.look = k;
       const look = k.craft ? k.sig : [k.pattern ? `узор «${PATTERN_NAME[k.pattern] || k.pattern}»` : 'однотонный', k.mat && MAT_NAME[k.mat], k.anim && ANIM_NAME[k.anim], k.flow && 'живой узор', k.glow && 'свечение', k.pulse && 'пульсация', k.holo && 'голограмма (переливается)', k.rainbow && 'радужный перелив', k.crown && 'корона'].filter(Boolean).join(', ');
-      rows.push(['Откуда', sourceText(k)], ['Вид', look]);
+      rows.push(['Откуда', sourceText(k)], ['Вид', EVO[id] ? k.sig : look]);
+      if (EVO[id]) { const E = EVO[id], n = evoOpen(id), cur = evoForm(id);
+        if (E.rar) tag = '<span class="badge-r" style="color:#ff3d2d">Хардкор</span>' + tag;
+        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && save.skins.includes(id) ? `<button type="button" class="evo-f${f === cur ? ' on' : ''}" data-evof="${f}">${['', 'I', 'II', 'III'][f]}</button>` : `<span class="evo-f lock" title="${E.need[f - 1]} ${E.unit}">🔒 ${['', 'I', 'II', 'III'][f]}<small>${E.need[f - 1]}</small></span>`).join('')}</span>${E.unit ? `<small class="evo-u">${E.unit}</small>` : ''}`],
+          ['Свои эффекты', 'след, аура, предмет над головой и эффект поедания — свои и растут с формой; дополнительные не надеваются']); }
       if (k.head) rows.push(['Над головой', HEAD_NAME[k.head] || k.head]);
       if (isShiny(k)) rows.push(['Блик', k.shine === 'bolt' ? 'молния' : 'полоса']);
       if (k.chest || k.lchest) rows.push(['Звёзды', `${'★'.repeat(st)}${'☆'.repeat(3 - st)} — ${st ? STAR_TEXT[st] + `; бонус, пока скин надет: ${starBonusOf(k).text(st)}` : `пока нет; звёзды этого скина дадут: ${STAR_BONUS[k.chest || k.lchest].text(1)} за каждую`}${st < 3 ? `. Следующая за повтор из сундука: ${STAR_TEXT[st + 1]}` : ''}`]);
@@ -171,6 +176,7 @@
   $('itemModal').addEventListener('click', e => {
     if (e.target === $('itemModal') || e.target.id === 'imOk') { closeItem(); return; }
     const pv = e.target.closest('button[data-apv]'); if (pv) { const ret = imReturn; closeItem(); openArenaPreview(pv.dataset.apv, ret && ret.id); return; }
+    const ef = e.target.closest('button[data-evof]'); if (ef) { save.evo = { ...(save.evo || {}), [imId]: +ef.dataset.evof }; persist(); refreshSkin(); openItem(imKind + ':' + imId); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const orig = $(b.dataset.act);
     if (orig && !orig.disabled) orig.click();

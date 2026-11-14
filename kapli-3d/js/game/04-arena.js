@@ -154,7 +154,7 @@
   const playerVis = Array.from({ length: 10 }, () => makeVis(C('--me')));
   player.free = playerVis.slice();
   const freeVis = player.free;
-  const refreshSkin = () => { playerVis.forEach(v => applySkin(v)); if (typeof applyAura === 'function') applyAura(); };   // forEach would pass the index as the skin
+  const refreshSkin = () => { playerVis.forEach(v => { v.mine = true; applySkin(v); }); if (typeof applyAura === 'function') applyAura(); };   // forEach would pass the index as the skin
   refreshSkin();
 
   const BOT_DEFS = [

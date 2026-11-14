@@ -321,7 +321,7 @@
     { id: 'abyss',    name: 'Бездна',  color: '#020210', accent: '#22e6ff', pattern: 'vortex', mat: 'rim', head: 'shards', glow: true, ch: 'epic', sig: 'глубина и осколки' },
     { id: 'titan',    name: 'Титан',   color: '#ffd23f', accent: '#ff4fd8', pattern: 'plates', mat: 'chrome', anim: 'heartbeat', crown: true, ch: 'legendary', sig: 'пластины и пульс ядра' },
     // legendary achievements
-    { id: 'lg_worlds',    name: 'Пожиратель миров', color: '#14002a', accent: '#ff2d55', pattern: 'swirl', glow: true, pulse: true, head: 'moons', shine: 'bolt', legend: 'kills', sig: 'луны на орбите' },
+    { id: 'lg_worlds',    name: 'Пожиратель миров', color: '#14002a', accent: '#ff2d55', pattern: 'swirl', glow: true, pulse: true, head: 'moons', shine: 'bolt', legend: 'kills', sig: 'чёрная дыра: аккреционный диск, затягивает съеденное' },
     { id: 'lg_tycoon',    name: 'Золотой магнат',   color: '#b07a00', accent: '#ffd23f', pattern: 'coins', mat: 'gold', head: 'coincrown', shine: 'stripe', legend: 'coins', sig: 'стопки монет и корона из монет' },
     { id: 'lg_supernova', name: 'Звёздный взрыв',   color: '#ffffff', accent: '#ff4fd8', pattern: 'stars', holo: true, holoBase: .78, holoSpan: .08, glow: true, pulse: true, head: 'nova', shine: 'bolt', legend: 'stars2', sig: 'взрывы звёзд' },
     { id: 'lg_eternal',   name: 'Вечный чемпион',   color: '#fff6a0', accent: '#ffd23f', pattern: 'laurel', holo: true, holoBase: .1, holoSpan: .04, glow: true, head: 'laurel', shine: 'stripe', legend: 'wins3', sig: 'лавры и сияние' },

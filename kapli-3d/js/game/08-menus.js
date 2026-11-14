@@ -681,7 +681,7 @@
     }
     if (MB.vis) MB.scene.remove(MB.vis.mesh);
     const k = skin(); MB.vis = previewBlob(k, starsOf(k), save.hat); MB.vis.look = k;
-    const au = save.fx && save.fx.aura; if (au) setAura(MB.vis, au, k.color);
+    const au = save.fx && save.fx.aura; if (au && !evoOn()) setAura(MB.vis, au, k.color);
     MB.scene.add(MB.vis.mesh); $('mbName').textContent = k.name;
   }
   function mbRefresh() { try { const k = JSON.stringify([save.skin, save.hat, save.fx && save.fx.aura, starsOf(skin())]); if (k !== MB.key) { MB.key = k; mbBuild(); } } catch (e) { try { MB.key = ''; } catch (e2) {} } }   // too early at start-up: try again on the next render
@@ -1586,6 +1586,7 @@
     if (b.dataset.arch) {
       const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price || (save.archTok || 0) < ARCH_TOK[o.rar] || archBuysLeft() < 1) return;
       coinsSpend(o.price, 'archive'); save.archTok -= ARCH_TOK[o.rar]; save.archBuys.n++; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
+    } else if (b.dataset.hat && evoOn() && save.hat !== b.dataset.hat) { toast(`Нельзя с «${skin().name}»: у скина свои эффекты`); return;
     } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
     else if (b.dataset.col) {
@@ -1609,6 +1610,7 @@
         if (!buyable(f) || save.coins < f.price || playerLevel() < f.lvl) return;
         coinsSpend(f.price, 'fx'); save.fxOwned.push(f.id);
       } else if (save.fx[f.slot] === f.id) { save.fx[f.slot] = null; persist(); applyAura(); renderShop(); const again = $(b.id); if (again) again.focus(); return; }
+      if (evoOn()) { toast(`Нельзя с «${skin().name}»: у скина свои след, аура и эффект поедания`); persist(); renderShop(); return; }
       save.fx[f.slot] = f.id; applyAura();
     } else if (b.dataset.abuy) {
       const a = abilById(b.dataset.abuy); if (save.abil.owned.includes(a.id) || save.coins < a.price) return;

@@ -743,6 +743,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   }
   function applySkin(vis, s = skin(), stars = starsOf(s), hat = save.hat) {
     const m = vis.mesh.material;
+    if (isEvo(s)) hat = null;   // 2.7: a skin with evolution wears its own things over the head
     vis.stars = stars; vis.hatOn = !!hat;
     m.map = skinTex(s);
     m.emissiveMap = skinTex(s);
@@ -766,6 +767,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     else if (vis.starGlow) vis.starGlow.visible = false;
     applyLook(vis, s);
     vis.ring.material.color.set(0xffffff);
+    evoApply(vis, s, !!vis.mine);
   }
   // items above the head for epic and legendary skins (the crown stays for the others)
   function buildHead(type) {
@@ -849,6 +851,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     return g;
   }
   function animateHead(v, now) {
+    if (v.evo) evoTick(v, now);
     const g = v.head; if (!g) return;
     const t = now / 1000;
     switch (g.userData.type) {
@@ -1111,7 +1114,8 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   function trailFx(dt, now) {
     trailT += dt; if (trailT < 0.035) return; trailT = 0;
     if (QUALITY === 'low') return;
-    if (save.fx.trail) { if (!player.trailDef || player.trailDef.id !== save.fx.trail) player.trailDef = fxById(save.fx.trail); trailOwner(player, save.fx.trail, now); }
+    if (evoOn()) evoTrail(now);
+    else if (save.fx.trail) { if (!player.trailDef || player.trailDef.id !== save.fx.trail) player.trailDef = fxById(save.fx.trail); trailOwner(player, save.fx.trail, now); }
     // bots emit at half rate and only near the camera, to keep particles cheap
     for (const o of bots) if (o.fx && o.fx.trail && o.cells.length && Math.random() < .5) trailOwner(o, o.fx.trail, now);
   }
@@ -1224,7 +1228,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     v.aura = buildAura(type, color);
     if (v.aura) v.mesh.add(v.aura);
   }
-  function applyAura() { for (const v of playerVis) setAura(v, save.fx.aura); }
+  function applyAura() { for (const v of playerVis) setAura(v, evoOn() ? null : save.fx.aura); }
   const tmpV3 = new THREE.Vector3();
   function animateAura(v, now) {
     const g = v.aura; if (!g) return;

@@ -169,6 +169,7 @@
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
       if (mode !== 'hardcore' || stats.ranked || stats.tutorial) return;
       save.hcStreak = stats.maxMass >= 3000 ? (save.hcStreak || 0) + 1 : 0;
+      save.hcPeak = Math.max(save.hcPeak || 0, Math.round(stats.maxMass));
       const give = (id, name, n) => { if (save.hcStreak >= n && !save.decor.includes(id)) { save.decor.push(id); stats.hcReward = name; setTimeout(() => toast(`Серия хардкора ×${n}: награда «${name}»!`), 1200); } };
       give('tt_hardened', 'Несгибаемый', 3); give('fr_tempered', 'Закалка', 5);
     }

@@ -513,7 +513,12 @@
           x.save(); x.globalCompositeOperation = 'lighter';
           if (d > 0) { glow(kx, ky, U * .5, 'rgba(255,210,63,.45)', d); x.fillStyle = 'rgba(255,220,120,.06)'; for (let k = 0; k < 10; k++) { const a = k / 10 * 6.283 + t * .25; x.globalAlpha = d; x.beginPath(); x.moveTo(kx, ky); x.lineTo(kx + Math.cos(a - .07) * U * .9, ky + Math.sin(a - .07) * U * .9); x.lineTo(kx + Math.cos(a + .07) * U * .9, ky + Math.sin(a + .07) * U * .9); x.fill(); }
             x.globalAlpha = d * .8; x.strokeStyle = '#ffd23f'; x.lineWidth = 2; x.shadowColor = '#ffd23f'; x.shadowBlur = 14; x.beginPath(); x.arc(cx, cy, R, -Math.PI / 2 - PH, -Math.PI / 2 + PH); x.stroke(); }
-          x.restore(); x.save(); crownPath(x, kx, ky, kr); x.globalAlpha = .3 + d * .7; x.strokeStyle = '#ffd23f'; x.lineWidth = 1.5; x.stroke(); if (d > 0) { x.globalAlpha = d; x.fillStyle = '#ffd23f'; x.shadowColor = '#ffb02e'; x.shadowBlur = 16; x.fill(); } x.restore(); }
+          x.restore(); x.save(); crownPath(x, kx, ky, kr);   // always gold (a trophy for all 50 waves); it flares when both halves meet
+          { const g = x.createLinearGradient(kx, ky - kr * .7, kx, ky + kr * .5); g.addColorStop(0, '#fff3b0'); g.addColorStop(.45, '#ffd23f'); g.addColorStop(1, '#d98a1a');
+            x.globalAlpha = .7 + d * .3; x.fillStyle = g; x.shadowColor = '#ffb02e'; x.shadowBlur = 6 + d * 14; x.fill(); }
+          x.shadowBlur = 0; x.globalAlpha = .85; x.strokeStyle = '#fff1a8'; x.lineWidth = 1.2; x.stroke();
+          x.globalAlpha = .9; x.fillStyle = '#ff3d6e'; x.beginPath(); x.arc(kx, ky - kr * .05, kr * .1, 0, 6.29); x.fill(); x.fillStyle = '#22e6ff'; x.beginPath(); x.arc(kx - kr * .55, ky + kr * .12, kr * .07, 0, 6.29); x.fill(); x.fillStyle = '#3dffa2'; x.beginPath(); x.arc(kx + kr * .55, ky + kr * .12, kr * .07, 0, 6.29); x.fill();
+          x.restore(); }
         // the pair, back to back, each looking outwards
         x.save(); x.globalAlpha = .35 + .15 * Math.sin(t * 2.4); x.strokeStyle = '#9fffd0'; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, dy, r * 2.5, Math.PI, 0); x.stroke(); x.restore();
         [['#22e6ff', '#0b4a66', -1], ['#3dffa2', '#0a5a3a', 1]].forEach(([col, deep, s], k) => {

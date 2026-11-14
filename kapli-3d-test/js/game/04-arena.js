@@ -196,12 +196,12 @@
   bots[7].partner = bots[8]; bots[8].partner = bots[7];
   // bosses: up to two on the arena at once, never two of the same kind
   const BOSS_TYPES = {
-    giant:    { name: 'Громила',   color: '#c2416b', speed: .78, life: 90, parts: 1, coins: 20, xp: 30, mass: p => Math.min(BOSS_MASS_CAP, Math.max(220, p * 1.4)), about: 'огромный и медленный' },
-    hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(BOSS_MASS_CAP, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
-    queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(BOSS_MASS_CAP, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
-    frost:    { name: 'Морозец',   color: '#9ff0ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'ледяное облако вокруг замедляет всех, кто подплыл близко' },   // 2.5: replaces «Телепорт»
-    chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
-    splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(BOSS_MASS_CAP, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
+    giant:    { name: 'Громила',   color: '#c2416b', speed: .78, life: 90, parts: 1, coins: 20, xp: 30, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(220, p * 1.4)), about: 'огромный и медленный' },
+    hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
+    queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
+    frost:    { name: 'Морозец',   color: '#9ff0ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'ледяное облако вокруг замедляет всех, кто подплыл близко' },   // 2.5: replaces «Телепорт»
+    chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
+    splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
   };
   // two of each kind, so survival can field duplicates in later waves
   let BOSS_TYPES_EXTRA = {};
@@ -364,10 +364,11 @@
 
   function speedOf(c) {
     const o = c.owner;
-    let v = BASE_SPEED * Math.pow(c.mass / START_MASS, -0.15);
+    const speedMass = o.isPlayer ? Math.min(c.mass, PLAYER_SPEED_MASS_CAP) : c.mass;
+    let v = BASE_SPEED * Math.pow(speedMass / START_MASS, -0.15);
     if (o.isPlayer || o.kind === 'rival') {   // the second player of a match for two moves exactly like you (no upgrades: they are off in modes for two)
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed
-      if (o.dashT > 0) v = BASE_SPEED * DASH_MULT * Math.pow(Math.max(1, c.mass / START_MASS), -0.1);   // 1.7.0: a big blob's dash is weaker
+      if (o.dashT > 0) v = BASE_SPEED * DASH_MULT * Math.pow(Math.max(1, speedMass / START_MASS), -0.1);   // 1.7.0: a big blob's dash is weaker
       if (o.isPlayer) v *= (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
       else v *= abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1;
       v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1) * (DuoM.speedK ? DuoM.speedK(c) : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»

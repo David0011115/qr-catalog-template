@@ -144,7 +144,7 @@
     }
     // bots don't always notice spikes: cowards are careful, aggressive bots blunder into them
     const careful = o.kind === 'boss' ? .35 : o.star ? .85 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
-    if ((o.spikeMemT = (o.spikeMemT || 0) - .35) <= 0) { o.spikeMemT = 3 + Math.random() * 2; o.spikeBlind = Math.random() >= careful * botSkill().careful; }   // a decision kept for 3–5 s
+    if ((o.spikeMemT = (o.spikeMemT || 0) - .35) <= 0) { o.spikeMemT = 3 + Math.random() * 2; o.spikeBlind = (mode === 'hardcore' && o.kind === 'boss') || Math.random() >= careful * botSkill().careful; }   // 2.7: in «Хардкор» bosses walk into spikes   // a decision kept for 3–5 s
     if (c.mass > VIRUS_MASS * 1.3 && !o.spikeBlind) for (const v of viruses) {
       const d = Math.hypot(v.x - c.x, v.z - c.z);
       if (d < cellR(c) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }

@@ -74,9 +74,13 @@
       const rv = radius(v.mass);
       for (const c of cells) {
         if (c.gone || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes; bosses get popped too
+        if (v.dodge && v.dodge.has(c) && Math.hypot(c.x - v.x, c.z - v.z) >= cellR(c) + rv) v.dodge.delete(c);
         if (v.trap && (c.owner === v.trap.owner || (v.trap.owner.team && c.owner.team === v.trap.owner.team))) continue;   // a trap spares its owner and allies
         if (abOn('x_ghost', c.owner) || abOn('shrink', c.owner) || c.owner.spawnSh > 0) continue;   // «Фантом» and «Сжатие» pass spikes
         if (Math.hypot(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
+          // 2.7 «Колючая броня» («Хардкор»): this spike may let the player through; it is decided once while they overlap
+          if (c.owner.isPlayer && ModeX.hcK('spike') < 1) { v.dodge = v.dodge || new Set(); if (v.dodge.has(c)) continue;
+            if (Math.random() >= ModeX.hcK('spike')) { v.dodge.add(c); toast('🌵 Шип не сработал'); continue; } }
           popCell(c, v); removeVirus(v); if (!v.trap) virusRespawn.push(10); rebuildCells(); break;
         }
       }

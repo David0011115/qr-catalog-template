@@ -21,7 +21,6 @@
     return g;
   }
   function spawnVirus(x, z, vx, vz) {
-    if (ModeX.hcSpikesDisabled()) return null;
     if (viruses.length >= VIRUS_MAX) return null;
     if (x === undefined) {
       for (let t = 0; t < 30; t++) { [x, z] = randInArena(12); if (cells.every(c => Math.hypot(c.x - x, c.z - z) > cellR(c) + 8)) break; }
@@ -31,14 +30,8 @@
     return v;
   }
   function removeVirus(v) { scene.remove(v.mesh); viruses.splice(viruses.indexOf(v), 1); }
+  function resetViruses() { [...viruses].forEach(removeVirus); const n = arenaIs('inferno') ? VIRUS_COUNT * 2 : arenaIs('lava') ? VIRUS_COUNT + 3 : VIRUS_COUNT; for (let i = 0; i < n; i++) spawnVirus(); }
   let virusRespawn = [];
-  function resetViruses() {
-    [...viruses].forEach(removeVirus);
-    virusRespawn = [];
-    if (ModeX.hcSpikesDisabled()) return;
-    const n = arenaIs('inferno') ? VIRUS_COUNT * 2 : arenaIs('lava') ? VIRUS_COUNT + 3 : VIRUS_COUNT;
-    for (let i = 0; i < n; i++) spawnVirus();
-  }
   function popCell(c, v) {
     const o = c.owner;
     // a boss that has no spare parts to split into loses 30% of its mass as food and is stunned for a moment
@@ -101,7 +94,6 @@
   }
   // ejected blobs feed a spike; every 5th shot fires a new spike in that direction
   function feedVirus(e) {
-    if (ModeX.hcSpikesDisabled()) return false;
     for (const v of viruses) {
       if (Math.hypot(e.x - v.x, e.z - v.z) > radius(v.mass) + .5) continue;
       v.feed++; v.mass += 6;

@@ -233,3 +233,13 @@
 .pd-eye-card h2 { margin: 0 0 10px; text-align: center; }
 .pd-eye-src { margin: 8px 0 0; text-align: center; font-size: 13px; color: #cfc8f5; }
 .pd-eye-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+
+/* 2.6: records «на проверке» */
+.rank-list li .sc .rk-held { display: block; font-size: .7rem; font-weight: 600; color: #ffd23f; }
+.rank-review { margin-top: -4px; } .rank-review.has { border-color: #ffd23f; color: #ffd23f; }
+.review-card { max-width: 440px; } .review-note { margin: 0 0 10px; font-size: .8rem; color: var(--muted); }
+.review-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 60vh; overflow: auto; }
+.review-list li { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; background: var(--row); border-radius: var(--r-sm); padding: 8px 10px; font-size: .86rem; }
+.review-list li .rv-who small { display: block; color: var(--muted); font-size: .76rem; margin-top: 2px; }
+.review-list li .btn { min-height: 36px; padding: 6px 10px; font-size: .78rem; }
+.review-list li.review-empty { display: block; text-align: center; color: var(--muted); background: none; }

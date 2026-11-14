@@ -891,9 +891,10 @@
           : emptyHTML('В этом режиме пока нет рекордов — стань первым!', 'search');
         decorateWho(list);
         if (!sess) { $('rankMe').textContent = 'Войди в аккаунт, чтобы твои рекорды попали в рейтинг.'; return; }
-        const me = await sb.rpc('kapli_my_place', { p_mode: m });
-        const row = me.data && me.data[0];
-        $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.total} · ${fmtBest(m, row.score)}` : 'У тебя пока нет рекорда в этом режиме — сыграй раунд.';
+        const [me, hd] = await Promise.all([sb.rpc('kapli_my_place', { p_mode: m }), sb.rpc('kapli_my_held').then(r => r, () => ({}))]);
+        const row = me.data && me.data[0], held = Array.isArray(hd.data) && hd.data.includes(m);
+        if (held) { const li = list.querySelector('li.me .sc'); if (li) li.insertAdjacentHTML('beforeend', '<small class="rk-held">⏳ на проверке</small>'); }
+        $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.total} · ${fmtBest(m, row.score)}${held ? ' · ⏳ рекорд на проверке: другие увидят его после одобрения' : ''}` : 'У тебя пока нет рекорда в этом режиме — сыграй раунд.';
       } catch (e) {
         list.innerHTML = `<p class="empty-note">${netErr(e) ? 'Нет связи с сервером.' : /kapli_|function|PGRST20/i.test(String(e.message || e.code)) ? 'Рейтинг ещё не включён на сервере.' : 'Рейтинг сейчас недоступен.'}</p>`;
       }
@@ -902,7 +903,41 @@
     $('rankList').addEventListener('click', e => { const b = e.target.closest('[data-rdf]'); if (b) { e.stopPropagation(); rankDiff = +b.dataset.rdf; loadRank('duoback'); } }, true);
     $('rankList').addEventListener('click', e => { const li = e.target.closest('[data-pc]'); if (li) openPlayerCard(li.dataset.pc); });
     $('rankList').addEventListener('keydown', e => { const li = e.target.closest('[data-pc]'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPlayerCard(li.dataset.pc); } });
-    $('rankBtn').addEventListener('click', () => { showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) || isDuoMode(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });
+    // 2.6: records «на проверке» — the «Создатель» reviews them here (RECORDS-REVIEW-MIGRATION.sql; the server checks the badge itself)
+    async function reviewCheck() {
+      let btn = $('rankReview');
+      if (!sess || !(save.badges || {}).creator) { if (btn) btn.hidden = true; return; }
+      let data; try { const r = await withTimeout(sb.rpc('kapli_review_list'), 9000); if (r.error) throw r.error; data = r.data; } catch (e) { if (btn) btn.hidden = true; return; }
+      if (!btn) { btn = document.createElement('button'); btn.type = 'button'; btn.id = 'rankReview'; btn.className = 'btn ghost rank-review'; $('rankMe').after(btn); btn.addEventListener('click', reviewOpen); }
+      btn.hidden = false; btn.textContent = `🕵 На проверке (${data.length})`; btn.classList.toggle('has', data.length > 0);
+      return data;
+    }
+    async function reviewOpen() {
+      const data = await reviewCheck(); if (!data) return;
+      let m = $('reviewM');
+      if (!m) {
+        m = document.createElement('div'); m.id = 'reviewM'; m.className = 'modal'; m.hidden = true;
+        m.innerHTML = `<div class="modal-card review-card" role="dialog" aria-modal="true" aria-labelledby="reviewH"><button class="modal-x" type="button" data-rvx aria-label="Закрыть">×</button><h2 id="reviewH">Рекорды на проверке</h2><p class="review-note">Рекорд держится, если он в 3 раза выше прошлого или первый рекорд слишком большой. До решения его видит только сам игрок.</p><ul class="review-list" id="reviewList"></ul></div>`;
+        document.body.appendChild(m);
+        m.addEventListener('click', async e => {
+          if (e.target === m || e.target.closest('[data-rvx]')) { m.hidden = true; $('rankReview').focus(); return; }
+          const b = e.target.closest('[data-rvok]'); if (!b) return;
+          const li = b.closest('li'), ok = b.dataset.rvok === '1';
+          if (!ok && !confirm(`Удалить рекорд игрока ${li.dataset.nick}?`)) return;
+          li.querySelectorAll('button').forEach(x => x.disabled = true);
+          try { const { error } = await withTimeout(sb.rpc('kapli_review_record', { p_nick: li.dataset.nick, p_mode: li.dataset.mode, p_ok: ok }), 9000); if (error) throw error;
+            toast(ok ? `Рекорд ${li.dataset.nick} показан всем` : `Рекорд ${li.dataset.nick} удалён`); li.remove();
+            if (!$('reviewList').children.length) $('reviewList').innerHTML = '<li class="review-empty">Проверять нечего ✓</li>';
+            reviewCheck(); if (li.dataset.mode === rankMode) loadRank(rankMode);
+          } catch (er) { li.querySelectorAll('button').forEach(x => x.disabled = false); toast(netErr(er) ? 'Нет связи с сервером.' : 'Не получилось — попробуй ещё раз.'); }
+        });
+      }
+      const mName = k => (MODES[k] || {}).name || k;
+      $('reviewList').innerHTML = data.length ? data.map(r => `<li data-nick="${escHtml(r.nickname)}" data-mode="${escHtml(r.mode)}"><div class="rv-who"><b>${escHtml(r.nickname)}</b> · ${escHtml(mName(r.mode))}<small>${r.prev_score != null ? `было ${fmtBest(r.mode, r.prev_score)} → ` : 'первый рекорд: '}<b>${fmtBest(r.mode, r.score)}</b>${r.prev_score ? ` (×${(r.score / r.prev_score).toFixed(1)})` : ''} · ${new Date(r.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="btn rv-ok" data-rvok="1">Показать</button><button type="button" class="btn ghost rv-no" data-rvok="0">Удалить</button></li>`).join('')
+        : '<li class="review-empty">Проверять нечего ✓</li>';
+      m.hidden = false; m.querySelector('[data-rvx]').focus();
+    }
+    $('rankBtn').addEventListener('click', () => { reviewCheck(); showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) || isDuoMode(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });
     $('rankBack').addEventListener('click', () => { showCard('menuCard'); $('rankBtn').focus(); });
 
     // ---------- 2.6: promo codes and exclusive badges are kept by the server (SECURITY-MIGRATION.sql) ----------

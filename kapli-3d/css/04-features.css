@@ -206,6 +206,7 @@
 @media (prefers-reduced-motion: reduce) { .ttl.tt-r-legendary { animation: none !important; } }
 /* rating of the modes for two */
 #rankModes .rm-duo { border-style: dashed; }
+#rankModes .rm-coins { border-color: rgba(255, 210, 63, .45); color: #ffd98a; } #rankModes .rm-coins[aria-pressed="true"] { border-color: #ffd23f; }
 .rank-list li.rk-diff { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: center; background: none; padding: 2px 0 6px; }
 .rank-list li.rk-diff button { padding: 6px 12px; min-height: 36px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .06); color: #e6e0ff; font: 700 12px/1 inherit; cursor: pointer; }
 .rank-list li.rk-diff button[aria-pressed="true"] { background: linear-gradient(90deg, #3dffa2, #22e6ff); color: #0b0820; border-color: transparent; }

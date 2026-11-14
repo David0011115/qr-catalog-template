@@ -861,7 +861,20 @@
     let rankMode = 'classic';
     let rankDiff = 0;
     $('rankModes').innerHTML = RANK_MODES.map(m => `<button type="button" data-rm="${m}" aria-pressed="false">${MODES[m].name}</button>`).join('') +
-      ['territory', 'duoback'].map(m => `<button type="button" data-rm="${m}" class="rm-duo" aria-pressed="false">👥 ${MODES[m].name}</button>`).join('');
+      ['territory', 'duoback'].map(m => `<button type="button" data-rm="${m}" class="rm-duo" aria-pressed="false">👥 ${MODES[m].name}</button>`).join('') +
+      `<button type="button" data-rm="coins" class="rm-coins" aria-pressed="false">◆ Монеты</button>`;
+    // 2.6: coins earned in the game since 2.6, counted by the server wallet (COINS-RATING-MIGRATION.sql)
+    async function loadCoinsRank() {
+      const list = $('rankList');
+      const { data, error } = await withTimeout(sb.rpc('kapli_coins_top', { p_limit: 20 }), 9000); if (error) throw error;
+      if (rankMode !== 'coins') return;
+      list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${Number(r.total).toLocaleString('ru-RU')} ◆</span></li>`).join('')
+        : `<li class="rk-empty">${emptyHTML('Здесь будут те, кто заработал больше всех монет в игре, — начиная с версии 2.6.', 'search')}</li>`;
+      decorateWho(list);
+      if (!sess) { $('rankMe').textContent = 'Войди в аккаунт: монеты считает сервер, только у игроков с аккаунтом.'; return; }
+      const me = await sb.rpc('kapli_coins_me'); const row = me.data && me.data[0];
+      $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.players} · заработано ${Number(row.total).toLocaleString('ru-RU')} ◆ с версии 2.6` : 'Считаются монеты, заработанные в игре с версии 2.6: раунды, достижения, сундуки, лиги. Промокоды и подарки не входят.';
+    }
     // the ratings of the modes for two: «Захват территории» — most wins; «Спина к спине» — the best pairs on each difficulty
     async function loadDuoRank(m) {
       const list = $('rankList');
@@ -884,6 +897,7 @@
       try {
         await ensureClient();
         if (m === 'territory' || m === 'duoback') { await loadDuoRank(m); return; }
+        if (m === 'coins') { await loadCoinsRank(); return; }
         if (sess) await syncBests();
         const { data, error } = await withTimeout(sb.rpc('kapli_leaderboard', { p_mode: m, p_limit: 20 }), 9000); if (error) throw error;
         if (rankMode !== m) return;

@@ -789,10 +789,12 @@
   function pbgMount(root) { root.querySelectorAll('canvas[data-pbg]').forEach(cv => pbgLive.add(cv)); if (!pbgRaf) pbgRaf = requestAnimationFrame(pbgLoop); }
   // ---- what a player shows to others ----
   const PB_BADGES = () => [{ id: 'legend', name: 'Легенда Капель', got: !!save.legendBadge }, { id: 'millionaire', name: 'Миллионер', got: !!(save.badges || {}).millionaire },
+    { id: 'hc100k', name: 'Предел двух миров', got: !!(save.badges || {}).hc100k, src: 'Победа в Hardcore: обе половины по 50 000 массы' },
     ...PROMO_BADGES.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], promo: true })), ...SPECIAL.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], src: b.src })), ...EVO_BADGES.map(b => ({ id: b.id, name: b.name, got: (TEST_MODE && save.evoAll) || b.got(), src: b.src }))];
   function pbBadgeSVG(id) {
     if (!id) return '';
     if (id === 'legend') return legendBadgeSVG(true); if (id === 'millionaire') return millionBadgeSVG(true);
+    if (id === 'hc100k') return '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3 29.5 8 37 7.5 39 15 45 20 41 27 42 35 34 38 29 45 22 41 14 44 10 37 3 33 6 25 3 18 10 13 12 6 20 8Z" fill="#ffd27a" stroke="#fff2bd" stroke-width="1.5"/><path d="M15 25 21 31 34 17" fill="none" stroke="#3b1d13" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="18" fill="none" stroke="#fff2bd" stroke-opacity=".8"/></svg>';
     if (EVO_BADGES.some(b => b.id === id)) return evoBadgeSVG(id);
     const pb = PROMO_BADGES.find(b => b.id === id); if (pb) return promoBadgeSVG(pb);
     const sb = SPECIAL.find(b => b.id === id); return sb ? specialBadgeSVG(sb, true) : '';

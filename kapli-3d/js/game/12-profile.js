@@ -46,7 +46,7 @@
   const pbgById = id => PBG.find(b => b.id === id) || PBG[0];
   // ---- drawing: every background is a function of (ctx, w, h, t seconds); random layouts are seeded, so a scene is the same every frame ----
   const pbgSeeds = {};
-  const pbgPts = (key, n, seed) => pbgSeeds[key] || (pbgSeeds[key] = (() => { let s = seed; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; return Array.from({ length: n }, () => ({ x: r(), y: r(), s: r(), p: r() * 6.28, q: r() })); })());
+  const pbgPts = (key, n, seed) => pbgSeeds[key + ':' + n] || (pbgSeeds[key + ':' + n] = (() => { let s = seed; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; return Array.from({ length: n }, () => ({ x: r(), y: r(), s: r(), p: r() * 6.28, q: r() })); })());
   const pbgHorse = {};
   function crBg(x, w, h, id, t, U, lin, glow, stars) {
     const gear = (cx, cy, r, n, rot, fill, hole = '#1a1006') => { x.save(); x.translate(cx, cy); x.rotate(rot); x.beginPath(); for (let i = 0; i <= n * 4; i++) { const a = i / (n * 4) * Math.PI * 2, rr = (i % 4 < 2) ? r : r * .82; x.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } x.closePath(); x.fillStyle = fill; x.fill();
@@ -341,7 +341,8 @@
       case 'bg_creator': {
         x.fillStyle = lin([[0, '#120800'], [1, '#2a1400']]); x.fillRect(0, 0, w, h);
         x.font = '10px monospace'; const cols = Math.ceil(w / 11);
-        for (let c = 0; c < cols; c++) { const p = pbgPts('cc', cols, 97)[c], sp = 30 + p.s * 50, head = (t * sp + p.y * h * 3) % (h + 120);
+        for (let c = 0; c < cols; c++) { const p = pbgPts('cc', 400, 97)[c % 400],   // 2.5: a fixed set — the list cached for a narrow preview used to end the drawing early on a wide card
+          sp = 30 + p.s * 50, head = (t * sp + p.y * h * 3) % (h + 120);
           for (let i = 0; i < 12; i++) { const yy = head - i * 11; if (yy < 0 || yy > h) continue; x.fillStyle = i ? `rgba(255,210,63,${.45 - i * .035})` : '#fff6c8'; x.fillText('01ΣΔ◆✦λ{}<>'[(c * 7 + i * 3 + Math.floor(t * 4)) % 11], c * 11, yy); } }
         const cx = w * .76, cy = h * .5, R = U * .3; x.globalCompositeOperation = 'lighter'; glow(cx, cy, R * 1.6, 'rgba(255,210,63,.4)');
         x.save(); x.translate(cx, cy); x.rotate(t * .4); x.strokeStyle = '#ffd23f'; x.lineWidth = 2; x.setLineDash([R * .3, R * .12]); x.beginPath(); x.arc(0, 0, R, 0, 6.29); x.stroke(); x.rotate(-t * .9); x.setLineDash([4, 6]); x.beginPath(); x.arc(0, 0, R * .75, 0, 6.29); x.stroke(); x.restore(); x.setLineDash([]); break; }

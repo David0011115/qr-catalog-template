@@ -382,3 +382,14 @@
 }
 .pd-tabs .gtab { flex-direction: column; justify-content: center; gap: 2px; text-align: center; padding: 5px 2px; }
 .pd-tabs .gtab .tab-ico { width: 24px; height: 24px; } .pd-tabs .gtab span { justify-items: center; } .pd-tabs .gtab b { overflow: visible; text-overflow: clip; font-size: .68rem; }
+/* 2.7: «Витрина недели» */
+.wsh-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 640px) { .wsh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.wsh-card { position: relative; display: grid; justify-items: center; gap: 4px; padding: 10px 8px; border-radius: 14px; text-align: center; cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, var(--rc) 55%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, transparent), rgba(255, 255, 255, .03)); }
+.wsh-card:hover, .wsh-card:focus-visible { box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 45%, transparent); outline: none; }
+.wsh-ico { width: 56px; height: 56px; display: grid; place-items: center; } .wsh-ico .thumb-img { width: 56px; height: 56px; }
+.wsh-card b { font-size: .8rem; line-height: 1.2; } .wsh-card small { font-size: .66rem; color: var(--muted); }
+.wsh-card .buy { width: 100%; margin-top: 2px; }
+.wsh-card em { position: absolute; top: 6px; right: 6px; font-style: normal; font-size: .62rem; background: rgba(0, 0, 0, .45); border-radius: 6px; padding: 1px 4px; }
+.wsh-foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 6px; } .wsh-foot small, .wsh-note { font-size: .7rem; color: var(--muted); }

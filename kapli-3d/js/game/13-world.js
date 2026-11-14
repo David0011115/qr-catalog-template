@@ -479,7 +479,7 @@
       `<g transform="translate(17 17) scale(1.25)" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" color="#fff">${ic}</g></svg>`;
   }
   document.querySelectorAll('[data-logo]').forEach(el => { el.innerHTML = hubLogoSVG(el.dataset.logo, 56); });
-  const SHOP_TAB_ICON = { up: 'up', abil: 'sabil', skin: 'skin', fx: 'fx', arena: 'arena', archive: 'arch' };
+  const SHOP_TAB_ICON = { up: 'up', abil: 'sabil', wshow: 'chest', skin: 'skin', fx: 'fx', arena: 'arena', archive: 'arch' };
   const tabIcon = id => SHOP_TAB_ICON[id] ? hubLogoSVG(SHOP_TAB_ICON[id], 22).replace('class="hub-logo"', 'class="tab-ico"') : '';
   function hubCardsInfo() {
     $('wardInfo').textContent = `скинов ${save.skins.length}/${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length} · надето: «${skin().name}»`;

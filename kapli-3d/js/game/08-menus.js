@@ -143,7 +143,7 @@
   $('tutSkip').addEventListener('click', () => { if (running && stats.tutorial) tutExit(false); });
   // 2.6: a guest's coins and purchases live only on this phone — said once before the first purchase (the next tap buys)
   function guestBuyWarn(b) {
-    if (Net.uid || save.guestBuyWarned || !['abuy', 'arch', 'aup', 'up', 'skin', 'fx', 'arena'].some(k => k in b.dataset) || !b.textContent.includes('◆')) return false;
+    if (Net.uid || save.guestBuyWarned || !['abuy', 'arch', 'aup', 'up', 'skin', 'fx', 'arena', 'wsh'].some(k => k in b.dataset) || !b.textContent.includes('◆')) return false;
     save.guestBuyWarned = true; persist();
     tutModal('Покупка без аккаунта', `<p class="guest-warn">⚠ ${GUEST_WARN}</p><p>Чтобы купить, нажми на кнопку ещё раз.</p>`, [['guestAcct', 'Войти в аккаунт', 'btn'], ['guestOk', 'Понятно', 'btn ghost']]);
     return true;
@@ -812,7 +812,7 @@
   }
   // the shop sells what you don't own yet; the wardrobe holds everything you own
   const SHOP_VIEWS = {
-    shop:     { title: 'Магазин', groups: [['Для боя', ['up', 'abil']], ['Внешний вид', ['skin', 'fx', 'arena']], ['Архив', ['archive']]], tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
+    shop:     { title: 'Магазин', groups: [['Для боя', ['up', 'abil']], ['Внешний вид', ['wshow', 'skin', 'fx', 'arena']], ['Архив', ['archive']]], tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['wshow', 'Витрина недели'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     abilities: { title: 'Способности', tabs: [['mab', 'Мои способности']] },
@@ -1031,6 +1031,36 @@
   const rewardChip = (r, label) => { const [t, id] = r || []; const kind = t === 'fx' ? 'fx' : t === 'skin' ? 'skin' : t === 'deco' ? 'deco' : t === 'pet' ? 'pet' : t === 'arena' ? 'arena' : null;
     return kind ? `<span class="rwb" data-info="${kind}:${id}" tabindex="0" role="button" aria-label="Посмотреть награду">${label}<em aria-hidden="true">👁</em></span>` : `<span class="rw">${label}</span>`; };
   $('shop').addEventListener('click', e => { const t = e.target.closest('[data-coltab]'); if (!t) return; save.settings.colTab = t.dataset.coltab; persist(); renderShop(); const b = document.querySelector(`[data-coltab="${t.dataset.coltab}"]`); if (b) b.focus(); });
+  // ---- 2.7 «Витрина недели»: 4 chest-only items the player does not have, for coins; new every Monday, one paid refresh a week ----
+  const WSH_PRICE = { common: 8000, rare: 15000, epic: 30000, legendary: 60000 }, WSH_REFRESH = 3000;
+  const wshOwned = (t, id) => (t === 'skin' ? save.skins : t === 'fx' ? save.fxOwned : t === 'pet' ? save.pets : save.decor).includes(id);
+  const wshItem = (t, id) => t === 'skin' ? SKINS.find(k => k.id === id) : t === 'fx' ? FX.find(f => f.id === id) : t === 'pet' ? PETS.find(x => x.id === id) : decorById(id);
+  function wshMake(skip = []) {
+    const week = raidWeek(), legOk = week - (save.wshowLeg ?? -99) >= 4;
+    const pool = t => (t === 'skin' ? SKINS : t === 'fx' ? FX : t === 'pet' ? PETS : DECOR.filter(d => !d.old)).filter(x => x.chest && (legOk || x.chest !== 'legendary') && !wshOwned(t, x.id) && !skip.includes(x.id)).map(x => [t, x]);
+    const pick = (list, taken) => { const L = list.filter(([, x]) => !taken.some(([, y]) => y.id === x.id)); if (!L.length) return null;
+      const r = pickRarity(Object.values(RARITY).map(v => v.w)), same = L.filter(([, x]) => x.chest === r); const from = same.length ? same : L; return from[Math.floor(Math.random() * from.length)]; };
+    const out = [];
+    for (const slot of [['skin'], ['skin'], ['fx'], ['pet', 'deco']]) { const it = pick(slot.flatMap(pool), out) || pick(['skin', 'fx', 'pet', 'deco'].flatMap(pool), out); if (it) { out.push(it); if (it[1].chest === 'legendary') { save.wshowLeg = week; } } }
+    return out.map(([t, x]) => ({ t, id: x.id }));
+  }
+  function wshState() {
+    const week = raidWeek();
+    if (!save.wshow || save.wshow.week !== week) { save.wshow = { week, items: wshMake(), re: false }; persist(); }
+    return save.wshow;
+  }
+  function wshHtml() {
+    const W = wshState(), days = Math.max(1, Math.ceil((W.week + 1) * 7 - 3 - Date.now() / 864e5));
+    const card = (o, i) => { const x = wshItem(o.t, o.id); if (!x) return ''; const rar = x.chest, own = wshOwned(o.t, o.id), price = WSH_PRICE[rar];
+      const ico = o.t === 'skin' ? `<span class="${swClass(x)}" style="${swatch(x)};width:52px;height:52px">${headIcon(x)}</span>` : thumbImg(o.t === 'deco' ? 'deco' : o.t, o.id);
+      const kind = o.t === 'skin' ? 'скин' : o.t === 'fx' ? 'эффект' : o.t === 'pet' ? 'питомец' : (x.kind === 'frame' ? 'рамка' : x.kind === 'title' ? 'титул' : 'украшение');
+      return `<div class="wsh-card" style="--rc:${RARITY[rar].color}" data-info="${o.t}:${o.id}" tabindex="0" role="button" aria-label="${escHtml(x.name)} — посмотреть"><span class="wsh-ico">${ico}</span><b>${escHtml(x.name)}</b><small>${kind} · <span style="color:${RARITY[rar].color}">${RARITY[rar].name}</span></small>` +
+        (own ? '<button class="buy sel" disabled>Куплено</button>' : `<button class="buy" data-wsh="${i}" ${save.coins >= price ? '' : 'disabled'}>${price.toLocaleString('ru-RU')} ◆</button>`) + '<em aria-hidden="true">👁</em></div>'; };
+    return `<p class="empty-note">Предметы, которые обычно выпадают только из сундуков. Своя витрина у каждого игрока: здесь только то, чего у тебя ещё нет. Обновится через ${days} дн.</p>` +
+      (W.items.length ? `<div class="wsh-grid">${W.items.map(card).join('')}</div>` : '<p class="empty-note">🎉 У тебя уже есть все предметы из сундуков — витрине нечего предложить.</p>') +
+      `<div class="wsh-foot">${W.re ? '<small>Витрину уже обновляли на этой неделе.</small>' : `<button class="btn ghost" type="button" data-wshre="1" ${save.coins >= WSH_REFRESH ? '' : 'disabled'}>🔄 Обновить витрину сейчас · ${WSH_REFRESH.toLocaleString('ru-RU')} ◆</button><small>Один раз в неделю.</small>`}</div>` +
+      `<ul class="quests arch-odds">${Object.entries(WSH_PRICE).map(([r, p]) => `<li><span><b style="color:${RARITY[r].color}">${RARITY[r].name}</b></span><span class="rw">${p.toLocaleString('ru-RU')} ◆</span></li>`).join('')}</ul><small class="wsh-note">Легендарный предмет появляется на витрине не чаще раза в 4 недели.</small>`;
+  }
   function renderShop() {
     renderAll();
     const lv = playerLevel(), view = SHOP_VIEWS[shopView];
@@ -1045,7 +1075,9 @@
     $('shopTabs').innerHTML = view === SHOP_VIEWS.goals
       ? `<div class="goal-tabs4">${view.tabs.map(([id, name]) => { const [d, n] = goalCount(id); return `<button class="tab gtab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}" style="--hc:${HUB_ICON['g_' + id][0]}">${hubLogoSVG('g_' + id, 30).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${name}</b><small>${d}/${n}</small></span></button>`; }).join('')}</div>`
       : view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
-    if (shopTab === 'skin') {
+    if (shopTab === 'wshow') {
+      $('shop').innerHTML = wshHtml();
+    } else if (shopTab === 'skin') {
       const list = SKINS.filter(k => buyable(k) && !save.skins.includes(k.id));
       $('shop').innerHTML = list.length ? `<div class="skins">${list.map(k => skinTile(k, 'buy')).join('')}</div>`
         : '<p class="empty-note">Все скины магазина уже твои.</p>';
@@ -1540,6 +1572,16 @@
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     if (guestBuyWarn(b)) return;
     if (b.dataset.apv) { openArenaPreview(b.dataset.apv, b.id); return; }
+    if (b.dataset.wsh !== undefined) {
+      const W = wshState(), o = W.items[+b.dataset.wsh]; if (!o) return; const x = wshItem(o.t, o.id), price = WSH_PRICE[x.chest];
+      if (wshOwned(o.t, o.id) || save.coins < price) return;
+      coinsSpend(price, 'showcase'); (o.t === 'skin' ? save.skins : o.t === 'fx' ? save.fxOwned : o.t === 'pet' ? save.pets : save.decor).push(o.id);
+      toast(`Витрина недели: «${x.name}» теперь твой`); Sound.play('chest'); persist(); renderShop(); renderAll(); return;
+    }
+    if (b.dataset.wshre) {
+      const W = wshState(); if (W.re || save.coins < WSH_REFRESH) return;
+      coinsSpend(WSH_REFRESH, 'showcase-refresh'); W.items = wshMake(W.items.map(o => o.id)); W.re = true; persist(); toast('Витрина обновлена'); renderShop(); renderAll(); return;
+    }
     if (b.dataset.arch) {
       const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price || (save.archTok || 0) < ARCH_TOK[o.rar] || archBuysLeft() < 1) return;
       coinsSpend(o.price, 'archive'); save.archTok -= ARCH_TOK[o.rar]; save.archBuys.n++; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');

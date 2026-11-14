@@ -351,7 +351,7 @@
       if (a.gone || b.gone) continue;
       const ra = cellR(a), rb = cellR(b);
       let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 0.001;
-      const mergeCap = o.isPlayer ? MAX_MASS : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP) : MAX_MASS;
+      const mergeCap = o.isPlayer ? Infinity : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP) : MAX_MASS;
       if (a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > mergeCap) {   // parts that would exceed this owner's cap stay apart
         if (d < ra + rb) {
           const push = (ra + rb - d) / 2 * Math.min(1, dt * 10); dx /= d; dz /= d;
@@ -504,11 +504,10 @@
     rebuildCells();
 
     for (const c of cells) {
-      const cap = c.owner.isPlayer ? MAX_MASS
-        : c.owner.kind === 'bot' ? BOT_MASS_CAP
+      const cap = c.owner.kind === 'bot' ? BOT_MASS_CAP
         : c.owner.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP)
         : MAX_MASS;
-      if (c.mass > cap) c.mass = cap;
+      if (!c.owner.isPlayer && c.mass > cap) c.mass = cap;   // the player has no per-part cap (fixed in main 14.11)
     }
     // The regular bot limit is shared by all of its parts, not repeated per part.
     for (const o of bots) {

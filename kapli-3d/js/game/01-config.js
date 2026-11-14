@@ -4,7 +4,7 @@
   // the field's radius and the number of crumbs change with the mode (setArenaSize): «Захват территории» ×1,5, «Спина к спине» ×0,8
   let R = 237.5, FOOD = 5250;
   const R_BASE = R, FOOD_BASE = FOOD, R_MAX = R * 2, FOOD_MAX = 12000, START_MASS = 10, MAX_BONUS = 6;
-  const MAX_MASS = 15000;   // player per-part cap
+  const MAX_MASS = 15000;   // fallback cap for non-player cell types; player cells have no mass cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
   const BOSS_MASS_CAP = 12000; // ordinary bosses; survival and raid have separate caps
   const MODES = {

@@ -104,7 +104,7 @@
   // ================= abilities: ALL tunable numbers live in this table =================
   // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
   // every level: cooldown −cdPerLv, power (duration / distance / radius / force) +powPerLv.
-  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .75, growth: 1.5, cdPerLv: .04, powPerLv: .065,
+  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .75, growth: 1.35, cdPerLv: .04, powPerLv: .065,
     rankedBuild: ['dash', 'split', 'eject'], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
     slotBtn: ['dash', 'split', 'eject'], slotKey: ['Space', 'KeyE', 'KeyQ'], slotKeyName: ['Пробел', 'E', 'Q'],
     arsenalCoins: 5000, slowFactor: .5, shrinkSpeed: 1.25, maxTraps: 2, decoySpeed: .55 };

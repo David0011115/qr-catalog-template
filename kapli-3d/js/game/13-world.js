@@ -445,6 +445,10 @@
     return d ? `${d} дн${h ? ` ${h} ч` : ''}` : h ? `${h} ч ${m % 60} мин` : `${Math.max(1, m)} мин`; }
   // ================= 2.2: logos for the Collection / Rewards buttons and the shop tabs =================
   const HUB_ICON = {
+    g_ach: ['#22e6ff', '#7b3dff', '<circle cx="12" cy="14.5" r="6"/><path d="M8 3l3 5.5M16 3l-3 5.5"/><path d="M9.6 14.6l1.7 1.7 3.2-3.4"/>'],
+    g_ch: ['#ff9a3d', '#ff3d6e', '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><path d="M18 3.5l-4.2 4.2M18 3.5v2.8h2.8"/>'],
+    g_skill: ['#3dffa2', '#22e6ff', '<path d="M12 2.8l8.5 9.2-8.5 9.2L3.5 12z"/><path d="M13.2 6.8L10 12h4.2l-3.2 5.2"/>'],
+    g_legend: ['#ffd23f', '#ff4fd8', '<path d="M3.8 17.2h16.4L18.6 7.6l-4.2 3.6L12 4.6l-2.4 6.6-4.2-3.6z"/><path d="M3.8 20.2h16.4"/>'],
     ward: ['#ff4fd8', '#7b3dff', '<path d="M12 7.2a2.1 2.1 0 1 1 2.1-2.1c0 1.3-2.1 1.6-2.1 3.1v.9"/><path d="M12 9.1L3.6 15.4c-.8.6-.4 1.6.6 1.6h15.6c1 0 1.4-1 .6-1.6z"/><circle cx="12" cy="19.6" r="1.4" fill="currentColor"/>'],
     pet: ['#3dffa2', '#0a8f6a', '<ellipse cx="12" cy="15.2" rx="4.6" ry="3.8"/><circle cx="6.2" cy="10.4" r="1.9"/><circle cx="9.8" cy="6.8" r="1.9"/><circle cx="14.2" cy="6.8" r="1.9"/><circle cx="17.8" cy="10.4" r="1.9"/>'],
     col: ['#b26bff', '#ff4fd8', '<rect x="7" y="4" width="11" height="14" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2H15"/><path d="M10 9h5M10 12h5M10 15h3"/>'],

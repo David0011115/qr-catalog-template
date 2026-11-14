@@ -987,6 +987,24 @@
     return `<div class="fxrow ${f.ex || f.chest || f.season || f.craft ? 'ex' : ''}"${inf}><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
       `<span class="desc">${f.desc}.</span><button class="${cls}" id="fx-${f.id}" data-fx="${f.id}" ${dis}>${label}</button></div>`;
   }
+  // ---- 2.7: «Достижения» — counts on the tabs, «почти готово» first, the done ones folded, 👁 on rewards ----
+  function goalCount(id) {
+    if (id === 'ach') { const L = ACH.filter(a => a.line); return [L.reduce((t, a) => t + achTier(a), 0), L.reduce((t, a) => t + a.steps.length, 0)]; }
+    if (id === 'ch') return [save.chDone.length, CHALLENGES.length];
+    if (id === 'skill') return [save.skillDone.length, SKILL.length];
+    return [LEGEND.filter(L => save.legendDone.includes(L.id)).length, LEGEND.length];
+  }
+  // items: [{ pct 0..1, done, html }]; «near» = at least 60% of the way
+  function goalGroups(items, near = 'Почти готово', rest = 'В процессе') {
+    const open = items.filter(x => !x.done).sort((a, b) => b.pct - a.pct), done = items.filter(x => x.done);
+    const hot = open.filter(x => x.pct >= .6), mid = open.filter(x => x.pct < .6);
+    const grid = l => `<div class="g-grid">${l.map(x => x.html).join('')}</div>`;
+    return (hot.length ? `<h3 class="g-h">🔥 ${near}</h3>${grid(hot)}` : '') + (mid.length ? `<h3 class="g-h">${rest}</h3>${grid(mid)}` : '') +
+      (done.length ? `<details class="res-drawer g-done"><summary>✓ Выполнено <small class="cnt">${done.length}</small></summary>${grid(done)}</details>` : '');
+  }
+  // a reward you can look at: tapping it opens the item window (the same as in the wardrobe)
+  const rewardChip = (r, label) => { const [t, id] = r || []; const kind = t === 'fx' ? 'fx' : t === 'skin' ? 'skin' : t === 'deco' ? 'deco' : t === 'pet' ? 'pet' : t === 'arena' ? 'arena' : null;
+    return kind ? `<span class="rwb" data-info="${kind}:${id}" tabindex="0" role="button" aria-label="Посмотреть награду">${label}<em aria-hidden="true">👁</em></span>` : `<span class="rw">${label}</span>`; };
   function renderShop() {
     renderAll();
     const lv = playerLevel(), view = SHOP_VIEWS[shopView];
@@ -998,7 +1016,9 @@
       $('shopTabs').innerHTML = `<div class="tab-groups">${view.groups.map(([name, ids]) => `<button class="tab tab-g" role="tab" data-tab="${ids[0]}" aria-selected="${ids.includes(shopTab)}">${ico(ids[0])}${name}</button>`).join('')}</div>` +
         (g[1].length > 1 ? `<div class="tab-sub">${g[1].map(id => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${ico(id)}${view.tabs.find(t => t[0] === id)[1]}</button>`).join('')}</div>` : '');
     } else
-    $('shopTabs').innerHTML = view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
+    $('shopTabs').innerHTML = view === SHOP_VIEWS.goals
+      ? `<div class="goal-tabs4">${view.tabs.map(([id, name]) => { const [d, n] = goalCount(id); return `<button class="tab gtab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}" style="--hc:${HUB_ICON['g_' + id][0]}">${hubLogoSVG('g_' + id, 30).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${name}</b><small>${d}/${n}</small></span></button>`; }).join('')}</div>`
+      : view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
     if (shopTab === 'skin') {
       const list = SKINS.filter(k => buyable(k) && !save.skins.includes(k.id));
       $('shop').innerHTML = list.length ? `<div class="skins">${list.map(k => skinTile(k, 'buy')).join('')}</div>`
@@ -1091,13 +1111,15 @@
         '<h3>Сезоны лиги</h3>' + COLLECTIONS.filter(c => c.group === 'seasons').map(colCard).join('') +
         '<h3>Праздники</h3>' + (COLLECTIONS.filter(c => c.group === 'holiday').map(colCard).join('') || '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
     } else if (shopTab === 'ch') {
-      $('shop').innerHTML = CHALLENGES.map(ch => {
-        const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
-        const shown = ch.time ? `${fmtTime(v)} / ${fmtTime(ch.goal)}` : `${Math.floor(v)} / ${ch.goal}`;
-        return `<div class="chal ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : ''}${ch.name}</b><span>${shown}</span></div>` +
-          `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
-          `<span class="rw">Награда: ${rewardName(ch.reward)}${done ? ' — в гардеробе' : ''}</span></div>`;
-      }).join('');
+      const [cd, cn] = goalCount('ch');
+      $('shop').innerHTML = `<div class="g-sum" style="--hc:${HUB_ICON.g_ch[0]}">${hubLogoSVG('g_ch', 44)}<div><b>Испытания · ${cd} из ${cn}</b><small>Большие цели на всё время игры: прогресс копится между раундами. Награда — предмет, нажми 👁, чтобы посмотреть.</small><div class="track"><div class="fill" style="width:${(cd / cn * 100).toFixed(0)}%"></div></div></div></div>` +
+        goalGroups(CHALLENGES.map(ch => {
+          const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
+          const shown = ch.time ? `${fmtTime(v)} / ${fmtTime(ch.goal)}` : `${Math.floor(v)} / ${ch.goal}`;
+          return { done, pct: v / ch.goal, html: `<div class="chal ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : ''}${ch.name}</b><span>${shown}</span></div>` +
+            `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
+            `<div class="col-foot">${rewardChip(ch.reward, `${done ? '✓ ' : ''}${rewardName(ch.reward)}`)}</div></div>` };
+        }));
     } else if (shopTab === 'archive') {
       const lv = playerLevel();
       const icon = o => o.kind === 'skin' ? (k => `<span class="${swClass(k)}" style="${swatch(k)};width:44px;height:44px">${headIcon(k)}</span>`)(SKINS.find(x => x.id === o.id)) : thumbImg(o.kind, o.id);
@@ -1138,23 +1160,23 @@
       $('shop').innerHTML = `<div class="legend-head skill-head"><span class="legend-pics"><span class="legend-pic"><span class="${swClass(vir)}" style="${swatch(vir)}"></span></span><span class="legend-pic"><span ${frameAttr('fr_master')}>Ты</span></span></span>` +
         `<div><b>Мастерские · ${done} из ${SKILL.length}</b><small>Проверяют умение, а не время: всё нужно сделать за один раунд. Каждое даёт монеты; за 3, 6, 9 и 13 выполненных — титулы ${SKILL_TT.map(([n, id]) => titleTag(id)).join(' ')}.</small>` +
         `<small>За все — рамка «Мастер» и скин «Виртуоз»${save.decor.includes('fr_master') ? ' (получены)' : ''}.</small></div></div>` +
-        SKILL.map(k => { const ok = save.skillDone.includes(k.id), b = fmtB(k);
-          return `<div class="chal skill-card ${ok ? 'done' : ''}"><div class="chal-top"><b>${ok ? '✓ ' : '🎯 '}${k.name}</b><span>${ok ? 'выполнено' : b}</span></div><small>${k.desc}</small>` +
+        goalGroups(SKILL.map(k => { const ok = save.skillDone.includes(k.id), b = fmtB(k);
+          return { done: ok, pct: 0, html: `<div class="chal skill-card ${ok ? 'done' : ''}"><div class="chal-top"><b>${ok ? '✓ ' : '🎯 '}${k.name}</b><span>${ok ? 'выполнено' : b}</span></div><small>${k.desc}</small>` +
             `<small class="skill-hint">Подсказка: ${k.hint}</small>` +
-            `<div class="col-foot"><span class="rw">+${k.coins} ◆</span>${ok && b ? `<span class="rw" style="color:var(--muted)">${b}</span>` : ''}</div></div>`; }).join('');
+            `<div class="col-foot"><span class="rw">+${k.coins} ◆</span>${ok && b ? `<span class="rw" style="color:var(--muted)">${b}</span>` : ''}</div></div>` }; }), '', 'Не выполнено');
     } else if (shopTab === 'legend') {
       const fmt = (L, v) => L.time ? `${Math.floor(v / 3600)} / ${L.goal / 3600} ч` : `${Math.min(v, L.goal).toLocaleString('ru-RU')} / ${L.goal.toLocaleString('ru-RU')}`;
       $('shop').innerHTML = `<div class="legend-head">${legendBadgeSVG(!!save.legendBadge)}<div><b>${save.legendBadge ? 'Ты — Легенда Капель!' : 'Значок «Легенда Капель»'}</b>` +
         `<small>${save.legendBadge ? 'Все легендарные достижения выполнены.' : `Выполни ${LEGEND_BASE.length} легендарных достижений (у «Грозы звёзд» и «Непобедимого» хватит первой ступени). Готово: ${LEGEND_BASE.filter(L => save.legendDone.includes(L.id)).length} из ${LEGEND_BASE.length}.`}</small>` +
         `<small>Прогресс считается с ${new Date(save.legend.since).toLocaleDateString('ru-RU')}. Каждое достижение даёт эксклюзивную награду, которую больше нигде не получить.</small></div></div>` +
-        LEGEND.map(L => {
+        goalGroups(LEGEND.map(L => {
           const v = legendVal(L), done = save.legendDone.includes(L.id);
           const pics = rewardsOf(L).map(([t, id]) => t === 'badge' ? millionBadgeSVG(true, 40) : t === 'deco' && decorById(id).kind === 'title' ? titleTag(id) : t === 'skin' ? `<span class="${swClass(SKINS.find(k => k.id === id))}" style="${swatch(SKINS.find(k => k.id === id))}"></span>` : t === 'fx' ? thumbImg('fx', id) : t === 'pet' ? thumbImg('pet', id)
-            : t === 'deco' ? `<span ${frameAttr(id)}>Ты</span>` : (a => `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`)(ARENAS.find(a => a.id === id))).map(x => `<span class="legend-pic">${x}</span>`).join('');
-          return `<div class="chal legend-card ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : '👑 '}${L.name}</b><span>${fmt(L, v)}</span></div><small>${L.desc}</small>` +
+            : t === 'deco' ? `<span ${frameAttr(id)}>Ты</span>` : (a => `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`)(ARENAS.find(a => a.id === id))).map((x, k) => { const r = rewardsOf(L)[k], info = r && ['skin', 'fx', 'deco', 'pet', 'arena'].includes(r[0]) ? ` data-info="${r[0]}:${r[1]}" tabindex="0" role="button" aria-label="Посмотреть награду"` : ''; return `<span class="legend-pic${info ? ' g-eye' : ''}"${info}>${x}</span>`; }).join('');
+          return { done, pct: Math.min(1, v / L.goal), html: `<div class="chal legend-card ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : '👑 '}${L.name}</b><span>${fmt(L, v)}</span></div><small>${L.desc}</small>` +
             `<div class="track"><div class="fill" style="width:${Math.min(100, v / L.goal * 100).toFixed(1)}%"></div></div>` +
-            `<div class="col-foot"><span class="legend-pics">${pics}</span><span class="rw">${legendNames(L)}${done ? ' — получено' : ''}</span></div></div>`;
-        }).join('');
+            `<div class="col-foot"><span class="legend-pics">${pics}</span><span class="rw">${legendNames(L)}${done ? ' — получено' : ''}</span></div></div>` };
+        }), 'Ближе всего', 'Впереди');
     } else if (shopTab === 'ach') {
       const T = achTotals(), B = save.achBest || {}, lines = ACH.filter(a => a.line), hol = ACH.filter(a => a.hol);
       const cnt = [0, 0, 0, 0]; lines.forEach(a => { const t = achTier(a); for (let k = 1; k <= t; k++) cnt[k]++; });
@@ -1174,7 +1196,8 @@
       const holSeen = hol.filter(a => achTier(a) > 0), holNext = hol.filter(a => !achTier(a));
       $('shop').innerHTML = `<div class="ach-sum"><div><b>${lines.filter(a => achTier(a) >= 3).length}<small>/${lines.length}</small></b><span>линеек на золоте</span></div>` +
         [1, 2, 3].map(k => `<div class="m${k}">${achEmblem({ id: 'ln_star', steps: ['', '', ''] }, k, 34)}<span><b>${cnt[k]}</b> ${METAL_NAME[k].toLowerCase()}</span></div>`).join('') + '</div>' +
-        `<div class="achc-grid">${lines.map(card).join('')}</div>` +
+        goalGroups(lines.map(a => { const t = achTier(a), n = a.steps.length, v = ACH_VAL[a.id], T2 = T, val = v ? v[0](T2, B) : 0, goal = v && t < n ? v[1][t] : 0, prev = v && t ? v[1][t - 1] : 0;
+          return { done: t >= n, pct: goal ? Math.min(1, Math.max(0, (val - prev) / (goal - prev))) : 0, html: card(a) }; })).replace(/class="g-grid"/g, 'class="g-grid achc-grid"') +
         (holSeen.length ? `<h3 class="ach-h">Праздники</h3><div class="achc-grid">${holSeen.map(card).join('')}</div>` : '') +
         `<details class="res-drawer ach-hol"><summary>Праздничные достижения впереди <small class="cnt">${holNext.length}</small></summary><div class="achc-grid">${holNext.map(card).join('')}</div></details>`;
     } else if (shopTab === 'abil') {

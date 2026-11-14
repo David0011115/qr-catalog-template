@@ -1091,7 +1091,7 @@
         (g[1].length > 1 ? `<div class="tab-sub">${g[1].map(id => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${ico(id)}${view.tabs.find(t => t[0] === id)[1]}</button>`).join('')}</div>` : '');
     } else
     $('shopTabs').innerHTML = view === SHOP_VIEWS.wardrobe   // 2.7: four tabs in one row, with icons
-      ? `<div class="ward-tabs">${view.tabs.map(([id, name]) => `<button class="tab gtab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}"><span class="wt-ic" aria-hidden="true">${({ wskin: '🫧', wfx: '✨', wdeco: '👑', warena: '🏟' })[id] || ''}</span><b>${name}</b></button>`).join('')}</div>`
+      ? `<div class="ward-tabs">${view.tabs.map(([id, name]) => `<button class="tab gtab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${hubLogoSVG(({ wskin: 'skin', wfx: 'fx', wdeco: 'deco', warena: 'arena' })[id], 22).replace('class="hub-logo"', 'class="tab-ico"')}<b>${name}</b></button>`).join('')}</div>`
       : view === SHOP_VIEWS.goals
       ? `<div class="goal-tabs4">${view.tabs.map(([id, name]) => { const [d, n] = goalCount(id); return `<button class="tab gtab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}" style="--hc:${HUB_ICON['g_' + id][0]}">${hubLogoSVG('g_' + id, 30).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${name}</b><small>${d}/${n}</small></span></button>`; }).join('')}</div>`
       : view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
@@ -1360,7 +1360,7 @@
     ['эффект поедания', 'burst', '#ff9a3d'], ['след', 'trail', '#22e6ff'], ['аура', 'aura', '#b26bff'],
     ['босс-рейд', 'skull', '#ff3d6e'], ['рейд', 'skull', '#ff3d6e'], ['боссы', 'skull', '#ff3d6e'], ['боты', 'robot', '#7fe8ff'],
     ['сундук', 'hub:chest'], ['из сундуков', 'hub:chest'], ['каких сколько', 'hub:chest'],
-    ['над головой', 'hat', '#ff6ad5'], ['рамки', 'frame', '#22e6ff'], ['титулы', 'tag', '#ffd23f'], ['фоны профиля', 'image', '#7fe8ff'],
+    ['над головой', 'hub:deco'], ['рамки', 'hub:p_frame'], ['титулы', 'hub:p_title'], ['фоны профиля', 'hub:p_bg'],
     ['скины', 'hub:skin'], ['эффекты', 'hub:fx'], ['питомц', 'hub:pet'], ['способност', 'hub:abil'],
     ['рост', 'sprout', '#3dffa2'], ['движение', 'bolt', '#ffd23f'], ['защита', 'shield', '#7fe8ff'], ['награды', 'gift', '#ff9a3d'],
     ['магазин', 'shop', '#22e6ff'], ['испытани', 'target', '#ff6ad5'], ['легенд', 'crown', '#ffd23f'], ['праздни', 'gift', '#ff6ad5'], ['обучение', 'cap', '#7fe8ff'],

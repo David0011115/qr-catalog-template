@@ -26,6 +26,8 @@
     duo_shield: () => evoShader(`vec3 q=normalize(vP); vec2 uv=vec2(atan(q.z,q.x)*2.2,asin(q.y)*3.); vec2 r=vec2(1.,1.732),hh=r*.5; vec2 a=mod(uv,r)-hh,b=mod(uv-hh,r)-hh; vec2 g=dot(a,a)<dot(b,b)?a:b; g=abs(g); float hx=max(dot(g,vec2(.866,.5)),g.y); float e=smoothstep(.42,.5,hx); float p=.5+.5*sin(t*2.-length(uv)*.8); ${LIT} gl_FragColor=vec4(mix(vec3(.04,.18,.2),vec3(.08,.32,.3),p*.4)*l+e*vec3(.35,1.,.8)*(.6+.6*p)+f*vec3(.4,1.,.85)*.5,1.);`),
     duo_const: () => evoStd(0x0a1030, { roughness: .3, metalness: .4, emissive: 0x0a1440, emissiveIntensity: .7 }),
   };
+  // forms II–III of the black hole glow a warm gold, brighter (as in the reference): [colour from form II, strength I, strength II–III]
+  const EVO_RIM2 = { lg_worlds: ['#ffb070', 1.5, 2.2] };
   const EVO_RIM = { lg_worlds: '#ff6a3d', lg_eternal: '#9fd8ff', cs_q4: '#ff4fd8', hc_berserk: '#ff1a1a', duo_twin: '#7affd0', duo_shield: '#5affc8', duo_const: '#8aa8ff' };
 
   // ---- the extras of each form: (g, F, full) adds meshes to g and returns a tick (t, dt) ----
@@ -37,9 +39,11 @@
         vertexShader: 'varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
         fragmentShader: EVO_NOISE + 'uniform float t; uniform float k; varying vec3 vP; void main(){ float d=length(vP.xy); float a=atan(vP.y,vP.x); float band=smoothstep(1.25,1.45,d)*(1.-smoothstep(1.9,2.75,d)); float sw=fbm(vec3(cos(a)*d*2.,sin(a)*d*2.,t*.4)+vec3(a*1.5-t*1.2/d,0.,0.)); vec3 hot=mix(vec3(1.,.25,.35),vec3(1.,.82,.45),smoothstep(1.9,1.3,d)); float i=band*(.45+sw*1.1)*k; gl_FragColor=vec4(hot*i,i); }' });
       const disk = new THREE.Mesh(new THREE.RingGeometry(1.2, 2.8, 96, 1), diskMat(F >= 3 ? 1.6 : 1.15)); disk.rotation.x = -1.2; g.add(disk);
-      let d2 = null, ph = null; if (F >= 2) { d2 = new THREE.Mesh(new THREE.RingGeometry(1.25, 2.3, 96, 1), diskMat(.75)); d2.rotation.set(-.35, .5, .4); g.add(d2); ph = ring(1.2, .025, 0xffe0a0, .9); g.add(ph); }
+      let d2 = null, ph = null; if (F >= 2) { d2 = new THREE.Mesh(new THREE.RingGeometry(1.25, 2.3, 96, 1), diskMat(.75)); d2.rotation.set(-.35, .5, .4); g.add(d2); ph = ring(1.2, .025, 0xffe0a0, .9); g.add(ph);
+        // the photon ring always faces the camera, like in the reference (it was fixed in the group and read as a white loop across the hole)
+        const q = new THREE.Quaternion(); ph.onBeforeRender = (r, sc, cam) => { ph.parent.getWorldQuaternion(q); ph.quaternion.copy(q.invert().multiply(cam.quaternion)); ph.updateMatrixWorld(); }; }
       const jets = []; if (F >= 3 && full) [1, -1].forEach(s => { const j = new THREE.Mesh(new THREE.ConeGeometry(.28, 3.2, 20, 1, true), evoGlow(0x9fd8ff, .35)); j.material.side = THREE.DoubleSide; j.position.y = s * 2.4; j.rotation.x = s > 0 ? Math.PI : 0; g.add(j); jets.push(j); });
-      return (t, dt) => { disk.rotation.z += dt * .6; if (d2) d2.rotation.z -= dt * .45; if (ph) ph.rotation.set(0, 0, 0); jets.forEach((j, i) => { j.material.opacity = .25 + .15 * Math.sin(t * 7 + i); }); };
+      return (t, dt) => { disk.rotation.z += dt * .6; if (d2) d2.rotation.z -= dt * .45; jets.forEach((j, i) => { j.material.opacity = .25 + .15 * Math.sin(t * 7 + i); }); };
     },
     lg_tycoon(g, F, full) {
       const coin = s => new THREE.Mesh(new THREE.CylinderGeometry(s, s, s * .2, 20), evoStd(0xffcc33, { metalness: .9, roughness: .25, emissive: 0x6a4a00, emissiveIntensity: .5 }));
@@ -183,10 +187,11 @@
     const F = vis.evoF || (mine ? Math.max(1, evoForm(s.id)) : 1), full = mine && QUALITY !== 'low';
     const g = new THREE.Group(); g.userData.F = F;
     if (EVO_BODY[s.id]) { g.add(new THREE.Mesh(sphereGeo, evoMat(s.id, EVO_BODY[s.id]))); vis.mesh.material.visible = false; }
-    if (EVO_RIM[s.id]) { const rim = new THREE.Mesh(sphereGeo, evoMat('rim' + s.id + F, () => evoRim(EVO_RIM[s.id], F >= 2 ? 1.6 : 1.1))); rim.scale.setScalar(1.12); g.add(rim); }   // only the rim is bigger (g.add() returns the group — scaling it buried the eyes)
+    if (EVO_RIM[s.id]) { const R2 = EVO_RIM2[s.id], rim = new THREE.Mesh(sphereGeo, evoMat('rim' + s.id + F, () => R2 ? evoRim(F >= 2 ? R2[0] : EVO_RIM[s.id], F >= 2 ? R2[2] : R2[1]) : evoRim(EVO_RIM[s.id], F >= 2 ? 1.6 : 1.1))); rim.scale.setScalar(1.12); g.add(rim); }   // only the rim is bigger (g.add() returns the group — scaling it buried the eyes)
     if (mine && EVO_EXTRA[s.id]) vis.evoTick = EVO_EXTRA[s.id](g, F, full);
     vis.evo = g; vis.mesh.add(g);
-    if (vis.head && s.id === 'lg_eternal') vis.head.visible = false;   // the wreath of «Вечный чемпион» is drawn by its form (not the old gold one)
+    if (vis.shine) vis.shine.visible = false;   // the old legend gleam (a lightning bolt) is not part of the evolved look
+    if (vis.head && (s.id === 'lg_eternal' || s.id === 'lg_worlds')) vis.head.visible = false;   // the wreath of «Вечный чемпион» is drawn by its form (not the old gold one)
   }
   function evoTick(vis, now) { EVO_T.value = now / 1000; if (vis.evoTick) vis.evoTick(now / 1000, Math.min(.05, (now - (vis.evoLast || now)) / 1000)); vis.evoLast = now; }
 

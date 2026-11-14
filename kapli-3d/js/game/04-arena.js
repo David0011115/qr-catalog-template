@@ -277,15 +277,17 @@
     if (mode !== 'survival') return 2;
     return stats.wave >= 10 ? 4 : stats.wave >= 5 ? 3 : 2;
   }
-  function spawnBoss() {
+  // want: a kind asked for by a «связка» of «Выживание» (one boss over the usual cap is allowed for it); near: spawn next to it
+  function spawnBoss(want = null, near = null) {
     const active = bossOwners.filter(o => o.cells.length);
-    if (active.length >= maxBosses()) return false;
+    if (active.length >= maxBosses() + (want ? 1 : 0)) return false;
     const surv = mode === 'survival';
     const dupesOk = surv && stats.wave >= 5;
-    let pool = bossOwners.filter(o => !o.cells.length && (dupesOk || !active.some(a => a.bossType === o.bossType)));
+    let pool = want ? bossOwners.filter(o => !o.cells.length && o.bossType === want)
+      : bossOwners.filter(o => !o.cells.length && (dupesOk || !active.some(a => a.bossType === o.bossType)));
     // one owner per kind unless duplicates are allowed
-    if (!dupesOk) pool = pool.filter((o, i, arr) => arr.findIndex(x => x.bossType === o.bossType) === i);
-    if (pool.length > 1) pool = pool.filter(o => o.bossType !== lastBoss);
+    if (!dupesOk && !want) pool = pool.filter((o, i, arr) => arr.findIndex(x => x.bossType === o.bossType) === i);
+    if (pool.length > 1 && !want) pool = pool.filter(o => o.bossType !== lastBoss);
     if (!pool.length) return false;
     const o = pool[Math.floor(Math.random() * pool.length)], b = BOSS_TYPES[o.bossType];
     let mass = b.mass(total(player));
@@ -295,15 +297,25 @@
       const biggest = Math.max(0, ...player.cells.map(c => c.mass));
       mass = Math.min(SURV_BOSS_CAP, Math.max(mass, biggest * 1.4) * ModeX.survGrow(stats.wave));
     }
-    const [x, z] = safeSpot(30);
+    const [x, z] = near ? [Math.max(-R * .8, Math.min(R * .8, near.x + 9)), Math.max(-R * .8, Math.min(R * .8, near.z + 9))] : safeSpot(30);
     addCell(o, x, z, mass, o.free.pop());
-    o.wave = stats.wave || 1;
+    o.wave = stats.wave || 1; o.mate = null;
     o.tpT = 5;
     o.life = b.life * (surv ? 1.5 : 1); o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3; o.spawnT = 4;
     lastBoss = o.bossType;
     rebuildCells();
-    toast(surv ? `Волна ${stats.wave}: ${b.name}` : `Босс ${b.name}: ${b.about}`); Sound.play('boss');
-    return true;
+    if (!want) toast(surv ? `Волна ${stats.wave}: ${b.name}` : `Босс ${b.name}: ${b.about}`); Sound.play('boss');
+    return o;
+  }
+  // 2.7 «Выживание»: every 3rd wave is a «связка» — two bosses that help each other come together;
+  // while both are alive and close, they are 10% faster
+  function spawnCombo(cb) {
+    const a = spawnBoss(cb.a); if (!a) return spawnBoss();
+    const b = spawnBoss(cb.b, a.cells[0]);
+    if (b) { a.mate = b; b.mate = a; }
+    toast(`Волна ${stats.wave} — связка «${cb.name}»: ${BOSS_TYPES[cb.a].name} + ${BOSS_TYPES[cb.b].name}. ${cb.how}`);
+    stats.combos = (stats.combos || 0) + 1;
+    return a;
   }
   function spawnMinion(queen) {
     const m = minions.find(o => !o.cells.length);

@@ -10,8 +10,8 @@
   const dayMode = () => { let h = 7; for (const ch of today) h = (h * 31 + ch.charCodeAt(0)) % 100003; return DAY_POOL[h % DAY_POOL.length]; };
   const DAY_MARK = '<span class="day-mark">🔥 режим дня · ◆ ×1,25</span>';
   const ModeX = (() => {
-    const MILES = [[1000, 30], [3000, 60], [6000, 100], [10000, 160]];
-    const ESC_S = 180, ESC_MAX = 4, RUSH_S = 30;
+    const MILES = [[1000, 30], [3000, 60], [6000, 100], [10000, 160], [15000, 220], [20000, 300], [25000, 400], [30000, 600]];   // 2.7: up to 30 000, the last gives «Вершина»
+    const ESC_S = 180, ESC_MAX = 4, RUSH_S = 45;
     const RULES = [
       { id: 'bonus2', name: 'Двойные бонусы', about: 'бонусы появляются вдвое чаще' },
       { id: 'fastbots', name: 'Быстрые боты', about: 'боты на 15% быстрее' },
@@ -55,13 +55,15 @@
     const solo = () => !stats.ranked && !stats.tutorial && !stats.chaos && !DuoM.on;
 
     function start() {
-      rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0;
+      rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = [];
       document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
       crownGround = null; hc = { speed: 0, absorb: 0, cd: 0 }; hcMile = 0; hcOffer = null; hcPanel(null);
       nextRing.visible = false;
       if (mode === 'royale') { zc = { x: 0, z: 0 }; zst = 0; zph = 'hold'; zt = 20; zoneR = R; zPlan(); }
       if (mode === 'crown') { crownHolder = null; { const an = Math.random() * 6.283; crownGround = { x: Math.cos(an) * R * .4, z: Math.sin(an) * R * .4 }; } [player, ...bots].forEach(o => o.crownT = 0); setTimeout(() => { if (running && mode === 'crown') toast('Корона лежит на поле (♛ на мини-карте) — хватай! Дальше она переходит только к тому, кто съест владельца'); }, 1500); }
+      // 2.7: in «Захват короны» bosses do not wear their crowns — the only crown on the field is the one to fight for
+      bossOwners.forEach(o => [...o.free, ...o.cells.map(c => c.vis)].forEach(v => { if (v && v.crown) v.crown.visible = mode !== 'crown'; }));
       if (mode === 'hardcore') effects.shield = Math.max(effects.shield, 7);   // a longer safe start: one life only
       if (mode === 'timed' && solo()) {
         rule = RULES[(Math.random() * RULES.length) | 0]; stats.timedRule = rule.id;
@@ -76,12 +78,18 @@
         while (mile < MILES.length && m >= MILES[mile][0]) {
           const [goal, coins] = MILES[mile++]; stats.modeXCoins += coins;
           toast(`Веха ${goal.toLocaleString('ru-RU')}! +${coins} ◆`); Sound.play('level');
+          if (goal === 30000) {   // the top: a title once, a legendary chest every time
+            save.special.push({ kind: 'challenge', rar: 'legendary', title: 'Вершина' });
+            if (!save.decor.includes('tt_summit')) { save.decor.push('tt_summit'); setTimeout(() => toast('Вершина «Классики»: титул «Вершина» и легендарный сундук!'), 1400); }
+            else setTimeout(() => toast('Вершина «Классики»: легендарный сундук!'), 1400);
+            persist();
+          }
           if (player.cells.length) { const [x, z] = centerOf(player), r = cellR(mainOf(player)); for (let k = 0; k < 5; k++) emit(x, r + 1, z, k % 2 ? '#ffd23f' : '#22e6ff', 18, 12 + k * 2, .9); wave(x, z, '#ffd23f', r, r + 26, .8); }
         }
         const e = Math.min(ESC_MAX, Math.floor(stats.time / ESC_S));
         if (e > esc) { esc = e; stats.modeXCoins += 20 * esc; toast(`Арена накаляется: уровень ${esc + 1}. Боты быстрее, боссы чаще, награда выше (+${20 * esc} ◆)`); Sound.play('boss'); }
       }
-      if (mode === 'timed' && !rushOn && stats.time >= TIMED_LEN - RUSH_S) { rushOn = true; toast('Финальный рывок! 30 секунд, крошки вдвое сытнее'); Sound.play('level'); }
+      if (mode === 'timed' && !rushOn && stats.time >= TIMED_LEN - RUSH_S) { rushOn = true; toast(`Финальный рывок! ${RUSH_S} секунд, крошки вдвое сытнее`); Sound.play('level'); }
       if (mode === 'timed' && stats.midRank === undefined && stats.time >= TIMED_LEN / 2) stats.midRank = rankOf();
       if (mode === 'crown') for (const o of bossOwners) for (const c of o.cells) c.mass = Math.max(20, c.mass * (1 - .008 * dt));   // the crown's bosses melt too
       if (mode === 'hardcore' && !stats.ranked) {
@@ -148,6 +156,21 @@
       return 15;
     }
     const survGrow = w => Math.pow(1.12, w - 1);
+    // 2.7: «связки» — pairs of the bosses that already exist, chosen so that one helps the other
+    const COMBOS = [
+      { name: 'Ловушка', a: 'frost', b: 'hunter', how: 'Морозец замедляет — Шустрик догоняет' },
+      { name: 'Засада', a: 'chameleon', b: 'hunter', how: 'Шустрик гонит тебя прямо к невидимому Мимику' },
+      { name: 'Рой', a: 'queen', b: 'splitter', how: 'прислужники и осколки со всех сторон' },
+      { name: 'Стена', a: 'giant', b: 'splitter', how: 'Громила перекрывает путь, осколки Делителя окружают' },
+      { name: 'Ледяной рой', a: 'frost', b: 'queen', how: 'прислужники в ледяном облаке' },
+      { name: 'Тень великана', a: 'giant', b: 'chameleon', how: 'за Громилой прячется Мимик' },
+    ];
+    let comboOrder = [];
+    function survCombo() {
+      if (stats.wave < 3 || stats.wave % 3) return null;
+      if (!comboOrder.length) comboOrder = COMBOS.map((c, i) => [Math.random(), c]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+      return comboOrder.pop();
+    }
     // «На время»: a reward for every place, plus 5 ◆ for each place won since the middle of the round
     function placeBonus(r) {
       const base = [40, 25, 15, 12, 10, 8, 7, 6][r - 1] || 5;
@@ -164,7 +187,7 @@
       },
       dayMode, dayMark: id => (id === dayMode() ? DAY_MARK : ''),
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
-      start, tick, end, survWave, survGrow, placeBonus, crownRules, crownBite,
+      start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder
         stats.wave = crownWave() + 1;
@@ -181,7 +204,7 @@
       cdK: o => (mode === 'hardcore' && o === player && hc.cd ? Math.pow(.9, hc.cd) : 1),
       gainK: () => (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? 1 + .05 * hc.absorb : 1),
       bonusK: () => (rule && rule.id === 'bonus2' ? .5 : 1),
-      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .9 : 1) * (o.isPlayer && mode === 'hardcore' ? 1 + .05 * hc.speed : 1) *
+      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? 1 + .05 * hc.speed : 1) *
         (o.kind === 'bot' ? (mode === 'classic' ? 1 + .04 * esc : rule && rule.id === 'fastbots' ? 1.15 : 1) : 1),
       bossK: () => (mode === 'classic' ? Math.max(.5, 1 - .125 * esc) : 1),
       quitLabel: () => (mode === 'classic' && stats.time >= 300 ? 'Забрать награду и выйти' : 'Завершить раунд'),

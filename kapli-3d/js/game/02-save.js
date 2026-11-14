@@ -407,6 +407,7 @@
   }
   // one-time reset of score stats after the runaway-growth bug
   if (!save.scoreReset1) { save.best = 0; save.bests.classic = 0; save.coins = 0; save.scoreReset1 = true; persist(); }
+  if (!save.timedReset27) { save.bests.timed = 0; save.timedReset27 = true; }   // 2.7: «На время» is 5 minutes now, the 3-minute records start again
   if (TEST_MODE) save.coins = Math.max(save.coins, 999999);
   // every level pays 50 × level coins; every 5th a chest; 10/20/30/40/50 a frame or a title
   const levelChest = L => L % 10 ? null : L <= 10 ? 'rare' : L <= 30 ? 'epic' : 'legendary';   // 1.7.0: every 10 levels

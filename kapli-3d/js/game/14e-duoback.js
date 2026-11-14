@@ -270,7 +270,7 @@
       pre(role, g) {
         Di = Math.max(0, Math.min(2, +g.diff || 0)); D = DIFF[Di]; pHome = role === 'host' ? -1 : 1;
         wv = 0; ph = 1; bt = 6; spec = null; meteors = []; offers = {}; picked = {}; shared = {}; co = prevCo = null;
-        team = { bosses: 0, specials: 0, bots: 0, resp: 0, s5: 0 };
+        team = { bosses: 0, specials: 0, bots: 0, resp: 0, s5: 0, hp: 0, hg: 0 };   // hp / hg: help points of the host and of the guest
         for (const o of [player, rival()]) { o.db = { mass: 0, speed: 0, armor: 0, absorb: 0, cd: 0 }; o.dbAbs = 1; }
         allBoss.forEach(o => { [...o.cells].forEach(removeCell); o.wasOn = false; });
       },
@@ -292,24 +292,27 @@
         tickMeteors(dt);
         if (ph === 1) { bt -= dt; if (bt <= 0) startWave(); }
         else if (!spec && !regOwners.some(o => o.cells.length)) {
-          if (wv >= MAX_WAVE && running) { DuoM.result('coop', 0, 'win', { w: MAX_WAVE, t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5, won: 1 }); return; }
+          if (wv >= MAX_WAVE && running) { DuoM.result('coop', 0, 'win', { w: MAX_WAVE, t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5, hp: team.hp, hg: team.hg, won: 1 }); return; }
           startBreak();
         }
         co = makeCo();
         if (!player.cells.length && !rival().cells.length && running) {
           const passed = ph === 1 ? wv : wv - 1;
-          DuoM.result('coop', 0, 'dead', { w: Math.max(0, passed), t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5 });
+          DuoM.result('coop', 0, 'dead', { w: Math.max(0, passed), t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5, hp: team.hp, hg: team.hg });
         }
       },
       lost(o) { team.resp++; },
       anyLost(o, eater) {
         if (!eater || !isPl(eater)) return;
+        // 2.7: help points — for bringing the partner back sooner (+1) and for eating a boss that was after the partner (+3)
+        const other = eater === player ? rival() : player, help = n => { if (eater === player) team.hp += n; else team.hg += n; };
         if (o.kind === 'bot') {
           team.bots++;
-          const other = eater === player ? rival() : player;
-          if (!other.cells.length && other.respawnAt !== undefined) { other.respawnAt = Math.max(stats.time + .5, other.respawnAt - 1); if (other === player) toast('Напарник ускорил твоё возвращение: −1 с'); }
+          if (!other.cells.length && other.respawnAt !== undefined) { other.respawnAt = Math.max(stats.time + .5, other.respawnAt - 1); help(1); if (other === player) toast('Напарник ускорил твоё возвращение: −1 с'); }
         } else if (o.kind === 'boss' && o.dbType && !o.dbSpec) {
           team.bosses++; if (eater !== player) { toast(`${o.name} повержен — его съел ${eater.name}!`); Sound.play('bossDown'); }
+          const om = other.cells.length ? mainOf(other) : null, bc = o.cells[0] || null;
+          if (om && ((o.target && o.target.owner === other) || (bc && Math.hypot(bc.x - om.x, bc.z - om.z) < 25))) { help(3); if (eater === player) toast('Ты прикрыл напарника: +3 очка помощи'); }
           if (o.dbType === 'twins') regOwners.forEach(x => { if (x !== o && x.dbType === 'twins' && x.cells.length) x.enr = 1; });
         }
       },
@@ -373,10 +376,15 @@
         persist();
         if (!DuoM.practice && DuoM.role === 'host') Net.duoCoop(x.df || 0, rival().pid, w, x.t || 0, (x.b || 0) + (x.s || 0), x.k || 0, x.r || 0);   // the room's creator sends the pair's run
         stats.duoHero = { v: w, l: 'волн пройдено' }; stats.duoWave = w; stats.duoSpecial5T = x.s5 || 0;
+        // 2.7: help points — 15 ◆ each (× difficulty); over all runs: «Надёжное плечо» at 100, the frame «Плечом к плечу» at 300
+        const myHelp = Math.max(0, Math.min(500, +(DuoM.role === 'host' ? x.hp : x.hg) || 0));
+        stats.duoHelp = myHelp; t.help = (t.help || 0) + myHelp; persist();
+        const give = (id, n, name) => { if (t.help >= n && !save.decor.includes(id)) { save.decor.push(id); persist(); setTimeout(() => toast(`Помощь напарнику ×${n}: награда «${name}»!`), 1600); } };
+        give('tt_shoulder', 100, 'Надёжное плечо'); give('fr_shoulder', 300, 'Плечом к плечу');
         stats.bossCoins = 0; stats.bossXp = Math.round((w * 8 + (x.s || 0) * 30) * df.coins);   // the same reward for both players
         const won = !!x.won;
         if (won) { t.wins = (t.wins || 0) + 1; persist(); }
-        return { win: won, bonus: Math.round((w * 12 + (x.b || 0) * 6 + (x.s || 0) * 60 + (won ? 300 : 0)) * df.coins),
+        return { win: won, bonus: Math.round((w * 12 + (x.b || 0) * 6 + (x.s || 0) * 60 + myHelp * 15 + (won ? 300 : 0)) * df.coins),
           title: won ? `Все ${MAX_WAVE} волн пройдены! · ${df.name}` : w ? `Пройдено волн: ${w} · ${df.name}` : `Первая волна оказалась сильнее · ${df.name}` };
       },
       dbg(cmd, v) {   // test build only
@@ -403,7 +411,7 @@
         if (!t || !t.games) return '<p class="hint duo-stats" style="margin:0">Здесь появятся ваши рекорды: волны на каждой сложности и лучшие пары.</p>';
         const rows = DIFF.map(d => `<span>${d.name} <b>${t.best[d.id] || 0}</b></span>`).join('');
         const all = DIFF.flatMap(d => (t.top[d.id] || []).map(m => ({ ...m, dn: d.name }))).sort((a, b) => b.w - a.w || a.t - b.t).slice(0, 5);
-        return `<div class="duo-stats"><div class="duo-st-row"><span>Забегов <b>${t.games}</b></span>${rows}</div>` +
+        return `<div class="duo-stats"><div class="duo-st-row"><span>Забегов <b>${t.games}</b></span>${rows}<span>Помощь <b>${t.help || 0}</b></span></div>` +
           `<ol class="duo-top">${all.map(m => `<li><b>${m.w} волн</b> · ${m.dn} · с ${escHtml(m.n)} · ${fmtTime(m.t)} · боссов ${m.b + m.s} · ботов ${m.k} · возвращений ${m.r}</li>`).join('')}</ol></div>`;
       },
     };

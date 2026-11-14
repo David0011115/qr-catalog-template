@@ -546,6 +546,8 @@
     if (stats.starKills) cellsHtml.push(['Звёзд повержено', stats.starKills]);
     if (stats.minions) cellsHtml.push(['Прислужников', stats.minions]);
     if (mode === 'survival') cellsHtml.push(['Волна', stats.wave]);
+    if (mode === 'survival' && stats.combos) cellsHtml.push(['Связок боссов', stats.combos]);
+    if (mode === 'duoback' && stats.duoHelp !== undefined) cellsHtml.push(['Помощь напарнику', `${stats.duoHelp} · +${Math.round(stats.duoHelp * 15)} ◆`]);
     if (stats.ejects) cellsHtml.push(['Выбросов', stats.ejects]);
     if (placeBonus) cellsHtml.push(['Бонус режима', `+${placeBonus} ◆`]);
     if (mode === 'crown') cellsHtml.push(['С короной', fmtTime(player.crownT)]);

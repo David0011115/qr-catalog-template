@@ -8,8 +8,8 @@
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
   const BOSS_MASS_CAP = 12000; // ordinary bosses; survival and raid have separate caps
   const MODES = {
-    classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы с наградой и арена, которая накаляется каждые 3 минуты' },
-    timed:    { name: 'На время',       desc: '3 минуты: случайное правило раунда, финальный рывок и награда за любое место' },
+    classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы до 30 000 с наградой и арена, которая накаляется каждые 3 минуты' },
+    timed:    { name: 'На время',       desc: '5 минут: случайное правило раунда, финальный рывок и награда за любое место' },
     survival: { name: 'Выживание',      desc: 'Волна боссов каждые 15 с. Боссы тают: к концу жизни их можно съесть. Каждая 5-я волна особая, после неё передышка' },
     split:    { name: 'Только деление', desc: 'Без рывка, деление раз в 3 с, до 10 частей' },
     crown:    { name: 'Захват короны',  desc: 'Корона лежит на поле; дальше она переходит только к тому, кто съест владельца. Владелец медленнее, на него охотятся боты и боссы, волны крепчают. До поражения' },
@@ -23,7 +23,7 @@
     raid:     { name: 'Босс-рейд',      desc: 'Пара колоссов недели: пока близнецы рядом, их связь гасит половину урона — разведи их. Урон копится между попытками, 3 попытки в день, за победу — уникальный скин и постоянные бонусы рейда' },
     royale:   { name: 'Королевская битва', desc: 'Зона сужается ступенями и смещается — следующий круг виден заранее, в нём падают бонусы. Боты не возрождаются, побеждает последний. Только в лиге, в свой сезон' },
   };
-  const TIMED_LEN = 180, PLACE_BONUS = [40, 25, 15];
+  const TIMED_LEN = 300, PLACE_BONUS = [40, 25, 15];
   const RACE_GOAL = 4000, TEAM_LEN = 240, DAILY_GOAL = 3000, ALLY_COLOR = '#6fa8ff';
   const LOWER_BETTER = { race: true, giant: true };
   // v46: «Только деление» and «Охота на Колосса» were removed: «Только деление» lives on as a daily modifier, the Colossus as the weekly raid boss
@@ -545,6 +545,9 @@
     tt('tt_invincible', 'Непобедимый', 'legendary', '#ffd23f', '#ffffff', '★', { legend: 'wins2' }),
     tt('tt_millionaire', 'Миллионер', 'legendary', '#ffd23f', '#3dffa2', '★', { legend: 'coins2' }),
     // achievement lines, step III
+    tt('tt_summit', 'Вершина', 'legendary', '#ffd23f', '#22e6ff', '▲', { src: '«Классика»: возьми последнюю веху — 30 000 массы.' }),
+    tt('tt_shoulder', 'Надёжное плечо', 'epic', '#3dffa2', '#22e6ff', '❂', { src: '«Спина к спине»: 100 очков помощи напарнику за все забеги.' }),
+    fr('fr_shoulder', 'Плечом к плечу', 'legendary', '#3dffa2', '#22e6ff', { src: '«Спина к спине»: 300 очков помощи напарнику за все забеги.' }),
     tt('tt_hardened', 'Несгибаемый', 'epic', '#ff6a00', '#ff2d55', '✦', { src: '«Хардкор»: 3 раунда подряд с массой 3 000 и больше.' }),
     fr('fr_tempered', 'Закалка', 'legendary', '#ff6a00', '#ffd23f', { src: '«Хардкор»: 5 раундов подряд с массой 3 000 и больше.' }),
     tt('tt_ln_duo', 'Несокрушимые', 'epic', '#3dffa2', '#22e6ff', '❖', { line: 'duo' }),
@@ -568,7 +571,7 @@
   // 2.1.0: mode cards — colours, icon (24×24 strokes) and short tags for each mode
   const MODE_ART = {
     classic:  { c: '#22e6ff', c2: '#7b3dff', ic: '<circle cx="10" cy="13" r="6.5"/><circle cx="8" cy="11.5" r="1" fill="currentColor"/><circle cx="12" cy="11.5" r="1" fill="currentColor"/><circle cx="19.5" cy="7.5" r="1.4"/><circle cx="20.5" cy="13.5" r="1.1"/><circle cx="18" cy="18.5" r="1"/>', tags: ['до поражения', 'боссы'] },
-    timed:    { c: '#ffd23f', c2: '#ff9a3d', ic: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M12 13.5l3 2M9.5 2.8h5M12 2.8v3M18.5 6.5l1.5-1.5"/>', tags: ['3 минуты', 'награда за место'] },
+    timed:    { c: '#ffd23f', c2: '#ff9a3d', ic: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M12 13.5l3 2M9.5 2.8h5M12 2.8v3M18.5 6.5l1.5-1.5"/>', tags: ['5 минут', 'награда за место'] },
     survival: { c: '#ff3d6e', c2: '#7a0030', ic: '<path d="M5 11a7 7 0 0 1 14 0v3l-2 2v3.5H7V16l-2-2z"/><circle cx="9.3" cy="12" r="1.7"/><circle cx="14.7" cy="12" r="1.7"/><path d="M10.5 19.5v-2M13.5 19.5v-2"/>', tags: ['волны боссов', 'каждые 15 с'] },
     crown:    { c: '#ffd23f', c2: '#ff4fd8', ic: '<path d="M3.5 18.5h17L19 8l-4.5 4L12 4.5 9.5 12 5 8z"/><path d="M3.5 21h17"/>', tags: ['до поражения', 'время с короной'] },
     rbuild:   { c: '#b26bff', c2: '#ff4fd8', ic: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/>', tags: ['3 случайные способности', 'опыт ×1,2'], isNew: true },

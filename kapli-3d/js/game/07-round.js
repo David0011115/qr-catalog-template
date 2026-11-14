@@ -112,8 +112,13 @@
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.25 + .1), flee: p0.flee * .8 } : p0;
     const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense;
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
+      // 2.7: bosses go for the holder wherever it is; a bot bigger than the holder hunts it across the whole arena;
+      // a smaller bot goes for any piece of the holder it can swallow (after a split) within a wide range
       const t = mainOf(crownHolder), d = Math.hypot(t.x - c.x, t.z - c.z);
-      if (canEat(c, t) && d < sense * (o.kind === 'boss' ? 4 : 2.5)) { o.target = t; o.tx = t.x; o.tz = t.z; return; }
+      if (o.kind === 'boss' || canEat(c, t)) { o.target = t; o.tx = t.x; o.tz = t.z; return; }
+      let bit = null, bd = sense * 3;
+      for (const h of crownHolder.cells) { const dh = Math.hypot(h.x - c.x, h.z - c.z); if (dh < bd && canEat(c, h)) { bd = dh; bit = h; } }
+      if (bit) { o.target = bit; o.tx = bit.x; o.tz = bit.z; return; }
     }
     if (mode === 'royale' && running) { const Z = ModeX.zoneC; if (Math.hypot(c.x - Z.x, c.z - Z.z) > zoneR * .8) { o.tx = Z.x + (c.x - Z.x) * .3; o.tz = Z.z + (c.z - Z.z) * .3; o.target = null; return; } }   // run from the storm
     if (o.bossType === 'hunter' && player.cells.length) {
@@ -307,7 +312,7 @@
     if (bossesOn()) bossTimer -= dt;
     if (bossTimer <= 0) {
       // survival: a new wave every 15 s, even if the arena is full of bosses
-      if (mode === 'survival') { stats.wave++; spawnBoss(); bossTimer = ModeX.survWave(); }
+      if (mode === 'survival') { stats.wave++; const cb = ModeX.survCombo(); if (cb) spawnCombo(cb); else spawnBoss(); bossTimer = ModeX.survWave(); }
       else bossTimer = (spawnBoss() ? (dailyIs('bosses') ? 20 : 40 * ModeX.bossK()) : 5);
     }
     for (const o of bossOwners) {
@@ -401,7 +406,8 @@
         }
       } }
       // decay grows with size, so mass can't snowball forever
-      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.04 * U.guard : 1) * dt;
+      // 2.7: half as fast and only from 500 mass (a small drop does not melt); «Хардкор» keeps the old, harsh one
+      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss') c.mass -= c.mass * (mode === 'hardcore' ? 0.003 : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.04 * U.guard : 1) * dt;
     }
 
     // bonuses (player only)

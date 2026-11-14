@@ -35,6 +35,7 @@
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
     { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
     { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 40 000 массы за раунд (формы растут вместе со скином «Берсерк»)', test: () => (save.hcPeak || 0) >= 40000 },
+    { id: 'bg_hc_singularity', name: 'Сингулярный трон', rar: 'legendary', src: 'победа в «Хардкоре»: обе половины по 50 000 массы', test: () => !!save.hc100k },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
@@ -550,6 +551,20 @@
           for (const e of [.18, .58]) { const ex = px + s * r * e, ey = py - r * .1; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .14, r * .18, 0, 0, 6.29); x.fill(); x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + s * r * .05, ey, r * .075, 0, 6.29); x.fill(); }
         });
         break; }
+      case 'bg_hc_singularity': {   // exclusive 100K Hardcore reward: two halves orbit a singularity beneath a twin crown
+        const beat = .5 + .5 * Math.sin(t * 1.7), cx = w * .55, cy = h * .48, R0 = U * .22;
+        x.fillStyle = lin([[0, '#050713'], [.48, '#100b2d'], [1, '#03050d']]); x.fillRect(0, 0, w, h); stars(110, 223, .9, '#d8eaff');
+        x.save(); x.globalCompositeOperation = 'lighter';
+        for (let k = 0; k < 3; k++) { x.strokeStyle = k === 1 ? 'rgba(255,210,122,.6)' : 'rgba(130,170,255,.28)'; x.lineWidth = 1.2 + k * .5; x.beginPath(); x.ellipse(cx, cy, R0 * (1.15 + k * .28), R0 * (.38 + k * .09), -.28 + k * .22, 0, 6.283); x.stroke(); }
+        glow(cx, cy, R0 * 2.2, `rgba(145,105,255,${.18 + beat * .12})`);
+        const orb = (a, col, deep) => { const px = cx + Math.cos(a) * R0 * 1.42, py = cy + Math.sin(a) * R0 * .48; glow(px, py, R0 * .48, col, .85); const g = x.createRadialGradient(px - 5, py - 7, 1, px, py, R0 * .16); g.addColorStop(0, '#ffffff'); g.addColorStop(.3, col); g.addColorStop(1, deep); x.fillStyle = g; x.beginPath(); x.arc(px, py, R0 * .16, 0, 6.283); x.fill(); };
+        orb(t * .42, '#22e6ff', '#12315f'); orb(t * .42 + Math.PI, '#ff4fd8', '#4a174f');
+        x.fillStyle = '#02030a'; x.beginPath(); x.arc(cx, cy, R0 * .46, 0, 6.283); x.fill(); x.strokeStyle = `rgba(255,210,122,${.55 + beat * .4})`; x.lineWidth = 2.2; x.shadowColor = '#ffd27a'; x.shadowBlur = 12 + beat * 12; x.beginPath(); x.arc(cx, cy, R0 * .49, 0, 6.283); x.stroke(); x.shadowBlur = 0;
+        for (const p of pbgPts('hc100k-stars', 64, 229)) { const a = p.p + t * (.08 + p.s * .12), rr = R0 * (1.7 + p.q * 1.6); glow(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .52, 1.5 + p.s * 2.5, p.q > .5 ? 'rgba(255,210,122,.9)' : 'rgba(150,190,255,.8)', .35 + .4 * beat); }
+        x.restore();
+        x.save(); x.translate(cx, cy + R0 * .92); x.strokeStyle = '#ffd27a'; x.lineWidth = 3; x.beginPath(); x.moveTo(-R0 * .55, 0); x.lineTo(-R0 * .3, -R0 * .22); x.lineTo(0, -R0 * .04); x.lineTo(R0 * .3, -R0 * .22); x.lineTo(R0 * .55, 0); x.stroke(); x.fillStyle = '#fff2bd'; x.beginPath(); x.arc(0, -R0 * .04, 3 + beat * 2, 0, 6.283); x.fill(); x.restore();
+        x.globalAlpha = .22; x.fillStyle = '#fff6d8'; x.font = `bold ${Math.max(12, U * .13)}px Russo One, Arial Black, sans-serif`; x.textAlign = 'right'; x.fillText('100K', w * .94, h * .88); x.globalAlpha = 1; break;
+      }
       case 'bg_hc_arena': {   // «Хардкор» 75 000: a colosseum under a blood moon, chains, the red mist and the edges beating like a heart
         const beat = Math.pow(Math.max(0, Math.sin(t * 2.6)), 8);
         x.fillStyle = lin([[0, '#120104'], [.55, '#3a0408'], [1, '#120103']]); x.fillRect(0, 0, w, h);
@@ -916,10 +931,12 @@
     pbgCheck(first);
   }
   function pbgCheck(quiet) {
-    save.pbg = save.pbg || []; const got = [];
+    save.pbg = save.pbg || []; const got = []; let badgeAdded = false;
+    if (save.hc100k) { save.badges = save.badges || {}; if (!save.badges.hc100k) { save.badges.hc100k = save.hc100kAt || Date.now(); badgeAdded = true; } }
     for (const b of PBG) if (!save.pbg.includes(b.id) && b.test()) { save.pbg.push(b.id); got.push(b); }
     if ((save.totals.chaosMax || 0) >= 5 && !save.decor.includes('fr_sing')) { save.decor.push('fr_sing'); if (!quiet) toast('Новая рамка: «Горизонт сингулярности»'); }
     if (!quiet) got.forEach(b => toast(`Новый фон профиля: «${b.name}»`));
+    if (badgeAdded) persist();
     return got;
   }
 

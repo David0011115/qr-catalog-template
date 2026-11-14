@@ -73,7 +73,7 @@
   function dash() {
     if (DuoM.guest) { DuoM.act('dash'); return; }
     if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
-    player.dashT = 0.35 + 0.035 * U.light; player.dashCd = dashCdBase; stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
+    player.dashT = 0.35 + 0.035 * U.light; player.dashCd = dashCdBase * ModeX.hcK('dash'); stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     { const [x, z] = pCenterXZ(); abFlash('dash', x, z, null, 'dash'); }
     const cost = 0.03 * (1 - 0.08 * U.light);
     player.cells.forEach(c => c.mass = Math.max(START_MASS * 0.5, c.mass * (1 - cost)));
@@ -88,7 +88,7 @@
       const n = addCell(o, c.x + c.hx * r, c.z + c.hz * r, c.mass, o.free.pop());
       n.hx = c.hx; n.hz = c.hz;
       n.vx = c.hx * 75; n.vz = c.hz * 75;
-      c.mergeT = n.mergeT = mergeTime;
+      c.mergeT = n.mergeT = mergeTime * (o.isPlayer ? ModeX.hcK('merge') : 1);
       c.vis.jig = n.vis.jig = 1;
       emit(n.x, r, n.z, cellColor(c), 14, 14, .5);
       did = true;
@@ -391,7 +391,7 @@
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const fx2 = c.owner.eff;   // the second player of a match for two keeps their bonuses here
-      const r = cellR(c) + (isP ? pMagnet : fx2 && fx2.magnet > 0 ? 6 : 0);
+      const r = cellR(c) + (isP ? pMagnet + (ModeX.hcK('magnet') - 1) * (cellR(c) * .5 + 4) : fx2 && fx2.magnet > 0 ? 6 : 0);
       const gain = (isP ? pGain : fx2 && fx2.double > 0 ? 2 : 1) * (abOn('pulse', c.owner) ? 2 : 1) * (c.owner.dbAbs || 1);
       const gx0 = fgCell(c.x - r), gx1 = fgCell(c.x + r), gz0 = fgCell(c.z - r), gz1 = fgCell(c.z + r);
       for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) { const bucket = fgrid[gx * FGN + gz];
@@ -483,7 +483,7 @@
             }
           } else if (victim.kind === 'minion') { if (!victim.cells.length) stats.minions++; }
           else if (!victim.cells.length) {
-            stats.kills++; if (player.dashT > 0) stats.dashKills = (stats.dashKills || 0) + 1;
+            stats.kills++; ModeX.hcKill(); if (player.dashT > 0) stats.dashKills = (stats.dashKills || 0) + 1;
             if (victim.star) {   // a star bot: bonus coins and experience
               stats.starKills = (stats.starKills || 0) + 1; stats.bossCoins += STAR_COINS; stats.bossXp += 40; if (stats.firstStarT === undefined) stats.firstStarT = stats.time;
               toast(`Звезда «${victim.name}» повержена! +${STAR_COINS} ◆`); Sound.play('star');

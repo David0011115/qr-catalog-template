@@ -393,3 +393,11 @@
 .wsh-card .buy { width: 100%; margin-top: 2px; }
 .wsh-card em { position: absolute; top: 6px; right: 6px; font-style: normal; font-size: .62rem; background: rgba(0, 0, 0, .45); border-radius: 6px; padding: 1px 4px; }
 .wsh-foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 6px; } .wsh-foot small, .wsh-note { font-size: .7rem; color: var(--muted); }
+/* 2.7: «Хардкор» — boost cards by rarity, the test line */
+#hcPick .hc-card { position: relative; border: 2px solid var(--rc) !important; box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 45%, transparent); }
+#hcPick .hc-card.r3 { background: linear-gradient(160deg, rgba(255, 210, 63, .25), rgba(255, 79, 216, .12)) !important; animation: hcLeg 1.6s ease-in-out infinite; }
+@keyframes hcLeg { 50% { box-shadow: 0 0 26px rgba(255, 210, 63, .7); } }
+#hcPick .hc-rar { position: absolute; top: 4px; right: 8px; font: 800 .6rem var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--rc); }
+#hcDbg { position: fixed; left: 50%; top: max(6px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 30; pointer-events: none; padding: 3px 10px; border-radius: 8px;
+  background: rgba(0, 0, 0, .65); color: #ffe08a; font: 600 .66rem var(--body); white-space: nowrap; max-width: 96vw; overflow: hidden; text-overflow: ellipsis; }
+@media (prefers-reduced-motion: reduce) { #hcPick .hc-card.r3 { animation: none; } }

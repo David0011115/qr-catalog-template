@@ -22,8 +22,22 @@
     // «Захват короны»: the crown lies in the middle until someone takes it, then passes only to whoever eats its holder
     let crownGround = null, crownLast = { x: 0, z: 0 };
     // «Хардкор»: small boosts at 2 000 … 25 000 mass (pick one of two), no shields and no second lives (2.7: three more steps and «Таяние −10%»)
-    const HC_MILES = [2000, 5000, 10000, 15000, 20000, 25000], HC_BOOST = { speed: ['⚡', 'Скорость +5%'], absorb: ['🍽', 'Поглощение +5%'], cd: ['⏱', 'Перезарядка −10%'], melt: ['🧊', 'Таяние −10%'] };
-    let hc = { speed: 0, absorb: 0, cd: 0, melt: 0 }, hcMile = 0, hcOffer = null, hcT = 0;
+    // 2.7: 11 milestones up to 50 000; each card's rarity is never below the step's floor and may roll one step higher;
+    // values by rarity (common / rare / epic / legendary); one boost at most HC_CAP times a round
+    const HC_MILES = [2000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000];
+    const HC_TIER = [[0, .25], [0, .25], [1, .25], [1, .25], [2, .15], [2, .15], [2, .3], [2, .45], [2, .6], [2, .75], [3, 0]];   // [floor, chance of one step higher]
+    const HC_CAP = 3, HC_R = ['common', 'rare', 'epic', 'legendary'], HC_RN = ['Обычное', 'Редкое', 'Эпическое', 'Легендарное'];
+    const HC_BOOST = {   // [icon, name, values, kind: '+' adds a percent, '-' multiplies by (1 − percent)]
+      speed: ['⚡', 'Скорость', [4, 6, 8, 10], '+'], absorb: ['🍽', 'Поглощение', [4, 6, 8, 10], '+'], cd: ['⏱', 'Перезарядка способностей', [8, 12, 16, 20], '-'],
+      melt: ['🧊', 'Таяние', [8, 12, 16, 20], '-'], skin: ['🛡', 'Толстая кожа', [3, 5, 7, 9], '+'], magnet: ['🧲', 'Притяжение крошек', [10, 15, 20, 25], '+'],
+      dash: ['💨', 'Короткий рывок', [10, 15, 20, 25], '-'], merge: ['🔗', 'Быстрое слияние', [10, 15, 20, 25], '-'], predator: ['🩸', 'Хищник', [8, 10, 12, 15], '+'], coins: ['💰', 'Добытчик', [4, 6, 8, 10], '+'] };
+    const HC_ABOUT = { speed: 'быстрее', absorb: 'еда сытнее', cd: 'способности перезаряжаются быстрее', melt: 'масса тает медленнее', skin: 'боту надо быть крупнее, чтобы съесть тебя', magnet: 'крошки притягиваются издалека',
+      dash: 'рывок перезаряжается быстрее', merge: 'части сливаются быстрее', predator: 'после съеденного бота 2 с ты быстрее', coins: 'монеты за раунд' };
+    let hc = {}, hcN = {}, hcMile = 0, hcOffer = null, hcT = 0, hcPredT = 0, hcDbg = { m: 0, t: 0, gain: 0 };
+    const hcReset = () => { hc = {}; hcN = {}; Object.entries(HC_BOOST).forEach(([k, b]) => { hc[k] = b[3] === '+' ? 0 : 1; hcN[k] = 0; }); };
+    hcReset();
+    const hcK = k => (mode !== 'hardcore' ? 1 : HC_BOOST[k][3] === '+' ? 1 + hc[k] / 100 : hc[k]);
+    const hcLabel = (k, r) => { const b = HC_BOOST[k], v = b[2][r]; return `${b[1]} ${b[3] === '+' ? '+' : '−'}${v}%`; };
     // «Босс-рейд»: a glowing tether between the twins while they are close — then only half of the damage gets through
     const tether = new THREE.Mesh(new THREE.BoxGeometry(1, .35, .35), new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false }));
     tether.visible = false; scene.add(tether);
@@ -58,7 +72,7 @@
       rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = [];
       document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
-      crownGround = null; hc = { speed: 0, absorb: 0, cd: 0, melt: 0 }; hcMile = 0; hcOffer = null; hcPanel(null);
+      crownGround = null; hcReset(); hcMile = 0; hcOffer = null; hcPredT = 0; hcDbg = { m: 0, t: 0, gain: 0 }; hcPanel(null);
       nextRing.visible = false;
       if (mode === 'royale') { zc = { x: 0, z: 0 }; zst = 0; zph = 'hold'; zt = 20; zoneR = R; zPlan(); }
       if (mode === 'crown') { crownHolder = null; { const an = Math.random() * 6.283; crownGround = { x: Math.cos(an) * R * .4, z: Math.sin(an) * R * .4 }; } [player, ...bots].forEach(o => o.crownT = 0); setTimeout(() => { if (running && mode === 'crown') toast('Корона лежит на поле (♛ на мини-карте) — хватай! Дальше она переходит только к тому, кто съест владельца'); }, 1500); }
@@ -94,10 +108,14 @@
       if (mode === 'crown') for (const o of bossOwners) for (const c of o.cells) c.mass = Math.max(20, c.mass * (1 - .008 * dt));   // the crown's bosses melt too
       if (mode === 'hardcore' && !stats.ranked) {
         if (hcMile < HC_MILES.length && total(player) >= HC_MILES[hcMile] && !hcOffer) {
-          hcMile++; const ids = Object.keys(HC_BOOST).sort(() => Math.random() - .5).slice(0, 2); hcOffer = ids; hcT = 12; hcPanel(ids);
-          toast(`Масса ${HC_MILES[hcMile - 1].toLocaleString('ru-RU')}: выбери маленькое улучшение`); Sound.play('level');
+          const [floor, up] = HC_TIER[hcMile]; hcMile++;
+          const ids = Object.keys(HC_BOOST).filter(k => hcN[k] < HC_CAP).sort(() => Math.random() - .5).slice(0, 2);
+          if (ids.length) { hcOffer = ids.map(k => ({ k, r: Math.min(3, floor + (Math.random() < up ? 1 : 0)) })); hcT = 12; hcPanel(hcOffer);
+            toast(`Масса ${HC_MILES[hcMile - 1].toLocaleString('ru-RU')}: выбери улучшение`); Sound.play('level'); }
         }
-        if (hcOffer) { hcT -= dt; if (hcT <= 0) hcPick(hcOffer[0]); }
+        if (hcOffer) { hcT -= dt; if (hcT <= 0) hcPick(0); }
+        hcPredT = Math.max(0, hcPredT - dt);
+        if (TEST_MODE) hcDebug(dt);
       }
       if (mode === 'raid') {
         const on = twinsLinked(); tether.visible = on && running;
@@ -113,21 +131,34 @@
         }
       }
     }
-    function hcPanel(ids) {
+    function hcPanel(offer) {
       let el = document.getElementById('hcPick');
       if (!el) {
         el = document.createElement('div'); el.id = 'hcPick'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Выбери улучшение'); document.body.appendChild(el);
         el.addEventListener('pointerdown', e => e.stopPropagation());
-        el.addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (b) hcPick(b.dataset.h); });
+        el.addEventListener('click', e => { const b = e.target.closest('[data-hi]'); if (b) hcPick(+b.dataset.hi); });
       }
-      if (!ids) { el.hidden = true; return; }
-      el.innerHTML = `<p>Хардкор: маленькое улучшение</p><div class="db-opts two">${ids.map(id => `<button type="button" data-h="${id}"><span class="ic">${HC_BOOST[id][0]}</span><b>${HC_BOOST[id][1]}</b><small>до конца раунда</small></button>`).join('')}</div>`;
+      if (!offer) { el.hidden = true; return; }
+      el.innerHTML = `<p>Хардкор: веха ${HC_MILES[hcMile - 1].toLocaleString('ru-RU')} — выбери улучшение</p><div class="db-opts two">${offer.map((o, i) => { const b = HC_BOOST[o.k];
+        return `<button type="button" data-hi="${i}" class="hc-card r${o.r}" style="--rc:${RARITY[HC_R[o.r]].color}"><span class="hc-rar">${HC_RN[o.r]}</span><span class="ic">${b[0]}</span><b>${hcLabel(o.k, o.r)}</b><small>${HC_ABOUT[o.k]} · до конца раунда${hcN[o.k] ? ` · уже ${hcN[o.k]} из ${HC_CAP}` : ''}</small></button>`; }).join('')}</div>`;
       el.hidden = false;
     }
-    function hcPick(id) { if (!hcOffer) return; hc[id]++; hcOffer = null; hcPanel(null); toast(`${HC_BOOST[id][1]} до конца раунда`); }
+    function hcPick(i) {
+      if (!hcOffer) return; const o = hcOffer[i] || hcOffer[0], b = HC_BOOST[o.k], v = b[2][o.r];
+      if (b[3] === '+') hc[o.k] += v; else hc[o.k] *= 1 - v / 100; hcN[o.k]++;
+      hcOffer = null; hcPanel(null); toast(`${HC_RN[o.r]}: ${hcLabel(o.k, o.r)} до конца раунда`);
+    }
+    // test build only: what the boosts give and how fast you eat vs how fast you melt
+    function hcDebug(dt) {
+      let el = document.getElementById('hcDbg'); if (!el) { el = document.createElement('div'); el.id = 'hcDbg'; document.body.appendChild(el); }
+      const m = total(player); let melt = 0; for (const c of player.cells) if (c.mass > 100) melt += c.mass * .003 * Math.pow(c.mass / 100, .25) * (1 - .04 * U.guard) * hcK('melt');
+      hcDbg.t += dt; if (hcDbg.t >= 1) { hcDbg.gain = hcDbg.gain * .7 + .3 * ((m - hcDbg.m) / hcDbg.t + melt); hcDbg.m = m; hcDbg.t = 0; }
+      const list = Object.keys(HC_BOOST).filter(k => hcN[k]).map(k => `${HC_BOOST[k][0]}${HC_BOOST[k][3] === '+' ? '+' + hc[k] : '−' + Math.round((1 - hc[k]) * 100)}%`).join(' ');
+      el.textContent = `ТЕСТ · ${Math.round(m)} · тает ${Math.round(melt)}/с · ешь ≈${Math.max(0, Math.round(hcDbg.gain))}/с · ${list || 'улучшений нет'}`;
+    }
     // the end of a round: the hardcore series reward
     function end() {
-      hcPanel(null); tether.visible = false; nextRing.visible = false;
+      hcPanel(null); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
       if (mode !== 'hardcore' || stats.ranked || stats.tutorial) return;
       save.hcStreak = stats.maxMass >= 3000 ? (save.hcStreak || 0) + 1 : 0;
       const give = (id, name, n) => { if (save.hcStreak >= n && !save.decor.includes(id)) { save.decor.push(id); stats.hcReward = name; setTimeout(() => toast(`Серия хардкора ×${n}: награда «${name}»!`), 1200); } };
@@ -188,8 +219,8 @@
       dayMode, dayMark: id => (id === dayMode() ? DAY_MARK : ''),
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
       // 2.7: what the ⓘ window of «Режимы» tells about each mode
-      info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
-      meltK: () => (mode === 'hardcore' ? Math.pow(.9, hc.melt) : 1),
+      info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
+      meltK: () => hcK('melt'), hcK, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder
@@ -204,10 +235,10 @@
         const [x, y] = P(at.x, at.z); g.fillStyle = '#ffd23f'; g.font = 'bold 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('♛', x, y - 8);
       },
       raidDmgK: () => (twinsLinked() ? .5 : 1) * raidPerk().dmg,
-      cdK: o => (mode === 'hardcore' && o === player && hc.cd ? Math.pow(.9, hc.cd) : 1),
-      gainK: () => (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? 1 + .05 * hc.absorb : 1),
+      cdK: o => (o === player ? hcK('cd') : 1),
+      gainK: () => (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') : 1),
       bonusK: () => (rule && rule.id === 'bonus2' ? .5 : 1),
-      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? 1 + .05 * hc.speed : 1) *
+      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? hcK('speed') * (hcPredT > 0 ? hcK('predator') : 1) : 1) *
         (o.kind === 'bot' ? (mode === 'classic' ? 1 + .04 * esc : rule && rule.id === 'fastbots' ? 1.15 : 1) : 1),
       bossK: () => (mode === 'classic' ? Math.max(.5, 1 - .125 * esc) : 1),
       quitLabel: () => (mode === 'classic' && stats.time >= 300 ? 'Забрать награду и выйти' : 'Завершить раунд'),
@@ -223,7 +254,7 @@
         }
         if (mode === 'survival' && breakAt) return 'особая волна';
         if (mode === 'raid' && running) return twinsLinked() ? '🔗 связь −50%' : '✂ разведены';
-        if (mode === 'hardcore' && (hc.speed || hc.absorb || hc.cd)) return Object.entries(hc).filter(([, n]) => n).map(([k, n]) => HC_BOOST[k][0] + (n > 1 ? '×' + n : '')).join(' ');
+        if (mode === 'hardcore' && Object.values(hcN).some(n => n)) return Object.keys(HC_BOOST).filter(k => hcN[k]).map(k => HC_BOOST[k][0] + (hcN[k] > 1 ? '×' + hcN[k] : '')).join(' ');
         return '';
       },
     };

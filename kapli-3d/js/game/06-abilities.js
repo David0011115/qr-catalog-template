@@ -402,6 +402,7 @@
     const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
     if (U.greed) cMul.push([`«Жадность» +${2 * U.greed}%`, 1 + .02 * U.greed]);
     if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);
+    if (ModeX.hcK('coins') > 1) cMul.push([`«Добытчик» +${Math.round((ModeX.hcK('coins') - 1) * 100)}%`, ModeX.hcK('coins')]);
     if (arenaIs('olympus')) cMul.push(['Арена «Олимп»', 1.05]);
     // П8: every star of the skin you wear gives +1% coins (normal modes only)
     if (starBonus('coins')) cMul.push([`Звёзды скина ${'★'.repeat(starsOf(skin()))}`, 1 + starBonus('coins') / 100]);

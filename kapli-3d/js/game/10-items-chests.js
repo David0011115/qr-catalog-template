@@ -104,7 +104,7 @@
     } else if (kind === 'pbg') {
       const b = pbgById(id), own = (save.pbg || []).includes(id), on = (save.pc || {}).bg === id;
       name = b.name; tag = rarTag(b.rar) + '<span class="badge-ex">фон профиля</span>';
-      flat = `<span class="im-pbg"><canvas data-pbg="${id}"></canvas><span class="im-pbg-av">${pcAvatar({ skin: save.skin, frame: save.frame }, 64)}</span></span>`;
+      flat = `<span class="im-pbg"><canvas data-pbg="${pbgKey(id)}"></canvas><span class="im-pbg-av">${pcAvatar({ skin: save.skin, frame: save.frame }, 64)}</span></span>`;
       rows.push(['Где видно', 'фон твоей карточки игрока: в профиле, в рейтинге и у друзей'], ['Откуда', b.craft ? `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(id)) || PACKS[0]).name}»: создаётся только из осколков` : b.src]);
       act = own ? (on ? '<button class="btn ghost" disabled>Стоит в профиле</button>' : `<button class="btn" data-act="pbg-${id}">Поставить в профиль</button>`) : `<button class="btn ghost" disabled>${b.craft ? 'Создаётся в мастерской' : 'Ещё не получен'}</button>`;
     } else if (kind === 'abil') {

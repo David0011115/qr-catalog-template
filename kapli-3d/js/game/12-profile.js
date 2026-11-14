@@ -34,7 +34,7 @@
     // 2.5 modes for two: 30 games in a mode
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
     { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
-    { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 75 000 массы за один раунд', test: () => (save.hcPeak || 0) >= 75000 },
+    { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 40 000 массы за раунд (формы растут вместе со скином «Берсерк»)', test: () => (save.hcPeak || 0) >= 40000 },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
@@ -44,7 +44,16 @@
     { id: 'bg_cr_void',   name: 'Вне времени',       rar: 'legendary', craft: true, src: 'Мастерская, серия «Хронос»', test: () => false },
     { id: 'bg_cr_astro',  name: 'Астролябия',        rar: 'legendary', src: 'награда за всю серию «Хронос» в мастерской', test: () => false },
   ];
-  const pbgById = id => PBG.find(b => b.id === id) || PBG[0];
+  const pbgById = id => PBG.find(b => b.id === id) || PBG.find(b => b.id === String(id || '').replace(/_f[123]$/, '')) || PBG[0];
+  // 2.7: backgrounds that evolve with an evolving skin — forms I–III; the form travels in the id on the card («bg_hc_arena_f3»)
+  const PBG_EVO = {
+    bg_hc_arena: { open: () => evoOpen('hc_berserk'), need: ['40 000', '50 000', '70 000'], unit: 'массы за раунд «Хардкора» — как у скина «Берсерк»', names: ['Пробуждение', 'Кровавая луна', 'Затмение ярости'] },
+    bg_duo_back: { open: () => Math.max(1, evoOpen('duo_twin')), need: ['30 забегов', '40-я волна', '50-я волна'], unit: '«Спины к спине» на «Обычном» — как у скина «Близнецы»', names: ['Первый виток', 'Двойная спираль', 'Сияние пары'] },
+    bg_duo_50: { open: () => TEST_MODE && save.evoAll ? 3 : evoDuoBest('mad') >= 50 ? 3 : evoDuoBest('hard') >= 50 ? 2 : 1, need: ['50 волн', '50 волн на «Сложном»', '50 волн на «Безумии»'], unit: '— формы II и III вместе со «Щитом союза» III и «Созвездием» III', names: ['Арка', 'Золотая арка', 'Корона Безумия'] },
+  };
+  const pbgOpen = id => PBG_EVO[id] && (save.pbg || []).includes(id) ? Math.min(3, PBG_EVO[id].open()) : 0;
+  const pbgForm = id => { const n = pbgOpen(id); if (!n) return PBG_EVO[id] ? 1 : 0; const p = (save.pbgF || {})[id]; return p && p <= n ? p : n; };
+  const pbgKey = (id, f) => PBG_EVO[id] ? `${id}_f${f || pbgForm(id) || 1}` : id;
   // ---- drawing: every background is a function of (ctx, w, h, t seconds); random layouts are seeded, so a scene is the same every frame ----
   const pbgSeeds = {};
   const pbgPts = (key, n, seed) => pbgSeeds[key + ':' + n] || (pbgSeeds[key + ':' + n] = (() => { let s = seed; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; return Array.from({ length: n }, () => ({ x: r(), y: r(), s: r(), p: r() * 6.28, q: r() })); })());
@@ -205,6 +214,7 @@
   };
 })();
   function pbgDraw(x, w, h, id, t) {
+    let f = 1; { const m = /_f([123])$/.exec(id || ''); if (m) { f = +m[1]; id = id.slice(0, -3); } }
     const lin = (stops, x0 = 0, y0 = 0, x1 = 0, y1 = h) => { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
     const glow = (cx, cy, r, col, a = 1) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = a; x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); x.globalAlpha = 1; };
     const stars = (n, seed, tw = 1, col = '#ffffff') => { for (const p of pbgPts('st' + seed, n, seed)) { x.globalAlpha = .25 + .75 * Math.abs(Math.sin(t * tw * (.5 + p.q) + p.p)); x.fillStyle = col; const r = p.s < .9 ? .8 : 1.7; x.fillRect(p.x * w, p.y * h, r, r); } x.globalAlpha = 1; };
@@ -481,13 +491,22 @@
         break; }
       case 'bg_duo_50': {   // «Спина к спине», all 50 waves: an arch of 50 marks, one per wave; each drop lights its own half (every 5th mark is a special boss's gem), the halves meet under a golden crown
         const crownPath = (x, kx, ky, kr) => { x.beginPath(); x.moveTo(kx - kr, ky + kr * .5); x.lineTo(kx - kr, ky - kr * .4); x.lineTo(kx - kr * .5, ky); x.lineTo(kx, ky - kr * .65); x.lineTo(kx + kr * .5, ky); x.lineTo(kx + kr, ky - kr * .4); x.lineTo(kx + kr, ky + kr * .5); x.closePath(); };
-        x.fillStyle = lin([[0, '#04060f'], [.55, '#07121f'], [1, '#0a1f24']]); x.fillRect(0, 0, w, h); stars(50, 201, .8);
+        x.fillStyle = f === 3 ? lin([[0, '#0a0418'], [.55, '#120a24'], [1, '#1a0f1c']]) : lin([[0, '#04060f'], [.55, '#07121f'], [1, '#0a1f24']]); x.fillRect(0, 0, w, h); stars(f === 3 ? 90 : 50, 201, .8);
+        if (f === 3) {   // III «Корона Безумия»: a violet storm halo, fireworks of the three difficulties
+          x.save(); x.globalCompositeOperation = 'lighter'; glow(w * .55, h * .1, U * .9, 'rgba(178,107,255,.28)');
+          for (let k = 0; k < 3; k++) { const per = 3.2, ph = ((t + k * 1.07) % per) / per, fx = w * [.14, .5, .9][k], fy = h * [.32, .14, .3][k], col = ['#22e6ff', '#ff9a3d', '#b26bff'][k];
+            if (ph < .7) { const rr = U * .16 * Math.sqrt(ph / .7); x.globalAlpha = 1 - ph / .7; x.fillStyle = col; for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; x.beginPath(); x.arc(fx + Math.cos(a) * rr, fy + Math.sin(a) * rr + ph * U * .05, 1.6, 0, 6.29); x.fill(); } } }
+          x.restore(); x.globalAlpha = 1; }
         const R = Math.min(h * 1.15, w * .46), cx = w * .55, cy = h + R * .3, PH = 1.2, BC = ['#22e6ff', '#ff3d6e', '#ff9a3d', '#c2416b'];
         const cyc = 18, tt = t % cyc, lit = Math.min(1, tt / 11) * 25, done = tt > 11 ? Math.min(1, (tt - 11) / 1.2) : 0, fade = tt > cyc - 1.2 ? (cyc - tt) / 1.2 : 1;
         const ang = (s, i) => -Math.PI / 2 + s * PH * (1 - i / 25), pt = (a, r) => [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
         const r = U * .1, dy = h * .62, dx = [cx - r * .95, cx + r * .95], SC = ['#22e6ff', '#3dffa2'];
-        // ghosts of the four special bosses in the sky: each flares when its mark is lit
-        [[.1, .3], [.3, .2], [.82, .2], [.96, .34]].forEach(([gx, gy], k) => {
+        if (f === 3) {   // a second, outer arch of violet storm-light for «Безумие»
+          x.save(); x.globalCompositeOperation = 'lighter'; x.strokeStyle = '#b26bff'; x.shadowColor = '#b26bff'; x.shadowBlur = 14; x.lineWidth = 2.5;
+          for (let i = 0; i < 40; i++) { const a0 = -Math.PI / 2 - PH + i / 40 * PH * 2, a1 = a0 + PH * 2 / 40 * .6, on = .35 + .65 * Math.max(0, Math.sin(t * 3 - i * .4)); x.globalAlpha = on; x.beginPath(); x.arc(cx, cy, R * 1.12, a0, a1); x.stroke(); }
+          x.restore(); x.globalAlpha = 1; }
+        // ghosts of the four special bosses in the sky: each flares when its mark is lit (from form II)
+        if (f >= 2) [[.1, .3], [.3, .2], [.82, .2], [.96, .34]].forEach(([gx, gy], k) => {
           const hit = Math.max(0, 1 - Math.abs((lit % 5) - 4.6) * 1.6) * (((lit / 5) | 0) % 4 === k ? 1 : 0), gr = U * .16, px = gx * w, py = gy * h + Math.sin(t * .6 + k * 2) * h * .03;
           x.save(); x.globalAlpha = (.1 + hit * .45) * fade; x.strokeStyle = BC[k]; x.lineWidth = 1.5; x.shadowColor = BC[k]; x.shadowBlur = 10;
           x.beginPath(); x.arc(px, py, gr, 0, 6.29); x.stroke(); crownPath(x, px, py - gr * 1.15, gr * .5); x.stroke();
@@ -515,8 +534,10 @@
           x.save(); x.globalCompositeOperation = 'lighter';
           if (d > 0) { glow(kx, ky, U * .5, 'rgba(255,210,63,.45)', d); x.fillStyle = 'rgba(255,220,120,.06)'; for (let k = 0; k < 10; k++) { const a = k / 10 * 6.283 + t * .25; x.globalAlpha = d; x.beginPath(); x.moveTo(kx, ky); x.lineTo(kx + Math.cos(a - .07) * U * .9, ky + Math.sin(a - .07) * U * .9); x.lineTo(kx + Math.cos(a + .07) * U * .9, ky + Math.sin(a + .07) * U * .9); x.fill(); }
             x.globalAlpha = d * .8; x.strokeStyle = '#ffd23f'; x.lineWidth = 2; x.shadowColor = '#ffd23f'; x.shadowBlur = 14; x.beginPath(); x.arc(cx, cy, R, -Math.PI / 2 - PH, -Math.PI / 2 + PH); x.stroke(); }
-          x.restore(); x.save(); crownPath(x, kx, ky, kr);   // always gold (a trophy for all 50 waves); it flares when both halves meet
-          { const g = x.createLinearGradient(kx, ky - kr * .7, kx, ky + kr * .5); g.addColorStop(0, '#fff3b0'); g.addColorStop(.45, '#ffd23f'); g.addColorStop(1, '#d98a1a');
+          x.restore(); x.save();
+          if (f === 3) { x.globalCompositeOperation = 'lighter'; for (const sd of [-1, 1]) for (let i = 0; i < 5; i++) { x.globalAlpha = .55 - i * .08; x.strokeStyle = i % 2 ? '#b26bff' : '#ffd23f'; x.lineWidth = 2; x.beginPath(); x.moveTo(kx + sd * kr * 1.1, ky); x.quadraticCurveTo(kx + sd * kr * (2 + i * .5), ky - kr * (1.2 + i * .25) + Math.sin(t * 2) * kr * .1, kx + sd * kr * (2.6 + i * .6), ky - kr * (.2 + i * .45)); x.stroke(); } x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; }
+          crownPath(x, kx, ky, kr);   // I silver, II–III gold (a trophy for all 50 waves); it flares when both halves meet
+          { const g = x.createLinearGradient(kx, ky - kr * .7, kx, ky + kr * .5); if (f === 1) { g.addColorStop(0, '#ffffff'); g.addColorStop(.45, '#c8d4e8'); g.addColorStop(1, '#7c8aa6'); } else { g.addColorStop(0, '#fff3b0'); g.addColorStop(.45, '#ffd23f'); g.addColorStop(1, '#d98a1a'); }
             x.globalAlpha = .7 + d * .3; x.fillStyle = g; x.shadowColor = '#ffb02e'; x.shadowBlur = 6 + d * 14; x.fill(); }
           x.shadowBlur = 0; x.globalAlpha = .85; x.strokeStyle = '#fff1a8'; x.lineWidth = 1.2; x.stroke();
           x.globalAlpha = .9; x.fillStyle = '#ff3d6e'; x.beginPath(); x.arc(kx, ky - kr * .05, kr * .1, 0, 6.29); x.fill(); x.fillStyle = '#22e6ff'; x.beginPath(); x.arc(kx - kr * .55, ky + kr * .12, kr * .07, 0, 6.29); x.fill(); x.fillStyle = '#3dffa2'; x.beginPath(); x.arc(kx + kr * .55, ky + kr * .12, kr * .07, 0, 6.29); x.fill();
@@ -532,26 +553,60 @@
       case 'bg_hc_arena': {   // «Хардкор» 75 000: a colosseum under a blood moon, chains, the red mist and the edges beating like a heart
         const beat = Math.pow(Math.max(0, Math.sin(t * 2.6)), 8);
         x.fillStyle = lin([[0, '#120104'], [.55, '#3a0408'], [1, '#120103']]); x.fillRect(0, 0, w, h);
-        glow(w * .7, h * .3, h * .5, `rgba(255,${60 + 40 * beat | 0},40,.9)`); x.globalAlpha = 1;
-        x.fillStyle = '#ff5a40'; x.beginPath(); x.arc(w * .7, h * .3, h * .13, 0, 6.29); x.fill();
+        // I «Пробуждение»: a pale dusk moon; II «Кровавая луна»; III «Затмение ярости»: the moon goes black inside a burning corona
+        if (f === 1) { glow(w * .7, h * .3, h * .42, 'rgba(255,150,90,.55)'); x.globalAlpha = 1; x.fillStyle = '#ffb08a'; x.beginPath(); x.arc(w * .7, h * .3, h * .11, 0, 6.29); x.fill(); }
+        else { glow(w * .7, h * .3, h * (f === 3 ? .7 : .5), `rgba(255,${60 + 40 * beat | 0},40,.9)`); x.globalAlpha = 1;
+          x.fillStyle = '#ff5a40'; x.beginPath(); x.arc(w * .7, h * .3, h * .13, 0, 6.29); x.fill(); }
+        if (f === 3) { const mx = w * .7, my = h * .3, mr = h * .13;
+          // the giant: a horned helm rising behind the arena, eyes burning with the heartbeat
+          x.save(); x.fillStyle = '#060001'; x.beginPath(); const hx = w * .3, hy = h * .44, hr = h * .3;
+          x.moveTo(hx - hr * .9, h * .7); x.quadraticCurveTo(hx - hr, hy - hr * .2, hx - hr * .35, hy - hr * .75); x.quadraticCurveTo(hx, hy - hr * .95, hx + hr * .35, hy - hr * .75); x.quadraticCurveTo(hx + hr, hy - hr * .2, hx + hr * .9, h * .7); x.fill();
+          for (const sd of [-1, 1]) { x.beginPath(); x.moveTo(hx + sd * hr * .45, hy - hr * .6); x.quadraticCurveTo(hx + sd * hr * 1.35, hy - hr * .8, hx + sd * hr * 1.2, hy - hr * 1.45); x.quadraticCurveTo(hx + sd * hr * 1.05, hy - hr * .95, hx + sd * hr * .3, hy - hr * .35); x.fill(); }
+          x.globalCompositeOperation = 'lighter'; for (const sd of [-1, 1]) { glow(hx + sd * hr * .3, hy - hr * .25, hr * (.16 + .1 * beat), 'rgba(255,40,20,.95)'); glow(hx + sd * hr * .3, hy - hr * .25, hr * .05, '#fff2c0'); }
+          x.restore();
+          // the eclipse and its corona
+          x.save(); x.globalCompositeOperation = 'lighter'; x.translate(mx, my);
+          for (let k = 0; k < 18; k++) { const a = k / 18 * 6.283 + t * .15, L = mr * (1.6 + .5 * Math.sin(t * 3 + k * 1.7) + beat * .6); x.globalAlpha = .45; x.strokeStyle = k % 2 ? '#ff3a1a' : '#ffb040'; x.lineWidth = 2; x.beginPath(); x.moveTo(Math.cos(a) * mr * 1.05, Math.sin(a) * mr * 1.05); x.lineTo(Math.cos(a) * L, Math.sin(a) * L); x.stroke(); }
+          x.restore(); x.globalAlpha = 1; x.fillStyle = '#050001'; x.beginPath(); x.arc(mx, my, mr * .96, 0, 6.29); x.fill();
+          x.strokeStyle = `rgba(255,${120 + 100 * beat | 0},60,1)`; x.lineWidth = 2; x.shadowColor = '#ff3a1a'; x.shadowBlur = 16; x.beginPath(); x.arc(mx, my, mr, 0, 6.29); x.stroke(); x.shadowBlur = 0;
+          // lightning from the eclipse into the arena, on the beat
+          if (beat > .25) { x.save(); x.globalCompositeOperation = 'lighter'; x.strokeStyle = '#ffd0b0'; x.lineWidth = 1.6; x.shadowColor = '#ff3a1a'; x.shadowBlur = 12; x.globalAlpha = beat;
+            const seed = Math.floor(t * 2.6 / 6.283); for (let b = 0; b < 2; b++) { let px = mx + (b ? mr : -mr) * .6, py = my + mr; x.beginPath(); x.moveTo(px, py);
+              for (let i = 1; i < 7; i++) { const r = Math.sin(seed * 12.9 + i * 7.3 + b * 3.1) * 43758.5; px += (r - Math.floor(r) - .5) * w * .09 + (b ? 1 : -1) * w * .015; py += (h * .7 - my - mr) / 6; x.lineTo(px, py); } x.stroke(); } x.restore(); }
+        }
         const gy = h * .7; x.fillStyle = '#0a0002'; x.fillRect(0, gy, w, h - gy);
         for (let k = 0; k < 9; k++) { const ax = w * (k / 8), aw = w * .09; x.fillStyle = '#0a0002'; x.beginPath(); x.moveTo(ax - aw / 2, gy); x.lineTo(ax - aw / 2, gy - h * .16); x.arc(ax, gy - h * .16, aw / 2, Math.PI, 0); x.lineTo(ax + aw / 2, gy); x.fill();
           x.fillStyle = `rgba(255,40,30,${.12 + .2 * beat})`; x.fillRect(ax - aw * .32, gy - h * .13, aw * .64, h * .13); }
         x.fillStyle = '#0a0002'; x.fillRect(0, gy - h * .26, w, h * .04);
         for (let m = 0; m < 3; m++) { x.globalAlpha = .25; x.fillStyle = '#ff2a2a'; const off = (t * 20 * (m + 1)) % w; x.beginPath(); for (let xx = -w; xx < w * 2; xx += 40) x.lineTo(xx + off - w, h * (.62 + m * .08) + Math.sin(xx / 90 + t + m) * 8); x.lineTo(w * 2, h); x.lineTo(-w, h); x.fill(); } x.globalAlpha = 1;
-        for (let c = 0; c < 4; c++) { const cx = w * (.12 + c * .26), sw = Math.sin(t * 1.2 + c) * 12; x.strokeStyle = '#2a2a30'; x.lineWidth = 2.5; for (let k = 0; k < 9; k++) { x.beginPath(); x.ellipse(cx + sw * k / 9, k * h * .035, 3.5, 6, k % 2 ? 0 : 1.57, 0, 6.29); x.stroke(); } }
+        if (f >= 2) for (let c = 0; c < 4; c++) { const cx = w * (.12 + c * .26), sw = Math.sin(t * 1.2 + c) * 12; x.strokeStyle = '#2a2a30'; x.lineWidth = 2.5; for (let k = 0; k < 9; k++) { x.beginPath(); x.ellipse(cx + sw * k / 9, k * h * .035, 3.5, 6, k % 2 ? 0 : 1.57, 0, 6.29); x.stroke(); } }
         const vg = x.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .3, w / 2, h / 2, Math.max(w, h) * .7); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(120,0,0,${.35 + .35 * beat})`); x.fillStyle = vg; x.fillRect(0, 0, w, h);
-        for (const p of pbgPts('hcm', 40, 181)) { const yy = ((p.y - t * (.03 + p.s * .05)) % 1 + 1) % 1; x.globalAlpha = yy; x.fillStyle = '#ff3a2a'; x.fillRect(p.x * w, yy * h, 2, 2); } x.globalAlpha = 1;
+        for (const p of pbgPts('hcm', f === 1 ? 20 : 40, 181)) { const yy = ((p.y - t * (.03 + p.s * .05)) % 1 + 1) % 1; x.globalAlpha = yy; x.fillStyle = '#ff3a2a'; x.fillRect(p.x * w, yy * h, 2, 2); } x.globalAlpha = 1;
+        if (f === 3) {   // lava cracks in the arena floor and an ember storm
+          x.save(); x.globalCompositeOperation = 'lighter'; x.lineCap = 'round';
+          for (const p of pbgPts('hcc', 7, 187)) { const sx = p.x * w, sy = h * (.74 + p.y * .22); x.strokeStyle = `rgba(255,${90 + 80 * beat | 0},30,${.55 + .4 * beat})`; x.lineWidth = 1.5 + p.s * 1.5; x.shadowColor = '#ff4010'; x.shadowBlur = 8;
+            x.beginPath(); x.moveTo(sx, sy); let cx = sx, cy = sy; for (let i = 0; i < 4; i++) { cx += (Math.sin(p.p * 9 + i * 2.1)) * w * .05; cy += Math.cos(p.p * 5 + i) * h * .025; x.lineTo(cx, cy); } x.stroke(); }
+          x.shadowBlur = 0; for (const p of pbgPts('hce', 60, 189)) { const yy = h - ((t * (25 + p.s * 45) + p.y * h) % h), xx = p.x * w + Math.sin(t * 1.3 + p.p * 6) * 14; glow(xx, yy, 2 + p.q * 3, 'rgba(255,120,40,.9)', .5 + .5 * (yy / h)); }
+          x.restore(); x.globalAlpha = 1; }
         break;
       }
       case 'bg_duo_back': {   // «Спина к спине», 30 runs: two comets climb in a double spiral through falling crowns of beaten bosses
-        x.fillStyle = lin([[0, '#03070f'], [.6, '#071c22'], [1, '#0b2a26']]); x.fillRect(0, 0, w, h); stars(70, 171, .8);
-        const cx = w * .5, A = U * .32, turns = 2.2;
+        x.fillStyle = lin([[0, '#03070f'], [.6, '#071c22'], [1, '#0b2a26']]); x.fillRect(0, 0, w, h); stars(f === 1 ? 40 : 70, 171, .8);
+        const cx = w * .5, A = U * .32, turns = f === 1 ? 1.4 : 2.2;
+        if (f === 3) {   // III «Сияние пары»: twin auroras over the sky, cyan and green, and a constellation of the pair
+          x.save(); x.globalCompositeOperation = 'lighter';
+          for (let k = 0; k < 2; k++) for (let i = 0; i < 46; i++) { const sv = i / 45, ax = sv * w, ay = h * (.2 + k * .1) + Math.sin(sv * 5 + t * .7 + k * 2) * h * .07, hh = h * (.18 + .08 * Math.sin(sv * 9 + t * 1.3 + k));
+            const g = x.createLinearGradient(ax, ay - hh, ax, ay + hh * .3); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.7, k ? 'rgba(61,255,162,.16)' : 'rgba(34,230,255,.16)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(ax, ay - hh, w / 45 + 1, hh * 1.3); }
+          const C = [[.1, .14], [.18, .3], [.27, .2], [.73, .2], [.82, .3], [.9, .14]]; x.strokeStyle = 'rgba(200,255,240,.35)'; x.lineWidth = 1; x.beginPath(); C.forEach(([a, b], i) => { if (i === 3) x.moveTo(a * w, b * h); else i ? x.lineTo(a * w, b * h) : x.moveTo(a * w, b * h); }); x.stroke();
+          C.forEach(([a, b], i) => glow(a * w, b * h, U * (.03 + .015 * Math.sin(t * 2 + i)), i < 3 ? 'rgba(34,230,255,.9)' : 'rgba(61,255,162,.9)'));
+          x.restore(); }
         // the gate they come out of
         x.save(); x.globalCompositeOperation = 'lighter'; glow(cx, h * 1.02, U * .55, 'rgba(61,255,162,.35)');
-        x.strokeStyle = 'rgba(61,255,162,.5)'; x.lineWidth = 2; x.beginPath(); x.ellipse(cx, h * .97, A * 1.2, U * .06, 0, 0, 6.29); x.stroke(); x.restore();
+        x.strokeStyle = 'rgba(61,255,162,.5)'; x.lineWidth = 2; x.beginPath(); x.ellipse(cx, h * .97, A * 1.2, U * .06, 0, 0, 6.29); x.stroke();
+        if (f === 3) for (let k = 1; k <= 3; k++) { const q = (t * .35 + k / 3) % 1; x.globalAlpha = 1 - q; x.strokeStyle = k % 2 ? '#22e6ff' : '#3dffa2'; x.beginPath(); x.ellipse(cx, h * .97 - q * h * .2, A * (1.2 + q * .5), U * (.06 + q * .03), 0, 0, 6.29); x.stroke(); }
+        x.restore(); x.globalAlpha = 1;
         // falling crowns
-        for (const p of pbgPts('cr', 9, 173)) {
+        for (const p of pbgPts('cr', f === 1 ? 4 : f === 3 ? 14 : 9, 173)) {
           const yy = ((t * (10 + p.s * 14) + p.y * h) % (h + 40)) - 20, xx = p.x * w + Math.sin(t * .8 + p.p * 6) * 10, sz = U * (.025 + p.q * .02), rot = Math.sin(t + p.p * 6) * .5;
           x.save(); x.translate(xx, yy); x.rotate(rot); x.globalAlpha = .35 + .4 * (1 - yy / h); x.fillStyle = '#ffd23f'; x.shadowColor = '#ffb02e'; x.shadowBlur = 8;
           x.beginPath(); x.moveTo(-sz, sz * .5); x.lineTo(-sz, -sz * .4); x.lineTo(-sz * .5, 0); x.lineTo(0, -sz * .6); x.lineTo(sz * .5, 0); x.lineTo(sz, -sz * .4); x.lineTo(sz, sz * .5); x.closePath(); x.fill(); x.restore();
@@ -574,8 +629,15 @@
         for (let k = 0; k < 2; k++) {
           const sv = 1, ang = sv * turns * 6.283 - t * 1.4 + k * Math.PI;
           const hx = cx + Math.sin(ang) * A * (.55 + .45 * sv), hy = h * (1.02 - sv * .86), r = U * (.035 + .012 * Math.cos(ang));
-          x.save(); x.globalCompositeOperation = 'lighter'; glow(hx, hy, r * 3.2, k ? 'rgba(61,255,162,.6)' : 'rgba(34,230,255,.6)'); glow(hx, hy, r, '#ffffff'); x.restore();
+          x.save(); x.globalCompositeOperation = 'lighter'; glow(hx, hy, r * 3.2, k ? 'rgba(61,255,162,.6)' : 'rgba(34,230,255,.6)'); glow(hx, hy, r, '#ffffff');
+          if (f === 3) { x.globalAlpha = .7; x.strokeStyle = k ? 'rgba(61,255,162,.8)' : 'rgba(34,230,255,.8)'; x.lineWidth = 1; x.beginPath(); x.moveTo(hx - r * 4, hy); x.lineTo(hx + r * 4, hy); x.moveTo(hx, hy - r * 4); x.lineTo(hx, hy + r * 4); x.stroke(); }
+          x.restore();
         }
+        if (f >= 2) {   // where the two meet at the top: a ring bursts on every turn (II faint, III bright with a crown)
+          const ty = h * .16, q = (t * .7) % 1; x.save(); x.globalCompositeOperation = 'lighter';
+          for (let k = 0; k < (f === 3 ? 3 : 1); k++) { const qq = (q + k / 3) % 1; x.globalAlpha = (1 - qq) * (f === 3 ? .7 : .35); x.strokeStyle = k % 2 ? '#3dffa2' : '#22e6ff'; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, ty, qq * U * .4, 0, 6.29); x.stroke(); }
+          if (f === 3) { glow(cx, ty, U * .22, 'rgba(255,230,140,.5)'); const kr = U * .055; x.globalAlpha = 1; x.fillStyle = '#ffd23f'; x.shadowColor = '#ffb02e'; x.shadowBlur = 12; x.beginPath(); x.moveTo(cx - kr, ty + kr * .5); x.lineTo(cx - kr, ty - kr * .4); x.lineTo(cx - kr * .5, ty); x.lineTo(cx, ty - kr * .65); x.lineTo(cx + kr * .5, ty); x.lineTo(cx + kr, ty - kr * .4); x.lineTo(cx + kr, ty + kr * .5); x.closePath(); x.fill(); }
+          x.restore(); x.globalAlpha = 1; }
         break; }
       case 'bg_nebula': {   // volumetric clouds, a ringed planet drifting past, dust
         x.fillStyle = lin([[0, '#06021a'], [1, '#12052c']]); x.fillRect(0, 0, w, h); stars(80, 11, 1.1);
@@ -722,7 +784,7 @@
   }
   function myShowcase() {
     const pc = save.pc || {};
-    return { bg: pc.bg || 'bg_base', frame: save.frame || '', title: save.title || '', badge: pc.badge || '', skin: save.skin, lvl: playerLevel(),
+    return { bg: pc.bg || 'bg_base', bgf: PBG_EVO[pc.bg] ? pbgForm(pc.bg) : undefined, frame: save.frame || '', title: save.title || '', badge: pc.badge || '', skin: save.skin, lvl: playerLevel(),
       ps: (p => p && (p.s || p.n) ? { s: p.s, n: p.n } : undefined)(prestigeOf(save.xp)),
       shelf: ((save.pc || {}).shelf || []).map(id => [id, achTier(achById(id))]).filter(([, t]) => t > 0).slice(0, 3),
       act: (() => { try { return actPublic(); } catch (e) { return undefined; } })(),
@@ -828,9 +890,9 @@
     return `<div class="pc-shelf">${list.map(([a, t]) => `<span class="pc-tr" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, Math.min(t, a.steps.length), 34)}<span style="min-width:0"><b>${a.name}</b><small>${a.steps.length <= 3 ? `${ROM3[Math.min(t, 3)]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</small></span></span>`).join('')}</div>`;
   }
   function pcardHTML(d, nick, opt = {}) {
-    const lv = Math.max(1, Math.min(50, d.lvl || 1)), li = Math.max(0, Math.min(5, d.league || 0)), ci = Math.max(0, Math.min(5, d.chaos || 0)), bg = pbgById(d.bg);
+    const lv = Math.max(1, Math.min(50, d.lvl || 1)), li = Math.max(0, Math.min(5, d.league || 0)), ci = Math.max(0, Math.min(5, d.chaos || 0)), bg = pbgById(d.bg), bgk = d.bgf && PBG_EVO[bg.id] ? `${bg.id}_f${d.bgf}` : String(d.bg || '').replace(/_f[123]$/, '') === bg.id ? d.bg : bg.id;
     const lvInfo = opt.me ? levelInfo(save.xp) : null, pct = lvInfo ? (lvInfo.max ? 100 : lvInfo.into / lvInfo.need * 100) : 100;
-    return `<div class="pcard r-${bg.rar}${bg.top ? ' top' : ''}" data-bgid="${bg.id}"><canvas class="pc-bg" data-pbg="${bg.id}"></canvas><div class="pc-edge"></div>` +
+    return `<div class="pcard r-${bg.rar}${bg.top ? ' top' : ''}" data-bgid="${bg.id}"><canvas class="pc-bg" data-pbg="${bgk}"></canvas><div class="pc-edge"></div>` +
       `<div class="pc-main">${pcAvatar(d, opt.mini ? 64 : 88)}<div class="pc-info"><b class="pc-nick">${escHtml(nick || 'Ты')}</b>${d.title && decorById(d.title) ? `<span class="pc-title">${titleTag(d.title)}</span>` : ''}` +
       `<small class="pc-lg">${rankEmblem(li, 22)}<span style="color:${LG_COLS[li]}">${LG_NAMES[li]}</span>${ci ? ` · ${chaosEmblem(ci, 22)}${ctTag(ci)}` : ''}</small></div>` +
       `<div class="pc-lvl"><svg viewBox="0 0 60 66" aria-hidden="true"><path d="M30 2 L57 17 V49 L30 64 L3 49 V17 Z" fill="rgba(20,10,50,.75)" stroke="url(#pcLvG${++pcUid})" stroke-width="${d.ps ? 3.2 : 2.5}"/><defs><linearGradient id="pcLvG${pcUid}" x1="0" y1="0" x2="1" y2="1">${(st => st.map((c, i) => `<stop offset="${(i / (st.length - 1)).toFixed(2)}" stop-color="${c}"/>`).join(''))(psStops(d.ps))}</linearGradient></defs></svg><small>Уровень</small><b>${lv}</b>${d.ps ? `<span class="ps-mark${d.ps.n ? ' nova' : ''}">${psLabel(d.ps)}</span>` : ''}${lvInfo ? `<i style="--p:${pct.toFixed(0)}%"></i>` : ''}</div></div>` +
@@ -896,6 +958,9 @@
   const pdOwned = (k, id) => !id ? true : k === 'bg' ? (save.pbg || []).includes(id) : k === 'badge' ? PB_BADGES().some(b => b.id === id && b.got) : save.decor.includes(id);
   const pdSrc = (k, id) => k === 'bg' ? pbgById(id).src : k === 'badge' ? ((PB_BADGES().find(b => b.id === id) || {}).src || 'особая цель') : decoSource(decorById(id));
   const pdName = (k, id) => !id ? 'нет' : k === 'bg' ? pbgById(id).name : k === 'badge' ? (PB_BADGES().find(b => b.id === id) || {}).name : decorById(id).name;
+  const pdBgForm = id => pdDraft && pdDraft.bg === id && pdDraft.bgf ? pdDraft.bgf : pbgForm(id);
+  const pdBgKey = id => pbgKey(id, pdBgForm(id));
+  const pdEvoMarks = id => { const n = pbgOpen(id), cur = pdBgForm(id); return [1, 2, 3].map(f => `<i class="${f <= n ? 'on' : ''}${f === cur && n ? ' cur' : ''}">${['', 'I', 'II', 'III'][f]}</i>`).join(''); };
   function openDecorEditor() { pdDraft = myShowcase(); pdTab = 'bg'; renderDecorEditor(); }
   // 2.6: the card on top is the live preview of what is picked; the list below stays still (no animated frames, titles
   // and badges all at once — that made scrolling stutter), and picking an item updates only the card, not the whole list
@@ -919,14 +984,19 @@
       m = document.createElement('div'); m.id = 'pdEyeM'; m.className = 'modal'; m.hidden = true;
       m.innerHTML = '<div class="modal-card pd-eye-card" role="dialog" aria-modal="true" aria-labelledby="pdEyeT"><h2 id="pdEyeT"></h2><div id="pdEyeBody"></div><div class="pd-eye-acts"><button class="btn" id="pdEyePick" type="button">Выбрать</button><button class="btn ghost" id="pdEyeClose" type="button">Закрыть</button></div></div>';
       document.body.appendChild(m);
-      m.addEventListener('click', e => { if (e.target === m || e.target.id === 'pdEyeClose') { m.hidden = true; $('pdEyeBody').innerHTML = ''; } });
-      $('pdEyePick').addEventListener('click', () => { const { k, id } = m.dataset; m.hidden = true; $('pdEyeBody').innerHTML = '';
+      m.addEventListener('click', e => { if (e.target === m || e.target.id === 'pdEyeClose') { m.hidden = true; $('pdEyeBody').innerHTML = ''; m.dataset.f = 0; return; }
+        const fb = e.target.closest('[data-pbf]'); if (fb) { m.dataset.f = fb.dataset.pbf; m.dataset.keep = 1; decorEye(m.dataset.k, m.dataset.id); const nb = $('pdEyeBody').querySelector(`[data-pbf="${fb.dataset.pbf}"]`); if (nb) nb.focus(); } });
+      $('pdEyePick').addEventListener('click', () => { const { k, id } = m.dataset, f = +m.dataset.f; m.hidden = true; $('pdEyeBody').innerHTML = ''; m.dataset.f = 0;
+        if (k === 'bg' && PBG_EVO[id] && f && f <= pbgOpen(id)) { pdDraft.bg = id; pdDraft.bgf = f; renderDecorEditor(); return; }
         const b = document.querySelector(`#pdGrid [data-pk="${k}"][data-pid="${id}"]`); if (b) b.click(); });
     }
     m.dataset.k = k; m.dataset.id = id;
-    $('pdEyeT').textContent = pdName(k, id);
-    $('pdEyeBody').innerHTML = pcardHTML({ ...pdDraft, [k]: id }, Net.nick || 'Ты', { me: true }) + (pdOwned(k, id) ? '' : `<p class="pd-eye-src">🔒 ${escHtml(pdSrc(k, id))}</p>`);
-    pbgMount($('pdEyeBody')); m.hidden = false; $('pdEyePick').focus();
+    const E = k === 'bg' && PBG_EVO[id], n = E ? pbgOpen(id) : 0, f = E ? (+m.dataset.f && m.dataset.fid === id ? +m.dataset.f : pdBgForm(id)) : 0; m.dataset.f = f; m.dataset.fid = id;
+    $('pdEyeT').textContent = pdName(k, id) + (E ? ` · ${['', 'I', 'II', 'III'][f]} «${E.names[f - 1]}»` : '');
+    $('pdEyeBody').innerHTML = pcardHTML({ ...pdDraft, [k]: id, ...(E ? { bgf: f } : {}) }, Net.nick || 'Ты', { me: true }) +
+      (E ? `<p class="pd-eye-src">Эволюция фона: форма растёт вместе со скином</p><span class="evo-forms pd-evo-forms">${[1, 2, 3].map(q => `<button type="button" class="evo-f${q === f ? ' on' : ''}${q > n ? ' lock' : ''}" data-pbf="${q}">${q > n ? '🔒 ' : ''}${['', 'I', 'II', 'III'][q]}<small>${q > n ? `${E.need[q - 1]}` : E.names[q - 1]}</small></button>`).join('')}</span>${f > n ? `<p class="pd-eye-src">🔒 форма ${['', 'I', 'II', 'III'][f]}: ${E.need[f - 1]} ${E.unit}</p>` : ''}` : '') +
+      (pdOwned(k, id) ? '' : `<p class="pd-eye-src">🔒 ${escHtml(pdSrc(k, id))}</p>`);
+    pbgMount($('pdEyeBody')); m.hidden = false; $('pdEyePick').disabled = !!(E && f > n && pdOwned(k, id)); if (!m.dataset.keep) $('pdEyePick').focus(); delete m.dataset.keep;
   }
   function renderDecorEditor() {
     if (!pdDraft) pdDraft = myShowcase();
@@ -944,7 +1014,7 @@
       return `<div class="pd-cell"><button class="pd-it${own ? '' : ' lock'}" data-pk="${k}" data-pid="${id || ''}" aria-pressed="${(pdDraft[k] || '') === (id || '')}">${body}<b>${escHtml(name)}</b>${rar ? `<span class="rr" style="color:${RARITY[rar].color}">${RARITY[rar].name}</span>` : ''}${own ? tag(k, id) : `<small>${escHtml(pdSrc(k, id))}</small>`}</button>${id ? `<button type="button" class="pd-eye" data-peye="${k}" data-pid="${id}" aria-label="Посмотреть: ${escHtml(name)}" title="Посмотреть">👁</button>` : ''}</div>`; };
     const order = arr => arr.filter(x => pdFlt === 'all' || (pdFlt === 'own') === pdOwned(pdTab, x.id)).sort((a, b) => (pdOwned(pdTab, b.id) - pdOwned(pdTab, a.id)) || (RAR_ORDER[a.rar] - RAR_ORDER[b.rar]));
     let html = '';
-    if (pdTab === 'bg') html = order(PBG.filter(b => !b.promo || (save.pbg || []).includes(b.id)).map(b => ({ ...b }))).map(b => item('bg', b.id, `<img data-pbgt="${b.id}" ${pbgThumbCache[b.id + 160 + 'x' + 90] ? `src="${pbgThumbCache[b.id + 160 + 'x' + 90]}"` : ''} alt="">`, b.name, b.rar)).join('');
+    if (pdTab === 'bg') html = order(PBG.filter(b => !b.promo || (save.pbg || []).includes(b.id)).map(b => ({ ...b }))).map(b => (k => item('bg', b.id, `<img data-pbgt="${k}" ${pbgThumbCache[k + 160 + 'x' + 90] ? `src="${pbgThumbCache[k + 160 + 'x' + 90]}"` : ''} alt="">${PBG_EVO[b.id] ? `<span class="pd-evo">${pdEvoMarks(b.id)}</span>` : ''}`, b.name, b.rar))(pdBgKey(b.id))).join('');
     else if (pdTab === 'frame') html = item('frame', '', pcAvatar({ ...pdDraft, frame: '', badge: '' }, 58), 'Без рамки') +
       order(DECOR.filter(d => d.kind === 'frame' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('frame', d.id, pcAvatar({ ...pdDraft, frame: d.id, badge: '' }, 46), d.name, d.rar)).join('');
     else if (pdTab === 'title') html = item('title', '', '<span class="pd-tt">—</span>', 'Без титула') +
@@ -974,6 +1044,7 @@
   $('pdReset').addEventListener('click', () => { pdDraft = myShowcase(); renderDecorEditor(); toast('Вернул то, что сейчас на профиле'); });
   function applyDecor() {
     if (!pdDraft || ['bg', 'frame', 'title', 'badge'].some(k => !pdOwned(k, pdDraft[k]))) return;
+    if (PBG_EVO[pdDraft.bg] && pdDraft.bgf) save.pbgF = { ...(save.pbgF || {}), [pdDraft.bg]: pdDraft.bgf };
     save.pc = { ...(save.pc || {}), bg: pdDraft.bg, badge: pdDraft.badge || '', shelf: (pdDraft.shelf || []).map(x => x[0]).slice(0, 3) }; save.frame = pdDraft.frame || null; save.title = pdDraft.title || null;
     persist(); Net.pushShowcase(); toast('Оформление профиля сохранено'); renderProfile(); renderDecorEditor();
   }
@@ -1143,7 +1214,7 @@
       pdDraft = { ...pdDraft, shelf: had ? cur : [...cur, [id, achTier(achById(id))]].slice(-3) }; renderDecorEditor();
       const again = document.querySelector(`[data-shelf="${id}"]`); if (again) again.focus({ preventScroll: true }); return; }
     const eye = e.target.closest('[data-peye]'); if (eye) { decorEye(eye.dataset.peye, eye.dataset.pid); return; }
-    const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid };
+    const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid }; if (b.dataset.pk === 'bg') pdDraft.bgf = PBG_EVO[b.dataset.pid] ? pbgForm(b.dataset.pid) : undefined;
     renderDecorTop(); $('pdGrid').querySelectorAll(`[data-pk="${b.dataset.pk}"]`).forEach(x => x.setAttribute('aria-pressed', x === b)); });
   $('pdApply').addEventListener('click', applyDecor);
   $('pcClose').addEventListener('click', closePlayerCard);

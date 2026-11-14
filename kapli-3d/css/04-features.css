@@ -443,3 +443,9 @@
 .pd-grid.grouped .pd-top .pd-it > :first-child { transform: scale(.6); margin: -12px -8px; }
 .pd-grid.grouped .pd-top .pd-it .pd-cur { margin-left: 4px; }
 .pd-drawer > summary { position: sticky; top: 0; z-index: 1; }
+/* 2.7: evolving profile backgrounds — form marks on the tile and the form picker in 👁 */
+.pd-it .pd-evo { position: absolute; right: 6px; top: 6px; display: flex; gap: 2px; }
+.pd-it .pd-evo i { font-style: normal; font-size: .5rem; font-weight: 800; padding: 1px 3px; border-radius: 4px; background: rgba(10, 6, 30, .8); color: rgba(255, 255, 255, .35); }
+.pd-it .pd-evo i.on { color: #ffd27a; } .pd-it .pd-evo i.cur { background: #ff6a3d; color: #fff; }
+.pd-evo-forms { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 6px 0; }
+.pd-evo-forms .evo-f small { display: block; font-size: .6rem; opacity: .8; }

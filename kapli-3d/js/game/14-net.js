@@ -438,7 +438,7 @@
     }
     function pushShowcase() {
       if (!sess || privacyPending) return; clearTimeout(scTimer);
-      scTimer = setTimeout(async () => { const d = myShowcase(), js = JSON.stringify(d); if (js === scLast) return;
+      scTimer = setTimeout(async () => { const d = myShowcase(); if (d.bgf) d.bg = pbgKey(d.bg, d.bgf); delete d.bgf; const js = JSON.stringify(d); if (js === scLast) return;
         try { await ensureClient(); const { error } = await withTimeout(sb.rpc('kapli_set_showcase', { p: d }), 9000); if (!error) scLast = js; } catch (e) {} }, 1500);
     }
     // a small avatar + title next to a nickname; tapping opens the player's card
@@ -1188,7 +1188,7 @@
     try { await document.fonts.ready; } catch (e) {}
     const W = 1080, H = 640, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
     x.save(); rr(x, 0, 0, W, H, 36); x.clip();
-    try { pbgDraw(x, W, H, (pbgById(d.bg) || {}).id || 'bg_base', 3.3); } catch (e) { x.fillStyle = '#0b0824'; x.fillRect(0, 0, W, H); }
+    try { pbgDraw(x, W, H, d.bgf ? pbgKey((pbgById(d.bg) || {}).id, d.bgf) : String(d.bg || '').replace(/_f[123]$/, '') === (pbgById(d.bg) || {}).id ? d.bg : (pbgById(d.bg) || {}).id || 'bg_base', 3.3); } catch (e) { x.fillStyle = '#0b0824'; x.fillRect(0, 0, W, H); }
     const gr = x.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, 'rgba(5,4,15,.15)'); gr.addColorStop(.55, 'rgba(5,4,15,.35)'); gr.addColorStop(1, 'rgba(5,4,15,.8)'); x.fillStyle = gr; x.fillRect(0, 0, W, H);
     // avatar: skin texture in a circle, eyes, frame ornament, badge
     const k = SKINS.find(s => s.id === d.skin) || SKINS[0], fr = decorById(d.frame), AX = 70, AY = 60, AS = 210;

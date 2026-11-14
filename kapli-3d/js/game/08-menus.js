@@ -1119,8 +1119,10 @@
     } else if (shopTab === 'ach') {
       const T = achTotals(), B = save.achBest || {}, lines = ACH.filter(a => a.line), hol = ACH.filter(a => a.hol);
       const cnt = [0, 0, 0, 0]; lines.forEach(a => { const t = achTier(a); for (let k = 1; k <= t; k++) cnt[k]++; });
-      const card = a => {
-        const t = achTier(a), n = a.steps.length, done = t >= n, v = ACH_VAL[a.id], m = achMetal(a, t);
+      const card = a0 => {
+        // one-off achievements (a holiday gift box) have no steps: shown as one step, done when the box was opened
+        const a = a0.steps ? a0 : { ...a0, steps: [a0.desc] };
+        const t = a0.steps ? achTier(a0) : (save.ach.includes(a0.id) || (a0.test && a0.test()) ? 1 : 0), n = a.steps.length, done = t >= n, v = ACH_VAL[a.id], m = achMetal(a, t);
         const val = v ? v[0](T, B) : null, goal = v && !done ? v[1][t] : null, prev = v && t ? v[1][t - 1] : 0;
         const pct = goal ? Math.max(0, Math.min(100, (val - prev) / (goal - prev) * 100)) : done ? 100 : 0;
         const steps = a.steps.map((st, k) => `<li class="${k < t ? 'on' : k === t ? 'next' : ''}"><i>${n <= 3 ? ROM3[k + 1] : k + 1}</i><span>${st}</span></li>`).join('');
@@ -1128,7 +1130,7 @@
           `<div class="achc-h"><b>${a.name}</b><span class="achc-tier">${t ? (n <= 3 ? `${ROM3[t]} · ${METAL_NAME[m]}` : `${t} из ${n}`) : 'не начато'}</span></div><small class="achc-d">${a.desc}</small>` +
           `<ol class="achc-steps">${steps}</ol>` +
           (done ? `<div class="achc-f"><span>✓ Все ступени пройдены</span>${a.title ? titleTag(a.title) : ''}</div>`
-            : `<div class="achc-bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="achc-f"><span>${goal ? `${Math.min(val, goal).toLocaleString('ru-RU')} / ${goal.toLocaleString('ru-RU')}` : `Дальше: ${a.steps[t]}`}</span><span class="rw">+${a.pay[t]} ◆${a.title && t === n - 1 ? ` · титул ${titleTag(a.title)}` : ''}</span></div>`) + '</div></div>';
+            : `<div class="achc-bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="achc-f"><span>${goal ? `${Math.min(val, goal).toLocaleString('ru-RU')} / ${goal.toLocaleString('ru-RU')}` : `Дальше: ${a.steps[t]}`}</span><span class="rw">${a.pay ? `+${a.pay[t]} ◆` : 'праздничная коробка'}${a.title && t === n - 1 ? ` · титул ${titleTag(a.title)}` : ''}</span></div>`) + '</div></div>';
       };
       const holSeen = hol.filter(a => achTier(a) > 0), holNext = hol.filter(a => !achTier(a));
       $('shop').innerHTML = `<div class="ach-sum"><div><b>${lines.filter(a => achTier(a) >= 3).length}<small>/${lines.length}</small></b><span>линеек на золоте</span></div>` +

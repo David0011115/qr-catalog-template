@@ -233,3 +233,30 @@
     if (out.length) { persist(); if (!quiet) out.forEach((t, i) => setTimeout(() => toast('✦ ' + t), 600 + i * 1800)); refreshSkin(); }
     return out;
   }
+
+  // ---- the badges of these goals: «Хардкор» 75 000 (a forged medallion with a drop of blood) and «Спина к спине» —
+  //      all 50 waves on each difficulty (a laurel medallion: yin-yang / shield / crown of stars) ----
+  const EVO_BADGES = [
+    { id: 'hc75', name: 'Берсерк · 75 000', src: '«Хардкор»: 75 000 массы за один раунд', got: () => (save.hcPeak || 0) >= 75000 },
+    { id: 'duo50n', name: 'Спина к спине · Обычный', src: 'все 50 волн «Спины к спине» на «Обычном»', got: () => evoDuoBest('normal') >= 50 },
+    { id: 'duo50h', name: 'Спина к спине · Сложный', src: 'все 50 волн «Спины к спине» на «Сложном»', got: () => evoDuoBest('hard') >= 50 },
+    { id: 'duo50m', name: 'Спина к спине · Безумие', src: 'все 50 волн «Спины к спине» на «Безумии»', got: () => evoDuoBest('mad') >= 50 },
+  ];
+  function evoBadgeSVG(id) {
+    if (id === 'hc75') {
+      const teeth = Array.from({ length: 16 }, (_, k) => `<rect x="30" y="1.5" width="4" height="6" rx="1" transform="rotate(${k * 22.5} 32 32)"/>`).join('');
+      return `<svg viewBox="0 0 64 72" class="evo-badge"><defs><linearGradient id="ebm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4d0"/><stop offset=".45" stop-color="#ff2d2d"/><stop offset="1" stop-color="#7a0808"/></linearGradient><radialGradient id="ebc" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#3a0a10"/><stop offset="1" stop-color="#0c0406"/></radialGradient></defs>
+        <g fill="url(#ebm)">${teeth}</g><circle cx="32" cy="32" r="25" fill="url(#ebm)"/><circle cx="32" cy="32" r="21.5" fill="url(#ebc)"/>
+        <path d="M32 14c6 6 10 10 10 17a10 10 0 0 1-20 0c0-7 4-11 10-17z" fill="url(#ebm)"/><path d="M32 22c3 3 5 6 5 9a5 5 0 0 1-10 0c0-3 2-6 5-9z" fill="#2a0004"/><path d="M20 20l-4-6M44 20l4-6M18 30h-6M46 30h6" stroke="url(#ebm)" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M8 56h48l-5 6 5 6H8l5-6z" fill="url(#ebm)"/><path d="M13 56h38v12H13z" fill="#1a0404" opacity=".85"/><text x="32" y="65" text-anchor="middle" font-family="Russo One, sans-serif" font-size="8.5" fill="#ffd0c0">75 000</text></svg>`;
+    }
+    const k = { duo50n: 'twin', duo50h: 'shield', duo50m: 'const' }[id]; if (!k) return '';
+    const P = { twin: ['#7affd0', '#22e6ff', '#0a3a34', 'ОБЫЧНЫЙ'], shield: ['#c8fff0', '#2ab8a0', '#062a2a', 'СЛОЖНЫЙ'], const: ['#ffe08a', '#b26bff', '#1a0a3a', 'БЕЗУМИЕ'] }[k], g = 'edb' + k;
+    const sym = k === 'twin' ? `<circle cx="40" cy="38" r="15" fill="none" stroke="url(#${g})" stroke-width="2.5"/><path d="M40 23a7.5 7.5 0 0 1 0 15a7.5 7.5 0 0 0 0 15a15 15 0 0 1 0-30z" fill="url(#${g})"/><circle cx="40" cy="30.5" r="2.2" fill="#0a3a34"/><circle cx="40" cy="45.5" r="2.2" fill="url(#${g})"/>`
+      : k === 'shield' ? `<path d="M40 21l15 6v10c0 9-6 16-15 19-9-3-15-10-15-19V27z" fill="#082a2a" stroke="url(#${g})" stroke-width="2.5"/><path d="M33 33l14 12M47 33L33 45" stroke="url(#${g})" stroke-width="2.6" stroke-linecap="round"/>`
+      : `<path d="M28 30l7 5 5-9 5 9 7-5-3 15H31z" fill="url(#${g})"/><g fill="#fff"><circle cx="26" cy="48" r="1.4"/><circle cx="40" cy="52" r="1.7"/><circle cx="54" cy="48" r="1.4"/></g><path d="M26 48L40 52L54 48" stroke="#fff" stroke-opacity=".6" stroke-width=".8" fill="none"/>`;
+    const laurel = side => Array.from({ length: 6 }, (_, i) => { const a = (side ? -1 : 1) * (.5 + i * .32), x = 40 + Math.sin(a) * 31, y = 40 + Math.cos(a) * 31; return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="2.6" ry="5.5" transform="rotate(${(-a * 57.3 + (side ? 30 : -30)).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})" fill="url(#${g})"/>`; }).join('');
+    return `<svg viewBox="0 0 80 96" class="evo-badge"><defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="${P[0]}"/><stop offset="1" stop-color="${P[1]}"/></linearGradient><radialGradient id="${g}c" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="${P[2]}"/><stop offset="1" stop-color="#03060c"/></radialGradient></defs>
+      ${laurel(0)}${laurel(1)}<circle cx="40" cy="40" r="23" fill="url(#${g})"/><circle cx="40" cy="40" r="20" fill="url(#${g}c)"/>${sym}
+      <path d="M10 72h60l-6 7 6 7H10l6-7z" fill="url(#${g})"/><path d="M16 72h48v14H16z" fill="#06131a" opacity=".88"/><text x="40" y="82.5" text-anchor="middle" font-family="Russo One, sans-serif" font-size="7.5" fill="${P[0]}">${P[3]}</text></svg>`;
+  }

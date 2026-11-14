@@ -1100,10 +1100,10 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   function dressBot(o) {
     const base = { id: 'bot_' + o.name, color: o.baseColor };
     const pick = list => list[(Math.random() * list.length) | 0];
-    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft)) : base;
+    let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft && !EVO[k.id])) : base;   // 2.7: no skins with evolution on bots
     o.fx = {};
     for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot && !f.legend && !f.craft)).id;
-    if (o.star) { sk = SKINS.find(k => k.id === o.star.skin) || sk; o.fx = { aura: o.star.aura, trail: o.star.trail, eat: 'supernova' }; }
+    if (o.star) { sk = SKINS.find(k => k.id === o.star.skin && !EVO[k.id]) || (isEvo(sk) ? base : sk); o.fx = { aura: o.star.aura, trail: o.star.trail, eat: 'supernova' }; }
     o.trailDef = o.fx.trail ? fxById(o.fx.trail) : null;
     const st = o.star ? 3 : sk === base || Math.random() < .5 ? 0 : 1 + ((Math.random() * 3) | 0);
     o.lvl = o.star ? 40 + ((Math.random() * 11) | 0) : 1 + ((Math.random() * Math.min(45, playerLevel() + 10)) | 0);

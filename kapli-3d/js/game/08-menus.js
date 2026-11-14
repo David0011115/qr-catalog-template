@@ -443,6 +443,20 @@
   // ---- 2.7: «Режимы» — two tabs, compact tiles, ⓘ with everything else ----
   $('modesTabs').addEventListener('click', e => { const b = e.target.closest('[data-mtab]'); if (!b) return; modesTabPick = b.dataset.mtab; renderAll(); b.focus(); });
   $('modesDuoHow').addEventListener('click', () => Duo.how(save.mode === 'duoback' ? 'duoback' : 'territory'));
+  // what each «Хардкор» boost does, in plain words (the ⓘ window of «Режимы»)
+  const HC_DESC = {
+    speed: 'Капля двигается быстрее — легче догнать и легче убежать.',
+    absorb: 'Всё съеденное даёт больше массы: крошки, боты, боссы.',
+    cd: 'Способности перезаряжаются быстрее.',
+    melt: 'Масса тает медленнее — особенно важно на большой массе.',
+    skin: 'Чтобы съесть тебя, боту или боссу нужно быть заметно крупнее.',
+    magnet: 'Крошки притягиваются к тебе с большего расстояния.',
+    dash: 'Рывок перезаряжается быстрее.',
+    merge: 'После деления части сливаются обратно быстрее.',
+    predator: 'После каждого съеденного бота 2 секунды ты быстрее.',
+    coins: 'Больше монет за этот раунд (общий потолок множителей ×2).',
+    spike: 'Шанс, что шип на тебе не сработает и ты пройдёшь сквозь него.',
+  };
   // 2.7: the details of each mode under ⓘ — rewards, steps, rules; the numbers come from the game itself
   function modeDetail(id) {
     const X = ModeX.info(), n = v => v.toLocaleString('ru-RU'), li = a => `<li>${a}</li>`, sec = (t, body) => `<details class="mi-sec"><summary>${t}</summary><div class="mi-body">${body}</div></details>`;   // drawers: closed until tapped
@@ -459,8 +473,8 @@
     if (id === 'rbuild') return sec('Как устроен', `<ul>${li('3 случайные способности из 12 обычных, даже не купленные')}${li('их уровни — как у тебя')}${li('опыт ×1,2')}</ul>`);
     if (id === 'hardcore') return sec('Без поблажек', `<ul>${li('нет бонусов на поле и второго шанса')}${li('боты злее, масса тает быстрее, чем в других режимах')}${li('длинная защита на старте')}${li('монеты ×1,6')}</ul>`) +
       sec(`Вехи — ${X.HC_MILES.length} улучшений за раунд`, tbl(X.HC_MILES.map((m, k) => { const [f, up] = X.HC_TIER[k]; return [`${n(m)} массы`, up ? `${X.HC_RN[f]}, шанс ${Math.round(up * 100)}% на ${X.HC_RN[f + 1].toLowerCase()}` : `${X.HC_RN[f]} — гарантированно`]; }))) +
-      sec('Улучшения: обычное / редкое / эпическое / легендарное', tbl(Object.entries(X.HC_BOOST).map(([k, [ic, nm, v, kd]]) => [`${ic} ${nm}`, v.map(x => (kd === '+' ? '+' : '−') + x + '%').join(' / ')])) +
-        `<small>Каждая веха — 2 карточки на выбор, редкость не ниже указанной. Одно улучшение — не больше ${X.HC_CAP} раз за раунд. Не успел выбрать за 12 с — возьмётся первое.</small>`) +
+      sec(`Улучшения — ${Object.keys(X.HC_BOOST).length} видов`, `<ul class="mi-boosts">${Object.entries(X.HC_BOOST).map(([k, [ic, nm, v, kd]]) => `<li><span class="mib-ic">${ic}</span><span class="mib-tx"><b>${nm}</b><small>${HC_DESC[k] || X.HC_ABOUT[k]}</small><span class="mib-v">${v.map((x, r) => `<i class="r${r}">${k === 'spike' ? x + '%' : (kd === '+' ? '+' : '−') + x + '%'}</i>`).join('')}</span></span></li>`).join('')}</ul>` +
+        `<small>Цвета: обычное · <span style="color:#4d7cff">редкое</span> · <span style="color:#b26bff">эпическое</span> · <span style="color:#ffd23f">легендарное</span>. Каждая веха — 2 карточки на выбор, редкость не ниже указанной в «Вехах». Одно улучшение — не больше ${X.HC_CAP} раз за раунд, одинаковые складываются. Не успел выбрать за 12 с — возьмётся первое.</small>`) +
       sec('Серия', `<ul>${li('3 раунда подряд с массой 3 000+ — титул «Несгибаемый»')}${li('5 раундов подряд — рамка «Закалка»')}</ul>`);
     if (id === 'raid') return sec('Рейд недели', `<ul>${li('пара колоссов-близнецов, общее здоровье 100 000')}${li('пока близнецы рядом, их связь гасит половину урона — разводи их')}${li('3 попытки в день по 4 минуты, урон копится')}${li('за победу: 1 500 ◆, эпический сундук, награды рейда за 1-ю, 3-ю и 5-ю победу')}</ul>`);
     if (id === 'royale') return sec('Правила', `<ul>${li('зона сужается ступенями и смещается — следующий круг виден заранее')}${li('в новом круге падают бонусы')}${li('боты не возрождаются, побеждает последний')}${li('только в лиге, в свой сезон')}</ul>`);

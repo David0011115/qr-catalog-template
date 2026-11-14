@@ -34,6 +34,7 @@
     // 2.5 modes for two: 30 games in a mode
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
     { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
+    { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 75 000 массы за один раунд', test: () => (save.hcPeak || 0) >= 75000 },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
@@ -528,6 +529,21 @@
           for (const e of [.18, .58]) { const ex = px + s * r * e, ey = py - r * .1; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .14, r * .18, 0, 0, 6.29); x.fill(); x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + s * r * .05, ey, r * .075, 0, 6.29); x.fill(); }
         });
         break; }
+      case 'bg_hc_arena': {   // «Хардкор» 75 000: a colosseum under a blood moon, chains, the red mist and the edges beating like a heart
+        const beat = Math.pow(Math.max(0, Math.sin(t * 2.6)), 8);
+        x.fillStyle = lin([[0, '#120104'], [.55, '#3a0408'], [1, '#120103']]); x.fillRect(0, 0, w, h);
+        glow(w * .7, h * .3, h * .5, `rgba(255,${60 + 40 * beat | 0},40,.9)`); x.globalAlpha = 1;
+        x.fillStyle = '#ff5a40'; x.beginPath(); x.arc(w * .7, h * .3, h * .13, 0, 6.29); x.fill();
+        const gy = h * .7; x.fillStyle = '#0a0002'; x.fillRect(0, gy, w, h - gy);
+        for (let k = 0; k < 9; k++) { const ax = w * (k / 8), aw = w * .09; x.fillStyle = '#0a0002'; x.beginPath(); x.moveTo(ax - aw / 2, gy); x.lineTo(ax - aw / 2, gy - h * .16); x.arc(ax, gy - h * .16, aw / 2, Math.PI, 0); x.lineTo(ax + aw / 2, gy); x.fill();
+          x.fillStyle = `rgba(255,40,30,${.12 + .2 * beat})`; x.fillRect(ax - aw * .32, gy - h * .13, aw * .64, h * .13); }
+        x.fillStyle = '#0a0002'; x.fillRect(0, gy - h * .26, w, h * .04);
+        for (let m = 0; m < 3; m++) { x.globalAlpha = .25; x.fillStyle = '#ff2a2a'; const off = (t * 20 * (m + 1)) % w; x.beginPath(); for (let xx = -w; xx < w * 2; xx += 40) x.lineTo(xx + off - w, h * (.62 + m * .08) + Math.sin(xx / 90 + t + m) * 8); x.lineTo(w * 2, h); x.lineTo(-w, h); x.fill(); } x.globalAlpha = 1;
+        for (let c = 0; c < 4; c++) { const cx = w * (.12 + c * .26), sw = Math.sin(t * 1.2 + c) * 12; x.strokeStyle = '#2a2a30'; x.lineWidth = 2.5; for (let k = 0; k < 9; k++) { x.beginPath(); x.ellipse(cx + sw * k / 9, k * h * .035, 3.5, 6, k % 2 ? 0 : 1.57, 0, 6.29); x.stroke(); } }
+        const vg = x.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .3, w / 2, h / 2, Math.max(w, h) * .7); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(120,0,0,${.35 + .35 * beat})`); x.fillStyle = vg; x.fillRect(0, 0, w, h);
+        for (const p of pbgPts('hcm', 40, 181)) { const yy = ((p.y - t * (.03 + p.s * .05)) % 1 + 1) % 1; x.globalAlpha = yy; x.fillStyle = '#ff3a2a'; x.fillRect(p.x * w, yy * h, 2, 2); } x.globalAlpha = 1;
+        break;
+      }
       case 'bg_duo_back': {   // «Спина к спине», 30 runs: two comets climb in a double spiral through falling crowns of beaten bosses
         x.fillStyle = lin([[0, '#03070f'], [.6, '#071c22'], [1, '#0b2a26']]); x.fillRect(0, 0, w, h); stars(70, 171, .8);
         const cx = w * .5, A = U * .32, turns = 2.2;
@@ -696,10 +712,11 @@
   function pbgMount(root) { root.querySelectorAll('canvas[data-pbg]').forEach(cv => pbgLive.add(cv)); if (!pbgRaf) pbgRaf = requestAnimationFrame(pbgLoop); }
   // ---- what a player shows to others ----
   const PB_BADGES = () => [{ id: 'legend', name: 'Легенда Капель', got: !!save.legendBadge }, { id: 'millionaire', name: 'Миллионер', got: !!(save.badges || {}).millionaire },
-    ...PROMO_BADGES.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], promo: true })), ...SPECIAL.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], src: b.src }))];
+    ...PROMO_BADGES.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], promo: true })), ...SPECIAL.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], src: b.src })), ...EVO_BADGES.map(b => ({ id: b.id, name: b.name, got: (TEST_MODE && save.evoAll) || b.got(), src: b.src }))];
   function pbBadgeSVG(id) {
     if (!id) return '';
     if (id === 'legend') return legendBadgeSVG(true); if (id === 'millionaire') return millionBadgeSVG(true);
+    if (EVO_BADGES.some(b => b.id === id)) return evoBadgeSVG(id);
     const pb = PROMO_BADGES.find(b => b.id === id); if (pb) return promoBadgeSVG(pb);
     const sb = SPECIAL.find(b => b.id === id); return sb ? specialBadgeSVG(sb, true) : '';
   }

@@ -63,7 +63,7 @@
     }
   }
   function updateViruses(dt) {
-    if (ModeX.hcSpikesDisabled()) {
+    if (typeof ModeX.hcSpikesDisabled === 'function' && ModeX.hcSpikesDisabled()) {
       [...viruses].forEach(removeVirus);
       virusRespawn = [];
       return;

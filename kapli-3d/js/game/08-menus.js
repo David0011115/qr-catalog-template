@@ -1109,7 +1109,7 @@
       $('shop').innerHTML = html || '<p class="empty-note">Все эффекты магазина уже твои.</p>';
     } else if (shopTab === 'wskin') {
       const own = sortOwned(SKINS.filter(k => save.skins.includes(k.id)), save.skins, 'wskin');
-      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length}. Нажми на группу, чтобы открыть.</p>` +
+      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length}. Выбери группу.</p>` +
         groupDrawers('ws_', own, sourceOf, ['Магазин', ...SOURCE_ORDER], part => `<div class="skins">${part.map(k => skinTile(k, 'own')).join('')}</div>`);
     } else if (shopTab === 'wfx') {
       const ownAll = sortOwned(FX.filter(f => save.fxOwned.includes(f.id)), save.fxOwned, 'wfx');
@@ -1386,9 +1386,22 @@
     });
   }
   { let q = 0; new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; decorateDrawers(); }); }).observe(document.body, { childList: true, subtree: true }); requestAnimationFrame(() => decorateDrawers()); }
+  // 2.7: the drawn icon of a group by its name (the same table as the drawers use)
+  function drawerIcon(label) {
+    const key = String(label).replace(/^[^0-9A-Za-zА-Яа-яЁё«(]+/, '').toLowerCase(), hit = DRAWER_ICONS.find(([k]) => key.startsWith(k)) || DRAWER_ICONS.find(([k]) => k.length > 4 && key.includes(k)); if (!hit) return '';
+    const hub = hit[1].startsWith('hub:') && HUB_ICON[hit[1].slice(4)], art = hub ? hub[2] : DI[hit[1]], col = hub ? hub[0] : hit[2];
+    return `<i class="dr-ic" style="--ic:${col}" aria-hidden="true"><svg viewBox="0 0 24 24">${art}</svg></i>`;
+  }
+  // 2.7: groups as one row of chips; only the chosen group is shown below — no stack of drawers to scroll through
+  const catSel = {};
+  function catChips(prefix, cats, cur) {
+    return `<div class="cat-chips" role="tablist">${cats.map(([name, n, all]) => `<button type="button" role="tab" class="cat-chip" data-gcat="${prefix}|${escHtml(name)}" aria-selected="${name === cur}">${drawerIcon(name)}<span>${escHtml(name)}</span><small>${all !== undefined ? `${n}/${all}` : n}</small></button>`).join('')}</div>`;
+  }
   function groupDrawers(prefix, list, keyOf, order, render) {
     const keys = [...new Set(list.map(keyOf))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
-    return keys.map(k => { const part = list.filter(x => keyOf(x) === k); return drawer(prefix + k, `${k} <small class="cnt">${part.length}</small>`, render(part)); }).join('');
+    if (!keys.length) return '';
+    const cur = keys.includes(catSel[prefix]) ? catSel[prefix] : keys[0];
+    return catChips(prefix, keys.map(k => [k, list.filter(x => keyOf(x) === k).length]), cur) + render(list.filter(x => keyOf(x) === cur));
   }
   const PET_SRC = pt => pt.craft ? 'Мастерская' : pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
   const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные', 'Мастерская'];
@@ -1552,6 +1565,8 @@
     save.settings.sort = { ...(save.settings.sort || {}), [e.target.dataset.tab]: e.target.value };
     persist(); renderShop(); const sel = $('sortSel'); if (sel) sel.focus();
   });
+  $('shop').addEventListener('click', e => { const b = e.target.closest('[data-gcat]'); if (!b) return; const [p, name] = b.dataset.gcat.split('|'); catSel[p] = name; renderShop();
+    const again = document.querySelector(`#shop [data-gcat="${CSS.escape(b.dataset.gcat)}"]`); if (again) { again.focus(); const row = again.parentElement; row.scrollLeft = Math.max(0, again.offsetLeft - row.offsetLeft - 24); } });
   $('shopTabs').addEventListener('click', e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     shopTab = b.dataset.tab; renderShop(); $('overlay').scrollTop = 0;

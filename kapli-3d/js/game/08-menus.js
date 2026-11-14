@@ -443,6 +443,31 @@
   // ---- 2.7: «Режимы» — two tabs, compact tiles, ⓘ with everything else ----
   $('modesTabs').addEventListener('click', e => { const b = e.target.closest('[data-mtab]'); if (!b) return; modesTabPick = b.dataset.mtab; renderAll(); b.focus(); });
   $('modesDuoHow').addEventListener('click', () => Duo.how(save.mode === 'duoback' ? 'duoback' : 'territory'));
+  // 2.7: the details of each mode under ⓘ — rewards, steps, rules; the numbers come from the game itself
+  function modeDetail(id) {
+    const X = ModeX.info(), n = v => v.toLocaleString('ru-RU'), li = a => `<li>${a}</li>`, sec = (t, body) => `<div class="mi-sec"><b>${t}</b>${body}</div>`;
+    const tbl = rows => `<div class="mi-tbl">${rows.map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('')}</div>`;
+    if (id === 'classic') return sec('Вехи массы — награда сразу', tbl(X.MILES.map(([m, c]) => [`${n(m)} массы`, `+${c} ◆${m === 30000 ? ' · титул «Вершина» (один раз) · легендарный сундук' : ''}`]))) +
+      sec('Арена накаляется', `<ul>${li(`каждые ${X.ESC_S / 60} минуты — новый уровень, всего ${X.ESC_MAX + 1}`)}${li('боты быстрее, боссы приходят чаще')}${li('за каждый уровень: +20 ◆ × номер уровня')}${li('после 5 минут можно «Забрать награду и выйти»')}</ul>`);
+    if (id === 'timed') return sec('Правило раунда — одно случайное', `<ul>${X.RULES.map(r => li(`<b>${r.name}</b> — ${r.about}`)).join('')}</ul>`) +
+      sec('Финальный рывок', `<ul>${li(`последние ${X.RUSH_S} с: крошки дают вдвое больше`)}</ul>`) +
+      sec('Награда за место', tbl(X.PLACE.map((c, i) => [`${i + 1}-е место`, `+${c} ◆`]).concat([['дальше', '+5 ◆'], ['за подъём во второй половине', '+5 ◆ за каждое место, до +25']])));
+    if (id === 'survival') return sec('Волны', `<ul>${li('новый босс каждые 15 с, каждая волна на 12% тяжелее')}${li('боссы тают: к концу жизни их можно съесть')}${li('каждая 5-я волна особая: босс в полтора раза крупнее, после неё передышка')}${li('со 5-й волны боссы могут повторяться, с 10-й их до 4 сразу')}</ul>`) +
+      sec('Связки — каждая 3-я волна', `<ul>${X.COMBOS.map(c => li(`<b>«${c.name}»</b>: ${c.how}`)).join('')}</ul><small>Пока двое из связки держатся рядом, они на 10% быстрее.</small>`);
+    if (id === 'crown') return sec('Правила', `<ul>${li('корона лежит на поле — подбери её первым')}${li('дальше она переходит только к тому, кто съест владельца (или большую его часть)')}${li('если владельца съест босс, корона падает на поле')}${li('владелец на 15% медленнее')}</ul>`) +
+      sec('Кто охотится на владельца', `<ul>${li('боссы — где бы он ни был')}${li('боты крупнее — через всю арену')}${li('боты мельче — за отколовшимися частями')}</ul>`) + sec('Рекорд', '<ul><li>время с короной за раунд</li></ul>');
+    if (id === 'rbuild') return sec('Как устроен', `<ul>${li('3 случайные способности из 12 обычных, даже не купленные')}${li('их уровни — как у тебя')}${li('опыт ×1,2')}</ul>`);
+    if (id === 'hardcore') return sec('Без поблажек', `<ul>${li('нет бонусов на поле и второго шанса')}${li('боты злее, масса тает быстрее, чем в других режимах')}${li('длинная защита на старте')}${li('монеты ×1,6')}</ul>`) +
+      sec('Вехи — выбери одно из двух улучшений (до конца раунда)', tbl(X.HC_MILES.map(m => [`${n(m)} массы`, 'улучшение на выбор']))) +
+      sec('Какие бывают улучшения', `<ul>${Object.values(X.HC_BOOST).map(([ic, t]) => li(`${ic} ${t}`)).join('')}</ul><small>Одинаковые складываются. Не успел выбрать за 12 с — возьмётся первое.</small>`) +
+      sec('Серия', `<ul>${li('3 раунда подряд с массой 3 000+ — титул «Несгибаемый»')}${li('5 раундов подряд — рамка «Закалка»')}</ul>`);
+    if (id === 'raid') return sec('Рейд недели', `<ul>${li('пара колоссов-близнецов, общее здоровье 100 000')}${li('пока близнецы рядом, их связь гасит половину урона — разводи их')}${li('3 попытки в день по 4 минуты, урон копится')}${li('за победу: 1 500 ◆, эпический сундук, награды рейда за 1-ю, 3-ю и 5-ю победу')}</ul>`);
+    if (id === 'royale') return sec('Правила', `<ul>${li('зона сужается ступенями и смещается — следующий круг виден заранее')}${li('в новом круге падают бонусы')}${li('боты не возрождаются, побеждает последний')}${li('только в лиге, в свой сезон')}</ul>`);
+    if (id === 'territory') return sec('Матч', `<ul>${li('4 минуты, вдвоём на двух телефонах')}${li('ешь ботов на своей половине — граница ползёт к сопернику')}${li('80% поля — досрочная победа')}${li('20 матчей — фон чата «Граница»')}</ul>`);
+    if (id === 'duoback') return sec('Забег', `<ul>${li('вместе против 50 волн боссов, три сложности')}${li('каждая 5-я волна — особый босс, 50-я — финал')}${li('перерывы с едой и усилениями')}</ul>`) +
+      sec('Помощь напарнику', tbl([['ешь ботов, пока он ждёт возвращения', '+1 очко'], ['съешь босса, который гнался за ним', '+3 очка'], ['каждое очко', '+15 ◆ (× сложность)'], ['100 очков за все забеги', 'титул «Надёжное плечо»'], ['300 очков', 'рамка «Плечом к плечу»']]));
+    return '';
+  }
   function modeInfo(id) {
     const m = MODES[id], a = modeArt(id), ms = modeMastery(id), pts = (save.mastery || {})[id] || 0;
     let el = $('modeInfoM');
@@ -459,7 +484,7 @@
     const league = LEAGUE_ROT.includes(id) ? (id === leagueMode() ? 'сейчас' : `сезон ${nextSeasonOf(id)}`) : '—';
     el.innerHTML = `<div class="modal-card mi-card" role="dialog" aria-modal="true" aria-labelledby="miName" style="--mc:${a.c};--mc2:${a.c2}">` +
       `<div class="mi-h"><span class="mi-art">${modeIcon(id)}</span><div><b id="miName">${m.name}</b><small>${m.duo ? '👥 вдвоём, на двух телефонах' : `Мастерство${ms.name ? ` · ${ms.name}` : ''} · ${pts} оч.`}</small></div><button class="modal-x" type="button" data-mix aria-label="Закрыть">×</button></div>` +
-      `<p class="mi-desc">${m.desc}</p><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>` +
+      `<p class="mi-desc">${m.desc}</p>${modeDetail(id)}<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>` +
       (m.duo ? `<div class="mi-st">${duoLine(id, 'rec')}</div>` : `<div class="mi-st"><span>Рекорд<b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство<b>${ms.name || '—'}</b></span><span>Лига<b>${league}</b></span></div>`) +
       (lock ? '' : `<button class="btn mi-pick" type="button" data-mipick="${id}">${save.mode === id ? 'Выбран — в меню' : 'Выбрать режим'}</button>`) + '</div>';
     el.hidden = false; el.querySelector('[data-mix]').focus();

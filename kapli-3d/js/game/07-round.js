@@ -407,7 +407,7 @@
       } }
       // decay grows with size, so mass can't snowball forever
       // 2.7: half as fast and only from 500 mass (a small drop does not melt); «Хардкор» keeps the old, harsh one
-      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss') c.mass -= c.mass * (mode === 'hardcore' ? 0.003 : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.04 * U.guard : 1) * dt;
+      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss') c.mass -= c.mass * (mode === 'hardcore' ? 0.003 : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? (1 - 0.04 * U.guard) * ModeX.meltK() : 1) * dt;
     }
 
     // bonuses (player only)

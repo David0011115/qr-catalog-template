@@ -21,9 +21,9 @@
     let rule = null, mile = 0, esc = 0, rushOn = false, breakAt = 0;
     // «Захват короны»: the crown lies in the middle until someone takes it, then passes only to whoever eats its holder
     let crownGround = null, crownLast = { x: 0, z: 0 };
-    // «Хардкор»: small boosts at 2 000 / 5 000 / 10 000 mass (pick one of two), no shields and no second lives
-    const HC_MILES = [2000, 5000, 10000], HC_BOOST = { speed: ['⚡', 'Скорость +5%'], absorb: ['🍽', 'Поглощение +5%'], cd: ['⏱', 'Перезарядка −10%'] };
-    let hc = { speed: 0, absorb: 0, cd: 0 }, hcMile = 0, hcOffer = null, hcT = 0;
+    // «Хардкор»: small boosts at 2 000 … 25 000 mass (pick one of two), no shields and no second lives (2.7: three more steps and «Таяние −10%»)
+    const HC_MILES = [2000, 5000, 10000, 15000, 20000, 25000], HC_BOOST = { speed: ['⚡', 'Скорость +5%'], absorb: ['🍽', 'Поглощение +5%'], cd: ['⏱', 'Перезарядка −10%'], melt: ['🧊', 'Таяние −10%'] };
+    let hc = { speed: 0, absorb: 0, cd: 0, melt: 0 }, hcMile = 0, hcOffer = null, hcT = 0;
     // «Босс-рейд»: a glowing tether between the twins while they are close — then only half of the damage gets through
     const tether = new THREE.Mesh(new THREE.BoxGeometry(1, .35, .35), new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false }));
     tether.visible = false; scene.add(tether);
@@ -58,7 +58,7 @@
       rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = [];
       document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
-      crownGround = null; hc = { speed: 0, absorb: 0, cd: 0 }; hcMile = 0; hcOffer = null; hcPanel(null);
+      crownGround = null; hc = { speed: 0, absorb: 0, cd: 0, melt: 0 }; hcMile = 0; hcOffer = null; hcPanel(null);
       nextRing.visible = false;
       if (mode === 'royale') { zc = { x: 0, z: 0 }; zst = 0; zph = 'hold'; zt = 20; zoneR = R; zPlan(); }
       if (mode === 'crown') { crownHolder = null; { const an = Math.random() * 6.283; crownGround = { x: Math.cos(an) * R * .4, z: Math.sin(an) * R * .4 }; } [player, ...bots].forEach(o => o.crownT = 0); setTimeout(() => { if (running && mode === 'crown') toast('Корона лежит на поле (♛ на мини-карте) — хватай! Дальше она переходит только к тому, кто съест владельца'); }, 1500); }
@@ -187,6 +187,9 @@
       },
       dayMode, dayMark: id => (id === dayMode() ? DAY_MARK : ''),
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
+      // 2.7: what the ⓘ window of «Режимы» tells about each mode
+      info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
+      meltK: () => (mode === 'hardcore' ? Math.pow(.9, hc.melt) : 1),
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder

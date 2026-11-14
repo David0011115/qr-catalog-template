@@ -1064,15 +1064,19 @@
       const tmp = document.createElement('div'); tmp.innerHTML = html; const nodes = [...tmp.children];
       const top = [], groups = new Map();
       nodes.forEach((n, i) => { const [k, id] = cells[i] || []; if (!id) { top.push(n.outerHTML); return; } const c = pdCat(k, id); if (!groups.has(c)) groups.set(c, []); groups.get(c).push([n.outerHTML, pdOwned(k, id), (pdDraft[k] || '') === id]); });
-      const order = PD_CAT_ORDER.filter(c => groups.has(c));
-      html = (top.length ? `<div class="pd-grid-in pd-top">${top.join('')}</div>` : '') + order.map(c => { const L = groups.get(c), key = 'pd_' + pdTab + '_' + c;
-        if (L.some(x => x[2]) && !pdDrawersSeen.has(key)) { pdDrawersSeen.add(key); openDrawers.add(key); }
-        return `<details class="res-drawer shop-drawer pd-drawer" data-dk="${key}" ${openDrawers.has(key) ? 'open' : ''}><summary>${c} <small class="cnt">${L.filter(x => x[1]).length} / ${L.length}</small></summary><div class="pd-grid-in">${L.map(x => x[0]).join('')}</div></details>`; }).join('');
+      const order = PD_CAT_ORDER.filter(c => groups.has(c)), key = 'pd_' + pdTab;
+      // 2.7: one row of group chips, only the chosen group below (starts on the group of what is picked now)
+      if (!order.includes(catSel[key])) catSel[key] = order.find(c => groups.get(c).some(x => x[2])) || order[0];
+      const cur = catSel[key];
+      html = (order.length ? catChips(key, order.map(c => { const L = groups.get(c); return [c, L.filter(x => x[1]).length, L.length]; }), cur) : '') +
+        `<div class="pd-grid-in">${top.join('')}${cur ? groups.get(cur).map(x => x[0]).join('') : ''}</div>`;
     }
     $('pdGrid').innerHTML = html; decorStill($('pdGrid')); decorateDrawers($('pdGrid'));
     $('pdGrid').classList.toggle('grouped', pdTab !== 'shelf');
   }
   $('pdCardBtn').addEventListener('click', () => { const on = $('pdTop').classList.toggle('full'); $('pdCardBtn').setAttribute('aria-expanded', on); $('pdCardBtn').textContent = on ? '✕ Свернуть' : '👁 Карточка'; });
+  $('pdGrid').addEventListener('click', e => { const b = e.target.closest('[data-gcat]'); if (!b) return; e.stopPropagation(); const [p, name] = b.dataset.gcat.split('|'); catSel[p] = name; renderDecorEditor();
+    const again = document.querySelector(`#pdGrid [data-gcat="${CSS.escape(b.dataset.gcat)}"]`); if (again) { again.focus(); const row = again.parentElement; row.scrollLeft = Math.max(0, again.offsetLeft - row.offsetLeft - 24); } });
   $('pdFlt').addEventListener('click', e => { const b = e.target.closest('[data-pdf]'); if (!b) return; pdFlt = b.dataset.pdf; renderDecorEditor(); const f = $('pdFlt').querySelector(`[data-pdf="${pdFlt}"]`); if (f) f.focus(); });
   $('pdReset').addEventListener('click', () => { pdDraft = myShowcase(); renderDecorEditor(); toast('Вернул то, что сейчас на профиле'); });
   function applyDecor() {

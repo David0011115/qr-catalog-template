@@ -477,3 +477,13 @@
 .ward-tabs .gtab[aria-selected="true"] { border-color: #22e6ff; color: #22e6ff; }
 @media (max-width: 420px) { .ward-tabs .gtab { flex-direction: column; gap: 1px; } .ward-tabs .gtab b { font-size: .66rem; } }
 .shop-drawer > summary .cnt { margin-right: auto; color: var(--muted); }
+/* 2.7: groups as one row of chips (profile decor, wardrobe): the chosen group shows below, nothing to scroll through */
+.cat-chips { display: flex; gap: 5px; overflow-x: auto; padding: 2px 2px 6px; margin-bottom: 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.cat-chips::-webkit-scrollbar { display: none; }
+.cat-chip { flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 6px; min-height: 34px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .04); color: #e9e4ff; font: 700 .72rem var(--body); cursor: pointer; scroll-snap-align: start; white-space: nowrap; }
+.cat-chip .dr-ic { width: 20px; height: 20px; margin: 0; }
+.cat-chip small { font-weight: 600; color: var(--muted); font-size: .64rem; }
+.cat-chip[aria-selected="true"] { border-color: #22e6ff; background: rgba(34, 230, 255, .14); color: #fff; box-shadow: 0 0 8px rgba(34, 230, 255, .3); }
+.cat-chip:focus-visible { outline: 2px solid #22e6ff; outline-offset: 1px; }
+.pd-grid.grouped .cat-chips { position: sticky; top: 0; z-index: 2; background: var(--panel, #140f33); }
+.pd-b > *, .pd-b .pd-right, .pd-grid { min-width: 0; max-width: 100%; } .cat-chips { max-width: 100%; }

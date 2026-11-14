@@ -415,3 +415,7 @@
 .evo-u { display: block; color: var(--muted); font-size: .7rem; margin-top: 3px; }
 .evo-f.lock { cursor: pointer; } .evo-f.lock.on { opacity: 1; border-color: #ffd23f; }
 .evo-f.worn::after { content: '✓'; font-size: .6rem; color: #3dffa2; }
+/* 2.7: the item preview keeps its square picture whatever shape its box gets (a wide window squeezed it and cut the drop) */
+#itemModal .im-view { min-height: 180px; }
+#itemModal .im-view { position: relative; }
+#itemModal .im-view canvas { position: absolute; inset: 0; margin: auto; width: auto !important; height: 100% !important; max-width: 100%; aspect-ratio: 1; }

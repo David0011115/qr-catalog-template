@@ -164,7 +164,7 @@
   };
   let evoPv = {};   // a form looked at in the item window (also a locked one)
   const isEvo = s => !!(s && EVO[s.id]);
-  const evoOpen = id => EVO[id] ? Math.min(3, EVO[id].forms()) : 0;
+  const evoOpen = id => !EVO[id] ? 0 : TEST_MODE && save.evoAll ? 3 : Math.min(3, EVO[id].forms());   // test build: «Открыть всё» opens every form
   const evoForm = id => { const n = evoOpen(id); if (!n) return 0; const p = (save.evo || {})[id]; return p && p <= n ? p : n; };
   const evoOn = (s = skin()) => isEvo(s) && save.skins.includes(s.id);
   // the skins themselves (the legendary and challenge ones already exist; these four are new)

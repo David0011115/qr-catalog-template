@@ -1373,6 +1373,7 @@
   let testResetArm = 0;
   // test build: everything collectable is open (profile backgrounds and badges too)
   function testUnlockAll() {
+    save.evoAll = true; try { evoCheck(true); refreshSkin(); } catch (e) {}
     save.pbg = [...new Set([...PBG.filter(b => !b.craft).map(b => b.id), ...(save.pbg || [])])]; save.badges = save.badges || {};
     [...PROMO_BADGES, ...SPECIAL].forEach(b => { save.badges[b.id] = save.badges[b.id] || today; }); save.badges.millionaire = save.badges.millionaire || today;
     save.legendBadge = save.legendBadge || today;

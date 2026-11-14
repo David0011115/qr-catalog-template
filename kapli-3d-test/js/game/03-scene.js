@@ -425,7 +425,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd166, metalness: .3, roughness: .35, emissive: 0xc08a10, emissiveIntensity: .8, side: THREE.DoubleSide });
   const radius = m => 0.38 * Math.sqrt(m);
   const cellR = c => 0.38 * Math.sqrt(c.mass) * (c.owner && c.owner.rs || 1);   // physical radius: collision and gameplay
-  const visualCellR = c => 0.38 * Math.sqrt(Math.min(c.mass, PLAYER_VISUAL_MASS_CAP)) * (c.owner && c.owner.rs || 1); // rendered size only
+  const visualCellR = c => 0.38 * Math.sqrt(c.owner && c.owner.isPlayer ? Math.min(c.mass, PLAYER_VISUAL_MASS_CAP) : c.mass) * (c.owner && c.owner.rs || 1); // player render cap only; collision radius stays mass-based
   const PREY = C('--prey'), THREAT = C('--threat'), NEUTRAL = new THREE.Color(0x8088c0);
 
   function makeCrown() {

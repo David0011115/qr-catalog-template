@@ -65,7 +65,10 @@ begin
   if jsonb_typeof(p_ops) = 'array' then
     for o in select x from jsonb_array_elements(p_ops) t(x) limit 200 loop
       id := o ->> 'id'; k := o ->> 'k'; src := left(coalesce(o ->> 's', ''), 24);
-      if id is null or id !~ '^[A-Za-z0-9_-]{4,40}$' or k not in ('e', 's') or jsonb_typeof(o -> 'n') <> 'number' then continue; end if;
+      if id is null or id !~ '^[A-Za-z0-9_-]{4,40}$' or k not in ('e', 's') or jsonb_typeof(o -> 'n') <> 'number' then
+        if id is not null then bad := bad || left(id, 40); end if;   -- answered, so the game drops it from its queue
+        continue;
+      end if;
       n := floor((o ->> 'n')::numeric);
       if exists (select 1 from public.kapli_wallet_ops where user_id = uid and op = id) then
         if exists (select 1 from public.kapli_wallet_ops where user_id = uid and op = id and ok) then done := done || id; else bad := bad || id; end if;

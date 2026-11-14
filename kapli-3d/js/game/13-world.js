@@ -469,7 +469,7 @@
     skin: ['#ff4fd8', '#ffd23f', '<path d="M12 3c3.2 4.2 6.5 7.6 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 10.6 8.8 7.2 12 3z"/><circle cx="10" cy="13" r="1.1" fill="currentColor"/><circle cx="14" cy="15.5" r="1.1" fill="currentColor"/><circle cx="11" cy="17.5" r="1.1" fill="currentColor"/>'],
     fx: ['#ffd23f', '#ff4fd8', '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>'],
     deco: ['#ff6ad5', '#ffd23f', '<path d="M3 18.5h18M6 18.5c0-4.5 1.5-9 6-9s6 4.5 6 9M9 9.5l1-5.5h4l1 5.5"/>'],   // «Украшения» (what is worn over the head)
-    arena: ['#4d7cff', '#22e6ff', '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.6" transform="rotate(-18 12 12)"/>'],
+    arena: ['#4d7cff', '#22e6ff', '<ellipse cx="12" cy="8.5" rx="9.5" ry="3.6"/><ellipse cx="12" cy="8.5" rx="4.6" ry="1.5"/><path d="M2.5 8.5v6.2c0 2 4.3 3.8 9.5 3.8s9.5-1.8 9.5-3.8V8.5"/><path d="M6.5 11.6v5.6M12 12.2v6.3M17.5 11.6v5.6"/><path d="M12 4.9V2.4l2.6.9-2.6.9"/>'],   // 2.7: a stadium (like 🏟), the same everywhere
     arch: ['#c0a0ff', '#ffd23f', '<path d="M6 4h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v1.5h4V6a2 2 0 0 0-2-2zM8 21a2 2 0 0 1-2-2V7.5"/><path d="M10.5 9h5M10.5 12h5M10.5 15h3"/>'],
   };
   function hubLogoSVG(k, size = 56) {

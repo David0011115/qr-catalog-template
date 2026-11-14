@@ -17,6 +17,14 @@
   $('startBtn').addEventListener('click', () => { pendingRanked = false; if (isDuoMode(save.mode)) { openDuoLobby(save.mode); return; } startRound(); });
   // ================= tutorial for new players =================
   const TUT_COINS = 500;
+  const MODE_SHORT = {
+    classic: 'До поражения: вехи массы до 30 000 с наградой', timed: '5 минут, случайное правило раунда', survival: 'Волна боссов каждые 15 секунд, связки боссов',
+    crown: 'Держи корону как можно дольше — на тебя охотятся все', rbuild: '3 случайные способности, опыт ×1,2', hardcore: 'Без бонусов, боты злее, монеты ×1,6',
+    raid: 'Пара колоссов недели, 3 попытки в день', royale: 'Зона сужается, побеждает последний', territory: 'Двигай границу поля к сопернику, 4 минуты',
+    duoback: 'Вдвоём против 50 волн боссов',
+  };
+  let modesTabPick = null;
+  const modesTab = () => modesTabPick || (isDuoMode(save.mode) ? 'duo' : 'solo');
   const GUEST_WARN = 'Режим гостя: прогресс хранится только на этом телефоне. Если удалить игру, очистить данные браузера или потерять телефон, восстановить его мы не сможем. Войди в аккаунт — и прогресс, монеты и покупки сохранятся на сервере.';
   const pCenter = () => { const m = total(player) || 1; return player.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); };
   function tutBot(i, mass, dist, still) {
@@ -432,7 +440,33 @@
   // menu groups: each opens its own small window; ← back returns to the menu
   document.querySelectorAll('[data-hub]').forEach(b => b.addEventListener('click', () => { showCard(b.dataset.hub); const f = $(b.dataset.hub).querySelector('.hub-list button'); if (f) f.focus(); }));
   document.querySelectorAll('[data-hubback]').forEach(b => b.addEventListener('click', () => { showCard('menuCard'); $('startBtn').focus(); }));
+  // ---- 2.7: «Режимы» — two tabs, compact tiles, ⓘ with everything else ----
+  $('modesTabs').addEventListener('click', e => { const b = e.target.closest('[data-mtab]'); if (!b) return; modesTabPick = b.dataset.mtab; renderAll(); b.focus(); });
+  $('modesDuoHow').addEventListener('click', () => Duo.how(save.mode === 'duoback' ? 'duoback' : 'territory'));
+  function modeInfo(id) {
+    const m = MODES[id], a = modeArt(id), ms = modeMastery(id), pts = (save.mastery || {})[id] || 0;
+    let el = $('modeInfoM');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'modeInfoM'; el.className = 'modal mode-info-m'; el.hidden = true; document.body.appendChild(el);
+      el.addEventListener('click', e => {
+        if (e.target === el || e.target.closest('[data-mix]')) { el.hidden = true; const t = $('mode-' + el.dataset.id); if (t) t.focus(); return; }
+        const pick = e.target.closest('[data-mipick]'); if (!pick) return;
+        el.hidden = true; save.mode = pick.dataset.mipick; mode = save.mode; persist(); renderAll(); showCard('menuCard'); $('startBtn').focus();
+      });
+    }
+    el.dataset.id = id;
+    const lock = $('mode-' + id) && $('mode-' + id).disabled;
+    const league = LEAGUE_ROT.includes(id) ? (id === leagueMode() ? 'сейчас' : `сезон ${nextSeasonOf(id)}`) : '—';
+    el.innerHTML = `<div class="modal-card mi-card" role="dialog" aria-modal="true" aria-labelledby="miName" style="--mc:${a.c};--mc2:${a.c2}">` +
+      `<div class="mi-h"><span class="mi-art">${modeIcon(id)}</span><div><b id="miName">${m.name}</b><small>${m.duo ? '👥 вдвоём, на двух телефонах' : `Мастерство${ms.name ? ` · ${ms.name}` : ''} · ${pts} оч.`}</small></div><button class="modal-x" type="button" data-mix aria-label="Закрыть">×</button></div>` +
+      `<p class="mi-desc">${m.desc}</p><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>` +
+      (m.duo ? `<div class="mi-st">${duoLine(id, 'rec')}</div>` : `<div class="mi-st"><span>Рекорд<b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство<b>${ms.name || '—'}</b></span><span>Лига<b>${league}</b></span></div>`) +
+      (lock ? '' : `<button class="btn mi-pick" type="button" data-mipick="${id}">${save.mode === id ? 'Выбран — в меню' : 'Выбрать режим'}</button>`) + '</div>';
+    el.hidden = false; el.querySelector('[data-mix]').focus();
+  }
+  $('modes').addEventListener('keydown', e => { const i = e.target.closest('[data-minfo]'); if (i && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); modeInfo(i.dataset.minfo); } });
   $('modes').addEventListener('click', e => {
+    const inf = e.target.closest('[data-minfo]'); if (inf) { e.stopPropagation(); modeInfo(inf.dataset.minfo); return; }
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     save.mode = b.dataset.mode; mode = save.mode; persist(); renderAll();
     showCard('menuCard'); $('startBtn').focus();
@@ -678,16 +712,21 @@
       mb.classList.add('mt'); mb.style.setProperty('--mc', a.c); mb.style.setProperty('--mc2', a.c2);
       mb.classList.toggle('duo', isDuoMode(id)); mb.innerHTML = `<span class="art">${modeIcon(id)}</span><span class="hd"><span class="k">${isDuoMode(id) ? '👥 Вдвоём · локально' : id === ModeX.dayMode() ? '🔥 Режим дня · ×1,25' : 'Режим'}</span><b class="n">${MODES[id].name}</b></span><span class="more">все ▸</span>` +
         (isDuoMode(id) ? `<span class="ln">${duoLine(id)}</span>` : `<span class="ln"><span>Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство <b style="color:#ffd23f">${ms.name ? `«${ms.name}»` : '—'}</b></span></span>`) + `<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>`; }
-    { const plv = playerLevel();
-      $('modes').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
+    { const plv = playerLevel(), tab = modesTab();
+      const ids = MODE_IDS.filter(id => !!MODES[id].duo === (tab === 'duo'));
+      $('mtSolo').textContent = MODE_IDS.filter(id => !MODES[id].duo).length; $('mtDuo').textContent = MODE_IDS.filter(id => MODES[id].duo).length;
+      document.querySelectorAll('#modesTabs [data-mtab]').forEach(b => b.setAttribute('aria-selected', b.dataset.mtab === tab));
+      $('modesDuoNote').hidden = tab !== 'duo';
+      // 2.7: compact tiles — one line of what the mode is; the full text, the league season and the mastery points are under ⓘ
+      $('modes').innerHTML = ids.map(id => [id, MODES[id]]).map(([id, m]) => {
         const a = modeArt(id), ms = modeMastery(id), on = save.mode === id;
         const lock = id === 'royale' && !TEST_MODE ? `<span>🔒</span>Только в лиге<small>сезон ${nextSeasonOf('royale')}</small>` : m.lvl && plv < m.lvl ? `<span>🔒</span>С ${m.lvl} уровня<small>сейчас ${plv}</small>` : '';
-        const tag = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })()
-          : id === 'royale' ? (TEST_MODE ? `<span class="lg-tag">Открыта для теста · сезон ${nextSeasonOf('royale')}</span>` : '') : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '';
-        return `<button class="mode mcard${m.duo ? ' duo' : ''}" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
-          (on ? '<span class="sel" aria-hidden="true">✓</span>' : '') + (a.isNew && !lock ? '<span class="nw">новый</span>' : '') +
-          `<span class="art">${modeIcon(id)}</span><span class="tx">${m.duo ? '<span class="duo-mark">👥 вдвоём · локально</span>' : ModeX.dayMark(id)}<b>${m.name}</b><small>${m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${tag}</span>` +
-          (m.duo ? `<span class="ft">${duoLine(id, 'rec')}</span>` : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` «${ms.name}»` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
+        const chips = (id === leagueMode() ? '<span class="mchip lg">🏆 режим лиги</span>' : '') + (id === ModeX.dayMode() ? '<span class="mchip day">🔥 режим дня · ◆×1,25</span>' : '') + (a.isNew && !lock ? '<span class="mchip fresh">новый</span>' : '');
+        const raid = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="m-raid">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })() : '';
+        return `<button class="mode mcard m27${m.duo ? ' duo' : ''}" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
+          `<span class="art">${modeIcon(id)}<span class="minf" data-minfo="${id}" role="button" tabindex="0" aria-label="Подробнее о режиме «${m.name}»">i</span>${on ? '<span class="sel" aria-hidden="true">✓</span>' : ''}</span>` +
+          `<span class="tx">${chips ? `<span class="mchips">${chips}</span>` : ''}<b>${m.name}</b><small>${MODE_SHORT[id] || m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${raid}</span>` +
+          (m.duo ? `<span class="ft">${duoLine(id, 'rec')}</span>` : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` · ${ms.name}` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
           (lock ? `<span class="lk">${lock}</span>` : '') + `</button>`; }).join(''); }
     $('abilCount').textContent = `${save.abil.owned.length}/${ABILITIES.length}`;
     $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;

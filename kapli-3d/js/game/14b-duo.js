@@ -94,6 +94,7 @@
     window.openDuoLobby = id => { lobby = id; drawn = ''; $('duoTitle').innerHTML = `${MODES[id].name} <span class="duo-badge">👥 вдвоём · локально</span>`; showCard('duoCard'); render();
       if (!save.duoHowSeen) setTimeout(() => duoHow(id), 350); };
     // how to connect two phones: shown once on the first visit of a room, and from «Как играть вдвоём?» any time
+    Duo.how = id => duoHow(id);   // 2.7: the «Вдвоём» tab of «Режимы» opens it too
     function duoHow(id) {
       save.duoHowSeen = true; persist();
       const rules = id === 'duoback' ? 'Вы вместе против 50 волн боссов: держитесь рядом, ешьте ботов, в перерывах выбирайте усиления. Съеденный возвращается по таймеру — напарник ускоряет его, съедая ботов.'

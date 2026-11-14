@@ -365,8 +365,9 @@
   </div>
 
   <div class="card" id="modesCard" hidden>
-    <h1>Режимы</h1>
-    <p class="info-lead">Выбери режим — он запустится кнопкой «Играть». Рейтинговые бои — в «Лиге» и «Хаос-лиге».</p>
+    <div class="modes-top"><h1>Режимы</h1>
+      <div class="modes-tabs" id="modesTabs" role="tablist" aria-label="Режимы"><button type="button" role="tab" data-mtab="solo">🎮 Одиночные <small id="mtSolo"></small></button><button type="button" role="tab" data-mtab="duo">👥 Вдвоём <small id="mtDuo"></small></button></div></div>
+    <p class="duo-note" id="modesDuoNote" hidden>Оба игрока открывают режим на своих телефонах: один создаёт комнату, второй вводит её код. <button type="button" class="link-btn" id="modesDuoHow">Как играть вдвоём?</button></p>
     <div class="modes" id="modes" role="radiogroup" aria-label="Режим игры"></div>
     <button class="btn ghost" id="modesBack">Готово</button>
   </div>

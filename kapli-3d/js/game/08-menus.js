@@ -491,34 +491,28 @@
     // holiday gift boxes (one edition a year): badge + frame
     { id: 'bday2026', src: 'праздничная коробка «День рождения 2026»', name: 'Именинник 2026', label: '2026', c: '#ff4fd8', c2: '#5a0a48', glyph: '🎂', sc: '#ffc2ec', frame: 'fr_bday2026', gift: true },
   ];
-  const PROMO_CODES = { 3528217734: 'beta', 2752792474: 'creator', 1531340868: 'vet', 2337100390: 'c_druzya', 318066375: 'c_help3d26',
-    3194462056: 'c_duo26', 208226527: 'c_duo26', 3193436217: 'c_duo26' };   // ДУО26 (also typed in Latin letters: DUO26, ДУO26)
-  // one-time coin gifts from update announcements
+  // 2.6: promo codes are checked by the server (SECURITY-MIGRATION.sql): the game no longer carries the codes
+  // the look of the coin gifts (by the code's id on the server); an unknown id gets the default look
   const PROMO_COINS = {
-    c_druzya: { name: 'Друзья', coins: 1000, c: '#ffd23f', sc: '#fff6a0' },
-    c_help3d26: { name: 'HELP3D26', coins: 3000, c: '#22e6ff', sc: '#b8f7ff' },
-    c_duo26: { name: 'ДУО26', coins: 7000, c: '#3dffa2', sc: '#b8ffd9' }   // 2.5 «Вдвоём»
+    c_druzya: { name: 'Друзья', c: '#ffd23f', sc: '#fff6a0' },
+    c_help3d26: { name: 'HELP3D26', c: '#22e6ff', sc: '#b8f7ff' },
+    c_duo26: { name: 'ДУО26', c: '#3dffa2', sc: '#b8ffd9' }
   };
-  // HELP3D26 is available for one week, until 18 November 2026, 23:59:59 Astana time.
-  const PROMO_EXPIRY = {
-    c_help3d26: new Date('2026-11-18T23:59:59+05:00').getTime(),
-    c_duo26: new Date('2026-11-21T23:59:59+05:00').getTime()   // ДУО26: one week, until 21 November 2026, 23:59:59 Astana time
-  };
-  const promoHash = t => { let x = 5381; for (const ch of t) x = (Math.imul(x, 33) ^ ch.charCodeAt(0)) >>> 0; return x; };
-  function redeemPromo(raw) {
-    const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+  const PROMO_ERR = { auth: 'Войди в аккаунт, чтобы активировать промокод: он даётся один раз на аккаунт.', unknown: 'Такого промокода нет.',
+    expired: 'Срок действия этого промокода истёк.', used: 'Этот промокод уже активирован.', often: 'Слишком много попыток — подожди минуту.', net: 'Нет связи с сервером — попробуй ещё раз.' };
+  async function redeemPromo(raw) {
+    const code = String(raw || '').trim();
     if (!code) return { err: 'Введи промокод.' };
-    const id = PROMO_CODES[promoHash(code)], b = id && PROMO_BADGES.find(x => x.id === id), cc = id && PROMO_COINS[id];
-    if (id && PROMO_EXPIRY[id] && Date.now() > PROMO_EXPIRY[id]) return { err: 'Срок действия этого промокода истёк.' };
+    const r = await Net.redeemPromo(code);
+    if (!r || r.err) return { err: PROMO_ERR[(r && r.err) || 'net'] || PROMO_ERR.net };
     save.promo = save.promo || []; save.badges = save.badges || {};
-    if (cc) {
-      if (save.promo.includes(id)) return { err: 'Этот промокод уже активирован.' };
-      save.promo.push(id); save.coins += cc.coins; persist(); renderAll();
-      return { coins: cc };
+    if (!save.promo.includes(r.id)) save.promo.push(r.id);
+    if (r.kind === 'coins') {
+      save.coins += r.coins; persist(); renderAll();
+      return { coins: { ...(PROMO_COINS[r.id] || { name: code.toUpperCase(), c: '#ffd23f', sc: '#fff6a0' }), coins: r.coins } };
     }
-    if (!b) return { err: 'Такого промокода нет.' };
-    if (save.promo.includes(id) || save.badges[id]) return { err: 'Этот промокод уже активирован.' };
-    save.promo.push(id); save.badges[id] = today; [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) save.decor.push(d); }); pbgCheck(true); persist();
+    const b = PROMO_BADGES.find(x => x.id === r.badge); if (!b) return { err: PROMO_ERR.net };
+    save.badges[b.id] = today; [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) save.decor.push(d); }); pbgCheck(true); persist();
     return { badge: b };
   }
   const promoCoinSVG = n => `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pcg" cx=".35" cy=".3"><stop offset="0" stop-color="#fff6a0"/><stop offset=".6" stop-color="#ffd23f"/><stop offset="1" stop-color="#b07a00"/></radialGradient></defs>` +
@@ -541,8 +535,10 @@
   // players who redeemed a code earlier get its newer frame and title too
   PROMO_BADGES.forEach(b => { if ((save.promo || []).includes(b.id)) [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) { save.decor.push(d); persist(); } }); });
   $('promoFx').addEventListener('click', () => { $('promoFx').hidden = true; });
-  $('promoBtn').addEventListener('click', () => {
-    const r = redeemPromo($('promoIn').value), m = $('promoMsg');
+  $('promoBtn').addEventListener('click', async () => {
+    const m = $('promoMsg'), btn = $('promoBtn'); if (btn.disabled) return;
+    btn.disabled = true; m.className = 'reset-note'; m.textContent = 'Проверяю…';
+    const r = await redeemPromo($('promoIn').value); btn.disabled = false;
     m.className = 'reset-note ' + (r.err ? 'err' : 'ok');
     if (r.err) { m.textContent = r.err; Sound.play('click'); return; }
     if (r.coins) { m.textContent = `Получено ${r.coins.coins.toLocaleString('ru-RU')} ◆!`; $('promoIn').value = ''; promoShow(r.coins); return; }

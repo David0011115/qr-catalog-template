@@ -58,7 +58,7 @@
       Net.uid = user ? user.id : null; Net.nick = user ? (nick || meta.nick || null) : null;
       Net.shortId = user && publicId != null ? String(publicId).padStart(6, '0') : '';
       Net.email = user ? user.email : '';
-      if (user) setTimeout(() => giftCheck(true), 500);
+      if (user) { setTimeout(() => giftCheck(true), 500); setTimeout(() => syncBadges(), 2500); }
       if (!user) { canPush = false; setSync('guest'); frStop(); } else { if (!privacyPending) setTimeout(() => pushShowcase(), 3000); if (!privacyPending && Net.uid !== frStart.uid) frStart(); }
       frStart.uid = Net.uid;
       renderChip();
@@ -570,7 +570,10 @@
     async function frPing() {
       if (!sess || FR.off || document.hidden) return;
       try {
-        const c = await frRpc('kapli_ping'); const before = FR.counts; FR.counts = c || FR.counts; frBadge();
+        const ver = typeof APP_LABEL !== 'undefined' ? APP_LABEL : '';
+        let c; try { c = FR.noVer ? await frRpc('kapli_ping') : await frRpc('kapli_ping', { p_ver: ver }); }
+        catch (e) { if (!FR.noVer && /PGRST202|Could not find the function/i.test(String((e && (e.message || e.code)) || e))) { FR.noVer = true; c = await frRpc('kapli_ping'); } else throw e; }
+        const before = FR.counts; FR.counts = c || FR.counts; frBadge();
         if (c.requests > before.requests && $('friendsCard').hidden) toast('👥 Новая заявка в друзья');
         if (c.gifts) await frClaim();
       } catch (e) {
@@ -902,7 +905,44 @@
     $('rankBtn').addEventListener('click', () => { showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) || isDuoMode(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });
     $('rankBack').addEventListener('click', () => { showCard('menuCard'); $('rankBtn').focus(); });
 
-    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, duoTerritory, duoCoop, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
+    // ---------- 2.6: promo codes and exclusive badges are kept by the server (SECURITY-MIGRATION.sql) ----------
+    async function redeemPromo(code) {
+      try { await ensureClient(); if (!sess) return { err: 'auth' };
+        const { data, error } = await withTimeout(sb.rpc('kapli_redeem_promo', { p_code: code }), 9000); if (error) throw error; return data; }
+      catch (e) { return { err: 'net' }; }
+    }
+    // the exclusive badges the server granted: the ones it does not know are removed from this save (with their frame,
+    // title and background), the granted ones come back on a new phone
+    const EXCL = ['creator', 'beta', 'vet'];
+    async function syncBadges() {
+      if (!sess || privacyPending) return;
+      let mine; try { const { data, error } = await withTimeout(sb.rpc('kapli_my_badges'), 9000); if (error || !Array.isArray(data)) return; mine = data; } catch (e) { return; }
+      save.badges = save.badges || {}; save.pbg = save.pbg || []; let changed = false;
+      for (const id of EXCL) {
+        const has = mine.includes(id), items = ['fr_' + id, 'tt_' + id];
+        if (has && !save.badges[id]) { save.badges[id] = today; items.forEach(d => { if (!save.decor.includes(d)) save.decor.push(d); }); changed = true; }
+        if (!has && (save.badges[id] || items.some(d => save.decor.includes(d)) || save.pbg.includes('bg_' + id))) {
+          delete save.badges[id]; save.decor = save.decor.filter(d => !items.includes(d)); save.pbg = save.pbg.filter(b => b !== 'bg_' + id);
+          if (save.frame === 'fr_' + id) save.frame = null; if (save.title === 'tt_' + id) save.title = null;
+          save.pc = save.pc || {}; if (save.pc.badge === id) save.pc.badge = ''; if (save.pc.bg === 'bg_' + id) save.pc.bg = 'bg_base';
+          changed = true;
+        }
+      }
+      if (changed) { pbgCheck(true); persist(); renderAll(); pushShowcase(); }
+    }
+    // ---------- 2.6: error reports (the device's journal goes to the server, no personal data) ----------
+    const DEV_KEY = 'kapli3d-dev', SENT_KEY = 'kapli3d-errsent';
+    const devId = () => { try { let d = localStorage.getItem(DEV_KEY); if (!d) { d = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem(DEV_KEY, d); } return d; } catch (e) { return ''; } };
+    async function errFlush() {
+      try {
+        const sent = +(localStorage.getItem(SENT_KEY) || 0), fresh = KapliErr.read().filter(e => e.t > sent).slice(-10); if (!fresh.length || !navigator.onLine) return;
+        await ensureClient(); if (!sb) return;
+        const { error } = await withTimeout(sb.rpc('kapli_err_report', { p_device: devId(), p_ver: typeof APP_LABEL !== 'undefined' ? APP_LABEL : '', p_ua: navigator.userAgent.slice(0, 160), p_items: fresh.map(e => ({ w: e.w, m: e.m, s: e.s, n: e.n })) }), 9000);
+        if (!error) localStorage.setItem(SENT_KEY, String(Math.max(...fresh.map(e => e.t))));
+      } catch (e) {}
+    }
+    setTimeout(errFlush, 15000); setInterval(errFlush, 5 * 60000);
+    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, duoTerritory, duoCoop, redeemPromo, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
     renderChip();
   }
 

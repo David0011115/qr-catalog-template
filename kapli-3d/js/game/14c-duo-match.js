@@ -6,7 +6,12 @@
   const DuoM = (() => {
     const SNAP_MS = 66, INPUT_MS = 50, RESPAWN_S = 2.5;
     const rival = makeOwner('Соперник', 'rival', null);
-    rival.free = Array.from({ length: 10 }, () => makeVis(new THREE.Color('#ff4fd8')));
+    // 2.6: the drops and bosses of the modes for two are built at the first match, not at the start of the game
+    // (less memory and a faster start for everyone who never plays them). The order is always the same on both phones,
+    // so the owners keep the same numbers in the snapshots.
+    const lazy = []; let built = false;
+    lazy.push(() => { rival.free = Array.from({ length: 10 }, () => makeVis(new THREE.Color('#ff4fd8'))); });
+    function ensureBuilt() { if (built) return; built = true; for (const f of lazy) f(); }
     owners.push(rival);
     const RIVAL_I = owners.indexOf(rival), PLAYER_I = owners.indexOf(player);
     const rules = {};   // each mode for two adds its own rules here (see 14d-territory.js)
@@ -101,7 +106,7 @@
       Duo.send(g); begin('host', g);
     }
     function begin(r, g) {
-      const t0 = performance.now();
+      const t0 = performance.now(); ensureBuilt();
       role = r; modeId = g.m; on = true; inp = { x: 0, z: 0 }; rl = rules[modeId] || null; bonSig = ''; rival.eff = eff0();
       rival.pid = null;
       if (rl && rl.pre) rl.pre(r, g);
@@ -127,7 +132,7 @@
     }
     function cleanup() {
       if (rl && rl.end) rl.end();
-      botMate = false; on = false; role = ''; rl = null; tag.visible = false; [...rival.cells].forEach(removeCell); rebuildCells();
+      botMate = false; on = false; role = ''; rl = null; if (stallEl) { stallEl.hidden = true; clearInterval(stallT); } tag.visible = false; [...rival.cells].forEach(removeCell); rebuildCells();
       setTimeout(() => { if (!running) setArenaSize(1); }, 1200);
     }
     function endMatch(title, win, notify, bonus = 0) {
@@ -291,14 +296,23 @@
       if (m.t === 'end') { endMatch(`${rival.name} вышел из матча`, true, false); return true; }
       return false;
     }
-    function linkState() { if (on && !botMate && Duo.state !== 'ready') endMatch('Связь со вторым телефоном потеряна', false, false); }
+    // 2.6: a short loss of the link pauses the match on both phones instead of ending it
+    let stallEl = null, stallT = 0;
+    function stallView() {
+      const show = on && !botMate && Duo.stalled;
+      if (!stallEl) { stallEl = document.createElement('div'); stallEl.id = 'duoStall'; stallEl.setAttribute('role', 'status'); document.body.appendChild(stallEl); }
+      stallEl.hidden = !show; clearInterval(stallT);
+      if (show) { const draw = () => { stallEl.innerHTML = `<b>Связь прервалась</b><small>Матч на паузе — ждём второй телефон… ${Math.max(0, 25 - Duo.silent)} с</small>`; }; draw(); stallT = setInterval(draw, 500); }
+    }
+    function linkState() { stallView(); if (on && !botMate && Duo.state !== 'ready') endMatch('Связь со вторым телефоном потеряна', false, false); }
     // the match cannot stop: the pause button opens the menu while the round goes on; «Завершить» leaves the match for both
     function menu() { renderPauseInfo(); showCard('pauseCard'); $('overlay').hidden = false; setGameUi(false); $('resumeBtn').focus(); }
     $('quitBtn').addEventListener('click', () => { if (on) { Duo.send({ t: 'end' }); cleanup(); } }, true);
     window.duoStartMatch = startAsHost; window.duoPractice = practice;
 
     return { get on() { return on; }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
-      get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, get practice() { return botMate; }, rules, rivalPick, result,
+      later: f => { if (built) f(); else lazy.push(f); },
+      get paused() { return on && !botMate && Duo.stalled; }, get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, get practice() { return botMate; }, rules, rivalPick, result,
       steerRival, act: (k, i) => { if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
       // a hook in canEat: the rules of the mode may forbid a bite; the second player's shield bonus counts like yours
       eatBlock: (a, b) => on && ((b.owner === rival && role === 'host' && rival.eff.shield > 0) || !!(rl && rl.eatBlock && rl.eatBlock(a, b))),

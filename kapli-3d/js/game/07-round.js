@@ -290,6 +290,7 @@
   const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatCandidates = [];
   const eatGridKey = (x, z) => ((x & 65535) << 16) | (z & 65535);
   function update(dt) {
+    if (DuoM.paused) return;   // a match for two waits while the link to the other phone is silent
     if (DuoM.guest) { DuoM.guestTick(dt); return; }   // the second phone of a match for two only draws what the host sends
     stats.time += dt;
     player.ejectCd = Math.max(0, (player.ejectCd || 0) - dt);

@@ -8,10 +8,12 @@
     let lastSide = 0, signT = 0, bx = 0, bxView = 0, pHome = -1, mesh = null, mat = null, flash = 0, limit = MATCH_S, ot = false;
 
     // eight more small bots, used only here: 24 in all, half of them come back on each half of the field
+    DuoM.later(() => {
     [['Капелька', 'coward'], ['Росинка', 'farmer'], ['Брызг', 'coward'], ['Ириска', 'farmer'], ['Пузырь', 'normal'], ['Мятка', 'coward'], ['Искорка', 'farmer'], ['Шарик', 'normal']].forEach(([n, p], k) => {
       const o = makeOwner(n, 'bot', p); o.baseColor = BOT_COLORS[(k * 2 + 1) % BOT_COLORS.length]; o.tExtra = true; o.disabled = true;
       o.free = Array.from({ length: BOT_PARTS }, () => makeVis(new THREE.Color(o.baseColor)));
       bots.push(o); owners.push(o);
+    });
     });
 
     const active = () => DuoM.mode === 'territory';

@@ -218,3 +218,8 @@
 .duo-how b { color: #fff; }
 .duo-how-rules { margin: 8px 0 0; padding: 8px 10px; border-radius: 12px; background: rgba(34, 230, 255, .08); border: 1px solid rgba(34, 230, 255, .25); font-size: 12px; line-height: 1.35; text-align: left; color: #cfc8f5; }
 .duo-how-btn { justify-self: center; font-weight: 700; }
+/* 2.6: a match for two waits while the link is silent */
+#duoStall { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 14px 22px; border-radius: 18px; background: rgba(12, 8, 32, .9); border: 2px solid #ffd23f; box-shadow: 0 0 26px rgba(255, 210, 63, .35); pointer-events: none; text-align: center; }
+#duoStall[hidden] { display: none; }
+#duoStall b { font: 400 22px/1.1 'Russo One', sans-serif; color: #ffd23f; } #duoStall small { font-size: 13px; font-weight: 700; color: #e6e0ff; }

@@ -10,10 +10,13 @@ if ('serviceWorker' in navigator) {
   // check for a new version on every launch and whenever the app comes back to the screen; reload once when it takes over
   const hadController = !!navigator.serviceWorker.controller;
   let reloaded = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
+  // 2.6: a new version never reloads the page in the middle of a round: it waits until the player is back in the menu
+  const reloadWhenFree = () => { if (reloaded) return; if (window.kapliBusy && window.kapliBusy()) { setTimeout(reloadWhenFree, 3000); return; } reloaded = true; location.reload(); };
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) reloadWhenFree(); });
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
     reg.update().catch(() => {});
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+    setInterval(() => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); }, 60 * 60 * 1000);   // 2.6: an app left open for hours still finds the new version
   }).catch(() => {}));
 }
 // version line at the bottom of Settings, so you can see which build is running

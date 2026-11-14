@@ -43,16 +43,14 @@
     const lateStep = () => (wv >= LATE ? Math.floor((wv - LATE) / 5) + 1 : 0);
 
     const bossVis = (color, n) => Array.from({ length: n }, () => { const v = makeVis(new THREE.Color(color)); v.crown.visible = true; v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8; return v; });
-    const regOwners = [];
-    for (const [type, d] of Object.entries(REG)) {
-      BOSS_TYPES_EXTRA['db_' + type] = { name: d.name, color: d.color, speed: d.speed, life: 1e9, parts: 3, coins: d.coins, xp: d.xp, about: d.about };
-      for (let k = 0; k < 2; k++) { const o = makeOwner(d.name, 'boss', 'boss'); o.bossType = 'db_' + type; o.dbType = type; o.life = 0; o.free = bossVis(d.color, 3); owners.push(o); regOwners.push(o); }
-    }
-    const specOwners = SPEC.map(d => {
-      BOSS_TYPES_EXTRA['db_' + d.id] = { name: d.name, color: d.color, speed: d.speed, life: 1e9, parts: 14, coins: 60, xp: 80, about: d.about };
-      const o = makeOwner(d.name, 'boss', 'boss'); o.bossType = 'db_' + d.id; o.dbType = d.id; o.dbSpec = true; o.life = 0; o.free = bossVis(d.color, 14); owners.push(o); return o;
+    const regOwners = [], specOwners = [], allBoss = [];
+    for (const [type, d] of Object.entries(REG)) BOSS_TYPES_EXTRA['db_' + type] = { name: d.name, color: d.color, speed: d.speed, life: 1e9, parts: 3, coins: d.coins, xp: d.xp, about: d.about };
+    for (const d of SPEC) BOSS_TYPES_EXTRA['db_' + d.id] = { name: d.name, color: d.color, speed: d.speed, life: 1e9, parts: 14, coins: 60, xp: 80, about: d.about };
+    DuoM.later(() => {   // built at the first match for two (see 14c-duo-match.js)
+      for (const [type, d] of Object.entries(REG)) for (let k = 0; k < 2; k++) { const o = makeOwner(d.name, 'boss', 'boss'); o.bossType = 'db_' + type; o.dbType = type; o.life = 0; o.free = bossVis(d.color, 3); owners.push(o); regOwners.push(o); }
+      for (const d of SPEC) { const o = makeOwner(d.name, 'boss', 'boss'); o.bossType = 'db_' + d.id; o.dbType = d.id; o.dbSpec = true; o.life = 0; o.free = bossVis(d.color, 14); owners.push(o); specOwners.push(o); }
+      allBoss.push(...regOwners, ...specOwners);
     });
-    const allBoss = [...regOwners, ...specOwners];
 
     // meteor warnings: red circles on the floor
     const rings = Array.from({ length: 3 }, () => {

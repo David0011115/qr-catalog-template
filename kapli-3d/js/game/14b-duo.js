@@ -4,10 +4,10 @@
   // Android alike). If the direct link does not come up, messages keep going through the server channel.
   // The entry in Settings shows only after the page was opened once with ?duo=1 (kept in localStorage).
   const Duo = (() => {
-    const ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', DIRECT_MS = 7000, LOST_MS = 10000;   // a weak phone can stall a few seconds while it builds the match field
+    const ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', DIRECT_MS = 7000, LOST_MS = 25000, STALL_MS = 3000;   // 2.6: after 3 s of silence the match waits; only after 25 s it is over   // a weak phone can stall a few seconds while it builds the match field
     const me = Math.random().toString(36).slice(2, 10);
     let rttLog = [];   // [time, ms] of the last 10 s: the screen shows the average and the worst, not one random ping
-    let ch = null, pc = null, dcR = null, dcU = null, role = '', code = '', state = 'idle', why = '', peer = '', rtt = 0, lastSeen = 0, tick = null, helloT = null, directT = null;
+    let stalled = false, ch = null, pc = null, dcR = null, dcU = null, role = '', code = '', state = 'idle', why = '', peer = '', rtt = 0, lastSeen = 0, tick = null, helloT = null, directT = null;
     let onMsg = () => {}, onState = () => {};
     const direct = () => !!(dcR && dcR.readyState === 'open');
     const set = (st, reason = '') => { state = st; why = reason; onState(); };
@@ -51,7 +51,13 @@
     function ready() {
       clearInterval(helloT); set('ready');
       directT = setTimeout(onState, DIRECT_MS);   // after this the screen says «через сервер» if the direct link is still down
-      clearInterval(tick); tick = setInterval(() => { send({ t: 'pi', n: performance.now() }, true); if (performance.now() - lastSeen > LOST_MS) leave('Связь со вторым телефоном потеряна', true); }, 1000);
+      clearInterval(tick); tick = setInterval(() => {
+        const gap = performance.now() - lastSeen;
+        // the direct link may have died (Wi-Fi ↔ mobile data): while it is silent, also ping through the game server
+        send({ t: 'pi', n: performance.now() }, true); if (gap > STALL_MS) sig('m', { d: JSON.stringify({ t: 'pi', n: performance.now() }) });
+        if (gap > STALL_MS !== stalled) { stalled = gap > STALL_MS; if (onState) onState(); }
+        if (gap > LOST_MS) leave('Связь со вторым телефоном потеряна', true);
+      }, 1000);
     }
     async function open(asRole, roomCode) {
       await leave('', true); role = asRole; code = roomCode || Array.from({ length: 5 }, () => ABC[Math.floor(Math.random() * ABC.length)]).join('');
@@ -69,12 +75,12 @@
       clearInterval(tick); clearInterval(helloT); clearTimeout(directT);
       if (!quiet && state === 'ready') send({ t: 'bye' });
       if (pc) try { pc.close(); } catch (e) {} pc = dcR = dcU = null;
-      const c = ch; ch = null; peer = ''; rtt = 0; rttLog = [];
+      const c = ch; ch = null; peer = ''; rtt = 0; rttLog = []; stalled = false;
       if (c) try { const sb = await Net.client(); await sb.removeChannel(c); } catch (e) {}
       set('idle', reason);
     }
     return { host: () => open('host'), join: c => open('guest', String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5)), leave, send,
-      get state() { return state; }, get why() { return why; }, get code() { return code; }, get role() { return role; }, get rtt() { return rtt; }, get rttAvg() { return rttLog.length ? Math.round(rttLog.reduce((s, x) => s + x[1], 0) / rttLog.length) : 0; }, get rttMax() { return rttLog.reduce((m, x) => Math.max(m, x[1]), 0); }, get direct() { return direct(); },
+      get state() { return state; }, get stalled() { return stalled && state === 'ready'; }, get silent() { return Math.round((performance.now() - lastSeen) / 1000); }, get why() { return why; }, get code() { return code; }, get role() { return role; }, get rtt() { return rtt; }, get rttAvg() { return rttLog.length ? Math.round(rttLog.reduce((s, x) => s + x[1], 0) / rttLog.length) : 0; }, get rttMax() { return rttLog.reduce((m, x) => Math.max(m, x[1]), 0); }, get direct() { return direct(); },
       on(msg, st) { onMsg = msg; onState = st; }, touch() { lastSeen = performance.now(); } };   // touch: a long local pause (building the field) is not a lost link
   })();
 

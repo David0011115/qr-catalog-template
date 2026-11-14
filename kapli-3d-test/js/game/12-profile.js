@@ -802,7 +802,6 @@
   function pbgMount(root) { root.querySelectorAll('canvas[data-pbg]').forEach(cv => pbgLive.add(cv)); if (!pbgRaf) pbgRaf = requestAnimationFrame(pbgLoop); }
   // ---- what a player shows to others ----
   const PB_BADGES = () => [{ id: 'legend', name: 'Легенда Капель', got: !!save.legendBadge }, { id: 'millionaire', name: 'Миллионер', got: !!(save.badges || {}).millionaire },
-    { id: 'hc100k', name: 'Корона Берсерка', got: !!(save.badges || {}).hc100k, src: 'победа в «Хардкоре»: обе половины по 50 000 массы' },
     ...PROMO_BADGES.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], promo: true })), ...SPECIAL.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], src: b.src })), ...EVO_BADGES.map(b => ({ id: b.id, name: b.name, got: (TEST_MODE && save.evoAll) || b.got(), src: b.src }))];
   function pbBadgeSVG(id) {
     if (!id) return '';
@@ -961,7 +960,7 @@
   const PD_CAT_ORDER = ['Обычные', 'Уровни', 'Лига', 'Хаос-лига', 'Режимы', 'Достижения', 'Коллекции', 'Сундуки', 'Праздники', 'Престиж', 'Мастерская', 'Особые', 'Архивные'];
   // where an item comes from: by its fields, else by the words of its source
   function pdCat(k, id) {
-    if (k === 'badge') { if (id === 'legend' || id === 'millionaire') return 'Достижения'; if (EVO_BADGES.some(b => b.id === id)) return 'Режимы'; if (PROMO_BADGES.some(b => b.id === id)) return 'Особые'; return 'Достижения'; }
+    if (k === 'badge') { if (id === 'legend' || id === 'millionaire') return 'Достижения'; if (EVO_BADGES.some(b => b.id === id) || id === 'hc100k') return 'Режимы'; if (PROMO_BADGES.some(b => b.id === id)) return 'Особые'; return 'Достижения'; }
     const d = k === 'bg' ? pbgById(id) : decorById(id); if (!d) return 'Обычные';
     if (d.old) return 'Архивные';
     if (d.promo) return 'Особые';

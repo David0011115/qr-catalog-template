@@ -845,7 +845,7 @@
   }
 
   // ---- profile appearance editor: tap anything (even locked) to preview it on the live card ----
-  let pdTab = 'bg', pdDraft = null;
+  let pdTab = 'bg', pdDraft = null, pdFlt = 'all';
   const PD_TABS = [['bg', 'Фон'], ['frame', 'Рамка'], ['title', 'Титул'], ['badge', 'Значок'], ['shelf', 'Витрина']];
   const pdOwned = (k, id) => !id ? true : k === 'bg' ? (save.pbg || []).includes(id) : k === 'badge' ? PB_BADGES().some(b => b.id === id && b.got) : save.decor.includes(id);
   const pdSrc = (k, id) => k === 'bg' ? pbgById(id).src : k === 'badge' ? ((PB_BADGES().find(b => b.id === id) || {}).src || 'особая цель') : decoSource(decorById(id));
@@ -885,11 +885,17 @@
   function renderDecorEditor() {
     if (!pdDraft) pdDraft = myShowcase();
     renderDecorTop();
-    $('pdTabs').innerHTML = PD_TABS.map(([k, n]) => `<button class="tab" role="tab" data-pd="${k}" aria-selected="${pdTab === k}">${n}</button>`).join('');
+    // 2.7: tabs with logos and «есть / всего»; a filter «Все / Есть / Нет»
+    const pdCount = k => { if (k === 'shelf') return [(pdDraft.shelf || []).length, 3];
+      const all = k === 'bg' ? PBG.filter(b => !b.promo || (save.pbg || []).includes(b.id)).map(b => b.id) : k === 'badge' ? PB_BADGES().filter(b => b.got || !b.promo).map(b => b.id)
+        : DECOR.filter(d => d.kind === k && ((!d.promo && !d.old) || save.decor.includes(d.id))).map(d => d.id);
+      return [all.filter(id => pdOwned(k, id)).length, all.length]; };
+    $('pdTabs').innerHTML = PD_TABS.map(([k, n]) => { const [h, a] = pdCount(k); return `<button class="tab gtab" role="tab" data-pd="${k}" aria-selected="${pdTab === k}" style="--hc:${HUB_ICON['p_' + k][0]}">${hubLogoSVG('p_' + k, 26).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${n}</b><small>${h}/${a}</small></span></button>`; }).join('');
+    $('pdFlt').innerHTML = pdTab === 'shelf' ? '' : [['all', 'Все'], ['own', 'Есть'], ['lock', 'Нет']].map(([k, n]) => `<button type="button" data-pdf="${k}" aria-pressed="${pdFlt === k}">${n}</button>`).join('') + '<span>сначала свои, потом по редкости</span>';
     const cur = myShowcase(), tag = (k, id) => (cur[k] || '') === (id || '') ? '<span class="pd-cur">сейчас</span>' : '';
     const item = (k, id, body, name, rar) => { const own = pdOwned(k, id);
       return `<div class="pd-cell"><button class="pd-it${own ? '' : ' lock'}" data-pk="${k}" data-pid="${id || ''}" aria-pressed="${(pdDraft[k] || '') === (id || '')}">${body}<b>${escHtml(name)}</b>${rar ? `<span class="rr" style="color:${RARITY[rar].color}">${RARITY[rar].name}</span>` : ''}${own ? tag(k, id) : `<small>${escHtml(pdSrc(k, id))}</small>`}</button>${id ? `<button type="button" class="pd-eye" data-peye="${k}" data-pid="${id}" aria-label="Посмотреть: ${escHtml(name)}" title="Посмотреть">👁</button>` : ''}</div>`; };
-    const order = arr => arr.sort((a, b) => (pdOwned(pdTab, b.id) - pdOwned(pdTab, a.id)) || (RAR_ORDER[a.rar] - RAR_ORDER[b.rar]));
+    const order = arr => arr.filter(x => pdFlt === 'all' || (pdFlt === 'own') === pdOwned(pdTab, x.id)).sort((a, b) => (pdOwned(pdTab, b.id) - pdOwned(pdTab, a.id)) || (RAR_ORDER[a.rar] - RAR_ORDER[b.rar]));
     let html = '';
     if (pdTab === 'bg') html = order(PBG.filter(b => !b.promo || (save.pbg || []).includes(b.id)).map(b => ({ ...b }))).map(b => item('bg', b.id, `<img data-pbgt="${b.id}" ${pbgThumbCache[b.id + 160 + 'x' + 90] ? `src="${pbgThumbCache[b.id + 160 + 'x' + 90]}"` : ''} alt="">`, b.name, b.rar)).join('');
     else if (pdTab === 'frame') html = item('frame', '', pcAvatar({ ...pdDraft, frame: '', badge: '' }, 58), 'Без рамки') +
@@ -903,9 +909,11 @@
           `<button class="pd-it pd-sh${t ? '' : ' lock'}" data-shelf="${a.id}" aria-pressed="${on.includes(a.id)}" ${t ? '' : 'disabled'}>${achEmblem(a, t, 52)}<b>${a.name}</b>${t ? `<span class="rr">${a.steps.length <= 3 ? `${ROM3[t]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</span>` : '<small>ещё не начато</small>'}${on.includes(a.id) ? `<span class="pd-cur">${on.indexOf(a.id) + 1}</span>` : ''}</button>`).join('');
     }
     else html = item('badge', '', '<span class="badge-mini pd-none">—</span>', 'Без значка') +
-      PB_BADGES().filter(b => b.got || !b.promo).sort((a, b) => b.got - a.got).map(b => item('badge', b.id, `<span class="badge-mini">${pbBadgeSVG(b.id)}</span>`, b.name)).join('');
+      PB_BADGES().filter(b => (b.got || !b.promo) && (pdFlt === 'all' || (pdFlt === 'own') === !!b.got)).sort((a, b) => b.got - a.got).map(b => item('badge', b.id, `<span class="badge-mini">${pbBadgeSVG(b.id)}</span>`, b.name)).join('');
     $('pdGrid').innerHTML = html; decorStill($('pdGrid'));
   }
+  $('pdFlt').addEventListener('click', e => { const b = e.target.closest('[data-pdf]'); if (!b) return; pdFlt = b.dataset.pdf; renderDecorEditor(); const f = $('pdFlt').querySelector(`[data-pdf="${pdFlt}"]`); if (f) f.focus(); });
+  $('pdReset').addEventListener('click', () => { pdDraft = myShowcase(); renderDecorEditor(); toast('Вернул то, что сейчас на профиле'); });
   function applyDecor() {
     if (!pdDraft || ['bg', 'frame', 'title', 'badge'].some(k => !pdOwned(k, pdDraft[k]))) return;
     save.pc = { ...(save.pc || {}), bg: pdDraft.bg, badge: pdDraft.badge || '', shelf: (pdDraft.shelf || []).map(x => x[0]).slice(0, 3) }; save.frame = pdDraft.frame || null; save.title = pdDraft.title || null;

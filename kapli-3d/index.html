@@ -478,10 +478,11 @@
     </div>
     </div></div>
     <div class="g-group prof-secs" data-grpid="pDecor" hidden><h2 class="g-title">🎨 Оформление профиля</h2>
-    <div id="pdPreview"></div><p class="pd-note" id="pdNote" aria-live="polite"></p>
-    <div class="tabs pd-tabs" id="pdTabs" role="tablist"></div>
-    <div class="pd-grid" id="pdGrid"></div>
-    <button class="btn" id="pdApply">Применить</button>
+    <div class="pd-split">
+      <div class="pd-left"><div id="pdPreview"></div><p class="pd-note" id="pdNote" aria-live="polite"></p>
+        <div class="pd-acts"><button class="btn" id="pdApply">Применить</button><button class="btn ghost" id="pdReset" type="button">Сбросить</button></div></div>
+      <div class="pd-right"><div class="tabs pd-tabs" id="pdTabs" role="tablist"></div><div class="pd-flt" id="pdFlt" role="group" aria-label="Показать"></div><div class="pd-grid" id="pdGrid"></div></div>
+    </div>
     <button class="btn ghost" data-grpback>← Профиль</button></div>
     <div class="g-group prof-secs" data-grpid="pStats" hidden><h2 class="g-title">📊 Статистика</h2>
     <details open class="res-drawer"><summary>Статистика <small class="cnt" id="psStats"></small></summary><div class="res-grid" id="profStats"></div></details>

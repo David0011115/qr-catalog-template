@@ -242,7 +242,7 @@
   function removeCell(c) {
     const o = c.owner;
     if (c.gone) return;
-    c.gone = true;
+    c.gone = true; o.lastAt = { x: c.x, z: c.z };   // where its last part was (2.7: «Спина к спине» checks if a boss died next to the partner)
     o.cells.splice(o.cells.indexOf(c), 1);
     c.vis.mesh.visible = c.vis.ring.visible = false;
     c.vis.shield.visible = false;

@@ -311,7 +311,7 @@
           if (!other.cells.length && other.respawnAt !== undefined) { other.respawnAt = Math.max(stats.time + .5, other.respawnAt - 1); help(1); if (other === player) toast('Напарник ускорил твоё возвращение: −1 с'); }
         } else if (o.kind === 'boss' && o.dbType && !o.dbSpec) {
           team.bosses++; if (eater !== player) { toast(`${o.name} повержен — его съел ${eater.name}!`); Sound.play('bossDown'); }
-          const om = other.cells.length ? mainOf(other) : null, bc = o.cells[0] || null;
+          const om = other.cells.length ? mainOf(other) : null, bc = o.cells[0] || o.lastAt || null;
           if (om && ((o.target && o.target.owner === other) || (bc && Math.hypot(bc.x - om.x, bc.z - om.z) < 25))) { help(3); if (eater === player) toast('Ты прикрыл напарника: +3 очка помощи'); }
           if (o.dbType === 'twins') regOwners.forEach(x => { if (x !== o && x.dbType === 'twins' && x.cells.length) x.enr = 1; });
         }
@@ -393,6 +393,7 @@
         if (cmd === 'wave') { wv = v - 1; ph = 1; bt = 0; }
         if (cmd === 'eat') for (const o of regOwners) if (o.cells.length) { [...o.cells].forEach(removeCell); rebuildCells(); lostCell(o, 50, v === 'r' ? rival() : player); }
         if (cmd === 'hit' && spec) spec.dmg += spec.max * v;
+        if (cmd === 'near') for (const o of regOwners) for (const c of o.cells) { const m = mainOf(rival()); if (m) { c.x = m.x + 4; c.z = m.z; } }   // test: the bosses next to the partner
         if (cmd === 'state') return { wv, ph, bt: Math.round(bt * 10) / 10, regs: regOwners.filter(o => o.cells.length).map(o => o.dbType + ':' + Math.round(total(o))), spec: spec ? spec.d.id + ' ' + Math.round(spec.dmg) + '/' + Math.round(spec.max) + ' cells ' + spec.cells.size : null, team, shared, offers, picked, pdb: player.db, rdb: rival().db, met: meteors.length };
       },
       lobbyHtml(role) {

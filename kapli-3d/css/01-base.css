@@ -1881,3 +1881,5 @@ body.menu-bg .menu-backdrop { display: block; }
  #leagueCard .lg-fold>summary{padding:10px 12px;font-size:.88rem}
  #leagueCard .lg-now>.hint{font-size:.73rem;line-height:1.3}
 }
+/* 2.5: the prestige panel is hidden before prestige (level 50); its own display rule used to show it as an empty golden bar */
+.ps-panel[hidden] { display: none; }

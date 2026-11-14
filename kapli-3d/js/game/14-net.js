@@ -573,7 +573,15 @@
         const c = await frRpc('kapli_ping'); const before = FR.counts; FR.counts = c || FR.counts; frBadge();
         if (c.requests > before.requests && $('friendsCard').hidden) toast('👥 Новая заявка в друзья');
         if (c.gifts) await frClaim();
-      } catch (e) { if (!netErr(e)) FR.off = true; }   // no server part yet: stay quiet until the next sign-in
+      } catch (e) {
+        // 2.5: one failed ping used to switch the online mark off until the next sign-in, so a player who kept playing
+        // showed «был(а) N дн. назад». Now only a missing server part stops it; an expired session is refreshed and the
+        // next minute tries again
+        if (netErr(e)) return;
+        const t = String((e && (e.message || e.code)) || e || '');
+        if (/PGRST202|Could not find the function|does not exist/i.test(t)) FR.off = true;
+        else if (/JWT|401|PGRST301|expired/i.test(t)) { try { await sb.auth.refreshSession(); } catch (er) {} }
+      }
     }
     async function frClaim() {
       const got = await frRpc('kapli_gifts_claim'); if (!got || !got.length) return;
@@ -581,6 +589,7 @@
       toast(got.length === 1 ? `🎁 Подарок от ${got[0].nickname}: +${sum} ◆` : `🎁 Подарки от друзей (${got.length}): +${sum} ◆`);
       FR.counts.gifts = 0;
     }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && FR.timer) frPing(); });   // back in the game: «в игре» at once, not in a minute
     function frStart() {
       frStop(); FR.off = false; frPing(); FR.timer = setInterval(frPing, 60000);
       ensureClient().then(() => {

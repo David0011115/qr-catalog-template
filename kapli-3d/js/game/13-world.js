@@ -450,8 +450,8 @@
     p_title: ['#ffd23f', '#ff9a3d', '<path d="M4 8h16v8H4z"/><path d="M4 8l-2 4 2 4M20 8l2 4-2 4M8 12h8"/>'],
     p_badge: ['#3dffa2', '#22e6ff', '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>'],
     p_shelf: ['#ff9a3d', '#ff3d6e', '<path d="M3 17h18M5 17v3M19 17v3"/><circle cx="7" cy="13" r="2.5"/><path d="M12 8.5l1.3 2.6 2.8.4-2 2 .5 2.8-2.6-1.4-2.6 1.4.5-2.8-2-2 2.8-.4z"/><rect x="16.5" y="10.5" width="4" height="5" rx="1"/>'],
-    c_skin: ['#ff4fd8', '#7b3dff', '<circle cx="12" cy="13" r="7"/><circle cx="9.5" cy="11.5" r="1" fill="currentColor"/><circle cx="14.5" cy="11.5" r="1" fill="currentColor"/><path d="M9.5 15.5c1.5 1 3.5 1 5 0"/>'],
-    c_fx: ['#22e6ff', '#3dffa2', '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/><circle cx="12" cy="12" r="2"/>'],
+    c_skin: ['#ff4fd8', '#ffd23f', '<path d="M12 3c3.2 4.2 6.5 7.6 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 10.6 8.8 7.2 12 3z"/><circle cx="10" cy="13" r="1.1" fill="currentColor"/><circle cx="14" cy="15.5" r="1.1" fill="currentColor"/><circle cx="11" cy="17.5" r="1.1" fill="currentColor"/>'],   // 2.7: one icon per thing everywhere — the same as «Скины» in the shop and wardrobe
+    c_fx: ['#ffd23f', '#ff4fd8', '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>'],   // the same as «Эффекты»
     c_league: ['#ffd23f', '#ff9a3d', '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.5 4M17 6h2.5a2.5 2.5 0 0 1-2.5 4M12 13v4M8.5 20h7M10 17h4"/>'],
     c_special: ['#ff9a3d', '#ff3d6e', '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M4 13h16M12 9v11"/><path d="M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6 .5 6-1.5S14 5 12 9"/>'],
     g_ach: ['#22e6ff', '#7b3dff', '<circle cx="12" cy="14.5" r="6"/><path d="M8 3l3 5.5M16 3l-3 5.5"/><path d="M9.6 14.6l1.7 1.7 3.2-3.4"/>'],
@@ -468,6 +468,7 @@
     sabil: ['#22e6ff', '#b26bff', '<path d="M12 2.5l6 6.5-6 12.5L6 9z"/><path d="M6 9h12M9.5 9L12 21.5 14.5 9"/>'],
     skin: ['#ff4fd8', '#ffd23f', '<path d="M12 3c3.2 4.2 6.5 7.6 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 10.6 8.8 7.2 12 3z"/><circle cx="10" cy="13" r="1.1" fill="currentColor"/><circle cx="14" cy="15.5" r="1.1" fill="currentColor"/><circle cx="11" cy="17.5" r="1.1" fill="currentColor"/>'],
     fx: ['#ffd23f', '#ff4fd8', '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>'],
+    deco: ['#ff6ad5', '#ffd23f', '<path d="M3 18.5h18M6 18.5c0-4.5 1.5-9 6-9s6 4.5 6 9M9 9.5l1-5.5h4l1 5.5"/>'],   // «Украшения» (what is worn over the head)
     arena: ['#4d7cff', '#22e6ff', '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.6" transform="rotate(-18 12 12)"/>'],
     arch: ['#c0a0ff', '#ffd23f', '<path d="M6 4h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v1.5h4V6a2 2 0 0 0-2-2zM8 21a2 2 0 0 1-2-2V7.5"/><path d="M10.5 9h5M10.5 12h5M10.5 15h3"/>'],
   };

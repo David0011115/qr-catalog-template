@@ -35,7 +35,14 @@
       dash: ['💨', 'Короткий рывок', [10, 15, 20, 25], '-'], merge: ['🔗', 'Быстрое слияние', [10, 15, 20, 25], '-'], predator: ['🩸', 'Хищник', [8, 10, 12, 15], '+'], coins: ['💰', 'Добытчик', [4, 6, 8, 10], '+'], spike: ['🌵', 'Колючая броня', [10, 15, 20, 25], '-'] };
     const HC_ABOUT = { speed: 'быстрее', absorb: 'еда сытнее', cd: 'способности перезаряжаются быстрее', melt: 'масса тает медленнее', skin: 'боту надо быть крупнее, чтобы съесть тебя', magnet: 'крошки притягиваются издалека',
       dash: 'рывок перезаряжается быстрее', merge: 'части сливаются быстрее', predator: 'после съеденного бота 2 с ты быстрее', coins: 'монеты за раунд', spike: 'шанс, что шип не сработает на тебе' };
-    let hc = {}, hcN = {}, hcMile = 0, hcOffer = null, hcT = 0, hcPredT = 0, hcDbg = { m: 0, t: 0, gain: 0 }, hcLog = null;   // hcLog: test build only — the round's record
+    let hc = {}, hcN = {}, hcMile = 0, hcOffer = null, hcT = 0, hcPredT = 0, hcSpikesOff = false, hcDbg = { m: 0, t: 0, gain: 0 }, hcLog = null;   // hcLog: test build only — the round's record
+    const hcSpikesDisabled = () => {
+      if (mode === 'hardcore' && !hcSpikesOff && total(player) >= 10000) {
+        hcSpikesOff = true;
+        toast('10 000 массы! Все шипы исчезли до конца раунда');
+      }
+      return mode === 'hardcore' && hcSpikesOff;
+    };
     const hcReset = () => { hc = {}; hcN = {}; Object.entries(HC_BOOST).forEach(([k, b]) => { hc[k] = b[3] === '+' ? 0 : 1; hcN[k] = 0; }); };
     hcReset();
     const hcK = k => (mode !== 'hardcore' ? 1 : HC_BOOST[k][3] === '+' ? 1 + hc[k] / 100 : hc[k]);
@@ -74,7 +81,7 @@
       rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = [];
       document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
-      crownGround = null; hcReset(); hcMile = 0; hcOffer = null; hcPredT = 0; hcDbg = { m: 0, t: 0, gain: 0 }; hcPanel(null);
+      crownGround = null; hcSpikesOff = false; hcReset(); hcMile = 0; hcOffer = null; hcPredT = 0; hcDbg = { m: 0, t: 0, gain: 0 }; hcPanel(null);
       hcLog = TEST_MODE && mode === 'hardcore' ? { at: Date.now(), ver: 'v2.7-test', decay: HC_DECAY, picks: [], samples: [], next: 0 } : null;
       nextRing.visible = false;
       if (mode === 'royale') { zc = { x: 0, z: 0 }; zst = 0; zph = 'hold'; zt = 20; zoneR = R; zPlan(); }
@@ -112,7 +119,17 @@
       if (mode === 'hardcore' && !stats.ranked) {
         if (hcMile < HC_MILES.length && total(player) >= HC_MILES[hcMile] && !hcOffer) {
           const [floor, up] = HC_TIER[hcMile]; hcMile++;
-          const ids = Object.keys(HC_BOOST).filter(k => hcN[k] < HC_CAP).sort(() => Math.random() - .5).slice(0, 2);
+          // «Колючая броня» получает двойной вес при случайном выборе двух разных карточек.
+          const pool = Object.keys(HC_BOOST).filter(k => hcN[k] < HC_CAP), ids = [];
+          while (pool.length && ids.length < 2) {
+            const weight = pool.reduce((sum, k) => sum + (k === 'spike' ? 2 : 1), 0);
+            let roll = Math.random() * weight, pick = pool.length - 1;
+            for (let i = 0; i < pool.length; i++) {
+              roll -= pool[i] === 'spike' ? 2 : 1;
+              if (roll < 0) { pick = i; break; }
+            }
+            ids.push(pool.splice(pick, 1)[0]);
+          }
           if (ids.length) { hcOffer = ids.map(k => ({ k, r: Math.min(3, floor + (Math.random() < up ? 1 : 0)) })); hcT = 12; hcPanel(hcOffer);
             toast(`Масса ${HC_MILES[hcMile - 1].toLocaleString('ru-RU')}: выбери улучшение`); Sound.play('level'); }
         }
@@ -229,7 +246,7 @@
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
       // 2.7: what the ⓘ window of «Режимы» tells about each mode
       info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
-      HC_DECAY, meltK: () => hcK('melt'), hcK, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
+      HC_DECAY, meltK: () => hcK('melt'), hcK, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder

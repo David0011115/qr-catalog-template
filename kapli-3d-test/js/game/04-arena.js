@@ -63,10 +63,11 @@
     }
   }
   function updateViruses(dt) {
-    if (typeof ModeX.hcSpikesDisabled === 'function' && ModeX.hcSpikesDisabled()) {
-      [...viruses].forEach(removeVirus);
+    const hcNoSpikes = typeof ModeX.hcSpikesDisabled === 'function' && ModeX.hcSpikesDisabled();
+    if (hcNoSpikes) {
+      // Hardcore отключает только обычные шипы; ловушки способности должны продолжать работать.
+      [...viruses].filter(v => !v.trap).forEach(removeVirus);
       virusRespawn = [];
-      return;
     }
     const k = Math.exp(-2 * dt);
     for (const v of [...viruses]) {

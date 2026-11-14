@@ -125,10 +125,31 @@
     if (o.kind === 'boss' && mode === 'hardcore' && ModeX.hcBossPressure() >= .2 && player.cells.length) {
       const t = ModeX.hcBossTarget(o);
       if (t) {
-        o.target = t; o.tx = t.x; o.tz = t.z;
-        if (o.bossType === 'hunter' && o.dashCd <= 0) {
-          const d = Math.hypot(t.x - c.x, t.z - c.z), pressure = ModeX.hcBossPressure();
-          if (d < 35 + pressure * 15 && canEat(c, t)) { o.dashT = .5 + pressure * .12; o.dashCd = Math.max(2.5, 5 - pressure * 2); }
+        const pressure = ModeX.hcBossPressure(), dx = t.x - c.x, dz = t.z - c.z, d = Math.hypot(dx, dz) || 1;
+        // Predict movement only a little: the boss aims ahead, but never tracks a perfect future position.
+        const lead = .25 + pressure * .85;
+        let tx = t.x + Math.max(-14, Math.min(14, t.vx || 0)) * lead;
+        let tz = t.z + Math.max(-14, Math.min(14, t.vz || 0)) * lead;
+        // One of two bosses pressures the target directly; the other tries to cut off its escape line.
+        if (o.hcRole === 'intercept' && pressure >= .4) {
+          const side = 10 + pressure * 12;
+          tx += -dz / d * side; tz += dx / d * side;
+        }
+        // Громила tries to push the player away from the safer outer edge.
+        if (o.bossType === 'giant' && pressure >= .3) {
+          const edge = Math.hypot(t.x, t.z) || 1, block = 4 + pressure * 9;
+          tx -= t.x / edge * block; tz -= t.z / edge * block;
+        }
+        o.target = t; o.tx = tx; o.tz = tz;
+        // Шустрик announces a dash before accelerating, leaving a readable dodge window.
+        if (o.bossType === 'hunter' && o.dashCd <= 0 && !o.hcDashWarn && d < 38 + pressure * 18) {
+          o.hcDashWarn = .48; o.hcDashTarget = t;
+          wave(c.x, c.z, '#ff6b3d', cellR(c), cellR(c) + 18 + pressure * 8, .5);
+        }
+        // Делитель deliberately opens a second angle after the player has grown.
+        if (o.bossType === 'splitter' && pressure >= .35 && o.splitCd <= 0 && o.cells.length < 6 && c.mass / 2 > t.mass * 1.25) {
+          o.cells.forEach(k => { k.hx = dx / d; k.hz = dz / d; });
+          if (splitOwner(o, 6, 10)) { o.splitCd = 6; rebuildCells(); }
         }
         return;
       }
@@ -332,6 +353,14 @@
     for (const o of bossOwners) {
       if (!o.cells.length) continue;
       o.dashT -= dt; o.dashCd = Math.max(0, o.dashCd - dt);
+      if (o.hcDashWarn > 0) {
+        o.hcDashWarn -= dt;
+        if (o.hcDashWarn <= 0) {
+          const target = o.hcDashTarget;
+          if (target && !target.gone && mode === 'hardcore') { o.dashT = .48 + .12 * ModeX.hcBossPressure(); o.dashCd = Math.max(2.5, 5 - ModeX.hcBossPressure() * 2.5); }
+          o.hcDashTarget = null; o.hcDashWarn = 0;
+        }
+      }
       if (o.bossType === 'queen') { o.spawnT -= dt; if (o.spawnT <= 0) { spawnMinion(o); o.spawnT = mode === 'hardcore' ? Math.max(3.2, 5 - 1.5 * ModeX.hcBossPressure()) : 5; } }
       if (o.bossType === 'frost') {   // a cold cloud around it: everyone close is slowed (players and the second player of a match for two)
         const c = o.cells[0], rc = cellR(c), reach = rc + 26 + (mode === 'hardcore' ? 10 * ModeX.hcBossPressure() : 0);
@@ -480,7 +509,10 @@
             finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
           }
         } }
-        a.mass += b.mass * 0.8 * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const gain = b.mass * 0.8 * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
+        const bossCap = mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP;
+        a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
         const victim = b.owner, lastMass = b.mass;
         if (mode === 'crown') ModeX.crownBite(a, b, victim, lastMass);
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }

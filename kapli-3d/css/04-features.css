@@ -223,3 +223,13 @@
   padding: 14px 22px; border-radius: 18px; background: rgba(12, 8, 32, .9); border: 2px solid #ffd23f; box-shadow: 0 0 26px rgba(255, 210, 63, .35); pointer-events: none; text-align: center; }
 #duoStall[hidden] { display: none; }
 #duoStall b { font: 400 22px/1.1 'Russo One', sans-serif; color: #ffd23f; } #duoStall small { font-size: 13px; font-weight: 700; color: #e6e0ff; }
+/* 2.6: the list in «Оформление профиля» stays still; the card above shows the picked item alive */
+.pd-grid *, .pd-grid *::before, .pd-grid *::after { animation: none !important; transition: none !important; }
+.pd-grid img[data-pbgt]:not([src]) { background: linear-gradient(110deg, rgba(255,255,255,.04) 30%, rgba(255,255,255,.1) 50%, rgba(255,255,255,.04) 70%); }
+.pd-cell { position: relative; display: grid; }
+.pd-eye { position: absolute; left: 6px; top: 6px; width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .22); background: rgba(10, 6, 30, .78); color: #fff; font-size: 15px; line-height: 1; cursor: pointer; display: grid; place-items: center; z-index: 1; }
+.pd-eye:hover, .pd-eye:focus-visible { border-color: #22e6ff; box-shadow: 0 0 10px rgba(34, 230, 255, .5); outline: none; }
+.pd-eye-card { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; }
+.pd-eye-card h2 { margin: 0 0 10px; text-align: center; }
+.pd-eye-src { margin: 8px 0 0; text-align: center; font-size: 13px; color: #cfc8f5; }
+.pd-eye-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }

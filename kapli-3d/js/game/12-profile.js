@@ -851,19 +851,47 @@
   const pdSrc = (k, id) => k === 'bg' ? pbgById(id).src : k === 'badge' ? ((PB_BADGES().find(b => b.id === id) || {}).src || 'особая цель') : decoSource(decorById(id));
   const pdName = (k, id) => !id ? 'нет' : k === 'bg' ? pbgById(id).name : k === 'badge' ? (PB_BADGES().find(b => b.id === id) || {}).name : decorById(id).name;
   function openDecorEditor() { pdDraft = myShowcase(); pdTab = 'bg'; renderDecorEditor(); }
-  function renderDecorEditor() {
-    if (!pdDraft) pdDraft = myShowcase();
+  // 2.6: the card on top is the live preview of what is picked; the list below stays still (no animated frames, titles
+  // and badges all at once — that made scrolling stutter), and picking an item updates only the card, not the whole list
+  function renderDecorTop() {
     $('pdPreview').innerHTML = pcardHTML(pdDraft, Net.nick || 'Ты', { me: true }); pbgMount($('pdPreview'));
     const locked = ['bg', 'frame', 'title', 'badge'].filter(k => !pdOwned(k, pdDraft[k]));
     $('pdNote').innerHTML = locked.length ? locked.map(k => `🔒 ${PD_TABS.find(t => t[0] === k)[1]} «${escHtml(pdName(k, pdDraft[k]))}» — ${escHtml(pdSrc(k, pdDraft[k]))}`).join('<br>') : 'Всё выбранное у тебя есть — можно применить.';
     $('pdApply').disabled = !!locked.length;
+  }
+  function decorStill(grid) {
+    grid.querySelectorAll('svg').forEach(s => { try { if (s.pauseAnimations) { s.pauseAnimations(); s.setCurrentTime(.8); } } catch (e) {} });
+    // profile backgrounds: thumbnails already drawn appear at once, the rest are drawn one per frame instead of all together
+    const todo = [...grid.querySelectorAll('img[data-pbgt]')].filter(im => !im.getAttribute('src'));
+    const next = () => { const im = todo.shift(); if (!im) return; if (im.isConnected) im.src = pbgThumb(im.dataset.pbgt); requestAnimationFrame(next); };
+    requestAnimationFrame(next);
+  }
+  // 👁: a big live look at one item on your card, like the chat themes; the list itself stays still
+  function decorEye(k, id) {
+    let m = document.getElementById('pdEyeM');
+    if (!m) {
+      m = document.createElement('div'); m.id = 'pdEyeM'; m.className = 'modal'; m.hidden = true;
+      m.innerHTML = '<div class="modal-card pd-eye-card" role="dialog" aria-modal="true" aria-labelledby="pdEyeT"><h2 id="pdEyeT"></h2><div id="pdEyeBody"></div><div class="pd-eye-acts"><button class="btn" id="pdEyePick" type="button">Выбрать</button><button class="btn ghost" id="pdEyeClose" type="button">Закрыть</button></div></div>';
+      document.body.appendChild(m);
+      m.addEventListener('click', e => { if (e.target === m || e.target.id === 'pdEyeClose') { m.hidden = true; $('pdEyeBody').innerHTML = ''; } });
+      $('pdEyePick').addEventListener('click', () => { const { k, id } = m.dataset; m.hidden = true; $('pdEyeBody').innerHTML = '';
+        const b = document.querySelector(`#pdGrid [data-pk="${k}"][data-pid="${id}"]`); if (b) b.click(); });
+    }
+    m.dataset.k = k; m.dataset.id = id;
+    $('pdEyeT').textContent = pdName(k, id);
+    $('pdEyeBody').innerHTML = pcardHTML({ ...pdDraft, [k]: id }, Net.nick || 'Ты', { me: true }) + (pdOwned(k, id) ? '' : `<p class="pd-eye-src">🔒 ${escHtml(pdSrc(k, id))}</p>`);
+    pbgMount($('pdEyeBody')); m.hidden = false; $('pdEyePick').focus();
+  }
+  function renderDecorEditor() {
+    if (!pdDraft) pdDraft = myShowcase();
+    renderDecorTop();
     $('pdTabs').innerHTML = PD_TABS.map(([k, n]) => `<button class="tab" role="tab" data-pd="${k}" aria-selected="${pdTab === k}">${n}</button>`).join('');
     const cur = myShowcase(), tag = (k, id) => (cur[k] || '') === (id || '') ? '<span class="pd-cur">сейчас</span>' : '';
     const item = (k, id, body, name, rar) => { const own = pdOwned(k, id);
-      return `<button class="pd-it${own ? '' : ' lock'}" data-pk="${k}" data-pid="${id || ''}" aria-pressed="${(pdDraft[k] || '') === (id || '')}">${body}<b>${escHtml(name)}</b>${rar ? `<span class="rr" style="color:${RARITY[rar].color}">${RARITY[rar].name}</span>` : ''}${own ? tag(k, id) : `<small>${escHtml(pdSrc(k, id))}</small>`}</button>`; };
+      return `<div class="pd-cell"><button class="pd-it${own ? '' : ' lock'}" data-pk="${k}" data-pid="${id || ''}" aria-pressed="${(pdDraft[k] || '') === (id || '')}">${body}<b>${escHtml(name)}</b>${rar ? `<span class="rr" style="color:${RARITY[rar].color}">${RARITY[rar].name}</span>` : ''}${own ? tag(k, id) : `<small>${escHtml(pdSrc(k, id))}</small>`}</button>${id ? `<button type="button" class="pd-eye" data-peye="${k}" data-pid="${id}" aria-label="Посмотреть: ${escHtml(name)}" title="Посмотреть">👁</button>` : ''}</div>`; };
     const order = arr => arr.sort((a, b) => (pdOwned(pdTab, b.id) - pdOwned(pdTab, a.id)) || (RAR_ORDER[a.rar] - RAR_ORDER[b.rar]));
     let html = '';
-    if (pdTab === 'bg') html = order(PBG.filter(b => !b.promo || (save.pbg || []).includes(b.id)).map(b => ({ ...b }))).map(b => item('bg', b.id, `<img src="${pbgThumb(b.id)}" alt="">`, b.name, b.rar)).join('');
+    if (pdTab === 'bg') html = order(PBG.filter(b => !b.promo || (save.pbg || []).includes(b.id)).map(b => ({ ...b }))).map(b => item('bg', b.id, `<img data-pbgt="${b.id}" ${pbgThumbCache[b.id + 160 + 'x' + 90] ? `src="${pbgThumbCache[b.id + 160 + 'x' + 90]}"` : ''} alt="">`, b.name, b.rar)).join('');
     else if (pdTab === 'frame') html = item('frame', '', pcAvatar({ ...pdDraft, frame: '', badge: '' }, 58), 'Без рамки') +
       order(DECOR.filter(d => d.kind === 'frame' && (!d.promo || save.decor.includes(d.id))).map(d => ({ ...d, rar: decoRarity(d) }))).map(d => item('frame', d.id, pcAvatar({ ...pdDraft, frame: d.id, badge: '' }, 58), d.name, d.rar)).join('');
     else if (pdTab === 'title') html = item('title', '', '<span class="pd-tt">—</span>', 'Без титула') +
@@ -876,7 +904,7 @@
     }
     else html = item('badge', '', '<span class="badge-mini pd-none">—</span>', 'Без значка') +
       PB_BADGES().filter(b => b.got || !b.promo).sort((a, b) => b.got - a.got).map(b => item('badge', b.id, `<span class="badge-mini">${pbBadgeSVG(b.id)}</span>`, b.name)).join('');
-    $('pdGrid').innerHTML = html;
+    $('pdGrid').innerHTML = html; decorStill($('pdGrid'));
   }
   function applyDecor() {
     if (!pdDraft || ['bg', 'frame', 'title', 'badge'].some(k => !pdOwned(k, pdDraft[k]))) return;
@@ -1048,7 +1076,9 @@
     if (sb) { const id = sb.dataset.shelf, cur = (pdDraft.shelf || []).filter(x => x[0] !== id), had = cur.length !== (pdDraft.shelf || []).length;
       pdDraft = { ...pdDraft, shelf: had ? cur : [...cur, [id, achTier(achById(id))]].slice(-3) }; renderDecorEditor();
       const again = document.querySelector(`[data-shelf="${id}"]`); if (again) again.focus({ preventScroll: true }); return; }
-    const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid }; renderDecorEditor(); const again = document.querySelector(`[data-pk="${b.dataset.pk}"][data-pid="${b.dataset.pid}"]`); if (again) again.focus({ preventScroll: true }); });
+    const eye = e.target.closest('[data-peye]'); if (eye) { decorEye(eye.dataset.peye, eye.dataset.pid); return; }
+    const b = e.target.closest('[data-pk]'); if (!b) return; pdDraft = { ...pdDraft, [b.dataset.pk]: b.dataset.pid };
+    renderDecorTop(); $('pdGrid').querySelectorAll(`[data-pk="${b.dataset.pk}"]`).forEach(x => x.setAttribute('aria-pressed', x === b)); });
   $('pdApply').addEventListener('click', applyDecor);
   $('pcClose').addEventListener('click', closePlayerCard);
   $('pcBody').addEventListener('click', e => { const box = $('pcSocial'); if (box && box.contains(e.target)) Net.pcSocialClick(e, box); });

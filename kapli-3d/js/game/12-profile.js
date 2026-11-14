@@ -892,7 +892,7 @@
     let d = me ? myShowcase() : null;
     if (!me) { const m = await Net.getShowcases([nick]); d = m.get(nick); }
     if ($('pcModal').hidden) return;
-    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (d && !me ? actOtherHTML(d.act) + rcOtherHTML(d.rc) : '') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
+    $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (d && !me ? (actOtherHTML(d.act) || '<p class="info-note pc-act-none">🔥 Календарь активности этого игрока появится, когда он зайдёт в игру обновлённой версии.</p>') + rcOtherHTML(d.rc) : '') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
     pbgMount($('pcBody'));
     if (!me) Net.pcSocial(nick, $('pcSocial'));
   }

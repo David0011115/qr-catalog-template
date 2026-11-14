@@ -311,7 +311,7 @@
     addCell(o, x, z, mass, o.free.pop());
     o.wave = stats.wave || 1; o.mate = null;
     o.tpT = 5;
-    o.life = b.life * (surv ? 1.5 : 1); o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3; o.spawnT = 4;
+    o.life = b.life * (surv ? 1.5 : 1); o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3; o.hcDashWarn = 0; o.hcDashTarget = null; o.hcRole = 'pursue'; o.spawnT = 4;
     lastBoss = o.bossType;
     rebuildCells();
     if (!want) toast(surv ? `Волна ${stats.wave}: ${b.name}` : `Босс ${b.name}: ${b.about}`); Sound.play('boss');

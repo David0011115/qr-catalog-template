@@ -487,3 +487,11 @@
 .cat-chip:focus-visible { outline: 2px solid #22e6ff; outline-offset: 1px; }
 .pd-grid.grouped .cat-chips { position: sticky; top: 0; z-index: 2; background: var(--panel, #140f33); }
 .pd-b > *, .pd-b .pd-right, .pd-grid { min-width: 0; max-width: 100%; } .cat-chips { max-width: 100%; }
+/* 2.7: all groups visible at once — the chips wrap onto a second line instead of scrolling sideways; no glow */
+.cat-chips { flex-wrap: wrap; overflow: visible; gap: 4px; padding: 0 0 4px; scroll-snap-type: none; }
+.cat-chip { min-height: 28px; padding: 2px 8px 2px 4px; gap: 4px; font-size: .66rem; box-shadow: none !important; }
+.cat-chip .dr-ic { width: 16px; height: 16px; filter: none; }
+.cat-chip small { font-size: .6rem; }
+.pd-grid.grouped .cat-chips { position: static; }
+.pd-b .pd-grid-in { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 5px; }
+.cat-chip .dr-ic svg { width: 16px; height: 16px; }

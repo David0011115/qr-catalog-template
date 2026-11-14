@@ -17,6 +17,7 @@
   $('startBtn').addEventListener('click', () => { pendingRanked = false; if (isDuoMode(save.mode)) { openDuoLobby(save.mode); return; } startRound(); });
   // ================= tutorial for new players =================
   const TUT_COINS = 500;
+  const GUEST_WARN = 'Режим гостя: прогресс хранится только на этом телефоне. Если удалить игру, очистить данные браузера или потерять телефон, восстановить его мы не сможем. Войди в аккаунт — и прогресс, монеты и покупки сохранятся на сервере.';
   const pCenter = () => { const m = total(player) || 1; return player.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); };
   function tutBot(i, mass, dist, still) {
     const o = bots[i]; if (!o) return null;
@@ -70,7 +71,7 @@
     if (done) {
       title = 'Обучение пройдено!';
       const first = !save.tutDone;
-      if (first) { save.tutDone = today; save.coins += TUT_COINS; save.legend.coins = (save.legend.coins || 0) + TUT_COINS; if (!save.skins.includes('tut_student')) save.skins.push('tut_student'); }
+      if (first) { save.tutDone = today; coinsAdd(TUT_COINS, 'tut'); save.legend.coins = (save.legend.coins || 0) + TUT_COINS; if (!save.skins.includes('tut_student')) save.skins.push('tut_student'); }
       const k = SKINS.find(x => x.id === 'tut_student');
       body = (first ? `<div class="tut-reward"><span class="${swClass(k)}" style="${swatch(k)};width:56px;height:56px">${headIcon(k)}</span><div><b>Награда: +${TUT_COINS} ◆ и скин «Ученик»</b><small>Скин уже в гардеробе.</small></div></div>` : '<p>Награда уже была получена раньше.</p>') +
         '<ul><li>Монеты трать в «Магазине» на улучшения и способности: щит, скачок, маскировку и другие. Выброс массы из обучения тоже покупается там.</li><li>Задания под кнопкой «Играть» и задания недели дают монеты и сундуки.</li><li>С «Лиги» начинаются рейтинговые бои и сезонные награды.</li><li>Всё об игре — в «Информации», а в каждой вкладке есть кнопка ⓘ.</li></ul>';
@@ -132,9 +133,17 @@
   });
   $('tutStartBtn').addEventListener('click', () => { showCard('menuCard'); startTutorial(); });
   $('tutSkip').addEventListener('click', () => { if (running && stats.tutorial) tutExit(false); });
+  // 2.6: a guest's coins and purchases live only on this phone — said once before the first purchase (the next tap buys)
+  function guestBuyWarn(b) {
+    if (Net.uid || save.guestBuyWarned || !['abuy', 'arch', 'aup', 'up', 'skin', 'fx', 'arena'].some(k => k in b.dataset) || !b.textContent.includes('◆')) return false;
+    save.guestBuyWarned = true; persist();
+    tutModal('Покупка без аккаунта', `<p class="guest-warn">⚠ ${GUEST_WARN}</p><p>Чтобы купить, нажми на кнопку ещё раз.</p>`, [['guestAcct', 'Войти в аккаунт', 'btn'], ['guestOk', 'Понятно', 'btn ghost']]);
+    return true;
+  }
+  $('tutModal').addEventListener('click', e => { if (e.target.id === 'guestAcct') { $('tutModal').hidden = true; Net.openAccount(null, 'shopCard'); } else if (e.target.id === 'guestOk') $('tutModal').hidden = true; });
   // first launch: offer the tutorial to a new player
   if (!save.tutSeen && !save.totals.rounds) setTimeout(() => tutModal('Добро пожаловать в «Капли 3D»!',
-    `<p>Ты — неоновая капля. Ешь тех, кто меньше, и убегай от тех, кто больше. Короткое обучение покажет всё за пару минут.</p><p>За прохождение: <b>+${TUT_COINS} ◆ и скин «Ученик»</b>.</p>`,
+    `<p>Ты — неоновая капля. Ешь тех, кто меньше, и убегай от тех, кто больше. Короткое обучение покажет всё за пару минут.</p><p>За прохождение: <b>+${TUT_COINS} ◆ и скин «Ученик»</b>.</p><p class="guest-warn">⚠ ${GUEST_WARN}</p>`,
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
@@ -364,7 +373,7 @@
   function newsUnseen() { return NEWS.filter(n => n.id > (save.newsSeen || 0)); }
   function newsRefresh() { $('newsDot').hidden = !newsUnseen().length; }
   function newsMarkSeen() {
-    NEWS.forEach(n => { const g = newsGift(n); if (g && !(save.newsGot || {})[n.id]) { save.coins += g; save.newsGot = { ...(save.newsGot || {}), [n.id]: g }; } });
+    NEWS.forEach(n => { const g = newsGift(n); if (g && !(save.newsGot || {})[n.id]) { coinsAdd(g, 'news'); save.newsGot = { ...(save.newsGot || {}), [n.id]: g }; } });
     save.newsSeen = NEWS[0].id; persist(); newsRefresh(); if (typeof renderAll === 'function') renderAll();
   }
   function openNews(onlyNew) {
@@ -508,7 +517,7 @@
     save.promo = save.promo || []; save.badges = save.badges || {};
     if (!save.promo.includes(r.id)) save.promo.push(r.id);
     if (r.kind === 'coins') {
-      save.coins += r.coins; persist(); renderAll();
+      save.coins += r.coins; persist(); renderAll(); Net.walletSoon(1500);   // the server put them in the wallet already (or they go with the first sync)
       return { coins: { ...(PROMO_COINS[r.id] || { name: code.toUpperCase(), c: '#ffd23f', sc: '#fff6a0' }), coins: r.coins } };
     }
     const b = PROMO_BADGES.find(x => x.id === r.badge); if (!b) return { err: PROMO_ERR.net };
@@ -1432,16 +1441,17 @@
       return;
     }
     const b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (guestBuyWarn(b)) return;
     if (b.dataset.apv) { openArenaPreview(b.dataset.apv, b.id); return; }
     if (b.dataset.arch) {
       const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price || (save.archTok || 0) < ARCH_TOK[o.rar] || archBuysLeft() < 1) return;
-      save.coins -= o.price; save.archTok -= ARCH_TOK[o.rar]; save.archBuys.n++; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
+      coinsSpend(o.price, 'archive'); save.archTok -= ARCH_TOK[o.rar]; save.archBuys.n++; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
     } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
     else if (b.dataset.col) {
       const c = COLLECTIONS.find(x => x.id === b.dataset.col);
       if (save.colDone.includes(c.id) || colOwned(c) < colItems(c).length) return;
-      save.colDone.push(c.id); save.coins += c.coins;
+      save.colDone.push(c.id); coinsAdd(c.coins, 'collection');
       if (c.hat && !save.hats.includes(c.hat)) save.hats.push(c.hat);
       if (c.title && !save.decor.includes(c.title)) save.decor.push(c.title);
       if (c.frame && !save.decor.includes(c.frame)) save.decor.push(c.frame);
@@ -1449,7 +1459,7 @@
       toast(`Коллекция «${c.name}» собрана: ${colRewardName(c)} + ${c.coins} ◆`);
     } else if (b.dataset.arena) {
       const a = ARENAS.find(x => x.id === b.dataset.arena);
-      if (a.price && !save.arenas.includes(a.id)) { if (save.coins < a.price || playerLevel() < (a.lvl || 1)) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
+      if (a.price && !save.arenas.includes(a.id)) { if (save.coins < a.price || playerLevel() < (a.lvl || 1)) return; coinsSpend(a.price, 'arena'); save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
       save.arena = a.id; applyArena(); setHoliday(curHoliday);
     } else if (b.dataset.pet) {
       save.pet = save.pet === b.dataset.pet ? null : b.dataset.pet; applyPet();
@@ -1457,26 +1467,26 @@
       const f = FX.find(x => x.id === b.dataset.fx);
       if (!save.fxOwned.includes(f.id)) {
         if (!buyable(f) || save.coins < f.price || playerLevel() < f.lvl) return;
-        save.coins -= f.price; save.fxOwned.push(f.id);
+        coinsSpend(f.price, 'fx'); save.fxOwned.push(f.id);
       } else if (save.fx[f.slot] === f.id) { save.fx[f.slot] = null; persist(); applyAura(); renderShop(); const again = $(b.id); if (again) again.focus(); return; }
       save.fx[f.slot] = f.id; applyAura();
     } else if (b.dataset.abuy) {
       const a = abilById(b.dataset.abuy); if (save.abil.owned.includes(a.id) || save.coins < a.price) return;
-      save.coins -= a.price; save.abil.owned.push(a.id); save.abil.bought.push(a.id);
+      coinsSpend(a.price, 'abil'); save.abil.owned.push(a.id); save.abil.bought.push(a.id);
       const free = save.build.indexOf(null); if (free >= 0) save.build[free] = a.id;
       toast(`Способность «${a.name}» куплена${free >= 0 ? ' и поставлена в билд' : ''}`); checkAbilAch();
     } else if (b.dataset.aup) {
       const a = abilById(b.dataset.aup), l = save.abil.lv[a.id] || 0, cost = abUpCost(a, l);
       if (!save.abil.owned.includes(a.id) || l >= ABIL_CFG.levels || save.coins < cost) return;
-      save.coins -= cost; save.abil.lv[a.id] = l + 1; toast(`«${a.name}»: уровень ${l + 1}`); checkAbilAch();
+      coinsSpend(cost, 'abilup'); save.abil.lv[a.id] = l + 1; toast(`«${a.name}»: уровень ${l + 1}`); checkAbilAch();
     } else if (b.dataset.slotclear) {
       save.build[+b.dataset.slotclear] = null;
     } else if (b.dataset.up) {
       const u = UPG.find(x => x.id === b.dataset.up), l = save.up[u.id], price = u.cost[l];
-      if (l < u.cost.length && save.coins >= price && playerLevel() >= u.lvl) { save.coins -= price; save.up[u.id]++; }
+      if (l < u.cost.length && save.coins >= price && playerLevel() >= u.lvl) { coinsSpend(price, 'upg'); save.up[u.id]++; }
     } else if (b.dataset.skin) {
       const s = SKINS.find(x => x.id === b.dataset.skin);
-      if (!save.skins.includes(s.id)) { if (!buyable(s) || save.coins < s.price || playerLevel() < s.lvl) return; save.coins -= s.price; save.skins.push(s.id); }
+      if (!save.skins.includes(s.id)) { if (!buyable(s) || save.coins < s.price || playerLevel() < s.lvl) return; coinsSpend(s.price, 'skin'); save.skins.push(s.id); }
       save.skin = s.id; refreshSkin();
     }
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);

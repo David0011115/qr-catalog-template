@@ -58,7 +58,7 @@
       Net.uid = user ? user.id : null; Net.nick = user ? (nick || meta.nick || null) : null;
       Net.shortId = user && publicId != null ? String(publicId).padStart(6, '0') : '';
       Net.email = user ? user.email : '';
-      if (user) { setTimeout(() => giftCheck(true), 500); setTimeout(() => syncBadges(), 2500); }
+      if (user) { setTimeout(() => giftCheck(true), 500); setTimeout(() => syncBadges(), 2500); walletSoon(4000); }
       if (!user) { canPush = false; setSync('guest'); frStop(); } else { if (!privacyPending) setTimeout(() => pushShowcase(), 3000); if (!privacyPending && Net.uid !== frStart.uid) frStart(); }
       frStart.uid = Net.uid;
       renderChip();
@@ -588,7 +588,7 @@
     }
     async function frClaim() {
       const got = await frRpc('kapli_gifts_claim'); if (!got || !got.length) return;
-      const sum = got.reduce((a, g) => a + g.amount, 0); save.coins += sum; persist(); renderAll();
+      const sum = got.reduce((a, g) => a + g.amount, 0); save.coins += sum; persist(); renderAll(); walletSoon(1500);   // the server put them in the wallet already
       toast(got.length === 1 ? `🎁 Подарок от ${got[0].nickname}: +${sum} ◆` : `🎁 Подарки от друзей (${got.length}): +${sum} ◆`);
       FR.counts.gifts = 0;
     }
@@ -940,6 +940,55 @@
     $('rankBtn').addEventListener('click', () => { reviewCheck(); showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) || isDuoMode(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });
     $('rankBack').addEventListener('click', () => { showCard('menuCard'); $('rankBtn').focus(); });
 
+    // ---------- 2.6: the coin wallet on the server (WALLET-MIGRATION.sql, economy V1) ----------
+    // save.wal = { uid, q: [{ id, k: 'e' | 's', n, s }] }: the operations not yet confirmed. The server counts each id once,
+    // so the queue may be sent again (no answer, another phone with the same cloud save). Its answer is the balance:
+    // the coins shown = the wallet + what is still in the queue. Before the first answer for this account the coins on
+    // the phone go to the server «as is» (the server caps them) and the queue is not used.
+    let walBusy = false, walAgain = false, walOff = false, walTimer = null;
+    const qSum = q => q.reduce((t, o) => t + (o.k === 's' ? -o.n : o.n), 0);
+    function walletSoon(ms) { clearTimeout(walTimer); walTimer = setTimeout(walletSync, ms || 6000); }
+    async function walletSync() {
+      if (walBusy) { walAgain = true; return; }
+      if (!sb || !sess || privacyPending || walOff) return;
+      if (!canPush || pending) { walletSoon(15000); return; }   // canPush: the save on this phone is the account's one (no «which save?» question open)
+      const uid = sess.user.id, W = save.wal && save.wal.uid === uid && Array.isArray(save.wal.q) ? save.wal : null;
+      walBusy = true; walAgain = false;
+      try {
+        if (!W) {   // the first time for this account on this phone
+          const c0 = save.coins;
+          const { data, error } = await withTimeout(sb.rpc('kapli_wallet_sync', { p_init: c0, p_ops: [] }), 10000); if (error) throw error;
+          if (!data || data.err || typeof data.coins !== 'number' || !sess || sess.user.id !== uid) return;
+          const d = save.coins - c0;   // coins that came while the answer was on its way
+          save.wal = { uid, q: [] }; save.coins = data.coins;
+          if (d > 0) coinsAdd(d, 'late'); else if (d < 0) coinsSpend(-d, 'late');
+        } else {
+          for (let i = 0; i < 5 && W.q.length; i++) {
+            const batch = W.q.slice(0, 200);
+            const { data, error } = await withTimeout(sb.rpc('kapli_wallet_sync', { p_init: 0, p_ops: batch }), 10000); if (error) throw error;
+            if (!data || data.err || typeof data.coins !== 'number') return;
+            const gone = new Set([...(data.done || []), ...(data.bad || [])]);
+            if ((data.bad || []).length) KapliErr.log(new Error(`wallet refused ${data.bad.length}: ${batch.filter(o => data.bad.includes(o.id)).map(o => o.k + o.n + ':' + o.s).join(',').slice(0, 200)}`), 'wallet');
+            W.q = W.q.filter(o => !gone.has(o.id));
+            save.coins = Math.max(0, data.coins + qSum(W.q));
+            if (!gone.size) break;
+          }
+          if (!W.q.length && !walAgain) {   // nothing to send: just take the balance (promo, gifts, the other phone)
+            const { data, error } = await withTimeout(sb.rpc('kapli_wallet_sync', { p_init: 0, p_ops: [] }), 10000); if (error) throw error;
+            if (data && typeof data.coins === 'number') save.coins = Math.max(0, data.coins + qSum(W.q));
+          }
+        }
+        persist(); renderAll();
+      } catch (e) {
+        const t = String((e && (e.message || e.code)) || e || '');
+        if (/PGRST202|Could not find the function|does not exist/i.test(t)) walOff = true;   // the server has no wallet yet: coins stay on the phone as before
+        else if (!netErr(e)) KapliErr.log(e, 'wallet');
+        walletSoon(60000);
+      } finally { walBusy = false; if (walAgain) walletSoon(1500); }
+    }
+    setInterval(() => { if (save.wal && save.wal.q && save.wal.q.length) walletSync(); }, 90000);
+    document.addEventListener('visibilitychange', () => { if (document.hidden && save.wal && save.wal.q && save.wal.q.length) walletSync(); });
+
     // ---------- 2.6: promo codes and exclusive badges are kept by the server (SECURITY-MIGRATION.sql) ----------
     async function redeemPromo(code) {
       try { await ensureClient(); if (!sess) return { err: 'auth' };
@@ -977,7 +1026,7 @@
       } catch (e) {}
     }
     setTimeout(errFlush, 15000); setInterval(errFlush, 5 * 60000);
-    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, duoTerritory, duoCoop, redeemPromo, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
+    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, duoTerritory, duoCoop, redeemPromo, walletSoon, walletSync, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
     renderChip();
   }
 

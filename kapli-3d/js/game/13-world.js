@@ -38,7 +38,7 @@
   $('apvCard').addEventListener('click', e => {
     if (!e.target.closest('#apvDo')) return;
     const a = ARENAS[apv.i];
-    if (!apvOwned(a)) { if (!a.price || save.coins < a.price || playerLevel() < (a.lvl || 1)) return; save.coins -= a.price; save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
+    if (!apvOwned(a)) { if (!a.price || save.coins < a.price || playerLevel() < (a.lvl || 1)) return; coinsSpend(a.price, 'arena'); save.arenas.push(a.id); toast(`Арена «${a.name}» куплена и включена`); }
     else toast(`Арена «${a.name}» выбрана`);
     save.arena = a.id;
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);

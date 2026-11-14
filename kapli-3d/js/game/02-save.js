@@ -11,8 +11,24 @@
     if (!s) { try { const safe = JSON.parse(localStorage.getItem(SAFE)); if (safe && safe.save && typeof safe.save === 'object') { s = safe.save; saveRestored = broken || 'missing'; } } catch (e) {} }
     if (s) save = { ...save, ...s, up: { ...save.up, ...s.up }, skins: s.skins || ['coral'], quests: s.quests || [] };
   }
+  // ---------- 2.6 economy V1: every change of coins goes through coinsAdd / coinsSpend ----------
+  // A signed-in player's coins live in the wallet on the server (WALLET-MIGRATION.sql). Each change also goes to a queue
+  // (save.wal.q) with its own id; 14-net.js sends the queue and takes the server's balance. A guest has only the number here.
+  const coinDev = (() => { try { let d = localStorage.getItem('kapli3d-dev'); if (!d) { d = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('kapli3d-dev', d); } return d.replace(/[^A-Za-z0-9]/g, '').slice(1, 11) || 'x'; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 10); } })();
+  let coinSeq = 0;
+  function coinOp(k, n, src) {
+    n = Math.round(+n || 0); if (!(n > 0)) return;
+    save.coins = Math.max(0, (save.coins || 0) + (k === 's' ? -n : n));
+    const W = save.wal; if (!W || !W.uid || !Array.isArray(W.q)) return;
+    // the server takes at most 20 000 in one earning
+    for (let left = n; left > 0; left -= k === 's' ? left : 20000)
+      W.q.push({ id: `${coinDev}-${Date.now().toString(36)}${(coinSeq++ % 1296).toString(36)}`, k, n: k === 's' ? left : Math.min(left, 20000), s: src });
+    try { Net.walletSoon(); } catch (e) {}   // Net is made a little below; refunds at start only queue
+  }
+  function coinsAdd(n, src) { coinOp('e', n, src); }
+  function coinsSpend(n, src) { coinOp('s', n, src); }
   // the «Обзор» upgrade was removed (the camera is farther for everyone): refund what was spent on it
-  if (save.up.vision) { save.coins += costs(25, 5).slice(0, save.up.vision).reduce((a, b) => a + b, 0); }
+  if (save.up.vision) { coinsAdd(costs(25, 5).slice(0, save.up.vision).reduce((a, b) => a + b, 0), 'refund'); }
   delete save.up.vision;
   // abilities (save schema 2): owned, levels, build. Old players keep the eject they always had, new players start with an empty 3rd slot
   if (!save.abil) {
@@ -38,7 +54,7 @@
     const spent = (u, l) => u.cost.slice(0, l).reduce((x, y) => x + y, 0);
     save.up.guard = Math.max(save.up.guard || 0, lk, la);
     const back = lk >= la ? spent(A, la) : spent(K, lk);
-    if (back) save.coins += back;
+    if (back) coinsAdd(back, 'refund');
     save.up.keep = save.up.armor = 0;
   }
   if (!save.abilGrowth) {
@@ -46,7 +62,7 @@
     let back = 0;
     for (const [id, lv] of Object.entries(save.abil.lv)) { const a = abilById(id); if (!a || !a.price) continue;
       for (let l = 0; l < lv; l++) back += Math.round(a.price * .5 * Math.pow(1.8, l) / 50) * 50 - Math.round(a.price * .5 * Math.pow(1.5, l) / 50) * 50; }
-    if (back > 0) { save.coins += back; save.abilRefund = back; }
+    if (back > 0) { coinsAdd(back, 'refund'); save.abilRefund = back; }
     save.abilGrowth = ABIL_CFG.growth;
   }
   if (!save.bal163) {
@@ -55,7 +71,7 @@
     UPG.forEach(u => { for (let l = 0; l < Math.min(save.up[u.id] || 0, u.oldCost.length); l++) spent += u.oldCost[l]; });
     for (const [id, lv] of Object.entries((save.abil && save.abil.lv) || {})) { const a = abilById(id); if (!a || !a.price) continue; for (let l = 0; l < lv; l++) spent += Math.round(a.price * .5 * Math.pow(1.5, l) / 50) * 50; }
     const back = Math.round(spent * .35 / 5) * 5;
-    if (back > 0) { save.coins += back; save.bal163Refund = back; }
+    if (back > 0) { coinsAdd(back, 'refund'); save.bal163Refund = back; }
     save.bal163 = true;
   }
   save.schema = 2;
@@ -74,7 +90,7 @@
   }
   fillQuests();
   try { localStorage.removeItem('blobs3d-save'); } catch (e) {}
-  const Net = { uid: null, nick: null, shortId: '', email: '', submitRecord() {}, boot() {}, pushShowcase() {}, getShowcases: async () => new Map(), pcSocial() {}, pcSocialClick() {} };   // filled by the accounts block below
+  const Net = { uid: null, nick: null, shortId: '', email: '', submitRecord() {}, boot() {}, pushShowcase() {}, getShowcases: async () => new Map(), pcSocial() {}, pcSocialClick() {}, walletSoon() {}, walletSync() {} };   // filled by the accounts block below
   const escHtml = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   let persistHook = null;   // cloud sync: told about every local save
   // every save also refreshes a safe copy (at most once a minute); a full storage is reported once instead of failing silently
@@ -171,7 +187,7 @@
     // a season ended while away: pay out by the league reached
     const li = leagueOf(save.season.pts), sd = seasonData(save.season.id), L = lgView(li, sd.holiday);
     if (save.season.pts > 0) {   // badge and rewards only for a season you actually played
-      save.coins += L.coins;
+      coinsAdd(L.coins, 'league');
       let extra = '';
       for (const it of seasonRewards(sd, li)) {
         const list = it.kind === 'skin' ? save.skins : it.kind === 'pet' ? save.pets : save.fxOwned;
@@ -210,7 +226,7 @@
   if (save.chaos.id !== chaosNow && chaosStarted) {
     const ti = chaosOf(save.chaos.pts), id = save.chaos.id;
     if (save.chaos.pts > 0) {
-      save.coins += CHAOS_CFG.coins[ti]; save.legend.coins = (save.legend.coins || 0) + CHAOS_CFG.coins[ti];
+      coinsAdd(CHAOS_CFG.coins[ti], 'chaos'); save.legend.coins = (save.legend.coins || 0) + CHAOS_CFG.coins[ti];
       const got = chaosSeasonRewards(id, ti);
       save.chaosLog.push({ id, tier: ti, pts: save.chaos.pts });
       const tok = save.archTok === undefined ? 0 : archTokAdd(ARCH_TOK_CHAOS); if (tok) got.push(`жетоны архива +${tok} 🎟`);
@@ -270,7 +286,7 @@
     if (save.pet && !petById(save.pet)) save.pet = null;
     if (save.stars) for (const [o, n] of Object.entries(sk.ren)) if (save.stars[o]) { save.stars[n] = Math.max(save.stars[n] || 0, save.stars[o]); delete save.stars[o]; }
     save.archive = null;   // the archive showcase is rebuilt from the new catalog
-    save.coins += coinsBack;
+    coinsAdd(coinsBack, 'refund');
     save.mig170 = { replaced, coins: coinsBack };
     persist();
   }
@@ -311,7 +327,7 @@
   if (!save.upg170) {   // levels above the new maximum come back as coins at their price
     let back = 0;
     UPG.forEach(u => { const l = save.up[u.id] || 0; if (u.cutCost && l > u.cost.length) { back += u.cutCost.slice(0, l - u.cost.length).reduce((a, b) => a + b, 0); save.up[u.id] = u.cost.length; } });
-    if (back) { save.coins += back; save.upgRefund170 = back; }
+    if (back) { coinsAdd(back, 'refund'); save.upgRefund170 = back; }
     save.upg170 = true; persist();
   }
   if (!save.bal209) {   // 2.0.9: «Крупный старт», «Пищеварение», «Жадность», «Удачливость» weaker — 35% back; «Пищеварение» 9–10 fully back
@@ -319,7 +335,7 @@
     for (const id of ['big', 'digest', 'greed', 'bonus']) { const u = UPG.find(x => x.id === id), l = save.up[id] || 0; for (let k = 0; k < Math.min(l, u.cost.length); k++) back += u.cost[k] * .35; }
     const dg = UPG.find(x => x.id === 'digest'), dl = save.up.digest || 0;
     if (dl > dg.cost.length) { back += dg.cutCost.slice(0, dl - dg.cost.length).reduce((a, b) => a + b, 0); save.up.digest = dg.cost.length; }
-    back = Math.round(back / 5) * 5; if (back > 0) { save.coins += back; save.bal209Refund = back; }
+    back = Math.round(back / 5) * 5; if (back > 0) { coinsAdd(back, 'refund'); save.bal209Refund = back; }
     save.bal209 = true; persist();
   }
   if (TEST_MODE) {
@@ -397,7 +413,7 @@
   function payLevels(to) {
     const out = [];
     for (let L = (save.lvlPaid || 1) + 1; L <= to; L++) {
-      const c = 50 * L; save.coins += c; const parts = [`+${c} ◆`];
+      const c = 50 * L; coinsAdd(c, 'level'); const parts = [`+${c} ◆`];
       const ch = levelChest(L); if (ch) { save.special.push({ kind: 'challenge', rar: ch, title: `Уровень ${L}` }); parts.push(`сундук «${RARITY[ch].name}»`); }
       for (const d of LEVEL_DECOR[L] || []) if (!save.decor.includes(d)) { save.decor.push(d); parts.push(`${decorById(d).kind === 'frame' ? 'рамка' : 'титул'} «${decorById(d).name}»`); }
       out.push(`<li class="done"><span>⬆ Уровень ${L}</span><span class="rw">${parts.join(' + ')}</span></li>`);

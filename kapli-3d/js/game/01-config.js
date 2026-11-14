@@ -731,7 +731,7 @@
     for (const k of SKILL) {
       if (k.best) { const v = k.best(S); if (v !== null && v !== undefined) { const old = save.skillBest[k.id]; if (old === undefined || (k.lower ? v < old : v > old)) save.skillBest[k.id] = v; } }
       if (save.skillDone.includes(k.id) || !k.test(S)) continue;
-      save.skillDone.push(k.id); save.coins += k.coins; save.legend.coins = (save.legend.coins || 0) + k.coins;
+      save.skillDone.push(k.id); coinsAdd(k.coins, 'skill'); save.legend.coins = (save.legend.coins || 0) + k.coins;
       out.push(k);
     }
     for (const [n, id] of SKILL_TT) if (save.skillDone.length >= n && !save.decor.includes(id)) { save.decor.push(id); out.push({ ms: id }); }

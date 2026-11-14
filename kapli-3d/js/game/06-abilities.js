@@ -437,7 +437,7 @@
       if (done) { coins += qCoins(q); xp += qXp(q); cExtra.push([`Задание: ${q.text}`, qCoins(q)]); }
       return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
-    save.coins += coins; save.xp += xp;
+    coinsAdd(coins, 'round'); save.xp += xp;
     if (seasonStarted && save.ss) { const S = save.ss; S.r++; S.t += stats.time; S.m = Math.max(S.m, Math.round(stats.maxMass)); S.w += stats.win ? 1 : 0; S.c += coins; S.x += xp; S.md[mode] = (S.md[mode] || 0) + 1; }
     const t = save.totals;
     t.splits += stats.splits; if (mode === 'timed' && stats.win) t.timedWins++;
@@ -472,7 +472,7 @@
         if (W.prog[t.id] >= t.n) { W.done.push(t.id);
           weekLine += `<li class="done"><span>📅 Задание недели: ${t.text(t.n)}</span><span class="rw">${W.done.length} / 3</span></li>`; }
       }
-      if (W.done.length === 3 && !W.bonus) { W.bonus = true; save.shardChests += 2; coins += WEEK_BONUS; save.special.push({ kind: 'challenge', rar: WEEK_CHEST, title: 'Неделя' }); weekLine += `<li class="done"><span>📅 Все задания недели</span><span class="rw">сундук «${RARITY[WEEK_CHEST].name}» и 2 сундука осколков</span></li>`; cExtra.push(['Все задания недели', WEEK_BONUS]); save.coins += WEEK_BONUS; const tk = archTokAdd(ARCH_TOK_WEEK); if (tk) weekLine += `<li class="done"><span>🎟 Жетон архива за задания недели</span><span class="rw">+${tk}</span></li>`; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
+      if (W.done.length === 3 && !W.bonus) { W.bonus = true; save.shardChests += 2; coins += WEEK_BONUS; save.special.push({ kind: 'challenge', rar: WEEK_CHEST, title: 'Неделя' }); weekLine += `<li class="done"><span>📅 Все задания недели</span><span class="rw">сундук «${RARITY[WEEK_CHEST].name}» и 2 сундука осколков</span></li>`; cExtra.push(['Все задания недели', WEEK_BONUS]); coinsAdd(WEEK_BONUS, 'week'); const tk = archTokAdd(ARCH_TOK_WEEK); if (tk) weekLine += `<li class="done"><span>🎟 Жетон архива за задания недели</span><span class="rw">+${tk}</span></li>`; weekLine += `<li class="done"><span>📅 Все задания недели выполнены!</span><span class="rw">+${WEEK_BONUS} ◆</span></li>`; } }
     const skillLine = checkSkill(stats).map(k => k.all ? '<li class="done skill"><span>🎯 Все мастерские достижения! Рамка «Мастер» и скин «Виртуоз»</span><span class="rw">в гардеробе</span></li>'
       : k.ms ? `<li class="done skill"><span>🎯 ${decorById(k.ms).skillN} мастерских достижений</span><span class="rw">титул «${decorById(k.ms).name}»</span></li>`
       : `<li class="done skill"><span>🎯 Мастерское достижение «${k.name}»</span><span class="rw">+${k.coins} ◆</span></li>`).join('');
@@ -488,7 +488,7 @@
     let masteryLine = '';
     for (let k = masteryLv(mBefore); k < masteryLv(save.mastery[mode]); k++) {
       const L = MASTERY_LV[k]; let what = '';
-      if (L.coins) { save.coins += L.coins; what = `+${L.coins} ◆`; }
+      if (L.coins) { coinsAdd(L.coins, 'legend'); what = `+${L.coins} ◆`; }
       masteryLine += `<li class="done"><span>Мастерство «${MODES[mode].name}»: ${L.name}</span><span class="rw">${what}</span></li>`;
     }
     if (!save.decor.includes('fr_modes') && SOLO_MODE_IDS.every(id => masteryLv(save.mastery[id] || 0) >= MASTERY_LV.length)) {

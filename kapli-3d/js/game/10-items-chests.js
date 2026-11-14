@@ -242,7 +242,7 @@
   function giftGive(ev) {
     save.gifts = save.gifts || []; save.badges = save.badges || {}; save.emo = save.emo || [];
     for (const g of ev.give) {
-      if (g.coins) save.coins += g.coins;
+      if (g.coins) coinsAdd(g.coins, 'chest');
       if (g.emote && !save.emo.includes(g.emote)) save.emo.push(g.emote);
       if (g.badge && !save.badges[g.badge]) save.badges[g.badge] = today;
       if (g.frame && !save.decor.includes(g.frame)) save.decor.push(g.frame);
@@ -291,7 +291,7 @@
     let star = 0;
     if (owned && type === 'skin' && (save.stars[item.id] || 0) < 3) { star = save.stars[item.id] = (save.stars[item.id] || 0) + 1; if (save.skin === item.id) refreshSkin(); }
     const coins = (opts.league ? 100 + opts.league * 60 : 40) + Math.floor(Math.random() * 80) + (owned && !star ? RARITY[rar].dup : 0);
-    save.coins += coins; save.legend.coins = (save.legend.coins || 0) + coins;
+    coinsAdd(coins, 'chest'); save.legend.coins = (save.legend.coins || 0) + coins;
     for (const ch of checkChallenges()) toast(`Испытание «${ch.name}»: ${rewardName(ch.reward)}`);
     persist();
     return { type, item, rar, dup: owned, star, coins };

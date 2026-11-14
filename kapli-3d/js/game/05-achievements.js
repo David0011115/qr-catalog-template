@@ -57,7 +57,7 @@
     save.achT = save.achT || {}; const got = [];
     for (const a of ACH) { if (!a.steps || save.ach.includes(a.id)) continue;
       const reach = Math.min(a.steps.length, a.stepOf(T, save.achBest)); let cur = save.achT[a.id] || 0;
-      while (cur < reach) { save.coins += a.pay[cur]; toast(`${a.name}${a.line ? ' ' + ['I', 'II', 'III'][cur] : ''}: ${a.steps[cur]} +${a.pay[cur]} ◆`); cur++; }
+      while (cur < reach) { coinsAdd(a.pay[cur], 'ach'); toast(`${a.name}${a.line ? ' ' + ['I', 'II', 'III'][cur] : ''}: ${a.steps[cur]} +${a.pay[cur]} ◆`); cur++; }
       save.achT[a.id] = cur; if (cur >= a.steps.length) { save.ach.push(a.id); if (a.title && !save.decor.includes(a.title)) save.decor.push(a.title); got.push({ ...a, coins: 0 }); } }
     return got;
   }
@@ -70,7 +70,7 @@
     for (const a of ACH) {
       if (a.steps) continue;
       if (save.ach.includes(a.id) || !a.test(T, stats)) continue;
-      save.ach.push(a.id); save.coins += a.coins; got.push(a);
+      save.ach.push(a.id); coinsAdd(a.coins, 'ach'); got.push(a);
       toast(`Достижение: ${a.name} +${a.coins} ◆`);
     }
     if (pbgCheck().length) persist();

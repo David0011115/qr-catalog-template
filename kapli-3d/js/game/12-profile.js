@@ -961,7 +961,7 @@
         box.querySelector('.ps-all').addEventListener('toggle', e => { psOpen = e.target.open; });
       } }
     $('profHead').innerHTML = [
-      ['Скины', `${save.skins.length} / ${SKINS.length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
+      ['Скины', `${save.skins.length} / ${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length}`], ['Эффекты', `${save.fxOwned.length} / ${FX.length}`], ['Питомцы', `${save.pets.length} / ${PETS.length}`],
       ['Способности', `${save.abil.owned.length} / ${ABILITIES.length}`], ['Коллекции', `${save.colDone.length} / ${COLLECTIONS.length}`], ['Достижения', `${save.ach.length + save.chDone.length} / ${ACH.length + CHALLENGES.length}`],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('profStats').innerHTML = [

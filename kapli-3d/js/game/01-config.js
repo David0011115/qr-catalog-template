@@ -305,7 +305,9 @@
     { id: 'raid_q1', name: 'Трофей: Громила',   color: '#2a2a32', accent: '#ff2d2d', pattern: 'cracks', emi: true, emiColor: '#ff3d2d', mat: 'magma', anim: 'magma', head: 'warhelm', raidQ: 1, sig: 'железо, раскалённые трещины, рогатый шлем' },
     { id: 'raid_q2', name: 'Трофей: Матка роя', color: '#ffb020', accent: '#5a2a00', pattern: 'hex', head: 'swarm', glow: true, raidQ: 2, sig: 'соты и рой' },
     { id: 'raid_q3', name: 'Трофей: Мимик',     color: '#c0c8e0', mat: 'chrome', anim: 'chameleon', raidQ: 3, sig: 'зеркало, меняет цвет' },
-    { id: 'raid_q4', name: 'Трофей: Телепорт',  color: '#120830', accent: '#22e6ff', pattern: 'vortex', head: 'portal', anim: 'twin', glow: true, raidQ: 4, sig: 'портал и мерцание' },
+    { id: 'raid_q4', name: 'Трофей: Телепорт',  color: '#120830', accent: '#22e6ff', pattern: 'vortex', head: 'portal', anim: 'twin', glow: true, raid: true, old: true, sig: 'портал и мерцание' },
+    // 2.7: the «Телепорт» boss was replaced by «Морозец» in 2.5, so the trophy of the IV quarter is «Морозец» now; «Телепорт» is archived (kept by its owners)
+    { id: 'raid_q4f', name: 'Трофей: Морозец', color: '#0a2a3a', accent: '#9ff0ff', pattern: 'facets', mat: 'crystal', head: 'icecrown', glow: true, raidQ: 4, sig: 'ледяная корона и иней' },
     // league chest
     { id: 'lc_shield',   name: 'Лиговый щит',       color: '#c0c8e0', accent: '#4d7cff', pattern: 'heraldry', head: 'crest', shine: 'stripe', lchest: 'common', sig: 'геральдика и герб лиги' },
     { id: 'lc_cup',      name: 'Чемпионский кубок', color: '#ffd23f', accent: '#fff6a0', pattern: 'laurel', mat: 'gold', head: 'cuphandles', shine: 'stripe', lchest: 'rare', sig: 'полированное золото, ручки кубка' },
@@ -823,7 +825,7 @@
   };
   // 1.7.0: one trophy per quarter of the year (the Monday of the raid week decides the quarter)
   const raidQuarter = w => Math.floor(new Date((w * 7 - 3) * 864e5).getUTCMonth() / 3) + 1;
-  function ensureRaidSkin(w) { return 'raid_q' + raidQuarter(w); }
+  function ensureRaidSkin(w) { const q = raidQuarter(w); return q === 4 ? 'raid_q4f' : 'raid_q' + q; }
 
   // ================= pets (league rewards: Platinum and Neon; holiday pets in holiday seasons) =================
   const PET_SPECIES = { drop: 'Капелька', cat: 'Котик', cube: 'Кубик', pyramid: 'Пирамидка', jelly: 'Медуза', firefly: 'Светлячок', robot: 'Робот', ghost: 'Призрачок',

@@ -482,7 +482,7 @@
   const SHOP_TAB_ICON = { up: 'up', abil: 'sabil', skin: 'skin', fx: 'fx', arena: 'arena', archive: 'arch' };
   const tabIcon = id => SHOP_TAB_ICON[id] ? hubLogoSVG(SHOP_TAB_ICON[id], 22).replace('class="hub-logo"', 'class="tab-ico"') : '';
   function hubCardsInfo() {
-    $('wardInfo').textContent = `скинов ${save.skins.length}/${SKINS.length} · надето: «${skin().name}»`;
+    $('wardInfo').textContent = `скинов ${save.skins.length}/${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length} · надето: «${skin().name}»`;
     const pt = save.pet && petById(save.pet); $('petInfo').textContent = pt ? ` · рядом: «${pt.name}»` : '';
     const bd = (save.build || []).filter(Boolean).map(id => (abilById(id) || {}).sh).filter(Boolean); $('abilInfo').textContent = bd.length ? ` · в бою: ${bd.join(' · ')}` : '';
     const lines = ACH.filter(a => a.line), m = [3, 2, 1].map(k => lines.filter(a => achMetal(a, achTier(a)) === k).length);

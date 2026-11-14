@@ -1057,7 +1057,7 @@
       $('shop').innerHTML = html || '<p class="empty-note">Все эффекты магазина уже твои.</p>';
     } else if (shopTab === 'wskin') {
       const own = sortOwned(SKINS.filter(k => save.skins.includes(k.id)), save.skins, 'wskin');
-      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Нажми на группу, чтобы открыть.</p>` +
+      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length}. Нажми на группу, чтобы открыть.</p>` +
         groupDrawers('ws_', own, sourceOf, ['Магазин', ...SOURCE_ORDER], part => `<div class="skins">${part.map(k => skinTile(k, 'own')).join('')}</div>`);
     } else if (shopTab === 'wfx') {
       const ownAll = sortOwned(FX.filter(f => save.fxOwned.includes(f.id)), save.fxOwned, 'wfx');

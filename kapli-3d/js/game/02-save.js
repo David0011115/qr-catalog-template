@@ -258,7 +258,7 @@
     const PET_MAP = { c_p_ice: ['c_p_lav', 'rare'], c_p_plasma: ['c_p_slime', 'epic'], c_p_star: ['c_p_rainbow', 'legendary'], lc_p_jelly: ['lc_p_cupbot', 'epic'] };
     const seasonIdx = (n, even) => { let m = ((n - 1) % 26) + 1; if (even ? m % 2 : !(m % 2)) m = even ? Math.min(26, m + 1) : m - 1; return m; };
     const mapSkin = id => { if (SKINS.some(k => k.id === id)) return null; if (SK_MAP[id]) return SK_MAP[id];
-      let m = /^raid_(\d+)$/.exec(id); if (m) return ['raid_q' + raidQuarter(+m[1]), 'epic'];
+      let m = /^raid_(\d+)$/.exec(id); if (m) return [ensureRaidSkin(+m[1]), 'epic'];
       m = /^cs_(\d+)$/.exec(id); if (m) return ['cs_q' + chaosQ(+m[1]), 'epic'];
       m = /^s_(\d+)$/.exec(id); if (m) return ['s_' + seasonIdx(+m[1], false), 'epic'];
       m = /^h_(\w+?)_\d{4}_\d$/.exec(id); if (m) return ['h_' + m[1], 'epic'];

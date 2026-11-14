@@ -267,7 +267,7 @@
     }
 
     DuoM.rules.duoback = {
-      arena: 1,
+      arena: .8,   // a smaller field: the pair stays close and the bosses find them
       goExtra: () => ({ diff: save.duoDiff || 0 }),
       pre(role, g) {
         Di = Math.max(0, Math.min(2, +g.diff || 0)); D = DIFF[Di]; pHome = role === 'host' ? -1 : 1;

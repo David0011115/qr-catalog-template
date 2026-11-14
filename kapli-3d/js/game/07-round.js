@@ -313,19 +313,10 @@
       if (!o.cells.length) continue;
       o.dashT -= dt; o.dashCd = Math.max(0, o.dashCd - dt);
       if (o.bossType === 'queen') { o.spawnT -= dt; if (o.spawnT <= 0) { spawnMinion(o); o.spawnT = 5; } }
-      if (o.bossType === 'teleport' && player.cells.length) {
-        o.tpT = (o.tpT ?? 5) - dt;
-        if (o.tpT <= 0) {
-          // blink to a random spot near your biggest part, never right on top of it
-          const c = o.cells[0], t = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), ang = Math.random() * Math.PI * 2;
-          const d = cellR(t) + cellR(c) + 16;
-          emit(c.x, cellR(c), c.z, '#22e6ff', 40, 18, .7);
-          let nx = t.x + Math.cos(ang) * d, nz = t.z + Math.sin(ang) * d; const dc = Math.hypot(nx, nz); if (dc > R - 4) { nx *= (R - 4) / dc; nz *= (R - 4) / dc; }
-          c.x = nx; c.z = nz; c.vx = c.vz = 0; c.vis.jig = 1;
-          emit(c.x, cellR(c), c.z, '#ffffff', 40, 18, .7);
-          if (nearView(c.x, c.z)) Sound.play('teleport');
-          o.tpT = 6 + Math.random() * 3;
-        }
+      if (o.bossType === 'frost') {   // a cold cloud around it: everyone close is slowed (players and the second player of a match for two)
+        const c = o.cells[0], rc = cellR(c), reach = rc + 26;
+        for (const p of [player, DuoM.rival]) for (const pc of p.cells) if (Math.hypot(pc.x - c.x, pc.z - c.z) < reach + cellR(pc)) { p.slowT = Math.max(p.slowT || 0, .35); break; }
+        o.frT = (o.frT ?? 0) - dt; if (o.frT <= 0) { o.frT = 1.4; if (nearView(c.x, c.z)) wave(c.x, c.z, '#9ff0ff', rc, reach, .9); }
       }
       o.life -= dt;
       if (o.life <= 0) { [...o.cells].forEach(removeCell); rebuildCells(); toast(`${o.name} ушёл с арены`); }

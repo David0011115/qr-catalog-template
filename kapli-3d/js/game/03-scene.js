@@ -376,7 +376,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   let arenaK = 1;
   function setArenaSize(k) {
     if (k === arenaK) return;
-    const was = arenaK; arenaK = k; R = R_BASE * k; FOOD = k > 1 ? FOOD_MAX : FOOD_BASE;
+    const was = arenaK; arenaK = k; R = R_BASE * k; FOOD = Math.min(FOOD_MAX, Math.round(FOOD_BASE * k * k));   // crumbs follow the area of the field
     [floor, edgeGlow, rim, rimGlow, rimInner, sceneryGround].forEach(m => m.scale.setScalar(k));
     gridTex.repeat.set(R / 3, R / 3); floorFx.uniforms.uTileRep.value = R / 3; floorFx.uniforms.uR.value = R;
     stars.scale.setScalar(k); nebulae.forEach(n => n.position.multiplyScalar(k / was));

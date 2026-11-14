@@ -154,6 +154,8 @@
       '«Королевская битва»: зона сужается ступенями и смещается, следующий круг виден заранее, в нём падают бонусы; шторм с каждой ступенью сильнее.',
       '🔥 Режим дня: каждый день один режим даёт монеты ×1,25 — смотри значок на карточке режима.',
       'Титулы: их стало меньше и каждый заметнее — легендарные мягко светятся. Убранные из выдачи титулы остаются у тех, кто их уже получил («архивные»). «Несокрушимый» за 20-ю волну теперь «Повелитель волн».',
+      'Новый босс «Морозец» вместо «Телепорта»: ледяное облако вокруг замедляет всех, кто подплыл близко.',
+      'Мастерская и комната режимов для двоих: стрелка «назад» в шапке окна.',
       'В круге лиги «Выживание» заняло место «Гонки массы».'] },
     { id: 188, ver: '2.4.0', date: '12 ноября', title: 'Мастерская «Хронос», обновлённые арены и фоны чата', kind: 'update',
       lead: 'Открылась мастерская: предметы, которых нет ни в магазине, ни в сундуках, теперь создаются из осколков. Арены и фоны чата перерисованы.', items: [
@@ -565,7 +567,7 @@
   // every window gets ← in its header (landscape); it does what its own back button does, or closes an open section first
   [['accountCard', 'acctBack'], ['chatCard', 'chatBack'], ['clanCard', 'clanBack'], ['friendsCard', 'frBack'], ['dmCard', 'dmBack'], ['rankCard', 'rankBack'],
    ['shopCard', 'backBtn'], ['chestCard', 'chestBack'], ['modesCard', 'modesBack'], ['chaosCard', 'chaosBack'], ['leagueCard', 'leagueBack'], ['profileCard', 'profBack'],
-   ['infoCard', 'infoBack'], ['settingsCard', 'setBack'], ['hubLeague', null], ['hubCol', null], ['hubRew', null]].forEach(([cid, bid]) => {
+   ['infoCard', 'infoBack'], ['settingsCard', 'setBack'], ['wsCard', 'wsBack'], ['duoCard', 'duoBack'], ['hubLeague', null], ['hubCol', null], ['hubRew', null]].forEach(([cid, bid]) => {
     const card = $(cid), own = bid ? $(bid) : card.querySelector(':scope > [data-hubback]'); if (!card || !own) return;
     own.classList.add('card-foot-back');
     const b = document.createElement('button'); b.type = 'button'; b.className = 'card-back'; b.setAttribute('aria-label', 'Назад'); b.innerHTML = icon('back');

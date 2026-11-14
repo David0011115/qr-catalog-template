@@ -189,7 +189,7 @@
     giant:    { name: 'Громила',   color: '#c2416b', speed: .78, life: 90, parts: 1, coins: 20, xp: 30, mass: p => Math.min(BOSS_MASS_CAP, Math.max(220, p * 1.4)), about: 'огромный и медленный' },
     hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(BOSS_MASS_CAP, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
     queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(BOSS_MASS_CAP, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
-    teleport: { name: 'Телепорт',  color: '#22e6ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'исчезает и появляется рядом с тобой' },
+    frost:    { name: 'Морозец',   color: '#9ff0ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'ледяное облако вокруг замедляет всех, кто подплыл близко' },   // 2.5: replaces «Телепорт»
     chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
     splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(BOSS_MASS_CAP, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
   };

@@ -424,3 +424,7 @@
 .mib-ic { font-size: 1.15rem; text-align: center; } .mib-tx b { display: block; font-size: .78rem; } .mib-tx small { display: block; font-size: .7rem; color: var(--muted); line-height: 1.35; }
 .mib-v { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; } .mib-v i { font-style: normal; font: 700 .64rem var(--body); padding: 1px 6px; border-radius: 6px; border: 1px solid currentColor; }
 .mib-v .r0 { color: #b8b5d6; } .mib-v .r1 { color: #4d7cff; } .mib-v .r2 { color: #b26bff; } .mib-v .r3 { color: #ffd23f; }
+/* 2.7: «Оформление профиля» — items in drawers by source */
+.pd-grid.grouped { display: block; }
+.pd-grid-in { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.pd-drawer > summary { position: sticky; top: 0; z-index: 1; }

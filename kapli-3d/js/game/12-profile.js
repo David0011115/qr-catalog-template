@@ -863,6 +863,35 @@
 
   // ---- profile appearance editor: tap anything (even locked) to preview it on the live card ----
   let pdTab = 'bg', pdDraft = null, pdFlt = 'all';
+  const pdDrawersSeen = new Set();
+  const PD_CAT_ORDER = ['Обычные', 'Уровни', 'Лига', 'Хаос-лига', 'Режимы', 'Достижения', 'Коллекции', 'Сундуки', 'Праздники', 'Престиж', 'Мастерская', 'Особые', 'Архивные'];
+  // where an item comes from: by its fields, else by the words of its source
+  function pdCat(k, id) {
+    if (k === 'badge') { if (id === 'legend' || id === 'millionaire') return 'Достижения'; if (EVO_BADGES.some(b => b.id === id)) return 'Режимы'; if (PROMO_BADGES.some(b => b.id === id)) return 'Особые'; return 'Достижения'; }
+    const d = k === 'bg' ? pbgById(id) : decorById(id); if (!d) return 'Обычные';
+    if (d.old) return 'Архивные';
+    if (d.promo) return 'Особые';
+    if (d.craft || d.series) return 'Мастерская';
+    if (d.chaos) return 'Хаос-лига';
+    if (d.league !== undefined) return 'Лига';
+    if (d.prestige) return 'Престиж';
+    if (d.legend || d.line || d.skill) return 'Достижения';
+    if (d.col) return 'Коллекции';
+    if (d.chest) return 'Сундуки';
+    if (d.holiday) return 'Праздники';
+    const src = String(d.src || (k === 'bg' ? '' : decoSource(d)) || '').toLowerCase();
+    if (/промокод/.test(src)) return 'Особые';
+    if (/мастерск/.test(src)) return 'Мастерская';
+    if (/хаос/.test(src)) return 'Хаос-лига';
+    if (/лиг|неон|сезон/.test(src)) return 'Лига';
+    if (/праздни|коробк|новый год|хэллоуин|влюбл/.test(src)) return 'Праздники';
+    if (/престиж/.test(src)) return 'Престиж';
+    if (/коллекци/.test(src)) return 'Коллекции';
+    if (/хардкор|спин|захват|волн|забег|матч|рейд|классик|режим/.test(src)) return 'Режимы';
+    if (/линейк|мастерств|достижени|испытани|победа/.test(src)) return 'Достижения';
+    if (/уровн/.test(src) || d.lvl) return 'Уровни';
+    return 'Обычные';
+  }
   const PD_TABS = [['bg', 'Фон'], ['frame', 'Рамка'], ['title', 'Титул'], ['badge', 'Значок'], ['shelf', 'Витрина']];
   const pdOwned = (k, id) => !id ? true : k === 'bg' ? (save.pbg || []).includes(id) : k === 'badge' ? PB_BADGES().some(b => b.id === id && b.got) : save.decor.includes(id);
   const pdSrc = (k, id) => k === 'bg' ? pbgById(id).src : k === 'badge' ? ((PB_BADGES().find(b => b.id === id) || {}).src || 'особая цель') : decoSource(decorById(id));
@@ -910,7 +939,8 @@
     $('pdTabs').innerHTML = PD_TABS.map(([k, n]) => { const [h, a] = pdCount(k); return `<button class="tab gtab" role="tab" data-pd="${k}" aria-selected="${pdTab === k}" style="--hc:${HUB_ICON['p_' + k][0]}">${hubLogoSVG('p_' + k, 26).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${n}</b><small>${h}/${a}</small></span></button>`; }).join('');
     $('pdFlt').innerHTML = pdTab === 'shelf' ? '' : [['all', 'Все'], ['own', 'Есть'], ['lock', 'Нет']].map(([k, n]) => `<button type="button" data-pdf="${k}" aria-pressed="${pdFlt === k}">${n}</button>`).join('') + '<span>сначала свои, потом по редкости</span>';
     const cur = myShowcase(), tag = (k, id) => (cur[k] || '') === (id || '') ? '<span class="pd-cur">сейчас</span>' : '';
-    const item = (k, id, body, name, rar) => { const own = pdOwned(k, id);
+    const cells = [];
+    const item = (k, id, body, name, rar) => { const own = pdOwned(k, id); cells.push([k, id || '']);
       return `<div class="pd-cell"><button class="pd-it${own ? '' : ' lock'}" data-pk="${k}" data-pid="${id || ''}" aria-pressed="${(pdDraft[k] || '') === (id || '')}">${body}<b>${escHtml(name)}</b>${rar ? `<span class="rr" style="color:${RARITY[rar].color}">${RARITY[rar].name}</span>` : ''}${own ? tag(k, id) : `<small>${escHtml(pdSrc(k, id))}</small>`}</button>${id ? `<button type="button" class="pd-eye" data-peye="${k}" data-pid="${id}" aria-label="Посмотреть: ${escHtml(name)}" title="Посмотреть">👁</button>` : ''}</div>`; };
     const order = arr => arr.filter(x => pdFlt === 'all' || (pdFlt === 'own') === pdOwned(pdTab, x.id)).sort((a, b) => (pdOwned(pdTab, b.id) - pdOwned(pdTab, a.id)) || (RAR_ORDER[a.rar] - RAR_ORDER[b.rar]));
     let html = '';
@@ -927,7 +957,18 @@
     }
     else html = item('badge', '', '<span class="badge-mini pd-none">—</span>', 'Без значка') +
       PB_BADGES().filter(b => (b.got || !b.promo) && (pdFlt === 'all' || (pdFlt === 'own') === !!b.got)).sort((a, b) => b.got - a.got).map(b => item('badge', b.id, `<span class="badge-mini">${pbBadgeSVG(b.id)}</span>`, b.name)).join('');
-    $('pdGrid').innerHTML = html; decorStill($('pdGrid'));
+    // 2.7: backgrounds, frames, titles and badges are grouped by where they come from (drawers with icons); the showcase stays a list
+    if (pdTab !== 'shelf') {
+      const tmp = document.createElement('div'); tmp.innerHTML = html; const nodes = [...tmp.children];
+      const top = [], groups = new Map();
+      nodes.forEach((n, i) => { const [k, id] = cells[i] || []; if (!id) { top.push(n.outerHTML); return; } const c = pdCat(k, id); if (!groups.has(c)) groups.set(c, []); groups.get(c).push([n.outerHTML, pdOwned(k, id), (pdDraft[k] || '') === id]); });
+      const order = PD_CAT_ORDER.filter(c => groups.has(c));
+      html = (top.length ? `<div class="pd-grid-in">${top.join('')}</div>` : '') + order.map(c => { const L = groups.get(c), key = 'pd_' + pdTab + '_' + c;
+        if (L.some(x => x[2]) && !pdDrawersSeen.has(key)) { pdDrawersSeen.add(key); openDrawers.add(key); }
+        return `<details class="res-drawer shop-drawer pd-drawer" data-dk="${key}" ${openDrawers.has(key) ? 'open' : ''}><summary>${c} <small class="cnt">${L.filter(x => x[1]).length} / ${L.length}</small></summary><div class="pd-grid-in">${L.map(x => x[0]).join('')}</div></details>`; }).join('');
+    }
+    $('pdGrid').innerHTML = html; decorStill($('pdGrid')); decorateDrawers($('pdGrid'));
+    $('pdGrid').classList.toggle('grouped', pdTab !== 'shelf');
   }
   $('pdFlt').addEventListener('click', e => { const b = e.target.closest('[data-pdf]'); if (!b) return; pdFlt = b.dataset.pdf; renderDecorEditor(); const f = $('pdFlt').querySelector(`[data-pdf="${pdFlt}"]`); if (f) f.focus(); });
   $('pdReset').addEventListener('click', () => { pdDraft = myShowcase(); renderDecorEditor(); toast('Вернул то, что сейчас на профиле'); });

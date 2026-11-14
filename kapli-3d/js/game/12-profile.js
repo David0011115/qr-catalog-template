@@ -871,7 +871,7 @@
     else if (pdTab === 'shelf') {
       const on = (pdDraft.shelf || []).map(x => x[0]);
       html = `<p class="pd-shelf-note">Выбери до трёх достижений — они встанут на карточку. Показывается ступень, до которой ты дошёл. Выбрано: ${on.length} из 3.</p>` +
-        ACH.filter(a => !a.hol || achTier(a)).map(a => ({ a, t: achTier(a) })).sort((x, y) => (y.t > 0) - (x.t > 0) || achMetal(y.a, y.t) - achMetal(x.a, x.t)).map(({ a, t }) =>
+        ACH.filter(a => a.steps && (!a.hol || achTier(a))).map(a => ({ a, t: achTier(a) })).sort((x, y) => (y.t > 0) - (x.t > 0) || achMetal(y.a, y.t) - achMetal(x.a, x.t)).map(({ a, t }) =>
           `<button class="pd-it pd-sh${t ? '' : ' lock'}" data-shelf="${a.id}" aria-pressed="${on.includes(a.id)}" ${t ? '' : 'disabled'}>${achEmblem(a, t, 52)}<b>${a.name}</b>${t ? `<span class="rr">${a.steps.length <= 3 ? `${ROM3[t]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</span>` : '<small>ещё не начато</small>'}${on.includes(a.id) ? `<span class="pd-cur">${on.indexOf(a.id) + 1}</span>` : ''}</button>`).join('');
     }
     else html = item('badge', '', '<span class="badge-mini pd-none">—</span>', 'Без значка') +

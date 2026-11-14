@@ -21,7 +21,8 @@
   const METAL_NAME = ['', 'Бронза', 'Серебро', 'Золото'];
   const ROM3 = ['', 'I', 'II', 'III'];
   const achById = id => ACH.find(a => a.id === id);
-  const achTier = a => !a ? 0 : save.ach.includes(a.id) ? a.steps.length : Math.min(a.steps.length, (save.achT || {})[a.id] || 0);
+  const achTier = a => !a || !a.steps ? 0 : save.ach.includes(a.id) ? a.steps.length :   // one-off achievements (a gift box) have no steps
+    Math.min(a.steps.length, (save.achT || {})[a.id] || 0);
   // stage → metal: lines map 1:1; holidays (6 steps): 1–2 bronze, 3–4 silver, 5–6 gold
   const achMetal = (a, t) => !t ? 0 : a.steps.length <= 3 ? t : t <= 2 ? 1 : t <= 4 ? 2 : 3;
   const achArtOf = a => ACH_ART[a.id] || ACH_ART[a.id.split('_')[0]] || ['#22e6ff', '<circle cx="12" cy="12" r="7"/>'];

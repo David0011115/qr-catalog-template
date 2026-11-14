@@ -1366,6 +1366,15 @@
     ['Показать все в раунде', () => { testEatShow = !testEatShow; testEatI = 0; testEatT = 1; return testEatShow ? 'начни раунд: каждые 1,6 с перед каплей сработает следующий эффект' : 'выключено'; }],
     ['Старт: масса 10', () => { testStartMass = 0; }], ['Старт: масса 1 000', () => { testStartMass = 1000; }], ['Старт: масса 5 000', () => { testStartMass = 5000; }], ['Старт: масса 15 000', () => { testStartMass = 15000; }]]);
   testAdd('Бонусы на арене', [['Только «Фонтан», сразу под каплей', () => { testOnlyBonus = 'fountain'; return 'в раунде каждые 9 с «Фонтан» появляется прямо под тобой'; }], ['Все бонусы как обычно', () => { testOnlyBonus = null; }]]);
+  // 2.7: the hardcore round records — copied as text to paste into the chat (the site's test copy has no artifact storage)
+  const hcCopy = n => { let L = []; try { L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); } catch (e) {}
+    if (!L.length) return 'пока нет записей — сыграй раунд «Хардкора» до конца';
+    const txt = 'hcstats ' + JSON.stringify(L.slice(-n));
+    const fallback = () => { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true"><h2>Статистика «Хардкора»</h2><p>Выдели текст и скопируй:</p><textarea readonly style="width:100%;height:40vh;font-size:11px"></textarea><button class="btn" type="button">Закрыть</button></div>';
+      m.querySelector('textarea').value = txt; m.querySelector('button').onclick = () => m.remove(); document.body.appendChild(m); m.querySelector('textarea').select(); };
+    try { navigator.clipboard.writeText(txt).then(() => toast(`Скопировано: ${Math.min(n, L.length)} раунд(ов) — вставь в чат`), fallback); } catch (e) { fallback(); }
+    return `раундов в записи: ${L.length}`; };
+  testAdd('Статистика «Хардкора»', [['📋 Последний раунд', () => hcCopy(1)], ['📋 Последние 5', () => hcCopy(5)], ['📋 Все (до 30)', () => hcCopy(30)]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
   function testRender() {
     $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');

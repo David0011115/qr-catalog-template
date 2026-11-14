@@ -1020,16 +1020,17 @@
     return [LEGEND.filter(L => save.legendDone.includes(L.id)).length, LEGEND.length];
   }
   // items: [{ pct 0..1, done, html }]; «near» = at least 60% of the way
-  function goalGroups(items, near = 'Почти готово', rest = 'В процессе') {
+  function goalGroups(items, near = 'Почти готово', rest = 'В процессе', doneName = 'Выполнено') {
     const open = items.filter(x => !x.done).sort((a, b) => b.pct - a.pct), done = items.filter(x => x.done);
     const hot = open.filter(x => x.pct >= .6), mid = open.filter(x => x.pct < .6);
     const grid = l => `<div class="g-grid">${l.map(x => x.html).join('')}</div>`;
     return (hot.length ? `<h3 class="g-h">🔥 ${near}</h3>${grid(hot)}` : '') + (mid.length ? `<h3 class="g-h">${rest}</h3>${grid(mid)}` : '') +
-      (done.length ? `<details class="res-drawer g-done"><summary>✓ Выполнено <small class="cnt">${done.length}</small></summary>${grid(done)}</details>` : '');
+      (done.length ? `<details class="res-drawer g-done"><summary>✓ ${doneName} <small class="cnt">${done.length}</small></summary>${grid(done)}</details>` : '');
   }
   // a reward you can look at: tapping it opens the item window (the same as in the wardrobe)
   const rewardChip = (r, label) => { const [t, id] = r || []; const kind = t === 'fx' ? 'fx' : t === 'skin' ? 'skin' : t === 'deco' ? 'deco' : t === 'pet' ? 'pet' : t === 'arena' ? 'arena' : null;
     return kind ? `<span class="rwb" data-info="${kind}:${id}" tabindex="0" role="button" aria-label="Посмотреть награду">${label}<em aria-hidden="true">👁</em></span>` : `<span class="rw">${label}</span>`; };
+  $('shop').addEventListener('click', e => { const t = e.target.closest('[data-coltab]'); if (!t) return; save.settings.colTab = t.dataset.coltab; persist(); renderShop(); const b = document.querySelector(`[data-coltab="${t.dataset.coltab}"]`); if (b) b.focus(); });
   function renderShop() {
     renderAll();
     const lv = playerLevel(), view = SHOP_VIEWS[shopView];
@@ -1113,28 +1114,35 @@
       const colCard = c => {
         const items = colItems(c), have = colOwned(c), full = have === items.length, got = save.colDone.includes(c.id);
         const chips = colList(c).map(([t, id]) => { const own = ownedList(t).includes(id);
-          if (t === 'skin') { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${own ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }
+          if (t === 'skin') { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${own ? '' : 'off'}" title="${k.name}" style="${swatch(k)}" data-info="skin:${id}" tabindex="0" role="button"></span>`; }
           if (t === 'abil') { const a = abilById(id); return `<span class="col-sw ab ${own ? '' : 'off'}" title="${a.name}" style="--ac:${a.color}">${a.icon}</span>`; }
           if (t === 'deco') { const d = decorById(id); return `<span class="col-sw ab ${own ? '' : 'off'}" title="${d.name}" style="--ac:${d.color || '#ff4fd8'}">${d.kind === 'frame' ? '▢' : 'Аа'}</span>`; }
           if (t === 'badge') return `<span class="col-sw ab ${own ? '' : 'off'}" title="Особый значок" style="--ac:#ff4fd8">★</span>`;
           if (t === 'look') return '';
-          const it = t === 'pet' ? petById(id) : FX.find(x => x.id === id); return `<span class="col-sw fx ${own ? '' : 'off'}" title="${it.name}">${thumbImg(t, id)}</span>`; }).join('');
+          const it = t === 'pet' ? petById(id) : FX.find(x => x.id === id); return `<span class="col-sw fx ${own ? '' : 'off'}" title="${it.name}" data-info="${t}:${id}" tabindex="0" role="button">${thumbImg(t, id)}</span>`; }).join('');
         const names = c.fx ? `<small class="col-names">${items.map(id => FX.find(x => x.id === id).name).join(' · ')}</small>` : c.looks ? `<div class="look-sets">${ABILITIES.map(a => { const ls = [0, 1, 2].map(k => lookOf(a, k)), n = ls.filter(l => save.abil.looks.includes(l.id)).length;
           return `<span class="${n === 3 ? 'full' : ''}" style="--ac:${a.color}" title="${a.name}"><i>${a.icon}</i>${ls.map(l => `<em style="background:${save.abil.looks.includes(l.id) ? l.c : 'transparent'};border-color:${l.c}" title="${l.name}"></em>`).join('')}${n === 3 ? '<b>✓</b>' : ''}</span>`; }).join('')}</div><small class="col-names">✓ — набор из 3 обликов собран</small>` : '';
-        const reward = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : [c.title && `титул ${titleTag(c.title)}`, c.frame && `рамка <span ${frameAttr(c.frame)}>Ты</span>`].filter(Boolean).join(' + ');
+        const rwRef = c.hat ? 'hat:' + c.hat : c.frame ? 'deco:' + c.frame : c.title ? 'deco:' + c.title : '';
+        const reward0 = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : [c.title && `титул ${titleTag(c.title)}`, c.frame && `рамка <span ${frameAttr(c.frame)}>Ты</span>`].filter(Boolean).join(' + ');
+        const reward = rwRef ? `<span class="rwb" data-info="${rwRef}" tabindex="0" role="button" aria-label="Посмотреть награду">${reward0}${c.coins ? ` + ${c.coins} ◆` : ''}<em aria-hidden="true">👁</em></span>` : `${reward0}${c.coins ? ` + ${c.coins} ◆` : ''}`;
+        const miss = !got && !full ? (n => n ? `<small class="col-miss">не хватает: ${n} — нажми на тусклый, чтобы узнать, где взять</small>` : '')(items.length - have) : '';
         return `<div class="chal ${got ? 'done' : ''}"><div class="chal-top"><b>${got ? '✓ ' : ''}${c.name}</b><span>${have} / ${items.length}</span></div>` +
           `<div class="col-row">${chips}</div>${names}<div class="track"><div class="fill" style="width:${(have / items.length * 100).toFixed(0)}%"></div></div>` +
-          `<div class="col-foot"><span class="rw">${reward}${c.coins ? ` + ${c.coins} ◆` : ''}</span>` +
+          miss + `<div class="col-foot"><span class="rw">${reward}</span>` +
           (got ? '<span class="rw" style="color:var(--prey)">получено</span>' : `<button class="buy" id="col-${c.id}" data-col="${c.id}" ${full ? '' : 'disabled'}>${full ? 'Забрать' : 'Не собрано'}</button>`) + '</div></div>';
       };
-      $('shop').innerHTML = '<h3>Скины</h3>' + COLLECTIONS.filter(c => c.skins).map(colCard).join('') +
-        '<h3>Эффекты</h3>' + COLLECTIONS.filter(c => c.fx).map(colCard).join('') +
-        '<h3>Питомцы</h3>' + COLLECTIONS.filter(c => c.group === 'pets').map(colCard).join('') +
-        '<h3>Способности</h3>' + COLLECTIONS.filter(c => c.group === 'abil').map(colCard).join('') +
-        '<h3>Хаос-лига</h3>' + COLLECTIONS.filter(c => c.group === 'chaos').map(colCard).join('') +
-        '<h3>Лига</h3>' + COLLECTIONS.filter(c => c.group === 'league').map(colCard).join('') +
-        '<h3>Сезоны лиги</h3>' + COLLECTIONS.filter(c => c.group === 'seasons').map(colCard).join('') +
-        '<h3>Праздники</h3>' + (COLLECTIONS.filter(c => c.group === 'holiday').map(colCard).join('') || '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
+      // 2.7: four tabs — skins, effects, league & chaos, special (pets, abilities, holidays)
+      const CT = [['skin', 'Скины', c => !!c.skins, 'Наборы скинов', 'Собери все скины набора — получишь предмет над головой и монеты'],
+        ['fx', 'Эффекты', c => !!c.fx, 'Наборы эффектов', 'Собери все эффекты набора — получишь монеты'],
+        ['league', 'Лига и Хаос', c => ['league', 'seasons', 'chaos'].includes(c.group), 'Лига и Хаос-лига', 'Награды сезонов, Хаос-арсенал и ветераны Хаоса'],
+        ['special', 'Особые', c => ['pets', 'abil', 'holiday'].includes(c.group), 'Особые наборы', 'Питомцы, способности и праздники']];
+      const cur = CT.find(t => t[0] === (save.settings.colTab || 'skin')) || CT[0];
+      const cnt = f => { const L = COLLECTIONS.filter(f); return [L.filter(c => save.colDone.includes(c.id)).length, L.length]; };
+      const list = COLLECTIONS.filter(cur[2]), [cd, cn] = cnt(cur[2]), coins = list.filter(c => save.colDone.includes(c.id)).reduce((t, c) => t + (c.coins || 0), 0), ready = list.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
+      $('shop').innerHTML = `<div class="goal-tabs4 col-tabs" role="tablist">${CT.map(([k, name, f]) => { const [d, n] = cnt(f); return `<button type="button" class="tab gtab" role="tab" data-coltab="${k}" aria-selected="${k === cur[0]}" style="--hc:${HUB_ICON['c_' + k][0]}">${hubLogoSVG('c_' + k, 30).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${name}</b><small>${d}/${n}</small></span></button>`; }).join('')}</div>` +
+        `<div class="g-sum" style="--hc:${HUB_ICON['c_' + cur[0]][0]}">${hubLogoSVG('c_' + cur[0], 44)}<div><b>${cur[3]} · ${cd} из ${cn}</b><small>${cur[4]}. ${ready ? `<b style="color:#3dffa2">Можно забрать: ${ready}</b> · ` : ''}${coins ? `получено ${coins.toLocaleString('ru-RU')} ◆` : ''}</small><div class="track"><div class="fill" style="width:${cn ? (cd / cn * 100).toFixed(0) : 0}%"></div></div></div></div>` +
+        (list.length ? goalGroups(list.map(c => { const n = colItems(c).length, h = colOwned(c), got = save.colDone.includes(c.id); return { done: got, pct: n ? h / n : 0, html: colCard(c) }; }), 'Почти собрано', 'В процессе', 'Собрано')
+          : '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
     } else if (shopTab === 'ch') {
       const [cd, cn] = goalCount('ch');
       $('shop').innerHTML = `<div class="g-sum" style="--hc:${HUB_ICON.g_ch[0]}">${hubLogoSVG('g_ch', 44)}<div><b>Испытания · ${cd} из ${cn}</b><small>Большие цели на всё время игры: прогресс копится между раундами. Награда — предмет, нажми 👁, чтобы посмотреть.</small><div class="track"><div class="fill" style="width:${(cd / cn * 100).toFixed(0)}%"></div></div></div></div>` +

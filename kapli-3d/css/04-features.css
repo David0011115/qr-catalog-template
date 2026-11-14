@@ -358,3 +358,7 @@
 .mi-sec ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: .74rem; line-height: 1.4; color: #e6e0ff; }
 .mi-sec small { font-size: .68rem; color: var(--muted); }
 .mi-tbl { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: .74rem; } .mi-tbl span:nth-child(odd) { color: var(--muted); white-space: nowrap; } .mi-tbl span:nth-child(even) { color: #ffd23f; font-weight: 700; }
+/* 2.7: «Коллекции» — four tabs, groups, a tap on a dim item shows where to get it */
+.col-tabs { margin-bottom: 8px; }
+.col-miss { display: block; font-size: .68rem; color: var(--muted); margin: 2px 0 4px; }
+.col-row .col-sw[data-info] { cursor: pointer; } .col-row .col-sw[data-info]:hover, .col-row .col-sw[data-info]:focus-visible { outline: 2px solid #22e6ff; outline-offset: 1px; }

@@ -287,3 +287,46 @@
 .mi-st { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: .66rem; color: var(--muted); }
 .mi-st > span { display: grid; gap: 2px; text-align: center; padding: 7px; border-radius: 10px; background: rgba(255, 255, 255, .05); }
 .mi-st b { font: 400 .9rem var(--display); color: #fff; }
+/* 2.7: the forge — shards fly in, the ingot heats, three blows; a risky forge may crack */
+.ws-risk-btn { border-color: rgba(255, 210, 63, .55) !important; color: #ffd23f !important; }
+.ws-risk-yes { background: linear-gradient(90deg, #ff9a3d, #ffd23f) !important; color: #1a1030 !important; }
+.ws-risk-note { color: #ffd98a; font-size: .74rem; line-height: 1.4; text-align: center; }
+.ws-forge2 { display: grid; justify-items: center; }
+.wf-stage { position: relative; width: 200px; height: 120px; animation: wfShake .18s linear .62s 3, wfGone .35s ease-in 1.75s both; }
+.wf-fly { position: absolute; top: 50%; opacity: 0; animation: wfFly .55s cubic-bezier(.5, 0, .7, 1) both; }
+.wf-fly.f0 { left: -10px; animation-delay: 0s; } .wf-fly.f1 { right: -10px; animation-delay: .08s; --dx: -1; }
+.wf-fly.f2 { left: 10px; top: 0; animation-delay: .16s; } .wf-fly.f3 { right: 10px; top: 0; animation-delay: .24s; --dx: -1; }
+@keyframes wfFly { 0% { opacity: 0; transform: scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(var(--dx, 1) * 90px), 34px) scale(.3) rotate(220deg); left: auto; } }
+.wf-anvil { position: absolute; left: 40px; right: 40px; bottom: 6px; height: 38px; border-radius: 6px 6px 12px 12px; background: linear-gradient(180deg, #8a8fa6, #3a3e52); clip-path: polygon(0 0, 100% 0, 86% 46%, 100% 100%, 0 100%, 14% 46%); }
+.wf-ingot { position: absolute; left: 76px; width: 48px; bottom: 44px; height: 14px; border-radius: 4px; background: #555; box-shadow: 0 0 0 transparent; animation: wfHeat 1.2s ease-in .45s both; }
+@keyframes wfHeat { 0% { background: #6a6a7a; } 60% { background: #ff6a00; box-shadow: 0 0 16px #ff6a00; } 100% { background: #fff1b0; box-shadow: 0 0 26px var(--rc, #ffd23f), 0 0 6px #fff; } }
+.wf-hammer { position: absolute; left: 112px; top: 0; width: 12px; height: 66px; border-radius: 4px; background: linear-gradient(90deg, #7a4a26, #c08a52); transform-origin: 50% 100%; transform: rotate(52deg); animation: wfHit .36s cubic-bezier(.6, 0, .9, .4) .5s 3 alternate; }
+.wf-hammer::before { content: ""; position: absolute; left: -15px; top: -8px; width: 42px; height: 24px; border-radius: 5px; background: linear-gradient(180deg, #e8ecff, #7f8fb0); }
+@keyframes wfHit { 0% { transform: rotate(52deg); } 100% { transform: rotate(-8deg) translate(-26px, 6px); } }
+.wf-sparks { position: absolute; left: 50%; bottom: 58px; width: 7px; height: 7px; border-radius: 50%; background: #fff6c8; opacity: 0;
+  box-shadow: -34px -14px 0 -1px var(--rc, #ffd23f), 30px -20px 0 -2px #fff, -18px -34px 0 -2px #fff, 20px -40px 0 -1px var(--rc, #ffd23f), 44px -4px 0 -3px #ffd27a, -46px 0 0 -3px #ffd27a; }
+.wf-sparks.s1 { animation: wfSpark .5s ease-out .86s both; } .wf-sparks.s2 { animation: wfSpark .5s ease-out 1.22s both; } .wf-sparks.s3 { animation: wfSpark .6s ease-out 1.58s both; }
+@keyframes wfSpark { 0% { opacity: 0; transform: scale(.3); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.7) translateY(-14px); } }
+.wf-burst { position: absolute; left: 50%; top: 40%; width: 10px; height: 10px; margin: -5px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #fff 0%, var(--rc, #ffd23f) 40%, transparent 70%); animation: wfBurst .6s ease-out 1.65s both; }
+@keyframes wfBurst { 0% { opacity: 0; transform: scale(1); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(22); } }
+@keyframes wfShake { 0%, 100% { transform: none; } 30% { transform: translate(-2px, 1px); } 70% { transform: translate(2px, -1px); } }
+@keyframes wfGone { to { opacity: 0; height: 0; transform: scale(.6); } }
+.wf-crack, .wf-half { display: none; }
+.ws-forge2.broke .wf-burst { background: radial-gradient(circle, #fff 0%, #ff3d6e 40%, transparent 70%); }
+.ws-forge2.broke .wf-crack { display: block; position: absolute; left: 96px; bottom: 44px; width: 10px; height: 14px; opacity: 0; z-index: 2;
+  background: linear-gradient(115deg, transparent 40%, #1a0a10 45%, #1a0a10 55%, transparent 60%); animation: wfCrack .2s ease-out 1.55s both; }
+@keyframes wfCrack { to { opacity: 1; transform: scaleY(1.4); } }
+.ws-forge2.broke .wf-ingot { animation: wfHeat 1.2s ease-in .45s both, wfHide .01s linear 1.7s both; }
+@keyframes wfHide { to { opacity: 0; } }
+.ws-forge2.broke .wf-half { display: block; position: absolute; bottom: 44px; width: 24px; height: 14px; background: #ffb07a; box-shadow: 0 0 10px #ff3d6e; opacity: 0; }
+.ws-forge2.broke .wf-half.l { left: 76px; border-radius: 4px 0 0 4px; animation: wfHalfL .6s ease-out 1.7s both; }
+.ws-forge2.broke .wf-half.r { left: 100px; border-radius: 0 4px 4px 0; animation: wfHalfR .6s ease-out 1.7s both; }
+@keyframes wfHalfL { 0% { opacity: 1; } 100% { opacity: 0; transform: translate(-50px, 26px) rotate(-70deg); } }
+@keyframes wfHalfR { 0% { opacity: 1; } 100% { opacity: 0; transform: translate(50px, 26px) rotate(80deg); } }
+.ws-forge2 + .made { display: grid; gap: 6px; justify-items: center; animation: wsMade .5s cubic-bezier(.3, 1.5, .5, 1) 2s both; }
+.ws-forge2 + .made .lucky { animation: wsMade .5s ease-out 2.3s both; }
+.made.fail h2 { color: #ff6b8a; } .made .lucky.ok { color: #3dffa2; }
+@media (prefers-reduced-motion: reduce) { .wf-stage { display: none; } .ws-forge2 + .made, .ws-forge2 + .made .lucky { animation: none; } }
+.ws-forge2 + .made .pv { box-shadow: 0 0 34px -4px var(--rc); } .ws-forge2 + .made .rar { color: var(--rc); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .7rem; }
+.ws-forge2 + .made .lucky { color: #ffd27a; font-size: .84rem; margin: 0; } .ws-forge2 + .made .lucky.ok { color: #3dffa2; }

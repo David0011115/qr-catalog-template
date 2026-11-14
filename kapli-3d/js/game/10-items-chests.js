@@ -517,7 +517,13 @@
   }
   const priceText = id => CR_PRICE[id].map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}" title="${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}">${shardIco(r, 16)}${n}</span>`).join(' ');
   const WS_LUCK = .1; // «Удачная ковка» chance
-  const canPay = id => CR_PRICE[id].every(([r, n]) => save.shards[r] >= n);
+  const canPay = (id, risky) => crPrice(id, risky).every(([r, n]) => save.shards[r] >= n);
+  // 2.7 «Рискованная ковка»: 30% cheaper, 75% success; a break burns half of what was paid (the other half comes back),
+  // and after a break the next risky forge of the same item cannot fail
+  const RISK = { k: .7, ok: .75 };
+  const crPrice = (id, risky) => CR_PRICE[id].map(([r, n]) => [r, risky ? Math.ceil(n * RISK.k) : n]);
+  const SH_GEN = { common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' };
+  const shList = list => list.map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 16)}${n}</span>`).join(' ');
   const wsOwned = id => save.skins.includes(id) || save.fxOwned.includes(id) || save.pets.includes(id) || save.decor.includes(id) || (save.pbg || []).includes(id) || (save.chatBg || []).includes(id) || save.arenas.includes(id) || CR_EMO.some(([k]) => emoId(k) === id && (save.emo || []).includes(k)) || save.abil.owned.includes(id);
   // what is still missing for a recipe, how far along it is (0…1), and an item by its id
   const wsMiss = id => CR_PRICE[id].map(([r, n]) => [r, n - save.shards[r]]).filter(([, n]) => n > 0);
@@ -527,31 +533,71 @@
   let wsAsk = null;
   const wsModalClose = () => { $('wsModal').hidden = true; wsAsk = null; };
   function wsConfirm(cat, id) {
-    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) return;
+    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id, true)) return;
     wsAsk = { cat, id }; const c = $('wsMCard'); c.style.setProperty('--rc', RARITY[it.rar].color);
+    if (!canPay(id)) { wsRiskAsk(cat, id); return; }   // only the risky price fits
     c.innerHTML = `<h2 id="wsMTitle">Создать «${it.name}»?</h2><div class="pv">${it.pv}</div><div class="rows"><span>Цена</span><span>${priceText(id)}</span>` +
       `<span>Останется</span><span>${RAR_KEYS.map(r => { const need = (CR_PRICE[id].find(([k]) => k === r) || [0, 0])[1]; return need ? `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 16)}${save.shards[r] - need}</span>` : ''; }).join(' ')}</span></div>` +
-      `<small style="color:var(--muted)">Осколки спишутся сразу, отменить нельзя.</small><div class="acts"><button class="btn ghost" type="button" id="wsNo">Отмена</button><button class="btn" type="button" id="wsYes">Создать</button></div>`;
+      `<small style="color:var(--muted)">Осколки спишутся сразу, отменить нельзя.</small><div class="acts"><button class="btn ghost" type="button" id="wsNo">Отмена</button><button class="btn ghost ws-risk-btn" type="button" id="wsRisk">🎲 Рискнуть −30%</button><button class="btn" type="button" id="wsYes">Создать</button></div>`;
     $('wsModal').hidden = false; $('wsYes').focus();
   }
-  function wsCraft(cat, id) {
-    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) { wsModalClose(); return; }
-    CR_PRICE[id].forEach(([r, n]) => { save.shards[r] -= n; }); it.give(); if (save.wsPin === id) delete save.wsPin;
+  // the second, separate confirmation of a risky forge — a misclick on «Рискнуть» costs nothing
+  function wsRiskAsk(cat, id) {
+    const it = wsItems(cat).find(x => x.id === id); if (!it) return;
+    wsAsk = { cat, id, risky: true }; const c = $('wsMCard'), pr = crPrice(id, true), guard = !!(save.wsPity || {})[id];
+    const burn = pr.map(([r, n]) => [r, n - Math.floor(n / 2)]);
+    c.innerHTML = `<h2 id="wsMTitle">🎲 Рискованная ковка</h2><div class="pv">${it.pv}</div><b>«${it.name}»</b>` +
+      `<div class="rows"><span>Цена</span><span>${shList(pr)} <s style="color:var(--muted);font-size:.72rem">${shList(CR_PRICE[id])}</s></span>` +
+      `<span>Шанс успеха</span><span><b style="color:${guard ? '#3dffa2' : '#ffd23f'}">${guard ? '100% — гарантия после поломки' : '75%'}</b></span>` +
+      (guard ? '' : `<span>Если сломается</span><span>сгорит ${shList(burn)}, остальное вернётся</span>`) + '</div>' +
+      (guard ? '' : '<small class="ws-risk-note">В 1 случае из 4 предмет ломается. Зато после поломки следующая рискованная ковка этого предмета получится точно.</small>') +
+      `<div class="acts"><button class="btn ghost" type="button" id="wsRiskNo">Назад</button><button class="btn ws-risk-yes" type="button" id="wsRiskYes" ${canPay(id, true) ? '' : 'disabled'}>Да, рискнуть</button></div>`;
+    $('wsModal').hidden = false; $('wsRiskNo').focus();   // the safe button gets the focus
+  }
+  // the forge: shards fly into the anvil, the ingot heats, three blows — then the item, or cracks and pieces
+  const forgeHtml = (it, spent, broke) => `<div class="ws-forge2${broke ? ' broke' : ''}"><div class="wf-stage">` +
+    spent.map(([r], k) => `<span class="wf-fly f${k % 4}">${shardIco(r, 22)}</span>`).join('') +
+    `<span class="wf-anvil"></span><span class="wf-ingot"></span><span class="wf-crack"></span><span class="wf-half l"></span><span class="wf-half r"></span>` +
+    `<span class="wf-hammer"></span><span class="wf-sparks s1"></span><span class="wf-sparks s2"></span><span class="wf-sparks s3"></span><span class="wf-burst"></span></div></div>`;
+  function wsCraft(cat, id, risky) {
+    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id, risky)) { wsModalClose(); return; }
+    const price = crPrice(id, risky); save.wsPity = save.wsPity || {};
+    const broke = !!risky && !save.wsPity[id] && Math.random() >= RISK.ok;
+    price.forEach(([r, n]) => { save.shards[r] -= n; });
+    if (broke) {
+      const back = price.map(([r, n]) => [r, Math.floor(n / 2)]).filter(([, n]) => n > 0);
+      back.forEach(([r, n]) => { save.shards[r] += n; }); save.wsPity[id] = true; save.wsBroke = (save.wsBroke || 0) + 1;
+      persist(); Sound.play('eaten'); buzz([60, 40, 120]);
+      const c = $('wsMCard');
+      c.innerHTML = forgeHtml(it, price, true) + `<div class="made fail"><h2 id="wsMTitle">Сломалось!</h2><b>Предмет «${it.name}» раскололся на наковальне</b>` +
+        `<p class="lucky">Вернулось: ${shList(back)}</p><p class="lucky ok">🛡 Следующая рискованная ковка этого предмета получится точно</p>` +
+        `<div class="acts"><button class="btn" type="button" id="wsDone">Понятно</button></div></div>`;
+      wsAsk = null; renderWorkshop(); renderAll(); setTimeout(() => { const d = $('wsDone'); if (d) d.focus(); }, 50); return;
+    }
+    if (risky) delete save.wsPity[id];
+    it.give(); if (save.wsPin === id) delete save.wsPin;
     // «Удачная ковка»: with WS_LUCK chance a quarter of every spent shard kind comes back (never a loss, only a bonus)
-    const back = Math.random() < WS_LUCK ? CR_PRICE[id].map(([r, n]) => [r, Math.floor(n / 4)]).filter(([, n]) => n > 0) : [];
+    const back = Math.random() < WS_LUCK ? price.map(([r, n]) => [r, Math.floor(n / 4)]).filter(([, n]) => n > 0) : [];
     back.forEach(([r, n]) => { save.shards[r] += n; }); save.wsLucky = (save.wsLucky || 0) + (back.length ? 1 : 0);
     const prize = wsSeries().got;   // progress rewards earned by this very item
     persist(); Sound.play('chest'); buzz(back.length ? [30, 60, 30] : 30);
     const c = $('wsMCard');
-    c.innerHTML = `<div class="ws-forge" style="display:grid;gap:10px;justify-items:center"><div class="ws-anvil"><i class="ws-hammer"></i><span class="ws-sparks"></span></div>` +
+    c.innerHTML = forgeHtml(it, price, false) +
       `<div class="made"><h2 id="wsMTitle">Создано!</h2><div class="pv">${it.pv}</div><span class="rar">${RARITY[it.rar].name}</span><b>${it.name}</b>` +
-      (cat === 'abil' ? '<small style="color:var(--muted)">Поставь в билд: Коллекция → Способности</small>' : cat === 'chatbg' ? '<small style="color:var(--muted)">Включи его в чате: шестерёнка ⚙ вверху справа</small>' : '') + `</div>` +
+      (cat === 'abil' ? '<small style="color:var(--muted)">Поставь в билд: Коллекция → Способности</small>' : cat === 'chatbg' ? '<small style="color:var(--muted)">Включи его в чате: шестерёнка ⚙ вверху справа</small>' : '') +
       prize.map(t => `<p class="lucky">🎁 Награда: ${t}</p>`).join('') +
       (back.length ? `<p class="lucky">✨ Удачная ковка! Вернулось: ${back.map(([r, n]) => `${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}`).join(', ')}</p>` : '') +
       `<div class="acts"><button class="btn" type="button" id="wsDone">Отлично</button></div></div>`;
     wsAsk = null; renderWorkshop(); renderAll(); $('wsDone').focus();
   }
-  $('wsModal').addEventListener('click', e => { if (e.target === $('wsModal') || e.target.id === 'wsNo' || e.target.id === 'wsDone') wsModalClose(); else if (e.target.id === 'wsYes' && wsAsk) wsCraft(wsAsk.cat, wsAsk.id); });
+  $('wsModal').addEventListener('click', e => {
+    const t = e.target.id;
+    if (e.target === $('wsModal') || t === 'wsNo' || t === 'wsDone') wsModalClose();
+    else if (t === 'wsYes' && wsAsk) wsCraft(wsAsk.cat, wsAsk.id, false);
+    else if (t === 'wsRisk' && wsAsk) wsRiskAsk(wsAsk.cat, wsAsk.id);
+    else if (t === 'wsRiskNo' && wsAsk) { if (canPay(wsAsk.id)) wsConfirm(wsAsk.cat, wsAsk.id); else wsModalClose(); }
+    else if (t === 'wsRiskYes' && wsAsk && wsAsk.risky) wsCraft(wsAsk.cat, wsAsk.id, true);
+  });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wsModal').hidden) wsModalClose(); });
   function renderWorkshop() {
     const sp = wsSeries(); if (sp.got.length) { persist(); sp.got.forEach((t, i) => setTimeout(() => toast('🎁 ' + t), i * 1800)); }
@@ -564,7 +610,7 @@
     const card = x => `<div class="ws-it" style="--rc:${RARITY[x.rar].color}"${x.info ? ` data-info="${x.info}" tabindex="0" role="button" aria-label="Подробнее: ${x.name}"` : ''}><div class="pv">${x.pv}</div><span class="rar">${RARITY[x.rar].name}</span><b>${x.name}</b>${x.sub ? `<small>${x.sub}</small>` : ''}` +
         (x.info ? '<span class="ws-look">👁 нажми, чтобы посмотреть</span>' : '') + (x.own ? '<span class="own">✓ Создано</span>' : `<small>${priceText(x.id)}</small>` +
           (canPay(x.id) ? '' : `<small class="ws-miss">не хватает: ${wsMiss(x.id).map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 14)}${n}</span>`).join(' ')}</small>`) +
-          `<button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id) ? '' : 'disabled'}>Создать</button>` +
+          `<button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id, true) ? '' : 'disabled'}>${canPay(x.id) ? 'Создать' : '🎲 Рискнуть'}</button>` +
           `<button class="ws-pin" type="button" data-wspin="${x.id}" aria-pressed="${save.wsPin === x.id}" aria-label="${save.wsPin === x.id ? 'Снять цель' : 'Сделать целью'}: ${x.name}">${save.wsPin === x.id ? '★ цель' : '☆ в цель'}</button>`) + '</div>';
     $('wsList').innerHTML = '<h2 class="section-title">Серии</h2>' + PACKS.map(pk => {
       const all = WS_CATS.flatMap(([cat]) => wsItems(cat).filter(x => packOf(x.id) === pk.id).map(x => ({ ...x, cat }))), own = all.filter(x => x.own).length, can = all.filter(x => !x.own && canPay(x.id)).length;

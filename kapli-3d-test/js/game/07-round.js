@@ -146,6 +146,11 @@
           o.hcDashWarn = .48; o.hcDashTarget = t;
           wave(c.x, c.z, '#ff6b3d', cellR(c), cellR(c) + 18 + pressure * 8, .5);
         }
+        // Мимик сохраняет маскировку, но на поздних этапах готовит короткую засаду.
+        if (o.bossType === 'chameleon' && pressure >= .65 && o.dashCd <= 0 && !o.hcDashWarn && d < 28 + pressure * 12) {
+          o.hcDashWarn = .62; o.hcDashTarget = t;
+          wave(c.x, c.z, '#3dffa2', cellR(c), cellR(c) + 14, .62);
+        }
         // Делитель deliberately opens a second angle after the player has grown.
         if (o.bossType === 'splitter' && pressure >= .35 && o.splitCd <= 0 && o.cells.length < 6 && c.mass / 2 > t.mass * 1.25) {
           o.cells.forEach(k => { k.hx = dx / d; k.hz = dz / d; });

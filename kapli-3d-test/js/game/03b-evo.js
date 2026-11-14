@@ -183,7 +183,7 @@
     const F = vis.evoF || (mine ? Math.max(1, evoForm(s.id)) : 1), full = mine && QUALITY !== 'low';
     const g = new THREE.Group(); g.userData.F = F;
     if (EVO_BODY[s.id]) { g.add(new THREE.Mesh(sphereGeo, evoMat(s.id, EVO_BODY[s.id]))); vis.mesh.material.visible = false; }
-    if (EVO_RIM[s.id]) g.add(new THREE.Mesh(sphereGeo, evoMat('rim' + s.id + F, () => evoRim(EVO_RIM[s.id], F >= 2 ? 1.6 : 1.1)))).scale.setScalar(1.12);
+    if (EVO_RIM[s.id]) { const rim = new THREE.Mesh(sphereGeo, evoMat('rim' + s.id + F, () => evoRim(EVO_RIM[s.id], F >= 2 ? 1.6 : 1.1))); rim.scale.setScalar(1.12); g.add(rim); }   // only the rim is bigger (g.add() returns the group — scaling it buried the eyes)
     if (mine && EVO_EXTRA[s.id]) vis.evoTick = EVO_EXTRA[s.id](g, F, full);
     vis.evo = g; vis.mesh.add(g);
     if (vis.head && s.id === 'lg_eternal') vis.head.visible = false;   // the wreath of «Вечный чемпион» is drawn by its form (not the old gold one)

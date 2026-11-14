@@ -795,7 +795,7 @@
     const dpr = Math.min(devicePixelRatio || 1, 2);
     for (const cv of vis) {
       const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) continue;
-      if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }   // 2.7: the height too — the profile strip opens into the full card
       const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); pbgDraw(x, w, h, cv.dataset.pbg, (save.settings.quality === 'low' && cv.dataset.pbg !== 'bg_hc_singularity' ? 3.3 : now / 1000));
     }
   }

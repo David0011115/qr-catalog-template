@@ -388,7 +388,7 @@
       lookTick(now);
       trackFps(now);
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
-      if (running && !paused && !dying) update(dt);
+      if (running && !paused && !dying) { if (ModeX.hcFrozen()) ModeX.hcFreezeTick(dt); else update(dt); }
       else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
       else if (!running) idle(dt);
       const mb = !running && !$('overlay').hidden;

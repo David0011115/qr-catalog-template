@@ -23,7 +23,9 @@
   function spawnVirus(x, z, vx, vz) {
     if (viruses.length >= VIRUS_MAX) return null;
     if (x === undefined) {
-      for (let t = 0; t < 30; t++) { [x, z] = randInArena(12); if (cells.every(c => Math.hypot(c.x - x, c.z - z) > cellR(c) + 8)) break; }
+      let ok = false;
+      for (let t = 0; t < 30 && !ok; t++) { [x, z] = randInArena(12); ok = cells.every(c => Math.hypot(c.x - x, c.z - z) > cellR(c) + 8); }
+      if (!ok) { virusRespawn.push(4); return null; }   // 2.7: no free spot (a huge drop covers it) — never put a spike inside a drop, try again in 4 s
     }
     const v = { x, z, vx: vx || 0, vz: vz || 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh() };
     viruses.push(v);
@@ -84,14 +86,11 @@
         if (v.trap && (c.owner === v.trap.owner || (v.trap.owner.team && c.owner.team === v.trap.owner.team))) continue;   // a trap spares its owner and allies
         if (abOn('x_ghost', c.owner) || abOn('shrink', c.owner) || c.owner.spawnSh > 0) continue;   // «Фантом» and «Сжатие» pass spikes
         if (Math.hypot(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
-          // 2.7 «Колючая броня» («Хардкор»): this spike may let the player through; it is decided once while they overlap
-          if (c.owner.isPlayer && ModeX.hcK('spike') < 1) { v.dodge = v.dodge || new Set(); if (v.dodge.has(c)) continue;
-            if (Math.random() >= ModeX.hcK('spike')) { v.dodge.add(c); toast('🌵 Шип не сработал'); continue; } }
           popCell(c, v); removeVirus(v); if (!v.trap) virusRespawn.push(10); rebuildCells(); break;
         }
       }
     }
-    virusRespawn = virusRespawn.map(t => t - dt).filter(t => { if (t <= 0) { spawnVirus(); return false; } return true; });
+    { let due = 0; virusRespawn = virusRespawn.map(t => t - dt).filter(t => { if (t <= 0) { due++; return false; } return true; }); while (due-- > 0) spawnVirus(); }
   }
   // ejected blobs feed a spike; every 5th shot fires a new spike in that direction
   function feedVirus(e) {
@@ -302,6 +301,7 @@
     const o = pool[Math.floor(Math.random() * pool.length)], b = BOSS_TYPES[o.bossType];
     let mass = b.mass(total(player));
     if (mode === 'crown') mass = ModeX.crownBossMass(b, mass);
+    if (mode === 'hardcore') mass = ModeX.hcBossMass(mass);
     if (surv) {
       // 2.5: every wave is 12% heavier (was 25%: a wall after wave 10), and always clearly bigger than the player's largest part
       const biggest = Math.max(0, ...player.cells.map(c => c.mass));

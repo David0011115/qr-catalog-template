@@ -112,6 +112,7 @@
   function think(o) {
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.25 + .1), flee: p0.flee * .8 } : p0;
     const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1);
+    if (o.hcPack && mode === 'hardcore') { const p = ModeX.hcPackTarget(o); if (p) { o.target = p.t; o.tx = p.x; o.tz = p.z; return; } }
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
       // 2.7: bosses go for the holder wherever it is; a bot bigger than the holder hunts it across the whole arena;
       // a smaller bot goes for any piece of the holder it can swallow (after a split) within a wide range
@@ -182,7 +183,7 @@
     }
     // bots don't always notice spikes: cowards are careful, aggressive bots blunder into them
     const careful = o.kind === 'boss' ? .35 : o.star ? .85 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
-    if ((o.spikeMemT = (o.spikeMemT || 0) - .35) <= 0) { o.spikeMemT = 3 + Math.random() * 2; o.spikeBlind = (mode === 'hardcore' && o.kind === 'boss') || Math.random() >= careful * botSkill().careful; }   // 2.7: in «Хардкор» bosses walk into spikes   // a decision kept for 3–5 s
+    if ((o.spikeMemT = (o.spikeMemT || 0) - .35) <= 0) { o.spikeMemT = 3 + Math.random() * 2; o.spikeBlind = Math.random() >= careful * botSkill().careful; }   // a decision kept for 3–5 s
     if (c.mass > VIRUS_MASS * 1.3 && !o.spikeBlind) for (const v of viruses) {
       const d = Math.hypot(v.x - c.x, v.z - c.z);
       if (d < cellR(c) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
@@ -504,7 +505,7 @@
       eatCandidates.sort((x, y) => x - y);
       for (let ci = 0; ci < eatCandidates.length; ci++) {
       const b = eatCells[eatCandidates[ci]];
-      if (dying || a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
+      if (dying || a.gone || b.gone || a.owner === b.owner || !(canEat(a, b) || ModeX.hcPackMerge(a, b))) continue;
       if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
           stats.raidDmg = Math.min(RAID_ATTEMPT_CAP, (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK()));
@@ -514,7 +515,7 @@
             finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
           }
         } }
-        const gain = b.mass * 0.8 * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? .75 : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
         const bossCap = mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP;
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
@@ -556,7 +557,7 @@
     rebuildCells();
 
     for (const c of cells) {
-      const cap = c.owner.kind === 'bot' ? BOT_MASS_CAP
+      const cap = c.owner.kind === 'bot' ? ModeX.botCap(c.owner)
         : c.owner.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP)
         : MAX_MASS;
       if (!c.owner.isPlayer && c.mass > cap) c.mass = cap;
@@ -567,9 +568,9 @@
       if (mass > HC_BOSS_MASS_CAP) { const k = HC_BOSS_MASS_CAP / mass; for (const c of o.cells) c.mass *= k; }
     }
     for (const o of bots) {
-      const mass = total(o);
-      if (mass > BOT_MASS_CAP) {
-        const scale = BOT_MASS_CAP / mass;
+      const mass = total(o), bcap = ModeX.botCap(o);
+      if (mass > bcap) {
+        const scale = bcap / mass;
         for (const c of o.cells) c.mass *= scale;
       }
     }

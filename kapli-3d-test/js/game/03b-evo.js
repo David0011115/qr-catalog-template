@@ -238,11 +238,39 @@
   //      all 50 waves on each difficulty (a laurel medallion: yin-yang / shield / crown of stars) ----
   const EVO_BADGES = [
     { id: 'hc75', name: 'Берсерк · 75 000', src: '«Хардкор»: 75 000 массы за один раунд', got: () => (save.hcPeak || 0) >= 75000 },
+    { id: 'hc88', name: 'Берсерк · 88 000', src: '«Хардкор»: 88 000 общей массы за раунд (обе половины вместе)', got: () => (save.hcPeak || 0) >= 88000 },
     { id: 'duo50n', name: 'Спина к спине · Обычный', src: 'все 50 волн «Спины к спине» на «Обычном»', got: () => evoDuoBest('normal') >= 50 },
     { id: 'duo50h', name: 'Спина к спине · Сложный', src: 'все 50 волн «Спины к спине» на «Сложном»', got: () => evoDuoBest('hard') >= 50 },
     { id: 'duo50m', name: 'Спина к спине · Безумие', src: 'все 50 волн «Спины к спине» на «Безумии»', got: () => evoDuoBest('mad') >= 50 },
   ];
+  // 2.7: the hardcore ladder badges — A «Абсолют» 75 000, B «Бесконечность» 88 000, C «Корона Берсерка» for the win (2 × 50 000)
+  let hcbUid = 0;
+  function hcBadgeSVG(kind, cls = '') {
+    const id = 'hcb' + (++hcbUid), C = cls ? ` class="${cls}"` : '';
+    if (kind === 'a') return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Берсерк · 75 000"><defs><radialGradient id="${id}a" cx="50%" cy="45%"><stop offset="0" stop-color="#3a0408"/><stop offset="1" stop-color="#0a0002"/></radialGradient><linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff6a3d"/><stop offset=".5" stop-color="#ff1a1a"/><stop offset="1" stop-color="#7a0010"/></linearGradient><radialGradient id="${id}c"><stop offset=".55" stop-color="#ff3a1a" stop-opacity="0"/><stop offset=".7" stop-color="#ffb040"/><stop offset="1" stop-color="#ff1a1a" stop-opacity="0"/></radialGradient></defs>
+      <path d="M50 3 L91 26 V74 L50 97 L9 74 V26 Z" fill="url(#${id}a)" stroke="url(#${id}r)" stroke-width="4"/><path d="M50 11 L84 30 V70 L50 89 L16 70 V30 Z" fill="none" stroke="#ff3a2a" stroke-opacity=".35" stroke-width="1.2"/>
+      <circle cx="50" cy="44" r="22" fill="url(#${id}c)"><animate attributeName="r" values="21;24;21" dur="1.4s" repeatCount="indefinite"/></circle>
+      ${Array.from({ length: 12 }, (_, i) => { const q = i * Math.PI / 6, r2 = i % 2 ? 23 : 27; return `<line x1="${(50 + Math.cos(q) * 17).toFixed(1)}" y1="${(44 + Math.sin(q) * 17).toFixed(1)}" x2="${(50 + Math.cos(q) * r2).toFixed(1)}" y2="${(44 + Math.sin(q) * r2).toFixed(1)}" stroke="#ffb040" stroke-width="1.6" stroke-linecap="round"/>`; }).join('')}
+      <circle cx="50" cy="44" r="15" fill="#050001" stroke="#ff6a3d" stroke-width="1.6"/>
+      <circle cx="43" cy="44" r="5.5" fill="#ff2d2d"><animate attributeName="cx" values="38;45;38" dur="2.8s" repeatCount="indefinite"/></circle><circle cx="57" cy="44" r="5.5" fill="#ff9a3d"><animate attributeName="cx" values="62;55;62" dur="2.8s" repeatCount="indefinite"/></circle>
+      <text x="50" y="80" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="17" fill="#fff1e0" stroke="#7a0010" stroke-width=".8">75K</text></svg>`;
+    if (kind === 'b') return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Берсерк · 88 000"><defs><linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#2a0306"/><stop offset="1" stop-color="#0a0002"/></linearGradient><linearGradient id="${id}e" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ff2d2d"/><stop offset=".5" stop-color="#ffd27a"/><stop offset="1" stop-color="#ff6a3d"/></linearGradient></defs>
+      <path d="M50 4 C70 22 88 38 88 60 A38 36 0 0 1 12 60 C12 38 30 22 50 4 Z" fill="url(#${id}s)" stroke="#ff2d2d" stroke-width="3.5"/><path d="M50 13 C66 28 80 41 80 59 A30 28 0 0 1 20 59 C20 41 34 28 50 13 Z" fill="none" stroke="#ff9a3d" stroke-opacity=".35"/>
+      <path id="${id}p" d="M50 56 C40 44 26 44 26 56 C26 68 40 68 50 56 C60 44 74 44 74 56 C74 68 60 68 50 56 Z" fill="none" stroke="url(#${id}e)" stroke-width="3.2"/>
+      <circle r="4.6" fill="#ff2d2d" stroke="#fff" stroke-width=".8"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#${id}p"/></animateMotion></circle><circle r="4.6" fill="#ffb040" stroke="#fff" stroke-width=".8"><animateMotion dur="3s" begin="-1.5s" repeatCount="indefinite"><mpath href="#${id}p"/></animateMotion></circle>
+      <path d="M38 30 L42 36 L50 31 L58 36 L62 30 L60 40 L40 40 Z" fill="#ffd27a" stroke="#7a3a00" stroke-width=".8"/>
+      <text x="50" y="86" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="11" letter-spacing="1" fill="#ffe6c0">88 000</text></svg>`;
+    return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Корона Берсерка · победа"><defs><radialGradient id="${id}m" cx="50%" cy="40%"><stop stop-color="#4a050c"/><stop offset="1" stop-color="#0d0103"/></radialGradient></defs>
+      <path d="M28 30 Q10 22 12 4 Q22 18 36 22 Z" fill="#1a0306" stroke="#ff2d2d" stroke-width="1.5"/><path d="M72 30 Q90 22 88 4 Q78 18 64 22 Z" fill="#1a0306" stroke="#ff2d2d" stroke-width="1.5"/>
+      <circle cx="50" cy="50" r="36" fill="url(#${id}m)" stroke="#ff2d2d" stroke-width="3.5"/>
+      ${Array.from({ length: 18 }, (_, i) => { const q = i * Math.PI / 9, P = (r, d) => `${(50 + Math.cos(q + d) * r).toFixed(1)} ${(50 + Math.sin(q + d) * r).toFixed(1)}`; return `<path d="M${P(36, 0)} L${P(42, .08)} L${P(36, .17)} Z" fill="#ff2d2d"/>`; }).join('')}
+      <path d="M30 50 Q32 30 50 26 Q68 30 70 50 Q66 64 50 66 Q34 64 30 50 Z" fill="#050001"/>
+      <circle cx="41" cy="47" r="3.6" fill="#ff3a1a"><animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/></circle><circle cx="59" cy="47" r="3.6" fill="#ff9a3d"><animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/></circle>
+      <path d="M18 76 L82 76 L76 86 L82 96 L18 96 L24 86 Z" fill="#ff2d2d" stroke="#4a0008"/><text x="50" y="91" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="12" fill="#fff">100K</text></svg>`;
+  }
   function evoBadgeSVG(id) {
+    if (id === 'hc75') return hcBadgeSVG('a', 'evo-badge');
+    if (id === 'hc88') return hcBadgeSVG('b', 'evo-badge');
     if (id === 'hc75') {
       const teeth = Array.from({ length: 16 }, (_, k) => `<rect x="30" y="1.5" width="4" height="6" rx="1" transform="rotate(${k * 22.5} 32 32)"/>`).join('');
       return `<svg viewBox="0 0 64 72" class="evo-badge"><defs><linearGradient id="ebm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4d0"/><stop offset=".45" stop-color="#ff2d2d"/><stop offset="1" stop-color="#7a0808"/></linearGradient><radialGradient id="ebc" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#3a0a10"/><stop offset="1" stop-color="#0c0406"/></radialGradient></defs>

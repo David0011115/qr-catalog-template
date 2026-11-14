@@ -7,7 +7,7 @@
   const MAX_MASS = 15000;   // fallback cap for non-player cell types; player cells have no mass cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
   const BOSS_MASS_CAP = 12000; // ordinary bosses outside Hardcore; survival and raid have separate caps
-  const HC_BOSS_MASS_CAP = 23000; // Hardcore only: total mass cap for each ordinary boss
+  let HC_BOSS_MASS_CAP = 23000; // Hardcore only: total mass cap for each ordinary boss; after 20 000 it follows the player's smaller half (ModeX)
   const PLAYER_SPEED_MASS_CAP = 20000, PLAYER_VISUAL_MASS_CAP = 20000;
   const MODES = {
     classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы до 30 000 с наградой и арена, которая накаляется каждые 3 минуты' },
@@ -687,7 +687,7 @@
 
   // skill achievements: one round, done right. Each gives its own title and coins; all of them — a frame and a skin
   const SKILL = [
-    { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, обходи шипы.', coins: 1500, title: ['Железный', '#c0c8e0'],
+    { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, держись подальше от крупных ботов.', coins: 1500, title: ['Железный', '#c0c8e0'],
       test: S => S.mode === 'hardcore' && !S.splits && S.maxMass >= 5000, best: S => S.mode === 'hardcore' && !S.splits ? Math.round(S.maxMass) : null, unit: 'массы' },
     { id: 'sk_giant60', name: 'Молниеносный', desc: 'Набери массу 1000 быстрее чем за 60 секунд', hint: 'Не отвлекайся на боссов: собирай крошки и ешь мелкие капли подряд, бонус «Двойная еда» очень помогает.', coins: 2000, title: ['Молния', '#ffd23f'],
       test: S => S.t1000 !== undefined && S.t1000 <= 60, best: S => S.t1000 !== undefined ? Math.floor(S.t1000) : null, lower: true, unit: 'с' },

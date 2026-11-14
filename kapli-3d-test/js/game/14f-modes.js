@@ -56,6 +56,7 @@
     function hcBossTarget(o) {
       if (mode !== 'hardcore' || !player.cells.length) return null;
       const active = bossOwners.filter(b => b.cells.length), ix = Math.max(0, active.indexOf(o));
+      o.hcRole = active.length > 1 && ix % 2 === 1 ? 'intercept' : 'pursue';
       let preferred = null;
       if (hcSplitDone) { const hm = hcHalfMass(), half = active.length > 1 ? ix % 2 : hm[0] <= hm[1] ? 0 : 1; preferred = player.cells.filter(c => c.hcHalf === half); }
       const candidates = preferred && preferred.length ? preferred : player.cells, origin = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b);

@@ -32,14 +32,14 @@
     const HC_BOOST = {   // [icon, name, values, kind: '+' adds a percent, '-' multiplies by (1 − percent)]
       speed: ['⚡', 'Скорость', [4, 6, 8, 10], '+'], absorb: ['🍽', 'Поглощение', [4, 6, 8, 10], '+'], cd: ['⏱', 'Перезарядка способностей', [8, 12, 16, 20], '-'],
       melt: ['🧊', 'Таяние', [8, 12, 16, 20], '-'], skin: ['🛡', 'Толстая кожа', [3, 5, 7, 9], '+'], magnet: ['🧲', 'Притяжение крошек', [10, 15, 20, 25], '+'],
-      dash: ['💨', 'Короткий рывок', [10, 15, 20, 25], '-'], merge: ['🔗', 'Быстрое слияние', [10, 15, 20, 25], '-'], predator: ['🩸', 'Хищник', [8, 10, 12, 15], '+'], coins: ['💰', 'Добытчик', [4, 6, 8, 10], '+'], spike: ['🌵', 'Колючая броня', [10, 15, 20, 25], '-'] };
+      dash: ['💨', 'Короткий рывок', [10, 15, 20, 25], '-'], merge: ['🔗', 'Быстрое слияние', [10, 15, 20, 25], '-'], predator: ['🩸', 'Хищник', [8, 10, 12, 15], '+'], coins: ['💰', 'Добытчик', [4, 6, 8, 10], '+'] };
     const HC_ABOUT = { speed: 'быстрее', absorb: 'еда сытнее', cd: 'способности перезаряжаются быстрее', melt: 'масса тает медленнее', skin: 'боту надо быть крупнее, чтобы съесть тебя', magnet: 'крошки притягиваются издалека',
-      dash: 'рывок перезаряжается быстрее', merge: 'части сливаются быстрее', predator: 'после съеденного бота 2 с ты быстрее', coins: 'монеты за раунд', spike: 'шанс, что шип не сработает на тебе' };
+      dash: 'рывок перезаряжается быстрее', merge: 'части сливаются быстрее', predator: 'после съеденного бота 2 с ты быстрее', coins: 'монеты за раунд' };
     let hc = {}, hcN = {}, hcMile = 0, hcOffer = null, hcT = 0, hcPredT = 0, hcDbg = { m: 0, t: 0, gain: 0 }, hcLog = null;   // hcLog: test build only — the round's record
     const hcReset = () => { hc = {}; hcN = {}; Object.entries(HC_BOOST).forEach(([k, b]) => { hc[k] = b[3] === '+' ? 0 : 1; hcN[k] = 0; }); };
     hcReset();
     const hcK = k => (mode !== 'hardcore' ? 1 : HC_BOOST[k][3] === '+' ? 1 + hc[k] / 100 : hc[k]);
-    const hcLabel = (k, r) => { const b = HC_BOOST[k], v = b[2][r]; if (k === 'spike') return `${b[1]}: шанс ${v}%`; return `${b[1]} ${b[3] === '+' ? '+' : '−'}${v}%`; };
+    const hcLabel = (k, r) => { const b = HC_BOOST[k], v = b[2][r]; return `${b[1]} ${b[3] === '+' ? '+' : '−'}${v}%`; };
     // «Босс-рейд»: a glowing tether between the twins while they are close — then only half of the damage gets through
     const tether = new THREE.Mesh(new THREE.BoxGeometry(1, .35, .35), new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false }));
     tether.visible = false; scene.add(tether);

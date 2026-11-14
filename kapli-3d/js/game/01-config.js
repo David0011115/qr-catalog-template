@@ -685,7 +685,7 @@
 
   // skill achievements: one round, done right. Each gives its own title and coins; all of them — a frame and a skin
   const SKILL = [
-    { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, обходи шипы.', coins: 1500, title: ['Железный', '#c0c8e0'],
+    { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, держись подальше от крупных ботов.', coins: 1500, title: ['Железный', '#c0c8e0'],
       test: S => S.mode === 'hardcore' && !S.splits && S.maxMass >= 5000, best: S => S.mode === 'hardcore' && !S.splits ? Math.round(S.maxMass) : null, unit: 'массы' },
     { id: 'sk_giant60', name: 'Молниеносный', desc: 'Набери массу 1000 быстрее чем за 60 секунд', hint: 'Не отвлекайся на боссов: собирай крошки и ешь мелкие капли подряд, бонус «Двойная еда» очень помогает.', coins: 2000, title: ['Молния', '#ffd23f'],
       test: S => S.t1000 !== undefined && S.t1000 <= 60, best: S => S.t1000 !== undefined ? Math.floor(S.t1000) : null, lower: true, unit: 'с' },

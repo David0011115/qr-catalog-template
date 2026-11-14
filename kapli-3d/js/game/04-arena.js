@@ -30,7 +30,8 @@
     return v;
   }
   function removeVirus(v) { scene.remove(v.mesh); viruses.splice(viruses.indexOf(v), 1); }
-  function resetViruses() { [...viruses].forEach(removeVirus); const n = arenaIs('inferno') ? VIRUS_COUNT * 2 : arenaIs('lava') ? VIRUS_COUNT + 3 : VIRUS_COUNT; for (let i = 0; i < n; i++) spawnVirus(); }
+  function resetViruses() { [...viruses].forEach(removeVirus); if (mode === 'hardcore') return;   // 2.7: no spikes in «Хардкор»
+    const n = arenaIs('inferno') ? VIRUS_COUNT * 2 : arenaIs('lava') ? VIRUS_COUNT + 3 : VIRUS_COUNT; for (let i = 0; i < n; i++) spawnVirus(); }
   let virusRespawn = [];
   function popCell(c, v) {
     const o = c.owner;
@@ -78,9 +79,6 @@
         if (v.trap && (c.owner === v.trap.owner || (v.trap.owner.team && c.owner.team === v.trap.owner.team))) continue;   // a trap spares its owner and allies
         if (abOn('x_ghost', c.owner) || abOn('shrink', c.owner) || c.owner.spawnSh > 0) continue;   // «Фантом» and «Сжатие» pass spikes
         if (Math.hypot(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
-          // 2.7 «Колючая броня» («Хардкор»): this spike may let the player through; it is decided once while they overlap
-          if (c.owner.isPlayer && ModeX.hcK('spike') < 1) { v.dodge = v.dodge || new Set(); if (v.dodge.has(c)) continue;
-            if (Math.random() >= ModeX.hcK('spike')) { v.dodge.add(c); toast('🌵 Шип не сработал'); continue; } }
           popCell(c, v); removeVirus(v); if (!v.trap) virusRespawn.push(10); rebuildCells(); break;
         }
       }

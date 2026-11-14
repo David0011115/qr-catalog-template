@@ -171,7 +171,7 @@
     if (!petObj) return;
     const g = petObj.g;
     if (!player.cells.length) { g.visible = false; return; }
-    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(c), a = now / 1300;
+    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = visualCellR(c), a = now / 1300;
     const tx = c.x + Math.cos(a) * (r + 2.2), tz = c.z + Math.sin(a) * (r + 2.2), ty = r * .9 + 1.3 + Math.sin(now / 280) * .3;
     const k = Math.min(1, dt * 6), px = petObj.x, pz = petObj.z;
     petObj.x += (tx - petObj.x) * k; petObj.z += (tz - petObj.z) * k; petObj.y += (ty - petObj.y) * k;
@@ -267,7 +267,7 @@
     if (zoneLine.visible) { const Z = ModeX.zoneC; zoneLine.position.set(Z.x, .06, Z.z); zoneOut.position.set(Z.x, .06, Z.z); zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
     for (const c of cells) {
-      const r = cellR(c), v = c.vis, animateVisible = nearView(c.x, c.z);
+      const r = visualCellR(c), v = c.vis, animateVisible = nearView(c.x, c.z);
       v.jig *= 0.93;
       const lk = v.look;
       if (lk) {
@@ -287,7 +287,7 @@
       }
       if (c.owner.bossType === 'chameleon') {
         // invisible until you are close: fades in over the last 20 units
-        let dmin = Infinity; for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
+        let dmin = Infinity; for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - visualCellR(pc) - r);
         const al = !player.cells.length ? .9 : Math.max(.05, Math.min(.9, (30 - dmin) / 20));
         c.vis.mesh.material.opacity = al; c.vis.glow.material.opacity = al * .9; c.vis.crown.visible = al > .5; c.vis.ring.visible = al > .3; c.seen = al > .3;
       }
@@ -347,7 +347,7 @@
     crownMesh.visible = running && mode === 'crown' && (!!ModeX.crownGround || (!!crownHolder && crownHolder.cells.length > 0));
     if (crownMesh.visible && ModeX.crownGround) { const g = ModeX.crownGround; crownMesh.position.set(g.x, 2.2 + Math.sin(now / 300) * .5, g.z); crownMesh.scale.setScalar(4); crownMesh.rotation.y = now / 500; }
     else if (crownMesh.visible) {
-      const top = crownHolder.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(top);
+      const top = crownHolder.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = visualCellR(top);
       crownMesh.position.set(top.x, r * 2 + 0.6 + Math.sin(now / 300) * 0.3, top.z);
       crownMesh.scale.setScalar(Math.max(2, r * 1.1)); crownMesh.rotation.y = now / 800;
     }
@@ -388,7 +388,7 @@
       lookTick(now);
       trackFps(now);
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
-      if (running && !paused && !dying) update(dt);
+      if (running && !paused && !dying) { if (ModeX.hcFrozen()) ModeX.hcFreezeTick(dt); else update(dt); }
       else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
       else if (!running) idle(dt);
       const mb = !running && !$('overlay').hidden;

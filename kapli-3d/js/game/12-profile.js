@@ -35,6 +35,7 @@
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
     { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
     { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 40 000 массы за раунд (формы растут вместе со скином «Берсерк»)', test: () => (save.hcPeak || 0) >= 40000 },
+    { id: 'bg_hc_singularity', name: 'Сингулярный трон', rar: 'legendary', src: 'победа в «Хардкоре»: обе половины по 50 000 массы', test: () => !!save.hc100k },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
@@ -550,6 +551,52 @@
           for (const e of [.18, .58]) { const ex = px + s * r * e, ey = py - r * .1; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, r * .14, r * .18, 0, 0, 6.29); x.fill(); x.fillStyle = '#140c2c'; x.beginPath(); x.arc(ex + s * r * .05, ey, r * .075, 0, 6.29); x.fill(); }
         });
         break; }
+      case 'bg_hc_singularity': {   // эксклюзив за победу 100K в Hardcore: трон двух миров
+        const beat = .5 + .5 * Math.sin(t * 1.8), pulse = .5 + .5 * Math.sin(t * 3.2), cx = w * .53, cy = h * .405, R = U * .205;
+        x.fillStyle = lin([[0, '#02040d'], [.34, '#0b1028'], [.7, '#17102d'], [1, '#03040b']]); x.fillRect(0, 0, w, h);
+        // Космическая глубина, туманности и звёздная пыль.
+        glow(cx, h * .39, U * .82, 'rgba(83,91,205,.19)'); glow(w * .16, h * .28, U * .4, 'rgba(25,184,224,.12)'); glow(w * .9, h * .3, U * .42, 'rgba(208,55,177,.12)');
+        stars(180, 223, 1.2, '#dceaff');
+        for (const p of pbgPts('hc-throne-dust', 100, 231)) { const yy = (p.y * h - t * (7 + p.s * 13) + h) % h, xx = p.x * w + Math.sin(t * .4 + p.p) * 7; x.globalAlpha = .2 + .5 * p.q; x.fillStyle = p.q > .52 ? '#ffd98b' : '#9adfff'; x.fillRect(xx, yy, .7 + p.s * 1.6, .7 + p.s * 1.6); } x.globalAlpha = 1;
+        // Две монументальные колонны с золотой гравировкой.
+        x.save();
+        for (const side of [-1, 1]) { const px = cx + side * U * .365, top = h * .11, base = h * .86, ww = U * .075;
+          x.fillStyle = lin([[0, '#343653'], [.43, '#171b34'], [1, '#070a18']], px, top, px, base); x.strokeStyle = 'rgba(255,211,125,.62)'; x.lineWidth = 1.4;
+          x.beginPath(); x.moveTo(px - ww, base); x.lineTo(px - ww * .78, top + U * .08); x.lineTo(px, top); x.lineTo(px + ww * .78, top + U * .08); x.lineTo(px + ww, base); x.closePath(); x.fill(); x.stroke();
+          for (let q = 0; q < 6; q++) { const yy = top + U * (.14 + q * .1); x.strokeStyle = 'rgba(170,190,255,.2)'; x.beginPath(); x.moveTo(px - ww * .68, yy); x.lineTo(px + ww * .68, yy); x.stroke(); }
+          glow(px, h * .4, U * .13, side < 0 ? 'rgba(34,230,255,.16)' : 'rgba(255,79,216,.16)');
+        }
+        // Спинка трона и раздвоенная корона.
+        x.fillStyle = '#080c1d'; x.strokeStyle = 'rgba(255,211,125,.86)'; x.lineWidth = 2;
+        x.beginPath(); x.moveTo(cx - U * .29, h * .78); x.lineTo(cx - U * .25, h * .24); x.lineTo(cx - U * .17, h * .16); x.lineTo(cx, h * .27); x.lineTo(cx + U * .17, h * .16); x.lineTo(cx + U * .25, h * .24); x.lineTo(cx + U * .29, h * .78); x.closePath(); x.fill(); x.stroke();
+        x.beginPath(); x.moveTo(cx - U * .2, h * .24); x.lineTo(cx - U * .13, h * .085); x.lineTo(cx - U * .045, h * .19); x.lineTo(cx, h * .045); x.lineTo(cx + U * .045, h * .19); x.lineTo(cx + U * .13, h * .085); x.lineTo(cx + U * .2, h * .24); x.stroke();
+        const sheen = (t * .22) % 1; x.strokeStyle = 'rgba(255,239,190,' + (.2 + beat * .5) + ')'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(cx - U * .22 + sheen * U * .44, h * .22); x.lineTo(cx - U * .22 + sheen * U * .44, h * .76); x.stroke();
+        x.restore();
+        // Две половины мира вращаются вокруг чёрной сингулярности.
+        x.save(); x.globalCompositeOperation = 'lighter';
+        for (let k = 0; k < 7; k++) { const a = t * (.11 + k * .009) + k * .48; x.strokeStyle = k % 2 ? 'rgba(111,166,255,.24)' : 'rgba(255,210,122,.38)'; x.lineWidth = .8 + (k % 3) * .45; x.beginPath(); x.ellipse(cx, cy, R * (1.08 + k * .13), R * (.34 + k * .052), a * .08 - .28, a, a + Math.PI * 1.72); x.stroke(); }
+        glow(cx, cy, R * 2.65, 'rgba(114,88,255,' + (.2 + beat * .2) + ')');
+        const orb = (a, col, deep, spin) => { const px = cx + Math.cos(a) * R * 1.42, py = cy + Math.sin(a) * R * .53, rr = R * (.17 + .012 * Math.sin(t * 2 + spin)); glow(px, py, R * .62, col, .9); const g = x.createRadialGradient(px - R * .05, py - R * .07, 1, px, py, R * .21); g.addColorStop(0, '#ffffff'); g.addColorStop(.24, col); g.addColorStop(1, deep); x.fillStyle = g; x.beginPath(); x.arc(px, py, rr, 0, 6.283); x.fill(); x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = 1.2; x.beginPath(); x.arc(px, py, rr * 1.16, 0, 6.283); x.stroke();
+          for (let n = 0; n < 4; n++) { const aa = a * 1.3 + n * 1.571 + t * .8, dr = R * (.27 + n * .025); x.fillStyle = col; x.beginPath(); x.arc(px + Math.cos(aa) * dr, py + Math.sin(aa) * dr * .7, 1.2 + n * .4, 0, 6.283); x.fill(); }
+        };
+        orb(t * .48, '#22e6ff', '#102c55', 0); orb(t * .48 + Math.PI, '#ff4fd8', '#42133f', 1);
+        // Горизонт событий, золотой разлом и вращающиеся дуги.
+        x.fillStyle = '#010208'; x.beginPath(); x.arc(cx, cy, R * .49, 0, 6.283); x.fill();
+        x.strokeStyle = 'rgba(255,224,151,' + (.62 + beat * .38) + ')'; x.lineWidth = 3; x.shadowColor = '#ffd27a'; x.shadowBlur = 16 + beat * 22; x.beginPath(); x.arc(cx, cy, R * (.51 + pulse * .014), t * .55, t * .55 + 5.7); x.stroke(); x.shadowBlur = 0;
+        x.strokeStyle = 'rgba(130,205,255,.68)'; x.lineWidth = 1.3; x.beginPath(); x.arc(cx, cy, R * .57, -t * .3, -t * .3 + 2.4); x.stroke();
+        // Рунические метки и искры по орбите.
+        for (let i = 0; i < 28; i++) { const a = i / 28 * 6.283 + t * .18, rr = R * (1.82 + .08 * Math.sin(t + i)), px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr * .52; x.globalAlpha = .38 + .55 * beat; x.fillStyle = i % 3 ? '#c6d9ff' : '#ffe0a0'; x.save(); x.translate(px, py); x.rotate(a); x.fillRect(-2, -1, 4, 2); x.restore(); }
+        for (let i = 0; i < 18; i++) { const a = i / 18 * 6.283 + t * .34, rr = R * (1.25 + (i % 4) * .19); glow(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .48, 2 + (i % 3), i % 2 ? 'rgba(87,220,255,.9)' : 'rgba(255,205,112,.9)', .45 + beat * .3); }
+        x.restore(); x.globalAlpha = 1;
+        // Передний план: ступени трона, золотые контуры и эмблема двух миров.
+        x.save(); x.translate(cx, h * .79);
+        for (let n = 0; n < 4; n++) { const ww = U * (.43 - n * .047), yy = n * U * .032; x.fillStyle = n % 2 ? '#25213a' : '#11152b'; x.strokeStyle = 'rgba(255,210,122,.82)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-ww, yy); x.lineTo(ww, yy); x.lineTo(ww * .82, yy + U * .052); x.lineTo(-ww * .82, yy + U * .052); x.closePath(); x.fill(); x.stroke(); }
+        x.restore();
+        // Дышащая надпись и медальон 100K.
+        x.globalAlpha = .65 + beat * .35; x.fillStyle = '#fff2bd'; x.font = 'bold ' + Math.max(12, U * .13) + 'px Russo One, Arial Black, sans-serif'; x.textAlign = 'right'; x.shadowColor = '#ffd27a'; x.shadowBlur = 8 + pulse * 12; x.fillText('100K', w * .94, h * .91); x.shadowBlur = 0; x.globalAlpha = 1;
+        x.strokeStyle = 'rgba(255,215,140,.8)'; x.lineWidth = 1.5; x.beginPath(); x.arc(w * .09, h * .88, U * .035, 0, 6.283); x.stroke(); x.fillStyle = '#ffe7b0'; x.font = 'bold ' + Math.max(7, U * .035) + 'px Arial'; x.textAlign = 'center'; x.fillText('HC', w * .09, h * .895);
+        break;
+      }
       case 'bg_hc_arena': {   // «Хардкор» 75 000: a colosseum under a blood moon, chains, the red mist and the edges beating like a heart
         const beat = Math.pow(Math.max(0, Math.sin(t * 2.6)), 8);
         x.fillStyle = lin([[0, '#120104'], [.55, '#3a0408'], [1, '#120103']]); x.fillRect(0, 0, w, h);
@@ -768,16 +815,18 @@
     for (const cv of vis) {
       const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) continue;
       if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
-      const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); pbgDraw(x, w, h, cv.dataset.pbg, (save.settings.quality === 'low' ? 3.3 : now / 1000));
+      const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); pbgDraw(x, w, h, cv.dataset.pbg, (save.settings.quality === 'low' && cv.dataset.pbg !== 'bg_hc_singularity' ? 3.3 : now / 1000));
     }
   }
   function pbgMount(root) { root.querySelectorAll('canvas[data-pbg]').forEach(cv => pbgLive.add(cv)); if (!pbgRaf) pbgRaf = requestAnimationFrame(pbgLoop); }
   // ---- what a player shows to others ----
   const PB_BADGES = () => [{ id: 'legend', name: 'Легенда Капель', got: !!save.legendBadge }, { id: 'millionaire', name: 'Миллионер', got: !!(save.badges || {}).millionaire },
+    { id: 'hc100k', name: 'Предел двух миров', got: !!(save.badges || {}).hc100k, src: 'Победа в Hardcore: обе половины по 50 000 массы' },
     ...PROMO_BADGES.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], promo: true })), ...SPECIAL.map(b => ({ id: b.id, name: b.name, got: !!(save.badges || {})[b.id], src: b.src })), ...EVO_BADGES.map(b => ({ id: b.id, name: b.name, got: (TEST_MODE && save.evoAll) || b.got(), src: b.src }))];
   function pbBadgeSVG(id) {
     if (!id) return '';
     if (id === 'legend') return legendBadgeSVG(true); if (id === 'millionaire') return millionBadgeSVG(true);
+    if (id === 'hc100k') return '<svg viewBox="0 0 96 96" role="img" aria-label="Предел двух миров"><defs><linearGradient id="hc100k-gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff8d8"/><stop offset=".38" stop-color="#ffd36e"/><stop offset=".72" stop-color="#b87524"/><stop offset="1" stop-color="#fff0b0"/></linearGradient><radialGradient id="hc100k-core"><stop stop-color="#fff"/><stop offset=".25" stop-color="#b9f7ff"/><stop offset=".65" stop-color="#6a5bff"/><stop offset="1" stop-color="#170d36"/></radialGradient></defs><path d="M48 3 58 13 73 9 78 24 92 33 84 48 91 63 76 72 72 88 56 83 48 94 39 83 23 88 19 72 4 63 12 48 4 33 19 24 23 9 39 13Z" fill="#120f25" stroke="url(#hc100k-gold)" stroke-width="3"/><circle cx="48" cy="48" r="33" fill="#080d20" stroke="url(#hc100k-gold)" stroke-width="2"/><path d="M22 43Q31 22 45 39Q49 45 48 54Q43 69 29 62Q19 56 22 43Z" fill="#22dff4" stroke="#d9fbff" stroke-width="2"/><path d="M74 43Q65 22 51 39Q47 45 48 54Q53 69 67 62Q77 56 74 43Z" fill="#ff4fd8" stroke="#ffe2fa" stroke-width="2"/><path d="M48 23 43 39 51 47 44 57 50 72" fill="none" stroke="#fff4c4" stroke-width="3" stroke-linecap="round"/><path d="M24 20 33 27 48 14 63 27 72 20" fill="none" stroke="url(#hc100k-gold)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="14" r="4" fill="#fff8d8" stroke="#b87524" stroke-width="1.5"/><path d="M31 76 48 82 65 76" fill="none" stroke="url(#hc100k-gold)" stroke-width="2.5" stroke-linecap="round"/></svg>';
     if (EVO_BADGES.some(b => b.id === id)) return evoBadgeSVG(id);
     const pb = PROMO_BADGES.find(b => b.id === id); if (pb) return promoBadgeSVG(pb);
     const sb = SPECIAL.find(b => b.id === id); return sb ? specialBadgeSVG(sb, true) : '';
@@ -916,10 +965,12 @@
     pbgCheck(first);
   }
   function pbgCheck(quiet) {
-    save.pbg = save.pbg || []; const got = [];
+    save.pbg = save.pbg || []; const got = []; let badgeAdded = false;
+    if (save.hc100k) { save.badges = save.badges || {}; if (!save.badges.hc100k) { save.badges.hc100k = save.hc100kAt || Date.now(); badgeAdded = true; } }
     for (const b of PBG) if (!save.pbg.includes(b.id) && b.test()) { save.pbg.push(b.id); got.push(b); }
     if ((save.totals.chaosMax || 0) >= 5 && !save.decor.includes('fr_sing')) { save.decor.push('fr_sing'); if (!quiet) toast('Новая рамка: «Горизонт сингулярности»'); }
     if (!quiet) got.forEach(b => toast(`Новый фон профиля: «${b.name}»`));
+    if (badgeAdded) persist();
     return got;
   }
 

@@ -470,7 +470,7 @@
     if (id === 'crown') return sec('Правила', `<ul>${li('корона лежит на поле — подбери её первым')}${li('дальше она переходит только к тому, кто съест владельца (или большую его часть)')}${li('если владельца съест босс, корона падает на поле')}${li('владелец на 15% медленнее')}</ul>`) +
       sec('Кто охотится на владельца', `<ul>${li('боссы — где бы он ни был')}${li('боты крупнее — через всю арену')}${li('боты мельче — за отколовшимися частями')}</ul>`) + sec('Рекорд', '<ul><li>время с короной за раунд</li></ul>');
     if (id === 'rbuild') return sec('Как устроен', `<ul>${li('3 случайные способности из 12 обычных, даже не купленные')}${li('их уровни — как у тебя')}${li('опыт ×1,2')}</ul>`);
-    if (id === 'hardcore') return sec('Без поблажек', `<ul>${li('нет бонусов и шипов на поле, нет второго шанса')}${li('боты злее, масса тает быстрее, чем в других режимах')}${li('длинная защита на старте')}${li('монеты ×1,6')}</ul>`) +
+    if (id === 'hardcore') return sec('Без поблажек', `<ul>${li('нет бонусов на поле и второго шанса')}${li('боты злее, масса тает быстрее, чем в других режимах')}${li('длинная защита на старте')}${li('при достижении 10 000 массы все шипы исчезают до конца раунда')}${li('монеты ×1,6')}</ul>`) +
       sec(`Вехи — ${X.HC_MILES.length} улучшений за раунд`, tbl(X.HC_MILES.map((m, k) => { const [f, up] = X.HC_TIER[k]; return [`${n(m)} массы`, up ? `${X.HC_RN[f]}, шанс ${Math.round(up * 100)}% на ${X.HC_RN[f + 1].toLowerCase()}` : `${X.HC_RN[f]} — гарантированно`]; }))) +
       sec(`Улучшения — ${Object.keys(X.HC_BOOST).length} видов`, `<ul class="mi-boosts">${Object.entries(X.HC_BOOST).map(([k, [ic, nm, v, kd]]) => `<li><span class="mib-ic">${ic}</span><span class="mib-tx"><b>${nm}</b><small>${HC_DESC[k] || X.HC_ABOUT[k]}</small><span class="mib-v">${v.map((x, r) => `<i class="r${r}">${(kd === '+' ? '+' : '−') + x + '%'}</i>`).join('')}</span></span></li>`).join('')}</ul>` +
         `<small>Цвета: обычное · <span style="color:#4d7cff">редкое</span> · <span style="color:#b26bff">эпическое</span> · <span style="color:#ffd23f">легендарное</span>. Каждая веха — 2 карточки на выбор, редкость не ниже указанной в «Вехах». Одно улучшение — не больше ${X.HC_CAP} раз за раунд, одинаковые складываются. Не успел выбрать за 12 с — возьмётся первое.</small>`) +
@@ -533,6 +533,8 @@
       prog: () => [Math.min(26, save.seasonLog.length), 26], how: n => `Собери 26 значков сезонов — это год игры: ${n[0]} из 26.` },
     { id: 'allhands', src: 'все 10 линеек достижений на III ступени', name: 'Мастер на все руки', label: 'ВСЕ РУКИ', c: '#3dffa2', c2: '#5a2a00', glyph: '✋',
       prog: () => { const L = ACH.filter(a => a.line); return [L.filter(a => save.ach.includes(a.id)).length, L.length]; }, how: n => `Доведи все линейки достижений до III ступени: ${n[0]} из ${n[1]}.` },
+    { id: 'hc100k', src: 'победа в «Хардкоре»: обе половины достигли 50 000 массы', name: 'Предел двух миров', label: '100K', c: '#ffd27a', c2: '#28124f', glyph: '∞',
+      prog: () => [save.hc100k ? 1 : 0, 1], how: () => 'Пройди «Хардкор»: после разделения доведи каждую половину до 50 000 массы.' },
   ];
   // promo badges have their own detailed shapes (1.7.0)
   function promoBadgeSVG(b) {
@@ -557,6 +559,11 @@
   }
   function specialBadgeSVG(b, got) {
     if (PROMO_BADGES.includes(b)) return promoBadgeSVG(b);
+    if (b.id === 'hc100k') return `<svg class="legend-badge ${got ? '' : 'off'}" viewBox="0 0 100 100" role="img" aria-label="Значок «${b.name}»${got ? '' : ', ещё не получен'}"${got ? ' style="filter:drop-shadow(0 0 13px #ffd27aaa)"' : ''}>
+      <defs><linearGradient id="hc100k-g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff8d7"/><stop offset=".35" stop-color="#ffd27a"/><stop offset=".7" stop-color="#b26bff"/><stop offset="1" stop-color="#22e6ff"/></linearGradient><radialGradient id="hc100k-orb"><stop stop-color="#ffffff"/><stop offset=".35" stop-color="#9ff0ff"/><stop offset="1" stop-color="#34206e"/></radialGradient></defs>
+      <path d="M50 3 L91 19 V48 C91 72 72 87 50 95 C28 87 9 72 9 48 V19 Z" fill="#130b2c" stroke="url(#hc100k-g)" stroke-width="3"/><path d="M50 11 L82 24 V48 C82 66 66 79 50 85 C34 79 18 66 18 48 V24 Z" fill="none" stroke="#fff4c7" stroke-opacity=".7" stroke-width="1.4"/>
+      <g fill="none" stroke="#ffd27a" stroke-width="2" opacity=".9"><ellipse cx="50" cy="45" rx="30" ry="12" transform="rotate(-28 50 45)"/><ellipse cx="50" cy="45" rx="30" ry="12" transform="rotate(28 50 45)"/></g>
+      <circle cx="35" cy="43" r="8" fill="url(#hc100k-orb)" stroke="#ffffff" stroke-width="1.2"/><circle cx="65" cy="43" r="8" fill="#ff4fd8" stroke="#fff0ff" stroke-width="1.2"/><path d="M36 24 L42 33 L50 27 L58 33 L64 24 L62 39 L38 39 Z" fill="url(#hc100k-g)" stroke="#fff6d8" stroke-width="1.3"/><path d="M30 66 Q50 58 70 66 L66 74 Q50 68 34 74 Z" fill="#ffd27a" stroke="#fff6d8" stroke-width="1.2"/><text x="50" y="88" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="11" fill="#fff6d8">100K</text></svg>`;
     return `<svg class="legend-badge ${got ? '' : 'off'}" viewBox="0 0 100 100" role="img" aria-label="Значок «${b.name}»${got ? '' : ', ещё не получен'}"${got ? ` style="filter:drop-shadow(0 0 10px ${b.c}99)"` : ''}>
       <defs><linearGradient id="spb_${b.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="${b.c}"/><stop offset="1" stop-color="${b.c2}"/></linearGradient></defs>
       <path d="M50 4 L88 18 V48 C88 70 70 82 50 90 C30 82 12 70 12 48 V18 Z" fill="url(#spb_${b.id})" stroke="${b.c}" stroke-width="2"/>

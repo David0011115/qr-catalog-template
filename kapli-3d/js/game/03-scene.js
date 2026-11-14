@@ -424,7 +424,8 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   const ringGeo = new THREE.RingGeometry(1.08, 1.22, 48);
   const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd166, metalness: .3, roughness: .35, emissive: 0xc08a10, emissiveIntensity: .8, side: THREE.DoubleSide });
   const radius = m => 0.38 * Math.sqrt(m);
-  const cellR = c => 0.38 * Math.sqrt(c.mass) * (c.owner && c.owner.rs || 1);   // «Сжатие» shrinks the player's cells
+  const cellR = c => 0.38 * Math.sqrt(c.owner && c.owner.isPlayer && c.mass > PLAYER_VISUAL_MASS_CAP ? PLAYER_VISUAL_MASS_CAP * Math.pow(c.mass / PLAYER_VISUAL_MASS_CAP, .35) : c.mass) * (c.owner && c.owner.rs || 1);   // physical radius: collision and gameplay
+  const visualCellR = cellR;   // 2.7: the drop is drawn exactly as big as it collides (it grows slowly after 20 000, eating is still decided by mass)
   const PREY = C('--prey'), THREAT = C('--threat'), NEUTRAL = new THREE.Color(0x8088c0);
 
   function makeCrown() {

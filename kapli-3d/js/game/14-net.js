@@ -32,7 +32,7 @@
     const summary = j => { try { const o = typeof j === 'string' ? JSON.parse(j) : j; return { lvl: levelInfo(o.xp || 0).level, coins: o.coins || 0, rounds: (o.totals && o.totals.rounds) || 0 }; } catch (e) { return { lvl: 1, coins: 0, rounds: 0 }; } };
     const hasProgress = j => { const m = summary(j); return m.rounds > 0 || m.coins > 0 || m.lvl > 1; };
     const progFp = j => { try { const o = typeof j === 'string' ? JSON.parse(j) : j, T = o.totals || {}, L = a => (a || []).length, sh = o.shards ? Object.values(o.shards).reduce((a, b) => a + b, 0) : 0;
-      return [o.xp || 0, o.coins || 0, T.rounds || 0, T.kills || 0, L(o.skins), L(o.fxOwned), L(o.pets), L(o.decor), L(o.ach), L(o.pbg), (o.season || {}).pts || 0, (o.chaos || {}).pts || 0, o.chests || 0, L(o.special), sh, (o.abil && L(o.abil.owned)) || 0].join('|'); } catch (e) { return ''; } };
+      return [o.xp || 0, o.coins || 0, T.rounds || 0, T.kills || 0, L(o.skins), L(o.fxOwned), L(o.pets), L(o.decor), L(o.ach), L(o.pbg), (o.season || {}).pts || 0, (o.chaos || {}).pts || 0, o.chests || 0, L(o.special), sh, (o.abil && L(o.abil.owned)) || 0, o.hc100k ? 1 : 0, o.badges && o.badges.hc100k || 0].join('|'); } catch (e) { return ''; } };
     const sumTxt = m => `уровень ${m.lvl}, ${m.coins.toLocaleString('ru-RU')} ◆, раундов: ${m.rounds}`;
     const netErr = e => { const t = String((e && (e.message || e.error_description)) || e || ''); return /fetch|network|timeout|Failed|Load failed/i.test(t); };
 
@@ -1384,6 +1384,9 @@
   function testUnlockAll() {
     save.evoAll = true; try { evoCheck(true); refreshSkin(); } catch (e) {}
     save.pbg = [...new Set([...PBG.filter(b => !b.craft).map(b => b.id), ...(save.pbg || [])])]; save.badges = save.badges || {};
+    // Test-only preview of the exclusive Hardcore victory rewards.
+    save.hc100k = true; save.hc100kAt = save.hc100kAt || today; save.badges.hc100k = save.badges.hc100k || today;
+    if (!save.pbg.includes('bg_hc_singularity')) save.pbg.push('bg_hc_singularity');
     [...PROMO_BADGES, ...SPECIAL].forEach(b => { save.badges[b.id] = save.badges[b.id] || today; }); save.badges.millionaire = save.badges.millionaire || today;
     save.legendBadge = save.legendBadge || today;
     // every league season of the first year (all six league shapes take turns) and a dozen Chaos seasons

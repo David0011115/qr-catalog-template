@@ -6,7 +6,9 @@
   const R_BASE = R, FOOD_BASE = FOOD, R_MAX = R * 2, FOOD_MAX = 12000, START_MASS = 10, MAX_BONUS = 6;
   const MAX_MASS = 15000;   // fallback cap for non-player cell types; player cells have no mass cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
-  const BOSS_MASS_CAP = 12000; // ordinary bosses; survival and raid have separate caps
+  const BOSS_MASS_CAP = 12000; // ordinary bosses outside Hardcore; survival and raid have separate caps
+  const HC_BOSS_MASS_CAP = 23000; // Hardcore only: total mass cap for each ordinary boss
+  const PLAYER_SPEED_MASS_CAP = 20000, PLAYER_VISUAL_MASS_CAP = 20000;
   const MODES = {
     classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы до 30 000 с наградой и арена, которая накаляется каждые 3 минуты' },
     timed:    { name: 'На время',       desc: '5 минут: случайное правило раунда, финальный рывок и награда за любое место' },
@@ -16,7 +18,7 @@
     rbuild:   { name: 'Случайный билд', desc: 'Каждый раунд — 3 случайные способности из 12 обычных, даже не купленные. Опыт ×1,2', lvl: 10 },
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
-    hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Длинная защита на старте, улучшения на 11 вехах — от 2 000 до 50 000 массы, чем дальше, тем реже и сильнее. Монеты ×1,6' },
+    hardcore: { name: 'Хардкор',        desc: 'Экстремальное выживание: адаптивные боссы (максимум два одновременно), обычные боссы до 23 000 массы. На 50 000 игрок делится на две равные половины; победа — когда каждая достигнет 50 000 (всего 100 000). Улучшения на 11 вехах, монеты ×1,6' },
     // modes for two phones on one network (a room by code): marked «вдвоём · локально» everywhere; 2.5 — replaces «Испытание дня»
     territory: { name: 'Захват территории', desc: 'Вдвоём, на двух телефонах. Поле разделено границей: ешь ботов на своей половине, расти — и граница ползёт к сопернику. 4 минуты, досрочная победа при 80% поля', duo: true },
     duoback:  { name: 'Спина к спине', desc: 'Вдвоём, на двух телефонах. Вместе против 50 волн боссов: перерывы с едой, усиления, особый босс каждую 5-ю волну, финал на 50-й. Три сложности', duo: true },   // 2.5 — replaces «Гонка массы»

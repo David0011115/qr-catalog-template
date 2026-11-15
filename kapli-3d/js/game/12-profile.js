@@ -1072,6 +1072,7 @@
     }
     $('pdGrid').innerHTML = html; decorStill($('pdGrid')); decorateDrawers($('pdGrid'));
     $('pdGrid').classList.toggle('grouped', pdTab !== 'shelf');
+    $('pdGrid').dataset.tab = pdTab;   // titles need wider tiles than backgrounds and frames
   }
   $('pdCardBtn').addEventListener('click', () => { const on = $('pdTop').classList.toggle('full'); $('pdCardBtn').setAttribute('aria-expanded', on); $('pdCardBtn').textContent = on ? '✕ Свернуть' : '👁 Карточка'; });
   $('pdGrid').addEventListener('click', e => { const b = e.target.closest('[data-gcat]'); if (!b) return; e.stopPropagation(); const [p, name] = b.dataset.gcat.split('|'); catSel[p] = name; renderDecorEditor();

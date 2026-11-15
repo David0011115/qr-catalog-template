@@ -70,6 +70,7 @@
       rows.push(['Откуда', EVO[id] ? `${sourceText(k)} — это форма I; формы II и III открываются дальше (см. «Эволюция»)` : sourceText(k)], ['Вид', EVO[id] ? k.sig : look]);
       if (EVO[id]) { const E = EVO[id], n = evoOpen(id), cur = evoForm(id);
         if (E.rar) tag = '<span class="badge-r" style="color:#ff3d2d">Хардкор</span>' + tag;
+        tag += `<span class="badge-ex evo-tag"><svg viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg>эволюция</span>`;
         const shown = evoPv[id] || Math.max(1, cur);
         const R = ['', 'I', 'II', 'III'], own = save.skins.includes(id);
         // 2.7: a tap on a form only shows it; the button below puts it on (it used to be put on silently)

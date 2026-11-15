@@ -67,12 +67,15 @@
       imVis = previewBlob(k, st, null); imObj = imVis.mesh; imVis.look = k;
       if (EVO[id] && evoPv[id]) { imVis.evoF = evoPv[id]; evoApply(imVis, k, true); }
       const look = k.craft ? k.sig : [k.pattern ? `узор «${PATTERN_NAME[k.pattern] || k.pattern}»` : 'однотонный', k.mat && MAT_NAME[k.mat], k.anim && ANIM_NAME[k.anim], k.flow && 'живой узор', k.glow && 'свечение', k.pulse && 'пульсация', k.holo && 'голограмма (переливается)', k.rainbow && 'радужный перелив', k.crown && 'корона'].filter(Boolean).join(', ');
-      rows.push(['Откуда', sourceText(k)], ['Вид', EVO[id] ? k.sig : look]);
+      rows.push(['Откуда', EVO[id] ? `${sourceText(k)} — это форма I; формы II и III открываются дальше (см. «Эволюция»)` : sourceText(k)], ['Вид', EVO[id] ? k.sig : look]);
       if (EVO[id]) { const E = EVO[id], n = evoOpen(id), cur = evoForm(id);
         if (E.rar) tag = '<span class="badge-r" style="color:#ff3d2d">Хардкор</span>' + tag;
         const shown = evoPv[id] || Math.max(1, cur);
-        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && save.skins.includes(id) ? `<button type="button" class="evo-f${f === shown ? ' on' : ''}${f === cur ? ' worn' : ''}" data-evof="${f}">${['', 'I', 'II', 'III'][f]}</button>` : `<button type="button" class="evo-f lock${f === shown ? ' on' : ''}" data-evopv="${f}" title="Посмотреть форму · ${E.need[f - 1]} ${E.unit}">🔒 ${['', 'I', 'II', 'III'][f]}<small>${E.need[f - 1]}</small></button>`).join('')}</span>` +
-          (evoPv[id] && !(evoPv[id] <= n && save.skins.includes(id)) ? `<small class="evo-u" style="color:#ffd23f">Предпросмотр формы ${['', 'I', 'II', 'III'][evoPv[id]]} — откроется: ${E.need[evoPv[id] - 1]} ${E.unit}</small>` : E.unit ? `<small class="evo-u">${E.unit} · нажми на форму, чтобы посмотреть</small>` : '')],
+        const R = ['', 'I', 'II', 'III'], own = save.skins.includes(id);
+        // 2.7: a tap on a form only shows it; the button below puts it on (it used to be put on silently)
+        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && own ? `<button type="button" class="evo-f${f === shown ? ' on' : ''}${f === cur ? ' worn' : ''}" data-evof="${f}">${R[f]}<small>${f === cur ? 'надета' : E.need[f - 1]}</small></button>` : `<button type="button" class="evo-f lock${f === shown ? ' on' : ''}" data-evopv="${f}" title="Посмотреть форму · ${E.need[f - 1]} ${E.unit}">🔒 ${R[f]}<small>${E.need[f - 1]}</small></button>`).join('')}</span>` +
+          `<small class="evo-u">${[1, 2, 3].map(f => `${R[f]} — ${E.need[f - 1]}`).join(' · ')}${E.unit ? ' ' + E.unit : ''}</small>` +
+          (evoPv[id] && !(evoPv[id] <= n && own) ? `<small class="evo-u" style="color:#ffd23f">Это предпросмотр формы ${R[evoPv[id]]} — она ещё закрыта</small>` : `<small class="evo-u">нажми на форму, чтобы посмотреть${own && n > 1 ? '; надеть — кнопкой ниже' : ''}</small>`)],
           ['Свои эффекты', 'след, аура, предмет над головой и эффект поедания — свои и растут с формой; дополнительные не надеваются']); }
       if (k.head) rows.push(['Над головой', HEAD_NAME[k.head] || k.head]);
       if (isShiny(k)) rows.push(['Блик', k.shine === 'bolt' ? 'молния' : 'полоса']);
@@ -80,6 +83,11 @@
       const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
       if (save.hat) rows.push(['Сейчас надето', `${HATS[save.hat].name} вместо предмета скина`]);
       act = !save.skins.includes(id) ? `<button class="btn ghost" disabled>${k.craft ? 'Создаётся в мастерской' : buyable(k) ? 'Купить можно в магазине' : 'Ещё не получен'}</button>` : save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
+      if (EVO[id] && save.skins.includes(id)) {   // the button names the form it puts on
+        const R = ['', 'I', 'II', 'III'], n = evoOpen(id), cur = Math.max(1, evoForm(id)), pv = evoPv[id] && evoPv[id] <= n ? evoPv[id] : cur;
+        act = save.skin === id ? (pv === cur ? `<button class="btn ghost" disabled>Выбран · форма ${R[cur]}</button>` : `<button class="btn" data-evoset="${pv}">Применить форму ${R[pv]}</button>`)
+          : `<button class="btn" data-act="skin-${id}" data-evoset="${pv}">Выбрать · форма ${R[pv]}</button>`;
+      }
     } else if (kind === 'fx') {
       const f = FX.find(x => x.id === id), on = save.fx[f.slot] === id;
       name = f.name; tag = rarTag(f.chest || f.lchest || f.craft) + `<span class="badge-ex">${SLOT_NAME[f.slot]}</span>`;
@@ -179,7 +187,9 @@
   $('itemModal').addEventListener('click', e => {
     if (e.target === $('itemModal') || e.target.id === 'imOk') { closeItem(); return; }
     const pv = e.target.closest('button[data-apv]'); if (pv) { const ret = imReturn; closeItem(); openArenaPreview(pv.dataset.apv, ret && ret.id); return; }
-    const ef = e.target.closest('button[data-evof]'); if (ef) { evoPv[imId] = +ef.dataset.evof; save.evo = { ...(save.evo || {}), [imId]: +ef.dataset.evof }; persist(); refreshSkin(); openItem(imKind + ':' + imId); return; }
+    const ef = e.target.closest('button[data-evof]'); if (ef) { evoPv[imId] = +ef.dataset.evof; openItem(imKind + ':' + imId); return; }
+    const es = e.target.closest('button[data-evoset]'); if (es) { const f = +es.dataset.evoset; save.evo = { ...(save.evo || {}), [imId]: f }; persist(); refreshSkin(); toast(`Форма ${['', 'I', 'II', 'III'][f]} надета`);
+      if (!es.dataset.act) { openItem(imKind + ':' + imId); return; } }
     const ep = e.target.closest('button[data-evopv]'); if (ep) { evoPv[imId] = +ep.dataset.evopv; openItem(imKind + ':' + imId); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const orig = $(b.dataset.act);

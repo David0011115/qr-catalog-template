@@ -496,3 +496,4 @@
 .pd-b .pd-grid-in { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 5px; }
 .cat-chip .dr-ic svg { width: 16px; height: 16px; }
 .pd-grid.grouped .cat-chips { position: sticky; top: 0; z-index: 3; background: #140f33; padding-top: 2px; }   /* the group row stays visible while the tiles scroll */
+.evo-forms .evo-f small { display: block; font-size: .58rem; opacity: .8; font-weight: 600; }

@@ -541,3 +541,9 @@
 #hcPick .hc-card .ic { grid-column: 1; grid-row: 1 / span 3; align-self: center; }
 #hcPick .hc-card b, #hcPick .hc-card .hc-debuff, #hcPick .hc-card small { grid-column: 2; }
 #hcPick .hc-card .hc-debuff { white-space: nowrap; margin: 2px 0; }
+/* titles: wide tiles, the tag fits inside its tile (it used to spill over the neighbours) */
+#pdGrid[data-tab="title"] .pd-grid-in { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+#pdGrid[data-tab="title"] .pd-it { padding-top: 30px; min-width: 0; overflow: hidden; }
+#pdGrid[data-tab="title"] .pd-tt { display: block; max-width: 100%; overflow: hidden; }
+#pdGrid[data-tab="title"] .pd-tt > * { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+#pdGrid .pd-cell { min-width: 0; }

@@ -700,7 +700,7 @@
     const au = save.fx && save.fx.aura; if (au && !evoOn()) setAura(MB.vis, au, k.color);
     MB.scene.add(MB.vis.mesh); $('mbName').textContent = k.name;
   }
-  function mbRefresh() { try { const k = JSON.stringify([save.skin, save.hat, save.fx && save.fx.aura, starsOf(skin())]); if (k !== MB.key) { MB.key = k; mbBuild(); } } catch (e) { try { MB.key = ''; } catch (e2) {} } }   // too early at start-up: try again on the next render
+  function mbRefresh() { try { const k = JSON.stringify([save.skin, save.hat, save.fx && save.fx.aura, starsOf(skin()), EVO[save.skin] ? evoForm(save.skin) : 0]); if (k !== MB.key) { MB.key = k; mbBuild(); } } catch (e) { try { MB.key = ''; } catch (e2) {} } }   // too early at start-up: try again on the next render
   (function mbLoop(now) {
     requestAnimationFrame(mbLoop);
     const el = $('menuBlob'); if (!MB.on || !MB.vis || running || $('overlay').hidden || $('menuCard').hidden || document.hidden || !el.offsetParent) return;
@@ -1017,7 +1017,8 @@
     else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
     const inf = ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Предпросмотр: ${s.name}"`;
-    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
+    const dna = EVO[s.id] ? `<span class="evo-dna" title="Скин с эволюцией${save.skins.includes(s.id) && evoForm(s.id) ? ` · форма ${['', 'I', 'II', 'III'][evoForm(s.id)]}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg>${save.skins.includes(s.id) && evoForm(s.id) ? ['', 'I', 'II', 'III'][evoForm(s.id)] : ''}</span>` : '';
+    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}>${dna}<div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
       ${starsOf(s) ? `<span class="stars-on" title="Звёзды скина: ${STAR_TEXT[starsOf(s)]}; ${starBonusOf(s) ? starBonusOf(s).text(starsOf(s)) : ''}">${'★'.repeat(starsOf(s))}</span>` : ''}<span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
   function fxRow(f, mode) {
@@ -1316,6 +1317,7 @@
     calendar: '<rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/>',
     sparkle: '<path d="M12 3l1.8 5.6 5.7 1.9-5.7 1.9L12 18l-1.8-5.6-5.7-1.9 5.7-1.9zM19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
     crown: '<path d="M3.5 8.5l4.5 4 4-7 4 7 4.5-4-2 10.5h-13z"/>',
+    dna: '<path d="M7 2.5c0 5 10 5 10 9.5S7 17 7 21.5M17 2.5c0 5-10 5-10 9.5s10 5 10 9.5"/><path d="M8.6 5.5h6.8M10 8.3h4M10 15.7h4M8.6 18.5h6.8"/>',   // 2.7: skins with evolution
     star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4l-5.3 3 1.2-6-4.5-4.1 6-.7z"/>',
     workshop: '<circle cx="9" cy="14" r="4.2"/><circle cx="9" cy="14" r="1.4"/><path d="M9 8.3v1.5M9 18.2v1.5M3.3 14h1.5M13.2 14h1.5M14.5 3.5l6 6-2 2-6-6zM15.5 8.5l-3.2 3.2"/>',
     cap: '<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2.2 9 2.2 12 0v-5M22 9v6"/>',
@@ -1354,7 +1356,7 @@
   };
   const DRAWER_ICONS = [
     ['фоны чата', 'chatbg', '#ff6ad5'], ['арены', 'hub:arena'], ['эмоции', 'smile', '#ffd23f'],
-    ['эволюция', 'crown', '#ff6a3d'], ['обычные', 'palette', '#c9c2ff'], ['уровни', 'star', '#22e6ff'], ['коллекции', 'hub:col'], ['достижения', 'medal', '#3dffa2'], ['особые', 'ticket', '#ff4fd8'], ['архивные', 'hub:arch'], ['сундуки', 'hub:chest'], ['значки хаос', 'chaos', '#ff4fd8'], ['хаос', 'chaos', '#ff4fd8'], ['значки сезон', 'hex', '#ffd23f'], ['особые значки', 'hex', '#22e6ff'],
+    ['эволюция', 'dna', '#3dffa2'], ['обычные', 'palette', '#c9c2ff'], ['уровни', 'star', '#22e6ff'], ['коллекции', 'hub:col'], ['достижения', 'medal', '#3dffa2'], ['особые', 'ticket', '#ff4fd8'], ['архивные', 'hub:arch'], ['сундуки', 'hub:chest'], ['значки хаос', 'chaos', '#ff4fd8'], ['хаос', 'chaos', '#ff4fd8'], ['значки сезон', 'hex', '#ffd23f'], ['особые значки', 'hex', '#22e6ff'],
     ['мастерские достижения', 'medal', '#3dffa2'], ['легендарные достижения', 'crown', '#ffd23f'], ['праздничные достижения', 'gift', '#ff6ad5'],
     ['мастерство', 'medal', '#3dffa2'], ['мастерская', 'workshop', '#ffd27a'], ['все награды престижа', 'star', '#ffd23f'], ['престиж', 'star', '#ffd23f'],
     ['эффект поедания', 'burst', '#ff9a3d'], ['след', 'trail', '#22e6ff'], ['аура', 'aura', '#b26bff'],

@@ -227,16 +227,87 @@
   }
 
   // the skins you earn here: given when form I opens, the next forms are announced
-  function evoCheck(quiet) {
-    save.evoSeen = save.evoSeen || {}; const out = [];
+  // ---- 2.7: getting a skin with evolution or a new form is an event: a moment in the round, a window after it, a «new» mark ----
+  const RN3 = ['', 'I', 'II', 'III'];
+  function evoCheck(quiet, live) {
+    save.evoSeen = save.evoSeen || {}; save.evoNew = save.evoNew || {}; save.evoQ = save.evoQ || []; const out = [], evs = [];
     for (const [id, E] of Object.entries(EVO)) {
       const n = evoOpen(id); if (!n) continue;
-      if (E.grant && !save.skins.includes(id)) { save.skins.push(id); out.push(`Новый скин «${E.grant}»!`); }
+      let fresh = false;
+      if (E.grant && !save.skins.includes(id)) { save.skins.push(id); out.push(`Новый скин «${E.grant}»!`); fresh = true; }
       const was = save.evoSeen[id] || 0;
-      if (n > was) { if (was && save.skins.includes(id)) out.push(`«${SKINS.find(k => k.id === id).name}»: открыта форма ${['', 'I', 'II', 'III'][n]}`); save.evoSeen[id] = n; }
+      if (n > was) { if ((was || fresh) && save.skins.includes(id)) { evs.push({ id, f: n, from: fresh ? 0 : was, fresh }); if (!fresh) out.push(`«${SKINS.find(k => k.id === id).name}»: открыта форма ${RN3[n]}`); } save.evoSeen[id] = n; }
+      else if (fresh) evs.push({ id, f: Math.max(1, n), from: 0, fresh });
     }
-    if (out.length) { persist(); if (!quiet) out.forEach((t, i) => setTimeout(() => toast('✦ ' + t), 600 + i * 1800)); refreshSkin(); }
+    const bulk = TEST_MODE && save.evoAll && quiet;   // test «Открыть всё»: no flood of windows and marks
+    for (const ev of evs) { if (bulk) continue; save.evoNew[ev.id] = ev.f; save.evoQ.push(ev);
+      if (live) evoMoment(ev); }
+    if (out.length || evs.length) { persist(); refreshSkin(); }
     return out;
+  }
+  // in the round: the drop turns into its new form right where it was earned
+  function evoMoment(ev) {
+    const k = SKINS.find(x => x.id === ev.id), E = EVO[ev.id]; if (!k) return;
+    if (save.skin === ev.id) { save.evo = { ...(save.evo || {}), [ev.id]: ev.f }; refreshSkin(); }
+    if (running && player.cells.length) { const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(c);
+      [0, 180, 360].forEach((d, i) => setTimeout(() => { try { wave(c.x, c.z, i % 2 ? E.c2 : E.c, r, r * 3.2 + 10, .9); } catch (e) {} }, d));
+      player.cells.forEach(cc => { if (cc.vis) cc.vis.jig = 1; }); }
+    try { Sound.play('level'); } catch (e) {}
+    let b = document.getElementById('evoBanner'); if (!b) { b = document.createElement('div'); b.id = 'evoBanner'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
+    b.style.setProperty('--ec', E.c); b.style.setProperty('--ec2', E.c2);
+    b.innerHTML = `<i aria-hidden="true"><svg viewBox="0 0 24 24">${DI.dna}</svg></i><span><small>${ev.fresh ? 'Новый скин с эволюцией' : 'Эволюция'}</small><b>«${k.name}» · форма ${RN3[ev.f]}</b></span>`;
+    b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); clearTimeout(evoMoment.t); evoMoment.t = setTimeout(() => b.classList.remove('show'), 3200);
+  }
+  // live checks during a round: hardcore peak mass (the waves of «Спина к спине» are checked when a wave starts)
+  let evoLiveT = 0, evoTestT = 0;
+  function evoLiveTick(dt) {
+    if (evoTestT > 0 && (evoTestT -= dt) <= 0) { evoTestT = 0; try { evoTestMoment(); } catch (e) { KapliErr.log(e, "evo-test"); } }
+    if ((evoLiveT += dt) < 1) return; evoLiveT = 0;
+    if (mode === 'hardcore' && !stats.ranked && player.cells.length) { const m = Math.round(total(player)); if (m > (save.hcPeak || 0)) { save.hcPeak = m; evoCheck(false, true); } }
+  }
+  function evoTestMoment() {   // test build: the worn evolution skin (or Berserk) jumps one form up right now
+    const id = EVO[save.skin] ? save.skin : 'hc_berserk'; if (!save.skins.includes(id)) save.skins.push(id);
+    const cur = Math.max(1, evoForm(id)), f = cur >= 3 ? 1 : cur + 1; if (save.skin !== id) { save.skin = id; save.evo = { ...(save.evo || {}), [id]: f === 1 ? 1 : f - 1 }; refreshSkin(); }
+    const ev = { id, f, from: f - 1 }; save.evoNew = { ...(save.evoNew || {}), [id]: f }; (save.evoQ = save.evoQ || []).push(ev); evoMoment(ev);
+  }
+  // after the round (or on start-up): a window per event — the drop flows from its old form into the new one
+  let evoWin = null;
+  function evoShowQueue() {
+    if (evoWin || running || !(save.evoQ || []).length) return;
+    if ([...document.querySelectorAll('.modal')].some(m => !m.hidden && m.id !== 'evoModal')) { clearTimeout(evoShowQueue.t); evoShowQueue.t = setTimeout(evoShowQueue, 900); return; }   // another window is open: wait for it
+    const ev = save.evoQ.shift(); persist(); const k = SKINS.find(x => x.id === ev.id), E = EVO[ev.id]; if (!k || !E) return evoShowQueue();
+    let m = document.getElementById('evoModal');
+    if (!m) { m = document.createElement('div'); m.id = 'evoModal'; m.className = 'modal'; m.hidden = true; document.body.appendChild(m); }
+    m.style.setProperty('--ec', E.c); m.style.setProperty('--ec2', E.c2);
+    const worn = save.skin === ev.id && Math.max(1, evoForm(ev.id)) === ev.f;
+    m.innerHTML = `<div class="modal-card evo-card" role="dialog" aria-modal="true" aria-labelledby="evoT"><div class="evo-stage"><svg class="evo-helix" viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg><canvas id="evoCv"></canvas><div class="evo-flash"></div></div>
+      <div class="evo-tx"><small>${ev.fresh ? '🧬 Новый скин с эволюцией' : '🧬 Эволюция'}</small><h2 id="evoT">«${k.name}» · форма ${RN3[ev.f]}</h2>
+      <p>${ev.fresh ? `Скин твой. Он растёт вместе с тобой: ${[1, 2, 3].map(f => `${RN3[f]} — ${E.need[f - 1]}`).join(' · ')}${E.unit ? ' ' + E.unit : ''}.` : `Открыта форма ${RN3[ev.f]} — ${E.need[ev.f - 1]}${E.unit ? ' ' + E.unit : ''}. Форму можно сменить в окне скина.`}</p>
+      <div class="evo-acts">${worn ? '<button class="btn" type="button" data-evok>Отлично</button>' : `<button class="btn" type="button" data-evowear>Надеть форму ${RN3[ev.f]}</button><button class="btn ghost" type="button" data-evok>Позже</button>`}</div></div></div>`;
+    m.hidden = false;
+    // a small 3D stage: old form → flash → new form
+    const cv = m.querySelector('#evoCv'), R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); R.setClearColor(0x000000, 0);
+    const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xc8c0ff, 0x10082a, 1.1)); { const d = new THREE.DirectionalLight(0xffffff, .8); d.position.set(2, 3, 4); sc.add(d); }
+    const cam = new THREE.PerspectiveCamera(35, 1, .1, 80); cam.position.set(0, 2.6, 8.6); cam.lookAt(0, .5, 0);
+    const v = previewBlob(k, 0, null); v.look = k; v.evoF = Math.max(1, ev.from || 1); evoApply(v, k, true); sc.add(v.mesh); v.mesh.position.y = .5;
+    if (ev.fresh) v.mesh.scale.setScalar(.01);
+    const t0 = performance.now(); let swapped = false, raf = 0;
+    const fit = () => { const w = cv.clientWidth || 260, h = cv.clientHeight || 260; R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
+    fit();
+    const loop = now => { raf = requestAnimationFrame(loop); const t = (now - t0) / 1000;
+      if (!swapped && t > 1.4) { swapped = true; v.evoF = ev.f; evoApply(v, k, true); m.querySelector('.evo-flash').classList.add('go'); try { Sound.play('level'); } catch (e) {} }
+      const pop = swapped ? 1 + .25 * Math.exp(-(t - 1.4) * 4) * Math.sin((t - 1.4) * 14) : ev.fresh ? Math.min(1, t / 1.2) * .6 : 1;
+      v.mesh.scale.setScalar(Math.max(.01, pop)); v.mesh.rotation.y = .4 + Math.sin(t * .6) * .5;
+      try { animateHead(v, now); evoTick(v, now); } catch (e) {}
+      R.render(sc, cam); };
+    raf = requestAnimationFrame(loop);
+    evoWin = () => { cancelAnimationFrame(raf); try { R.dispose(); } catch (e) {} evoWin = null; m.hidden = true; m.innerHTML = ''; };
+    m.onclick = e => {
+      if (e.target.closest('[data-evowear]')) { save.skin = ev.id; save.evo = { ...(save.evo || {}), [ev.id]: ev.f }; persist(); refreshSkin(); toast(`«${k.name}» · форма ${RN3[ev.f]} надета`); }
+      else if (!e.target.closest('[data-evok]') && e.target !== m) return;
+      evoWin(); try { renderAll(); } catch (er) {} setTimeout(evoShowQueue, 300);
+    };
+    const first = m.querySelector('[data-evowear], [data-evok]'); if (first) first.focus();
   }
 
   // ---- the badges of these goals: «Хардкор» 75 000 (a forged medallion with a drop of blood) and «Спина к спине» —

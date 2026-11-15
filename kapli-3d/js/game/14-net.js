@@ -1374,6 +1374,10 @@
       m.querySelector('textarea').value = txt; m.querySelector('button').onclick = () => m.remove(); document.body.appendChild(m); m.querySelector('textarea').select(); };
     try { navigator.clipboard.writeText(txt).then(() => toast(`Скопировано: ${Math.min(n, L.length)} раунд(ов) — вставь в чат`), fallback); } catch (e) { fallback(); }
     return `раундов в записи: ${L.length}`; };
+  testAdd('Эволюции', [['🧬 Окно: новая форма', () => { const id = 'hc_berserk'; if (!save.skins.includes(id)) save.skins.push(id); (save.evoQ = save.evoQ || []).push({ id, f: 2, from: 1 }); save.evoNew = { ...(save.evoNew || {}), [id]: 2 }; setTimeout(evoShowQueue, 300); return 'после закрытия панели — окно «Эволюция» Берсерка (I → II)'; }],
+    ['🧬 Окно: новый скин', () => { const id = 'duo_twin'; if (!save.skins.includes(id)) save.skins.push(id); (save.evoQ = save.evoQ || []).push({ id, f: 1, from: 0, fresh: true }); save.evoNew = { ...(save.evoNew || {}), [id]: 1 }; setTimeout(evoShowQueue, 300); return 'окно «Новый скин с эволюцией» — Близнецы'; }],
+    ['🧬 Момент в раунде', () => { evoTestT = 6; return 'запусти раунд: через 6 с капля перейдёт в следующую форму прямо на арене'; }],
+    ['🧬 Метки «новое»', () => { save.evoNew = {}; Object.keys(EVO).forEach(id => { if (save.skins.includes(id)) save.evoNew[id] = Math.max(1, evoOpen(id)); }); return 'метки на плитках Гардероба и точка на кнопке Гардероба'; }]]);
   testAdd('Статистика «Хардкора»', [['📋 Последний раунд', () => hcCopy(1)], ['📋 Последние 5', () => hcCopy(5)], ['📋 Все (до 30)', () => hcCopy(30)]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
   function testRender() {

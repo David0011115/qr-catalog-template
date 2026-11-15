@@ -112,6 +112,8 @@
     // ---- waves ----
     function startWave() {
       wv++; ph = 0;
+      // 2.7: a new best wave counts at once — an evolution form opens right in the run
+      try { save.duo = save.duo || {}; const tb = save.duo.duoback = Object.assign({ games: 0, best: {}, top: {} }, save.duo.duoback); if (wv > (tb.best[D.id] || 0)) { tb.best[D.id] = wv; evoCheck(false, true); } } catch (e) {}
       if (offers.p && !picked.p) { picked.p = offers.p[0]; applyBoost(player, offers.p[0]); }
       if (offers.r && !picked.r) { picked.r = offers.r[0]; applyBoost(rival(), offers.r[0]); }
       offers = {}; panel(null);

@@ -68,13 +68,13 @@
       if (EVO[id] && evoPv[id]) { imVis.evoF = evoPv[id]; evoApply(imVis, k, true); }
       const look = k.craft ? k.sig : [k.pattern ? `узор «${PATTERN_NAME[k.pattern] || k.pattern}»` : 'однотонный', k.mat && MAT_NAME[k.mat], k.anim && ANIM_NAME[k.anim], k.flow && 'живой узор', k.glow && 'свечение', k.pulse && 'пульсация', k.holo && 'голограмма (переливается)', k.rainbow && 'радужный перелив', k.crown && 'корона'].filter(Boolean).join(', ');
       rows.push(['Откуда', EVO[id] ? `${sourceText(k)} — это форма I; формы II и III открываются дальше (см. «Эволюция»)` : sourceText(k)], ['Вид', EVO[id] ? k.sig : look]);
-      if (EVO[id]) { const E = EVO[id], n = evoOpen(id), cur = evoForm(id);
+      if (EVO[id]) { const E = EVO[id], n = evoOpen(id), cur = evoForm(id), freshF = (save.evoNew || {})[id] || 0; if (freshF) { delete save.evoNew[id]; persist(); }
         if (E.rar) tag = '<span class="badge-r" style="color:#ff3d2d">Хардкор</span>' + tag;
         tag += `<span class="badge-ex evo-tag"><svg viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg>эволюция</span>`;
         const shown = evoPv[id] || Math.max(1, cur);
         const R = ['', 'I', 'II', 'III'], own = save.skins.includes(id);
         // 2.7: a tap on a form only shows it; the button below puts it on (it used to be put on silently)
-        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && own ? `<button type="button" class="evo-f${f === shown ? ' on' : ''}${f === cur ? ' worn' : ''}" data-evof="${f}">${R[f]}<small>${f === cur ? 'надета' : E.need[f - 1]}</small></button>` : `<button type="button" class="evo-f lock${f === shown ? ' on' : ''}" data-evopv="${f}" title="Посмотреть форму · ${E.need[f - 1]} ${E.unit}">🔒 ${R[f]}<small>${E.need[f - 1]}</small></button>`).join('')}</span>` +
+        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && own ? `<button type="button" class="evo-f${f === shown ? ' on' : ''}${f === cur ? ' worn' : ''}${f === freshF && f !== cur ? ' fresh' : ''}" data-evof="${f}">${R[f]}<small>${f === cur ? 'надета' : f === freshF ? 'новая!' : E.need[f - 1]}</small></button>` : `<button type="button" class="evo-f lock${f === shown ? ' on' : ''}" data-evopv="${f}" title="Посмотреть форму · ${E.need[f - 1]} ${E.unit}">🔒 ${R[f]}<small>${E.need[f - 1]}</small></button>`).join('')}</span>` +
           `<small class="evo-u">${[1, 2, 3].map(f => `${R[f]} — ${E.need[f - 1]}`).join(' · ')}${E.unit ? ' ' + E.unit : ''}</small>` +
           (evoPv[id] && !(evoPv[id] <= n && own) ? `<small class="evo-u" style="color:#ffd23f">Это предпросмотр формы ${R[evoPv[id]]} — она ещё закрыта</small>` : `<small class="evo-u">нажми на форму, чтобы посмотреть${own && n > 1 ? '; надеть — кнопкой ниже' : ''}</small>`)],
           ['Свои эффекты', 'след, аура, предмет над головой и эффект поедания — свои и растут с формой; дополнительные не надеваются']); }

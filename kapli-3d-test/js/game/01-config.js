@@ -144,7 +144,7 @@
   const abilById = id => ABILITIES.find(a => a.id === id);
   const BASE_ABIL = ABILITIES.filter(a => !a.xa && !a.cr), XA_ABIL = ABILITIES.filter(a => a.xa), CR_ABIL = ABILITIES.filter(a => a.cr);
   const abUpCost = (a, lv) => Math.round(a.price * ABIL_CFG.firstLevel * Math.pow(ABIL_CFG.growth, lv) / 50) * 50;   // price of level lv+1   // dash = 3.2x the starting speed, whatever the mass
-  const OLD_SPEED = 11, BASE_SPEED = OLD_SPEED * 3;   // everyone moves 3x faster than the first version (shown as 300%)   // split cooldown (s) for everyone, part limit for bots
+  const OLD_SPEED = 11, BASE_SPEED = OLD_SPEED * 3 * 1.35;   // 2.7: +35% for every drop in every mode (owner's call)   // everyone moves 3x faster than the first version (shown as 300%)   // split cooldown (s) for everyone, part limit for bots
   const css = getComputedStyle(document.documentElement);
   const tok = k => css.getPropertyValue(k).trim();
   const C = k => new THREE.Color(tok(k));

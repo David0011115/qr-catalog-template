@@ -529,3 +529,11 @@
 #hcFuse:disabled { opacity: .6; cursor: default; box-shadow: none; }
 #hcWin { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 31; padding: 8px 16px 12px; border-radius: 14px; background: rgba(30, 20, 4, .86); border: 1.5px solid #ffd23f; color: #fff4c8; font: 700 .86rem var(--body); text-align: center; box-shadow: 0 0 18px rgba(255, 210, 63, .4); pointer-events: none; }
 #hcWin b { color: #ffd23f; } #hcWin i { position: absolute; left: 10px; right: 10px; bottom: 5px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #ffd23f var(--p), rgba(255, 255, 255, .15) var(--p)); }
+/* 2.7 «Хардкор»: the risky card and the timed curses */
+.hc-card.risk { border-style: dashed; box-shadow: 0 0 0 1px rgba(255, 61, 110, .5), 0 0 16px -4px #ff3d6e; }
+.hc-card .hc-debuff { display: block; color: #ff6b8a; font-weight: 800; font-size: .74rem; }
+#hcCurse { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 31; display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 12px; background: rgba(40, 4, 14, .88); border: 1.5px solid #ff3d6e; color: #ffd6df; font: 700 .8rem var(--body); box-shadow: 0 0 16px rgba(255, 61, 110, .45); pointer-events: none; }
+#hcCurse span { font-size: 1.1rem; } #hcCurse b { color: #ff6b8a; } #hcCurse small { opacity: .85; }
+#miniWrap.fog canvas { filter: blur(6px) brightness(.35); transition: filter .4s; }
+.hc-card .hc-risk { position: absolute; left: 8px; top: 6px; padding: 1px 7px; border-radius: 99px; background: #ff3d6e; color: #fff; font: 800 .6rem var(--body); letter-spacing: .06em; text-transform: uppercase; }
+.hc-card.risk { padding-top: 22px; }

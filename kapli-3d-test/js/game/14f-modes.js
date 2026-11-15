@@ -35,6 +35,7 @@
       dash: ['💨', 'Короткий рывок', [10, 15, 20, 25], '-'], merge: ['🔗', 'Быстрое слияние', [10, 15, 20, 25], '-'], predator: ['🩸', 'Хищник', [8, 10, 12, 15], '+'], coins: ['💰', 'Добытчик', [4, 6, 8, 10], '+'] };
     const HC_ABOUT = { speed: 'быстрее', absorb: 'еда сытнее', cd: 'способности перезаряжаются быстрее', melt: 'масса тает медленнее', skin: 'боту надо быть крупнее, чтобы съесть тебя', magnet: 'крошки притягиваются издалека',
       dash: 'рывок перезаряжается быстрее', merge: 'части сливаются быстрее, а после деления короче перезарядка «Слить половины»', predator: 'после съеденного бота 2 с ты быстрее', coins: 'монеты за раунд' };
+    let hcD = {}, hcCurse = null, hcCurseT = 75;
     let hc = {}, hcN = {}, hcMile = 0, hcOffer = null, hcT = 0, hcPredT = 0, hcSpikesOff = false, hcDbg = { m: 0, t: 0, gain: 0 }, hcLog = null;
     let hcBossStage = 0, hcSplitDone = false, hcRevive = null, hcPackT = 0, hcFreezeT = 0, hcLastOffer = -99, hcFuseT = 0, hcFuseCd = 0, hcWinT = 0, hcFuseHold = 0;
     // 2.7: the player's smaller half (or main part before the split) — what bosses and packs measure themselves against
@@ -139,10 +140,35 @@
       }
       return mode === 'hardcore' && hcSpikesOff;
     };
-    const hcReset = () => { hc = {}; hcN = {}; Object.entries(HC_BOOST).forEach(([k, b]) => { hc[k] = b[3] === '+' ? 0 : 1; hcN[k] = 0; }); };
+    const hcReset = () => { hc = {}; hcN = {}; Object.entries(HC_BOOST).forEach(([k, b]) => { hc[k] = b[3] === '+' ? 0 : 1; hcN[k] = 0; }); hcD = { melt: 0, slow: 0, absorb: 0, magnet: 0, dashLen: 0, sense: 0 }; hcCurse = null; hcCurseT = 75; hcCurseUi(); };
+    // 2.7: one of the two cards at a milestone is «risky» — its bonus is ×1.5, with a minus; the minus is smaller for a rarer card
+    const HC_DEBUFF = { speed: ['melt', 'таешь быстрее'], absorb: ['slow', 'медленнее'], cd: ['absorb', 'еда менее сытная'], melt: ['slow', 'медленнее'], skin: ['magnet', 'крошки притягиваются слабее'],
+      magnet: ['melt', 'таешь быстрее'], dash: ['dashLen', 'рывок короче'], merge: ['sense', 'боты замечают тебя издалека'], predator: ['slow', 'медленнее'], coins: ['absorb', 'еда менее сытная'] };
+    const HC_RISK_FRAC = [.5, .33, .25, .2];
+    const hcRiskV = (k, r) => Math.round(HC_BOOST[k][2][r] * 1.5), hcRiskD = (k, r) => Math.max(1, Math.round(hcRiskV(k, r) * HC_RISK_FRAC[r]));
+    // timed curses: from 10 000 mass, every 60–90 s, a random curse for 15 s
+    const HC_CURSES = { slow: ['🐌', 'Вязкость', 'скорость −20%'], hunger: ['🔥', 'Голод', 'таяние ×1,5'], blind: ['🌫', 'Туман', 'мини-карта погасла'], nodash: ['⛓', 'Оковы', 'рывок недоступен'], hunted: ['🎯', 'Метка', 'боты видят тебя в 1,5 раза дальше'] };
+    const curseOn = id => mode === 'hardcore' && hcCurse && hcCurse.id === id;
+    const hcDK = k => 1 + (hcD[k] || 0) / 100, hcDM = k => Math.max(.3, 1 - (hcD[k] || 0) / 100);
+    function hcCurseUi() {
+      let el = document.getElementById('hcCurse'); const mm = document.getElementById('miniWrap'); if (mm) mm.classList.toggle('fog', curseOn('blind'));
+      if (!hcCurse || !running) { if (el) el.hidden = true; return; }
+      if (!el) { el = document.createElement('div'); el.id = 'hcCurse'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+      const c = HC_CURSES[hcCurse.id]; el.hidden = false; el.innerHTML = `<span>${c[0]}</span><b>${c[1]}</b><small>${c[2]} · ${Math.ceil(hcCurse.t)} с</small>`;
+    }
+    let hcCurseUiT = 0;
+    function hcCurseTick(dt) {
+      if (hcCurse) { if ((hcCurse.t -= dt) <= 0) { toast(`${HC_CURSES[hcCurse.id][1]} прошла`); hcCurse = null; hcCurseUi(); } }
+      else if ((total(player) >= 10000 || hcCurseT <= 3) && (hcCurseT -= dt) <= 0) {
+        const ids = Object.keys(HC_CURSES), id = ids[Math.floor(Math.random() * ids.length)], c = HC_CURSES[id];
+        hcCurse = { id, t: 15 }; hcCurseT = 60 + Math.random() * 30; toast(`${c[0]} Проклятие «${c[1]}»: ${c[2]} на 15 с`); Sound.play('boss');
+        if (hcLog) (hcLog.curses = hcLog.curses || []).push([Math.round(stats.time), id]);
+      }
+      if ((hcCurseUiT -= dt) <= 0) { hcCurseUiT = .25; hcCurseUi(); }
+    }
     hcReset();
     const hcK = k => (mode !== 'hardcore' ? 1 : HC_BOOST[k][3] === '+' ? 1 + hc[k] / 100 : hc[k]);
-    const hcLabel = (k, r) => { const b = HC_BOOST[k], v = b[2][r]; return `${b[1]} ${b[3] === '+' ? '+' : '−'}${v}%`; };
+    const hcLabel = (k, r, risk) => { const b = HC_BOOST[k], v = risk ? Math.round(b[2][r] * 1.5) : b[2][r]; return `${b[1]} ${b[3] === '+' ? '+' : '−'}${v}%`; };
     // «Босс-рейд»: a glowing tether between the twins while they are close — then only half of the damage gets through
     const tether = new THREE.Mesh(new THREE.BoxGeometry(1, .35, .35), new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false }));
     tether.visible = false; scene.add(tether);
@@ -202,7 +228,7 @@
         }
         if (!hcSplitDone && m >= 50000) hcAutoSplit();
         { const ref = hcRef(); HC_BOSS_MASS_CAP = ref >= 20000 || hcSplitDone ? Math.max(23000, ref * 1.4) : 23000; }   // follows the smaller half both ways; bosses above it melt 1%/s (07-round)
-        hcPackTick(dt);
+        hcPackTick(dt); hcCurseTick(dt);
         if (m >= 10000 && bossTimer > 10) bossTimer = 10;   // from 10 000 the second boss does not keep you waiting
         if (hcSplitDone) hcFuseTick(dt);
         if (hcSplitDone && !hcFuseT) {
@@ -243,7 +269,7 @@
           const [floor, up] = HC_TIER[hcMile]; hcMile++;
           const pool = Object.keys(HC_BOOST).filter(k => hcN[k] < HC_CAP), ids = [];
           while (pool.length && ids.length < 2) ids.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-          if (ids.length) { hcOffer = ids.map(k => ({ k, r: Math.min(3, floor + (Math.random() < up ? 1 : 0)) })); hcT = 15; hcPanel(hcOffer);
+          if (ids.length) { const ri = ids.length > 1 ? Math.floor(Math.random() * 2) : -1; hcOffer = ids.map((k, i) => ({ k, r: Math.min(3, floor + (Math.random() < up ? 1 : 0)), risk: i === ri })); hcT = 15; hcPanel(hcOffer);
             toast(`Масса ${HC_MILES[hcMile - 1].toLocaleString('ru-RU')}: выбери улучшение`); Sound.play('level'); }
         }
 
@@ -273,19 +299,20 @@
       }
       if (!offer) { el.hidden = true; return; }
       el.innerHTML = `<p>Хардкор: веха ${HC_MILES[hcMile - 1].toLocaleString('ru-RU')} — выбери улучшение · игра на паузе · <b id="hcPickT">15</b> с</p><div class="db-opts two">${offer.map((o, i) => { const b = HC_BOOST[o.k];
-        return `<button type="button" data-hi="${i}" class="hc-card r${o.r}" style="--rc:${RARITY[HC_R[o.r]].color}"><span class="hc-rar">${HC_RN[o.r]}</span><span class="ic">${b[0]}</span><b>${hcLabel(o.k, o.r)}</b><small>${HC_ABOUT[o.k]} · до конца раунда${hcN[o.k] ? ` · уже ${hcN[o.k]} из ${HC_CAP}` : ''}</small></button>`; }).join('')}</div>`;
+        return `<button type="button" data-hi="${i}" class="hc-card r${o.r}${o.risk ? ' risk' : ''}" style="--rc:${RARITY[HC_R[o.r]].color}"><span class="hc-rar">${HC_RN[o.r]}</span>${o.risk ? '<span class="hc-risk">⚠ риск</span>' : ''}<span class="ic">${b[0]}</span><b>${hcLabel(o.k, o.r, o.risk)}</b>${o.risk ? `<span class="hc-debuff">🔻 ${HC_DEBUFF[o.k][1]} ${hcRiskD(o.k, o.r)}%</span>` : ''}<small>${HC_ABOUT[o.k]} · до конца раунда${hcN[o.k] ? ` · уже ${hcN[o.k]} из ${HC_CAP}` : ''}</small></button>`; }).join('')}</div>`;
       el.hidden = false;
     }
     function hcPick(i) {
-      if (!hcOffer) return; const o = hcOffer[i] || hcOffer[0], b = HC_BOOST[o.k], v = b[2][o.r];
+      if (!hcOffer) return; const o = hcOffer[i] || hcOffer[0], b = HC_BOOST[o.k], v = o.risk ? hcRiskV(o.k, o.r) : b[2][o.r];
       if (b[3] === '+') hc[o.k] += v; else hc[o.k] *= 1 - v / 100; hcN[o.k]++;
-      if (hcLog) hcLog.picks.push({ mile: HC_MILES[hcMile - 1], t: Math.round(stats.time), boost: o.k, rar: HC_RN[o.r], v, other: hcOffer.filter(x => x !== o).map(x => x.k + ':' + HC_RN[x.r]).join() });
-      hcOffer = null; hcPanel(null); toast(`${HC_RN[o.r]}: ${hcLabel(o.k, o.r)} до конца раунда`);
+      if (o.risk) { const [t] = HC_DEBUFF[o.k]; hcD[t] = (hcD[t] || 0) + hcRiskD(o.k, o.r); }
+      if (hcLog) hcLog.picks.push({ mile: HC_MILES[hcMile - 1], t: Math.round(stats.time), boost: o.k, rar: HC_RN[o.r], v, risk: o.risk ? HC_DEBUFF[o.k][0] + '+' + hcRiskD(o.k, o.r) : '', other: hcOffer.filter(x => x !== o).map(x => x.k + ':' + HC_RN[x.r]).join() });
+      hcOffer = null; hcPanel(null); toast(`${HC_RN[o.r]}: ${o.risk ? hcLabel(o.k, o.r, true) + ` · 🔻 ${HC_DEBUFF[o.k][1]} ${hcRiskD(o.k, o.r)}%` : hcLabel(o.k, o.r)} до конца раунда`);
     }
     // test build only: what the boosts give and how fast you eat vs how fast you melt
     function hcDebug(dt) {
       let el = document.getElementById('hcDbg'); if (!el) { el = document.createElement('div'); el.id = 'hcDbg'; document.body.appendChild(el); }
-      const m = total(player); let melt = 0; for (const c of player.cells) if (c.mass > 100) melt += c.mass * HC_DECAY * Math.pow(c.mass / 100, .25) * (1 - .04 * U.guard) * Math.max(.6, hcK('melt')) * hcMeltUp();
+      const m = total(player); let melt = 0; for (const c of player.cells) if (c.mass > 100) melt += c.mass * HC_DECAY * Math.pow(c.mass / 100, .25) * (1 - .04 * U.guard) * Math.max(.6, hcK('melt')) * hcDK('melt') * (curseOn('hunger') ? 1.5 : 1) * hcMeltUp();
       hcDbg.t += dt; if (hcDbg.t >= 1) { hcDbg.gain = hcDbg.gain * .7 + .3 * ((m - hcDbg.m) / hcDbg.t + melt); hcDbg.m = m; hcDbg.t = 0; }
       if (hcLog && stats.time >= hcLog.next && hcLog.samples.length < 400) { hcLog.next = stats.time + 5; const hm = hcHalfMass(); hcLog.samples.push([Math.round(stats.time), Math.round(m), Math.round(melt), Math.max(0, Math.round(hcDbg.gain)), player.cells.length, Math.round(hm[0]), Math.round(hm[1]), hcBossStage]); }
       const list = Object.keys(HC_BOOST).filter(k => hcN[k]).map(k => `${HC_BOOST[k][0]}${HC_BOOST[k][3] === '+' ? '+' + hc[k] : '−' + Math.round((1 - hc[k]) * 100)}%`).join(' ');
@@ -293,7 +320,7 @@
     }
     // the end of a round: the hardcore series reward
     function end() {
-      hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } hcWinUi(null); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
+      hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } hcWinUi(null); hcCurse = null; hcCurseUi(); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
       if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] };   // bites: [time, who, its mass, the part it ate] delete rec.next; hcLog = null;
         try { const L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); L.push(rec); localStorage.setItem('kapli3d-hcstats', JSON.stringify(L.slice(-30))); } catch (e) {}
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
@@ -365,7 +392,10 @@
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
       // 2.7: what the ⓘ window of «Режимы» tells about each mode
       info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
-      HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) : hcK("melt")) * hcMeltUp(), hcK,
+      HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) * hcDK("melt") * (curseOn("hunger") ? 1.5 : 1) : hcK("melt")) * hcMeltUp(), hcK,
+      hcCurseSoon: () => { hcCurse = null; hcCurseT = 3; },
+      hcMagnetK: () => (mode === 'hardcore' ? hcDM("magnet") : 1), hcDashLenK: () => (mode === 'hardcore' ? hcDM("dashLen") : 1), hcNoDash: () => curseOn("nodash"),
+      hcSenseK: () => (mode === 'hardcore' ? hcDK("sense") * (curseOn("hunted") ? 1.5 : 1) : 1),
       hcBossMass: mass => { const ref = hcRef(); return hcSplitDone || ref >= 20000 ? Math.min(HC_BOSS_MASS_CAP, Math.max(3000, ref * (.85 + .35 * hcBossPressure()))) : mass; },   // after 20 000: 85–120% of the smaller half (more with the threat stage)
       hcPackTarget, botCap: o => (mode === 'hardcore' && o.hcPack ? Math.max(BOT_MASS_CAP, hcRef() * 1.4) : BOT_MASS_CAP),
       hcPackMerge: (a, b) => mode === 'hardcore' && a.owner.hcPack && b.owner.hcPack && a.owner !== b.owner && a.mass >= b.mass,
@@ -389,9 +419,9 @@
       },
       raidDmgK: () => (twinsLinked() ? .5 : 1) * raidPerk().dmg,
       cdK: o => (o === player ? hcK('cd') : 1),
-      gainK: () => (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') * (total(player) >= 50000 ? .5 : .75) : 1),
+      gainK: () => (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') * (total(player) >= 50000 ? .5 : .75) * hcDM('absorb') : 1),
       bonusK: () => (rule && rule.id === 'bonus2' ? .5 : 1),
-      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? hcK('speed') * (hcPredT > 0 ? hcK('predator') : 1) : 1) *
+      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? hcK('speed') * (hcPredT > 0 ? hcK('predator') : 1) * hcDM('slow') * (curseOn('slow') ? .8 : 1) : 1) *
         (o.kind === 'bot' ? (mode === 'classic' ? 1 + .04 * esc : rule && rule.id === 'fastbots' ? 1.15 : 1) : 1),
       bossK: () => (mode === 'classic' ? Math.max(.5, 1 - .125 * esc) : 1),
       quitLabel: () => (mode === 'classic' && stats.time >= 300 ? 'Забрать награду и выйти' : 'Завершить раунд'),

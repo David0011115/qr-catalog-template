@@ -527,3 +527,5 @@
 #hcFuse { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; display: grid; justify-items: center; gap: 0; min-height: 46px; padding: 6px 16px; border-radius: 14px; border: 1.5px solid #3dffa2; background: rgba(8, 24, 20, .82); color: #eafff5; font: 800 .82rem var(--body); cursor: pointer; box-shadow: 0 0 14px rgba(61, 255, 162, .35); }
 #hcFuse small { font-weight: 600; font-size: .62rem; opacity: .8; }
 #hcFuse:disabled { opacity: .6; cursor: default; box-shadow: none; }
+#hcWin { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 31; padding: 8px 16px 12px; border-radius: 14px; background: rgba(30, 20, 4, .86); border: 1.5px solid #ffd23f; color: #fff4c8; font: 700 .86rem var(--body); text-align: center; box-shadow: 0 0 18px rgba(255, 210, 63, .4); pointer-events: none; }
+#hcWin b { color: #ffd23f; } #hcWin i { position: absolute; left: 10px; right: 10px; bottom: 5px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #ffd23f var(--p), rgba(255, 255, 255, .15) var(--p)); }

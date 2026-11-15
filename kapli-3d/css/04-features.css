@@ -523,3 +523,7 @@
 #wardBtn.evo-new { position: relative; } #wardBtn.evo-new::after { content: ''; position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: #3dffa2; box-shadow: 0 0 8px #3dffa2; }
 .evo-f.fresh { border-color: #3dffa2; box-shadow: 0 0 10px #3dffa2; animation: evoPulse 1.4s ease-in-out infinite; } .evo-f.fresh small { color: #3dffa2; }
 @keyframes evoPulse { 50% { box-shadow: 0 0 2px #3dffa2; } }
+/* 2.7 «Хардкор»: the fusion button after the split */
+#hcFuse { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; display: grid; justify-items: center; gap: 0; min-height: 46px; padding: 6px 16px; border-radius: 14px; border: 1.5px solid #3dffa2; background: rgba(8, 24, 20, .82); color: #eafff5; font: 800 .82rem var(--body); cursor: pointer; box-shadow: 0 0 14px rgba(61, 255, 162, .35); }
+#hcFuse small { font-weight: 600; font-size: .62rem; opacity: .8; }
+#hcFuse:disabled { opacity: .6; cursor: default; box-shadow: none; }

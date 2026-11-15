@@ -36,11 +36,11 @@
     const HC_ABOUT = { speed: 'быстрее', absorb: 'еда сытнее', cd: 'способности перезаряжаются быстрее', melt: 'масса тает медленнее', skin: 'боту надо быть крупнее, чтобы съесть тебя', magnet: 'крошки притягиваются издалека',
       dash: 'рывок перезаряжается быстрее', merge: 'части сливаются быстрее', predator: 'после съеденного бота 2 с ты быстрее', coins: 'монеты за раунд' };
     let hc = {}, hcN = {}, hcMile = 0, hcOffer = null, hcT = 0, hcPredT = 0, hcSpikesOff = false, hcDbg = { m: 0, t: 0, gain: 0 }, hcLog = null;
-    let hcBossStage = 0, hcSplitDone = false, hcRevive = null, hcPackT = 0, hcFreezeT = 0;
+    let hcBossStage = 0, hcSplitDone = false, hcRevive = null, hcPackT = 0, hcFreezeT = 0, hcLastOffer = -99, hcFuseT = 0, hcFuseCd = 0;
     // 2.7: the player's smaller half (or main part before the split) — what bosses and packs measure themselves against
     const hcRef = () => { if (!player.cells.length) return 0; if (hcSplitDone) { const hm = hcHalfMass().filter(v => v > 0); return hm.length ? Math.min(...hm) : 0; } return mainOf(player).mass; };
     // melt is ×1 up to 20 000 and rises smoothly to ×1.45 at 30 000 total mass
-    const hcMeltUp = () => mode !== 'hardcore' ? 1 : 1 + .45 * Math.max(0, Math.min(1, (total(player) - 20000) / 10000));
+    const hcMeltUp = () => { if (mode !== 'hardcore') return 1; const m = total(player); return 1 + .45 * Math.max(0, Math.min(1, (m - 20000) / 10000)) + .35 * Math.max(0, Math.min(1, (m - 50000) / 10000)); };   // ×1.45 at 30 000, ×1.8 at 60 000
     // packs: after 30 000, three bots hunt the smaller half together and can swallow each other to become a real threat
     const hcPackBots = () => bots.filter(o => o.hcPack && o.cells.length);
     function hcPackTick(dt) {
@@ -64,8 +64,8 @@
     const HC_BOSS_MILESTONES = [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000];
     const hcBossPressure = () => mode === 'hardcore' ? Math.min(1, hcBossStage / HC_BOSS_MILESTONES.length) : 0;
     const hcHalfMass = () => [0, 1].map(h => player.cells.reduce((s, c) => s + (c.hcHalf === h ? c.mass : 0), 0));
-    function hcAutoSplit() {
-      const mass = total(player), old = [...player.cells]; if (!old.length || mass < 50000 || player.free.length + old.length < 2) return false;
+    function hcAutoSplit(again) {
+      const mass = total(player), old = [...player.cells]; if (!old.length || (!again && mass < 50000) || player.free.length + old.length < 2) return false;
       const [cx, cz] = centerOf(player), lead = mainOf(player), hl = Math.hypot(lead.hx || 0, lead.hz || 0) || 1, hx = (lead.hx || 1) / hl, hz = (lead.hz || 0) / hl;
       old.forEach(removeCell);
       const half = mass / 2, a = addCell(player, cx, cz, half, player.free.pop()), b = addCell(player, cx, cz, half, player.free.pop());
@@ -75,7 +75,36 @@
       a.hx = -hx; a.hz = -hz; b.hx = hx; b.hz = hz; a.vx = -hx * 18; a.vz = -hz * 18; b.vx = hx * 18; b.vz = hz * 18;
       a.mergeT = b.mergeT = 2; rebuildCells(); hcSplitDone = true;
       player.splitCd = Math.max(player.splitCd || 0, 2); stats.splits = (stats.splits || 0) + 1; stats.hcSplitAt = stats.time; stats.hcHalfPeak = [half, half];
-      toast('50 000 массы! Игрок разделился на две равные половины по 25 000'); Sound.play('level'); return true;
+      if (again) toast(`Слияние закончилось — снова две половины по ${Math.round(half).toLocaleString('ru-RU')}`); else toast('50 000 массы! Игрок разделился на две равные половины по 25 000'); Sound.play('level'); return true;
+    }
+    // В: «Слияние» — a button after the split: for 10 s the halves may merge into one drop (to eat a boss neither half can), then they split again
+    function hcFuseUi() {
+      let b = document.getElementById('hcFuse');
+      const show = running && mode === 'hardcore' && hcSplitDone && !stats.ranked;
+      if (!show) { if (b) b.hidden = true; return; }
+      if (!b) { b = document.createElement('button'); b.id = 'hcFuse'; b.type = 'button'; document.body.appendChild(b);
+        b.addEventListener('pointerdown', e => e.stopPropagation()); b.addEventListener('click', e => { e.stopPropagation(); hcFuseStart(); }); }
+      b.hidden = false; b.disabled = hcFuseT > 0 || hcFuseCd > 0;
+      b.innerHTML = hcFuseT > 0 ? `🔗 Слиты · ${Math.ceil(hcFuseT)} с` : hcFuseCd > 0 ? `🔗 Слияние · ${Math.ceil(hcFuseCd)} с` : '🔗 Слить половины<small>на 10 с</small>';
+    }
+    function hcFuseStart() {
+      if (!hcSplitDone || hcFuseT > 0 || hcFuseCd > 0 || !player.cells.length) return;
+      hcFuseT = 10; player.cells.forEach(c => { c.mergeT = 0; }); toast('🔗 Половины сливаются на 10 секунд — веди их друг к другу'); Sound.play('level'); hcFuseUi();
+    }
+    let hcFuseUiT = 0;
+    function hcFuseTick(dt) {
+      if (hcFuseT > 0 && (hcFuseT -= dt) <= 0) { hcFuseT = 0; hcFuseCd = 45; hcAutoSplit(true); }
+      else if (hcFuseCd > 0) hcFuseCd = Math.max(0, hcFuseCd - dt);
+      if ((hcFuseUiT -= dt) <= 0) { hcFuseUiT = .25; hcFuseUi(); }
+    }
+    // А: «Двойной укус» — both halves touching a boss together, and together 1.25× bigger than it, eat it; the mass is shared between them
+    function hcPairBite(a, b) {
+      if (mode !== 'hardcore' || !hcSplitDone || hcFuseT > 0 || !a.owner.isPlayer || b.owner.kind !== 'boss' || a.hcHalf === undefined) return null;
+      const near = c => Math.hypot(c.x - b.x, c.z - b.z) < cellR(c) + cellR(b) * .55;
+      if (!near(a)) return null;
+      const p = player.cells.filter(c => c.hcHalf !== undefined && c.hcHalf !== a.hcHalf && near(c)).sort((x, y) => y.mass - x.mass)[0];
+      if (!p || a.mass < p.mass || a.mass + p.mass < b.mass * eatRatio(b) || b.owner.spawnSh > 0) return null;
+      return p;
     }
     function hcBossTarget(o) {
       if (mode !== 'hardcore' || !player.cells.length) return null;
@@ -129,7 +158,7 @@
 
     function start() {
       rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = [];
-      hcBossStage = 0; hcSplitDone = false; hcRevive = null; hcPackT = 0; hcFreezeT = 0; HC_BOSS_MASS_CAP = 23000; bots.forEach(o => o.hcPack = 0); stats.hcSplitAt = null; stats.hcHalfPeak = [0, 0]; stats.hcVictory = false;
+      hcBossStage = 0; hcSplitDone = false; hcRevive = null; hcPackT = 0; hcFreezeT = 0; hcLastOffer = -99; hcFuseT = 0; hcFuseCd = 0; hcFuseUi(); HC_BOSS_MASS_CAP = 23000; bots.forEach(o => o.hcPack = 0); stats.hcSplitAt = null; stats.hcHalfPeak = [0, 0]; stats.hcVictory = false;
       document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
       crownGround = null; hcSpikesOff = false; hcReset(); hcMile = 0; hcOffer = null; hcPredT = 0; hcDbg = { m: 0, t: 0, gain: 0 }; hcPanel(null);
@@ -157,7 +186,8 @@
         if (!hcSplitDone && m >= 50000) hcAutoSplit();
         { const ref = hcRef(); if (ref >= 20000) HC_BOSS_MASS_CAP = Math.max(HC_BOSS_MASS_CAP, ref * 1.4); }   // only rises: living bosses never shrink when you split or a half revives small
         hcPackTick(dt);
-        if (hcSplitDone) {
+        if (hcSplitDone) hcFuseTick(dt);
+        if (hcSplitDone && !hcFuseT) {
           let hm = hcHalfMass();
           for (const c of player.cells) if (c.hcHalf !== 0 && c.hcHalf !== 1) { c.hcHalf = hm[0] <= hm[1] ? 0 : 1; hm = hcHalfMass(); }
           stats.hcHalfPeak = [Math.max(stats.hcHalfPeak[0] || 0, hm[0]), Math.max(stats.hcHalfPeak[1] || 0, hm[1])];
@@ -188,7 +218,8 @@
       if (mode === 'timed' && stats.midRank === undefined && stats.time >= TIMED_LEN / 2) stats.midRank = rankOf();
       if (mode === 'crown') for (const o of bossOwners) for (const c of o.cells) c.mass = Math.max(20, c.mass * (1 - .008 * dt));   // the crown's bosses melt too
       if (mode === 'hardcore' && !stats.ranked) {
-        if (hcMile < HC_MILES.length && total(player) >= HC_MILES[hcMile] && !hcOffer) {
+        if (hcMile < HC_MILES.length && total(player) >= HC_MILES[hcMile] && !hcOffer && (HC_MILES[hcMile] <= 20000 || stats.time - hcLastOffer >= 20)) {   // 2.7: no burst of cards — after 20 000 one per 20 s
+          hcLastOffer = stats.time;
           const [floor, up] = HC_TIER[hcMile]; hcMile++;
           const pool = Object.keys(HC_BOOST).filter(k => hcN[k] < HC_CAP), ids = [];
           while (pool.length && ids.length < 2) ids.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
@@ -242,7 +273,7 @@
     }
     // the end of a round: the hardcore series reward
     function end() {
-      hcPanel(null); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
+      hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
       if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '' }; delete rec.next; hcLog = null;
         try { const L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); L.push(rec); localStorage.setItem('kapli3d-hcstats', JSON.stringify(L.slice(-30))); } catch (e) {}
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
@@ -319,7 +350,7 @@
       hcPackTarget, botCap: o => (mode === 'hardcore' && o.hcPack ? Math.max(BOT_MASS_CAP, HC_BOSS_MASS_CAP) : BOT_MASS_CAP),
       hcPackMerge: (a, b) => mode === 'hardcore' && a.owner.hcPack && b.owner.hcPack && a.owner !== b.owner && a.mass >= b.mass,
       // the choice of a hardcore card stops the world; the 15 s countdown runs in real time
-      hcFrozen: () => mode === 'hardcore' && !!hcOffer,
+      hcFrozen: () => mode === 'hardcore' && !!hcOffer, hcFusing: () => mode === 'hardcore' && hcFuseT > 0, hcPairBite,
       hcFreezeTick(dt) { hcT -= dt; const el = document.getElementById('hcPickT'); if (el) el.textContent = Math.max(0, Math.ceil(hcT)); if (hcT <= 0) hcPick(0); }, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
       hcBossPressure, hcBossSenseK: () => 1 + .5 * hcBossPressure(), hcBossTurnK: () => 1 + .55 * hcBossPressure(),
       hcBossSpawnInterval: () => 40 - 16 * hcBossPressure(), hcBossTarget,

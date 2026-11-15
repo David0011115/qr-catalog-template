@@ -517,7 +517,7 @@
             finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
           }
         } }
-        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && total(player) >= 50000 ? .5 : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && (b.owner.hcPack || total(player) >= 50000) ? .5 : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
         const bossCap = mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP;
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
@@ -563,12 +563,12 @@
       const cap = c.owner.kind === 'bot' ? ModeX.botCap(c.owner)
         : c.owner.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP)
         : MAX_MASS;
-      if (!c.owner.isPlayer && c.mass > cap) c.mass = cap;
+      if (!c.owner.isPlayer && c.mass > cap && !(mode === 'hardcore' && c.owner.kind === 'boss')) c.mass = cap;
     }
     // The regular bot limit is shared by all of its parts, not repeated per part.
     if (mode === 'hardcore') for (const o of bossOwners) {
       const mass = total(o);
-      if (mass > HC_BOSS_MASS_CAP) { const k = HC_BOSS_MASS_CAP / mass; for (const c of o.cells) c.mass *= k; }
+      if (mass > HC_BOSS_MASS_CAP) { const k = Math.max(HC_BOSS_MASS_CAP / mass, 1 - .01 * dt); for (const c of o.cells) c.mass *= k; }   // 2.7: melts down 1%/s, a comeback stays possible
     }
     for (const o of bots) {
       const mass = total(o), bcap = ModeX.botCap(o);

@@ -36,7 +36,7 @@
     const HC_ABOUT = { speed: 'быстрее', absorb: 'еда сытнее', cd: 'способности перезаряжаются быстрее', melt: 'масса тает медленнее', skin: 'боту надо быть крупнее, чтобы съесть тебя', magnet: 'крошки притягиваются издалека',
       dash: 'рывок перезаряжается быстрее', merge: 'части сливаются быстрее, а после деления короче перезарядка «Слить половины»', predator: 'после съеденного бота 2 с ты быстрее', coins: 'монеты за раунд' };
     let hc = {}, hcN = {}, hcMile = 0, hcOffer = null, hcT = 0, hcPredT = 0, hcSpikesOff = false, hcDbg = { m: 0, t: 0, gain: 0 }, hcLog = null;
-    let hcBossStage = 0, hcSplitDone = false, hcRevive = null, hcPackT = 0, hcFreezeT = 0, hcLastOffer = -99, hcFuseT = 0, hcFuseCd = 0, hcWinT = 0;
+    let hcBossStage = 0, hcSplitDone = false, hcRevive = null, hcPackT = 0, hcFreezeT = 0, hcLastOffer = -99, hcFuseT = 0, hcFuseCd = 0, hcWinT = 0, hcFuseHold = 0;
     // 2.7: the player's smaller half (or main part before the split) — what bosses and packs measure themselves against
     const hcRef = () => { if (!player.cells.length) return 0; if (hcSplitDone) { const hm = hcHalfMass().filter(v => v > 0); return hm.length ? Math.min(...hm) : 0; } return mainOf(player).mass; };
     // melt is ×1 up to 20 000 and rises smoothly to ×1.45 at 30 000 total mass
@@ -84,8 +84,8 @@
       if (!show) { if (b) b.hidden = true; return; }
       if (!b) { b = document.createElement('button'); b.id = 'hcFuse'; b.type = 'button'; document.body.appendChild(b);
         b.addEventListener('pointerdown', e => e.stopPropagation()); b.addEventListener('click', e => { e.stopPropagation(); hcFuseStart(); }); }
-      b.hidden = false; b.disabled = hcFuseT > 0 || hcFuseCd > 0;
-      b.innerHTML = hcFuseT > 0 ? `🔗 Слиты · ${Math.ceil(hcFuseT)} с` : hcFuseCd > 0 ? `🔗 Слияние · ${Math.ceil(hcFuseCd)} с` : '🔗 Слить половины<small>на 6 с · −10% массы</small>';
+      b.hidden = false; b.disabled = hcFuseCd > 0 && !(hcFuseT > 0);
+      b.innerHTML = hcFuseT > 0 ? (hcFuseHold > 0 ? `⚠ Опасно — деление отложено<small>✂ нажми, чтобы разделиться сейчас</small>` : `✂ Разделить сейчас<small>само через ${Math.ceil(hcFuseT)} с</small>`) : hcFuseCd > 0 ? `🔗 Слияние · ${Math.ceil(hcFuseCd)} с` : '🔗 Слить половины<small>на 6 с · −10% массы</small>';
     }
     // the victory bar: both halves at 50 000 and held for 15 s
     function hcWinUi(hm) {
@@ -94,13 +94,23 @@
       if (!el) { el = document.createElement('div'); el.id = 'hcWin'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
       el.hidden = false; el.innerHTML = `🏆 Удержи обе половины ≥ 50 000: <b>${Math.max(0, Math.ceil(15 - hcWinT))} с</b><i style="--p:${Math.min(100, hcWinT / 15 * 100).toFixed(0)}%"></i>`;
     }
+    function hcFuseEnd() { hcFuseT = 0; hcFuseHold = 0; hcFuseCd = 90 * hcK('merge'); hcAutoSplit(true); }   // «Быстрое слияние» shortens the cooldown
+    // would a half (half of the fused drop) be eaten by a boss nearby?
+    function hcFuseDanger() {
+      if (!player.cells.length) return false; const c = mainOf(player), half = total(player) / 2, rH = .38 * Math.sqrt(half);
+      return bossOwners.some(o => o.cells.some(b => b.mass > half * 1.25 && Math.hypot(b.x - c.x, b.z - c.z) < cellR(b) + rH + 40));
+    }
     function hcFuseStart() {
+      if (hcFuseT > 0) { hcFuseEnd(); toast('✂ Половины разделены'); return; }
       if (!hcSplitDone || hcFuseT > 0 || hcFuseCd > 0 || !player.cells.length) return;
       hcFuseT = 6; player.cells.forEach(c => { c.mergeT = 0; c.mass *= .9; }); toast('🔗 Слияние на 6 секунд (−10% массы) — веди половины друг к другу'); Sound.play('level'); hcFuseUi();
     }
     let hcFuseUiT = 0;
     function hcFuseTick(dt) {
-      if (hcFuseT > 0 && (hcFuseT -= dt) <= 0) { hcFuseT = 0; hcFuseCd = 90 * hcK('merge'); hcAutoSplit(true); }   // «Быстрое слияние» shortens the cooldown
+      if (hcFuseT > 0 && (hcFuseT -= dt) <= 0) {
+        if (hcFuseDanger() && hcFuseHold < 5) { hcFuseHold += dt; hcFuseT = .001; }   // a boss could swallow a half right now: wait (5 s at most)
+        else hcFuseEnd();
+      }
       else if (hcFuseCd > 0) hcFuseCd = Math.max(0, hcFuseCd - dt);
       if ((hcFuseUiT -= dt) <= 0) { hcFuseUiT = .25; hcFuseUi(); }
     }
@@ -165,7 +175,7 @@
 
     function start() {
       rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = [];
-      hcBossStage = 0; hcSplitDone = false; hcRevive = null; hcPackT = 0; hcFreezeT = 0; hcLastOffer = -99; hcFuseT = 0; hcFuseCd = 0; hcWinT = 0; hcFuseUi(); hcWinUi(null); HC_BOSS_MASS_CAP = 23000; bots.forEach(o => o.hcPack = 0); stats.hcSplitAt = null; stats.hcHalfPeak = [0, 0]; stats.hcVictory = false;
+      hcBossStage = 0; hcSplitDone = false; hcRevive = null; hcPackT = 0; hcFreezeT = 0; hcLastOffer = -99; hcFuseT = 0; hcFuseCd = 0; hcWinT = 0; hcFuseHold = 0; hcFuseUi(); hcWinUi(null); HC_BOSS_MASS_CAP = 23000; bots.forEach(o => o.hcPack = 0); stats.hcSplitAt = null; stats.hcHalfPeak = [0, 0]; stats.hcVictory = false;
       document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
       crownGround = null; hcSpikesOff = false; hcReset(); hcMile = 0; hcOffer = null; hcPredT = 0; hcDbg = { m: 0, t: 0, gain: 0 }; hcPanel(null);
@@ -191,7 +201,7 @@
           const reached = HC_BOSS_MILESTONES[hcBossStage++]; toast(`Угроза боссов повышена: ${reached.toLocaleString('ru-RU')} массы`); Sound.play('boss');
         }
         if (!hcSplitDone && m >= 50000) hcAutoSplit();
-        { const ref = hcRef(); if (ref >= 20000) HC_BOSS_MASS_CAP = Math.max(HC_BOSS_MASS_CAP, ref * 1.4); }   // only rises: living bosses never shrink when you split or a half revives small
+        { const ref = hcRef(); HC_BOSS_MASS_CAP = ref >= 20000 || hcSplitDone ? Math.max(23000, ref * 1.4) : 23000; }   // follows the smaller half both ways; bosses above it melt 1%/s (07-round)
         hcPackTick(dt);
         if (hcSplitDone) hcFuseTick(dt);
         if (hcSplitDone && !hcFuseT) {
@@ -356,12 +366,12 @@
       info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
       HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) : hcK("melt")) * hcMeltUp(), hcK,
       hcBossMass: mass => { const ref = hcRef(); return hcSplitDone || ref >= 20000 ? Math.min(HC_BOSS_MASS_CAP, Math.max(3000, ref * (.85 + .35 * hcBossPressure()))) : mass; },   // after 20 000: 85–120% of the smaller half (more with the threat stage)
-      hcPackTarget, botCap: o => (mode === 'hardcore' && o.hcPack ? Math.max(BOT_MASS_CAP, HC_BOSS_MASS_CAP) : BOT_MASS_CAP),
+      hcPackTarget, botCap: o => (mode === 'hardcore' && o.hcPack ? Math.max(BOT_MASS_CAP, hcRef() * 1.4) : BOT_MASS_CAP),
       hcPackMerge: (a, b) => mode === 'hardcore' && a.owner.hcPack && b.owner.hcPack && a.owner !== b.owner && a.mass >= b.mass,
       // the choice of a hardcore card stops the world; the 15 s countdown runs in real time
       hcFrozen: () => mode === 'hardcore' && !!hcOffer, hcFusing: () => mode === 'hardcore' && hcFuseT > 0, hcPairBite,
       hcFreezeTick(dt) { hcT -= dt; const el = document.getElementById('hcPickT'); if (el) el.textContent = Math.max(0, Math.ceil(hcT)); if (hcT <= 0) hcPick(0); }, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
-      hcBossPressure, hcBossSenseK: () => 1 + .5 * hcBossPressure(), hcBossTurnK: () => 1 + .55 * hcBossPressure(),
+      hcBossPressure, hcBossSenseK: () => (hcSplitDone ? 2 : 1 + .5 * hcBossPressure()), hcBossTurnK: () => (hcSplitDone ? 1.8 : 1 + .55 * hcBossPressure()), hcPackSpeedK: o => (mode === 'hardcore' && o.hcPack ? 1.15 : 1),
       hcBossSpawnInterval: () => (hcSplitDone ? 6 : 40 - 16 * hcBossPressure()), hcBossTarget,
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },

@@ -374,6 +374,7 @@
       v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1) * (DuoM.speedK ? DuoM.speedK(c) : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
     }
     else if (o.freezeT > 0) v *= .05;
+    if (o.hcPack) v *= ModeX.hcPackSpeedK(o);   // 2.7 «Хардкор»: a pack hunts 15% faster
     else if (o.slowT > 0) v *= ABIL_CFG.slowFactor * (o.kind === 'boss' ? bossInfo(o).speed : 1);
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;

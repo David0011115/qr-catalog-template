@@ -40,14 +40,14 @@
     // 2.7: the player's smaller half (or main part before the split) — what bosses and packs measure themselves against
     const hcRef = () => { if (!player.cells.length) return 0; if (hcSplitDone) { const hm = hcHalfMass().filter(v => v > 0); return hm.length ? Math.min(...hm) : 0; } return mainOf(player).mass; };
     // melt is ×1 up to 20 000 and rises smoothly to ×1.45 at 30 000 total mass
-    const hcMeltUp = () => { if (mode !== 'hardcore') return 1; const m = total(player); return 1 + .45 * Math.max(0, Math.min(1, (m - 20000) / 10000)) + .35 * Math.max(0, Math.min(1, (m - 50000) / 10000)) + .6 * Math.max(0, Math.min(1, (m - 80000) / 20000)); };   // ×1.45 at 30 000, ×1.8 at 60 000, ×2.4 at 100 000
+    const hcMeltUp = () => { if (mode !== 'hardcore') return 1; const m = total(player); return 1 + .45 * Math.max(0, Math.min(1, (m - 15000) / 10000)) + .35 * Math.max(0, Math.min(1, (m - 50000) / 10000)) + .6 * Math.max(0, Math.min(1, (m - 80000) / 20000)); };   // ×1.45 at 30 000, ×1.8 at 60 000, ×2.4 at 100 000
     // packs: after 30 000, three bots hunt the smaller half together and can swallow each other to become a real threat
     const hcPackBots = () => bots.filter(o => o.hcPack && o.cells.length);
     function hcPackTick(dt) {
       for (const o of bots) if (o.hcPack && !o.cells.length) o.hcPack = 0;
-      if (total(player) < 30000) return;
+      if (total(player) < 20000) return;
       if ((hcPackT -= dt) > 0 || hcPackBots().length >= 2) return;
-      hcPackT = 25; const t = hcPackTarget(); if (!t) return;
+      hcPackT = 20; const t = hcPackTarget(); if (!t) return;
       const pick = bots.filter(o => o.kind === 'bot' && o.cells.length && !o.hcPack).sort((a, b) => Math.hypot(mainOf(a).x - t.x, mainOf(a).z - t.z) - Math.hypot(mainOf(b).x - t.x, mainOf(b).z - t.z)).slice(0, 3);
       if (pick.length < 3) return;
       const ref = hcRef();
@@ -203,6 +203,7 @@
         if (!hcSplitDone && m >= 50000) hcAutoSplit();
         { const ref = hcRef(); HC_BOSS_MASS_CAP = ref >= 20000 || hcSplitDone ? Math.max(23000, ref * 1.4) : 23000; }   // follows the smaller half both ways; bosses above it melt 1%/s (07-round)
         hcPackTick(dt);
+        if (m >= 10000 && bossTimer > 10) bossTimer = 10;   // from 10 000 the second boss does not keep you waiting
         if (hcSplitDone) hcFuseTick(dt);
         if (hcSplitDone && !hcFuseT) {
           let hm = hcHalfMass();
@@ -293,7 +294,7 @@
     // the end of a round: the hardcore series reward
     function end() {
       hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } hcWinUi(null); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
-      if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '' }; delete rec.next; hcLog = null;
+      if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] };   // bites: [time, who, its mass, the part it ate] delete rec.next; hcLog = null;
         try { const L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); L.push(rec); localStorage.setItem('kapli3d-hcstats', JSON.stringify(L.slice(-30))); } catch (e) {}
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
       if (mode !== 'hardcore' || stats.ranked || stats.tutorial) return;
@@ -372,7 +373,7 @@
       hcFrozen: () => mode === 'hardcore' && !!hcOffer, hcFusing: () => mode === 'hardcore' && hcFuseT > 0, hcPairBite,
       hcFreezeTick(dt) { hcT -= dt; const el = document.getElementById('hcPickT'); if (el) el.textContent = Math.max(0, Math.ceil(hcT)); if (hcT <= 0) hcPick(0); }, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
       hcBossPressure, hcBossSenseK: () => (hcSplitDone ? 2 : 1 + .5 * hcBossPressure()), hcBossTurnK: () => (hcSplitDone ? 1.8 : 1 + .55 * hcBossPressure()), hcPackSpeedK: o => (mode === 'hardcore' && o.hcPack ? 1.15 : 1),
-      hcBossSpawnInterval: () => (hcSplitDone ? 6 : 40 - 16 * hcBossPressure()), hcBossTarget,
+      hcBossSpawnInterval: () => (hcSplitDone ? 6 : total(player) >= 10000 ? 10 : 40 - 16 * hcBossPressure()), hcBossTarget,
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
       get crownGround() { return crownGround; },
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder
@@ -388,7 +389,7 @@
       },
       raidDmgK: () => (twinsLinked() ? .5 : 1) * raidPerk().dmg,
       cdK: o => (o === player ? hcK('cd') : 1),
-      gainK: () => (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') * (total(player) >= 50000 ? .5 : 1) : 1),
+      gainK: () => (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') * (total(player) >= 50000 ? .5 : .75) : 1),
       bonusK: () => (rule && rule.id === 'bonus2' ? .5 : 1),
       botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? hcK('speed') * (hcPredT > 0 ? hcK('predator') : 1) : 1) *
         (o.kind === 'bot' ? (mode === 'classic' ? 1 + .04 * esc : rule && rule.id === 'fastbots' ? 1.15 : 1) : 1),

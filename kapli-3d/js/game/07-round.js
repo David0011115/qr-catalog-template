@@ -110,7 +110,7 @@
   const botSkill = () => BOT_SKILL.normal;
   const botLead = o => botSkill().lead * (o.persona === 'hunter' || o.star ? 1.5 : 1);
   function think(o) {
-    const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.25 + .1), flee: p0.flee * .8 } : p0;
+    const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.5 + .2), flee: p0.flee * .6 } : p0;
     const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1);
     if (o.hcPack && mode === 'hardcore') { const p = ModeX.hcPackTarget(o); if (p) { o.target = p.t; o.tx = p.x; o.tz = p.z; return; } }
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
@@ -524,7 +524,7 @@
         if (pairMate) { const share = gain * pairMate.mass / (a.mass - gain + pairMate.mass); a.mass -= share; pairMate.mass += share; pairMate.vis.jig = 1; toast('🔗 Двойной укус! Половины съели босса вместе'); }
         const victim = b.owner, lastMass = b.mass;
         if (mode === 'crown') ModeX.crownBite(a, b, victim, lastMass);
-        if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
+        if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; (stats.bites = stats.bites || []).push([Math.round(stats.time), a.owner.kind === 'boss' ? 'boss:' + a.owner.bossType : a.owner.hcPack ? 'pack' : a.owner.kind || '?', Math.round(a.mass), Math.round(lastMass)]); if (stats.bites.length > 12) stats.bites.shift(); } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) { if (evoOn()) evoEat(b.x, b.z, rb); else eatFx(b.x, b.z, rb, cellColor(b)); } else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
         removeCell(b);
         if (a.owner.isPlayer) {

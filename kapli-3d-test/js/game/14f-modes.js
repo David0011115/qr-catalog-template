@@ -148,6 +148,7 @@
     }
     function tick(dt) {
       if (dying || !running) return;
+      try { evoLiveTick(dt); } catch (e) {}
       if (mode === 'hardcore' && solo()) {
         const m = total(player);
         while (hcBossStage < HC_BOSS_MILESTONES.length && m >= HC_BOSS_MILESTONES[hcBossStage]) {

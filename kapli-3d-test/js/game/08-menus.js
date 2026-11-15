@@ -721,7 +721,7 @@
     for (const b of SPECIAL) { if (save.badges[b.id]) continue; const [v, n] = b.prog(); if (v >= n) { save.badges[b.id] = today; toast(`Новый особый значок «${b.name}»! Он в профиле.`); persist(); } }
   }
   function renderAll() {
-    checkSpecialBadges(); renderChaosBtn(); mbRefresh(); try { prestigeCheck(); } catch (e) {} requestAnimationFrame(goalFade);
+    checkSpecialBadges(); renderChaosBtn(); mbRefresh(); try { $('wardBtn').classList.toggle('evo-new', Object.keys(save.evoNew || {}).length > 0); setTimeout(evoShowQueue, 400); } catch (e) {} try { prestigeCheck(); } catch (e) {} requestAnimationFrame(goalFade);
     // menu chip = a mini profile: your avatar with its frame and the emblem of your league
     { const av = $('acctChip').querySelector('.ac-ava'), sc = myShowcase(), li = leagueOf(save.season.pts), k = JSON.stringify([sc.skin, sc.frame, li]);
       if (av.dataset.k !== k) { av.dataset.k = k; av.innerHTML = pcAvatar({ ...sc, badge: '' }, 36); av.classList.add('has-av'); $('acctRank').innerHTML = rankEmblem(li, 18, { still: true }); } }
@@ -1017,7 +1017,7 @@
     else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
     const inf = ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Предпросмотр: ${s.name}"`;
-    const dna = EVO[s.id] ? `<span class="evo-dna" title="Скин с эволюцией${save.skins.includes(s.id) && evoForm(s.id) ? ` · форма ${['', 'I', 'II', 'III'][evoForm(s.id)]}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg>${save.skins.includes(s.id) && evoForm(s.id) ? ['', 'I', 'II', 'III'][evoForm(s.id)] : ''}</span>` : '';
+    const dna = EVO[s.id] ? `${(save.evoNew || {})[s.id] ? '<span class="evo-newmark">новое</span>' : ''}<span class="evo-dna" title="Скин с эволюцией${save.skins.includes(s.id) && evoForm(s.id) ? ` · форма ${['', 'I', 'II', 'III'][evoForm(s.id)]}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg>${save.skins.includes(s.id) && evoForm(s.id) ? ['', 'I', 'II', 'III'][evoForm(s.id)] : ''}</span>` : '';
     return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}>${dna}<div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
       ${starsOf(s) ? `<span class="stars-on" title="Звёзды скина: ${STAR_TEXT[starsOf(s)]}; ${starBonusOf(s) ? starBonusOf(s).text(starsOf(s)) : ''}">${'★'.repeat(starsOf(s))}</span>` : ''}<span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }

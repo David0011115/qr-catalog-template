@@ -500,3 +500,26 @@
 .skin .evo-dna { position: absolute; left: 6px; top: 6px; z-index: 2; display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px 2px 3px; border-radius: 99px; background: rgba(10, 40, 30, .85); border: 1px solid #3dffa2; color: #3dffa2; font: 800 .6rem var(--body); }
 .skin .evo-dna svg, .evo-tag svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .evo-tag { display: inline-flex; align-items: center; gap: 3px; color: #3dffa2; border-color: #3dffa2; }
+/* 2.7: evolution moments — the banner in the round, the window after it, the «new» marks */
+#evoBanner { position: fixed; left: 50%; top: 58%; z-index: 60; transform: translate(-50%, -10px) scale(.9); opacity: 0; pointer-events: none; display: flex; align-items: center; gap: 10px; padding: 10px 18px 10px 12px; border-radius: 16px; background: rgba(8, 6, 26, .86); border: 1.5px solid var(--ec, #3dffa2); box-shadow: 0 0 24px color-mix(in srgb, var(--ec, #3dffa2) 60%, transparent); color: #fff; }
+#evoBanner.show { animation: evoBan 3.2s ease forwards; }
+#evoBanner i { width: 34px; height: 34px; color: var(--ec, #3dffa2); animation: evoSpin 1.6s linear infinite; } #evoBanner svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#evoBanner small { display: block; font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ec2, #fff); } #evoBanner b { font-size: 1.05rem; }
+@keyframes evoBan { 0% { opacity: 0; transform: translate(-50%, -10px) scale(.85); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.06); } 18% { transform: translate(-50%, 0) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -6px) scale(.97); } }
+@keyframes evoSpin { to { transform: rotateY(360deg); } }
+.evo-card { width: min(640px, calc(100vw - 24px)); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px; align-items: center; border: 1.5px solid var(--ec, #3dffa2); box-shadow: 0 0 40px -6px color-mix(in srgb, var(--ec, #3dffa2) 55%, transparent); }
+.evo-stage { position: relative; aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--ec, #3dffa2) 28%, transparent), transparent 65%), #0b0722; }
+.evo-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.evo-helix { position: absolute; inset: 8%; width: 84%; height: 84%; fill: none; stroke: var(--ec, #3dffa2); stroke-width: 1.2; opacity: .22; animation: evoSpin 6s linear infinite; }
+.evo-flash { position: absolute; inset: 0; background: radial-gradient(circle, #fff 0, var(--ec, #3dffa2) 30%, transparent 70%); opacity: 0; pointer-events: none; }
+.evo-flash.go { animation: evoFlash .9s ease-out; }
+@keyframes evoFlash { 0% { opacity: 0; } 15% { opacity: .95; } 100% { opacity: 0; } }
+.evo-tx small { color: var(--ec, #3dffa2); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; font-size: .72rem; }
+.evo-tx h2 { margin: 4px 0 6px; font-size: 1.3rem; } .evo-tx p { margin: 0 0 12px; color: var(--muted); font-size: .86rem; }
+.evo-acts { display: flex; gap: 8px; flex-wrap: wrap; } .evo-acts .btn { margin: 0; }
+@media (max-width: 560px) { .evo-card { grid-template-columns: 1fr; } .evo-stage { max-width: 240px; justify-self: center; width: 100%; } }
+@media (prefers-reduced-motion: reduce) { #evoBanner.show, .evo-helix, #evoBanner i, .evo-flash.go { animation: none; } #evoBanner.show { opacity: 1; transform: translate(-50%, 0); } }
+.skin .evo-newmark { position: absolute; right: 6px; top: 6px; z-index: 2; padding: 2px 7px; border-radius: 99px; background: #3dffa2; color: #062018; font: 800 .58rem var(--body); text-transform: uppercase; letter-spacing: .06em; box-shadow: 0 0 10px #3dffa2; }
+#wardBtn.evo-new { position: relative; } #wardBtn.evo-new::after { content: ''; position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: #3dffa2; box-shadow: 0 0 8px #3dffa2; }
+.evo-f.fresh { border-color: #3dffa2; box-shadow: 0 0 10px #3dffa2; animation: evoPulse 1.4s ease-in-out infinite; } .evo-f.fresh small { color: #3dffa2; }
+@keyframes evoPulse { 50% { box-shadow: 0 0 2px #3dffa2; } }

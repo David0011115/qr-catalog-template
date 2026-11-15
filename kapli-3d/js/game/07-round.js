@@ -73,7 +73,8 @@
   function dash() {
     if (DuoM.guest) { DuoM.act('dash'); return; }
     if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
-    player.dashT = 0.35 + 0.035 * U.light; player.dashCd = dashCdBase * ModeX.hcK('dash'); stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
+    if (ModeX.hcNoDash()) { toast('⛓ Оковы: рывок недоступен'); return; }
+    player.dashT = (0.35 + 0.035 * U.light) * ModeX.hcDashLenK(); player.dashCd = dashCdBase * ModeX.hcK('dash'); stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     { const [x, z] = pCenterXZ(); abFlash('dash', x, z, null, 'dash'); }
     const cost = 0.03 * (1 - 0.08 * U.light);
     player.cells.forEach(c => c.mass = Math.max(START_MASS * 0.5, c.mass * (1 - cost)));
@@ -111,7 +112,7 @@
   const botLead = o => botSkill().lead * (o.persona === 'hunter' || o.star ? 1.5 : 1);
   function think(o) {
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.5 + .2), flee: p0.flee * .6 } : p0;
-    const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1);
+    const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1) * (o.kind === 'bot' || o.kind === 'boss' ? ModeX.hcSenseK() : 1);
     if (o.hcPack && mode === 'hardcore') { const p = ModeX.hcPackTarget(o); if (p) { o.target = p.t; o.tx = p.x; o.tz = p.z; return; } }
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
       // 2.7: bosses go for the holder wherever it is; a bot bigger than the holder hunts it across the whole arena;
@@ -441,7 +442,7 @@
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const fx2 = c.owner.eff;   // the second player of a match for two keeps their bonuses here
-      const r = cellR(c) + (isP ? pMagnet + (ModeX.hcK('magnet') - 1) * (cellR(c) * .5 + 4) : fx2 && fx2.magnet > 0 ? 6 : 0);
+      const r = cellR(c) + (isP ? (pMagnet + (ModeX.hcK('magnet') - 1) * (cellR(c) * .5 + 4)) * ModeX.hcMagnetK() : fx2 && fx2.magnet > 0 ? 6 : 0);
       const gain = (isP ? pGain : fx2 && fx2.double > 0 ? 2 : 1) * (abOn('pulse', c.owner) ? 2 : 1) * (c.owner.dbAbs || 1);
       const gx0 = fgCell(c.x - r), gx1 = fgCell(c.x + r), gz0 = fgCell(c.z - r), gz1 = fgCell(c.z + r);
       for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) { const bucket = fgrid[gx * FGN + gz];

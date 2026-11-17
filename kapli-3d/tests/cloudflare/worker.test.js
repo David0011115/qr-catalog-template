@@ -151,3 +151,43 @@ test('Worker rejects unauthenticated room operations', async () => {
     assert.equal(response.status, 401);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+
+test('Worker attaches the authenticated guest save to a room join without trusting client-supplied build data', async () => {
+  authFetch('22222222-2222-4222-8222-222222222222');
+  let captured;
+  const env = envFor({
+    async fetch(internal) {
+      captured = { path: new URL(internal.url).pathname, body: JSON.parse(await internal.text()) };
+      return new Response(JSON.stringify({ room: { code: 'ABCDE', status: 'lobby' } }), { status: 200 });
+    },
+  });
+  try {
+    const response = await handleWorkerRequest(
+      request('https://worker.example/api/rooms/ABCDE/join', 'POST', { build: ['unknown', 'unknown', 'unknown'] }),
+      env,
+    );
+    assert.equal(response.status, 200);
+    assert.equal(captured.path, '/internal/join');
+    assert.deepEqual(captured.body.player.build, ['shield', 'split', null]);
+    assert.equal(captured.body.player.upgrades.big, 2);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('Worker refuses to create a room when existing account save data cannot be read', async () => {
+  globalThis.fetch = async url => {
+    if (String(url).endsWith('/auth/v1/user')) return new Response(JSON.stringify({
+      id: '11111111-1111-4111-8111-111111111111', user_metadata: { nickname: 'Player' },
+    }), { status: 200 });
+    return new Response('RLS denied', { status: 403 });
+  };
+  const env = envFor({ fetch: async () => { throw new Error('must not allocate room'); } });
+  try {
+    const response = await handleWorkerRequest(
+      request('https://worker.example/api/rooms', 'POST', { mode: 'territory', difficultyIndex: 0 }),
+      env,
+    );
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error, 'account-data-unavailable');
+  } finally { globalThis.fetch = originalFetch; }
+});

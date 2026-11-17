@@ -155,9 +155,11 @@ export function speedOf(cell, rules = {}) {
   } else if (positive(owner.freezeT) > 0) {
     velocity *= 0.05;
   } else if (positive(owner.slowT) > 0) {
-    velocity *= PHYSICS.SLOW_FACTOR * (owner.kind === 'boss' ? finiteOr(owner.bossSpeed, 1) : 1);
+    const bossSpeed = finiteOr(rules.bossSpeedFor?.(owner), finiteOr(owner.bossSpeed, 1));
+    velocity *= PHYSICS.SLOW_FACTOR * (owner.kind === 'boss' ? bossSpeed : 1);
   } else if (owner.kind === 'boss') {
-    velocity *= finiteOr(owner.bossSpeed, 1) *
+    const bossSpeed = finiteOr(rules.bossSpeedFor?.(owner), finiteOr(owner.bossSpeed, 1));
+    velocity *= bossSpeed *
       (positive(owner.dashT) > 0 ? 2 : 1) *
       (positive(owner.stunT) > 0 ? 0.4 : 1);
   } else if (owner.kind === 'minion') {

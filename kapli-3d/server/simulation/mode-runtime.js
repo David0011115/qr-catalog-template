@@ -163,11 +163,16 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
       const tick = tickDuobackSpecialBoss(state, boss, players, dt, specialWorld, options.random);
       events.push(...tick.events);
       options.applyBossSteering?.(boss, tick.steering, world);
+      if (tick.result) options.onSpecialBossResult?.(tick.result, boss, tick.events, world);
     }
   }
 
   const meteorHits = tickDuobackMeteors(state, players, dt, isShielded);
-  for (const hit of meteorHits) events.push({ type: 'boss-meteor-hit', ...hit });
+  for (const hit of meteorHits) {
+    const event = { type: 'boss-meteor-hit', ...hit };
+    events.push(event);
+    options.onMeteorHit?.(hit, world);
+  }
 
   for (const player of players) {
     const respawned = tickDuobackPlayerRespawn(

@@ -60,6 +60,10 @@ export function parseClientMessage(raw, maxBytes = MAX_CLIENT_MESSAGE_BYTES) {
     }
     return { ok: true, command: { type: 'ability', seq: message.seq, slot: message.slot } };
   }
+  if (message.type === 'action') {
+    if (!Number.isSafeInteger(message.seq) || message.seq < 1 || !['dash', 'split', 'eject'].includes(message.action)) return { ok: false, reason: 'invalid-action' };
+    return { ok: true, command: { type: 'action', seq: message.seq, action: message.action } };
+  }
   if (message.type === 'boost') {
     if (!Number.isSafeInteger(message.seq) || message.seq < 1 ||
         typeof message.id !== 'string' || !/^[a-z0-9_]{1,32}$/.test(message.id)) {

@@ -30,6 +30,8 @@ function ownerSummary(owner) {
     homeSide: owner.homeSide || 0, mass: totalMass(owner),
     cellCount: owner.cells.length, poolSize: owner.free.length + owner.cells.length,
     build: owner.build || [], persona: owner.persona || null,
+    db: owner.db || null, eff: owner.eff || null, abT: owner.abT || null,
+    abCd: owner.abCd || null, dashCd: owner.dashCd || 0, splitCd: owner.splitCd || 0,
     dbType: owner.dbType || null, dbSpec: !!owner.dbSpec,
     dbSlot: owner.dbSlot ?? owner.slot ?? null, dbId: owner.dbId || null,
     connected: owner.connected !== false,

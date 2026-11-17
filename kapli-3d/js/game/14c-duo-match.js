@@ -285,6 +285,7 @@
         const o = data.role === role ? player : rival;
         o.serverId = data.id; o.isPlayer = true; o.role = data.role;
         o.team = data.team || null; o.name = data.name || o.name;
+        if (Array.isArray(data.build)) o.build = data.build;
         if (data.db) o.db = data.db; if (data.eff) o.eff = data.eff;
         if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
         o.rs = data.rs || o.rs || 1;
@@ -308,6 +309,7 @@
       }
       o.serverId = data.id; o.kind = data.kind || o.kind; o.name = data.name || o.name;
       o.team = data.team || null; o.homeSide = data.homeSide || 0; o.persona = data.persona || o.persona;
+      if (Array.isArray(data.build)) o.build = data.build;
       if (data.db) o.db = data.db; if (data.eff) o.eff = data.eff;
       if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
       o.dashCd = data.dashCd || 0; o.splitCd = data.splitCd || 0;

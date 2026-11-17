@@ -54,6 +54,13 @@ export function duobackRespawnSeconds(state) { return Math.max(5, state.difficul
 export function duobackPlayerSpeedMultiplier(player) { return 1 + 0.08 * (player?.db?.speed || 0); }
 export function duobackAbsorbMultiplier(player) { return 1 + 0.25 * (player?.db?.absorb || 0); }
 export function duobackCooldownMultiplier(player) { return Math.pow(0.85, player?.db?.cd || 0); }
+export function duobackBossBaseSpeed(boss) {
+  if (!boss?.dbType) return 1;
+  const regular = DUOBACK_REGULAR_BOSSES[boss.dbType];
+  if (regular) return regular.speed;
+  return DUOBACK_SPECIAL_BOSSES.find(item => item.id === boss.dbType)?.speed ?? 1;
+}
+
 export function duobackBossSpeedMultiplier(boss, wave) {
   if (!boss?.dbType) return 1;
   return (boss.dbType === 'twins' && boss.enr ? 1.35 : 1) * (1 + 0.03 * duobackLateStep(wave));

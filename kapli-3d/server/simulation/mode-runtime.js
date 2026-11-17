@@ -11,6 +11,10 @@ import {
   duobackBossBaseSpeed, duobackBossSpeedMultiplier, duobackCooldownMultiplier,
 } from '../modes/duoback.js';
 import { tickDuobackRegularBoss, tickDuobackPlayerRespawn } from '../modes/duoback-bosses.js';
+import {
+  applyDuobackBossSteering, removeDuobackBossEntity, removeDuobackWorldCell,
+  resolveDuobackBossEntity, spawnDuobackBossEntity, spawnDuobackBossChunk,
+} from '../modes/duoback-entities.js';
 import { tickDuobackSpecialBoss, duobackSpecialChunkEaten } from '../modes/duoback-special.js';
 
 const totalMass = owner => (owner?.cells || []).reduce((sum, cell) => sum + cell.mass, 0);
@@ -98,7 +102,10 @@ export function createDuobackRules(state, options = {}) {
         }
         if (victim?.kind === 'boss' && victim.dbType && !victim.dbSpec) {
           const result = duobackRegularBossDefeated(state, victim);
-          if (result) options.onRegularBossDefeated?.(victim, result, world);
+          if (result) {
+            removeDuobackBossEntity(world, victim);
+            options.onRegularBossDefeated?.(victim, result, world);
+          }
           return result || false;
         }
         return false;
@@ -124,12 +131,24 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
   const events = [];
   const spawnRequests = [];
   const bossTicks = [];
-  const removeCell = cell => options.removeCell?.(world, cell);
+  const removeCell = cell => options.removeCell
+    ? options.removeCell(world, cell)
+    : removeDuobackWorldCell(world, cell);
   const rebuildCells = () => options.rebuildCells?.(world);
+  const resolveRegular = descriptor => options.resolveRegularBoss
+    ? options.resolveRegularBoss(world, descriptor)
+    : resolveDuobackBossEntity(world, { ...descriptor, kind: 'regular' }, state.wave);
+  const resolveSpecial = descriptor => options.resolveSpecialBoss
+    ? options.resolveSpecialBoss(world, descriptor)
+    : resolveDuobackBossEntity(world, { ...descriptor, kind: 'special' }, state.wave);
+  const applySteering = (boss, steering) => {
+    if (options.applyBossSteering) options.applyBossSteering(boss, steering, world);
+    else applyDuobackBossSteering(boss, steering, dt, options.physicsRules || {});
+  };
   const isShielded = player => !!options.isShielded?.(player);
 
   for (const descriptor of [...state.regular]) {
-    const boss = options.resolveRegularBoss?.(world, descriptor);
+    const boss = resolveRegular(descriptor);
     if (!boss) throw new Error(`DuoBack regular boss entity missing: ${descriptor.type}:${descriptor.slot}`);
     if (!boss.id || boss.dbType !== descriptor.type ||
         (descriptor.slot !== undefined && boss.slot !== undefined && boss.slot !== descriptor.slot)) {
@@ -160,13 +179,14 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     if (tick.expired) {
       state.regular = state.regular.filter(item =>
         !(item.type === descriptor.type && item.slot === descriptor.slot));
+      removeDuobackBossEntity(world, boss);
       options.onRegularBossExpired?.(boss, world);
       events.push({ type: 'regular-boss-expired', bossId: boss.id, bossType: descriptor.type, slot: descriptor.slot });
     }
   }
 
   if (state.special) {
-    const boss = options.resolveSpecialBoss?.(world, state.special);
+    const boss = resolveSpecial(state.special);
     if (!boss) throw new Error(`DuoBack special boss entity missing: ${state.special.id}`);
     if (!boss.id || boss.dbType !== state.special.id || boss.dbSpec !== true) {
       throw new TypeError('DuoBack special boss entity does not match its stable descriptor');
@@ -178,14 +198,19 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
         removeCell,
         rebuildCells,
         burstFood: (x, z, radius, count) => options.burstFood?.(world, x, z, radius, count),
-        spawnChunk: (owner, descriptor, slot) => options.spawnChunk?.(world, owner, descriptor, slot),
+        spawnChunk: (owner, descriptor, slot) => options.spawnChunk
+          ? options.spawnChunk(world, owner, descriptor, slot)
+          : spawnDuobackBossChunk(world, owner, descriptor, slot),
       };
       const tick = tickDuobackSpecialBoss(state, boss, players, dt, specialWorld, options.random);
       events.push(...tick.events);
       bossTicks.push({ bossId: boss.id, type: state.special?.id ?? boss.dbType, events: tick.events, steering: tick.steering, result: tick.result });
       options.applyBossSteering?.(boss, tick.steering, world);
       for (const event of tick.events) options.onBossEvent?.(event, boss, world);
-      if (tick.result) options.onSpecialBossResult?.(tick.result, boss, tick.events, world);
+      if (tick.result) {
+        removeDuobackBossEntity(world, boss);
+        options.onSpecialBossResult?.(tick.result, boss, tick.events, world);
+      }
     }
   }
 
@@ -219,6 +244,11 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
       const request = { ...descriptor, wave: state.wave };
       spawnRequests.push(request);
       events.push({ type: 'boss-spawn-requested', ...request });
+      if (options.spawnPositionForBoss) {
+        const position = options.spawnPositionForBoss(request, world, options.random);
+        const created = spawnDuobackBossEntity(world, request, position, state.wave);
+        events.push({ type: 'boss-entity-created', bossId: created.owner.id, cellId: created.cell.id });
+      }
       options.onWaveSpawn?.(request, state, world);
     }
     if (phase.transition.spawns?.length) {

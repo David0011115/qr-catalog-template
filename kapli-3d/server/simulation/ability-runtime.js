@@ -30,14 +30,15 @@ export function createAbilityRuleAdapters(world, options = {}) {
     physicsRules: {
       ...physics,
       abilityOn: physics.abilityOn || abilityOn,
-      playerSpeedEffect: Number.isFinite(world?.effects?.speed)
-        ? world.effects.speed : physics.playerSpeedEffect,
+      playerSpeedEffect: physics.playerSpeedEffect,
+      playerSpeedEffectFor: physics.playerSpeedEffectFor ||
+        (owner => (owner?.eff?.speed || 0) > 0 || (owner?.role === 'host' && (world?.effects?.speed || 0) > 0)),
     },
     worldRules: {
       ...interactions,
       abilityOn: interactions.abilityOn || abilityOn,
       playerShieldActive: interactions.playerShieldActive ||
-        (owner => !!owner?.isPlayer && (world?.effects?.shield || 0) > 0),
+        (owner => !!owner?.isPlayer && ((owner?.eff?.shield || 0) > 0 || (owner?.role === 'host' && (world?.effects?.shield || 0) > 0))),
     },
   };
 }
@@ -46,8 +47,8 @@ export function createAbilityWorldAdapter(world, options = {}) {
   if (!world || !Array.isArray(world.owners) || !Array.isArray(world.cells)) {
     throw new TypeError('world owners and cells are required');
   }
-  world.ownersById ||= new Map(world.owners.map(owner => [owner.id, owner]));
-  world.cellsById ||= new Map(world.cells.filter(cell => cell.id != null).map(cell => [cell.id, cell]));
+  world.ownersById = new Map(world.owners.map(owner => [owner.id, owner]));
+  world.cellsById = new Map(world.cells.filter(cell => cell.id != null).map(cell => [cell.id, cell]));
   world.viruses ||= [];
   world.ejects ||= [];
   world.food ||= [];
@@ -72,6 +73,14 @@ export function createAbilityWorldAdapter(world, options = {}) {
       const index = world.cells.indexOf(cell);
       if (index >= 0) world.cells.splice(index, 1);
       if (cell.id != null) world.cellsById.delete(cell.id);
+      const owner = cell.owner;
+      if (owner && !cell.slotRecycled) {
+        if (Array.isArray(owner.free) && cell.slotId != null) {
+          if (!owner.free.includes(cell.slotId)) owner.free.push(cell.slotId);
+          owner.freeCount = owner.free.length;
+        } else if (Number.isFinite(owner.freeCount)) owner.freeCount += 1;
+        cell.slotRecycled = true;
+      }
       return true;
     },
     rebuildCells: () => {

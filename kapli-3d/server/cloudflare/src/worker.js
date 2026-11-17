@@ -141,4 +141,12 @@ export async function handleWorkerRequest(request, env) {
   return withCors(response, request, env);
 }
 
-export default { fetch: handleWorkerRequest };
+export default {
+  async fetch(request, env) {
+    try { return await handleWorkerRequest(request, env); }
+    catch (error) {
+      console.error(JSON.stringify({ event: 'worker-error', message: String(error?.message || error), path: new URL(request.url).pathname }));
+      return withCors(json({ error: 'internal-error' }, 500), request, env);
+    }
+  },
+};

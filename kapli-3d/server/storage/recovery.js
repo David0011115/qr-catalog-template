@@ -32,6 +32,10 @@ export function validateSnapshotEnvelope(snapshot) {
 
 export function buildRecoveryPlan(snapshot, events) {
   validateSnapshotEnvelope(snapshot);
+  for (const event of events) {
+    if (!event || event.matchId !== snapshot.matchId) throw new Error('EVENT_MATCH_MISMATCH');
+    if (!Number.isInteger(event.sequence) || event.sequence < 1 || !event.type || !Number.isFinite(event.createdAt)) throw new Error('INVALID_EVENT');
+  }
   const pending = events.filter(e => e.sequence > snapshot.eventCursor).slice().sort((a, b) => a.sequence - b.sequence);
   let expected = snapshot.eventCursor + 1;
   for (const event of pending) {

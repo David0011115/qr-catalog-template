@@ -1,7 +1,8 @@
 // Thin orchestration layer for the already-audited server mode rule modules.
 // Spawning, owner lookup and reward persistence remain explicit host callbacks.
 import {
-  tickTerritory, territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,\n  territoryBotHome, territoryBotSpawnX,
+  tickTerritory, territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,
+   territoryBotHome, territoryBotSpawnX,
 } from '../modes/territory.js';
 import {
   tickDuobackPhase, tickDuobackMeteors, duobackRegularBossDefeated,

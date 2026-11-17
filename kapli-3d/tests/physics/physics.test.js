@@ -96,3 +96,37 @@ test('player movement gets the original short-distance steering factor', () => {
   steerCell(b, 0.1, 0, 1 / 30);
   assert.ok(p.x < b.x);
 });
+
+test('speed formulas use source player upgrades, pet levels, temporary speed and shrink', () => {
+  const c = cell(10, 0, 0, player());
+  const base = speedOf(c); assert.equal(base, 33);
+  const boosted = speedOf(c, { speedUpgradeFor: () => 5, speedPetLevelFor: () => 5, playerSpeedEffect: 1, abilityOn: id => id === 'shrink' });
+  assert.ok(Math.abs(boosted - 33 * 1.05 * 1.45 * 1.1 * 1.25) < 1e-10);
+});
+
+test('dash ignores normal mass slowdown and uses the source -0.1 exponent', () => {
+  const c = cell(100, 0, 0, player({ dashT: 1 }));
+  assert.ok(Math.abs(speedOf(c) - 33 * 3.2 * Math.pow(10, -0.1)) < 1e-10);
+});
+
+test('boss speed comes from boss-info callback and keeps dash, stun and slow ordering', () => {
+  const owner = { kind: 'boss' };
+  const c = cell(10, 0, 0, owner);
+  assert.equal(speedOf(c, { bossSpeedFor: () => 0.55 }), 33 * 0.55);
+  owner.dashT = 1; owner.stunT = 1;
+  assert.ok(Math.abs(speedOf(c, { bossSpeedFor: () => 0.55 }) - 33 * 0.55 * 2 * 0.4) < 1e-10);
+  owner.dashT = 0; owner.stunT = 0; owner.slowT = 1;
+  assert.equal(speedOf(c, { bossSpeedFor: () => 0.55 }), 33 * 0.5 * 0.55);
+  owner.freezeT = 1;
+  assert.equal(speedOf(c, { bossSpeedFor: () => 0.55 }), 33 * 0.05);
+});
+
+test('bot, star, minion, daily, cyber, storm and mode speed multipliers match source order', () => {
+  const bot = cell(10, 0, 0, { kind: 'bot' });
+  assert.equal(speedOf(bot), 33 * 0.92);
+  bot.owner.star = true; assert.equal(speedOf(bot), 33);
+  bot.owner.star = false; bot.owner.dashT = 1; assert.equal(speedOf(bot), 33 * 0.92 * 1.9);
+  const minion = cell(10, 0, 0, { kind: 'minion' }); assert.equal(speedOf(minion), 33 * 1.05);
+  const globalBoosts = { dailySpeed: true, cyberArena: true, stormEvent: true, modeBotSpeedK: () => 2 };
+  assert.ok(Math.abs(speedOf(minion, globalBoosts) - 33 * 1.05 * 1.3 * 1.1 * 1.4 * 2) < 1e-10);
+});

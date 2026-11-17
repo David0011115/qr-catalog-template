@@ -225,5 +225,5 @@ test('DuoBack snapshots reject invalid meteor geometry and dangling special spli
   const snapshot = serializeDuobackState(state);
   assert.equal(validateDuobackStateSnapshot(snapshot), true);
   assert.throws(() => restoreDuobackState({ ...snapshot, meteors: [{ x: 0, z: 0, radius: -1, t: 1 }] }), /INVALID_DUOBACK_METEOR/);
-  assert.throws(() => restoreDuobackState({ ...snapshot, special: { ...snapshot.special, split: ['missing'] } }), /INVALID_DUOBACK_SPLIT/);
+  assert.throws(() => restoreDuobackState({ ...snapshot, special: { ...snapshot.special, split: ['piece-a', 'piece-a'] } }), /INVALID_DUOBACK_SPLIT/);
 });

@@ -6,6 +6,7 @@ const big = o => (o?.cells || []).reduce((a, b) => !a || b.mass > a.mass ? b : a
 const unit = (dx, dz) => { const d = Math.hypot(dx, dz) || 1; return { x: dx / d, z: dz / d, d }; };
 
 export function steerDuobackRegularBoss(boss, players, options = {}) {
+  boss.think = 1;
   const ps = players.filter(p => p.cells?.length);
   const c = big(boss);
   if (!c || !ps.length) return { target: null, tx: boss.tx ?? c?.x ?? 0, tz: boss.tz ?? c?.z ?? 0, dashStarted: false };

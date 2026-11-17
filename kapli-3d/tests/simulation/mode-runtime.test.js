@@ -287,7 +287,7 @@ test('DuoBack runtime creates special boss entities and advances their steering 
     { id: 'host', role: 'host', isPlayer: true, cells: [hostCell] },
     { id: 'guest', role: 'guest', isPlayer: true, cells: [guestCell] },
   ];
-  const world = { owners: players, cells: [hostCell, guestCell], arenaRadius: 300, matchTime: 12 };
+  const world = { owners: [...players], cells: [hostCell, guestCell], arenaRadius: 300, matchTime: 12 };
   const options = {
     resolvePlayers: () => players,
     random: () => 0.5,
@@ -314,7 +314,7 @@ test('DuoBack runtime creates regular bosses and removes an expired entity from 
     { id: 'host', role: 'host', isPlayer: true, cells: [hostCell] },
     { id: 'guest', role: 'guest', isPlayer: true, cells: [guestCell] },
   ];
-  const world = { owners: players, cells: [hostCell, guestCell], arenaRadius: 300 };
+  const world = { owners: [...players], cells: [hostCell, guestCell], arenaRadius: 300 };
   const options = {
     resolvePlayers: () => players, random: () => 0.7,
     spawnPositionForBoss: () => ({ x: 0, z: 0 }),
@@ -340,7 +340,7 @@ test('DuoBack special boss defeat removes its owner and all cells from the autho
     { id: 'host', role: 'host', isPlayer: true, cells: [hostCell] },
     { id: 'guest', role: 'guest', isPlayer: true, cells: [guestCell] },
   ];
-  const world = { owners: players, cells: [hostCell, guestCell], arenaRadius: 300 };
+  const world = { owners: [...players], cells: [hostCell, guestCell], arenaRadius: 300 };
   const options = {
     resolvePlayers: () => players, random: () => 0.5,
     spawnPositionForBoss: () => ({ x: 0, z: 0 }),

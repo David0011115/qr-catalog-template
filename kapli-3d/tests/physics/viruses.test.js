@@ -84,7 +84,8 @@ test('every fifth ejected blob fires a new virus and resets the fed virus', () =
   assert.equal(fired.fired, true);
   assert.equal(v.mass, 100);
   assert.equal(v.feed, 0);
-  assert.equal(fired.spawnedVirus.x, 10);
+  // Source uses `e.vx / d || 1`, so a vertical shot also gets +X drift.
+  assert.ok(Math.abs(fired.spawnedVirus.x - 18.36) < 1e-12);
   assert.ok(fired.spawnedVirus.z < 20);
   assert.equal(fired.spawnedVirus.vz, -60);
 });

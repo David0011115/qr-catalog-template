@@ -217,7 +217,7 @@ test('boss defeat hook ignores special bosses and non-boss entities', () => {
   assert.equal(duobackRegularBossDefeated(s, { kind: 'bot' }), false);
   assert.equal(s.team.bosses, 0);
 });
-test('DuoBack snapshots reject invalid meteor geometry and dangling special split pieces', () => {
+test('DuoBack snapshots reject invalid meteor geometry and duplicate split-piece references', () => {
   const state = createDuobackState(0);
   state.wave = 5;
   state.special = { id: 'split', max: 200, damage: 10, life: 40, shed: 1, attack: 2, pull: 0, base: 100, chunks: [{ cellId: 'piece-a', mass: 20 }], split: ['piece-a'] };

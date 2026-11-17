@@ -203,7 +203,7 @@ export function duobackCanFinish(state, players) {
   if (state.finished) return { finished: true, won: false };
   const alive = players.filter(p => p.cells?.length).length;
   if (alive === 0) return { finished: true, won: false };
-  if (state.wave >= DUOBACK_RULES.maxWave && state.phase === 1 && !state.special && state.regular.length === 0) {
+  if (state.wave >= DUOBACK_RULES.maxWave && state.phase === 0 && !state.special && state.regular.length === 0) {
     return { finished: true, won: true };
   }
   return { finished: false, won: false };

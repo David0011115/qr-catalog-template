@@ -103,11 +103,11 @@ test('room state requests require a valid Supabase session and are scoped to the
   const env = envFor({
     async fetch(internal) {
       captured = { path: new URL(internal.url).pathname, userId: internal.headers.get('x-kapli-user-id') };
-      return new Response(JSON.stringify({ room: { code: 'ABCD' } }), { status: 200 });
+      return new Response(JSON.stringify({ room: { code: 'ABCDE' } }), { status: 200 });
     },
   });
   try {
-    const response = await handleWorkerRequest(request('https://worker.example/api/rooms/ABCD'), env);
+    const response = await handleWorkerRequest(request('https://worker.example/api/rooms/ABCDE'), env);
     assert.equal(response.status, 200);
     assert.equal(captured.path, '/internal/state');
     assert.equal(captured.userId, '11111111-1111-4111-8111-111111111111');
@@ -118,7 +118,7 @@ test('Worker rejects unauthenticated room operations', async () => {
   globalThis.fetch = async () => new Response('{}', { status: 401 });
   try {
     const response = await handleWorkerRequest(
-      new Request('https://worker.example/api/rooms/ABCD/join', {
+      new Request('https://worker.example/api/rooms/ABCDE/join', {
         method: 'POST', headers: { origin: 'https://game.example' }, body: '{}',
       }),
       envFor({ fetch: async () => { throw new Error('must not reach DO'); } }),

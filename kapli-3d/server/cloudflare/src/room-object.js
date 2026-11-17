@@ -28,14 +28,17 @@ function ownerSummary(owner) {
     id: owner.id, name: owner.name, kind: owner.kind, role: owner.role || null,
     team: owner.team || null, isPlayer: !!owner.isPlayer,
     homeSide: owner.homeSide || 0, mass: totalMass(owner),
-    cellCount: owner.cells.length, build: owner.build || [],
+    cellCount: owner.cells.length, poolSize: owner.free.length + owner.cells.length,
+    build: owner.build || [], persona: owner.persona || null,
+    dbType: owner.dbType || null, dbSpec: !!owner.dbSpec,
+    dbSlot: owner.dbSlot ?? owner.slot ?? null, dbId: owner.dbId || null,
     connected: owner.connected !== false,
   };
 }
 
 function cellSnapshot(cell) {
   return {
-    id: cell.id, ownerId: cell.owner.id, x: cell.x, z: cell.z, mass: cell.mass,
+    id: cell.id, slotId: cell.slotId || null, ownerId: cell.owner.id, x: cell.x, z: cell.z, mass: cell.mass,
     hx: cell.hx || 0, hz: cell.hz || 0, vx: cell.vx || 0, vz: cell.vz || 0,
     mergeT: cell.mergeT || 0, rs: cell.owner.rs || 1, gone: !!cell.gone,
     spawnShield: cell.owner.spawnSh || 0, dashT: cell.owner.dashT || 0,

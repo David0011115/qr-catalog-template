@@ -110,7 +110,7 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
     world.food.push({ id: `food:${i}`, x: point.x, z: point.z });
   }
 
-  const bots = createBotRoster(mode);
+  const bots = createBotRoster(mode, rng);
   world.owners.push(...bots);
   for (const bot of bots) spawnBotOwner(bot, world, rng, { running: false });
   spawnInitialViruses(world, rng);

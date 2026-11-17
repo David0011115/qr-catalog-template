@@ -21,8 +21,8 @@ export function createRoomState({ roomId, code, hostId, now }) {
 
 export function joinRoom(room, playerId, now) {
   if (room.status === 'closed') return { ok: false, reason: 'room-closed' };
-  if (room.status !== 'waiting' || room.players.length >= ROOM_RULES.maxPlayers) return { ok: false, reason: 'room-full-or-started' };
   if (!playerId || room.players.some(p => p.id === playerId)) return { ok: false, reason: 'invalid-player' };
+  if (room.status !== 'waiting' || room.players.length >= ROOM_RULES.maxPlayers) return { ok: false, reason: 'room-full-or-started' };
   room.players.push({ id: playerId, role: 'guest', ready: false, connected: true });
   room.status = 'lobby'; room.waitingDeadlineAt = null;
   return { ok: true, role: 'guest', code: room.code };

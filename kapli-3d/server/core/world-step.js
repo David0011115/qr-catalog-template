@@ -267,7 +267,7 @@ export function stepWorldInteractions(world, dt, rules = {}) {
   const knownCellIds = new Set(world.cells.map(cell => String(cell.id)));
   const tick = Number.isSafeInteger(rules.tick) ? rules.tick : Math.round(finite(world.clock, 0) / dt) + 1;
   const virusResult = stepViruses(
-    [...world.viruses], world.cells, dt, world.arenaRadius, world.respawnTimers,
+    [...world.viruses], [...world.cells], dt, world.arenaRadius, world.respawnTimers,
     {
       ...virusRules,
       random,

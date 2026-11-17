@@ -22,11 +22,17 @@ export function createSimulationLoopState(playerIds) {
   const lastReceivedSeq = {};
   const lastProcessedSeq = {};
   const pendingInputs = {};
+  const lastAbilityReceivedSeq = {};
+  const lastAbilityProcessedSeq = {};
+  const pendingAbilities = {};
   const directions = {};
   for (const id of playerIds) {
     lastReceivedSeq[id] = 0;
     lastProcessedSeq[id] = 0;
     pendingInputs[id] = null;
+    lastAbilityReceivedSeq[id] = 0;
+    lastAbilityProcessedSeq[id] = 0;
+    pendingAbilities[id] = null;
     directions[id] = { x: 0, z: 0 };
   }
 
@@ -36,6 +42,9 @@ export function createSimulationLoopState(playerIds) {
     lastReceivedSeq,
     lastProcessedSeq,
     pendingInputs,
+    lastAbilityReceivedSeq,
+    lastAbilityProcessedSeq,
+    pendingAbilities,
     directions,
   };
 }
@@ -63,6 +72,29 @@ export function submitPlayerInput(state, lifecycle, playerId, command) {
   return { ok: true, acceptedSeq: command.seq, queued: true };
 }
 
+export function submitAbilityCommand(state, lifecycle, playerId, command) {
+  if (!matchInputAllowed(lifecycle, playerId)) {
+    return { ok: false, reason: 'input-not-allowed' };
+  }
+  if (!Object.hasOwn(state.lastAbilityReceivedSeq, playerId)) {
+    return { ok: false, reason: 'unknown-player' };
+  }
+  if (!isRecord(command) || command.type !== 'ability' ||
+      !Number.isSafeInteger(command.seq) || command.seq < 1 ||
+      !Number.isSafeInteger(command.slot) || command.slot < 0) {
+    return { ok: false, reason: 'invalid-ability-command' };
+  }
+  if (command.seq <= state.lastAbilityReceivedSeq[playerId]) {
+    return {
+      ok: false, reason: 'stale-ability-sequence',
+      lastReceivedSeq: state.lastAbilityReceivedSeq[playerId],
+    };
+  }
+  state.lastAbilityReceivedSeq[playerId] = command.seq;
+  state.pendingAbilities[playerId] = { seq: command.seq, slot: command.slot };
+  return { ok: true, acceptedSeq: command.seq, queued: true };
+}
+
 // Advances exactly one authoritative 30 Hz tick. Wall-clock scheduling belongs
 // to the future Durable Object adapter; callers cannot supply a variable dt.
 export function stepSimulationTick(state, lifecycle, world, options = {}) {
@@ -76,8 +108,28 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
   const dt = SIMULATION_RULES.tickSeconds;
   const nextTick = state.tick + 1;
   const acknowledgements = [];
-
-  const abilityStep = options.stepAbilities?.(world, dt, { tick: nextTick, lifecycle });
+  const abilityAcknowledgements = [];
+  const abilityCommands = [];
+  for (const player of lifecycle.players) {
+    const pending = state.pendingAbilities[player.id];
+    if (!pending) continue;
+    const owner = options.resolveOwner(world, player.id);
+    if (!owner?.id) throw new Error('world owner with stable id not found for ability command: ' + player.id);
+    abilityCommands.push({ ownerId: String(owner.id), seq: pending.seq, slot: pending.slot });
+  }
+  if (abilityCommands.length && typeof options.stepAbilities !== 'function') {
+    throw new TypeError('stepAbilities adapter is required to process queued ability commands');
+  }
+  const abilityStep = options.stepAbilities?.(world, dt, {
+    tick: nextTick, lifecycle, commands: clone(abilityCommands),
+  });
+  for (const player of lifecycle.players) {
+    const pending = state.pendingAbilities[player.id];
+    if (!pending) continue;
+    state.lastAbilityProcessedSeq[player.id] = pending.seq;
+    state.pendingAbilities[player.id] = null;
+    abilityAcknowledgements.push({ playerId: player.id, processedSeq: pending.seq });
+  }
 
   for (const player of lifecycle.players) {
     const id = player.id;
@@ -120,6 +172,7 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
     tick: state.tick,
     dt,
     acknowledgements,
+    abilityAcknowledgements,
     worldStep,
     abilityStep: abilityStep ?? null,
     modeStep: modeStep ?? null,
@@ -141,8 +194,10 @@ export function restoreSimulationLoopState(snapshot) {
   }
 
   const ids = Object.keys(snapshot.lastReceivedSeq);
-  const samePlayers = [snapshot.lastProcessedSeq, snapshot.pendingInputs, snapshot.directions]
-    .every(record => Object.keys(record).length === ids.length && ids.every(id => Object.hasOwn(record, id)));
+  const samePlayers = [
+    snapshot.lastProcessedSeq, snapshot.pendingInputs, snapshot.lastAbilityReceivedSeq,
+    snapshot.lastAbilityProcessedSeq, snapshot.pendingAbilities, snapshot.directions,
+  ].every(record => Object.keys(record).length === ids.length && ids.every(id => Object.hasOwn(record, id)));
   if (ids.length !== 2 || !samePlayers ||
       snapshot.snapshotSequence !== Math.floor(snapshot.tick / SIMULATION_RULES.snapshotEveryTicks) ||
       ids.some(id => {
@@ -151,6 +206,16 @@ export function restoreSimulationLoopState(snapshot) {
         return !Number.isSafeInteger(snapshot.lastReceivedSeq[id]) || snapshot.lastReceivedSeq[id] < 0 ||
           !Number.isSafeInteger(snapshot.lastProcessedSeq[id]) || snapshot.lastProcessedSeq[id] < 0 ||
           snapshot.lastProcessedSeq[id] > snapshot.lastReceivedSeq[id] ||
+          !Number.isSafeInteger(snapshot.lastAbilityReceivedSeq[id]) || snapshot.lastAbilityReceivedSeq[id] < 0 ||
+          !Number.isSafeInteger(snapshot.lastAbilityProcessedSeq[id]) || snapshot.lastAbilityProcessedSeq[id] < 0 ||
+          snapshot.lastAbilityProcessedSeq[id] > snapshot.lastAbilityReceivedSeq[id] ||
+          !(snapshot.pendingAbilities[id] === null ||
+            (isRecord(snapshot.pendingAbilities[id]) &&
+             Number.isSafeInteger(snapshot.pendingAbilities[id].seq) &&
+             snapshot.pendingAbilities[id].seq > snapshot.lastAbilityProcessedSeq[id] &&
+             snapshot.pendingAbilities[id].seq <= snapshot.lastAbilityReceivedSeq[id] &&
+             Number.isSafeInteger(snapshot.pendingAbilities[id].slot) &&
+             snapshot.pendingAbilities[id].slot >= 0)) ||
           !(pending === null ||
             (isRecord(pending) &&
              Number.isSafeInteger(pending.seq) &&

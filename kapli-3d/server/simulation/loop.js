@@ -105,7 +105,7 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
   }
 
   const nextTick = state.tick + 1;
-  const worldStep = stepWorldInteractions(world, dt, options.worldRules || {});
+  const worldStep = stepWorldInteractions(world, dt, { ...(options.worldRules || {}), tick: nextTick });
   options.simulateWorld?.(world, dt, { tick: nextTick, acknowledgements: clone(acknowledgements), worldStep });
   state.tick = nextTick;
 

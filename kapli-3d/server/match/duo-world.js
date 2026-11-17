@@ -33,8 +33,10 @@ function pointInArena(rng, arenaRadius, margin) {
   return { x: Math.cos(angle) * distance, z: Math.sin(angle) * distance };
 }
 
-function createPlayerOwner(player, role, arenaRadius, build) {
-  const x = (role === 'host' ? -1 : 1) * arenaRadius * 0.55;
+function createPlayerOwner(player, role, mode, arenaRadius, build) {
+  const home = role === 'host' ? -1 : 1;
+  const spawnFactor = mode === 'territory' ? 0.6 : 0.18;
+  const x = home * arenaRadius * spawnFactor;
   const cell = {
     id: `player:${player.id}:cell:0`, x, z: 0, mass: DUO_WORLD_SOURCE.startMass,
     vx: 0, vz: 0, hx: x > 0 ? -1 : 1, hz: 0, mergeT: 0, gone: false,
@@ -45,9 +47,9 @@ function createPlayerOwner(player, role, arenaRadius, build) {
     cells: [cell], free: Array.from({ length: DUO_WORLD_SOURCE.playerParts - 1 }, (_, i) => `player:${player.id}:slot:${i + 1}`),
     spawnSh: 3, dashT: 0, dashCd: 0, splitCd: 0, abCd: {}, abT: {}, rs: 1,
     slowT: 0, iceT: 0, freezeT: 0, phase2: 0, build: [...build],
-    eff: { speed: 0, shield: 0, double: 0, magnet: 0 },
-    db: role === 'host' || role === 'guest' ? { mass: 0, speed: 0, armor: 0, absorb: 0, cd: 0 } : null,
-    dbAbs: 1,
+    eff: { speed: 0, shield: 3, double: 0, magnet: 0 },
+    db: mode === 'duoback' ? { mass: 0, speed: 0, armor: 0, absorb: 0, cd: 0 } : null,
+    dbAbs: mode === 'duoback' ? 1 : null,
   };
   cell.owner = owner;
   return owner;
@@ -87,8 +89,8 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
   );
   const rng = new DeterministicRandom(seed);
   const build = drawBuild(rng);
-  const host = createPlayerOwner(byRole.host, 'host', arenaRadius, build);
-  const guest = createPlayerOwner(byRole.guest, 'guest', arenaRadius, build);
+  const host = createPlayerOwner(byRole.host, 'host', mode, arenaRadius, build);
+  const guest = createPlayerOwner(byRole.guest, 'guest', mode, arenaRadius, build);
   const modeState = mode === 'territory'
     ? createTerritoryState(arenaRadius, { role: 'host' })
     : createDuobackState(difficultyIndex);

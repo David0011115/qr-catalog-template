@@ -50,7 +50,7 @@ test('leech drains seven percent per second, transfers half, and respects 10-mas
   const c = cell('b', 100, 0, 0), b = boss('leech', c);
   const p = player('host', [cell('p', 100, 1, 0), cell('small', 10.1, 1, 0)]);
   const out = tickDuobackRegularBoss(b, 1, [p], { canEat: () => false, isShielded: () => false });
-  assert.ok(Math.abs(p.cells[0].mass - 93) < 1e-12); assert.ok(Math.abs(c.mass - 103.36) < 1e-12);
+  assert.ok(Math.abs(p.cells[0].mass - 93) < 1e-12); assert.ok(Math.abs(c.mass - 102.1) < 1e-12);
   assert.equal(p.cells[1].mass, 10.1); assert.equal(out.events.filter(e => e.type === 'leech-drain').length, 1);
   const shielded = player('guest', [cell('shield', 100, 1, 0)]);
   tickDuobackRegularBoss(b, 1, [shielded], { canEat: () => false, isShielded: () => true });

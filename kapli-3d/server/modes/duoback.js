@@ -227,3 +227,42 @@ export function restoreDuobackState(snapshot) {
   state.regular = snapshot.regular.map(b => ({ ...b })); state.meteors = snapshot.meteors.map(m => ({ ...m })); state.finished = !!snapshot.finished;
   return state;
 }
+
+// Called once when a regular boss owner loses its final cell.
+export function duobackRegularBossDefeated(state, boss) {
+  if (!boss?.dbType || boss.dbSpec) return false;
+  state.team.bosses += 1;
+  state.regular = state.regular.filter(x => !(x.type === boss.dbType && x.slot === boss.slot));
+  const enraged = [];
+  if (boss.dbType === 'twins') {
+    for (const other of state.regular) if (other.type === 'twins') { other.enr = 1; enraged.push(other.slot); }
+  }
+  return { counted: true, enragedTwinSlots: enraged };
+}
+
+// The host calls this after ticking regular/special bosses and meteor warnings.
+// It reproduces the source order: clear final wave first, then check simultaneous player death.
+export function tickDuobackPhase(state, dt, players, rng, world = {}) {
+  if (state.finished) return { phase: 'finished', result: null };
+  if (world.dying) return { phase: state.phase === 1 ? 'break' : 'wave', result: null };
+  let transition = null;
+  if (state.phase === 1) {
+    state.breakRemaining -= dt;
+    if (state.breakRemaining <= 0) {
+      transition = startDuobackWave(state, players, rng, world.availableRegularSlots);
+      if (transition.shieldSeconds) world.grantPairShield?.(transition.shieldSeconds);
+      if (transition.appliedBoosts?.length) world.onAutoBoosts?.(transition.appliedBoosts);
+    }
+  } else if (!state.special && state.regular.length === 0) {
+    if (state.wave >= DUOBACK_RULES.maxWave) { state.finished = true; return { phase: 'finished', result: { won: true, reason: 'all-waves-cleared' } }; }
+    transition = startDuobackBreak(state, rng);
+    world.spawnBreakFood?.(transition.foodPerPlayer, transition.arenaFood);
+    if (transition.spawnBonuses) world.spawnBonuses?.(transition.spawnBonuses);
+    if (Object.keys(transition.offers).length) world.publishBoostOffers?.(transition.offers);
+  }
+  if (players.every(p => !p.cells?.length)) {
+    state.finished = true;
+    return { phase: 'finished', result: { won: false, reason: 'both-players-dead' }, transition };
+  }
+  return { phase: state.phase === 1 ? 'break' : 'wave', result: null, transition };
+}

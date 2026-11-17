@@ -19,7 +19,7 @@ test('ability command resolves server-owned slot and activates shield with coold
   assert.equal(result.casts[0].ok, true);
   assert.ok(world.owners[0].abCd.shield > 24);
   assert.ok(world.owners[0].abT.shieldB > 5.9);
-  assert.equal(world.effects.shield, 0);
+  assert.ok(world.effects.shield > 5.9);
 });
 
 test('client-supplied ability IDs are ignored; empty server slot is rejected', () => {

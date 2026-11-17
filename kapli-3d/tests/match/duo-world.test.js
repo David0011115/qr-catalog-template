@@ -13,8 +13,8 @@ test('Territory world uses source arena scale, food density and 24-bot roster', 
   assert.equal(world.food.length, Math.round(5250 * 1.5 * 1.5));
   assert.equal(world.owners.filter(owner => owner.kind === 'bot').length, 24);
   assert.equal(world.owners.filter(owner => owner.isPlayer).length, 2);
-  assert.equal(owners.host.cells[0].x, -world.arenaRadius * 0.55);
-  assert.equal(owners.guest.cells[0].x, world.arenaRadius * 0.55);
+  assert.equal(owners.host.cells[0].x, -world.arenaRadius * 0.6);
+  assert.equal(owners.guest.cells[0].x, world.arenaRadius * 0.6);
   assert.equal(world.viruses.length, 8);
 });
 
@@ -24,6 +24,7 @@ test('DuoBack world uses the smaller source arena and the 16 base bots', () => {
   assert.equal(world.food.length, Math.round(5250 * 0.8 * 0.8));
   assert.equal(world.owners.filter(owner => owner.kind === 'bot').length, 16);
   assert.equal(world.modeState.difficultyIndex, 2);
+  assert.equal(world.owners.find(owner => owner.role === 'host').cells[0].x, -world.arenaRadius * 0.18);
   assert.equal(world.viruses.length, 8);
 });
 

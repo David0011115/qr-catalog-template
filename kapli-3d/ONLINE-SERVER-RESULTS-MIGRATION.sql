@@ -21,6 +21,7 @@ create or replace function public.kapli_duo_territory_submit_server(
   p_match_id uuid,
   p_host_user_id uuid,
   p_guest_user_id uuid,
+  p_host_result text,
   p_host_share integer,
   p_extra jsonb default '{}'::jsonb
 )
@@ -40,15 +41,17 @@ begin
   end if;
   if p_match_id is null or p_host_user_id is null or p_guest_user_id is null
      or p_host_user_id = p_guest_user_id
+     or p_host_result not in ('win', 'loss', 'draw')
      or p_host_share is null or p_host_share not between 0 and 100 then
     return jsonb_build_object('ok', false, 'reason', 'invalid-match-result');
   end if;
 
-  v_host_result := case
-    when p_host_share >= 51 then 'win'
-    when p_host_share <= 49 then 'loss'
-    else 'draw'
-  end;
+  v_host_result := p_host_result;
+  if (v_host_result = 'win' and p_host_share < 51)
+     or (v_host_result = 'loss' and p_host_share > 49)
+     or (v_host_result = 'draw' and p_host_share not between 48 and 52) then
+    return jsonb_build_object('ok', false, 'reason', 'result-share-mismatch');
+  end if;
   v_guest_result := case v_host_result
     when 'win' then 'loss'
     when 'loss' then 'win'
@@ -180,7 +183,7 @@ begin
 end;
 $$;
 
-revoke all on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid, integer, jsonb) from public, anon, authenticated;
+revoke all on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid, text, integer, jsonb) from public, anon, authenticated;
 revoke all on function public.kapli_duo_coop_submit_server(uuid, uuid, uuid, integer, integer, integer, integer, integer, integer, jsonb) from public, anon, authenticated;
 grant execute on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid, integer, jsonb) to service_role;
 grant execute on function public.kapli_duo_coop_submit_server(uuid, uuid, uuid, integer, integer, integer, integer, integer, integer, jsonb) to service_role;

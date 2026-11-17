@@ -79,13 +79,13 @@ export function applyDuobackBoost(player, id, state) {
   return true;
 }
 
-function regularSpawnDescriptor(type, mass, slot, rng) {
+function regularSpawnDescriptor(type, mass, slot, activeIndex) {
   const d = DUOBACK_REGULAR_BOSSES[type];
   return {
     kind: 'regular', type, slot,
     mass,
     life: DUOBACK_RULES.regularLife,
-    dashT: 0, dashCd: 3, enr: 0, spikeT: 3, k: slot,
+    dashT: 0, dashCd: 3, enr: 0, spikeT: 3, k: activeIndex,
   };
 }
 
@@ -117,7 +117,8 @@ export function startDuobackWave(state, players, rng, availableSlots) {
     const slot = takeRegularSlot(type, used, availableSlots);
     if (slot === null) return;
     const mass = Math.min(30000, base * grow * (type === 'leech' ? 0.9 : 1.25) * Math.sqrt(state.difficulty.hp));
-    spawns.push(regularSpawnDescriptor(type, mass, slot, rng));
+    const activeIndex = spawns.filter(b => b.kind === 'regular' && b.type === type).length;
+    spawns.push(regularSpawnDescriptor(type, mass, slot, activeIndex));
   };
   if (state.wave % 5 === 0) {
     const specialIndex = ((state.wave / 5 - 1) % DUOBACK_SPECIAL_BOSSES.length);
@@ -200,11 +201,12 @@ export function tickDuobackMeteors(state, players, dt, isShielded) {
 
 export function duobackCanFinish(state, players) {
   if (state.finished) return { finished: true, won: false };
-  const alive = players.filter(p => p.cells?.length).length;
-  if (alive === 0) return { finished: true, won: false };
+  // Source checks a cleared final wave before its simultaneous-death condition.
   if (state.wave >= DUOBACK_RULES.maxWave && state.phase === 0 && !state.special && state.regular.length === 0) {
     return { finished: true, won: true };
   }
+  const alive = players.filter(p => p.cells?.length).length;
+  if (alive === 0) return { finished: true, won: false };
   return { finished: false, won: false };
 }
 

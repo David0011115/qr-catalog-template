@@ -3,7 +3,7 @@
 export class DeterministicRandom {
   constructor(seed, counter = 0) {
     this.seed = Number(seed) | 0;
-    this.counter = Math.max(0, Number(counter) | 0);
+    this.counter = Math.max(0, Math.trunc(Number(counter) || 0));
   }
 
   next() {

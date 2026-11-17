@@ -541,6 +541,7 @@ export class GameRoom {
         catch (error) {
           this.loopTimer = null;
           this.room.status = 'closed'; this.room.closedAt = Date.now(); this.room.closeReason = 'simulation-error';
+          console.error(JSON.stringify({ event: 'simulation-error', matchId: this.runtime?.lifecycle.matchId, message: String(error?.message || error) }));
           this.appendEvent('simulation-error', { message: String(error?.message || error) }, true).catch(() => {});
           this.broadcast({ type: 'match-error', error: 'simulation-error' });
           return;

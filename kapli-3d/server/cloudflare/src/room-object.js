@@ -217,7 +217,7 @@ export class GameRoom {
     if (request.method !== 'GET' && !body) return json({ error: 'invalid-json' }, 400);
 
     if (url.pathname === '/internal/create' && request.method === 'POST') return this.createRoom(userId, nickname, body);
-    if (url.pathname === '/internal/join' && request.method === 'POST') return this.join(userId, nickname);
+    if (url.pathname === '/internal/join' && request.method === 'POST') return this.join(userId, nickname, body.player);
     if (url.pathname === '/internal/state' && request.method === 'GET') {
       if (!this.requireRoomPlayer(userId)) return json({ error: 'room-not-found' }, 404);
       return json({ room: this.roomView() });
@@ -270,7 +270,7 @@ export class GameRoom {
     return result;
   }
 
-  async join(userId, nickname) {
+  async join(userId, nickname, profile) {
     if (!userId) return json({ error: 'unauthorized' }, 401);
     if (!this.room) {
       const attempt = await this.recordInvalidAttempt(userId);
@@ -279,12 +279,22 @@ export class GameRoom {
     const result = joinRoom(this.room, userId, Date.now());
     if (!result.ok) return json({ error: result.reason }, 409);
     const player = playerFor(this.room, userId);
-    player.nickname = nickname;
+    this.applyPlayerProfile(player, nickname, profile);
     this.sql('DELETE FROM invalid_attempts WHERE user_id = ?', userId);
     await this.ctx.storage.deleteAlarm();
     await this.appendEvent('player-joined', { playerId: userId, role: 'guest' }, true);
     this.broadcast({ type: 'room-state', room: this.roomView() });
     return json({ room: this.roomView() }, 200);
+  }
+
+  applyPlayerProfile(player, nickname, profile) {
+    if (!player) return;
+    const value = profile && typeof profile === 'object' ? profile : {};
+    player.nickname = String(value.nickname || nickname || 'Игрок').slice(0, 24);
+    player.build = Array.isArray(value.build) ? value.build.slice(0, 3) : ['dash', 'split', null];
+    player.upgrades = value.upgrades && typeof value.upgrades === 'object' ? { ...value.upgrades } : {};
+    player.abilityLevels = value.abilityLevels && typeof value.abilityLevels === 'object' ? { ...value.abilityLevels } : {};
+    player.skin = typeof value.skin === 'string' ? value.skin : 'coral';
   }
 
   async readyPlayer(userId, ready) {

@@ -248,3 +248,26 @@ test('queued ability command remains pending when no ability adapter is supplied
   assert.deepEqual(state.pendingAbilities.p1, { seq: 1, slot: 0 });
   assert.equal(state.tick, 0);
 });
+
+
+test('pre-interaction adapter runs after player steering and before world collisions and eating', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const world = makeWorld();
+  const order = [];
+  let xAtPreStep = null;
+  const out = stepSimulationTick(state, lifecycle, world, {
+    resolveOwner,
+    beforeWorldInteractions: (currentWorld, dt, meta) => {
+      order.push('before');
+      xAtPreStep = currentWorld.cells[0].x;
+      assert.equal(dt, 1 / 30);
+      assert.equal(meta.tick, 1);
+      return { botsSteered: 16 };
+    },
+    simulateWorld: () => order.push('after'),
+  });
+  assert.ok(xAtPreStep > 0);
+  assert.deepEqual(order, ['before', 'after']);
+  assert.deepEqual(out.beforeWorldInteractions, { botsSteered: 16 });
+});

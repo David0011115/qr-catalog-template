@@ -125,7 +125,7 @@ test('meteor impact pops large cells and pushes smaller cells', () => {
 test('shield and pulse cast set the authoritative active timers', () => {
   const p = owner('p', [cell(100)]), w = worldFor(p, [], { effects: { shield: 0 } });
   castWorldAbility('shield', p, w, createWorldAbilityEffects(), { player: true });
-  assert.equal(w.effects.shield, 6); assert.ok(Math.abs(p.abT.shieldB - 6.78) < 1e-12); assert.ok(p.shHit instanceof Set);
+  assert.equal(w.effects.shield, 6); assert.equal(p.abT.shieldB, 6); assert.ok(p.shHit instanceof Set);
   castWorldAbility('pulse', p, w, createWorldAbilityEffects()); assert.equal(p.abT.pulse, 5);
 });
 
@@ -228,7 +228,7 @@ test('phase second jump uses cooldown reduction and Chronos arena multiplier', (
 test('validated ability cast starts cooldown only after a successful effect', () => {
   const p = owner('p', [cell(100)]), w = worldFor(p, [], { effects: { shield: 0 } }), s = createWorldAbilityEffects();
   const cast = castServerAbility('shield', p, w, s, { player: true, level: 2 });
-  assert.equal(cast.ok, true); assert.equal(p.abCd.shield, 23); assert.equal(p.abT.shieldB, 6);
+  assert.equal(cast.ok, true); assert.equal(p.abCd.shield, 23); assert.ok(Math.abs(p.abT.shieldB - 6.78) < 1e-12);
   assert.equal(castServerAbility('shield', p, w, s, { player: true, level: 2 }).reason, 'cooldown-or-unavailable');
 });
 

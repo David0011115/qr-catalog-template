@@ -163,3 +163,29 @@ test('duoback boosts feed authoritative movement, armor and ability cooldown rul
   assert.equal(rules.worldRules.eatBlock(attacker, target), true);
   assert.equal(rules.abilityOptions.cooldownMultiplierFor(player), 0.85);
 });
+
+test('DuoBack runtime publishes special-boss outcomes and meteor hits in source tick order', () => {
+  const state = createDuobackState();
+  state.wave = 5;
+  state.phase = 0;
+  state.special = { id: 'vortex', max: 100, damage: 100, chunks: [], enhanced: false };
+  state.meteors = [{ x: 0, z: 0, radius: 20, t: 0.01 }];
+  const bossCell = { id: 'special-main', mass: 200, x: 50, z: 0 };
+  const boss = { id: 'special-owner', dbType: 'vortex', dbSpec: true, cells: [bossCell], free: [] };
+  const player = { role: 'host', isPlayer: true, cells: [{ id: 'p-cell', mass: 100, x: 0, z: 0 }] };
+  const partner = { role: 'guest', isPlayer: true, cells: [{ id: 'q-cell', mass: 100, x: 100, z: 0 }] };
+  const order = [];
+  const out = stepDuobackRuntime(state, { cells: [bossCell], matchTime: 50 }, 0.1, {
+    resolvePlayers: () => [player, partner],
+    resolveSpecialBoss: () => boss,
+    random: () => 0.5,
+    removeCell: (_world, cell) => { cell.gone = true; boss.cells = boss.cells.filter(item => item !== cell); },
+    rebuildCells: () => {},
+    onSpecialBossResult: result => order.push('special:' + result),
+    onMeteorHit: hit => order.push('meteor:' + hit.role),
+  });
+  assert.deepEqual(order, ['special:defeated', 'meteor:host']);
+  assert.equal(state.team.specials, 1);
+  assert.equal(player.cells[0].mass, 70);
+  assert.ok(out.events.some(event => event.type === 'boss-meteor-hit' && event.role === 'host'));
+});

@@ -1,7 +1,7 @@
 // Thin orchestration layer for the already-audited server mode rule modules.
 // Spawning, owner lookup and reward persistence remain explicit host callbacks.
 import {
-  tickTerritory, territoryBlocksEat, territorySpeedMultiplier,
+  tickTerritory, territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,
 } from '../modes/territory.js';
 import {
   tickDuobackPhase, tickDuobackMeteors, duobackRegularBossDefeated,
@@ -19,6 +19,7 @@ export function createTerritoryRules(state) {
     },
     worldRules: {
       eatBlock: (attacker, target) => territoryBlocksEat(state, attacker, target),
+      onPlayerEaten: victimRole => territoryPlayerWasEaten(state, victimRole),
     },
   };
 }
@@ -110,5 +111,12 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
   });
   if (phase.result) options.onResult?.(phase.result, world);
   const finish = duobackCanFinish(state, players);
+  if (finish.finished && !state.finished) {
+    state.finished = true;
+    options.onResult?.({
+      won: finish.won,
+      reason: finish.won ? 'all-waves-cleared' : 'both-players-dead',
+    }, world);
+  }
   return { events, meteorHits, phase, finish };
 }

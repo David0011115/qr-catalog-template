@@ -47,6 +47,7 @@ export function tickMatchLifecycle(state, now, resolveDisconnect) {
   const expired = state.players.filter(p => !p.connected && now >= p.reconnectUntil);
   if (!expired.length) return { ended: false, remainingMs: Math.min(...state.players.filter(p => !p.connected).map(p => p.reconnectUntil - now)) };
   state.status = 'finished'; state.endedAt = now; state.endReason = 'reconnect-timeout';
+  if (state.pausedAt !== null) { state.pausedMs += Math.max(0, now - state.pausedAt); state.pausedAt = null; }
   const disconnected = expired.map(p => ({ id: p.id, role: p.role }));
   state.result = resolveDisconnect ? resolveDisconnect(disconnected, state.players.map(p => ({ id: p.id, role: p.role, connected: p.connected }))) : { reason: state.endReason, disconnected };
   return { ended: true, result: state.result, disconnected };

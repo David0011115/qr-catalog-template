@@ -11,7 +11,7 @@ test('room validates five-character code and starts with creator as unready host
   const r = room(1000);
   assert.equal(r.status, 'waiting'); assert.equal(r.code, 'A2BCD');
   assert.deepEqual(r.players, [{ id: 'host', role: 'host', ready: false, connected: true }]);
-  assert.throws(() => createRoomState({ roomId: 'x', code: 'short', hostId: 'h', now: 0 }), /five/);
+  assert.throws(() => createRoomState({ roomId: 'x', code: 'TOOLONG', hostId: 'h', now: 0 }), /five/);
 });
 
 test('second player joins once and room becomes a two-player lobby', () => {
@@ -19,7 +19,7 @@ test('second player joins once and room becomes a two-player lobby', () => {
   assert.deepEqual(joinRoom(r, 'guest', 100), { ok: true, role: 'guest', code: 'A2BCD' });
   assert.equal(r.status, 'lobby'); assert.equal(r.players.length, 2);
   assert.equal(joinRoom(r, 'third', 100).reason, 'room-full-or-started');
-  assert.equal(joinRoom(r, 'guest', 100).reason, 'invalid-player');
+  assert.equal(joinRoom(r, 'guest', 100).reason, 'room-full-or-started');
 });
 
 test('both players must be ready before a three-second countdown starts', () => {

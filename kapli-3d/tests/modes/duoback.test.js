@@ -154,7 +154,8 @@ test('final wave is won only after all bosses are gone; simultaneous player deat
   assert.equal(duobackCanFinish(s, [player('host'), player('guest')]).finished, false);
   s.regular = []; s.special = null;
   assert.deepEqual(duobackCanFinish(s, [player('host'), player('guest')]), { finished: true, won: true });
-  assert.deepEqual(duobackCanFinish(s, [{ role: 'host', cells: [] }, { role: 'guest', cells: [] }]), { finished: true, won: false });
+  const dead = createDuobackState(0); dead.wave = 49; dead.phase = 0; dead.regular = [{ type: 'weaver' }];
+  assert.deepEqual(duobackCanFinish(dead, [{ role: 'host', cells: [] }, { role: 'guest', cells: [] }]), { finished: true, won: false });
 });
 
 test('Duoback state snapshot restores wave, offers, bosses and meteor timers', () => {

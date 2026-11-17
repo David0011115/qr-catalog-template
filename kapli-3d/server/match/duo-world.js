@@ -129,5 +129,5 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
   spawnInitialViruses(world, rng);
   world.randomState = rng.snapshot();
 
-  return { world, players: { host, guest }, build: [...build], rng };
+  return { world, players: { host, guest }, build: [...fallbackBuild], rng };
 }

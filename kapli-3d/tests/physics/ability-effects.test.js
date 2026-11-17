@@ -172,7 +172,7 @@ test('mirror twin tracks heading and merges back when its timer expires', () => 
   const s = createWorldAbilityEffects();
   assert.equal(castWorldAbility('x_twin', p, w, s, { player: true, playerMaxParts: () => 4 }).ok, true);
   const twin = p.cells[1]; main.hx = 0.6; main.hz = 0.8;
-  tickWorldAbilityEffects(s, w, 0.1); assert.equal(twin.hx, 0); assert.equal(twin.hz, 0.8);
+  tickWorldAbilityEffects(s, w, 0.1); assert.equal(twin.hx, -0.6); assert.equal(twin.hz, 0.8);
   tickWorldAbilityEffects(s, w, 5); assert.equal(p.cells.length, 1); assert.equal(main.mass, 200);
 });
 

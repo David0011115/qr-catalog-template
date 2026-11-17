@@ -7,7 +7,8 @@ This directory contains the rendering-free foundation for the authoritative mult
 - `core/physics.js`: mass-to-radius, movement speed, steering, arena clamping, eating eligibility, bite gain, and mass decay. Numeric rules are extracted from the current game implementation; context-dependent upgrades and mode hooks are supplied through callbacks.
 - `core/random.js`: seeded PRNG matching the generator used by the existing two-phone mode, with a serializable seed/counter snapshot.
 - `core/viruses.js`: virus movement and collisions, trap ownership/expiry, spike splitting, ejected-mass launch/drag/pickup, feeding a virus, and respawn timers. It exposes complete tick helpers while leaving entity storage and visual effects to the caller.
-- `core/abilities.js`: source-derived ability cooldown/power formulas, active timers, shrink-size easing, phase-jump cooldown timing, and decoy movement/collision. World-changing ability effects are still being ported separately.
+- `core/abilities.js`: source-derived ability cooldown/power formulas, active timers, shrink-size easing, phase-jump cooldown timing, and decoy movement/collision.
+- `core/ability-effects.js`: source-derived world effects for slow/push/blink, overload, black hole, anchor, meteors, vampirism, typhoon, ice trail, ghost expiration, Chronos rewind/swap, plus serializable effect/history state. Special split/twin, gear-wall collision and trap placement still need integration with the entity/mode layer.
 
 These modules are not wired into a Worker or Durable Object yet. The browser game continues to run exactly as before.
 
@@ -21,7 +22,7 @@ From the `kapli-3d/` directory, run:
 node --test tests/physics/*.test.js
 ```
 
-The tests cover extracted movement/eating formulas, deterministic random restoration, virus collisions/splitting, ejected-mass interactions, ability timing, decoy behavior, and timer ordering.
+The tests cover extracted movement/eating formulas, deterministic random restoration, virus collisions/splitting, ejected-mass interactions, ability timing, decoy behavior, active world effects, and timer ordering.
 
 ## Next extraction steps
 

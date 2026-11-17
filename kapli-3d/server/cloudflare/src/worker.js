@@ -79,7 +79,8 @@ async function callRoom(env, code, path, method, user, body) {
 export async function handleWorkerRequest(request, env) {
   const url = new URL(request.url);
   if (url.pathname === '/health' && request.method === 'GET') {
-    return json({ ok: true, service: 'kapli-3d-online', protocol: 1 });
+    if (!allowedOrigin(request, env)) return json({ error: 'origin-not-allowed' }, 403);
+    return withCors(json({ ok: true, service: 'kapli-3d-online', protocol: 1 }), request, env);
   }
   if (request.method === 'OPTIONS') {
     if (!allowedOrigin(request, env)) return json({ error: 'origin-not-allowed' }, 403);

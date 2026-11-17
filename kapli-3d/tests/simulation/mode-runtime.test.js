@@ -159,7 +159,7 @@ test('duoback boosts feed authoritative movement, armor and ability cooldown rul
   const target = { mass: 130, owner: { db: { armor: 1 } } };
   const rules = createDuobackRules(state);
   assert.equal(rules.physicsRules.duoSpeedK({ owner: player }), 1.16);
-  assert.equal(rules.physicsRules.bossSpeedFor(boss), 1.35);
+  assert.equal(rules.physicsRules.bossSpeedFor(boss), 0.95 * 1.35);
   assert.equal(rules.worldRules.eatBlock(attacker, target), true);
   assert.equal(rules.abilityOptions.cooldownMultiplierFor(player), 0.85);
 });

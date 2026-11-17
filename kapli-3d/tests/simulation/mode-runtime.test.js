@@ -32,6 +32,85 @@ test('territory runtime computes authoritative share and applies the source earl
   }), false);
 });
 
+test('DuoBack eating hooks apply special-boss damage and player-only defeat rewards once', () => {
+  const state = createDuobackState();
+  state.special = { max: 100, damage: 0, chunks: [{ cellId: 'piece-1', mass: 50 }] };
+  state.regular = [{ type: 'twins', slot: 0 }, { type: 'twins', slot: 1 }];
+  const host = { role: 'host', isPlayer: true, cells: [], respawnAt: 20 };
+  const guest = { role: 'guest', isPlayer: true, cells: [{ mass: 100 }] };
+  const rules = createDuobackRules(state, {
+    resolvePlayers: () => [host, guest],
+    onSpecialChunkEaten: (_event, damage) => assert.equal(damage, 30),
+  });
+  const specialOwner = { kind: 'boss', dbSpec: true };
+  const specialResult = rules.worldRules.onCellEaten({
+    victim: specialOwner, target: { id: 'piece-1' }, lastMass: 50,
+  }, {});
+  assert.equal(specialResult, 30);
+  assert.equal(state.special.damage, 30);
+
+  const regularBoss = { id: 'twin-0', kind: 'boss', dbType: 'twins', slot: 0 };
+  let rewardCalls = 0;
+  const rewardRules = createDuobackRules(state, {
+    onRegularBossDefeated: () => { rewardCalls++; },
+  });
+  const defeat = rewardRules.worldRules.onCellLost({
+    victim: regularBoss, victimEliminated: true,
+    attacker: { owner: { isPlayer: true, role: 'guest' } },
+  }, {});
+  assert.equal(defeat.counted, true);
+  assert.equal(state.team.bosses, 1);
+  assert.deepEqual(state.regular, [{ type: 'twins', slot: 1, enr: 1 }]);
+  assert.equal(rewardCalls, 1);
+});
+
+test('DuoBack bot and player losses update partner respawn and player return timers', () => {
+  const state = createDuobackState();
+  const host = { role: 'host', isPlayer: true, cells: [], respawnAt: 20 };
+  const guest = { role: 'guest', isPlayer: true, cells: [{ mass: 100 }] };
+  const rules = createDuobackRules(state, { resolvePlayers: () => [host, guest] });
+  const botResult = rules.worldRules.onCellLost({
+    victim: { kind: 'bot', role: 'bot' }, victimEliminated: true,
+    attacker: { owner: guest },
+  }, { matchTime: 10 });
+  assert.equal(state.team.bots, 1);
+  assert.equal(botResult.acceleratedRole, 'host');
+  assert.equal(host.respawnAt, 19);
+
+  const lostPlayer = { role: 'guest', isPlayer: true, cells: [] };
+  const respawnAt = rules.worldRules.onCellLost({
+    victim: lostPlayer, victimEliminated: true, attacker: { owner: null },
+  }, { matchTime: 10 });
+  assert.equal(respawnAt, false);
+  assert.equal(lostPlayer.respawnAt, 25);
+  assert.equal(state.team.respawns, 1);
+});
+
+test('DuoBack regular boss expiry removes the wave descriptor without counting a player defeat', () => {
+  const state = createDuobackState();
+  state.wave = 2;
+  state.phase = 0;
+  state.regular = [{ kind: 'regular', type: 'weaver', slot: 0 }];
+  const cell = { id: 'boss-cell', mass: 100 };
+  const boss = { id: 'boss-weaver', dbType: 'weaver', slot: 0, cells: [cell], life: 0.01, dashT: 0, dashCd: 0, spikeT: 10 };
+  let expired = 0;
+  const out = stepDuobackRuntime(state, {}, 0.1, {
+    resolvePlayers: () => [
+      { role: 'host', cells: [{ mass: 100 }] },
+      { role: 'guest', cells: [{ mass: 100 }] },
+    ],
+    random: () => 0.5,
+    resolveRegularBoss: () => boss,
+    removeCell: (_world, target) => { target.gone = true; boss.cells = []; },
+    rebuildCells: () => {},
+    onRegularBossExpired: () => { expired++; },
+  });
+  assert.equal(expired, 1);
+  assert.deepEqual(state.regular, []);
+  assert.equal(state.team.bosses, 0);
+  assert.ok(out.events.some(event => event.type === 'regular-boss-expired'));
+});
+
 test('duoback runtime calls boss, meteor, respawn and phase adapters in deterministic order', () => {
   const state = createDuobackState();
   const p1 = { role: 'host', cells: [{ mass: 100 }] };

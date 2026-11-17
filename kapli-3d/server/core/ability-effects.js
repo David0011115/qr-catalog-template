@@ -1,7 +1,7 @@
 // Deterministic, rendering-free ability world effects extracted from js/game/06-abilities.js.
 // Entity creation/removal, food-grid updates, mode hooks and presentation are callbacks.
 import { cellRadius } from './physics.js';
-import { ABILITY_DATA, abilityOn, createDecoy } from './abilities.js';
+import { ABILITY_DATA, abilityOn, createDecoy, stepDecoys } from './abilities.js';
 import { createVirus, VIRUS_RULES } from './viruses.js';
 
 const n = (v, d = 0) => Number.isFinite(v) ? v : d;
@@ -78,7 +78,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
     if (owner.cells.length >= maxParts || main.mass < 20 || !world.splitOwner) return { ok: false, reason: 'cannot-split' };
     if (!world.splitOwner(owner, owner.cells.length + 1, a.dur)) return { ok: false, reason: 'split-failed' };
     const twin = owner.cells[owner.cells.length - 1];
-    state.effects.push({ id, t: a.dur, ownerId: owner.id, caId: main.id, cbId: twin.id });
+    state.effects.push({ id, t: a.dur, ownerId: owner.id, caId: main.id, cbId: twin.id, isPlayer: !!options.player });
     return { ok: true, events };
   }
   if (id === 'cr_gearwall') {
@@ -203,6 +203,12 @@ export function tickWorldAbilityEffects(state, world, dt) {
   if (!(dt > 0)) return { events: [], removed: [] };
   const events = [], removed = [], spawned = [];
   const owners = world.owners.filter(o => o.cells?.length);
+  if (state.decoys?.length) {
+    const decoyResult = stepDecoys(state.decoys, world.ownersById, world.owners, dt, world.arenaRadius);
+    state.decoys = decoyResult.decoys;
+    events.push(...decoyResult.events.map(e => ({ type: 'decoy-' + e.reason, ownerId: e.decoy.ownerId, caughtBy: e.caughtBy?.id ?? null, foodBurst: e.foodBurst, foodRadius: e.foodRadius, slowTargetId: e.slowTarget?.id ?? null })));
+    for (const e of decoyResult.events) if (e.foodBurst) world.burstFood?.(e.decoy.x, e.decoy.z, e.foodRadius, e.foodBurst);
+  }
   for (const owner of owners) {
     if (owner.freezeT) owner.freezeT = Math.max(0, owner.freezeT - dt);
     if (owner.huntT > 0) owner.huntT -= dt;
@@ -269,7 +275,31 @@ export function tickWorldAbilityEffects(state, world, dt) {
     effect.t -= dt;
     const owner = world.ownersById.get(effect.ownerId);
     const foes = owner ? world.foesOf(owner) : [];
-    if (effect.id === 'x_hole') {
+    if (effect.id === 'cr_gearwall') {
+      for (const foe of foes) for (const c of foe.cells) for (const segment of effect.segs) {
+        const u = unit(c.x - segment.x, c.z - segment.z), limit = effect.gr + cellRadius(c);
+        if (u.d >= limit) continue;
+        c.x = segment.x + u.x * limit; c.z = segment.z + u.z * limit;
+        c.vx += u.x * 38; c.vz += u.z * 38;
+        const hitId = c.id ?? c;
+        if (!effect.hitIds.includes(hitId)) {
+          effect.hitIds.push(hitId); c.mass *= 0.95;
+          events.push({ type: 'gearwall-hit', ownerId: effect.ownerId, cellId: c.id ?? null });
+        }
+      }
+    } else if (effect.id === 'x_twin') {
+      const ownerCells = owner?.cells || [];
+      const ca = world.findCell?.(effect.caId) || ownerCells.find(c => c.id === effect.caId);
+      const cb = world.findCell?.(effect.cbId) || ownerCells.find(c => c.id === effect.cbId);
+      if (effect.t > 0 && !effect.isPlayer && ca && cb && !ca.gone && !cb.gone) { cb.hx = -ca.hx; cb.hz = ca.hz; }
+      if (effect.t <= 0 && ca && cb && !ca.gone && !cb.gone && cb.owner === owner) {
+        ca.mass += cb.mass;
+        world.removeCell?.(cb);
+        ca.mergeT = 0;
+        world.rebuildCells?.();
+        events.push({ type: 'twin-merged', ownerId: effect.ownerId, cellId: cb.id ?? null });
+      }
+    } else if (effect.id === 'x_hole') {
       pullFood(world.food, effect.x, effect.z, effect.radius, 26, dt, world.onFoodMove);
       for (const e of world.ejects) { const u = unit(effect.x - e.x, effect.z - e.z); if (u.d < effect.radius) { e.vx += u.x * 80 * dt; e.vz += u.z * 80 * dt; } }
     } else if (effect.id === 'x_anchor') {

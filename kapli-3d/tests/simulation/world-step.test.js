@@ -127,3 +127,67 @@ test('full interaction step applies collisions, food, eating and non-player caps
   assert.equal(result.food.consumed, 0);
   assert.equal(botCell.mass, 10000);
 });
+
+test('ejected mass moves and is picked up by a sufficiently large cell', () => {
+  const p = owner('p1'), c = cell('c', p, 0, 0, 100);
+  const eject = { x: 1, z: 0, vx: 0, vz: 0, mass: 8, age: 1 };
+  const w = world([p], [c], { ejects: [eject] });
+  const result = stepWorldInteractions(w, 1 / 30);
+  assert.equal(result.ejects.pickups.length, 1);
+  assert.equal(c.mass, 108);
+  assert.deepEqual(w.ejects, []);
+});
+
+test('ejected mass feeds a virus before moving and increments its feed mass', () => {
+  const p = owner('p1'), c = cell('c', p, 100, 100, 10);
+  const virus = { x: 0, z: 0, vx: 0, vz: 0, mass: 100, feed: 0, trap: null };
+  const eject = { x: 0, z: 0, vx: 20, vz: 0, mass: 8, age: 0 };
+  const w = world([p], [c], { viruses: [virus], ejects: [eject] });
+  const result = stepWorldInteractions(w, 1 / 30);
+  assert.equal(result.ejects.fed.length, 1);
+  assert.equal(virus.feed, 1);
+  assert.equal(virus.mass, 106);
+  assert.deepEqual(w.ejects, []);
+});
+
+test('virus pop creates deterministic split cells and starts its respawn timer', () => {
+  const p = owner('p1');
+  p.freeCount = 2;
+  const c = cell('c', p, 0, 0, 300);
+  const virus = { x: 0, z: 0, vx: 0, vz: 0, mass: 100, feed: 0, trap: null };
+  const w = world([p], [c], { viruses: [virus] });
+  const result = stepWorldInteractions(w, 1 / 30, {
+    virusRules: {
+      playerMaxParts: () => 4,
+      playerMergeTime: () => 14,
+    },
+  });
+  assert.equal(result.viruses.pops.length, 1);
+  assert.equal(result.viruses.pops[0].result.type, 'split');
+  assert.equal(p.cells.length, 3);
+  assert.equal(w.cells.length, 3);
+  assert.equal(p.freeCount, 0);
+  assert.equal(w.viruses.length, 0);
+  assert.equal(w.respawnTimers.length, 1);
+  assert.ok(Math.abs(w.respawnTimers[0] - (10 - 1 / 30)) < 1e-9);
+});
+
+test('expired virus respawn timer creates a virus at a deterministic safe position', () => {
+  const p = owner('p1'), c = cell('c', p, 0, 0, 10);
+  const w = world([p], [c], { respawnTimers: [0.01] });
+  const before = { ...w.randomState };
+  const result = stepWorldInteractions(w, 1 / 30);
+  assert.equal(result.respawnedViruses, 1);
+  assert.equal(w.viruses.length, 1);
+  assert.deepEqual(w.respawnTimers, []);
+  assert.notDeepEqual(w.randomState, before);
+  assert.ok(Math.hypot(w.viruses[0].x, w.viruses[0].z) <= w.arenaRadius - 12);
+  assert.ok(Math.hypot(w.viruses[0].x - c.x, w.viruses[0].z - c.z) > 8 + Math.sqrt(10) * 0.38);
+});
+
+test('world clock advances by the exact fixed simulation step', () => {
+  const p = owner('p1'), c = cell('c', p, 50, 50, 10);
+  const w = world([p], [c], { clock: 3 });
+  stepWorldInteractions(w, 1 / 30);
+  assert.ok(Math.abs(w.clock - (3 + 1 / 30)) < 1e-12);
+});

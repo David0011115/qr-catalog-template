@@ -289,6 +289,10 @@
         if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
         o.rs = data.rs || o.rs || 1;
         o.dashCd = data.dashCd || 0; o.splitCd = data.splitCd || 0;
+        o.upgrades = data.upgrades || {}; o.abilityLevels = data.abilityLevels || {}; o.skin = data.skin || o.skin;
+        o.splitMaxParts = data.splitMaxParts || 4; o.mergeSeconds = data.mergeSeconds || 14;
+        o.dashCooldown = data.dashCooldown || 4; o.dashDuration = data.dashDuration || .35;
+        o.dashMassCost = data.dashMassCost || .03; o.ejectSpeed = data.ejectSpeed || 60;
         return owners.indexOf(o);
       }
       let o = owners.find(item => item.serverId === data.id);
@@ -308,7 +312,11 @@
       if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
       o.dashCd = data.dashCd || 0; o.splitCd = data.splitCd || 0;
       o.dbType = data.dbType || null; o.dbSpec = !!data.dbSpec; o.dbSlot = data.dbSlot ?? null; o.dbId = data.dbId || null;
-      o.rs = data.rs || o.rs || 1;
+      o.rs = data.rs || o.rs || 1; o.skin = data.skin || o.skin;
+      o.upgrades = data.upgrades || o.upgrades || {}; o.abilityLevels = data.abilityLevels || o.abilityLevels || {};
+      o.splitMaxParts = data.splitMaxParts || o.splitMaxParts || 4; o.mergeSeconds = data.mergeSeconds || o.mergeSeconds || 14;
+      o.dashCooldown = data.dashCooldown || o.dashCooldown || 4; o.dashDuration = data.dashDuration || o.dashDuration || .35;
+      o.dashMassCost = data.dashMassCost || o.dashMassCost || .03; o.ejectSpeed = data.ejectSpeed || o.ejectSpeed || 60;
       const poolSize = Math.max(1, data.poolSize || 1);
       while (o.free.length + o.cells.length < poolSize) o.free.push(makeVis(new THREE.Color(data.kind === 'boss' ? '#ff9f43' : '#65d6ff')));
       return owners.indexOf(o);

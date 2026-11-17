@@ -1,3 +1,5 @@
+import { territoryLeftShare } from '../modes/territory.js';
+
 function safeInteger(value, fallback = 0) {
   return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : fallback;
 }
@@ -40,9 +42,7 @@ export async function persistMatchResult(env, runtime, room) {
 
   if (runtime.mode === 'territory') {
     const state = runtime.world.modeState;
-    const share = Number.isFinite(state.share)
-      ? state.share
-      : Math.max(0, Math.min(1, 0.5 + state.border / (2 * runtime.world.arenaRadius)));
+    const share = Number.isFinite(state.share) ? state.share : territoryLeftShare(state);
     const hostShare = Math.max(0, Math.min(100, Math.floor(share * 100)));
     const result = runtime.lifecycle.result || {};
     return callRpc(env, 'kapli_duo_territory_submit_server', {
@@ -63,7 +63,7 @@ export async function persistMatchResult(env, runtime, room) {
   const waves = result.won
     ? 50
     : safeInteger(state.phase === 1 ? state.wave : Math.max(0, state.wave - 1));
-  const time = Math.max(1, safeInteger(runtime.world.clock, 1));
+  const time = Math.max(1, Math.round(Number(runtime.world.clock) || 1));
   return callRpc(env, 'kapli_duo_coop_submit_server', {
     p_match_id: runtime.lifecycle.matchId,
     p_host_user_id: host.id,

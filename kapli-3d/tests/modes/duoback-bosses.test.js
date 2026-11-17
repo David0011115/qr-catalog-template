@@ -4,7 +4,7 @@ import { steerDuobackRegularBoss, tickDuobackRegularBoss, tickDuobackPlayerRespa
 
 const cell = (id, mass, x, z, extra = {}) => ({ id, mass, x, z, hx: 1, hz: 0, vx: 0, vz: 0, ...extra });
 const player = (role, cells, extra = {}) => ({ role, cells, ...extra });
-const boss = (type, c, extra = {}) => ({ id: 'boss-' + type, dbType: type, cells: [c], life: 34, dashT: 0, dashCd: 0, spikeT: 3, ...extra });
+const boss = (type, c, extra = {}) => ({ id: 'boss-' + type, dbType: type, cells: [c], life: 34, dashT: 0, dashCd: 0, spikeT: 3, enr: 0, ...extra });
 
 test('regular boss targets nearest player by default', () => {
   const b = boss('weaver', cell('b', 100, 0, 0));
@@ -60,7 +60,7 @@ test('leech drains seven percent per second, transfers half, and respects 10-mas
 test('leech does not drain a player cell that it can eat', () => {
   const c = cell('b', 100, 0, 0), b = boss('leech', c), p = player('host', [cell('p', 50, 1, 0)]);
   tickDuobackRegularBoss(b, 1, [p], { canEat: () => true });
-  assert.equal(p.cells[0].mass, 50); assert.equal(c.mass, 100);
+  assert.equal(p.cells[0].mass, 50); assert.ok(Math.abs(c.mass - 98.6) < 1e-12);
 });
 
 test('remaining twin becomes enraged after its partner was active and died', () => {

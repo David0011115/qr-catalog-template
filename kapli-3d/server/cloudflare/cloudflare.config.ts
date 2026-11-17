@@ -9,6 +9,11 @@ export default defineConfig({
     exports: {
       GameRoom: exports.durableObject({ storage: 'sqlite' }),
     },
+    observability: {
+      enabled: true,
+      logs: { enabled: true, invocationLogs: true, headSamplingRate: 1 },
+      traces: { enabled: true, headSamplingRate: 0.05 },
+    },
     env: {
       ROOMS: bindings.durableObject({ worker: entrypoint, exportName: 'GameRoom' }),
       SUPABASE_URL: bindings.secret(),

@@ -70,8 +70,8 @@
 
   function setApiBase(value) {
     const parsed = new URL(String(value || '').trim());
-    if (!['https:', 'http:'].includes(parsed.protocol)) throw new Error('Нужен адрес https:// Cloudflare Worker');
-    apiBase = parsed.origin.replace(/\/$/, '') + parsed.pathname.replace(/\/$/, '');
+    if (!['https:', 'http:'].includes(parsed.protocol) || parsed.pathname !== '/' || parsed.search || parsed.hash) throw new Error('Укажи корневой адрес Cloudflare Worker без дополнительных путей');
+    apiBase = parsed.origin.replace(/\/$/, '');
     localStorage.setItem(API_STORAGE_KEY, apiBase);
   }
 
@@ -211,7 +211,7 @@
       connected = false;
       if (socket === ws) socket = null;
       if (leaving || !room || room.status === 'closed') return;
-      if (matchStarted) { paused = true; showLobbyCard(); }
+      if (matchStarted) { paused = true; if (room) room.status = 'paused'; showLobbyCard(); }
       scheduleReconnect();
     };
   }
@@ -256,7 +256,7 @@
   }
 
   function applySnapshot(payload, initial = false) {
-    if (!payload || !Array.isArray(payload.owners) || !window.DuoM) return;
+    if (!payload || !Array.isArray(payload.owners) || typeof DuoM === 'undefined') return;
     const ownerIndices = new Map();
     for (const owner of payload.owners) ownerIndices.set(owner.id, DuoM.serverIndex(owner));
     const rows = [], cellMeta = {};
@@ -344,9 +344,9 @@
       lastClock = message.clock || lastClock;
       applySnapshot(message, false);
     } else if (message.type === 'match-paused') {
-      paused = true; showLobbyCard();
+      paused = true; if (room) room.status = 'paused'; showLobbyCard();
     } else if (message.type === 'match-resumed') {
-      paused = false;
+      paused = false; if (room) room.status = 'active';
       if ($('duoCard')) $('duoCard').hidden = true;
     } else if (message.type === 'match-ended') endClientMatch(message.result || {});
     else if (message.type === 'room-closed') {

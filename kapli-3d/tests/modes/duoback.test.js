@@ -7,7 +7,7 @@ import {
   duobackCooldownMultiplier, duobackBossSpeedMultiplier, duobackBlocksBossEat,
   drawDuobackBoostChoices, applyDuobackBoost, startDuobackWave, startDuobackBreak,
   chooseDuobackBoost, duobackPlayerLost, duobackBotEaten, tickDuobackMeteors,
-  duobackCanFinish, serializeDuobackState, restoreDuobackState,
+  duobackCanFinish, serializeDuobackState, restoreDuobackState, duobackRegularBossDefeated, tickDuobackPhase,
 } from '../../server/modes/duoback.js';
 
 const player = (role, masses = [100]) => ({ role, cells: masses.map((mass, i) => ({ id: role + i, mass, x: 0, z: 0 })) });

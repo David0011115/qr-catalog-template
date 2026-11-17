@@ -133,6 +133,7 @@ export class GameRoom {
         if (event.type === 'input-command') this.runtime.submitInput(item.playerId, item.command);
         if (event.type === 'ability-command') this.runtime.submitAbility(item.playerId, item.command);
         if (event.type === 'boost-command') this.runtime.submitBoost(item.playerId, item.command);
+        if (event.type === 'action-command') this.runtime.submitAction(item.playerId, item.command);
       }
     }
     this.lastPersistAt = Date.now();
@@ -397,18 +398,20 @@ export class GameRoom {
       ? this.runtime.submitInput(userId, parsed.command)
       : parsed.command.type === 'ability'
         ? this.runtime.submitAbility(userId, parsed.command)
-        : this.runtime.submitBoost(userId, parsed.command);
+        : parsed.command.type === 'action'
+          ? this.runtime.submitAction(userId, parsed.command)
+          : this.runtime.submitBoost(userId, parsed.command);
     if (!result.ok) {
       this.send(socket, { type: 'command-rejected', reason: result.reason, seq: parsed.command.seq });
       return;
     }
     await this.appendEvent(
-      parsed.command.type === 'input' ? 'input-command' : parsed.command.type === 'ability' ? 'ability-command' : 'boost-command',
+      parsed.command.type === 'input' ? 'input-command' : parsed.command.type === 'ability' ? 'ability-command' : parsed.command.type === 'action' ? 'action-command' : 'boost-command',
       { playerId: userId, command: parsed.command },
       false,
     );
     this.send(socket, {
-      type: parsed.command.type === 'input' ? 'input-queued' : parsed.command.type === 'ability' ? 'ability-queued' : 'boost-queued',
+      type: parsed.command.type === 'input' ? 'input-queued' : parsed.command.type === 'ability' ? 'ability-queued' : parsed.command.type === 'action' ? 'action-queued' : 'boost-queued',
       seq: parsed.command.seq,
     });
   }
@@ -523,7 +526,7 @@ export class GameRoom {
       tick: this.runtime.simulation.tick, clock: world.clock || 0,
       inputSeqs: { ...this.runtime.simulation.lastReceivedSeq },
       abilitySeqs: { ...this.runtime.abilityState.lastCommandSeq },
-      boostSeqs: { ...this.runtime.lastBoostSeq },
+      boostSeqs: { ...this.runtime.lastBoostSeq }, actionSeqs: { ...this.runtime.lastActionSeq },
     };
   }
 

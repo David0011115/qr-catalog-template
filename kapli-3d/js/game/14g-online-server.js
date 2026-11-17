@@ -9,7 +9,7 @@
   let apiBase = String(window.KAPLI_ONLINE_API || localStorage.getItem(API_STORAGE_KEY) || '').replace(/\/$/, '');
   let activeMode = null, room = null, role = '', userId = '', socket = null;
   let paused = false, matchStarted = false, leaving = false, connected = false;
-  let inputSeq = 0, abilitySeq = 0, boostSeq = 0, reconnectDelay = 1000, reconnectTimer = null;
+  let inputSeq = 0, abilitySeq = 0, boostSeq = 0, actionSeq = 0, reconnectDelay = 1000, reconnectTimer = null;
   let lastModeState = null, lastClock = 0, lastMatchId = null;
 
   const $ = id => document.getElementById(id);
@@ -247,6 +247,14 @@
     return true;
   }
 
+  function useAction(action) {
+    if (!connected || !['dash', 'split', 'eject'].includes(action)) return false;
+    const seq = actionSeq + 1;
+    if (!sendMessage({ type: 'action', seq, action })) return false;
+    actionSeq = seq;
+    return true;
+  }
+
   function pickBoost(id) {
     if (!connected || typeof id !== 'string') return false;
     const seq = boostSeq + 1;
@@ -307,6 +315,7 @@
     inputSeq = payload.inputSeqs?.[userId] || 0;
     abilitySeq = payload.abilitySeqs?.[userId] || 0;
     boostSeq = payload.boostSeqs?.[userId] || 0;
+    actionSeq = payload.actionSeqs?.[userId] || 0;
     matchStarted = true;
     paused = room.status === 'paused';
     applySnapshot(payload, true);
@@ -425,7 +434,7 @@
   }, true);
 
   window.KapliOnlineServer = {
-    openLobby, sendInput, useAbility, pickBoost,
+    openLobby, sendInput, useAbility, useAction, pickBoost,
     get paused() { return paused || !!room && room.status === 'paused'; },
     get active() { return !!activeMode; },
     get room() { return room; },

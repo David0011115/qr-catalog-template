@@ -52,7 +52,7 @@ export function tickDuobackSpecialBoss(state, owner, players, dt, world, rng = M
       x: main.x + Math.cos(angle) * (mainRadius + 3), z: main.z + Math.sin(angle) * (mainRadius + 3),
       mass, vx: Math.cos(angle) * 30, vz: Math.sin(angle) * 30, mergeT: 1e9, life: 12,
     };
-    const c = world.spawnChunk(owner, descriptor);
+    const c = world.spawnChunk(owner, descriptor, owner.free?.pop());
     if (c) { chunks.push({ cellId: c.id, mass: c.mass }); world.rebuildCells?.(); events.push({ type: 'special-shed', cellId: c.id, mass }); }
     s.shed = 2;
   }

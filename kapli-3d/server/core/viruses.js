@@ -275,7 +275,9 @@ export function stepViruses(viruses, cells, dt, arenaRadius, respawnTimers = [],
       if (!canPopOnVirus(cell, virus, rules)) continue;
       const ownerState = rules.ownerStateFor?.(cell.owner) || { cellsCount: 1, freeCount: 0 };
       const result = popCellOnVirus(cell, virus, ownerState, rules);
-      pops.push({ cell, virus, result });
+      const event = { cell, virus, result };
+      pops.push(event);
+      rules.onPop?.(event);
       if (!virus.trap) nextTimers.push(createVirusRespawnTimer());
       popped = true;
       break;

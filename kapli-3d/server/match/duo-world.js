@@ -45,6 +45,7 @@ function createPlayerOwner(player, role, mode, arenaRadius, build) {
     id: player.id, name: player.nickname || (role === 'host' ? 'Игрок 1' : 'Игрок 2'),
     kind: 'player', isPlayer: true, role, team: 'duo',
     cells: [cell], free: Array.from({ length: DUO_WORLD_SOURCE.playerParts - 1 }, (_, i) => `player:${player.id}:slot:${i + 1}`),
+    freeCount: DUO_WORLD_SOURCE.playerParts - 1,
     spawnSh: 3, dashT: 0, dashCd: 0, splitCd: 0, abCd: {}, abT: {}, rs: 1,
     slowT: 0, iceT: 0, freezeT: 0, phase2: 0, build: [...build],
     eff: { speed: 0, shield: 3, double: 0, magnet: 0 },

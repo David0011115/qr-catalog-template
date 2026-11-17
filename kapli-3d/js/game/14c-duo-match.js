@@ -287,6 +287,7 @@
         o.team = data.team || null; o.name = data.name || o.name;
         if (data.db) o.db = data.db; if (data.eff) o.eff = data.eff;
         if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
+        o.rs = data.rs || o.rs || 1;
         o.dashCd = data.dashCd || 0; o.splitCd = data.splitCd || 0;
         return owners.indexOf(o);
       }
@@ -306,7 +307,8 @@
       if (data.db) o.db = data.db; if (data.eff) o.eff = data.eff;
       if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
       o.dashCd = data.dashCd || 0; o.splitCd = data.splitCd || 0;
-      o.dbType = data.dbType || o.dbType; o.dbSpec = !!data.dbSpec; o.dbSlot = data.dbSlot ?? o.dbSlot;
+      o.dbType = data.dbType || null; o.dbSpec = !!data.dbSpec; o.dbSlot = data.dbSlot ?? null; o.dbId = data.dbId || null;
+      o.rs = data.rs || o.rs || 1;
       const poolSize = Math.max(1, data.poolSize || 1);
       while (o.free.length + o.cells.length < poolSize) o.free.push(makeVis(new THREE.Color(data.kind === 'boss' ? '#ff9f43' : '#65d6ff')));
       return owners.indexOf(o);

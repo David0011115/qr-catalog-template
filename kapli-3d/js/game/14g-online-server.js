@@ -301,7 +301,7 @@
       DuoM.serverBegin(role, {
         m: activeMode, diff: room.difficultyIndex || 0, seed: 1,
         build: self?.build || [], name: self?.name || 'Игрок',
-        peerName: peer?.name || 'Напарник',
+        peerName: peer?.name || 'Напарник', peerSkin: peer?.skin || null,
       });
     }
     inputSeq = payload.inputSeqs?.[userId] || 0;

@@ -7,11 +7,11 @@ import {
 
 const room = now => createRoomState({ roomId: 'room-1', code: 'A2BCD', hostId: 'host', now });
 
-test('room validates five-character code and starts with creator as unready host', () => {
+test('room normalizes a non-empty code and starts with creator as unready host', () => {
   const r = room(1000);
   assert.equal(r.status, 'waiting'); assert.equal(r.code, 'A2BCD');
   assert.deepEqual(r.players, [{ id: 'host', role: 'host', ready: false, connected: true }]);
-  assert.throws(() => createRoomState({ roomId: 'x', code: 'TOOLONG', hostId: 'h', now: 0 }), /five/);
+  assert.throws(() => createRoomState({ roomId: 'x', code: '', hostId: 'h', now: 0 }), /empty/);
 });
 
 test('second player joins once and room becomes a two-player lobby', () => {

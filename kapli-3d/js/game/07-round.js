@@ -71,7 +71,7 @@
   ABIL_CFG.slotBtn.forEach((bid, i) => $(bid).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSlot(i); }));
 
   function dash() {
-    if (DuoM.guest) { DuoM.act('dash'); return; }
+    if (DuoM.server || DuoM.guest) { DuoM.act('dash'); return; }
     if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
     player.dashT = 0.35 + 0.035 * U.light; player.dashCd = dashCdBase; stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     { const [x, z] = pCenterXZ(); abFlash('dash', x, z, null, 'dash'); }
@@ -97,7 +97,7 @@
     return did;
   }
   function split() {
-    if (DuoM.guest) { DuoM.act('split'); return; }
+    if (DuoM.server || DuoM.guest) { DuoM.act('split'); return; }
     if (dailyIs('dashonly')) return;
     if (!running || paused || !player.cells.length || player.splitCd > 0) return;
     if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; abUsed('split'); rebuildCells(); buzz(20); { const [x, z] = pCenterXZ(); abFlash('split', x, z, null, 'split'); } }

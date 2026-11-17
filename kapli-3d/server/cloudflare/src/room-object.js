@@ -326,12 +326,8 @@ export class GameRoom {
     const player = this.requireRoomPlayer(userId);
     if (!userId || !player || this.room.status === 'closed') return json({ error: 'invalid-or-expired-ticket' }, 401);
 
-    for (const socket of this.ctx.getWebSockets()) {
-      const attachment = socket.deserializeAttachment();
-      if (attachment?.userId === userId) {
-        try { socket.close(4001, 'replaced-by-new-connection'); } catch {}
-      }
-    }
+    const replacedSockets = this.ctx.getWebSockets().filter(socket =>
+      socket.deserializeAttachment()?.userId === userId);
 
     if (this.runtime?.lifecycle.status === 'paused' && !player.connected) {
       const resumed = this.runtime.reconnect(userId, Date.now());
@@ -345,6 +341,9 @@ export class GameRoom {
     const client = pair[0], server = pair[1];
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ userId });
+    for (const oldSocket of replacedSockets) {
+      try { oldSocket.close(4001, 'replaced-by-new-connection'); } catch {}
+    }
     server.send(JSON.stringify({ type: 'room-state', room: this.roomView() }));
     if (this.runtime) server.send(JSON.stringify(this.worldInitMessage()));
     await this.appendEvent('socket-connected', { playerId: userId }, true);

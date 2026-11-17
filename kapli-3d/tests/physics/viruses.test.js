@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   VIRUS_RULES, createVirus, moveVirus, tickVirusTrap, canPopOnVirus,
-  popCellOnVirus, feedVirusWithEject, createEjectedMass, moveEjectedMass,
+  popCellOnVirus, feedVirusWithEject, createEjectedMass, botEjectMass, moveEjectedMass,
   tryEjectedMassPickup, tickVirusRespawnTimers, canSpawnVirus, tryFeedEjectIntoViruses, ejectFromCells, stepViruses, stepEjectedMass,
 } from '../../server/core/viruses.js';
 
@@ -181,4 +181,15 @@ test('bot virus split uses the original four-part cap by default', () => {
   const bot = owner({ kind: 'bot' }), c = cell(200, 0, 0, bot);
   const result = popCellOnVirus(c, createVirus(0, 0), { cellsCount: 1, freeCount: 10 });
   assert.equal(result.pieces, 4); assert.equal(result.spawned.length, 3);
+});
+test('bot ejection launches backward from its largest cell and respects the shared cap', () => {
+  const b = owner({ kind: 'bot', cells: [] });
+  const main = cell(100, 10, 20, b); main.hx = 0; main.hz = 1; main.vx = 3; main.vz = 4;
+  const smaller = cell(40, 0, 0, b); b.cells = [main, smaller];
+  const ejects = [], e = botEjectMass(b, ejects);
+  assert.equal(e, ejects[0]); assert.equal(main.mass, 90); assert.equal(smaller.mass, 40);
+  assert.ok(Math.abs(e.x - 10) < 1e-12); assert.ok(e.z < 20);
+  assert.equal(e.vx, 3); assert.equal(e.vz, -56);
+  const full = Array.from({ length: VIRUS_RULES.MAX_EJECTS }, () => ({}));
+  assert.equal(botEjectMass(b, full), null); assert.equal(main.mass, 90);
 });

@@ -74,7 +74,10 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
   }
 
   const dt = SIMULATION_RULES.tickSeconds;
+  const nextTick = state.tick + 1;
   const acknowledgements = [];
+
+  const abilityStep = options.stepAbilities?.(world, dt, { tick: nextTick, lifecycle });
 
   for (const player of lifecycle.players) {
     const id = player.id;
@@ -104,9 +107,9 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
     }
   }
 
-  const nextTick = state.tick + 1;
   const worldStep = stepWorldInteractions(world, dt, { ...(options.worldRules || {}), tick: nextTick });
-  options.simulateWorld?.(world, dt, { tick: nextTick, acknowledgements: clone(acknowledgements), worldStep });
+  const modeStep = options.stepMode?.(world, dt, { tick: nextTick, worldStep });
+  options.simulateWorld?.(world, dt, { tick: nextTick, acknowledgements: clone(acknowledgements), worldStep, abilityStep, modeStep });
   state.tick = nextTick;
 
   const snapshotDue = state.tick % SIMULATION_RULES.snapshotEveryTicks === 0;
@@ -118,6 +121,8 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
     dt,
     acknowledgements,
     worldStep,
+    abilityStep: abilityStep ?? null,
+    modeStep: modeStep ?? null,
     snapshotDue,
     snapshotSequence: state.snapshotSequence,
   };

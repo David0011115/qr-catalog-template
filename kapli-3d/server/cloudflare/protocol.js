@@ -60,6 +60,13 @@ export function parseClientMessage(raw, maxBytes = MAX_CLIENT_MESSAGE_BYTES) {
     }
     return { ok: true, command: { type: 'ability', seq: message.seq, slot: message.slot } };
   }
+  if (message.type === 'boost') {
+    if (!Number.isSafeInteger(message.seq) || message.seq < 1 ||
+        typeof message.id !== 'string' || !/^[a-z0-9_]{1,32}$/.test(message.id)) {
+      return { ok: false, reason: 'invalid-boost' };
+    }
+    return { ok: true, command: { type: 'boost', seq: message.seq, id: message.id } };
+  }
   if (message.type === 'ping') {
     if (!Number.isFinite(message.sentAt)) return { ok: false, reason: 'invalid-ping' };
     return { ok: true, command: { type: 'ping', sentAt: message.sentAt } };

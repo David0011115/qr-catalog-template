@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   PHYSICS, radius, cellRadius, eatRatio, canEat, canEatAtDistance,
   eatingGain, massDecay, speedOf, steerCell,
-} from '../server/core/physics.js';
+} from '../../server/core/physics.js';
 
 const owner = (extra = {}) => ({ kind: 'bot', ...extra });
 const cell = (mass, x = 0, z = 0, own = owner()) => ({

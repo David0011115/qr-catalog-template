@@ -292,6 +292,8 @@ export function restoreDuoMatchRuntime(snapshot, options = {}) {
     mode: snapshot.mode, lifecycle, simulation, world, abilityState,
     modeCommands: Array.isArray(snapshot.modeCommands) ? snapshot.modeCommands : [],
     lastBoostSeq: snapshot.lastBoostSeq && typeof snapshot.lastBoostSeq === 'object' ? { ...snapshot.lastBoostSeq } : {},
+    actionQueue: Array.isArray(snapshot.actionQueue) ? snapshot.actionQueue.map(command => ({ ...command })) : [],
+    lastActionSeq: snapshot.lastActionSeq && typeof snapshot.lastActionSeq === 'object' ? { ...snapshot.lastActionSeq } : {},
     options,
   });
 }

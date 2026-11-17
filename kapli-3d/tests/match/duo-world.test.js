@@ -45,3 +45,40 @@ test('world generation rejects unsupported modes and invalid player identities',
   assert.throws(() => createDuoWorld({ mode: 'territory', players: [players[0], players[0]], seed: 1 }), /unique authenticated/);
   assert.throws(() => createDuoWorld({ mode: 'territory', players, seed: '1' }), /integer world seed/);
 });
+
+
+test('Duo world uses each authenticated player loadout and source-derived progression', () => {
+  const world = createDuoWorld({
+    mode: 'duoback', seed: 77, players: [
+      {
+        id: 'host-progress', role: 'host', nickname: 'Host',
+        build: ['dash', 'shield', 'eject'],
+        upgrades: { big: 3, speed: 4, splitmax: 2, merge: 3, dash: 2, light: 4, digest: 5, magnet: 2, guard: 3 },
+        abilityLevels: { eject: 4, shield: 2 },
+        skin: 'coral',
+      },
+      {
+        id: 'guest-progress', role: 'guest', nickname: 'Guest',
+        build: ['split', 'pulse', null],
+        upgrades: { big: 1, splitmax: 0, merge: 0 },
+        abilityLevels: { pulse: 1 },
+        skin: 'mint',
+      },
+    ],
+  });
+  const host = world.owners.find(owner => owner.role === 'host');
+  const guest = world.owners.find(owner => owner.role === 'guest');
+  assert.deepEqual(host.build, ['dash', 'shield', 'eject']);
+  assert.deepEqual(guest.build, ['split', 'pulse', null]);
+  assert.equal(host.cells[0].mass, 13);
+  assert.equal(guest.cells[0].mass, 11);
+  assert.equal(host.splitMaxParts, 6);
+  assert.equal(host.mergeSeconds, 12.74);
+  assert.equal(host.dashCooldown, 3.76);
+  assert.equal(host.dashDuration, 0.49);
+  assert.equal(host.dashMassCost, 0.0204);
+  assert.equal(host.ejectSpeed, 75.6);
+  assert.equal(host.upgrades.guard, 3);
+  assert.equal(host.abilityLevels.shield, 2);
+  assert.equal(guest.skin, 'mint');
+});

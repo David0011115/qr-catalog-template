@@ -16,7 +16,7 @@
     const RIVAL_I = owners.indexOf(rival), PLAYER_I = owners.indexOf(player);
     const rules = {};   // each mode for two adds its own rules here (see 14d-territory.js)
     let modeIdLast = '', botMate = false, botT = 0, botGoal = null;   // test build: the second player can be a bot on this phone
-    let rl = null, bonSig = '', on = false, role = '', modeId = '', inp = { x: 0, z: 0 }, snapAt = 0, inAt = 0, virAt = 0, foodDirty = new Set(), sideX = { p: 0, r: 0 };
+    let rl = null, bonSig = '', on = false, role = '', modeId = '', serverMode = false, inp = { x: 0, z: 0 }, snapAt = 0, inAt = 0, virAt = 0, foodDirty = new Set(), sideX = { p: 0, r: 0 };
     const rng = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const r1 = v => Math.round(v * 10) / 10;
 
@@ -121,17 +121,28 @@
       if (rl && rl.begin) rl.begin(r, g);
       place(player, homeX(player));
       dress(rival, g.peerSkin || g.skin, g.peerName || g.name);
-      if (r === 'host') { place(rival, homeX(rival)); rival.abT = {}; rival.abCd = {}; rival.dashT = 0; rival.dashCd = 0; rival.splitCd = 0; }
+      if (serverMode) {
+        rival.isPlayer = true; rival.team = g.peerTeam || (modeId === 'duoback' ? 'duo' : (r === 'host' ? 'guest' : 'host'));
+        rival.abT = {}; rival.abCd = {}; rival.dashT = 0; rival.dashCd = 0; rival.splitCd = 0;
+        dress(rival, g.peerSkin || g.skin, g.peerName || g.name);
+        place(rival, homeX(rival));
+      }
+      else if (r === 'host') { place(rival, homeX(rival)); rival.abT = {}; rival.abCd = {}; rival.dashT = 0; rival.dashCd = 0; rival.splitCd = 0; }
       else {   // the other phone draws, it does not run: no local bonuses, spikes come from the host
         bonuses.forEach(b => scene.remove(b.mesh)); bonuses = [];
         [...rival.cells].forEach(removeCell);
         Duo.send({ t: 'hi', name: Net.nick || 'Игрок', skin: save.skin, pid: Net.shortId ? +Net.shortId : null });
       }
-      Duo.touch(); if (TEST_MODE) console.log('duo begin ms', Math.round(performance.now() - t0));
+      if (!serverMode) Duo.touch(); if (TEST_MODE) console.log('duo begin ms', Math.round(performance.now() - t0));
       toast(r === 'host' ? 'Матч начался! Ты слева' : 'Матч начался! Ты справа');
     }
     function cleanup() {
       if (rl && rl.end) rl.end();
+      if (serverMode) {
+        for (const o of owners) if (o !== player && o !== rival && o.serverId) [...o.cells].forEach(removeCell);
+        rival.isPlayer = false; rival.team = null;
+      }
+      serverMode = false;
       botMate = false; on = false; role = ''; rl = null; if (stallEl) { stallEl.hidden = true; clearInterval(stallT); } tag.visible = false; [...rival.cells].forEach(removeCell); rebuildCells();
       setTimeout(() => { if (!running) setArenaSize(1); }, 1200);
     }
@@ -145,7 +156,7 @@
     // the host ends the match for both phones. w: 'host' | 'guest' | 'draw'; sh: the host's result (share of the field); why: 'early' | 'time'
     function result(w, sh, why, x) {   // x: extra numbers of the mode (waves, bosses…), the same for both
       if (!on || dying) return;
-      if (role === 'host') Duo.send({ t: 'res', w, sh, why, x });
+      if (role === 'host' && !serverMode) Duo.send({ t: 'res', w, sh, why, x });
       modeIdLast = modeId;
       const me = w === 'coop' ? 'coop' : w === 'draw' ? 'draw' : w === role ? 'win' : 'loss';
       const out = rl && rl.finish ? rl.finish(me, role === 'host' ? sh : 1 - sh, why, x) : { title: me === 'win' ? 'Победа!' : me === 'draw' ? 'Ничья' : 'Поражение', bonus: 0 };
@@ -202,6 +213,7 @@
       return { x, z, type, mesh };
     }
     function act(k, i) {   // host: an action from the other phone
+      if (serverMode) { window.KapliOnlineServer?.useAbility(k, i); return; }
       const o = rival; if (!o.cells.length || role !== 'host') return;
       const id = k === 'slot' ? runBuild[i] : k;
       if (id === 'split') { if (o.splitCd <= 0 && splitOwner(o, playerMaxParts(), playerMergeTime())) rebuildCells(); }
@@ -228,6 +240,7 @@
       return [0, 0];
     }
     function apply(s) {
+      if (serverMode) { applyServer(s); return; }
       stats.time = Math.max(stats.time, s.tm);
       const seen = new Set();
       for (const row of s.o) {
@@ -260,6 +273,108 @@
       if (rl && rl.apply) rl.apply(s);
       if (s.cd) { player.dashCd = s.cd.d; player.splitCd = s.cd.s; player.abCd = s.cd.a; }
       rebuildCells();
+    }
+    function serverBegin(r, g) {
+      serverMode = true;
+      begin(r, { ...g, seed: g.seed ?? 1, build: Array.isArray(g.build) ? g.build : [] });
+      return on;
+    }
+    function serverIndex(data) {
+      if (data.isPlayer) {
+        const o = data.role === role ? player : rival;
+        o.serverId = data.id; o.isPlayer = true; o.role = data.role;
+        o.team = data.team || null; o.name = data.name || o.name;
+        return owners.indexOf(o);
+      }
+      let o = owners.find(item => item.serverId === data.id);
+      if (!o && data.kind === 'bot') o = owners.find(item => item.kind === 'bot' && item.name === data.name && !item.serverId);
+      if (!o && data.kind === 'boss') o = owners.find(item =>
+        item.kind === 'boss' && item.dbType === data.dbType &&
+        !!item.dbSpec === !!data.dbSpec &&
+        (item.dbSlot ?? item.slot ?? null) === (data.dbSlot ?? null) && !item.serverId);
+      if (!o) {
+        o = makeOwner(data.name || 'Объект', data.kind || 'bot', data.persona || null);
+        owners.push(o);
+        if (data.kind === 'boss' && Array.isArray(bossOwners) && !bossOwners.includes(o)) bossOwners.push(o);
+      }
+      o.serverId = data.id; o.kind = data.kind || o.kind; o.name = data.name || o.name;
+      o.team = data.team || null; o.homeSide = data.homeSide || 0; o.persona = data.persona || o.persona;
+      o.dbType = data.dbType || o.dbType; o.dbSpec = !!data.dbSpec; o.dbSlot = data.dbSlot ?? o.dbSlot;
+      const poolSize = Math.max(1, data.poolSize || 1);
+      while (o.free.length + o.cells.length < poolSize) o.free.push(makeVis(new THREE.Color(data.kind === 'boss' ? '#ff9f43' : '#65d6ff')));
+      return owners.indexOf(o);
+    }
+    function applyServer(s) {
+      stats.time = Math.max(stats.time, s.tm || 0);
+      const seen = new Set();
+      for (const row of s.o || []) {
+        const index = row[0];
+        const o = index === PLAYER_I ? player : index === RIVAL_I ? rival : owners[index];
+        if (!o) continue;
+        seen.add(o);
+        const meta = s.cm?.[index] || [];
+        const n = (row.length - 1) / 3;
+        while (o.cells.length > n) removeCell(o.cells[o.cells.length - 1]);
+        for (let k = 0; k < n; k++) {
+          const x = row[1 + k * 3], z = row[2 + k * 3], m = row[3 + k * 3];
+          let cell = o.cells[k];
+          if (!cell) {
+            if (!o.free.length) o.free.push(makeVis(new THREE.Color('#65d6ff')));
+            cell = addCell(o, x, z, m, o.free.pop());
+          }
+          const info = meta[k] || {};
+          cell.tx = x; cell.tz = z; cell.mass = m;
+          cell.serverId = info.id || null; cell.serverSlotId = info.slotId || null;
+          cell.thx = info.hx; cell.thz = info.hz;
+          cell.tvx = info.vx; cell.tvz = info.vz;
+          cell.mergeT = info.mergeT || 0;
+          o.rs = info.rs || o.rs || 1;
+          o.spawnSh = info.spawnShield || 0; o.dashT = info.dashT || 0;
+        }
+      }
+      for (const o of owners) if (!seen.has(o) && o.cells.length) [...o.cells].forEach(removeCell);
+      if (s.f) for (let j = 0; j < s.f.length; j += 3) setFood(s.f[j], s.f[j + 1], s.f[j + 2]);
+      if (s.v) {
+        const n = s.v.length / 3;
+        while (viruses.length > n) removeVirus(viruses[viruses.length - 1]);
+        while (viruses.length < n) spawnVirus(0, 0);
+        viruses.forEach((v, k) => {
+          v.x = s.v[k * 3]; v.z = s.v[k * 3 + 1]; v.mass = s.v[k * 3 + 2];
+          v.vx = v.vz = 0;
+        });
+      }
+      if (s.cd) {
+        player.dashCd = s.cd.d || 0; player.splitCd = s.cd.s || 0; player.abCd = s.cd.a || {};
+      }
+      if (rl && rl.applyServer && s.ms) rl.applyServer(s.ms);
+      rebuildCells();
+    }
+    function serverTick(dt) {
+      if (!serverMode || !on) return;
+      stats.time = Math.max(stats.time, stats.serverClock || 0);
+      const [dx, dz] = localDir(), now = performance.now();
+      if (now - inAt > INPUT_MS) {
+        inAt = now;
+        window.KapliOnlineServer?.sendInput(dx, dz);
+      }
+      const k = Math.min(1, dt * 12);
+      for (const cell of cells) {
+        if (cell.tx === undefined) continue;
+        const ex = cell.tx - cell.x, ez = cell.tz - cell.z, distance = Math.hypot(ex, ez);
+        if (distance > 40) { cell.x = cell.tx; cell.z = cell.tz; }
+        else if (distance > 0.02) { cell.x += ex * k; cell.z += ez * k; }
+        if (Number.isFinite(cell.thx) && Number.isFinite(cell.thz)) {
+          cell.hx += (cell.thx - cell.hx) * k; cell.hz += (cell.thz - cell.hz) * k;
+          const length = Math.hypot(cell.hx, cell.hz) || 1; cell.hx /= length; cell.hz /= length;
+        }
+      }
+      for (const virus of viruses) if (virus.mesh) virus.mesh.position.set(virus.x, radius(virus.mass) * .9, virus.z);
+      if (rl && rl.view) rl.view(dt);
+      tagTick();
+    }
+    function serverEnd(w, sh, why, extra) {
+      if (!serverMode || !on) return;
+      result(w, sh, why, extra);
     }
     function guestTick(dt) {
       stats.time += dt;
@@ -310,10 +425,10 @@
     $('quitBtn').addEventListener('click', () => { if (on) { Duo.send({ t: 'end' }); cleanup(); } }, true);
     window.duoStartMatch = startAsHost; window.duoPractice = practice;
 
-    return { get on() { return on; }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
+    return { get on() { return on; }, get server() { return serverMode; }, get serverRole() { return role; }, serverBegin, serverIndex, serverApply: applyServer, serverTick, serverEnd, get serverInput() { return localDir(); }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
       later: f => { if (built) f(); else lazy.push(f); },
       get paused() { return on && !botMate && Duo.stalled; }, get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, get practice() { return botMate; }, rules, rivalPick, result,
-      steerRival, act: (k, i) => { if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
+      steerRival, act: (k, i) => { if (serverMode) window.KapliOnlineServer?.useAbility(k, i); else if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
       // a hook in canEat: the rules of the mode may forbid a bite; the second player's shield bonus counts like yours
       eatBlock: (a, b) => on && ((b.owner === rival && role === 'host' && rival.eff.shield > 0) || !!(rl && rl.eatBlock && rl.eatBlock(a, b))),
       speedK: c => { if (!on) return 1; let k = c.owner === rival && role === 'host' && rival.eff.speed > 0 ? 1.45 : 1; if (rl && rl.speedK) k *= rl.speedK(c); return k; },

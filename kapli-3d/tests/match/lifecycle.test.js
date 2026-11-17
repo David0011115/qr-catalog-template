@@ -31,7 +31,7 @@ test('reconnect before deadline resumes only after every player is connected', (
   assert.equal(first.resumed, false); assert.equal(s.status, 'paused');
   const second = reconnectMatchPlayer(s, 'p2', 20000);
   assert.equal(second.resumed, true); assert.equal(s.status, 'active');
-  assert.equal(s.pausedMs, 17000); assert.equal(matchElapsedMs(s, 21000), 3000);
+  assert.equal(s.pausedMs, 18000); assert.equal(matchElapsedMs(s, 21000), 2000);
 });
 
 test('reconnect timeout ends match and delegates result to mode rules', () => {

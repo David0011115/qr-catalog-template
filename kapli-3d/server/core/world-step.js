@@ -88,6 +88,7 @@ function foodRespawn(world, food, rules) {
       throw new TypeError('placeFood must return finite x and z');
     }
     food.x = point.x; food.z = point.z;
+    rules.onFoodRespawn?.(food, world);
     return;
   }
   if (!world.randomState) {
@@ -99,6 +100,7 @@ function foodRespawn(world, food, rules) {
   food.x = Math.cos(angle) * distance;
   food.z = Math.sin(angle) * distance;
   world.randomState = random.snapshot();
+  rules.onFoodRespawn?.(food, world);
 }
 
 // Mirrors the source's 8-unit food grid, magnet radius, multipliers and decay.

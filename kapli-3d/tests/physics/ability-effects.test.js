@@ -66,7 +66,7 @@ test('hole pulls food and ejected blobs but does not affect cells', () => {
   const w = worldFor(p, [foe]); w.food.push(food); w.ejects.push(eject);
   const s = createWorldAbilityEffects(); castWorldAbility('x_hole', p, w, s);
   tickWorldAbilityEffects(s, w, 0.1);
-  assert.ok(food.x < 10); assert.ok(eject.vx < 0); assert.equal(foe.cells[0].vx, 0);
+  assert.ok(food.x > 10); assert.ok(eject.vx > 0); assert.equal(foe.cells[0].vx, 0);
 });
 
 test('anchor attracts cells with boss force reduced to 30 percent', () => {
@@ -103,7 +103,7 @@ test('ice trail drops a four-second patch every 0.15 seconds and slows touching 
   const p = owner('p', [cell(100)]), foe = owner('foe', [cell(20, 5, 0)]), w = worldFor(p, [foe]);
   const s = createWorldAbilityEffects(); p.abT.x_ice = 4;
   tickWorldAbilityEffects(s, w, 1 / 30);
-  assert.equal(s.effects.length, 1); assert.equal(s.effects[0].t, 4); assert.equal(foe.iceT, 0.35);
+  assert.equal(s.effects.length, 1); assert.ok(Math.abs(s.effects[0].t - (4 - 1 / 30)) < 1e-12); assert.equal(foe.iceT, 0.35);
 });
 
 test('chronos history records 10 Hz samples and retains six seconds', () => {

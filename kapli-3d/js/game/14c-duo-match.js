@@ -275,6 +275,7 @@
       rebuildCells();
     }
     function serverBegin(r, g) {
+      cleanup();
       serverMode = true;
       begin(r, { ...g, seed: g.seed ?? 1, build: Array.isArray(g.build) ? g.build : [] });
       return on;

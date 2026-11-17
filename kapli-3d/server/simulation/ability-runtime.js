@@ -124,12 +124,13 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
     const isPlayer = options.isPlayerOwner?.(owner) ?? !!owner.isPlayer;
     const cast = ['dash', 'split', 'eject'].includes(abilityId)
       ? castUtilityAbility(abilityId, owner, adapter, {
-          level: options.abilityLevelFor?.(owner) ?? 0,
+          level: options.abilityLevelFor?.(owner, abilityId) ?? 0,
+          lightLevel: options.lightLevelFor?.(owner) ?? owner.upgrades?.light ?? 0,
           rebuildCells: adapter.rebuildCells,
         })
       : castServerAbility(abilityId, owner, adapter, state, {
       player: isPlayer,
-      level: options.abilityLevelFor?.(owner) ?? 0,
+      level: options.abilityLevelFor?.(owner, abilityId) ?? 0,
       chronosArena: !!options.chronosArenaFor?.(owner),
       phaseWindow: options.phaseWindow,
       playerState: options.playerStateFor?.(owner),
@@ -149,7 +150,7 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
     const isPlayer = options.isPlayerOwner?.(owner) ?? !!owner.isPlayer;
     const timer = tickAbilityOwner(owner, dt, {
       player: isPlayer,
-      level: options.abilityLevelFor?.(owner) ?? 0,
+      level: options.abilityLevelFor?.(owner, 'x_phase') ?? 0,
       chronosArena: !!options.chronosArenaFor?.(owner),
     });
     const cooldownMultiplier = options.cooldownMultiplierFor?.(owner) ?? 1;

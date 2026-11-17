@@ -8,8 +8,8 @@ const clone = value => structuredClone(value);
 const findPlayer = (room, id) => room.players.find(p => p.id === id);
 
 export function createRoomState({ roomId, code, hostId, now }) {
-  if (!roomId || !code || !hostId || !Number.isFinite(now)) throw new TypeError('roomId, code, hostId and now are required');
-  const normalized = String(code).trim().toUpperCase();
+  if (!roomId || !hostId || !Number.isFinite(now)) throw new TypeError('roomId, hostId and now are required');
+  const normalized = String(code ?? '').trim().toUpperCase();
   if (!normalized) throw new TypeError('room code cannot be empty');
   return {
     roomId, code: normalized, status: 'waiting', createdAt: now,

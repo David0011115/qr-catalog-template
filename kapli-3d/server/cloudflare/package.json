@@ -1,0 +1,14 @@
+{
+  "name": "kapli-3d-online-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "cf dev",
+    "build": "cf build",
+    "deploy": "cf deploy",
+    "test": "node --test ../../tests/cloudflare/*.test.js"
+  },
+  "devDependencies": {
+    "cf": "^0.30.0"
+  }
+}

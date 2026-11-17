@@ -91,7 +91,7 @@ export function tickDuobackSpecialBoss(state, owner, players, dt, world, rng = M
         x: main.x + Math.cos(angle) * (mainRadius + 8), z: main.z + Math.sin(angle) * (mainRadius + 8),
         mass: Math.max(14, s.base * 0.35), vx: Math.cos(angle) * 34, vz: Math.sin(angle) * 34, mergeT: 1e9, life: 99,
       };
-      const c = world.spawnChunk(owner, descriptor);
+      const c = world.spawnChunk(owner, descriptor, owner.free?.pop());
       if (c) { chunks.push({ cellId: c.id, mass: c.mass }); s.split.push(c.id); }
     }
     s.splitTimer = 10; world.rebuildCells?.();

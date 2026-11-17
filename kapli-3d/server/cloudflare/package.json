@@ -9,6 +9,7 @@
     "test": "node --test ../../tests/cloudflare/*.test.js"
   },
   "devDependencies": {
+    "cf": "^1.0.0-rc.1",
     "wrangler": "^4.136.0"
   }
 }

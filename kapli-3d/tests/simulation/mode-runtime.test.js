@@ -182,11 +182,13 @@ test('DuoBack runtime publishes special-boss outcomes and meteor hits in source 
     removeCell: (_world, cell) => { cell.gone = true; boss.cells = boss.cells.filter(item => item !== cell); },
     rebuildCells: () => {},
     onSpecialBossResult: result => order.push('special:' + result),
-    onMeteorHit: hit => order.push('meteor:' + hit.role),
+    onMeteorHit: hit => { order.push('meteor:' + hit.role); assert.equal(hit.lostMass, 30); },
   });
   assert.deepEqual(order, ['special:defeated', 'meteor:host']);
   assert.equal(state.team.specials, 1);
   assert.equal(player.cells[0].mass, 70);
+  assert.equal(out.meteorHits[0].beforeMass, 100);
+  assert.equal(out.meteorHits[0].afterMass, 70);
   assert.ok(out.events.some(event => event.type === 'boss-meteor-hit' && event.role === 'host'));
 });
 
@@ -202,4 +204,75 @@ test('Territory runtime exposes stable home-side and source-position adapters fo
   assert.equal(rules.botSpawnX(1), 64);
   assert.equal(rules.botSpawnX(23), 64);
   assert.throws(() => rules.botSpawnX(24), RangeError);
+});
+
+
+test('DuoBack wave transition publishes every authoritative boss spawn request', () => {
+  const state = createDuobackState();
+  state.wave = 4;
+  state.phase = 1;
+  state.breakRemaining = 0.01;
+  const players = [
+    { role: 'host', isPlayer: true, cells: [{ id: 'h', mass: 100 }] },
+    { role: 'guest', isPlayer: true, cells: [{ id: 'g', mass: 120 }] },
+  ];
+  const requests = [];
+  const transitions = [];
+  const out = stepDuobackRuntime(state, { matchTime: 90 }, 0.1, {
+    resolvePlayers: () => players,
+    random: () => 0.5,
+    onWaveSpawn: request => requests.push(request),
+    onWaveStarted: transition => transitions.push(transition),
+  });
+  assert.equal(state.wave, 5);
+  assert.equal(state.phase, 0);
+  assert.ok(requests.some(request => request.kind === 'special' && request.id === 'vortex'));
+  assert.ok(requests.every(request => request.wave === 5));
+  assert.deepEqual(out.spawnRequests, requests);
+  assert.equal(transitions.length, 1);
+  assert.ok(out.events.some(event => event.type === 'boss-spawn-requested'));
+});
+
+test('DuoBack runtime rejects a resolved regular boss that does not match its stable slot descriptor', () => {
+  const state = createDuobackState();
+  state.wave = 2;
+  state.phase = 0;
+  state.regular = [{ kind: 'regular', type: 'weaver', slot: 0 }];
+  assert.throws(() => stepDuobackRuntime(state, {}, 1 / 30, {
+    resolvePlayers: () => [
+      { role: 'host', cells: [{ mass: 100 }] },
+      { role: 'guest', cells: [{ mass: 100 }] },
+    ],
+    random: () => 0.5,
+    resolveRegularBoss: () => ({
+      id: 'wrong-owner', dbType: 'leech', slot: 0, cells: [{ id: 'c', mass: 100 }],
+    }),
+  }), /does not match its stable descriptor/);
+});
+
+test('DuoBack runtime forwards regular boss attack events and weaver virus spawn requests', () => {
+  const state = createDuobackState();
+  state.wave = 2;
+  state.phase = 0;
+  state.regular = [{ kind: 'regular', type: 'weaver', slot: 0 }];
+  const boss = {
+    id: 'weaver-0', dbType: 'weaver', slot: 0,
+    cells: [{ id: 'weaver-cell', mass: 100, x: 0, z: 0, hx: 1, hz: 0 }],
+    life: 20, dashT: 0, dashCd: 0, spikeT: 0.01, enr: 0,
+  };
+  const bossEvents = [], viruses = [];
+  const out = stepDuobackRuntime(state, {}, 0.1, {
+    resolvePlayers: () => [
+      { role: 'host', cells: [{ mass: 100, x: 40, z: 0 }] },
+      { role: 'guest', cells: [{ mass: 100, x: 80, z: 0 }] },
+    ],
+    random: () => 0.5,
+    resolveRegularBoss: () => boss,
+    onBossEvent: event => bossEvents.push(event),
+    spawnVirus: event => viruses.push(event),
+  });
+  assert.equal(bossEvents[0].type, 'spawn-virus');
+  assert.equal(viruses.length, 1);
+  assert.equal(viruses[0].ownerId, 'weaver-0');
+  assert.equal(out.bossTicks[0].bossId, 'weaver-0');
 });

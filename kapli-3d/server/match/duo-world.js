@@ -102,7 +102,7 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
     owners: [host, guest], cells: [...host.cells, ...guest.cells],
     food: [], viruses: [], ejects: [], bonuses: [],
     modeState, time: 0, tick: 0, nextEntitySequence: 1,
-    build: [...build], random: rng.snapshot(),
+    build: [...build], randomState: rng.snapshot(),
   };
 
   for (let i = 0; i < foodCount; i++) {
@@ -114,7 +114,7 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
   world.owners.push(...bots);
   for (const bot of bots) spawnBotOwner(bot, world, rng, { running: false });
   spawnInitialViruses(world, rng);
-  world.random = rng.snapshot();
+  world.randomState = rng.snapshot();
 
   return { world, players: { host, guest }, build: [...build], rng };
 }

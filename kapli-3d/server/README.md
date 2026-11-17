@@ -32,10 +32,10 @@ node --test tests
 
 The tests cover extracted movement/eating formulas and differential checks against the browser source, deterministic random restoration, virus collisions/splitting, player and bot ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, room/countdown rules, room snapshot restoration, reconnect lifecycle, snapshot consistency and event replay.
 
-## Next extraction steps
+## Next implementation steps
 
-1. Remaining ability world effects and collision interactions.
-2. Territory and DuoBack server-side mode rules.
-3. Complete match snapshot/event serialization and recovery.
-4. Comparative tests against the browser implementation.
-5. Worker/room integration after the core passes those tests.
+1. Define durable serialization for entity references, including owner/cell IDs and reference-based ability hit sets; the current recovery helpers validate snapshots and event replay but are not a SQLite adapter.
+2. Build the deterministic simulation orchestrator around the approved 30 Hz server tick, 15 Hz snapshots, input sequence numbers and acknowledgements.
+3. Connect the audited physics, mass caps, viruses, abilities and mode hooks through explicit world/entity adapters.
+4. Add end-to-end tests for command validation, match recovery and cross-mode state transitions.
+5. Only after separate approval, add the Worker/Durable Object entry points and connect the existing Supabase services. No Cloudflare or Supabase resources have been changed.

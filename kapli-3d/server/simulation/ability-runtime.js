@@ -44,7 +44,7 @@ export function createAbilityRuleAdapters(world, options = {}) {
   };
 }
 
-export export function createAbilityWorldAdapter(world, options = {}) {
+export function createAbilityWorldAdapter(world, options = {}) {
   if (!world || !Array.isArray(world.owners) || !Array.isArray(world.cells)) {
     throw new TypeError('world owners and cells are required');
   }

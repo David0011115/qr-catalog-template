@@ -1,7 +1,7 @@
 // Deterministic, rendering-free ability world effects extracted from js/game/06-abilities.js.
 // Entity creation/removal, food-grid updates, mode hooks and presentation are callbacks.
 import { cellRadius } from './physics.js';
-import { ABILITY_DATA, abilityOn, createDecoy, stepDecoys } from './abilities.js';
+import { ABILITY_DATA, abilityOn, createDecoy, stepDecoys, startAbilityCooldown } from './abilities.js';
 import { createVirus, VIRUS_RULES } from './viruses.js';
 
 const n = (v, d = 0) => Number.isFinite(v) ? v : d;
@@ -46,13 +46,14 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
     const ttl = isBlink ? 1 : a.dur * power;
     const d = createDecoy(owner.id, main.x, main.z, main.hx, main.hz, cellRadius(main), ttl, { still: isBlink, team: owner.team });
     state.decoys ||= [];
-    state.decoys = state.decoys.filter(x => x.ownerId !== owner.id);
+    if (!isBlink || options.player) state.decoys = state.decoys.filter(x => x.ownerId !== owner.id);
     state.decoys.push(d);
-    if (isBlink) for (const foe of world.owners) if (foe.target?.owner === owner) foe.target = { owner: { decoy: true }, ...d };
+    if (isBlink) for (const foe of world.owners) if (foe.target?.owner === owner) foe.target = d;
     if (isBlink) {
       for (const c of owner.cells) {
-        const p = clampPoint(c.x + main.hx * a.dist * power, c.z + main.hz * a.dist * power, world.arenaRadius);
-        c.x = p.x; c.z = p.z;
+        c.x += main.hx * a.dist * power; c.z += main.hz * a.dist * power;
+        if (world.clampCell) world.clampCell(c);
+        else { const p = clampPoint(c.x, c.z, world.arenaRadius, cellRadius(c) * 0.6); c.x = p.x; c.z = p.z; }
       }
     }
     return { ok: true, events: isBlink ? [{ type: 'blink-shadow', x: px, z: pz, radius: cellRadius(main), ttl: 1, ownerId: owner.id }] : events };
@@ -109,7 +110,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
   }
   if (id === 'x_phase') {
     const distance = a.dist;
-    if (owner.phase2 > 0) { owner.phase2 = 0; owner.abCd.x_phase = options.player ? a.cd * (1 - 0.04 * Math.max(0, n(options.level))) : a.cd; }
+    if (owner.abT && owner.cells?.length && owner.phase2 > 0) { owner.phase2 = 0; owner.abCd.x_phase = options.player ? a.cd * (1 - 0.04 * Math.max(0, n(options.level))) : a.cd; }
     else owner.phase2 = n(options.phaseWindow, 2);
     for (const c of owner.cells) { const p = clampPoint(c.x + main.hx * distance, c.z + main.hz * distance, world.arenaRadius); c.x = p.x; c.z = p.z; }
     return { ok: true, events };
@@ -207,7 +208,10 @@ export function tickWorldAbilityEffects(state, world, dt) {
     const decoyResult = stepDecoys(state.decoys, world.ownersById, world.owners, dt, world.arenaRadius);
     state.decoys = decoyResult.decoys;
     events.push(...decoyResult.events.map(e => ({ type: 'decoy-' + e.reason, ownerId: e.decoy.ownerId, caughtBy: e.caughtBy?.id ?? null, foodBurst: e.foodBurst, foodRadius: e.foodRadius, slowTargetId: e.slowTarget?.id ?? null })));
-    for (const e of decoyResult.events) if (e.foodBurst) world.burstFood?.(e.decoy.x, e.decoy.z, e.foodRadius, e.foodBurst);
+    for (const e of decoyResult.events) {
+      for (const targetOwner of world.owners) if (targetOwner.target === e.decoy) targetOwner.target = null;
+      if (e.foodBurst) world.burstFood?.(e.decoy.x, e.decoy.z, e.foodRadius, e.foodBurst);
+    }
   }
   for (const owner of owners) {
     if (owner.freezeT) owner.freezeT = Math.max(0, owner.freezeT - dt);
@@ -292,7 +296,7 @@ export function tickWorldAbilityEffects(state, world, dt) {
       const ca = world.findCell?.(effect.caId) || ownerCells.find(c => c.id === effect.caId);
       const cb = world.findCell?.(effect.cbId) || ownerCells.find(c => c.id === effect.cbId);
       if (effect.t > 0 && !effect.isPlayer && ca && cb && !ca.gone && !cb.gone) { cb.hx = -ca.hx; cb.hz = ca.hz; }
-      if (effect.t <= 0 && ca && cb && !ca.gone && !cb.gone && cb.owner === owner) {
+      if (effect.t <= 0 && ca && cb && !ca.gone && !cb.gone && ca.owner === owner && cb.owner === owner) {
         ca.mass += cb.mass;
         world.removeCell?.(cb);
         ca.mergeT = 0;

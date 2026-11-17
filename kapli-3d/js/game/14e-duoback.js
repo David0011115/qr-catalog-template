@@ -59,7 +59,7 @@
     });
 
     let D = DIFF[0], Di = 0, pHome = -1, wv = 0, ph = 1, bt = 6, team = null, spec = null, meteors = [], offers = {}, picked = {}, shared = null;
-    let co = null, prevCo = null;   // what both phones show: [phase, wv, break left, bosses, special hp %, special kind, host player's return, rival's return]
+    let co = null, prevCo = null, serverOfferKey = '';   // what both phones show: [phase, wv, break left, bosses, special hp %, special kind, host player's return, rival's return]
     const rival = () => DuoM.rival;
     const active = () => DuoM.mode === 'duoback';
     const pl = () => [player, rival()].filter(o => o.cells.length);

@@ -177,3 +177,8 @@ test('complete ejected-mass tick adds mass after movement when a cell picks it u
   assert.equal(result.pickups.length, 1);
   assert.equal(c.mass, 108);
 });
+test('bot virus split uses the original four-part cap by default', () => {
+  const bot = owner({ kind: 'bot' }), c = cell(200, 0, 0, bot);
+  const result = popCellOnVirus(c, createVirus(0, 0), { cellsCount: 1, freeCount: 10 });
+  assert.equal(result.pieces, 4); assert.equal(result.spawned.length, 3);
+});

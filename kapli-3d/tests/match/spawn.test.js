@@ -26,7 +26,7 @@ test('safe spawn uses source fallback after 50 blocked samples', () => {
 
 test('Territory bot spawn stays on its assigned home side', () => {
   const state = createTerritoryState(100);
-  const left = findTerritoryBotSpawn(state, 0, world(), sequence([0.25, 0.25]));
+  const left = findTerritoryBotSpawn(state, 0, world(), sequence([0.5, 0.25]));
   const right = findTerritoryBotSpawn(state, 1, world(), sequence([0.25, 0.25]));
   assert.equal(left.homeSide, -1);
   assert.equal(right.homeSide, 1);
@@ -46,7 +46,7 @@ test('Territory bot fallback matches source home-side interpolation', () => {
 });
 
 test('DuoBack boss spawn uses the source 40-unit safety distance', () => {
-  const result = findDuobackBossSpawn(world(), sequence([0, 0.25]));
+  const result = findDuobackBossSpawn(world(), sequence([0.25, 0.25]));
   assert.equal(result.safe, true);
   assert.equal(result.x, 0);
   assert.ok(result.z > 0);

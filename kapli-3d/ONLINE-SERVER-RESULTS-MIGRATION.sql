@@ -41,7 +41,7 @@ begin
   end if;
   if p_match_id is null or p_host_user_id is null or p_guest_user_id is null
      or p_host_user_id = p_guest_user_id
-     or p_host_result not in ('win', 'loss', 'draw')
+     or p_host_result is null or p_host_result not in ('win', 'loss', 'draw')
      or p_host_share is null or p_host_share not between 0 and 100 then
     return jsonb_build_object('ok', false, 'reason', 'invalid-match-result');
   end if;
@@ -185,5 +185,5 @@ $$;
 
 revoke all on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid, text, integer, jsonb) from public, anon, authenticated;
 revoke all on function public.kapli_duo_coop_submit_server(uuid, uuid, uuid, integer, integer, integer, integer, integer, integer, jsonb) from public, anon, authenticated;
-grant execute on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid, integer, jsonb) to service_role;
+grant execute on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid, text, integer, jsonb) to service_role;
 grant execute on function public.kapli_duo_coop_submit_server(uuid, uuid, uuid, integer, integer, integer, integer, integer, integer, jsonb) to service_role;

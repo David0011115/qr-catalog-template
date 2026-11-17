@@ -1,0 +1,154 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  SIMULATION_RULES, createSimulationLoopState, submitPlayerInput,
+  stepSimulationTick, serializeSimulationLoopState, restoreSimulationLoopState,
+} from '../../server/simulation/loop.js';
+import {
+  createMatchLifecycleState, disconnectMatchPlayer,
+} from '../../server/match/lifecycle.js';
+
+const makeLifecycle = () => createMatchLifecycleState({
+  matchId: 'm1', roomId: 'r1', startedAt: 0,
+  players: [{ id: 'p1', role: 'host' }, { id: 'p2', role: 'guest' }],
+});
+
+const makeWorld = () => {
+  const p1 = { id: 'owner-1', playerId: 'p1', isPlayer: true, cells: [] };
+  const p2 = { id: 'owner-2', playerId: 'p2', isPlayer: true, cells: [] };
+  const c1 = { id: 'c1', owner: p1, x: 0, z: 0, hx: 1, hz: 0, vx: 0, vz: 0, mass: 100 };
+  const c2 = { id: 'c2', owner: p2, x: 0, z: 10, hx: 0, hz: 1, vx: 0, vz: 0, mass: 100 };
+  p1.cells.push(c1); p2.cells.push(c2);
+  return { arenaRadius: 100, owners: [p1, p2], cells: [c1, c2] };
+};
+const resolveOwner = (world, id) => world.owners.find(owner => owner.playerId === id);
+
+test('loop starts with two independent sequence streams and fixed simulation rates', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  assert.equal(state.tick, 0);
+  assert.equal(state.lastReceivedSeq.p1, 0);
+  assert.equal(state.lastProcessedSeq.p2, 0);
+  assert.deepEqual(state.directions.p1, { x: 0, z: 0 });
+  assert.equal(SIMULATION_RULES.tickRate, 30);
+  assert.equal(SIMULATION_RULES.snapshotRate, 15);
+  assert.equal(SIMULATION_RULES.tickSeconds, 1 / 30);
+  assert.throws(() => createSimulationLoopState(['p1', 'p1']), /unique/);
+});
+
+test('valid input is queued but acknowledged only after an authoritative tick', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const accepted = submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 1, x: 1, z: 0 });
+  assert.deepEqual(accepted, { ok: true, acceptedSeq: 1, queued: true });
+  assert.equal(state.lastProcessedSeq.p1, 0);
+
+  const out = stepSimulationTick(state, lifecycle, makeWorld(), { resolveOwner });
+  assert.equal(out.advanced, true);
+  assert.equal(out.tick, 1);
+  assert.deepEqual(out.acknowledgements, [{ playerId: 'p1', processedSeq: 1 }]);
+  assert.equal(state.lastProcessedSeq.p1, 1);
+});
+
+test('stale and malformed commands are rejected without replacing pending input', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 4, x: 0, z: 1 });
+  assert.equal(submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 4, x: 1, z: 0 }).reason, 'stale-sequence');
+  assert.equal(submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 5, x: 1, z: 1 }).reason, 'invalid-input');
+  assert.equal(submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 5, x: NaN, z: 0 }).reason, 'invalid-input');
+  assert.deepEqual(state.pendingInputs.p1, { seq: 4, x: 0, z: 1 });
+});
+
+test('latest accepted command replaces older pending input and only latest sequence is acknowledged', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 1, x: 1, z: 0 });
+  submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 2, x: 0, z: 1 });
+  const out = stepSimulationTick(state, lifecycle, makeWorld(), { resolveOwner });
+  assert.deepEqual(out.acknowledgements, [{ playerId: 'p1', processedSeq: 2 }]);
+  assert.deepEqual(state.directions.p1, { x: 0, z: 1 });
+});
+
+test('unknown players cannot submit commands', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  assert.equal(
+    submitPlayerInput(state, lifecycle, 'p3', { type: 'input', seq: 1, x: 1, z: 0 }).reason,
+    'input-not-allowed',
+  );
+});
+
+test('each tick uses fixed dt and delegates world interactions after player steering', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const world = makeWorld();
+  submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 1, x: 1, z: 0 });
+  let observed = null;
+  const out = stepSimulationTick(state, lifecycle, world, {
+    resolveOwner,
+    simulateWorld: (w, dt, meta) => { observed = { sameWorld: w === world, dt, meta }; },
+  });
+  assert.equal(out.dt, 1 / 30);
+  assert.equal(observed.sameWorld, true);
+  assert.equal(observed.dt, 1 / 30);
+  assert.equal(observed.meta.tick, 1);
+  assert.ok(world.cells[0].x > 0);
+});
+
+test('snapshot cadence is exactly every second tick', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const world = makeWorld();
+  const snapshots = [];
+  for (let i = 0; i < 6; i++) {
+    const out = stepSimulationTick(state, lifecycle, world, { resolveOwner });
+    if (out.snapshotDue) snapshots.push([out.tick, out.snapshotSequence]);
+  }
+  assert.deepEqual(snapshots, [[2, 1], [4, 2], [6, 3]]);
+});
+
+test('disconnect pauses the simulation immediately and does not consume queued input', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const world = makeWorld();
+  submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 1, x: 1, z: 0 });
+  disconnectMatchPlayer(lifecycle, 'p2', 100);
+  const before = { x: world.cells[0].x, tick: state.tick };
+  const out = stepSimulationTick(state, lifecycle, world, { resolveOwner });
+  assert.equal(out.advanced, false);
+  assert.equal(state.tick, before.tick);
+  assert.equal(world.cells[0].x, before.x);
+  assert.equal(state.pendingInputs.p1.seq, 1);
+  assert.equal(state.lastProcessedSeq.p1, 0);
+});
+
+test('idle input preserves the cell heading while movement still uses fixed steering', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const world = makeWorld();
+  const before = world.cells[0].x;
+  stepSimulationTick(state, lifecycle, world, { resolveOwner });
+  assert.ok(world.cells[0].x > before);
+});
+
+test('simulation snapshots round-trip sequence, pending input and direction state', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  submitPlayerInput(state, lifecycle, 'p2', { type: 'input', seq: 7, x: 0, z: -1 });
+  const restored = restoreSimulationLoopState(serializeSimulationLoopState(state));
+  assert.deepEqual(restored, state);
+  assert.equal(restored.pendingInputs.p2.seq, 7);
+  assert.throws(() => restoreSimulationLoopState({ ...state, tick: -1 }), /invalid/);
+});
+
+test('same initial state and command stream produce identical positions', () => {
+  const run = () => {
+    const state = createSimulationLoopState(['p1', 'p2']);
+    const lifecycle = makeLifecycle();
+    const world = makeWorld();
+    submitPlayerInput(state, lifecycle, 'p1', { type: 'input', seq: 1, x: 0.6, z: 0.8 });
+    for (let i = 0; i < 30; i++) stepSimulationTick(state, lifecycle, world, { resolveOwner });
+    return { tick: state.tick, x: world.cells[0].x, z: world.cells[0].z };
+  };
+  assert.deepEqual(run(), run());
+});

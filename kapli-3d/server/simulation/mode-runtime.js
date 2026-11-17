@@ -5,11 +5,12 @@ import {
 } from '../modes/territory.js';
 import {
   tickDuobackPhase, tickDuobackMeteors, duobackRegularBossDefeated,
-  duobackCanFinish, duobackBlocksBossEat, duobackPlayerSpeedMultiplier,
+  duobackCanFinish, duobackBlocksBossEat, duobackPlayerLost, duobackBotEaten,
+  duobackPlayerSpeedMultiplier,
   duobackBossSpeedMultiplier, duobackCooldownMultiplier,
 } from '../modes/duoback.js';
 import { tickDuobackRegularBoss, tickDuobackPlayerRespawn } from '../modes/duoback-bosses.js';
-import { tickDuobackSpecialBoss } from '../modes/duoback-special.js';
+import { tickDuobackSpecialBoss, duobackSpecialChunkEaten } from '../modes/duoback-special.js';
 
 const totalMass = owner => (owner?.cells || []).reduce((sum, cell) => sum + cell.mass, 0);
 
@@ -62,6 +63,40 @@ export function createDuobackRules(state, options = {}) {
       ...interactions,
       eatBlock: (attacker, target) =>
         !!interactions.eatBlock?.(attacker, target) || duobackBlocksBossEat(attacker, target),
+      onCellEaten: (event, world) => {
+        interactions.onCellEaten?.(event, world);
+        const owner = event?.victim;
+        if (owner?.dbSpec) {
+          const damage = duobackSpecialChunkEaten(state, event.target?.id, event.lastMass);
+          if (damage > 0) options.onSpecialChunkEaten?.(event, damage, world);
+          return damage;
+        }
+        return 0;
+      },
+      onCellLost: (event, world) => {
+        interactions.onCellLost?.(event, world);
+        if (!event?.victimEliminated) return false;
+        const victim = event.victim;
+        const eater = event.attacker?.owner;
+        const matchTime = options.matchTimeForWorld?.(world) ?? world?.matchTime ?? 0;
+        if (victim?.isPlayer) {
+          const respawnAt = duobackPlayerLost(state, victim, matchTime);
+          options.onPlayerLost?.(victim, respawnAt, world);
+        }
+        if (!eater?.isPlayer) return false;
+        if (victim?.kind === 'bot') {
+          const players = options.resolvePlayers?.(world) || [];
+          const result = duobackBotEaten(state, eater, players, matchTime);
+          if (result.acceleratedRole) options.onPartnerRespawnAccelerated?.(result, world);
+          return result;
+        }
+        if (victim?.kind === 'boss' && victim.dbType && !victim.dbSpec) {
+          const result = duobackRegularBossDefeated(state, victim);
+          if (result) options.onRegularBossDefeated?.(victim, result, world);
+          return result || false;
+        }
+        return false;
+      },
     },
     abilityOptions: {
       ...options.abilityOptions,
@@ -106,6 +141,12 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     events.push(...tick.events);
     options.applyBossSteering?.(boss, tick.steering, world);
     for (const event of tick.events) if (event.type === 'spawn-virus') options.spawnVirus?.(event, world);
+    if (tick.expired) {
+      state.regular = state.regular.filter(item =>
+        !(item.type === descriptor.type && item.slot === descriptor.slot));
+      options.onRegularBossExpired?.(boss, world);
+      events.push({ type: 'regular-boss-expired', bossId: boss.id, bossType: descriptor.type, slot: descriptor.slot });
+    }
   }
 
   if (state.special) {

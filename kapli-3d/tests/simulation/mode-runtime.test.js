@@ -5,7 +5,7 @@ import { createDuobackState } from '../../server/modes/duoback.js';
 import { createTerritoryRules, stepTerritoryRuntime, stepDuobackRuntime } from '../../server/simulation/mode-runtime.js';
 
 test('territory runtime computes authoritative share and applies the source early-win rule', () => {
-  const state = createTerritoryState(100);
+  const state = createTerritoryState(100);\n  state.border = 60;
   const host = { role: 'host', cells: [{ mass: 100 }] };
   const guest = { role: 'guest', cells: [{ mass: 10 }] };
   const world = {};
@@ -17,7 +17,7 @@ test('territory runtime computes authoritative share and applies the source earl
   assert.equal(out.hostMass, 100);
   assert.equal(out.guestMass, 10);
   assert.equal(result?.winner, 'host');
-  assert.equal(createTerritoryRules(state).worldRules.eatBlock(state, { role: 'host' }, { kind: 'bot', x: 99 }), true);
+  assert.equal(createTerritoryRules(state).worldRules.eatBlock({ role: 'host' }, { kind: 'bot', x: 99 }), true);
 });
 
 test('duoback runtime calls boss, meteor, respawn and phase adapters in deterministic order', () => {

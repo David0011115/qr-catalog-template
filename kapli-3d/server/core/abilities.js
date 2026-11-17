@@ -85,7 +85,7 @@ export function tickAbilityOwner(owner, dt, options = {}) {
   if (owner.iceT) owner.iceT = Math.max(0, owner.iceT - dt);
 
   let phaseCooldownStarted = false;
-  if (owner.phase2 > 0) {
+  if (owner.abT && owner.cells?.length && owner.phase2 > 0) {
     owner.phase2 -= dt;
     if (owner.phase2 <= 0) {
       owner.phase2 = 0;

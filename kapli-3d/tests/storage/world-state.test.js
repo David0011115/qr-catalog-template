@@ -1,4 +1,7 @@
 import test from 'node:test';
+import {
+  spawnDuobackBossEntity, spawnDuobackBossChunk,
+} from '../../server/modes/duoback-entities.js';
 import assert from 'node:assert/strict';
 import {
   WORLD_SNAPSHOT_VERSION, serializeWorldState, validateWorldSnapshot, restoreWorldState,
@@ -78,4 +81,32 @@ test('serialization rejects cells assigned to the wrong owner and duplicate owne
   const duplicate = makeWorld();
   duplicate.owners[0].cells.push(duplicate.cells[1]);
   assert.throws(() => serializeWorldState(duplicate), /multiple owners/);
+});
+
+
+test('DuoBack boss pools, chunks and mode references survive world snapshot recovery', () => {
+  const world = makeWorld();
+  const spawned = spawnDuobackBossEntity(world, {
+    kind: 'special', id: 'split', wave: 10, mainMass: 600, life: 80,
+  }, { x: 25, z: -10 });
+  const reservedSlot = spawned.owner.free.pop();
+  const chunk = spawnDuobackBossChunk(world, spawned.owner, {
+    x: 35, z: -10, mass: 90, vx: 34, vz: 0, mergeT: 1e9, life: 12,
+  }, reservedSlot);
+  world.modeState = {
+    mode: 'duoback', wave: 10,
+    special: { id: 'split', chunks: [{ cellId: chunk.id, mass: chunk.mass }], split: [chunk.id] },
+  };
+  const snapshot = serializeWorldState(world);
+  const restored = restoreWorldState(snapshot);
+  const owner = restored.ownersById.get(spawned.owner.id);
+  const restoredChunk = restored.cellsById.get(chunk.id);
+  assert.ok(owner);
+  assert.equal(restoredChunk.owner, owner);
+  assert.equal(owner.cells.find(cell => cell.id === chunk.id), restoredChunk);
+  assert.equal(owner.free.includes(reservedSlot), false);
+  assert.equal(restored.modeState.special.chunks[0].cellId, chunk.id);
+  assert.deepEqual(restored.modeState.special.split, [chunk.id]);
+  assert.equal(restoredChunk.life, 12);
+  assert.equal(restoredChunk.slot, reservedSlot);
 });

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BASE_BOT_DEFS, BOT_PERSONAS, TERRITORY_EXTRA_BOT_DEFS,
-  createBotRoster, spawnBotOwner, thinkBot, tickBotOwner,
+  chooseBotAbility, createBotRoster, spawnBotOwner, thinkBot, tickBotOwner,
 } from '../../server/modes/bots.js';
 import { createTerritoryState } from '../../server/modes/territory.js';
 import { DeterministicRandom } from '../../server/core/random.js';
@@ -87,4 +87,49 @@ test('bot tick uses server physics and respawns through deterministic spawn help
   tickBotOwner(bot, world, 1 / 30, rng);
   assert.ok(Number.isFinite(x));
   assert.ok(Number.isFinite(bot.cells[0].x));
+});
+
+
+test('bot builds contain three unique source-classic slots', () => {
+  const bots = createBotRoster('duoback', new DeterministicRandom(11));
+  const allowed = new Set(['dash', 'split', 'eject', 'shield', 'pulse', 'blink', 'slow', 'cloak', 'push', 'shrink', 'decoy', 'trap']);
+  for (const bot of bots) {
+    assert.equal(bot.build.length, 3);
+    assert.equal(new Set(bot.build).size, 3);
+    assert.ok(bot.build.every(id => allowed.has(id)));
+  }
+});
+
+test('defensive bot ability selection prioritizes the source defensive list', () => {
+  const bot = {
+    id: 'bot:0', kind: 'bot', persona: 'coward', build: ['shield', 'pulse'],
+    cells: [], abCd: {}, abT: {},
+  };
+  const threatOwner = { id: 'threat', kind: 'boss', cells: [] };
+  const cell = makeCell('b', bot, 0, 0, 100); bot.cells.push(cell);
+  const threat = makeCell('t', threatOwner, 10, 0, 300); threatOwner.cells.push(threat);
+  const world = { cells: [cell, threat] };
+  const choice = chooseBotAbility(bot, world, () => 0, {
+    canEat: (attacker, target) => attacker === threat && target === cell,
+  });
+  assert.equal(choice.id, 'shield');
+  assert.equal(choice.defensive, true);
+});
+
+test('bot ability AI casts through the supplied server adapter during its think cycle', () => {
+  const bot = {
+    id: 'bot:0', kind: 'bot', persona: 'coward', build: ['shield'],
+    cells: [], free: [], abCd: {}, abT: {}, think: 0, tx: 0, tz: 0,
+  };
+  const threatOwner = { id: 'threat', kind: 'boss', cells: [] };
+  const cell = makeCell('b', bot, 0, 0, 100); bot.cells.push(cell);
+  const threat = makeCell('t', threatOwner, 10, 0, 300); threatOwner.cells.push(threat);
+  const world = { arenaRadius: 100, owners: [bot, threatOwner], cells: [cell, threat], food: [], viruses: [], ejects: [] };
+  let cast = null;
+  tickBotOwner(bot, world, 1 / 30, () => 0, {
+    canEat: (attacker, target) => attacker === threat && target === cell,
+    castBotAbility: id => { cast = id; return { ok: true }; },
+  });
+  assert.equal(cast, 'shield');
+  assert.equal(bot.lastBotAbility.result.ok, true);
 });

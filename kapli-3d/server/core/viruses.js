@@ -6,6 +6,7 @@ import { radius, cellRadius } from './physics.js';
 export const VIRUS_RULES = Object.freeze({
   MASS: 100,
   MAX_COUNT: 16,
+  MAX_TRAPS_PER_OWNER: 2,
   FEED_MASS: 6,
   FEEDS_TO_FIRE: 5,
   MOVE_DRAG: 2,

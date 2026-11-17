@@ -25,7 +25,7 @@ test('ability command resolves server-owned slot and activates shield with coold
 test('client-supplied ability IDs are ignored; empty server slot is rejected', () => {
   const world = makeWorld(), state = createAbilityRuntimeState();
   const result = stepAbilityRuntime(world, state, 1 / 30, [
-    { ownerId: 'p1', slot: 0, abilityId: 'x_over' },
+    { ownerId: 'p1', slot: 0, seq: 1, abilityId: 'x_over' },
   ], { resolveAbilityId: () => null });
   assert.equal(result.casts[0].reason, 'empty-slot');
   assert.equal(world.owners[0].abCd.shield, 0);
@@ -36,4 +36,16 @@ test('ability runtime state survives through the world snapshot field', () => {
   stepAbilityRuntime(world, state, 1 / 30, [], { resolveAbilityId: () => null });
   assert.equal(world.abilityState, state);
   assert.ok(Array.isArray(world.abilityState.effects));
+});
+
+test('ability command sequence prevents replay of an already processed activation', () => {
+  const world = makeWorld(), state = createAbilityRuntimeState();
+  const options = { resolveAbilityId: () => 'shield' };
+  const first = stepAbilityRuntime(world, state, 1 / 30, [{ ownerId: 'p1', slot: 0, seq: 7 }], options);
+  assert.equal(first.casts[0].ok, true);
+  world.owners[0].abCd.shield = 0;
+  const replay = stepAbilityRuntime(world, state, 1 / 30, [{ ownerId: 'p1', slot: 0, seq: 7 }], options);
+  assert.equal(replay.casts[0].ok, false);
+  assert.equal(replay.casts[0].reason, 'invalid-command');
+  assert.equal(state.lastCommandSeq.p1, 7);
 });

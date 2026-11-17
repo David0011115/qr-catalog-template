@@ -37,7 +37,7 @@ The tests cover extracted movement/eating formulas and differential checks again
 - `simulation/loop.js` accepts normalized direction commands with monotonically increasing per-player sequence numbers; malformed and stale commands are rejected.
 - Accepted commands are queued and acknowledged only after the authoritative tick processes them. A newer pending command replaces an older unprocessed direction for that player.
 - `stepSimulationTick()` advances exactly (1/30) second, applies the current player direction through the source-matched steering function, then invokes an optional world-step adapter for collisions, food, viruses, abilities and mode hooks.
-- Snapshot cadence is fixed at every second tick (15 Hz). The loop state, pending inputs and sequence cursors have validated JSON-safe snapshot/restore helpers.
+- The loop marks a snapshot as due every second tick (15 Hz) and increments a snapshot sequence; the caller still performs the actual serialization and durable write. Loop state, pending inputs and sequence cursors have validated JSON-safe snapshot/restore helpers.
 - The loop is a simulation-core building block, not a running server: no Durable Object scheduler, WebSocket transport, collision/world adapter or browser-client integration has been added. The existing browser game remains unchanged.
 
 ## Next implementation steps

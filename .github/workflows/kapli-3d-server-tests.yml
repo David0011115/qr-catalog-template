@@ -35,9 +35,7 @@ jobs:
           find js/game -name '*.js' -print0 | xargs -0 -n1 node --check
           node --check js/loader.js
           find server -name '*.js' -print0 | xargs -0 -n1 node --check
-      - name: Install Cloudflare CLI
-        run: npm install --global cf@latest
-      - name: Install Cloudflare Worker build backend
+      - name: Install Cloudflare Worker tooling
         working-directory: kapli-3d/server/cloudflare
         run: npm install --no-package-lock
       - name: Build Cloudflare Worker

@@ -213,3 +213,32 @@ export function clampEjectedMassToArena(eject, arenaRadius) {
   if (d > limit && d > 0) { eject.x *= limit / d; eject.z *= limit / d; }
   return eject;
 }
+
+// Matches feedVirus(e): the first virus within radius(mass)+0.5 consumes the blob.
+export function tryFeedEjectIntoViruses(eject, viruses) {
+  for (const virus of viruses) {
+    if (Math.hypot(eject.x - virus.x, eject.z - virus.z) > radius(virus.mass) + 0.5) continue;
+    return { virus, ...feedVirusWithEject(virus, eject) };
+  }
+  return null;
+}
+
+// Mirrors eject(): one blob per eligible player cell, with oldest-first cap at 60.
+export function ejectFromCells(cells, ejects, rules = {}) {
+  let didEject = false;
+  const removed = [];
+  const created = [];
+  for (const cell of cells) {
+    if (cell.mass < VIRUS_RULES.EJECT_MIN_MASS) continue;
+    if (ejects.length >= 60) {
+      const oldest = ejects.shift();
+      if (oldest) removed.push(oldest);
+    }
+    const eject = createEjectedMass(cell, rules);
+    if (!eject) continue;
+    ejects.push(eject);
+    created.push(eject);
+    didEject = true;
+  }
+  return { didEject, created, removed, cooldown: didEject ? VIRUS_RULES.EJECT_COOLDOWN : 0 };
+}

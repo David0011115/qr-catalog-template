@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAbilityRuntimeState, stepAbilityRuntime } from '../../server/simulation/ability-runtime.js';
+import { createAbilityRuntimeState, createAbilityRuleAdapters, stepAbilityRuntime } from '../../server/simulation/ability-runtime.js';
 
 const makeWorld = () => {
   const p = { id: 'p1', isPlayer: true, cells: [], abCd: { shield: 0 }, abT: {} };
@@ -48,4 +48,23 @@ test('ability command sequence prevents replay of an already processed activatio
   assert.equal(replay.casts[0].ok, false);
   assert.equal(replay.casts[0].reason, 'invalid-command');
   assert.equal(state.lastCommandSeq.p1, 7);
+});
+
+test('ability rule adapters expose active flags and player-wide shield/speed effects', () => {
+  const world = makeWorld();
+  world.effects = { shield: 2, speed: 3 };
+  world.owners[0].abT.pulse = 1;
+  const rules = createAbilityRuleAdapters(world);
+  assert.equal(rules.worldRules.abilityOn('pulse', world.owners[0]), true);
+  assert.equal(rules.worldRules.playerShieldActive(world.owners[0]), true);
+  assert.equal(rules.physicsRules.playerSpeedEffect, 3);
+});
+
+test('mode cooldown modifier applies to successful ability activation', () => {
+  const world = makeWorld(), state = createAbilityRuntimeState();
+  stepAbilityRuntime(world, state, 1 / 30, [{ ownerId: 'p1', slot: 0, seq: 1 }], {
+    resolveAbilityId: () => 'shield',
+    cooldownMultiplierFor: () => 0.5,
+  });
+  assert.ok(world.owners[0].abCd.shield > 12.4 && world.owners[0].abCd.shield < 12.5);
 });

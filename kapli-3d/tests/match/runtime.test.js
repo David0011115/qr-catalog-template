@@ -1,0 +1,91 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  createDuoMatchRuntime, restoreDuoMatchRuntime,
+} from '../../server/match/runtime.js';
+
+const players = [
+  { id: 'user-host', role: 'host', nickname: 'Host' },
+  { id: 'user-guest', role: 'guest', nickname: 'Guest' },
+];
+
+test('Territory match runtime accepts direction commands and advances both players and bots server-side', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-1', matchId: 'match-1', players, mode: 'territory', seed: 1234, startedAt: 1000,
+  });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  const beforeX = host.cells[0].x;
+  assert.deepEqual(runtime.submitInput('user-host', { type: 'input', seq: 1, x: 1, z: 0 }), {
+    ok: true, acceptedSeq: 1, queued: true,
+  });
+  const out = runtime.step();
+  assert.equal(out.advanced, true);
+  assert.ok(host.cells[0].x > beforeX);
+  assert.equal(runtime.simulation.lastProcessedSeq['user-host'], 1);
+  assert.equal(out.beforeWorldInteractions.bots.length, 24);
+});
+
+test('Territory players remain opponents while DuoBack players are teammates', () => {
+  const territory = createDuoMatchRuntime({
+    roomId: 'r1', matchId: 'm1', players, mode: 'territory', seed: 1,
+  });
+  const duoback = createDuoMatchRuntime({
+    roomId: 'r2', matchId: 'm2', players, mode: 'duoback', seed: 1,
+  });
+  const hostTerritory = territory.world.owners.find(owner => owner.role === 'host').cells[0];
+  const guestTerritory = territory.world.owners.find(owner => owner.role === 'guest').cells[0];
+  const hostDuo = duoback.world.owners.find(owner => owner.role === 'host').cells[0];
+  const guestDuo = duoback.world.owners.find(owner => owner.role === 'guest').cells[0];
+  assert.equal(territory.world.modeState.border, 0);
+  assert.notEqual(hostTerritory.owner.team, guestTerritory.owner.team);
+  assert.equal(hostDuo.owner.team, guestDuo.owner.team);
+});
+
+test('DuoBack match runtime progresses its break and spawns its first boss through the safe default', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-2', matchId: 'match-2', players, mode: 'duoback', seed: 88, startedAt: 0,
+  });
+  for (let i = 0; i < 181; i++) runtime.step();
+  assert.equal(runtime.world.modeState.wave, 1);
+  assert.equal(runtime.world.owners.filter(owner => owner.kind === 'boss').length, 1);
+  assert.ok(runtime.world.cells.some(cell => cell.owner.kind === 'boss'));
+});
+
+test('match runtime snapshot restores world entities, mode state, RNG and input sequence', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-3', matchId: 'match-3', players, mode: 'territory', seed: 42, startedAt: 100,
+  });
+  runtime.submitInput('user-guest', { type: 'input', seq: 3, x: 0, z: -1 });
+  runtime.step();
+  const restored = restoreDuoMatchRuntime(runtime.serialize());
+  assert.equal(restored.lifecycle.matchId, 'match-3');
+  assert.equal(restored.simulation.tick, runtime.simulation.tick);
+  assert.equal(restored.simulation.lastProcessedSeq['user-guest'], 3);
+  assert.equal(restored.world.mode, 'territory');
+  assert.equal(restored.world.owners.filter(owner => owner.kind === 'bot').length, 24);
+  assert.deepEqual(restored.world.randomState, runtime.world.randomState);
+  assert.equal(restored.world.modeState.border, runtime.world.modeState.border);
+  assert.equal(restored.step().tick, runtime.simulation.tick + 1);
+});
+
+test('ability commands resolve a server-owned build slot and acknowledge only processed commands', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-4', matchId: 'match-4', players, mode: 'territory', seed: 987, startedAt: 100,
+  });
+  const result = runtime.submitAbility('user-host', { type: 'ability', seq: 1, slot: 0 });
+  assert.equal(result.ok, true);
+  const out = runtime.step();
+  assert.deepEqual(out.abilityAcknowledgements, [{ playerId: 'user-host', processedSeq: 1 }]);
+  assert.equal(runtime.abilityState.lastCommandSeq['user-host'], undefined);
+  assert.equal(runtime.world.owners.find(owner => owner.role === 'host').abCd[runtime.world.build[0]] > 0, true);
+});
+
+test('match runtime pauses on disconnect and resumes only when the same player reconnects', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-5', matchId: 'match-5', players, mode: 'territory', seed: 12, startedAt: 100,
+  });
+  assert.equal(runtime.disconnect('user-guest', 500).paused, true);
+  assert.equal(runtime.step().advanced, false);
+  assert.equal(runtime.reconnect('user-guest', 1000).resumed, true);
+  assert.equal(runtime.step().advanced, true);
+});

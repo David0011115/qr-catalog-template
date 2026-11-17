@@ -50,10 +50,11 @@ The tests cover extracted movement/eating formulas and differential checks again
 
 ## Deterministic input loop
 
-- `simulation/loop.js` accepts normalized direction commands with monotonically increasing per-player sequence numbers; malformed and stale commands are rejected.
-- Accepted commands are queued and acknowledged only after the authoritative tick processes them. A newer pending command replaces an older unprocessed direction for that player.
-- `stepSimulationTick()` advances exactly (1/30) second, applies the current player direction through the source-matched steering function, then invokes an optional world-step adapter for collisions, food, viruses, abilities and mode hooks.
-- The loop marks a snapshot as due every second tick (15 Hz) and increments a snapshot sequence; the caller still performs the actual serialization and durable write. Loop state, pending inputs and sequence cursors have validated JSON-safe snapshot/restore helpers.
+- `simulation/loop.js` accepts normalized direction commands and ability-slot commands with separate monotonically increasing per-player sequence numbers; malformed and stale commands are rejected.
+- Accepted direction and ability commands are queued and acknowledged only after the authoritative tick processes them. A newer pending command replaces an older unprocessed command of the same type for that player.
+- `submitAbilityCommand()` accepts only a sequence number and slot index; the ability ID is resolved by the trusted `stepAbilities` adapter. The loop passes the stable server owner ID, sequence and slot into that adapter and acknowledges only after it returns successfully.
+- `stepSimulationTick()` advances exactly (1/30) second, processes queued abilities, applies the current player direction through the source-matched steering function, then runs world interactions and the optional mode adapter.
+- The loop marks a snapshot as due every second tick (15 Hz) and increments a snapshot sequence; the caller still performs the actual serialization and durable write. Loop state, pending movement/ability commands and both sequence cursors have validated JSON-safe snapshot/restore helpers.
 - The loop is a simulation-core building block, not a running server: no Durable Object scheduler, WebSocket transport, full room-owned entity adapter or browser-client integration has been added. The existing browser game remains unchanged.
 
 ## Ability runtime

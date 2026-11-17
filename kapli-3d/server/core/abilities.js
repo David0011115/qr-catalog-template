@@ -118,6 +118,7 @@ export function createDecoy(ownerId, x, z, hx, hz, radius, ttl, options = {}) {
     ownerId, x, z, hx, hz, r: radius, ttl,
     still: !!options.still,
     team: options.team ?? null,
+    owner: { decoy: true },
   };
 }
 

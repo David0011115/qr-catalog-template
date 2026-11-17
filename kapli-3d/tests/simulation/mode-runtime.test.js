@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTerritoryState } from '../../server/modes/territory.js';
 import { createDuobackState } from '../../server/modes/duoback.js';
-import { createTerritoryRules, stepTerritoryRuntime, stepDuobackRuntime } from '../../server/simulation/mode-runtime.js';
+import { createTerritoryRules, createDuobackRules, stepTerritoryRuntime, stepDuobackRuntime } from '../../server/simulation/mode-runtime.js';
 
 test('territory runtime computes authoritative share and applies the source early-win rule', () => {
   const state = createTerritoryState(100);
@@ -69,4 +69,18 @@ test('duoback final wave result is surfaced to the room adapter', () => {
   assert.equal(out.finish.won, true);
   assert.equal(state.finished, true);
   assert.equal(result?.won, true);
+});
+
+test('duoback boosts feed authoritative movement, armor and ability cooldown rules', () => {
+  const state = createDuobackState();
+  state.wave = 10;
+  const player = { db: { speed: 2, cd: 1 } };
+  const boss = { dbType: 'twins', enr: 1 };
+  const attacker = { dbType: 'leech', mass: 100 };
+  const target = { mass: 130, owner: { db: { armor: 1 } } };
+  const rules = createDuobackRules(state);
+  assert.equal(rules.physicsRules.duoSpeedK({ owner: player }), 1.16);
+  assert.ok(rules.physicsRules.bossSpeedFor(boss) > 1.35);
+  assert.equal(rules.worldRules.eatBlock(attacker, target), true);
+  assert.equal(rules.abilityOptions.cooldownMultiplierFor(player), 0.85);
 });

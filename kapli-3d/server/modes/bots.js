@@ -33,7 +33,7 @@ export function createBotRoster(mode = 'duoback') {
   const owners = defs.map(([name, persona], index) => ({
     id: `bot:${index}`, name, kind: 'bot', persona, botIndex: index,
     homeSide: mode === 'territory' ? (index % 2 ? 1 : -1) : 0,
-    cells: [], free: Array.from({ length: 4 }, (_, slot) => `bot:${index}:slot:${slot}`),
+    cells: [], free: Array.from({ length: 4 }, (_, slot) => `bot:${index}:slot:${slot}`), freeCount: 4,
     respawn: 0, think: 0, tx: 0, tz: 0, target: null, partner: null,
     dashT: 0, dashCd: 0, splitCd: 0, spawnSh: 0, abCd: {}, abT: {}, rs: 1,
   }));
@@ -59,6 +59,7 @@ export function spawnBotOwner(owner, world, rng, options = {}) {
     ? findTerritoryBotSpawn(world.modeState, owner.botIndex, world, () => rand(rng), running ? 22 : 14)
     : findSafeSpawn(world, () => rand(rng), running ? 22 : 14);
   const slot = owner.free.pop();
+  owner.freeCount = owner.free.length;
   const cell = {
     id: `${owner.id}:cell:${slot.split(':').at(-1)}`, slotId: slot,
     x: position.x, z: position.z, mass, vx: 0, vz: 0,

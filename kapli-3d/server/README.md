@@ -4,7 +4,8 @@ This directory contains the rendering-free foundation for the authoritative mult
 
 ## Current modules
 
-- `core/physics.js`: mass-to-radius, movement speed, steering, arena clamping, eating eligibility, bite gain, and mass decay. Numeric rules are extracted from the current game implementation; context-dependent upgrades and mode hooks are supplied through callbacks.
+- `core/physics.js`: mass-to-radius, movement speed, steering, arena clamping, eating eligibility, bite gain, and mass decay.
+- `core/mass-caps.js`: source-exact player/bot/boss merge limits, per-cell caps and shared regular-bot total cap. Numeric rules are extracted from the current game implementation; context-dependent upgrades and mode hooks are supplied through callbacks.
 - `core/random.js`: seeded PRNG matching the generator used by the existing two-phone mode, with a serializable seed/counter snapshot.
 - `core/viruses.js`: virus movement and collisions, trap ownership/expiry, spike splitting, player forward ejection, bot backward ejection, ejected-mass drag/pickup, feeding a virus, and respawn timers. It exposes complete tick helpers while leaving entity storage and visual effects to the caller.
 - `core/abilities.js`: source-derived ability cooldown/power formulas, active timers, shrink-size easing, phase-jump cooldown timing, and decoy movement/collision.

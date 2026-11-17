@@ -75,7 +75,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
   }
   if (id === 'x_ice') { owner.abT.x_ice = a.dur; owner.iceDrop = 0; state.iceDropByOwner[owner.id] = 0; return { ok: true, events }; }
   if (id === 'x_twin') {
-    const maxParts = options.player ? world.playerMaxParts?.(owner) ?? 4 : n(world.botParts, 8);
+    const maxParts = options.player ? world.playerMaxParts?.(owner) ?? 4 : n(world.botParts, 4);
     if (owner.cells.length >= maxParts || main.mass < 20 || !world.splitOwner) return { ok: false, reason: 'cannot-split' };
     if (!world.splitOwner(owner, owner.cells.length + 1, a.dur)) return { ok: false, reason: 'split-failed' };
     const twin = owner.cells[owner.cells.length - 1];

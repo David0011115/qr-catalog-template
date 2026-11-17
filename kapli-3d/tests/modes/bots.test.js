@@ -71,7 +71,7 @@ test('bot target selection farms deterministic food when no prey is available', 
   const bot = { id: 'bot:0', kind: 'bot', persona: 'farmer', cells: [] };
   const cell = makeCell('b', bot, 0, 0, 10); bot.cells.push(cell);
   const world = { arenaRadius: 100, cells: [cell], food: [{ x: 0, z: 40 }, { x: 50, z: 50 }, { x: 0, z: 20 }], viruses: [], ejects: [] };
-  const result = thinkBot(bot, world, new DeterministicRandom(4), { canEat: () => false });
+  const result = thinkBot(bot, world, () => 0.8, { canEat: () => false });
   assert.equal(result.action, 'farm');
   assert.equal(bot.tz, 20);
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { castWorldAbility, createWorldAbilityEffects, tickWorldAbilityEffects, recordChronosHistory } from '../../server/core/ability-effects.js';
+import { castWorldAbility, castServerAbility, createWorldAbilityEffects, tickWorldAbilityEffects, recordChronosHistory } from '../../server/core/ability-effects.js';
 
 const cell = (mass, x = 0, z = 0, extra = {}) => ({ mass, x, z, vx: 0, vz: 0, hx: 1, hz: 0, ...extra });
 const owner = (id, cells, extra = {}) => ({ id, cells, abT: {}, abCd: {}, ...extra });
@@ -224,4 +224,20 @@ test('phase second jump uses cooldown reduction and Chronos arena multiplier', (
   p.phase2 = 0.5;
   castWorldAbility('x_phase', p, w, s, { player: true, level: 0, chronosArena: true });
   assert.equal(p.phase2, 0); assert.equal(p.abCd.x_phase, 25.2);
+});
+test('validated ability cast starts cooldown only after a successful effect', () => {
+  const p = owner('p', [cell(100)]), w = worldFor(p, [], { effects: { shield: 0 } }), s = createWorldAbilityEffects();
+  const cast = castServerAbility('shield', p, w, s, { player: true, level: 2 });
+  assert.equal(cast.ok, true); assert.equal(p.abCd.shield, 23); assert.equal(p.abT.shieldB, 6);
+  assert.equal(castServerAbility('shield', p, w, s, { player: true, level: 2 }).reason, 'cooldown-or-unavailable');
+});
+
+test('failed ability does not start cooldown and phase first jump waits for second jump', () => {
+  const p = owner('p', [cell(100)]), w = worldFor(p), s = createWorldAbilityEffects();
+  const noPrey = castServerAbility('x_hunt', p, w, s, { player: true });
+  assert.equal(noPrey.ok, false); assert.equal(p.abCd.x_hunt, undefined);
+  const first = castServerAbility('x_phase', p, w, s, { player: true });
+  assert.equal(first.ok, true); assert.equal(p.phase2, 2); assert.equal(p.abCd.x_phase, undefined);
+  const second = castServerAbility('x_phase', p, w, s, { player: true, chronosArena: true });
+  assert.equal(second.ok, true); assert.equal(p.phase2, 0); assert.equal(p.abCd.x_phase, 25.2);
 });

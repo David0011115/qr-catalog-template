@@ -97,7 +97,7 @@ test('special boss appears every fifth wave with exact health and final-wave mul
   const s = createDuobackState(1); s.wave = 4;
   const out = startDuobackWave(s, [player('host', [100]), player('guest', [80])], () => 0.99);
   assert.equal(s.wave, 5); assert.equal(s.special.id, 'vortex');
-  assert.equal(s.special.mainMass, 190);
+  assert.equal(s.special.mainMass, 100 * 1.9 * (1 + 0.07 * 4));
   assert.equal(s.special.max, 100 * 2.4 * 1.4);
   assert.equal(s.special.life, 80); assert.equal(s.special.shed, 2); assert.equal(s.special.attack, 4);
   const final = createDuobackState(0); final.wave = 49;

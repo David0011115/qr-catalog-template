@@ -23,8 +23,13 @@ test('territory runtime computes authoritative share and applies the source earl
   assert.equal(rules.physicsRules.duoSpeedK({ owner: host, x: 99 }), 0.85);
   const jumpState = createTerritoryState(100);
   const jumpRules = createTerritoryRules(jumpState);
-  assert.equal(jumpRules.worldRules.onPlayerEaten('guest'), true);
+  assert.equal(jumpRules.worldRules.onCellLost({
+    victim: guest, attacker: { owner: host }, victimEliminated: true,
+  }), true);
   assert.ok(jumpState.border > 0);
+  assert.equal(jumpRules.worldRules.onCellLost({
+    victim: guest, attacker: { owner: host }, victimEliminated: false,
+  }), false);
 });
 
 test('duoback runtime calls boss, meteor, respawn and phase adapters in deterministic order', () => {

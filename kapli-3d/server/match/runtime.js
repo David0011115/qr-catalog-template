@@ -1,6 +1,8 @@
 // Runtime composition for an authoritative two-player match.
 // Cloudflare transports and persists this plain state; this module owns the rules.
 import { canEat } from '../core/physics.js';
+import { castServerAbility } from '../core/ability-effects.js';
+import { castBotUtilityAbility } from '../core/utility-abilities.js';
 import { DeterministicRandom } from '../core/random.js';
 import { tickBotOwner } from '../modes/bots.js';
 import { territorySideAt, restoreTerritoryState, serializeTerritoryState } from '../modes/territory.js';
@@ -9,7 +11,7 @@ import {
   createTerritoryRules, createDuobackRules, stepTerritoryRuntime, stepDuobackRuntime,
 } from '../simulation/mode-runtime.js';
 import {
-  createAbilityRuntimeState, createAbilityRuleAdapters, stepAbilityRuntime,
+  createAbilityRuntimeState, createAbilityRuleAdapters, createAbilityWorldAdapter, stepAbilityRuntime,
 } from '../simulation/ability-runtime.js';
 import {
   createSimulationLoopState, submitPlayerInput, submitAbilityCommand, stepSimulationTick,
@@ -122,6 +124,13 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
             ...currentAbilityRules.worldRules,
           };
           const botResults = [];
+          const botAbilityWorld = createAbilityWorldAdapter(currentWorld);
+          const castBotAbility = (id, bot) => ['dash', 'eject', 'split'].includes(id)
+            ? castBotUtilityAbility(id, bot, currentWorld, { rebuildCells: botAbilityWorld.rebuildCells })
+            : castServerAbility(id, bot, botAbilityWorld, abilityState, { player: false, level: 0 });
+          const splitBot = (bot) => castBotUtilityAbility('split', bot, currentWorld, {
+            rebuildCells: botAbilityWorld.rebuildCells,
+          });
           for (const bot of currentWorld.owners) {
             if (bot.kind !== 'bot') continue;
             botResults.push({
@@ -132,6 +141,8 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
                   ...physicsRules, ...worldRules,
                 }),
                 isCloaked: owner => !!worldRules.abilityOn?.('cloak', owner),
+                castBotAbility,
+                splitBot,
                 foodAllowed: mode === 'territory'
                   ? (_owner, food) => territorySideAt(currentWorld.modeState, food.x) === _owner.homeSide
                   : undefined,
@@ -210,6 +221,8 @@ export function restoreDuoMatchRuntime(snapshot, options = {}) {
   const simulation = restoreSimulationLoopState(snapshot.simulation);
   const world = restoreWorldState(snapshot.world);
   world.mode = snapshot.mode;
+  world.tick = simulation.tick;
+  world.build = world.owners.find(owner => owner.isPlayer)?.build || [];
   world.modeState = snapshot.mode === 'territory'
     ? restoreTerritoryState(snapshot.world.modeState)
     : restoreDuobackState(snapshot.world.modeState);

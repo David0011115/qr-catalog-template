@@ -2,7 +2,7 @@
 // Cloudflare transports and persists this plain state; this module owns the rules.
 import { canEat } from '../core/physics.js';
 import { castServerAbility } from '../core/ability-effects.js';
-import { castBotUtilityAbility } from '../core/utility-abilities.js';
+import { castBotUtilityAbility, castUtilityAbility } from '../core/utility-abilities.js';
 import { DeterministicRandom } from '../core/random.js';
 import { tickBotOwner } from '../modes/bots.js';
 import { territorySideAt, restoreTerritoryState, serializeTerritoryState } from '../modes/territory.js';
@@ -43,7 +43,7 @@ function finishMatch(lifecycle, result, now) {
   return true;
 }
 
-function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeCommands = [], lastBoostSeq = {}, options = {} }) {
+function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeCommands = [], lastBoostSeq = {}, actionQueue = [], lastActionSeq = {}, options = {} }) {
   world.mode = mode;
   world.abilityState = abilityState;
   world.respawnTimers ||= [];
@@ -52,12 +52,24 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
 
   const resolvePlayers = currentWorld => playersFor(currentWorld);
   const runtime = {
-    mode, lifecycle, simulation, world, abilityState, modeCommands, lastBoostSeq,
+    mode, lifecycle, simulation, world, abilityState, modeCommands, lastBoostSeq, actionQueue, lastActionSeq,
     submitInput(playerId, command) {
       return submitPlayerInput(simulation, lifecycle, playerId, command);
     },
     submitAbility(playerId, command) {
       return submitAbilityCommand(simulation, lifecycle, playerId, command);
+    },
+    submitAction(playerId, command) {
+      const owner = ownerFor(world, playerId);
+      if (!owner?.isPlayer || !['dash', 'split', 'eject'].includes(command?.action) ||
+          !Number.isSafeInteger(command?.seq) || command.seq < 1) {
+        return { ok: false, reason: 'invalid-action-command' };
+      }
+      const previous = lastActionSeq[playerId] || 0;
+      if (command.seq <= previous) return { ok: false, reason: 'replayed-command' };
+      lastActionSeq[playerId] = command.seq;
+      actionQueue.push({ playerId, seq: command.seq, action: command.action });
+      return { ok: true, acceptedSeq: command.seq, queued: true };
     },
     submitBoost(playerId, command) {
       if (mode !== 'duoback') return { ok: false, reason: 'mode-does-not-support-boosts' };
@@ -94,6 +106,17 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
     },
     elapsedMs(now = Date.now()) { return matchElapsedMs(lifecycle, now); },
     step() {
+      const actionEvents = [];
+      while (actionQueue.length) {
+        const command = actionQueue.shift();
+        const owner = ownerFor(world, command.playerId);
+        const result = owner ? castUtilityAbility(command.action, owner, world, {
+          level: options.abilityLevelFor?.(owner, command.action) ?? 0,
+          lightLevel: options.lightLevelFor?.(owner) ?? owner.upgrades?.light ?? 0,
+          rebuildCells: options.rebuildCells,
+        }) : { ok: false, reason: 'owner-not-found' };
+        actionEvents.push({ playerId: command.playerId, seq: command.seq, action: command.action, ...result });
+      }
       const out = stepSimulationTick(simulation, lifecycle, world, {
         resolveOwner: ownerFor,
         createModeRules(currentWorld) {
@@ -215,6 +238,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
         },
       });
       if (out.advanced) world.tick = out.tick;
+      out.actionEvents = actionEvents;
       return out;
     },
     serialize() {
@@ -228,6 +252,8 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
         simulation: serializeSimulationLoopState(simulation),
         modeCommands: modeCommands.map(command => ({ ...command })),
         lastBoostSeq: { ...lastBoostSeq },
+        actionQueue: actionQueue.map(command => ({ ...command })),
+        lastActionSeq: { ...lastActionSeq },
         world: worldSnapshot,
       };
     },

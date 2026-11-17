@@ -6,6 +6,7 @@ import { radius, cellRadius } from './physics.js';
 export const VIRUS_RULES = Object.freeze({
   MASS: 100,
   MAX_COUNT: 16,
+  MAX_EJECTS: 60,
   MAX_TRAPS_PER_OWNER: 2,
   FEED_MASS: 6,
   FEEDS_TO_FIRE: 5,
@@ -165,6 +166,23 @@ export function createEjectedMass(cell, rules = {}) {
   };
 }
 
+// Bots eject from behind themselves, unlike the player's forward ejection.
+// Mirrors botEject() in js/game/06-abilities.js.
+export function botEjectMass(owner, ejects) {
+  if (!owner?.cells?.length || ejects.length >= VIRUS_RULES.MAX_EJECTS) return null;
+  const cell = owner.cells.reduce((a, b) => a.mass >= b.mass ? a : b);
+  if (cell.mass < VIRUS_RULES.EJECT_MIN_MASS) return null;
+  cell.mass -= VIRUS_RULES.EJECT_COST;
+  const offset = cellRadius(cell) + VIRUS_RULES.EJECT_RADIUS_OFFSET;
+  const eject = {
+    x: cell.x - cell.hx * offset, z: cell.z - cell.hz * offset,
+    vx: -cell.hx * VIRUS_RULES.EJECT_SPEED + n(cell.vx),
+    vz: -cell.hz * VIRUS_RULES.EJECT_SPEED + n(cell.vz),
+    mass: VIRUS_RULES.EJECT_MASS, age: 0,
+  };
+  ejects.push(eject);
+  return eject;
+}
 export function moveEjectedMass(eject, dt, arenaRadius) {
   if (!(dt > 0)) return eject;
   eject.x += eject.vx * dt;

@@ -62,7 +62,7 @@ async function authenticate(request, env) {
 }
 
 async function loadPlayerGameData(user, env) {
-  const base = String(env.SUPABASE_URL).replace(/\\/$/, '');
+  const base = String(env.SUPABASE_URL).replace(/\/$/, '');
   const headers = { apikey: env.SUPABASE_ANON_KEY, authorization: `Bearer ${user.accessToken}` };
   const query = new URLSearchParams({ user_id: `eq.${user.id}` });
   const profileUrl = `${base}/rest/v1/player_profiles?${new URLSearchParams({ ...Object.fromEntries(query), select: 'nickname' })}`;

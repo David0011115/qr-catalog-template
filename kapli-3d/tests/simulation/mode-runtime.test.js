@@ -189,3 +189,17 @@ test('DuoBack runtime publishes special-boss outcomes and meteor hits in source 
   assert.equal(player.cells[0].mass, 70);
   assert.ok(out.events.some(event => event.type === 'boss-meteor-hit' && event.role === 'host'));
 });
+
+
+test('Territory runtime exposes stable home-side and source-position adapters for all bot slots', () => {
+  const state = createTerritoryState(100);
+  state.border = 10;
+  const rules = createTerritoryRules(state);
+  assert.equal(rules.botHomeSide(0), -1);
+  assert.equal(rules.botHomeSide(1), 1);
+  assert.equal(rules.botHomeSide(23), 1);
+  assert.equal(rules.botSpawnX(0), -56);
+  assert.equal(rules.botSpawnX(1), 64);
+  assert.equal(rules.botSpawnX(23), 64);
+  assert.throws(() => rules.botSpawnX(24), RangeError);
+});

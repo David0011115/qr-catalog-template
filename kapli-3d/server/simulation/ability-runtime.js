@@ -5,6 +5,7 @@ import {
 } from '../core/ability-effects.js';
 import { canEat, cellRadius, clampCellToArena } from '../core/physics.js';
 import { abilityOn as isAbilityOn } from '../core/abilities.js';
+import { castUtilityAbility, tickUtilityAbilityTimers } from '../core/utility-abilities.js';
 
 export function createAbilityRuntimeState() {
   return { ...createWorldAbilityEffects(), clock: 0, historyTimer: 0, history: [], lastCommandSeq: {} };
@@ -121,7 +122,12 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
       continue;
     }
     const isPlayer = options.isPlayerOwner?.(owner) ?? !!owner.isPlayer;
-    const cast = castServerAbility(abilityId, owner, adapter, state, {
+    const cast = ['dash', 'split', 'eject'].includes(abilityId)
+      ? castUtilityAbility(abilityId, owner, adapter, {
+          level: options.abilityLevelFor?.(owner) ?? 0,
+          rebuildCells: adapter.rebuildCells,
+        })
+      : castServerAbility(abilityId, owner, adapter, state, {
       player: isPlayer,
       level: options.abilityLevelFor?.(owner) ?? 0,
       chronosArena: !!options.chronosArenaFor?.(owner),
@@ -139,6 +145,7 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
 
   const timers = [];
   for (const owner of adapter.owners) {
+    tickUtilityAbilityTimers(owner, dt);
     const isPlayer = options.isPlayerOwner?.(owner) ?? !!owner.isPlayer;
     const timer = tickAbilityOwner(owner, dt, {
       player: isPlayer,

@@ -170,7 +170,7 @@ test('mirror twin tracks heading and merges back when its timer expires', () => 
   w.splitOwner = () => { const twin = cell(100, 5, 0, { id: 'b' }); twin.owner = p; p.cells.push(twin); return true; };
   w.removeCell = c => { p.cells = p.cells.filter(x => x !== c); c.gone = true; };
   const s = createWorldAbilityEffects();
-  assert.equal(castWorldAbility('x_twin', p, w, s, { player: true, playerMaxParts: () => 4 }).ok, true);
+  assert.equal(castWorldAbility('x_twin', p, w, s, { player: false }).ok, true);
   const twin = p.cells[1]; main.hx = 0.6; main.hz = 0.8;
   tickWorldAbilityEffects(s, w, 0.1); assert.equal(twin.hx, -0.6); assert.equal(twin.hz, 0.8);
   tickWorldAbilityEffects(s, w, 5); assert.equal(p.cells.length, 1); assert.equal(main.mass, 200);

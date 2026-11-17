@@ -50,7 +50,7 @@ test('bots alternate their home halves and respawn 60 percent toward their own e
   const s = createTerritoryState(100); s.border = 10;
   const bot0 = { kind: 'bot', botIndex: 0 }, bot1 = { kind: 'bot', botIndex: 1 };
   assert.equal(territoryBotHome(0), -1); assert.equal(territoryBotHome(1), 1);
-  assert.equal(territoryHomeSide(bot0), -1); assert.equal(territoryHomeSide(bot1), 1);
+  assert.equal(territoryHomeSide(bot0), 0); assert.equal(territoryHomeSide(bot1), 0);
   assert.equal(territorySpawnX(s, { role: 'host' }), -56);
   assert.equal(territorySpawnX(s, { role: 'guest' }), 64);
 });
@@ -103,4 +103,13 @@ test('snapshot and restore preserve border, time limit and overtime state', () =
   assert.equal(copy.border, s.border); assert.equal(copy.limit, 270); assert.equal(copy.overtime, true);
   const applied = createTerritoryState(100); applyTerritorySnapshot(applied, snap, 10);
   assert.equal(applied.border, 12.3); assert.equal(applied.limit, 270); assert.equal(applied.overtime, true);
+});
+
+test('bots use alternating spawn halves but do not receive player-only territory penalties', () => {
+  const s = createTerritoryState(100);
+  const bot0 = { kind: 'bot', botIndex: 0 }, bot1 = { kind: 'bot', botIndex: 1 };
+  assert.equal(territoryBotHome(0), -1); assert.equal(territoryBotHome(1), 1);
+  assert.equal(territorySpeedMultiplier(s, bot0, 50), 1);
+  assert.equal(territorySpeedMultiplier(s, bot1, -50), 1);
+  assert.equal(territoryBlocksEat(s, bot0, { kind: 'bot', x: 50 }), false);
 });

@@ -110,9 +110,9 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
   }
   if (id === 'x_phase') {
     const distance = a.dist;
-    if (owner.abT && owner.cells?.length && owner.phase2 > 0) { owner.phase2 = 0; owner.abCd.x_phase = options.player ? a.cd * (1 - 0.04 * Math.max(0, n(options.level))) : a.cd; }
+    if (owner.phase2 > 0) { owner.phase2 = 0; startAbilityCooldown(owner, 'x_phase', { player: !!options.player, level: options.level || 0, chronosArena: !!options.chronosArena }); }
     else owner.phase2 = n(options.phaseWindow, 2);
-    for (const c of owner.cells) { const p = clampPoint(c.x + main.hx * distance, c.z + main.hz * distance, world.arenaRadius); c.x = p.x; c.z = p.z; }
+    for (const c of owner.cells) { c.x += main.hx * distance; c.z += main.hz * distance; if (world.clampCell) world.clampCell(c); else { const p = clampPoint(c.x, c.z, world.arenaRadius, cellRadius(c) * 0.6); c.x = p.x; c.z = p.z; } }
     return { ok: true, events };
   }
   if (id === 'blink') {

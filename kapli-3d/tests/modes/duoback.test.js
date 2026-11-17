@@ -169,3 +169,49 @@ test('Duoback state snapshot restores wave, offers, bosses and meteor timers', (
   assert.deepEqual(copy.offers, s.offers); assert.deepEqual(copy.regular, s.regular); assert.deepEqual(copy.meteors, s.meteors);
   assert.deepEqual(copy.special, s.special);
 });
+
+test('defeating one twin increments boss count and enrages the remaining twin', () => {
+  const s = createDuobackState(0); s.regular = [
+    { type: 'twins', slot: 0, enr: 0 }, { type: 'twins', slot: 1, enr: 0 },
+  ];
+  const result = duobackRegularBossDefeated(s, { dbType: 'twins', slot: 0, dbSpec: false });
+  assert.equal(s.team.bosses, 1); assert.deepEqual(result.enragedTwinSlots, [1]);
+  assert.equal(s.regular.length, 1); assert.equal(s.regular[0].enr, 1);
+});
+
+test('break countdown starts next wave and grants pair shield when selected', () => {
+  const s = createDuobackState(0); s.shared.sh_shield = 1;
+  const players = [player('host'), player('guest')]; let shield = 0;
+  const out = tickDuobackPhase(s, 6, players, () => 0.99, { grantPairShield: n => { shield = n; } });
+  assert.equal(s.wave, 1); assert.equal(s.phase, 0); assert.equal(out.phase, 'wave');
+  assert.equal(out.transition.shieldSeconds, 4); assert.equal(shield, 4);
+});
+
+test('cleared non-final wave enters a break and spawns source break supplies', () => {
+  const s = createDuobackState(0); s.wave = 4; s.phase = 0; s.regular = []; s.special = null;
+  let food = null, bonuses = 0;
+  const out = tickDuobackPhase(s, 1 / 30, [player('host'), player('guest')], () => 0.99, {
+    spawnBreakFood: (perPlayer, arena) => { food = [perPlayer, arena]; }, spawnBonuses: n => { bonuses = n; },
+  });
+  assert.equal(s.phase, 1); assert.equal(out.phase, 'break');
+  assert.deepEqual(food, [90, 90]); assert.equal(bonuses, 2);
+});
+
+test('final wave clear wins before simultaneous player-death check', () => {
+  const s = createDuobackState(0); s.wave = 50; s.phase = 0; s.regular = []; s.special = null;
+  const out = tickDuobackPhase(s, 1 / 30, [{ role: 'host', cells: [] }, { role: 'guest', cells: [] }], () => 0.5);
+  assert.equal(out.result.won, true); assert.equal(out.result.reason, 'all-waves-cleared');
+});
+
+test('simultaneous death during an active wave ends the run', () => {
+  const s = createDuobackState(0); s.wave = 12; s.phase = 0; s.regular = [{ type: 'weaver', slot: 0 }];
+  const out = tickDuobackPhase(s, 1 / 30, [{ role: 'host', cells: [] }, { role: 'guest', cells: [] }], () => 0.5);
+  assert.equal(out.result.won, false); assert.equal(out.result.reason, 'both-players-dead');
+});
+
+test('boss defeat hook ignores special bosses and non-boss entities', () => {
+  const s = createDuobackState(0);
+  assert.equal(duobackRegularBossDefeated(s, { dbType: 'vortex', dbSpec: true }), false);
+  assert.equal(duobackRegularBossDefeated(s, { kind: 'bot' }), false);
+  assert.equal(s.team.bosses, 0);
+});

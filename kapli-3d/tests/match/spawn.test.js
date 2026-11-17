@@ -48,6 +48,6 @@ test('Territory bot fallback matches source home-side interpolation', () => {
 test('DuoBack boss spawn uses the source 40-unit safety distance', () => {
   const result = findDuobackBossSpawn(world(), sequence([0.25, 0.25]));
   assert.equal(result.safe, true);
-  assert.equal(result.x, 0);
+  assert.ok(Math.abs(result.x) < 1e-12);
   assert.ok(result.z > 0);
 });

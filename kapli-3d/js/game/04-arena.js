@@ -378,7 +378,7 @@
   const ejectMat = new THREE.MeshStandardMaterial({ roughness: .25, emissiveIntensity: .6 });
   let ejects = [];
   function eject() {
-    if (DuoM.guest) { DuoM.act('eject'); return; }
+    if (DuoM.server || DuoM.guest) { DuoM.act('eject'); return; }
     if (!running || paused || !player.cells.length || player.ejectCd > 0) return;
     let did = false;
     for (const c of player.cells) {

@@ -386,6 +386,10 @@
       if (!serverMode || !on) return;
       result(w, sh, why, extra);
     }
+    function serverAbort() {
+      if (!serverMode || !on) return;
+      endMatch('Онлайн-матч приостановлен', false, false, 0);
+    }
     function guestTick(dt) {
       stats.time += dt;
       const [dx, dz] = localDir(), now = performance.now();
@@ -435,7 +439,7 @@
     $('quitBtn').addEventListener('click', () => { if (on) { Duo.send({ t: 'end' }); cleanup(); } }, true);
     window.duoStartMatch = startAsHost; window.duoPractice = practice;
 
-    return { get on() { return on; }, get server() { return serverMode; }, get serverRole() { return role; }, serverBegin, serverIndex, serverApply: applyServer, serverTick, serverEnd, get serverInput() { return localDir(); }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
+    return { get on() { return on; }, get server() { return serverMode; }, get serverRole() { return role; }, serverBegin, serverIndex, serverApply: applyServer, serverTick, serverEnd, serverAbort, get serverInput() { return localDir(); }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
       later: f => { if (built) f(); else lazy.push(f); },
       get paused() { return on && !botMate && Duo.stalled; }, get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, get practice() { return botMate; }, rules, rivalPick, result,
       steerRival, act: (k, i) => { if (serverMode) window.KapliOnlineServer?.useAbility(k, i); else if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,

@@ -64,6 +64,7 @@ export function tickDuobackRegularBoss(boss, dt, players, options = {}) {
   }
   if (boss.life <= 0) {
     for (const c of [...boss.cells]) options.removeCell?.(c);
+    options.rebuildCells?.();
     events.push({ type: 'boss-expired', bossId: boss.id });
     return { events, expired: true, steering };
   }

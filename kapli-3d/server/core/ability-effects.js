@@ -1,7 +1,7 @@
 // Deterministic, rendering-free ability world effects extracted from js/game/06-abilities.js.
 // Entity creation/removal, food-grid updates, mode hooks and presentation are callbacks.
 import { cellRadius } from './physics.js';
-import { ABILITY_DATA, abilityOn, createDecoy, stepDecoys, startAbilityCooldown } from './abilities.js';
+import { ABILITY_DATA, abilityOn, createDecoy, stepDecoys, startAbilityCooldown, canCastAbility } from './abilities.js';
 import { createVirus, VIRUS_RULES } from './viruses.js';
 
 const n = (v, d = 0) => Number.isFinite(v) ? v : d;
@@ -339,4 +339,18 @@ export function recordChronosHistory(state, owner, world, dt) {
     state.history.push({ t: state.clock, x: center.x, z: center.z, mass: world.totalMass(owner) });
     while (state.history.length && state.history[0].t < state.clock - 6) state.history.shift();
   }
+}
+
+// Complete cast entry point: validates cooldown, applies the world effect, and
+// starts the normal cooldown only after a successful cast. Phase's first jump
+// is the exception; its cooldown starts on the second jump/window expiry.
+export function castServerAbility(id, owner, world, state, options = {}) {
+  if (!canCastAbility(owner, id)) return { ok: false, reason: 'cooldown-or-unavailable' };
+  const phaseWindowWasActive = id === 'x_phase' && owner.phase2 > 0;
+  const result = castWorldAbility(id, owner, world, state, options);
+  if (!result.ok) return result;
+  if (id !== 'x_phase' || !phaseWindowWasActive) {
+    startAbilityCooldown(owner, id, { player: !!options.player, level: options.level || 0, chronosArena: !!options.chronosArena });
+  }
+  return result;
 }

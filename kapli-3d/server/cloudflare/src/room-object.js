@@ -354,7 +354,10 @@ export class GameRoom {
     server.send(JSON.stringify({ type: 'room-state', room: this.roomView() }));
     if (this.runtime) server.send(JSON.stringify(this.worldInitMessage()));
     await this.appendEvent('socket-connected', { playerId: userId }, true);
-    if (this.runtime?.lifecycle.status === 'active' && this.room.status === 'active') this.startLoop();
+    if (this.runtime?.lifecycle.status === 'active' && this.room.status === 'active') {
+      this.startLoop();
+      this.broadcast({ type: 'match-resumed', room: this.roomView() });
+    }
     return new Response(null, { status: 101, webSocket: client });
   }
 

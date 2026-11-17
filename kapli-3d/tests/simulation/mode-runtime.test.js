@@ -5,7 +5,8 @@ import { createDuobackState } from '../../server/modes/duoback.js';
 import { createTerritoryRules, stepTerritoryRuntime, stepDuobackRuntime } from '../../server/simulation/mode-runtime.js';
 
 test('territory runtime computes authoritative share and applies the source early-win rule', () => {
-  const state = createTerritoryState(100);\n  state.border = 60;
+  const state = createTerritoryState(100);
+  state.border = 60;
   const host = { role: 'host', cells: [{ mass: 100 }] };
   const guest = { role: 'guest', cells: [{ mass: 10 }] };
   const world = {};

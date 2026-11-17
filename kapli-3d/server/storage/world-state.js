@@ -3,7 +3,7 @@
 
 export const WORLD_SNAPSHOT_VERSION = 1;
 
-const OMIT = new Set(['cells', 'owner', 'target', 'vis', 'mesh', 'group', 'object3d', 'shHit', 'spHit']);
+const OMIT = new Set(['cells', 'owner', 'target', 'partner', 'vis', 'mesh', 'group', 'object3d', 'shHit', 'spHit']);
 const isObject = value => value !== null && typeof value === 'object';
 
 function dataClone(value, seen = new Set()) {
@@ -95,6 +95,7 @@ export function serializeWorldState(world) {
   const ownerTargets = world.owners.map(owner => ({
     ownerId: String(owner.id),
     target: targetReference(owner.target, cellIds, decoyIndexes),
+    partnerId: owner.partner?.id == null ? null : String(owner.partner.id),
     shHitOwnerIds: [...(owner.shHit || [])].map(item => String(isObject(item) ? item.id : item)),
     spHitOwnerIds: [...(owner.spHit || [])].map(item => String(isObject(item) ? item.id : item)),
   }));
@@ -177,6 +178,7 @@ export function restoreWorldState(snapshot) {
     const owner = ownersById.get(item.ownerId);
     owner.target = item.target?.kind === 'cell' ? cellsById.get(item.target.id)
       : item.target?.kind === 'decoy' ? decoys[item.target.index] : null;
+    owner.partner = item.partnerId == null ? null : ownersById.get(item.partnerId);
     owner.shHit = new Set(item.shHitOwnerIds.map(id => ownersById.get(id)));
     owner.spHit = new Set(item.spHitOwnerIds.map(id => ownersById.get(id)));
   }

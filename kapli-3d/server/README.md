@@ -33,6 +33,11 @@ node --test tests
 The tests cover extracted movement/eating formulas and differential checks against the browser source, deterministic random restoration, virus collisions/splitting, player and bot ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, room/countdown rules, room snapshot restoration, reconnect lifecycle, snapshot consistency and event replay, world entity serialization and reference restoration.
 
 ## Authoritative world interactions
+- The same phase now also advances ejected blobs and viruses in the original order: ejected blobs feed spikes or are picked up first; viruses then move, expire traps, pop eligible cells, and advance respawn timers.
+- Virus splits create stable-ID, rendering-free cells in both the owner and world entity lists. Free split capacity is supplied by `owner.freeCount` or `worldRules.virusRules.ownerStateFor`; progression-specific limits and merge times can be supplied through the virus rules. Respawn positions and split angles use the persisted PRNG state.
+- Virus-pop side effects that depend on mode/UI (for example boss food bursts, statistics and notifications) are exposed through `worldRules.onVirusPop`. They are deliberately not guessed by the generic simulation core.
+
+
 
 - Each simulation tick now runs the extracted world-interaction phase after player steering: own-cell separation/merging, food pickup, mass decay, player-vs-player/NPC eating, and non-player mass caps.
 - The rules preserve the source ordering in `js/game/07-round.js`: cell-pair interactions, food and decay, eating pass, then mass caps. Eating uses the stable cell snapshot, 48-unit broad-phase buckets, source radius threshold, 1.25 mass ratio and 80% mass transfer.

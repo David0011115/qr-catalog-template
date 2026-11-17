@@ -354,3 +354,50 @@ test('DuoBack special boss defeat removes its owner and all cells from the autho
   assert.equal(world.cells.some(cell => cell.owner === boss), false);
   assert.equal(state.special, null);
 });
+
+
+test('DuoBack wave transitions choose source-safe boss positions without a room callback', () => {
+  const state = createDuobackState();
+  state.wave = 4; state.phase = 1; state.breakRemaining = 0.01;
+  const hostCell = { id: 'host-cell', mass: 100, x: -100, z: 0, hx: 1, hz: 0 };
+  const guestCell = { id: 'guest-cell', mass: 100, x: 100, z: 0, hx: -1, hz: 0 };
+  const players = [
+    { id: 'host', role: 'host', isPlayer: true, cells: [hostCell] },
+    { id: 'guest', role: 'guest', isPlayer: true, cells: [guestCell] },
+  ];
+  const world = { owners: [...players], cells: [hostCell, guestCell], arenaRadius: 300 };
+  const out = stepDuobackRuntime(state, world, 0.1, {
+    resolvePlayers: () => players,
+    random: () => 0.5,
+  });
+  assert.equal(out.spawnRequests.length, 1);
+  const boss = world.owners.find(owner => owner.dbSpec);
+  assert.ok(boss);
+  assert.ok(Math.hypot(boss.cells[0].x - hostCell.x, boss.cells[0].z - hostCell.z) > 40);
+  assert.ok(Math.hypot(boss.cells[0].x - guestCell.x, boss.cells[0].z - guestCell.z) > 40);
+});
+
+test('Weaver creates a server virus by default when no room callback is supplied', () => {
+  const state = createDuobackState();
+  state.wave = 2; state.phase = 0;
+  state.regular = [{ kind: 'regular', type: 'weaver', slot: 0 }];
+  const boss = {
+    id: 'weaver-default', dbType: 'weaver', slot: 0,
+    cells: [{ id: 'weaver-cell', mass: 100, x: 20, z: 10, hx: 1, hz: 0 }],
+    life: 20, dashT: 0, dashCd: 0, spikeT: 0.01, enr: 0,
+  };
+  const world = { viruses: [] };
+  stepDuobackRuntime(state, world, 0.1, {
+    resolvePlayers: () => [
+      { role: 'host', cells: [{ mass: 100, x: 40, z: 0 }] },
+      { role: 'guest', cells: [{ mass: 100, x: 80, z: 0 }] },
+    ],
+    random: () => 0.5,
+    resolveRegularBoss: () => boss,
+    applyBossSteering: () => {},
+  });
+  assert.equal(world.viruses.length, 1);
+  assert.equal(world.viruses[0].mass, 100);
+  assert.equal(world.viruses[0].x, 15);
+  assert.equal(world.viruses[0].z, 10);
+});

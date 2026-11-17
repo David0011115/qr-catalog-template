@@ -213,7 +213,7 @@
       return { x, z, type, mesh };
     }
     function act(k, i) {   // host: an action from the other phone
-      if (serverMode) { window.KapliOnlineServer?.useAbility(k, i); return; }
+      if (serverMode) { if (k === 'slot') window.KapliOnlineServer?.useAbility(k, i); else window.KapliOnlineServer?.useAction(k); return; }
       const o = rival; if (!o.cells.length || role !== 'host') return;
       const id = k === 'slot' ? runBuild[i] : k;
       if (id === 'split') { if (o.splitCd <= 0 && splitOwner(o, playerMaxParts(), playerMergeTime())) rebuildCells(); }

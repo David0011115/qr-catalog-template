@@ -9,6 +9,8 @@ This directory contains the rendering-free foundation for the authoritative mult
 
 These modules are not wired into a Worker or Durable Object yet. The browser game continues to run exactly as before.
 
+**Balance invariant:** player cells have no per-cell mass cap and may merge even when their combined mass exceeds the old `MAX_MASS` value. Keep the existing bot and boss caps separate; do not reintroduce a player cap.
+
 ## Regression tests
 
 From the `kapli-3d/` directory, run:

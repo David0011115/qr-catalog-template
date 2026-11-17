@@ -1,0 +1,26 @@
+name: Kapli 3D server core tests
+
+on:
+  push:
+    branches:
+      - kapli-3d-online-test
+    paths:
+      - 'kapli-3d/server/**'
+      - 'kapli-3d/tests/**'
+      - '.github/workflows/kapli-3d-server-tests.yml'
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kapli-3d
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run server core regression tests
+        run: node --test tests/physics/*.test.js

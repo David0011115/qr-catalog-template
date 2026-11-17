@@ -12,7 +12,7 @@ function worldFor(caster, foes = [], extra = {}) {
     foesOf: o => owners.filter(x => x !== o), nearOf: (a, b, r) => Math.hypot(a.cells[0].x - b.cells[0].x, a.cells[0].z - b.cells[0].z) < r,
     totalMass: o => o.cells.reduce((s, c) => s + c.mass, 0),
     canEat: (a, b) => a.mass > b.mass * 1.25,
-    clampCell: c => { const d = Math.hypot(c.x, c.z), lim = 99; if (d > lim) { c.x *= lim / d; c.z *= lim / d; } },
+    clampCell: c => { const d = Math.hypot(c.x, c.z), lim = 100 - 0.38 * Math.sqrt(c.mass) * 0.6; if (d > lim) { c.x *= lim / d; c.z *= lim / d; } },
     ...extra,
   };
 }
@@ -39,7 +39,7 @@ test('blink and phase shift every cell by the main cell heading and clamp to are
   const p = owner('p', [cell(100, 90, 0, { hx: 1, hz: 0 }), cell(50, 85, 0)]);
   const w = worldFor(p);
   const blink = castWorldAbility('blink', p, w, createWorldAbilityEffects(), { player: true });
-  assert.equal(blink.ok, true); assert.ok(p.cells.every(c => Math.hypot(c.x, c.z) <= 96 + 1e-9));
+  assert.equal(blink.ok, true); assert.ok(p.cells.every(c => Math.hypot(c.x, c.z) <= 98 + 1e-9));
   assert.equal(blink.events[0].type, 'blink-shadow');
 });
 
@@ -200,4 +200,28 @@ test('Chronos swap only selects the nearest target in front and outside boss/min
   const result = castWorldAbility('cr_swap', p, w, s);
   assert.equal(result.ok, true); assert.equal(result.targetId, front.cells[0].id);
   assert.equal(p.cells[0].x, 8); assert.equal(front.cells[0].x, 0); assert.equal(behind.cells[0].x, -5);
+});
+test('blink shadow retargets pursuers and clears their target when it disappears', () => {
+  const p = owner('p1', [cell(100)]), foe = owner('foe', [cell(400, 0, 0)]);
+  foe.target = { owner: p }; const w = worldFor(p, [foe]), s = createWorldAbilityEffects();
+  castWorldAbility('blink', p, w, s, { player: true });
+  const shadow = s.decoys[0]; assert.equal(foe.target, shadow); assert.equal(shadow.owner.decoy, true);
+  tickWorldAbilityEffects(s, w, 1.1);
+  assert.equal(s.decoys.length, 0); assert.equal(foe.target, null);
+});
+
+test('bot blink shadows stack, while a bot decoy cast replaces its previous clone', () => {
+  const bot = owner('bot', [cell(100)], { kind: 'bot' }), w = worldFor(bot), s = createWorldAbilityEffects();
+  castWorldAbility('blink', bot, w, s, { player: false });
+  castWorldAbility('blink', bot, w, s, { player: false });
+  assert.equal(s.decoys.length, 2);
+  castWorldAbility('decoy', bot, w, s, { player: false });
+  assert.equal(s.decoys.length, 1); assert.equal(s.decoys[0].still, false);
+});
+
+test('phase second jump uses cooldown reduction and Chronos arena multiplier', () => {
+  const p = owner('p', [cell(100)]), w = worldFor(p), s = createWorldAbilityEffects();
+  p.phase2 = 0.5;
+  castWorldAbility('x_phase', p, w, s, { player: true, level: 0, chronosArena: true });
+  assert.equal(p.phase2, 0); assert.equal(p.abCd.x_phase, 25.2);
 });

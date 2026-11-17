@@ -78,3 +78,43 @@ test('utility cooldowns advance on fixed server ticks', () => {
   assert.ok(Math.abs(owner.splitCd - (10 - 1 / 30)) < 1e-12);
   assert.ok(Math.abs(owner.ejectCd - (0.12 - 1 / 30)) < 1e-12);
 });
+
+
+test('account upgrades extend split capacity and reduce merge time using source formulas', () => {
+  const owner = makePlayer('upgraded', 200);
+  owner.splitMaxParts = 6;
+  owner.mergeSeconds = 14 * (1 - 0.03 * 6);
+  const world = { cells: [...owner.cells] };
+  const result = castUtilityAbility('split', owner, world);
+  assert.equal(result.ok, true);
+  assert.equal(owner.cells[1].mergeT, 11.48);
+  for (let i = 0; i < 4; i++) {
+    owner.splitCd = 0;
+    for (const cell of owner.cells) cell.mass = 100;
+    const split = castUtilityAbility('split', owner, world);
+    if (owner.cells.length < 6) assert.equal(split.ok, true);
+  }
+  assert.equal(owner.cells.length, 6);
+});
+
+test('account dash upgrades set duration, cooldown and mass cost independently', () => {
+  const owner = makePlayer('light-upgrade', 100);
+  owner.dashDuration = 0.35 + 0.035 * 4;
+  owner.dashCooldown = 4 * (1 - 0.03 * 3);
+  owner.dashMassCost = 0.03 * (1 - 0.08 * 4);
+  const result = castUtilityAbility('dash', owner, { cells: owner.cells });
+  assert.equal(result.ok, true);
+  assert.equal(owner.dashT, 0.49);
+  assert.equal(owner.dashCd, 3.64);
+  assert.ok(Math.abs(owner.cells[0].mass - 98.08) < 1e-9);
+});
+
+test('eject uses the authenticated ability level embedded in the owner profile', () => {
+  const owner = makePlayer('eject-level', 100);
+  owner.ejectSpeed = 60 * (1 + 0.065 * 4);
+  const world = { cells: [...owner.cells], ejects: [] };
+  const result = castUtilityAbility('eject', owner, world);
+  assert.equal(result.ok, true);
+  assert.equal(world.ejects[0].vx, 75.6);
+  assert.equal(owner.cells[0].mass, 90);
+});

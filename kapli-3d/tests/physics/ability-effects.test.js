@@ -241,3 +241,9 @@ test('failed ability does not start cooldown and phase first jump waits for seco
   const second = castServerAbility('x_phase', p, w, s, { player: true, chronosArena: true });
   assert.equal(second.ok, true); assert.equal(p.phase2, 0); assert.equal(p.abCd.x_phase, 25.2);
 });
+test('bot twin ability respects the original four-part cap by default', () => {
+  const bot = owner('bot', [cell(100), cell(80), cell(60), cell(40)], { kind: 'bot' });
+  const w = worldFor(bot); w.splitOwner = () => { throw new Error('must not split at part cap'); };
+  const result = castWorldAbility('x_twin', bot, w, createWorldAbilityEffects(), { player: false });
+  assert.equal(result.ok, false); assert.equal(result.reason, 'cannot-split');
+});

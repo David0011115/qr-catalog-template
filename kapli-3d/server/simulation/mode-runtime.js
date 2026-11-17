@@ -131,9 +131,10 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
   const events = [];
   const spawnRequests = [];
   const bossTicks = [];
-  const removeCell = cell => options.removeCell
-    ? options.removeCell(world, cell)
-    : removeDuobackWorldCell(world, cell);
+  const removeCell = cell => {
+    options.removeCell?.(world, cell);
+    return removeDuobackWorldCell(world, cell);
+  };
   const rebuildCells = () => options.rebuildCells?.(world);
   const resolveRegular = descriptor => options.resolveRegularBoss
     ? options.resolveRegularBoss(world, descriptor)

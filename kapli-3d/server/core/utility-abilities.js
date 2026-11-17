@@ -61,7 +61,7 @@ function ejectMass(owner, world, options) {
 }
 
 export function castUtilityAbility(id, owner, world, options = {}) {
-  if (!owner?.isPlayer || !owner.cells?.length) return { ok: false, reason: 'no-cells' };
+  if ((!owner?.isPlayer && !options.allowBots) || !owner.cells?.length) return { ok: false, reason: 'no-cells' };
   if (id === 'dash') {
     if ((owner.dashCd || 0) > 0) return { ok: false, reason: 'cooldown' };
     const lightLevel = Math.max(0, options.lightLevel || 0);
@@ -93,4 +93,38 @@ export function tickUtilityAbilityTimers(owner, dt) {
   for (const key of ['dashT', 'dashCd', 'splitCd', 'ejectCd']) {
     if (owner[key] > 0) owner[key] = Math.max(0, owner[key] - dt);
   }
+}
+
+
+export function castBotUtilityAbility(id, owner, world, options = {}) {
+  if (id === 'split') return castUtilityAbility('split', owner, world, { ...options, allowBots: true });
+  if (!owner?.kind || owner.kind !== 'bot' || !owner.cells?.length) return { ok: false, reason: 'no-cells' };
+  if (id === 'dash') {
+    if ((owner.abCd?.dash || 0) > 0) return { ok: false, reason: 'cooldown' };
+    owner.dashT = 0.45;
+    owner.abCd ||= {};
+    owner.abCd.dash = 4;
+    return { ok: true, events: [{ type: 'bot-dash', ownerId: owner.id }] };
+  }
+  if (id === 'eject') {
+    if ((owner.abCd?.eject || 0) > 0) return { ok: false, reason: 'cooldown' };
+    const cell = owner.cells.reduce((best, item) => !best || item.mass > best.mass ? item : best, null);
+    if (!cell || cell.mass < UTILITY_ABILITY_RULES.ejectMinMass ||
+        (world.ejects || []).length >= UTILITY_ABILITY_RULES.ejectMaxCount) {
+      return { ok: false, reason: 'eject-unavailable' };
+    }
+    world.ejects ||= [];
+    cell.mass -= UTILITY_ABILITY_RULES.ejectMassCost;
+    const radius = cellRadius(cell) + UTILITY_ABILITY_RULES.ejectRadiusOffset;
+    world.ejects.push({
+      x: cell.x - cell.hx * radius, z: cell.z - cell.hz * radius,
+      vx: -cell.hx * UTILITY_ABILITY_RULES.ejectSpeed + (cell.vx || 0),
+      vz: -cell.hz * UTILITY_ABILITY_RULES.ejectSpeed + (cell.vz || 0),
+      mass: UTILITY_ABILITY_RULES.ejectMass, age: 0,
+    });
+    owner.abCd ||= {};
+    owner.abCd.eject = 1.5;
+    return { ok: true, events: [{ type: 'bot-eject', ownerId: owner.id }] };
+  }
+  return { ok: false, reason: 'unsupported-bot-utility' };
 }

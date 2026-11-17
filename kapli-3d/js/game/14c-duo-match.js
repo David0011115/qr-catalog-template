@@ -354,6 +354,18 @@
           if (v.mesh) v.mesh.position.set(v.x, .09, v.z);
         });
       }
+      if (s.ej) {
+        while (ejects.length > s.ej.length) { const old = ejects.pop(); if (old.mesh) scene.remove(old.mesh); }
+        while (ejects.length < s.ej.length) {
+          const mesh = new THREE.Mesh(ejectGeo, ejectMat); scene.add(mesh);
+          ejects.push({ x: 0, z: 0, vx: 0, vz: 0, mass: EJECT_MASS, age: 0, mesh });
+        }
+        s.ej.forEach((item, index) => {
+          const e = ejects[index]; e.tx = item.x; e.tz = item.z; e.vx = item.vx || 0; e.vz = item.vz || 0;
+          e.mass = item.mass || EJECT_MASS; e.age = item.age || 0;
+          e.mesh.scale.setScalar(radius(e.mass));
+        });
+      }
       if (s.cd) {
         player.dashCd = s.cd.d || 0; player.splitCd = s.cd.s || 0; player.abCd = s.cd.a || {};
       }
@@ -380,6 +392,10 @@
         }
       }
       for (const virus of viruses) if (virus.mesh) virus.mesh.position.set(virus.x, .09, virus.z);
+      for (const e of ejects) if (e.tx !== undefined) {
+        e.x += (e.tx - e.x) * k; e.z += (e.tz - e.z) * k;
+        if (e.mesh) e.mesh.position.set(e.x, radius(e.mass), e.z);
+      }
       if (rl && rl.view) rl.view(dt);
       tagTick();
     }

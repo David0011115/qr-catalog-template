@@ -78,7 +78,6 @@ export function territoryPlayerWasEaten(state, victimRole) {
 
 export function tickTerritory(state, dt, elapsedSeconds, hostMass, guestMass, options = {}) {
   if (state.finished) return { result: null, overtimeStarted: false, share: territoryLeftShare(state) };
-  if (options.dying) return { result: null, overtimeStarted: false, share: territoryLeftShare(state) };
   const total = hostMass + guestMass;
   if (total > 0 && dt > 0) {
     const relativeLead = (hostMass - guestMass) / total;
@@ -90,6 +89,7 @@ export function tickTerritory(state, dt, elapsedSeconds, hostMass, guestMass, op
   const maxBorder = TERRITORY_RULES.borderLimit * state.arenaRadius;
   state.border = clamp(state.border, -maxBorder, maxBorder);
   const share = territoryLeftShare(state);
+  if (options.dying) return { result: null, overtimeStarted: false, share };
   if (share >= TERRITORY_RULES.earlyWinShare) { state.finished = true; return { result: { winner: 'host', share, reason: 'early' }, overtimeStarted: false, share }; }
   if (share <= 1 - TERRITORY_RULES.earlyWinShare) { state.finished = true; return { result: { winner: 'guest', share, reason: 'early' }, overtimeStarted: false, share }; }
   if (elapsedSeconds < state.limit) return { result: null, overtimeStarted: false, share };

@@ -172,7 +172,7 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     });
     events.push(...tick.events);
     bossTicks.push({ bossId: boss.id, type: descriptor.type, events: tick.events, steering: tick.steering, expired: tick.expired });
-    options.applyBossSteering?.(boss, tick.steering, world);
+    applySteering(boss, tick.steering);
     for (const event of tick.events) {
       if (event.type === 'spawn-virus') options.spawnVirus?.(event, world);
       options.onBossEvent?.(event, boss, world);
@@ -206,7 +206,7 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
       const tick = tickDuobackSpecialBoss(state, boss, players, dt, specialWorld, options.random);
       events.push(...tick.events);
       bossTicks.push({ bossId: boss.id, type: state.special?.id ?? boss.dbType, events: tick.events, steering: tick.steering, result: tick.result });
-      options.applyBossSteering?.(boss, tick.steering, world);
+      applySteering(boss, tick.steering);
       for (const event of tick.events) options.onBossEvent?.(event, boss, world);
       if (tick.result) {
         removeDuobackBossEntity(world, boss);

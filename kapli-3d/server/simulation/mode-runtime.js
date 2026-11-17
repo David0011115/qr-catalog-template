@@ -1,7 +1,7 @@
 // Thin orchestration layer for the already-audited server mode rule modules.
 // Spawning, owner lookup and reward persistence remain explicit host callbacks.
 import {
-  tickTerritory, territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,
+  tickTerritory, territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,\n  territoryBotHome, territoryBotSpawnX,
 } from '../modes/territory.js';
 import {
   tickDuobackPhase, tickDuobackMeteors, duobackRegularBossDefeated,
@@ -16,6 +16,11 @@ const totalMass = owner => (owner?.cells || []).reduce((sum, cell) => sum + cell
 
 export function createTerritoryRules(state) {
   return {
+    // Bot index is the stable position in the 24-entry Territory bot roster.
+    // The room owns safe-spot sampling; this adapter supplies the source-matched
+    // home half and the x-coordinate used by the source respawn formula.
+    botHomeSide: index => territoryBotHome(index),
+    botSpawnX: index => territoryBotSpawnX(state, index),
     physicsRules: {
       duoSpeedK: cell => territorySpeedMultiplier(state, cell.owner, cell.x),
     },

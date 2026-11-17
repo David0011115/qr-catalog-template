@@ -143,7 +143,9 @@ export function speedOf(cell, rules = {}) {
     }
     if (owner.isPlayer) {
       velocity *= 1 + 0.01 * positive(rules.speedUpgradeFor?.(owner));
-      velocity *= positive(rules.playerSpeedEffect) > 0 ? 1.45 : 1;
+      const speedEffectOn = typeof rules.playerSpeedEffectFor === 'function'
+        ? !!rules.playerSpeedEffectFor(owner) : positive(rules.playerSpeedEffect) > 0;
+      velocity *= speedEffectOn ? 1.45 : 1;
       velocity *= 1 + 0.02 * positive(rules.speedPetLevelFor?.(owner));
       if (rules.abilityOn?.('shrink', owner)) velocity *= PHYSICS.SHRINK_SPEED;
     } else if (rules.abilityOn?.('shrink', owner)) {

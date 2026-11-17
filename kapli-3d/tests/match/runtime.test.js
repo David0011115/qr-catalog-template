@@ -91,3 +91,41 @@ test('match runtime pauses on disconnect and resumes only when the same player r
   assert.equal(runtime.reconnect('user-guest', 1000).resumed, true);
   assert.equal(runtime.step().advanced, true);
 });
+
+
+test('DuoBack boost picks are validated, sequenced and applied by the authoritative runtime', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-boost', matchId: 'match-boost', players, mode: 'duoback', seed: 61, startedAt: 100,
+  });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  const beforeMass = host.cells[0].mass;
+  runtime.world.modeState.offers = { host: ['mass', 'speed'], guest: ['armor'] };
+  runtime.world.modeState.picked = {};
+  assert.deepEqual(runtime.submitBoost('user-host', { seq: 1, id: 'mass' }), {
+    ok: true, acceptedSeq: 1, queued: true,
+  });
+  assert.equal(runtime.submitBoost('user-host', { seq: 1, id: 'mass' }).reason, 'replayed-command');
+  assert.equal(runtime.submitBoost('user-guest', { seq: 1, id: 'mass' }).reason, 'boost-not-offered');
+  const out = runtime.step();
+  assert.equal(out.modeStep.boostEvents[0].accepted, true);
+  assert.equal(runtime.world.modeState.picked.host, 'mass');
+  assert.equal(host.db.mass, 1);
+  assert.ok(host.cells[0].mass > beforeMass);
+  assert.equal(runtime.lastBoostSeq['user-host'], 1);
+});
+
+test('queued DuoBack boost picks survive match snapshot recovery', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-boost-recovery', matchId: 'match-boost-recovery',
+    players, mode: 'duoback', seed: 62, startedAt: 100,
+  });
+  runtime.world.modeState.offers = { host: ['shield', 'mass'], guest: ['armor'] };
+  runtime.world.modeState.picked = {};
+  assert.equal(runtime.submitBoost('user-host', { seq: 4, id: 'shield' }).ok, true);
+  const restored = restoreDuoMatchRuntime(runtime.serialize());
+  assert.equal(restored.lastBoostSeq['user-host'], 4);
+  assert.equal(restored.modeCommands.length, 1);
+  restored.step();
+  assert.equal(restored.world.modeState.picked.host, 'shield');
+  assert.equal(restored.modeCommands.length, 0);
+});

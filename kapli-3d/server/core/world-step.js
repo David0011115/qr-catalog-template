@@ -16,6 +16,16 @@ function removeWorldCell(world, cell) {
   }
   const index = world.cells.indexOf(cell);
   if (index >= 0) world.cells.splice(index, 1);
+  const owner = cell.owner;
+  if (owner && !cell.slotRecycled) {
+    if (Array.isArray(owner.free) && cell.slotId != null) {
+      if (!owner.free.includes(cell.slotId)) owner.free.push(cell.slotId);
+      owner.freeCount = owner.free.length;
+    } else if (Number.isFinite(owner.freeCount)) {
+      owner.freeCount += 1;
+    }
+    cell.slotRecycled = true;
+  }
   return true;
 }
 
@@ -259,7 +269,7 @@ export function stepWorldInteractions(world, dt, rules = {}) {
   const getFreeCount = owner => {
     if (!freeCounts.has(owner)) {
       const supplied = virusRules.ownerStateFor?.(owner)?.freeCount;
-      freeCounts.set(owner, Number.isFinite(supplied) ? supplied : finite(owner.freeCount, 0));
+      freeCounts.set(owner, Number.isFinite(supplied) ? supplied : finite(owner.freeCount, Array.isArray(owner.free) ? owner.free.length : 0));
     }
     return freeCounts.get(owner);
   };
@@ -280,15 +290,18 @@ export function stepWorldInteractions(world, dt, rules = {}) {
             id = `virus-cell:${tick}:${event.cell.owner.id}:${spawnedCellSequence++}`;
           } while (knownCellIds.has(id));
           knownCellIds.add(id);
-          const created = { id, ...descriptor, owner: event.cell.owner, gone: false };
-          event.cell.owner.cells.push(created);
+          const owner = event.cell.owner;
+          const slotId = Array.isArray(owner.free) && owner.free.length ? owner.free.pop() : null;
+          const created = { id, ...descriptor, owner, slotId, gone: false };
+          owner.cells.push(created);
           world.cells.push(created);
         }
         if (spawned.length) {
           const owner = event.cell.owner;
           const nextFree = Math.max(0, getFreeCount(owner) - spawned.length);
           freeCounts.set(owner, nextFree);
-          if (Number.isFinite(owner.freeCount)) owner.freeCount = nextFree;
+          if (Array.isArray(owner.free)) owner.freeCount = owner.free.length;
+          else if (Number.isFinite(owner.freeCount)) owner.freeCount = nextFree;
         }
         rules.onVirusPop?.(event, world);
       },

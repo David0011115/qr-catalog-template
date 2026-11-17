@@ -5,7 +5,8 @@ import {
   territoryShareForRole, territoryHomeSide, territoryBotHome, territorySpawnX,
   territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,
   tickTerritory, territorySnapshot, applyTerritorySnapshot,
-  serializeTerritoryState, restoreTerritoryState, validateTerritorySnapshot,\n  validateTerritoryStateSnapshot, territoryBotSpawnX,
+  serializeTerritoryState, restoreTerritoryState, validateTerritorySnapshot,
+   validateTerritoryStateSnapshot, territoryBotSpawnX,
 } from '../../server/modes/territory.js';
 
 test('territory starts with host on the left and equal shares', () => {

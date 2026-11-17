@@ -4,6 +4,7 @@ import {
   castServerAbility, createWorldAbilityEffects, tickWorldAbilityEffects, recordChronosHistory,
 } from '../core/ability-effects.js';
 import { canEat, cellRadius, clampCellToArena } from '../core/physics.js';
+import { abilityOn as isAbilityOn } from '../core/abilities.js';
 
 export function createAbilityRuntimeState() {
   return { ...createWorldAbilityEffects(), clock: 0, historyTimer: 0, history: [], lastCommandSeq: {} };
@@ -19,6 +20,26 @@ function centerOf(owner) {
     x: point.x + cell.x * cell.mass / mass,
     z: point.z + cell.z * cell.mass / mass,
   }), { x: 0, z: 0 });
+}
+
+export function createAbilityRuleAdapters(world, options = {}) {
+  const physics = options.physicsRules || {};
+  const interactions = options.worldRules || {};
+  const abilityOn = (id, owner) => isAbilityOn(owner, id);
+  return {
+    physicsRules: {
+      ...physics,
+      abilityOn: physics.abilityOn || abilityOn,
+      playerSpeedEffect: Number.isFinite(world?.effects?.speed)
+        ? world.effects.speed : physics.playerSpeedEffect,
+    },
+    worldRules: {
+      ...interactions,
+      abilityOn: interactions.abilityOn || abilityOn,
+      playerShieldActive: interactions.playerShieldActive ||
+        (owner => !!owner?.isPlayer && (world?.effects?.shield || 0) > 0),
+    },
+  };
 }
 
 export function createAbilityWorldAdapter(world, options = {}) {
@@ -99,20 +120,28 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
       playerState: options.playerStateFor?.(owner),
       effects: options.effectsFor?.(owner),
     });
+    const cooldownMultiplier = options.cooldownMultiplierFor?.(owner) ?? 1;
+    if (cast.ok && abilityId !== 'x_phase' && Number.isFinite(cooldownMultiplier) &&
+        cooldownMultiplier >= 0 && owner.abCd?.[abilityId] > 0) {
+      owner.abCd[abilityId] *= cooldownMultiplier;
+    }
     casts.push({ ownerId: owner.id, slot: command.slot, abilityId, ...cast });
   }
 
   const timers = [];
   for (const owner of adapter.owners) {
     const isPlayer = options.isPlayerOwner?.(owner) ?? !!owner.isPlayer;
-    timers.push({
-      ownerId: owner.id,
-      ...tickAbilityOwner(owner, dt, {
-        player: isPlayer,
-        level: options.abilityLevelFor?.(owner) ?? 0,
-        chronosArena: !!options.chronosArenaFor?.(owner),
-      }),
+    const timer = tickAbilityOwner(owner, dt, {
+      player: isPlayer,
+      level: options.abilityLevelFor?.(owner) ?? 0,
+      chronosArena: !!options.chronosArenaFor?.(owner),
     });
+    const cooldownMultiplier = options.cooldownMultiplierFor?.(owner) ?? 1;
+    if (timer.phaseCooldownStarted && Number.isFinite(cooldownMultiplier) &&
+        cooldownMultiplier >= 0 && owner.abCd?.x_phase > 0) {
+      owner.abCd.x_phase *= cooldownMultiplier;
+    }
+    timers.push({ ownerId: owner.id, ...timer });
   }
   const effects = tickWorldAbilityEffects(state, adapter, dt);
   if (options.historyOwner && options.chronosArenaFor?.(options.historyOwner)) {

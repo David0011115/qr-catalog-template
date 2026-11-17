@@ -203,7 +203,11 @@ export function tickDuobackMeteors(state, players, dt, isShielded) {
   for (const meteor of state.meteors) {
     meteor.t -= dt;
     if (meteor.t <= 0) for (const player of players) if (!isShielded(player)) for (const c of player.cells || []) {
-      if (Math.hypot(c.x - meteor.x, c.z - meteor.z) < meteor.radius) { c.mass = Math.max(10, c.mass * 0.7); hits.push({ role: player.role, cellId: c.id ?? null }); }
+      if (Math.hypot(c.x - meteor.x, c.z - meteor.z) < meteor.radius) {
+        const beforeMass = c.mass;
+        c.mass = Math.max(10, c.mass * 0.7);
+        hits.push({ role: player.role, cellId: c.id ?? null, beforeMass, afterMass: c.mass, lostMass: beforeMass - c.mass });
+      }
     }
   }
   state.meteors = state.meteors.filter(m => m.t > 0);

@@ -138,11 +138,11 @@ export function stepFoodAndDecay(world, dt, rules = {}) {
     const owner = cell.owner;
     const player = !!owner.isPlayer;
     const magnet = player
-      ? finite(rules.magnetFor?.(owner), 0)
+      ? finite(rules.magnetFor?.(owner), 0) + (owner.eff?.magnet > 0 ? 6 : 0)
       : owner.eff?.magnet > 0 ? 6 : 0;
     const pickupRadius = cellRadius(cell) + magnet;
     const gain = (player
-      ? finite(rules.playerFoodGainFor?.(owner), 1)
+      ? finite(rules.playerFoodGainFor?.(owner), 1) * (owner.eff?.double > 0 ? 2 : 1)
       : owner.eff?.double > 0 ? 2 : 1) *
       (rules.abilityOn?.('pulse', owner) ? 2 : 1) *
       finite(owner.dbAbs, 1);

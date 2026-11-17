@@ -72,12 +72,14 @@ test('ability commands resolve a server-owned build slot and acknowledge only pr
   const runtime = createDuoMatchRuntime({
     roomId: 'room-4', matchId: 'match-4', players, mode: 'territory', seed: 987, startedAt: 100,
   });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  host.build = ['shield', 'pulse', 'cloak'];
   const result = runtime.submitAbility('user-host', { type: 'ability', seq: 1, slot: 0 });
   assert.equal(result.ok, true);
   const out = runtime.step();
   assert.deepEqual(out.abilityAcknowledgements, [{ playerId: 'user-host', processedSeq: 1 }]);
-  assert.equal(runtime.abilityState.lastCommandSeq['user-host'], undefined);
-  assert.equal(runtime.world.owners.find(owner => owner.role === 'host').abCd[runtime.world.build[0]] > 0, true);
+  assert.equal(runtime.abilityState.lastCommandSeq['user-host'], 1);
+  assert.equal(host.abCd.shield > 0, true);
 });
 
 test('match runtime pauses on disconnect and resumes only when the same player reconnects', () => {

@@ -50,7 +50,7 @@ test('split respects the 20-mass minimum and four-part source cap', () => {
     owner.cells.push(cell); world.cells.push(cell);
   }
   owner.splitCd = 0;
-  assert.equal(castUtilityAbility('split', owner, world).events[0].count, 0);
+  assert.equal(castUtilityAbility('split', owner, world).reason, 'split-unavailable');
   assert.equal(owner.cells.length, 4);
 });
 

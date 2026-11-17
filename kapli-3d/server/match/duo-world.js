@@ -38,7 +38,7 @@ function createPlayerOwner(player, role, mode, arenaRadius, build) {
   const spawnFactor = mode === 'territory' ? 0.6 : 0.18;
   const x = home * arenaRadius * spawnFactor;
   const cell = {
-    id: `player:${player.id}:cell:0`, x, z: 0, mass: DUO_WORLD_SOURCE.startMass,
+    id: `player:${player.id}:cell:0`, slotId: `player:${player.id}:slot:0`, x, z: 0, mass: DUO_WORLD_SOURCE.startMass,
     vx: 0, vz: 0, hx: x > 0 ? -1 : 1, hz: 0, mergeT: 0, gone: false,
   };
   const owner = {

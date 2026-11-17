@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   VIRUS_RULES, createVirus, moveVirus, tickVirusTrap, canPopOnVirus,
   popCellOnVirus, feedVirusWithEject, createEjectedMass, moveEjectedMass,
-  tryEjectedMassPickup, tickVirusRespawnTimers, canSpawnVirus,
+  tryEjectedMassPickup, tickVirusRespawnTimers, canSpawnVirus, tryFeedEjectIntoViruses, ejectFromCells,
 } from '../../server/core/viruses.js';
 
 const owner = extra => ({ kind: 'bot', ...(extra || {}) });
@@ -120,4 +120,29 @@ test('ejected mass cannot be created below the 25-mass threshold', () => {
   const c = cell(24);
   assert.equal(createEjectedMass(c), null);
   assert.equal(c.mass, 24);
+});
+
+test('ejected blob feeds only the first nearby virus', () => {
+  const far = createVirus(100, 100);
+  const near = createVirus(0, 0);
+  const result = tryFeedEjectIntoViruses({ x: 0, z: 0, vx: 60, vz: 0 }, [far, near]);
+  assert.equal(result.virus, near);
+  assert.equal(result.consumed, true);
+  assert.equal(near.feed, 1);
+  assert.equal(far.feed, 0);
+  assert.equal(tryFeedEjectIntoViruses({ x: 50, z: 50, vx: 0, vz: 0 }, [far, near]), null);
+});
+
+test('ejection batch caps blobs at 60 and removes the oldest first', () => {
+  const cells = [cell(100), cell(24)];
+  const ejects = Array.from({ length: 60 }, (_, i) => ({ id: i, x: 0, z: 0, vx: 0, vz: 0, mass: 8, age: 1 }));
+  const result = ejectFromCells(cells, ejects);
+  assert.equal(result.didEject, true);
+  assert.equal(result.created.length, 1);
+  assert.equal(result.removed.length, 1);
+  assert.equal(result.removed[0].id, 0);
+  assert.equal(ejects.length, 60);
+  assert.equal(cells[0].mass, 90);
+  assert.equal(cells[1].mass, 24);
+  assert.equal(result.cooldown, 0.12);
 });

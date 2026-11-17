@@ -5,7 +5,7 @@ import {
   territoryShareForRole, territoryHomeSide, territoryBotHome, territorySpawnX,
   territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,
   tickTerritory, territorySnapshot, applyTerritorySnapshot,
-  serializeTerritoryState, restoreTerritoryState,
+  serializeTerritoryState, restoreTerritoryState, validateTerritorySnapshot,\n  validateTerritoryStateSnapshot, territoryBotSpawnX,
 } from '../../server/modes/territory.js';
 
 test('territory starts with host on the left and equal shares', () => {
@@ -112,4 +112,34 @@ test('bots use alternating spawn halves but do not receive player-only territory
   assert.equal(territorySpeedMultiplier(s, bot0, 50), 1);
   assert.equal(territorySpeedMultiplier(s, bot1, -50), 1);
   assert.equal(territoryBlocksEat(s, bot0, { kind: 'bot', x: 50 }), false);
+});
+test('territory bot spawn helpers cover all 24 source roster slots and reject invalid indices', () => {
+  const s = createTerritoryState(100); s.border = 10;
+  for (let index = 0; index < 24; index++) {
+    const home = index % 2 ? 1 : -1;
+    assert.equal(territoryBotHome(index), home);
+    assert.equal(territoryBotSpawnX(s, index), s.border + (home * 100 - s.border) * 0.6);
+  }
+  for (const index of [-1, 24, 1.5, NaN]) assert.throws(() => territoryBotHome(index), RangeError);
+});
+
+test('territory network snapshots reject malformed borders, time limits and empty payloads', () => {
+  const s = createTerritoryState(100);
+  assert.throws(() => validateTerritorySnapshot(null, 100), TypeError);
+  assert.throws(() => validateTerritorySnapshot({}, 100), TypeError);
+  assert.throws(() => applyTerritorySnapshot(s, { bx: 91 }), RangeError);
+  assert.throws(() => applyTerritorySnapshot(s, { bx: Infinity }), RangeError);
+  assert.throws(() => applyTerritorySnapshot(s, { lim: 300 }), RangeError);
+  assert.equal(applyTerritorySnapshot(s, { bx: 90, lim: 270 }, 10).border, 90);
+  assert.equal(s.limit, 270);
+});
+
+test('territory durable snapshots reject invalid roles, radii, flags and out-of-range borders', () => {
+  const valid = serializeTerritoryState(createTerritoryState(100));
+  assert.equal(validateTerritoryStateSnapshot(valid), valid);
+  assert.throws(() => restoreTerritoryState({ ...valid, arenaRadius: 0 }), RangeError);
+  assert.throws(() => restoreTerritoryState({ ...valid, playerRole: 'bot' }), TypeError);
+  assert.throws(() => restoreTerritoryState({ ...valid, border: 91 }), RangeError);
+  assert.throws(() => restoreTerritoryState({ ...valid, limit: 360 }), RangeError);
+  assert.throws(() => restoreTerritoryState({ ...valid, overtime: 1 }), TypeError);
 });

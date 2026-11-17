@@ -15,7 +15,8 @@ function nextCellId(owner, slotId) {
 function splitOwner(owner, world, options) {
   let created = 0;
   for (const cell of [...owner.cells].sort((a, b) => b.mass - a.mass)) {
-    if (owner.cells.length >= UTILITY_ABILITY_RULES.splitMaxParts || !owner.free?.length) break;
+    const maxParts = Math.min(10, Math.max(4, Number(owner.splitMaxParts) || UTILITY_ABILITY_RULES.splitMaxParts));
+    if (owner.cells.length >= maxParts || !owner.free?.length) break;
     if (cell.mass < UTILITY_ABILITY_RULES.splitMinMass) continue;
     const slotId = owner.free.pop();
     owner.freeCount = owner.free.length;
@@ -27,14 +28,14 @@ function splitOwner(owner, world, options) {
       mass: cell.mass, hx: cell.hx, hz: cell.hz,
       vx: cell.hx * UTILITY_ABILITY_RULES.splitSpeed,
       vz: cell.hz * UTILITY_ABILITY_RULES.splitSpeed,
-      mergeT: UTILITY_ABILITY_RULES.splitMergeSeconds,
+      mergeT: Number.isFinite(owner.mergeSeconds) ? owner.mergeSeconds : UTILITY_ABILITY_RULES.splitMergeSeconds,
       gone: false, owner,
     };
-    cell.mergeT = UTILITY_ABILITY_RULES.splitMergeSeconds;
+    cell.mergeT = Number.isFinite(owner.mergeSeconds) ? owner.mergeSeconds : UTILITY_ABILITY_RULES.splitMergeSeconds;
     owner.cells.push(spawned); world.cells.push(spawned);
     created++;
   }
-  if (created) owner.splitCd = UTILITY_ABILITY_RULES.splitCooldown;
+  if (created) owner.splitCd = Number.isFinite(owner.splitCooldown) ? owner.splitCooldown : UTILITY_ABILITY_RULES.splitCooldown;
   options.rebuildCells?.(world);
   return created;
 }
@@ -47,7 +48,7 @@ function ejectMass(owner, world, options) {
     if (world.ejects.length >= UTILITY_ABILITY_RULES.ejectMaxCount) world.ejects.shift();
     cell.mass -= UTILITY_ABILITY_RULES.ejectMassCost;
     const radius = cellRadius(cell) + UTILITY_ABILITY_RULES.ejectRadiusOffset;
-    const velocity = UTILITY_ABILITY_RULES.ejectSpeed * (1 + 0.065 * Math.max(0, options.level || 0));
+    const velocity = Number.isFinite(owner.ejectSpeed) ? owner.ejectSpeed : UTILITY_ABILITY_RULES.ejectSpeed * (1 + 0.065 * Math.max(0, options.level || 0));
     world.ejects.push({
       x: cell.x + cell.hx * radius, z: cell.z + cell.hz * radius,
       vx: cell.hx * velocity + (cell.vx || 0),
@@ -56,7 +57,7 @@ function ejectMass(owner, world, options) {
     });
     ejected++;
   }
-  if (ejected) owner.ejectCd = UTILITY_ABILITY_RULES.ejectCooldown;
+  if (ejected) owner.ejectCd = Number.isFinite(owner.ejectCooldown) ? owner.ejectCooldown : UTILITY_ABILITY_RULES.ejectCooldown;
   return ejected;
 }
 
@@ -64,10 +65,10 @@ export function castUtilityAbility(id, owner, world, options = {}) {
   if ((!owner?.isPlayer && !options.allowBots) || !owner.cells?.length) return { ok: false, reason: 'no-cells' };
   if (id === 'dash') {
     if ((owner.dashCd || 0) > 0) return { ok: false, reason: 'cooldown' };
-    const lightLevel = Math.max(0, options.lightLevel || 0);
-    owner.dashT = UTILITY_ABILITY_RULES.dashSeconds + 0.035 * lightLevel;
-    owner.dashCd = UTILITY_ABILITY_RULES.dashCooldown;
-    const cost = UTILITY_ABILITY_RULES.dashMassCost * (1 - 0.08 * lightLevel);
+    const lightLevel = Math.max(0, options.lightLevel ?? owner.upgrades?.light ?? 0);
+    owner.dashT = Number.isFinite(owner.dashDuration) ? owner.dashDuration : UTILITY_ABILITY_RULES.dashSeconds + 0.035 * lightLevel;
+    owner.dashCd = Number.isFinite(owner.dashCooldown) ? owner.dashCooldown : UTILITY_ABILITY_RULES.dashCooldown;
+    const cost = Number.isFinite(owner.dashMassCost) ? owner.dashMassCost : UTILITY_ABILITY_RULES.dashMassCost * (1 - 0.08 * lightLevel);
     for (const cell of owner.cells) cell.mass = Math.max(5, cell.mass * (1 - cost));
     return { ok: true, events: [{ type: 'dash', ownerId: owner.id }] };
   }

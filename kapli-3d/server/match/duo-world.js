@@ -100,9 +100,11 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
     Math.round(DUO_WORLD_SOURCE.baseFoodCount * scale * scale),
   );
   const rng = new DeterministicRandom(seed);
-  const build = drawBuild(rng);
-  const host = createPlayerOwner(byRole.host, 'host', mode, arenaRadius, build);
-  const guest = createPlayerOwner(byRole.guest, 'guest', mode, arenaRadius, build);
+  const fallbackBuild = drawBuild(rng);
+  const hostBuild = Array.isArray(byRole.host.build) && byRole.host.build.length === 3 ? byRole.host.build : fallbackBuild;
+  const guestBuild = Array.isArray(byRole.guest.build) && byRole.guest.build.length === 3 ? byRole.guest.build : fallbackBuild;
+  const host = createPlayerOwner(byRole.host, 'host', mode, arenaRadius, hostBuild);
+  const guest = createPlayerOwner(byRole.guest, 'guest', mode, arenaRadius, guestBuild);
   const modeState = mode === 'territory'
     ? createTerritoryState(arenaRadius, { role: 'host' })
     : createDuobackState(difficultyIndex);
@@ -113,7 +115,7 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
     owners: [host, guest], cells: [...host.cells, ...guest.cells],
     food: [], viruses: [], ejects: [], bonuses: [],
     modeState, time: 0, tick: 0, nextEntitySequence: 1,
-    build: [...build], randomState: rng.snapshot(),
+    build: [...fallbackBuild], randomState: rng.snapshot(),
   };
 
   for (let i = 0; i < foodCount; i++) {

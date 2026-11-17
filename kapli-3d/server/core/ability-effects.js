@@ -1,7 +1,8 @@
 // Deterministic, rendering-free ability world effects extracted from js/game/06-abilities.js.
 // Entity creation/removal, food-grid updates, mode hooks and presentation are callbacks.
 import { cellRadius } from './physics.js';
-import { ABILITY_DATA, abilityOn } from './abilities.js';
+import { ABILITY_DATA, abilityOn, createDecoy } from './abilities.js';
+import { createVirus, VIRUS_RULES } from './viruses.js';
 
 const n = (v, d = 0) => Number.isFinite(v) ? v : d;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -24,6 +25,70 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
   const power = options.player ? 1 + 0.065 * Math.max(0, n(options.level)) : 1;
   const foes = world.foesOf(owner);
   const events = [];
+  if (id === 'shield') {
+    if (options.player && world.effects) world.effects.shield = Math.max(world.effects.shield || 0, a.dur * power);
+    else owner.abT.shield = a.dur;
+    owner.abT.shieldB = a.dur * power;
+    owner.shHit = new Set();
+    return { ok: true, events };
+  }
+  if (id === 'pulse') { owner.abT.pulse = a.dur * power; return { ok: true, events }; }
+  if (id === 'shrink' || id === 'cloak') {
+    owner.abT[id] = a.dur * power;
+    if (id === 'cloak') {
+      owner.cloakBonus = true;
+      for (const foe of world.owners) if (foe.target?.owner === owner) foe.target = null;
+    }
+    return { ok: true, events };
+  }
+  if (id === 'decoy' || id === 'blink') {
+    const isBlink = id === 'blink';
+    const ttl = isBlink ? 1 : a.dur * power;
+    const d = createDecoy(owner.id, main.x, main.z, main.hx, main.hz, cellRadius(main), ttl, { still: isBlink, team: owner.team });
+    state.decoys ||= [];
+    state.decoys = state.decoys.filter(x => x.ownerId !== owner.id);
+    state.decoys.push(d);
+    if (isBlink) for (const foe of world.owners) if (foe.target?.owner === owner) foe.target = { owner: { decoy: true }, ...d };
+    if (isBlink) {
+      for (const c of owner.cells) {
+        const p = clampPoint(c.x + main.hx * a.dist * power, c.z + main.hz * a.dist * power, world.arenaRadius);
+        c.x = p.x; c.z = p.z;
+      }
+    }
+    return { ok: true, events: isBlink ? [{ type: 'blink-shadow', x: px, z: pz, radius: cellRadius(main), ttl: 1, ownerId: owner.id }] : events };
+  }
+  if (id === 'trap') {
+    const mine = (world.viruses || []).filter(v => v.trap?.ownerId === owner.id);
+    if (mine.length >= VIRUS_RULES.MAX_TRAPS_PER_OWNER || mine.length >= 2) {
+      const first = mine[0], index = world.viruses.indexOf(first);
+      if (index >= 0) world.viruses.splice(index, 1);
+    }
+    const trap = createVirus(px, pz, 0, 0, { trap: { ttl: a.dur, ownerId: owner.id, team: owner.team ?? null } });
+    world.viruses ||= []; world.viruses.push(trap);
+    return { ok: true, events: [{ type: 'trap-created', ownerId: owner.id, x: px, z: pz }] };
+  }
+  if (['x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].includes(id)) {
+    owner.abT[id] = a.dur;
+    if (id === 'x_refl') owner.spHit = new Set();
+    return { ok: true, events };
+  }
+  if (id === 'x_ice') { owner.abT.x_ice = a.dur; owner.iceDrop = 0; state.iceDropByOwner[owner.id] = 0; return { ok: true, events }; }
+  if (id === 'x_twin') {
+    const maxParts = options.player ? world.playerMaxParts?.(owner) ?? 4 : n(world.botParts, 8);
+    if (owner.cells.length >= maxParts || main.mass < 20 || !world.splitOwner) return { ok: false, reason: 'cannot-split' };
+    if (!world.splitOwner(owner, owner.cells.length + 1, a.dur)) return { ok: false, reason: 'split-failed' };
+    const twin = owner.cells[owner.cells.length - 1];
+    state.effects.push({ id, t: a.dur, ownerId: owner.id, caId: main.id, cbId: twin.id });
+    return { ok: true, events };
+  }
+  if (id === 'cr_gearwall') {
+    const gr = Math.max(2.4, cellRadius(main) * 0.5), distance = cellRadius(main) + gr + 2;
+    const cx = px + main.hx * distance, cz = pz + main.hz * distance;
+    const nx = -main.hz, nz = main.hx;
+    const segs = [-1.9, 0, 1.9].map(k => ({ x: cx + nx * gr * k, z: cz + nz * gr * k }));
+    state.effects.push({ id, t: a.dur, ownerId: owner.id, gr, segs, hitIds: [] });
+    return { ok: true, events };
+  }
   if (id === 'slow') {
     const rad = a.radius * power;
     for (const foe of foes) if (world.nearOf(owner, foe, rad)) foe.slowT = Math.max(foe.slowT || 0, a.dur * power);
@@ -42,8 +107,15 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
     }
     return { ok: true, events };
   }
-  if (id === 'blink' || id === 'x_phase') {
-    const distance = id === 'blink' ? a.dist * power : a.dist;
+  if (id === 'x_phase') {
+    const distance = a.dist;
+    if (owner.phase2 > 0) { owner.phase2 = 0; owner.abCd.x_phase = options.player ? a.cd * (1 - 0.04 * Math.max(0, n(options.level))) : a.cd; }
+    else owner.phase2 = n(options.phaseWindow, 2);
+    for (const c of owner.cells) { const p = clampPoint(c.x + main.hx * distance, c.z + main.hz * distance, world.arenaRadius); c.x = p.x; c.z = p.z; }
+    return { ok: true, events };
+  }
+  if (id === 'blink') {
+    const distance = a.dist * power;
     for (const c of owner.cells) {
       const p = clampPoint(c.x + main.hx * distance, c.z + main.hz * distance, world.arenaRadius);
       c.x = p.x; c.z = p.z;

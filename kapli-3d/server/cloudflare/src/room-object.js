@@ -65,28 +65,36 @@ export class GameRoom {
         id INTEGER PRIMARY KEY CHECK (id = 1),
         payload TEXT NOT NULL,
         updated_at INTEGER NOT NULL
-      );
+      )
+    `);
+    ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS event_log (
         sequence INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL,
         payload TEXT NOT NULL,
         created_at INTEGER NOT NULL
-      );
+      )
+    `);
+    ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS snapshots (
         sequence INTEGER PRIMARY KEY,
         payload TEXT NOT NULL,
         created_at INTEGER NOT NULL
-      );
+      )
+    `);
+    ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS socket_tickets (
         ticket_hash TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
         expires_at INTEGER NOT NULL
-      );
+      )
+    `);
+    ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS invalid_attempts (
         user_id TEXT PRIMARY KEY,
         count INTEGER NOT NULL,
         blocked_until INTEGER NOT NULL
-      );
+      )
     `);
     this.ready = ctx.blockConcurrencyWhile(async () => this.load());
   }

@@ -16,6 +16,8 @@ import {
   resolveDuobackBossEntity, spawnDuobackBossEntity, spawnDuobackBossChunk,
 } from '../modes/duoback-entities.js';
 import { tickDuobackSpecialBoss, duobackSpecialChunkEaten } from '../modes/duoback-special.js';
+import { createVirus } from '../core/viruses.js';
+import { findDuobackBossSpawn } from '../match/spawn.js';
 
 const totalMass = owner => (owner?.cells || []).reduce((sum, cell) => sum + cell.mass, 0);
 
@@ -174,7 +176,13 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     bossTicks.push({ bossId: boss.id, type: descriptor.type, events: tick.events, steering: tick.steering, expired: tick.expired });
     applySteering(boss, tick.steering);
     for (const event of tick.events) {
-      if (event.type === 'spawn-virus') options.spawnVirus?.(event, world);
+      if (event.type === 'spawn-virus') {
+        if (options.spawnVirus) options.spawnVirus(event, world);
+        else {
+          world.viruses ||= [];
+          if (world.viruses.length < 16) world.viruses.push(createVirus(event.x, event.z));
+        }
+      }
       options.onBossEvent?.(event, boss, world);
     }
     if (tick.expired) {
@@ -245,8 +253,10 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
       const request = { ...descriptor, wave: state.wave };
       spawnRequests.push(request);
       events.push({ type: 'boss-spawn-requested', ...request });
-      if (options.spawnPositionForBoss) {
-        const position = options.spawnPositionForBoss(request, world, options.random);
+      if (options.spawnPositionForBoss || (Array.isArray(world.cells) && Number.isFinite(world.arenaRadius))) {
+        const position = options.spawnPositionForBoss
+          ? options.spawnPositionForBoss(request, world, options.random)
+          : findDuobackBossSpawn(world, options.random);
         const created = spawnDuobackBossEntity(world, request, position, state.wave);
         events.push({ type: 'boss-entity-created', bossId: created.owner.id, cellId: created.cell.id });
       }

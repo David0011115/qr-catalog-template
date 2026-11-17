@@ -15,11 +15,11 @@ export default defineConfig({
       traces: { enabled: true, headSamplingRate: 0.05 },
     },
     env: {
-      ROOMS: bindings.durableObject({ worker: entrypoint, exportName: 'GameRoom' }),
+      ROOMS: bindings.durableObject({ worker: 'kapli-3d-online-test', exportName: 'GameRoom' }),
       SUPABASE_URL: bindings.secret(),
       SUPABASE_ANON_KEY: bindings.secret(),
       SUPABASE_SERVICE_ROLE_KEY: bindings.secret(),
-      ALLOWED_ORIGINS: bindings.text('https://replace-with-your-game-domain.example'),
+      ALLOWED_ORIGINS: bindings.secret(),
     },
   },
 });

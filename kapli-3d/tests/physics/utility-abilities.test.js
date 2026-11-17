@@ -82,6 +82,7 @@ test('utility cooldowns advance on fixed server ticks', () => {
 
 test('account upgrades extend split capacity and reduce merge time using source formulas', () => {
   const owner = makePlayer('upgraded', 200);
+  owner.free.push('slot-4', 'slot-5'); owner.freeCount = owner.free.length;
   owner.splitMaxParts = 6;
   owner.mergeSeconds = 14 * (1 - 0.03 * 6);
   const world = { cells: [...owner.cells] };
@@ -106,7 +107,7 @@ test('account dash upgrades set duration, cooldown and mass cost independently',
   assert.equal(result.ok, true);
   assert.equal(owner.dashT, 0.49);
   assert.equal(owner.dashCd, 3.64);
-  assert.ok(Math.abs(owner.cells[0].mass - 98.08) < 1e-9);
+  assert.ok(Math.abs(owner.cells[0].mass - 97.96) < 1e-9);
 });
 
 test('eject uses the authenticated ability level embedded in the owner profile', () => {

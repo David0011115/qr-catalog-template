@@ -69,3 +69,12 @@ test('serialization rejects owner cell lists that refer to missing cells', () =>
   const world = makeWorld(); world.owners[0].cells.push({ id: 'missing' });
   assert.throws(() => serializeWorldState(world), /owner references unknown cell/);
 });
+
+test('serialization rejects cells assigned to the wrong owner and duplicate owner membership', () => {
+  const wrongOwner = makeWorld();
+  wrongOwner.owners[0].cells = [wrongOwner.cells[1]];
+  assert.throws(() => serializeWorldState(wrongOwner), /owner\/cell membership mismatch/);
+  const duplicate = makeWorld();
+  duplicate.owners[0].cells.push(duplicate.cells[1]);
+  assert.throws(() => serializeWorldState(duplicate), /multiple owners/);
+});

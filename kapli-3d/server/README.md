@@ -9,16 +9,19 @@ This directory contains the rendering-free foundation for the authoritative mult
 - `core/random.js`: seeded PRNG matching the generator used by the existing two-phone mode, with a serializable seed/counter snapshot.
 - `core/viruses.js`: virus movement and collisions, trap ownership/expiry, spike splitting, player forward ejection, bot backward ejection, ejected-mass drag/pickup, feeding a virus, and respawn timers. It exposes complete tick helpers while leaving entity storage and visual effects to the caller.
 - `core/abilities.js`: source-derived ability cooldown/power formulas, active timers, shrink-size easing, phase-jump cooldown timing, and decoy movement/collision.
-- `core/ability-effects.js`: validated ability casting/cooldowns and source-derived world effects for shield, pulse, slow, push, blink/phase, shrink/cloak, decoy, traps, overload, black hole, anchor, meteors, mirror twin, vampirism, typhoon, ice trail, ghost expiration, Chronos gear wall/rewind/swap, plus serializable effect/history state. The module uses injected world/entity callbacks and is not yet wired into the live game loop or Durable Object.
+- `core/ability-effects.js`: validated ability casting/cooldowns and source-derived world effects for shield, pulse, slow, push, blink/phase, shrink/cloak, decoy, traps, overload, black hole, anchor, meteors, mirror twin, vampirism, typhoon, ice trail, ghost expiration, Chronos gear wall/rewind/swap, plus serializable effect/history state. Effects are driven by the simulation adapter and injected entity callbacks.
 - `modes/territory.js`: server-authoritative territory border movement, circular area-share formula, home-side bot restrictions/spawns, foreign-side speed penalty, eaten-player border jumps, 80% early win, 4-minute timer and one 30-second overtime, plus snapshot/restore.
+- `simulation/ability-runtime.js`: server-owned ability-slot resolution, monotonic per-owner activation sequence checks, cooldown and timer ticking, effect stepping, Chronos history, and world adapters.
+- `simulation/mode-runtime.js`: adapters that step Territory scoring/eat hooks and DuoBack regular/special bosses, meteor strikes, respawns, wave transitions and result callbacks. Entity creation, spawn positions, boss steering and reward side effects remain explicit callbacks.
 - `modes/duoback.js`: Duoback difficulty, 50-wave progression, boss spawn scaling, 5-wave special cadence, boost choices/effects, shared pair boosts, break/respawn timing, meteor strike damage, phase transitions, boss-defeat hooks and mode-state snapshot.
 - `modes/duoback-bosses.js`: regular boss target selection, wedge/devourer dashes, leech mass drain, weaver spike spawning, twin enrage and boss life/melt.
 - `modes/duoback-special.js`: special-boss chunk damage/lifetime, shedding, vortex pull, meteor warnings, split/re-split phases, defeat/escape outcomes. World entity creation/removal is injected through callbacks.
 - `room/lifecycle.js`: two-player room lifecycle, readiness/countdown, five-minute waiting timeout, creator/guest leave rules, invalid-code blocking, reconnect handoff and room snapshot/restore.
 - `match/lifecycle.js`: immediate pause on disconnect, 30-second reconnect deadline, resume only after both players reconnect, paused-time accounting and mode-specific timeout result callback.
-- `storage/recovery.js`: versioned snapshot envelopes, five-second/critical snapshot policy, sequence-checked event replay and recovery gap detection.\n- `storage/world-state.js`: JSON-safe world snapshots with stable owner/cell IDs, restored circular owner↔cell links, cell/decoy target references, defensive hit sets, and validation that rejects dangling or mismatched entity references.
+- `storage/recovery.js`: versioned snapshot envelopes, five-second/critical snapshot policy, sequence-checked event replay and recovery gap detection.
+- `storage/world-state.js`: JSON-safe world snapshots with stable owner/cell IDs, restored circular owner↔cell links, cell/decoy target references, defensive hit sets, and validation that rejects dangling or mismatched entity references.
 
-These modules are not wired into a Worker or Durable Object yet. The browser game continues to run exactly as before.
+These modules are now callable from the fixed simulation tick through `stepAbilities` and `stepMode` adapters. They are not yet wired into a Worker or Durable Object, and the browser game continues to run exactly as before. A room host must still provide authoritative slot/build resolution, entity spawn/remove callbacks, mode-specific steering, and reward/stat persistence.
 
 **Balance invariant:** player cells have no per-cell mass cap and may merge even when their combined mass exceeds the old `MAX_MASS` value. Keep the existing bot and boss caps separate; do not reintroduce a player cap.
 
@@ -43,7 +46,7 @@ The tests cover extracted movement/eating formulas and differential checks again
 - The rules preserve the source ordering in `js/game/07-round.js`: cell-pair interactions, food and decay, eating pass, then mass caps. Eating uses the stable cell snapshot, 48-unit broad-phase buckets, source radius threshold, 1.25 mass ratio and 80% mass transfer.
 - Food respawn uses the persisted `world.randomState` PRNG stream. A world that can consume food must be initialized with a valid random-state snapshot, or supply a deterministic `worldRules.placeFood` callback.
 - Mode- and progression-specific differences are injected through explicit `worldRules` callbacks (for example guard, magnet, food multipliers, ability checks, mode mass caps and eat hooks); no mode-specific result/stat handling is guessed by the generic core.
-- The `stepSimulationTick()` result includes interaction summaries. The optional `simulateWorld` callback runs after the generic interaction phase for later mode-specific adapters.
+- The `stepSimulationTick()` result includes interaction summaries and optional ability/mode results. `stepAbilities` runs at the start of the fixed tick; `stepMode` runs after generic world interactions. `simulateWorld` remains a final extension hook.
 
 ## Deterministic input loop
 
@@ -51,7 +54,18 @@ The tests cover extracted movement/eating formulas and differential checks again
 - Accepted commands are queued and acknowledged only after the authoritative tick processes them. A newer pending command replaces an older unprocessed direction for that player.
 - `stepSimulationTick()` advances exactly (1/30) second, applies the current player direction through the source-matched steering function, then invokes an optional world-step adapter for collisions, food, viruses, abilities and mode hooks.
 - The loop marks a snapshot as due every second tick (15 Hz) and increments a snapshot sequence; the caller still performs the actual serialization and durable write. Loop state, pending inputs and sequence cursors have validated JSON-safe snapshot/restore helpers.
-- The loop is a simulation-core building block, not a running server: no Durable Object scheduler, WebSocket transport, collision/world adapter or browser-client integration has been added. The existing browser game remains unchanged.
+- The loop is a simulation-core building block, not a running server: no Durable Object scheduler, WebSocket transport, full room-owned entity adapter or browser-client integration has been added. The existing browser game remains unchanged.
+
+## Ability runtime
+- `stepAbilityRuntime(world, state, dt, commands, options)` accepts only owner IDs, monotonically increasing activation sequence numbers and a slot number. The slot is resolved server-side by `resolveAbilityId`; client-supplied ability IDs are ignored.
+- Cooldowns and active ability timers advance once per fixed tick before persistent world effects are applied. A successful cast starts its cooldown; failed casts do not.
+- `state.lastCommandSeq` must be included in the world snapshot so activation replay is rejected after recovery. `world.abilityState` stores decoys, effect timers and Chronos history state for serialization.
+- Mode/build-dependent facts (slot contents, levels, Chronos arena state, player-specific effects) are supplied by trusted server callbacks. Do not accept those values from the client.
+
+## Mode runtime
+- `createTerritoryRules(state)` provides the territory-aware movement multiplier, bot eat restriction and the player-eaten border-jump hook. `stepTerritoryRuntime` updates the border, evaluates early win/time/overtime and reports results.
+- `stepDuobackRuntime` advances regular and special boss rules, meteor damage, player respawn timers and wave/break progression. The room adapter must resolve boss entities and implement spawn/remove, steering, food/virus and reward callbacks.
+- These are server-side rule adapters, not a completed online mode. Their callbacks still need to be bound to the actual room entity model and validated against full source-level gameplay parity.
 
 ## Next implementation steps
 

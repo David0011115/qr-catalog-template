@@ -7,7 +7,7 @@ import {
   duobackCooldownMultiplier, duobackBossBaseSpeed, duobackBossSpeedMultiplier, duobackBlocksBossEat,
   drawDuobackBoostChoices, applyDuobackBoost, startDuobackWave, startDuobackBreak,
   chooseDuobackBoost, duobackPlayerLost, duobackBotEaten, tickDuobackMeteors,
-  duobackCanFinish, serializeDuobackState, restoreDuobackState, duobackRegularBossDefeated, tickDuobackPhase,
+  duobackCanFinish, serializeDuobackState, validateDuobackStateSnapshot, restoreDuobackState, duobackRegularBossDefeated, tickDuobackPhase,
 } from '../../server/modes/duoback.js';
 
 const player = (role, masses = [100]) => ({ role, cells: masses.map((mass, i) => ({ id: role + i, mass, x: 0, z: 0 })) });
@@ -165,7 +165,7 @@ test('Duoback state snapshot restores wave, offers, bosses and meteor timers', (
   s.offers = { host: ['mass', 'speed', 'armor'], guest: ['cd', 'absorb', 'mass'] };
   s.picked = { host: 'mass' }; s.regular = [{ type: 'weaver', life: 10, mass: 400 }];
   s.meteors = [{ x: 4, z: 5, radius: 18, t: 0.8 }];
-  s.special = { id: 'meteor', chunks: [{ id: 'c1', mass: 20 }], split: ['c1'], damage: 10 };
+  s.special = { id: 'meteor', max: 200, damage: 10, life: 40, shed: 1, attack: 2, pull: 0, base: 100, chunks: [{ cellId: 'c1', mass: 20 }], split: ['c1'], splitTimer: 5, splitAgain: false, enhanced: true };
   const copy = restoreDuobackState(serializeDuobackState(s));
   assert.equal(copy.difficultyIndex, 2); assert.equal(copy.wave, 30); assert.equal(copy.shared.sh_link, 2);
   assert.deepEqual(copy.offers, s.offers); assert.deepEqual(copy.regular, s.regular); assert.deepEqual(copy.meteors, s.meteors);
@@ -216,4 +216,14 @@ test('boss defeat hook ignores special bosses and non-boss entities', () => {
   assert.equal(duobackRegularBossDefeated(s, { dbType: 'vortex', dbSpec: true }), false);
   assert.equal(duobackRegularBossDefeated(s, { kind: 'bot' }), false);
   assert.equal(s.team.bosses, 0);
+});
+test('DuoBack snapshots reject invalid meteor geometry and dangling special split pieces', () => {
+  const state = createDuobackState(0);
+  state.wave = 5;
+  state.special = { id: 'split', max: 200, damage: 10, life: 40, shed: 1, attack: 2, pull: 0, base: 100, chunks: [{ cellId: 'piece-a', mass: 20 }], split: ['piece-a'] };
+  state.meteors = [{ x: 0, z: 0, radius: 18, t: 1 }];
+  const snapshot = serializeDuobackState(state);
+  assert.equal(validateDuobackStateSnapshot(snapshot), true);
+  assert.throws(() => restoreDuobackState({ ...snapshot, meteors: [{ x: 0, z: 0, radius: -1, t: 1 }] }), /INVALID_DUOBACK_METEOR/);
+  assert.throws(() => restoreDuobackState({ ...snapshot, special: { ...snapshot.special, split: ['missing'] } }), /INVALID_DUOBACK_SPLIT/);
 });

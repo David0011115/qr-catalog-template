@@ -121,3 +121,83 @@ test('meteor impact pops large cells and pushes smaller cells', () => {
   tickWorldAbilityEffects(s, w, 0.02);
   assert.deepEqual(popped, [large.cells[0]]); assert.ok(small.cells[0].vx > 0); assert.equal(s.effects.length, 0);
 });
+
+test('shield and pulse cast set the authoritative active timers', () => {
+  const p = owner('p', [cell(100)]), w = worldFor(p, [], { effects: { shield: 0 } });
+  castWorldAbility('shield', p, w, createWorldAbilityEffects(), { player: true });
+  assert.equal(w.effects.shield, 6); assert.equal(p.abT.shieldB, 6); assert.ok(p.shHit instanceof Set);
+  castWorldAbility('pulse', p, w, createWorldAbilityEffects()); assert.equal(p.abT.pulse, 5);
+});
+
+test('cloak removes existing bot targets and shrink/cloak timers are stored', () => {
+  const p = owner('p', [cell(100)]), bot = owner('bot', [cell(20)]); bot.target = { owner: p };
+  const w = worldFor(p, [bot]);
+  castWorldAbility('cloak', p, w, createWorldAbilityEffects());
+  assert.equal(p.abT.cloak, 4); assert.equal(p.cloakBonus, true); assert.equal(bot.target, null);
+  castWorldAbility('shrink', p, w, createWorldAbilityEffects()); assert.equal(p.abT.shrink, 4);
+});
+
+test('trap cast replaces oldest owned trap when the two-trap limit is reached', () => {
+  const p = owner('p', [cell(100)]), w = worldFor(p); w.viruses = [
+    { x: 1, z: 0, trap: { ownerId: 'p', ttl: 5 } },
+    { x: 2, z: 0, trap: { ownerId: 'p', ttl: 5 } },
+    { x: 3, z: 0, trap: { ownerId: 'other', ttl: 5 } },
+  ];
+  const first = w.viruses[0]; castWorldAbility('trap', p, w, createWorldAbilityEffects());
+  assert.equal(w.viruses.length, 3); assert.equal(w.viruses.includes(first), false);
+  assert.equal(w.viruses.filter(v => v.trap?.ownerId === 'p').length, 2);
+});
+
+test('decoy cast replaces previous clone and blink shadow is stationary', () => {
+  const p = owner('p', [cell(100)]), s = createWorldAbilityEffects(), w = worldFor(p);
+  castWorldAbility('decoy', p, w, s); const first = s.decoys[0];
+  castWorldAbility('decoy', p, w, s); assert.equal(s.decoys.length, 1); assert.notEqual(s.decoys[0], first);
+  const blink = castWorldAbility('blink', p, w, s, { player: true });
+  assert.equal(blink.events[0].type, 'blink-shadow'); assert.equal(s.decoys.length, 1); assert.equal(s.decoys[0].still, true);
+});
+
+test('phase jump has a two-second second-jump window and starts cooldown on second use', () => {
+  const p = owner('p', [cell(100)]), w = worldFor(p), s = createWorldAbilityEffects();
+  castWorldAbility('x_phase', p, w, s); assert.equal(p.phase2, 2); assert.equal(p.abCd.x_phase, undefined);
+  castWorldAbility('x_phase', p, w, s, { player: true });
+  assert.equal(p.phase2, 0); assert.equal(p.abCd.x_phase, 28);
+});
+
+test('mirror twin tracks heading and merges back when its timer expires', () => {
+  const main = cell(100, 0, 0, { id: 'a' });
+  const p = owner('p', [main]); main.owner = p;
+  const w = worldFor(p);
+  w.splitOwner = () => { const twin = cell(100, 5, 0, { id: 'b' }); twin.owner = p; p.cells.push(twin); return true; };
+  w.removeCell = c => { p.cells = p.cells.filter(x => x !== c); c.gone = true; };
+  const s = createWorldAbilityEffects();
+  assert.equal(castWorldAbility('x_twin', p, w, s, { player: true, playerMaxParts: () => 4 }).ok, true);
+  const twin = p.cells[1]; main.hx = 0.6; main.hz = 0.8;
+  tickWorldAbilityEffects(s, w, 0.1); assert.equal(twin.hx, 0); assert.equal(twin.hz, 0.8);
+  tickWorldAbilityEffects(s, w, 5); assert.equal(p.cells.length, 1); assert.equal(main.mass, 200);
+});
+
+test('gear wall pushes colliding cells and removes five percent mass once per cell', () => {
+  const p = owner('p', [cell(100, 0, 0)]), foe = owner('foe', [cell(100, 0, 0, { id: 'foe-cell' })]);
+  const w = worldFor(p, [foe]), s = createWorldAbilityEffects();
+  castWorldAbility('cr_gearwall', p, w, s);
+  const effect = s.effects[0], c = foe.cells[0];
+  c.x = effect.segs[1].x; c.z = effect.segs[1].z;
+  tickWorldAbilityEffects(s, w, 1 / 30); assert.equal(c.mass, 95); assert.ok(c.vx > 0 || c.vz !== 0);
+  tickWorldAbilityEffects(s, w, 1 / 30); assert.equal(c.mass, 95);
+});
+
+test('Chronos rewind restores previous position and only increases mass', () => {
+  const p = owner('p', [cell(100)]), w = worldFor(p), s = { clock: 10, history: [{ t: 6, x: -10, z: 0, mass: 150 }] };
+  p.cells[0].x = 20;
+  const result = castWorldAbility('cr_rewind', p, w, s, { player: true });
+  assert.equal(result.ok, true); assert.equal(p.cells[0].x, -10); assert.equal(p.cells[0].mass, 150);
+});
+
+test('Chronos swap only selects the nearest target in front and outside boss/minion classes', () => {
+  const p = owner('p', [cell(100, 0, 0, { hx: 1, hz: 0 })]);
+  const behind = owner('behind', [cell(20, -5, 0)]), front = owner('front', [cell(20, 8, 0)]);
+  const w = worldFor(p, [behind, front]), s = createWorldAbilityEffects();
+  const result = castWorldAbility('cr_swap', p, w, s);
+  assert.equal(result.ok, true); assert.equal(result.targetId, front.cells[0].id);
+  assert.equal(p.cells[0].x, 8); assert.equal(front.cells[0].x, 0); assert.equal(behind.cells[0].x, -5);
+});

@@ -189,7 +189,9 @@ export function restoreSimulationLoopState(snapshot) {
   if (!isRecord(snapshot) || !Number.isSafeInteger(snapshot.tick) || snapshot.tick < 0 ||
       !Number.isSafeInteger(snapshot.snapshotSequence) || snapshot.snapshotSequence < 0 ||
       !isRecord(snapshot.lastReceivedSeq) || !isRecord(snapshot.lastProcessedSeq) ||
-      !isRecord(snapshot.pendingInputs) || !isRecord(snapshot.directions)) {
+      !isRecord(snapshot.pendingInputs) || !isRecord(snapshot.lastAbilityReceivedSeq) ||
+      !isRecord(snapshot.lastAbilityProcessedSeq) || !isRecord(snapshot.pendingAbilities) ||
+      !isRecord(snapshot.directions)) {
     throw new TypeError('invalid simulation loop snapshot');
   }
 

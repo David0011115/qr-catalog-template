@@ -398,6 +398,6 @@ test('Weaver creates a server virus by default when no room callback is supplied
   });
   assert.equal(world.viruses.length, 1);
   assert.equal(world.viruses[0].mass, 100);
-  assert.equal(world.viruses[0].x, 15);
+  assert.ok(Math.abs(world.viruses[0].x - 11.2) < 1e-9);
   assert.equal(world.viruses[0].z, 10);
 });

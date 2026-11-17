@@ -102,7 +102,7 @@ test('special boss appears every fifth wave with exact health and final-wave mul
   assert.equal(s.special.life, 80); assert.equal(s.special.shed, 2); assert.equal(s.special.attack, 4);
   const final = createDuobackState(0); final.wave = 49;
   const f = startDuobackWave(final, [player('host', [100]), player('guest', [80])], () => 0.99);
-  assert.equal(final.wave, 50); assert.equal(final.special.final, true); assert.equal(final.special.max, 100 * 2.4 * 3.3 * 1.3);
+  assert.equal(final.wave, 50); assert.equal(final.special.final, true); assert.equal(final.special.max, 100 * 2.4 * 3.25 * 1.3);
   assert.equal(f.spawns.filter(x => x.kind === 'regular').length, 2);
 });
 

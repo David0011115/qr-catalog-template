@@ -276,3 +276,81 @@ test('DuoBack runtime forwards regular boss attack events and weaver virus spawn
   assert.equal(viruses[0].ownerId, 'weaver-0');
   assert.equal(out.bossTicks[0].bossId, 'weaver-0');
 });
+
+
+test('DuoBack runtime creates special boss entities and advances their steering without external resolvers', () => {
+  const state = createDuobackState();
+  state.wave = 4; state.phase = 1; state.breakRemaining = 0.01;
+  const hostCell = { id: 'host-cell', mass: 100, x: 100, z: 0, hx: 1, hz: 0 };
+  const guestCell = { id: 'guest-cell', mass: 100, x: 120, z: 0, hx: 1, hz: 0 };
+  const players = [
+    { id: 'host', role: 'host', isPlayer: true, cells: [hostCell] },
+    { id: 'guest', role: 'guest', isPlayer: true, cells: [guestCell] },
+  ];
+  const world = { owners: players, cells: [hostCell, guestCell], arenaRadius: 300, matchTime: 12 };
+  const options = {
+    resolvePlayers: () => players,
+    random: () => 0.5,
+    spawnPositionForBoss: () => ({ x: 0, z: 0 }),
+  };
+  const started = stepDuobackRuntime(state, world, 0.1, options);
+  assert.equal(started.spawnRequests.length, 1);
+  const boss = world.owners.find(owner => owner.dbSpec);
+  assert.ok(boss);
+  assert.equal(boss.dbType, 'vortex');
+  assert.equal(boss.cells.length, 1);
+  const beforeX = boss.cells[0].x;
+  const ticked = stepDuobackRuntime(state, world, 1 / 30, options);
+  assert.equal(ticked.bossTicks[0].bossId, boss.id);
+  assert.ok(boss.cells[0].x > beforeX);
+});
+
+test('DuoBack runtime creates regular bosses and removes an expired entity from the world', () => {
+  const state = createDuobackState();
+  state.phase = 1; state.breakRemaining = 0.01;
+  const hostCell = { id: 'host-cell', mass: 100, x: 100, z: 0, hx: 1, hz: 0 };
+  const guestCell = { id: 'guest-cell', mass: 100, x: 120, z: 0, hx: 1, hz: 0 };
+  const players = [
+    { id: 'host', role: 'host', isPlayer: true, cells: [hostCell] },
+    { id: 'guest', role: 'guest', isPlayer: true, cells: [guestCell] },
+  ];
+  const world = { owners: players, cells: [hostCell, guestCell], arenaRadius: 300 };
+  const options = {
+    resolvePlayers: () => players, random: () => 0.7,
+    spawnPositionForBoss: () => ({ x: 0, z: 0 }),
+  };
+  stepDuobackRuntime(state, world, 0.1, options);
+  const descriptor = state.regular[0];
+  const boss = world.owners.find(owner => owner.dbType === descriptor.type);
+  assert.ok(boss);
+  boss.life = 0.01;
+  const out = stepDuobackRuntime(state, world, 0.1, options);
+  assert.ok(out.events.some(event => event.type === 'regular-boss-expired'));
+  assert.equal(world.owners.includes(boss), false);
+  assert.equal(world.cells.includes(boss.cells[0]), false);
+  assert.equal(state.regular.length, 0);
+});
+
+test('DuoBack special boss defeat removes its owner and all cells from the authoritative world', () => {
+  const state = createDuobackState();
+  state.wave = 4; state.phase = 1; state.breakRemaining = 0.01;
+  const hostCell = { id: 'host-cell', mass: 100, x: 100, z: 0, hx: 1, hz: 0 };
+  const guestCell = { id: 'guest-cell', mass: 100, x: 120, z: 0, hx: 1, hz: 0 };
+  const players = [
+    { id: 'host', role: 'host', isPlayer: true, cells: [hostCell] },
+    { id: 'guest', role: 'guest', isPlayer: true, cells: [guestCell] },
+  ];
+  const world = { owners: players, cells: [hostCell, guestCell], arenaRadius: 300 };
+  const options = {
+    resolvePlayers: () => players, random: () => 0.5,
+    spawnPositionForBoss: () => ({ x: 0, z: 0 }),
+  };
+  stepDuobackRuntime(state, world, 0.1, options);
+  const boss = world.owners.find(owner => owner.dbSpec);
+  state.special.damage = state.special.max;
+  const out = stepDuobackRuntime(state, world, 0.1, options);
+  assert.equal(out.bossTicks[0].result, 'defeated');
+  assert.equal(world.owners.includes(boss), false);
+  assert.equal(world.cells.some(cell => cell.owner === boss), false);
+  assert.equal(state.special, null);
+});

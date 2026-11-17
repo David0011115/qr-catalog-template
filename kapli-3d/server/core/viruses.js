@@ -95,7 +95,7 @@ export function popCellOnVirus(cell, virus, ownerState, rules = {}) {
   const maxParts = owner.isPlayer
     ? n(rules.playerMaxParts?.(owner), 4)
     : owner.kind === 'bot'
-      ? n(rules.botParts, 8)
+      ? n(rules.botParts, 4)
       : owner.kind === 'boss'
         ? ownerState.cellsCount + ownerState.freeCount
         : 1;

@@ -59,8 +59,12 @@ export function duobackBossSpeedMultiplier(boss, wave) {
   return (boss.dbType === 'twins' && boss.enr ? 1.35 : 1) * (1 + 0.03 * duobackLateStep(wave));
 }
 export function duobackBlocksBossEat(attacker, target) {
-  const armor = target?.db?.armor || 0;
-  return !!armor && !!attacker?.dbType && attacker.mass < target.mass * (1.25 + 0.15 * armor);
+  const attackerOwner = attacker?.owner || attacker;
+  const targetOwner = target?.owner || target;
+  const attackerMass = attacker?.mass ?? attackerOwner?.mass;
+  const targetMass = target?.mass ?? targetOwner?.mass;
+  const armor = targetOwner?.db?.armor || 0;
+  return !!armor && !!attackerOwner?.dbType && attackerMass < targetMass * (1.25 + 0.15 * armor);
 }
 
 export function drawDuobackBoostChoices(rng) {

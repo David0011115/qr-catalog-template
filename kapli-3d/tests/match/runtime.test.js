@@ -129,3 +129,38 @@ test('queued DuoBack boost picks survive match snapshot recovery', () => {
   assert.equal(restored.world.modeState.picked.host, 'shield');
   assert.equal(restored.modeCommands.length, 0);
 });
+
+
+test('match runtime processes sequenced split and eject actions before the authoritative physics tick and recovers queued actions', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-actions', matchId: 'match-actions',
+    players: [
+      { id: 'user-host', role: 'host', nickname: 'Host', build: ['dash', 'split', 'eject'] },
+      { id: 'user-guest', role: 'guest', nickname: 'Guest', build: ['dash', 'split', 'eject'] },
+    ],
+    mode: 'territory', seed: 991, startedAt: 1000,
+  });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  host.cells[0].mass = 100;
+  assert.deepEqual(runtime.submitAction('user-host', { seq: 1, action: 'split' }), {
+    ok: true, acceptedSeq: 1, queued: true,
+  });
+  assert.equal(runtime.submitAction('user-host', { seq: 1, action: 'eject' }).reason, 'replayed-command');
+  const splitTick = runtime.step();
+  assert.equal(splitTick.actionEvents[0].ok, true);
+  assert.equal(host.cells.length, 2);
+  assert.equal(host.cells[0].mass, 50);
+  assert.equal(host.cells[1].mass, 50);
+
+  assert.deepEqual(runtime.submitAction('user-host', { seq: 2, action: 'eject' }), {
+    ok: true, acceptedSeq: 2, queued: true,
+  });
+  const snapshot = runtime.serialize();
+  const restored = restoreDuoMatchRuntime(snapshot);
+  assert.equal(restored.lastActionSeq['user-host'], 2);
+  assert.equal(restored.actionQueue.length, 1);
+  const ejectTick = restored.step();
+  assert.equal(ejectTick.actionEvents[0].ok, true);
+  assert.equal(restored.world.ejects.length, 2);
+  assert.equal(restored.lastActionSeq['user-host'], 2);
+});

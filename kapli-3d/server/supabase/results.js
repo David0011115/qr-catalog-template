@@ -49,6 +49,7 @@ export async function persistMatchResult(env, runtime, room) {
       p_match_id: runtime.lifecycle.matchId,
       p_host_user_id: host.id,
       p_guest_user_id: guest.id,
+      p_host_result: result.winner === 'host' ? 'win' : result.winner === 'guest' ? 'loss' : 'draw',
       p_host_share: hostShare,
       p_extra: {
         winner: result.winner || 'draw',

@@ -242,3 +242,57 @@ export function ejectFromCells(cells, ejects, rules = {}) {
   }
   return { didEject, created, removed, cooldown: didEject ? VIRUS_RULES.EJECT_COOLDOWN : 0 };
 }
+// Complete authoritative virus tick, including collision ordering and the
+// same-frame decrement of newly queued 10-second respawn timers.
+export function stepViruses(viruses, cells, dt, arenaRadius, respawnTimers = [], rules = {}) {
+  const survivors = [];
+  const nextTimers = [...respawnTimers];
+  const pops = [];
+  for (const virus of viruses) {
+    if (virus.trap && tickVirusTrap(virus, dt)) continue;
+    moveVirus(virus, dt, arenaRadius);
+    let popped = false;
+    for (const cell of cells) {
+      if (!canPopOnVirus(cell, virus, rules)) continue;
+      const ownerState = rules.ownerStateFor?.(cell.owner) || { cellsCount: 1, freeCount: 0 };
+      const result = popCellOnVirus(cell, virus, ownerState, rules);
+      pops.push({ cell, virus, result });
+      if (!virus.trap) nextTimers.push(createVirusRespawnTimer());
+      popped = true;
+      break;
+    }
+    if (!popped) survivors.push(virus);
+  }
+  const timerResult = tickVirusRespawnTimers(nextTimers, dt);
+  return { viruses: survivors, respawnTimers: timerResult.timers, spawnCount: timerResult.spawnCount, pops };
+}
+
+// Complete authoritative ejected-blob tick. Virus feeding happens before
+// movement; cell pickup happens after movement, matching updateEjects(dt).
+export function stepEjectedMass(ejects, viruses, cells, dt, arenaRadius, rules = {}) {
+  const survivors = [...ejects];
+  const fed = [];
+  const pickups = [];
+  const spawnedViruses = [];
+  for (let i = survivors.length - 1; i >= 0; i--) {
+    const eject = survivors[i];
+    const feed = tryFeedEjectIntoViruses(eject, viruses);
+    if (feed) {
+      if (feed.spawnedVirus && canSpawnVirus(viruses.length)) {
+        viruses.push(feed.spawnedVirus);
+        spawnedViruses.push(feed.spawnedVirus);
+      }
+      survivors.splice(i, 1);
+      fed.push({ eject, ...feed });
+      continue;
+    }
+    moveEjectedMass(eject, dt, arenaRadius);
+    for (const cell of cells) {
+      if (!tryEjectedMassPickup(eject, cell, rules)) continue;
+      survivors.splice(i, 1);
+      pickups.push({ eject, cell });
+      break;
+    }
+  }
+  return { ejects: survivors, viruses, fed, pickups, spawnedViruses };
+}

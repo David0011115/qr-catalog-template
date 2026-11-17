@@ -45,7 +45,8 @@ export function createBotRoster(mode = 'duoback') {
 export function spawnBotOwner(owner, world, rng, options = {}) {
   if (!owner || owner.kind !== 'bot' || owner.cells.length || !owner.free.length) return null;
   const players = world.owners.filter(item => item.isPlayer);
-  const playerMass = players.reduce((sum, item) => sum + totalMass(item), 0) / Math.max(1, players.length);
+  const primaryPlayer = players.find(item => item.role === 'host') || players[0];
+  const playerMass = totalMass(primaryPlayer);
   const top = Math.min(10000, Math.max(30, playerMass * 0.6));
   const aliveMasses = world.owners.filter(item => item !== owner && item.kind === 'bot' && item.cells.length)
     .map(totalMass).sort((a, b) => a - b);

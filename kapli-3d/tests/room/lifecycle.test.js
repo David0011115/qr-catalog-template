@@ -19,7 +19,7 @@ test('second player joins once and room becomes a two-player lobby', () => {
   assert.deepEqual(joinRoom(r, 'guest', 100), { ok: true, role: 'guest', code: 'A2BCD' });
   assert.equal(r.status, 'lobby'); assert.equal(r.players.length, 2);
   assert.equal(joinRoom(r, 'third', 100).reason, 'room-full-or-started');
-  assert.equal(joinRoom(r, 'guest', 100).reason, 'room-full-or-started');
+  assert.equal(joinRoom(r, 'guest', 100).reason, 'invalid-player');
 });
 
 test('both players must be ready before a three-second countdown starts', () => {

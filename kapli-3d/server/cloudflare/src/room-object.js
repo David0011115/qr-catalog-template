@@ -500,7 +500,7 @@ export class GameRoom {
       food: world.food.map(food => ({ id: food.id, x: food.x, z: food.z })),
       viruses: world.viruses.map(virus => ({ ...virus })),
       ejects: world.ejects.map(item => ({ ...item })),
-      modeState: world.modeState,
+      modeState: world.modeState, respawnTimers: world.respawnTimers || {},
       tick: this.runtime.simulation.tick, clock: world.clock || 0,
       inputSeqs: { ...this.runtime.simulation.lastReceivedSeq },
       abilitySeqs: { ...this.runtime.abilityState.lastCommandSeq },
@@ -517,7 +517,7 @@ export class GameRoom {
       owners: world.owners.map(ownerSummary),
       viruses: world.viruses.map(virus => ({ ...virus })),
       ejects: world.ejects.map(item => ({ ...item })),
-      foodChanges, modeState: world.modeState,
+      foodChanges, modeState: world.modeState, respawnTimers: world.respawnTimers || {},
       elapsedMs: this.runtime.elapsedMs(),
     };
   }

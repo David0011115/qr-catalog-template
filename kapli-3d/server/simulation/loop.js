@@ -110,6 +110,15 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
   const acknowledgements = [];
   const abilityAcknowledgements = [];
   const abilityCommands = [];
+  // Mode rules are resolved from authoritative state before movement/eating.
+  // This keeps Territory/DuoBack modifiers in the same tick as core physics.
+  const modeRules = options.createModeRules?.(world, { tick: nextTick, lifecycle }) || {};
+  if (!isRecord(modeRules)) throw new TypeError('createModeRules must return a rule object');
+  const modePhysicsRules = modeRules.physicsRules || {};
+  const modeWorldRules = modeRules.worldRules || {};
+  if (!isRecord(modePhysicsRules) || !isRecord(modeWorldRules)) {
+    throw new TypeError('mode physicsRules and worldRules must be objects');
+  }
   for (const player of lifecycle.players) {
     const pending = state.pendingAbilities[player.id];
     if (!pending) continue;
@@ -123,6 +132,23 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
   const abilityStep = options.stepAbilities?.(world, dt, {
     tick: nextTick, lifecycle, commands: clone(abilityCommands),
   });
+  const abilityPhysicsRules = abilityStep?.physicsRules || {};
+  const abilityWorldRules = abilityStep?.worldRules || {};
+  if (!isRecord(abilityPhysicsRules) || !isRecord(abilityWorldRules)) {
+    throw new TypeError('ability physicsRules and worldRules must be objects');
+  }
+  const physicsRules = {
+    ...(options.physicsRules || {}),
+    ...modePhysicsRules,
+    ...abilityPhysicsRules,
+    arenaRadius: world.arenaRadius,
+  };
+  const worldRules = {
+    ...(options.worldRules || {}),
+    ...modeWorldRules,
+    ...abilityWorldRules,
+    tick: nextTick,
+  };
   for (const player of lifecycle.players) {
     const pending = state.pendingAbilities[player.id];
     if (!pending) continue;
@@ -154,12 +180,12 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
         cell.x + dx * 10,
         cell.z + dz * 10,
         dt,
-        { ...(options.physicsRules || {}), arenaRadius: world.arenaRadius },
+        physicsRules,
       );
     }
   }
 
-  const worldStep = stepWorldInteractions(world, dt, { ...(options.worldRules || {}), tick: nextTick });
+  const worldStep = stepWorldInteractions(world, dt, worldRules);
   const modeStep = options.stepMode?.(world, dt, { tick: nextTick, worldStep });
   options.simulateWorld?.(world, dt, { tick: nextTick, acknowledgements: clone(acknowledgements), worldStep, abilityStep, modeStep });
   state.tick = nextTick;

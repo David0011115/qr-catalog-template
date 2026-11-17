@@ -59,7 +59,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
   }
   if (id === 'trap') {
     const mine = (world.viruses || []).filter(v => v.trap?.ownerId === owner.id);
-    if (mine.length >= VIRUS_RULES.MAX_TRAPS_PER_OWNER || mine.length >= 2) {
+    if (mine.length >= VIRUS_RULES.MAX_TRAPS_PER_OWNER) {
       const first = mine[0], index = world.viruses.indexOf(first);
       if (index >= 0) world.viruses.splice(index, 1);
     }

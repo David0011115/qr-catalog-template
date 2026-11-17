@@ -122,13 +122,19 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     throw new TypeError('duoback requires the persisted deterministic random stream');
   }
   const events = [];
+  const spawnRequests = [];
+  const bossTicks = [];
   const removeCell = cell => options.removeCell?.(world, cell);
   const rebuildCells = () => options.rebuildCells?.(world);
   const isShielded = player => !!options.isShielded?.(player);
 
   for (const descriptor of [...state.regular]) {
     const boss = options.resolveRegularBoss?.(world, descriptor);
-    if (!boss) continue;
+    if (!boss) throw new Error(`DuoBack regular boss entity missing: ${descriptor.type}:${descriptor.slot}`);
+    if (!boss.id || boss.dbType !== descriptor.type ||
+        (descriptor.slot !== undefined && boss.slot !== undefined && boss.slot !== descriptor.slot)) {
+      throw new TypeError('DuoBack regular boss entity does not match its stable descriptor');
+    }
     if (!boss.cells?.length) {
       const defeated = duobackRegularBossDefeated(state, boss);
       if (defeated) {
@@ -145,8 +151,12 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
       rebuildCells,
     });
     events.push(...tick.events);
+    bossTicks.push({ bossId: boss.id, type: descriptor.type, events: tick.events, steering: tick.steering, expired: tick.expired });
     options.applyBossSteering?.(boss, tick.steering, world);
-    for (const event of tick.events) if (event.type === 'spawn-virus') options.spawnVirus?.(event, world);
+    for (const event of tick.events) {
+      if (event.type === 'spawn-virus') options.spawnVirus?.(event, world);
+      options.onBossEvent?.(event, boss, world);
+    }
     if (tick.expired) {
       state.regular = state.regular.filter(item =>
         !(item.type === descriptor.type && item.slot === descriptor.slot));
@@ -157,7 +167,11 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
 
   if (state.special) {
     const boss = options.resolveSpecialBoss?.(world, state.special);
-    if (boss) {
+    if (!boss) throw new Error(`DuoBack special boss entity missing: ${state.special.id}`);
+    if (!boss.id || boss.dbType !== state.special.id || boss.dbSpec !== true) {
+      throw new TypeError('DuoBack special boss entity does not match its stable descriptor');
+    }
+    {
       const specialWorld = {
         ...world,
         findCell: id => options.findCell?.(world, id) ?? world.cells?.find(cell => cell.id === id) ?? null,
@@ -168,7 +182,9 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
       };
       const tick = tickDuobackSpecialBoss(state, boss, players, dt, specialWorld, options.random);
       events.push(...tick.events);
+      bossTicks.push({ bossId: boss.id, type: state.special?.id ?? boss.dbType, events: tick.events, steering: tick.steering, result: tick.result });
       options.applyBossSteering?.(boss, tick.steering, world);
+      for (const event of tick.events) options.onBossEvent?.(event, boss, world);
       if (tick.result) options.onSpecialBossResult?.(tick.result, boss, tick.events, world);
     }
   }
@@ -197,6 +213,18 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     spawnBonuses: count => options.spawnBonuses?.(count, world),
     publishBoostOffers: offers => options.publishBoostOffers?.(offers, world),
   });
+  if (phase.transition) {
+    options.onPhaseTransition?.(phase.transition, state, world);
+    for (const descriptor of phase.transition.spawns || []) {
+      const request = { ...descriptor, wave: state.wave };
+      spawnRequests.push(request);
+      events.push({ type: 'boss-spawn-requested', ...request });
+      options.onWaveSpawn?.(request, state, world);
+    }
+    if (phase.transition.spawns?.length) {
+      options.onWaveStarted?.(phase.transition, state, world);
+    }
+  }
   if (phase.result) options.onResult?.(phase.result, world);
   const finish = phase.result
     ? { finished: true, won: !!phase.result.won }
@@ -208,5 +236,5 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
       reason: finish.won ? 'all-waves-cleared' : 'both-players-dead',
     }, world);
   }
-  return { events, meteorHits, phase, finish };
+  return { events, meteorHits, bossTicks, spawnRequests, phase, finish };
 }

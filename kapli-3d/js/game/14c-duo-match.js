@@ -347,7 +347,10 @@
         while (viruses.length < n) spawnVirus(0, 0);
         viruses.forEach((v, k) => {
           v.x = s.v[k * 3]; v.z = s.v[k * 3 + 1]; v.mass = s.v[k * 3 + 2];
-          v.vx = v.vz = 0;
+          const meta = s.vm?.[k] || {};
+          v.id = meta.id || v.id; v.vx = meta.vx || 0; v.vz = meta.vz || 0;
+          v.feed = meta.feed || 0; v.trap = meta.trap || null;
+          if (v.mesh) v.mesh.position.set(v.x, .09, v.z);
         });
       }
       if (s.cd) {
@@ -375,7 +378,7 @@
           const length = Math.hypot(cell.hx, cell.hz) || 1; cell.hx /= length; cell.hz /= length;
         }
       }
-      for (const virus of viruses) if (virus.mesh) virus.mesh.position.set(virus.x, radius(virus.mass) * .9, virus.z);
+      for (const virus of viruses) if (virus.mesh) virus.mesh.position.set(virus.x, .09, virus.z);
       if (rl && rl.view) rl.view(dt);
       tagTick();
     }

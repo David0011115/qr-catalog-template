@@ -76,7 +76,7 @@ test('Duo world uses each authenticated player loadout and source-derived progre
   assert.equal(host.mergeSeconds, 12.74);
   assert.equal(host.dashCooldown, 3.76);
   assert.equal(host.dashDuration, 0.49);
-  assert.equal(host.dashMassCost, 0.0204);
+  assert.ok(Math.abs(host.dashMassCost - 0.0204) < 1e-12);
   assert.equal(host.ejectSpeed, 75.6);
   assert.equal(host.upgrades.guard, 3);
   assert.equal(host.abilityLevels.shield, 2);

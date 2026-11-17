@@ -41,6 +41,8 @@ test('health endpoint is public and reports the protocol version', async () => {
   const response = await handleWorkerRequest(new Request('https://worker.example/health'), {});
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { ok: true, service: 'kapli-3d-online', protocol: 1 });
+  const cors = await handleWorkerRequest(new Request('https://worker.example/health', { headers: { origin: 'https://game.example' } }), { ALLOWED_ORIGINS: 'https://game.example' });
+  assert.equal(cors.headers.get('access-control-allow-origin'), 'https://game.example');
 });
 
 test('Worker rejects unapproved browser origins before authentication', async () => {

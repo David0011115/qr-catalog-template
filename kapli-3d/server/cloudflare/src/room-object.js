@@ -61,7 +61,6 @@ export class GameRoom {
     this.loopTimer = null;
     this.nextTickAt = 0;
     this.lastPersistAt = 0;
-    this.ready = ctx.blockConcurrencyWhile(async () => this.load());
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS room_state (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -90,6 +89,7 @@ export class GameRoom {
         blocked_until INTEGER NOT NULL
       );
     `);
+    this.ready = ctx.blockConcurrencyWhile(async () => this.load());
   }
 
   sql(query, ...values) { return this.ctx.storage.sql.exec(query, ...values); }
@@ -106,7 +106,7 @@ export class GameRoom {
       if (row) payload = JSON.parse(row.payload);
     }
     if (payload) this.restorePayload(payload);
-    if (this.runtime && sequence > 0) {
+    if (this.runtime && latest) {
       const events = this.sql(
         'SELECT sequence, type, payload FROM event_log WHERE sequence > ? ORDER BY sequence ASC',
         sequence,
@@ -118,6 +118,7 @@ export class GameRoom {
       }
     }
     this.lastPersistAt = Date.now();
+    if (this.room?.status === 'paused' && this.runtime) await this.scheduleReconnectAlarm();
   }
 
   restorePayload(payload) {
@@ -126,7 +127,6 @@ export class GameRoom {
       resolveDisconnect: this.resolveDisconnect.bind(this),
     }) : null;
     this.seed = payload.seed ?? null;
-    if (this.room?.status === 'paused' && this.runtime) this.scheduleReconnectAlarm();
   }
 
   exportPayload() {
@@ -327,8 +327,8 @@ export class GameRoom {
 
     const pair = new WebSocketPair();
     const client = pair[0], server = pair[1];
-    server.serializeAttachment({ userId });
     this.ctx.acceptWebSocket(server);
+    server.serializeAttachment({ userId });
     server.send(JSON.stringify({ type: 'room-state', room: this.roomView() }));
     if (this.runtime) server.send(JSON.stringify(this.worldInitMessage()));
     await this.appendEvent('socket-connected', { playerId: userId }, true);
@@ -338,6 +338,7 @@ export class GameRoom {
 
   async webSocketMessage(socket, raw) {
     await this.ready;
+    if (this.runtime?.lifecycle.status === 'active' && this.room?.status === 'active') this.startLoop();
     const attachment = socket.deserializeAttachment();
     const userId = attachment?.userId;
     if (!userId || !this.runtime || this.runtime.lifecycle.status !== 'active') {
@@ -415,7 +416,7 @@ export class GameRoom {
     const deadlines = this.runtime.lifecycle.players
       .filter(player => !player.connected && Number.isFinite(player.reconnectUntil))
       .map(player => player.reconnectUntil);
-    if (deadlines.length) this.ctx.storage.setAlarm(Math.min(...deadlines));
+    if (deadlines.length) return this.ctx.storage.setAlarm(Math.min(...deadlines));
   }
 
   resolveDisconnect(disconnected, players) {
@@ -429,6 +430,10 @@ export class GameRoom {
   async alarm() {
     await this.ready;
     const now = Date.now();
+    if (this.room?.status === 'closed' && this.runtime?.lifecycle.status === 'finished' && this.room.resultPersistence?.status === 'pending') {
+      await this.persistResult();
+      return;
+    }
     if (this.room?.status === 'paused' && this.runtime) {
       const result = tickMatchLifecycle(this.runtime.lifecycle, now, this.resolveDisconnect.bind(this));
       if (result.ended) {
@@ -506,12 +511,12 @@ export class GameRoom {
         if (out.snapshotDue && out.advanced) this.broadcast(this.snapshotMessage(out));
         if (this.runtime.lifecycle.status === 'finished') {
           this.loopTimer = null;
-          this.finishMatch();
+          this.finishMatch().catch(() => {});
           return;
         }
       }
       const now = Date.now();
-      if (now - this.lastPersistAt >= PERSIST_INTERVAL_MS) this.writeSnapshot();
+      if (now - this.lastPersistAt >= PERSIST_INTERVAL_MS) this.writeSnapshot().catch(() => {});
       const delay = this.nextTickAt - performance.now();
       this.loopTimer = setTimeout(run, Math.max(0, delay));
     };

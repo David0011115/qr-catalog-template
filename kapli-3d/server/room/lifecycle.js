@@ -67,7 +67,7 @@ export function leaveRoom(room, playerId, now) {
   const player = findPlayer(room, playerId);
   if (!player || room.status === 'closed') return { action: 'none' };
   if (room.status === 'active' || room.status === 'paused') {
-    player.connected = false;
+    player.connected = false; room.status = 'paused';
     return { action: 'match-disconnect', playerId };
   }
   if (player.role === 'host') {
@@ -103,4 +103,13 @@ export function roomSummary(room) {
     players: room.players.map(p => ({ id: p.id, role: p.role, ready: p.ready, connected: p.connected })),
     countdownEndsAt: room.countdownEndsAt, waitingDeadlineAt: room.waitingDeadlineAt,
   };
+}
+
+export function reconnectRoomPlayer(room, playerId) {
+  if (room.status !== 'paused') return { ok: false, reason: 'room-not-paused' };
+  const player = findPlayer(room, playerId);
+  if (!player || player.connected) return { ok: false, reason: 'player-not-disconnected' };
+  player.connected = true;
+  if (room.players.every(p => p.connected)) { room.status = 'active'; return { ok: true, resumed: true }; }
+  return { ok: true, resumed: false };
 }

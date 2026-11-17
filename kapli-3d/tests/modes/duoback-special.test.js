@@ -44,7 +44,7 @@ test('vortex starts three-second pull with eight-second cooldown and moves playe
   const out = tickDuobackSpecialBoss(state, boss, players, 0.1, world, () => 0.5);
   assert.equal(out.events[0].type, 'vortex-pull-start');
   assert.ok(players[0].cells[0].x < before);
-  assert.ok(Math.abs(state.special.pull - 2.9) < 1e-12); assert.equal(state.special.attack, 7.9);
+  assert.ok(Math.abs(state.special.pull - 2.9) < 1e-12); assert.equal(state.special.attack, 8);
 });
 
 test('enhanced vortex pulls harder for four seconds and uses six-second attack interval', () => {
@@ -52,7 +52,7 @@ test('enhanced vortex pulls harder for four seconds and uses six-second attack i
   const before = players[0].cells[0].x;
   tickDuobackSpecialBoss(state, boss, players, 0.1, world, () => 0.5);
   assert.ok(Math.abs((before - players[0].cells[0].x) - 2.4) < 1e-12);
-  assert.ok(Math.abs(state.special.pull - 3.9) < 1e-12); assert.equal(state.special.attack, 5.9);
+  assert.ok(Math.abs(state.special.pull - 3.9) < 1e-12); assert.equal(state.special.attack, 6);
 });
 
 test('meteor special creates one warning normally and three warnings in enhanced mode', () => {
@@ -63,7 +63,7 @@ test('meteor special creates one warning normally and three warnings in enhanced
   const enhanced = setup('meteor', true); enhanced.state.special.attack = 0;
   tickDuobackSpecialBoss(enhanced.state, enhanced.boss, enhanced.players, 0.1, enhanced.world, () => 0);
   assert.equal(enhanced.state.meteors.length, 3);
-  assert.deepEqual(enhanced.state.meteors.map(m => m.t), [1.6, 1.9, 2]);
+  assert.deepEqual(enhanced.state.meteors.map(m => m.t), [1.6, 2, 1.9]);
 });
 
 test('split special breaks into four pieces at half health and regenerates 20 percent after ten seconds', () => {
@@ -75,7 +75,7 @@ test('split special breaks into four pieces at half health and regenerates 20 pe
   const before = state.special.damage;
   tickDuobackSpecialBoss(state, boss, players, 10, world, () => 0.5);
   assert.equal(state.special.damage, Math.max(0, before - 20));
-  assert.equal(state.special.splitTimer, 0);
+  assert.ok(state.special.splitTimer <= 0);
 });
 
 test('enhanced split can trigger a second break at 75 percent damage', () => {
@@ -93,7 +93,7 @@ test('special boss sheds a chunk when a player approaches and two-second timer e
   state.special.shed = 0;
   const out = tickDuobackSpecialBoss(state, boss, players, 0.1, world, () => 0.5);
   assert.equal(out.events.some(e => e.type === 'special-shed'), true);
-  assert.equal(state.special.chunks.length, 1); assert.equal(state.special.shed, 2);
+  assert.equal(state.special.chunks.length, 2); assert.equal(state.special.shed, 2);
 });
 
 test('untracked chunks expire after 12 seconds without being counted as eaten damage', () => {

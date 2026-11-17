@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   VIRUS_RULES, createVirus, moveVirus, tickVirusTrap, canPopOnVirus,
   popCellOnVirus, feedVirusWithEject, createEjectedMass, moveEjectedMass,
-  tryEjectedMassPickup, tickVirusRespawnTimers, canSpawnVirus, tryFeedEjectIntoViruses, ejectFromCells,
+  tryEjectedMassPickup, tickVirusRespawnTimers, canSpawnVirus, tryFeedEjectIntoViruses, ejectFromCells, stepViruses, stepEjectedMass,
 } from '../../server/core/viruses.js';
 
 const owner = extra => ({ kind: 'bot', ...(extra || {}) });
@@ -145,4 +145,34 @@ test('ejection batch caps blobs at 60 and removes the oldest first', () => {
   assert.equal(cells[0].mass, 90);
   assert.equal(cells[1].mass, 24);
   assert.equal(result.cooldown, 0.12);
+});
+test('complete virus tick moves first, resolves pop, and queues 10-second respawn', () => {
+  const v = createVirus(0, 0);
+  const c = cell(200);
+  const result = stepViruses([v], [c], 1 / 30, 100, [], {
+    ownerStateFor: () => ({ cellsCount: 1, freeCount: 0 }),
+  });
+  assert.equal(result.viruses.length, 0);
+  assert.equal(result.pops.length, 1);
+  assert.equal(result.spawnCount, 0);
+  assert.ok(Math.abs(result.respawnTimers[0] - (10 - 1 / 30)) < 1e-12);
+});
+
+test('complete ejected-mass tick feeds a virus before moving the blob', () => {
+  const v = createVirus(0, 0);
+  const e = { x: 0, z: 0, vx: 60, vz: 0, mass: 8, age: 0 };
+  const result = stepEjectedMass([e], [v], [], 1 / 30, 100);
+  assert.equal(result.ejects.length, 0);
+  assert.equal(result.fed.length, 1);
+  assert.equal(v.feed, 1);
+  assert.equal(e.x, 0);
+});
+
+test('complete ejected-mass tick adds mass after movement when a cell picks it up', () => {
+  const e = { x: 0, z: 0, vx: 0, vz: 0, mass: 8, age: 0.6 };
+  const c = cell(100);
+  const result = stepEjectedMass([e], [], [c], 1 / 30, 100);
+  assert.equal(result.ejects.length, 0);
+  assert.equal(result.pickups.length, 1);
+  assert.equal(c.mass, 108);
 });

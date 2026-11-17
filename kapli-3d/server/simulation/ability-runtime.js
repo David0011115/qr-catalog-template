@@ -30,6 +30,8 @@ export function createAbilityRuleAdapters(world, options = {}) {
   return {
     physicsRules: {
       ...physics,
+      speedUpgradeFor: physics.speedUpgradeFor || options.speedUpgradeFor,
+      guardLevelFor: physics.guardLevelFor || options.guardLevelFor,
       abilityOn: physics.abilityOn || abilityOn,
       playerSpeedEffect: Number.isFinite(world?.effects?.speed) ? world.effects.speed : physics.playerSpeedEffect,
       playerSpeedEffectFor: physics.playerSpeedEffectFor ||
@@ -37,6 +39,8 @@ export function createAbilityRuleAdapters(world, options = {}) {
     },
     worldRules: {
       ...interactions,
+      playerFoodGainFor: interactions.playerFoodGainFor || options.playerFoodGainFor,
+      magnetFor: interactions.magnetFor || options.magnetFor,
       abilityOn: interactions.abilityOn || abilityOn,
       playerShieldActive: interactions.playerShieldActive ||
         (owner => !!owner?.isPlayer && ((owner?.eff?.shield || 0) > 0 || (world?.effects?.shield || 0) > 0)),

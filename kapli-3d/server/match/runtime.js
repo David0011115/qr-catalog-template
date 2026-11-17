@@ -61,7 +61,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
     },
     submitAction(playerId, command) {
       const owner = ownerFor(world, playerId);
-      if (!owner?.isPlayer || !['dash', 'split', 'eject'].includes(command?.action) ||
+      if (lifecycle.status !== 'active' || !owner?.isPlayer || !['dash', 'split', 'eject'].includes(command?.action) ||
           !Number.isSafeInteger(command?.seq) || command.seq < 1) {
         return { ok: false, reason: 'invalid-action-command' };
       }

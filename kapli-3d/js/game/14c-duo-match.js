@@ -305,7 +305,8 @@
       return owners.indexOf(o);
     }
     function applyServer(s) {
-      stats.time = Math.max(stats.time, s.tm || 0);
+      stats.serverClock = s.tm || 0;
+      stats.time = Math.max(stats.time, stats.serverClock);
       const seen = new Set();
       for (const row of s.o || []) {
         const index = row[0];

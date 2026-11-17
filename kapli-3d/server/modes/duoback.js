@@ -268,7 +268,7 @@ export function validateDuobackStateSnapshot(snapshot) {
           !nonNegative(chunk.mass) || chunkIds.has(chunk.cellId)) fail('INVALID_DUOBACK_SPECIAL_CHUNK');
       chunkIds.add(chunk.cellId);
     }
-    if (special.split && (special.split.some(id => typeof id !== 'string' || !chunkIds.has(id)) ||
+    if (special.split && (special.split.some(id => typeof id !== 'string' || !id) ||
         new Set(special.split).size !== special.split.length)) fail('INVALID_DUOBACK_SPLIT');
   }
   return true;

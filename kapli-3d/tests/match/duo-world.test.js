@@ -66,8 +66,8 @@ test('Duo world uses each authenticated player loadout and source-derived progre
       },
     ],
   });
-  const host = world.owners.find(owner => owner.role === 'host');
-  const guest = world.owners.find(owner => owner.role === 'guest');
+  const host = world.players.host;
+  const guest = world.players.guest;
   assert.deepEqual(host.build, ['dash', 'shield', 'eject']);
   assert.deepEqual(guest.build, ['split', 'pulse', null]);
   assert.equal(host.cells[0].mass, 13);

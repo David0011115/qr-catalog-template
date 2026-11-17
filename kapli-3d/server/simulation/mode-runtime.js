@@ -110,7 +110,9 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     publishBoostOffers: offers => options.publishBoostOffers?.(offers, world),
   });
   if (phase.result) options.onResult?.(phase.result, world);
-  const finish = duobackCanFinish(state, players);
+  const finish = phase.result
+    ? { finished: true, won: !!phase.result.won }
+    : duobackCanFinish(state, players);
   if (finish.finished && !state.finished) {
     state.finished = true;
     options.onResult?.({

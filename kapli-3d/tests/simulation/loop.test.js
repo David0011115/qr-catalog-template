@@ -214,6 +214,32 @@ test('ability commands are validated, queued and acknowledged after the authorit
   assert.equal(state.lastAbilityProcessedSeq.p1, 1);
 });
 
+test('mode and ability rule adapters are composed into the same authoritative physics tick', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const world = makeWorld();
+  world.cells[1].x = 1;
+  world.cells[1].z = 0;
+  world.cells[1].mass = 10;
+  const calls = [];
+  const out = stepSimulationTick(state, lifecycle, world, {
+    resolveOwner,
+    createModeRules: (_world, meta) => {
+      assert.equal(meta.tick, 1);
+      calls.push('mode-rules');
+      return { physicsRules: {}, worldRules: {
+        onCellLost: event => calls.push(event.victimEliminated ? 'mode-lost-final' : 'mode-lost'),
+      } };
+    },
+    stepAbilities: () => ({
+      physicsRules: {},
+      worldRules: { onCellEaten: () => calls.push('ability-eaten-hook') },
+    }),
+  });
+  assert.equal(out.advanced, true);
+  assert.deepEqual(calls, ['mode-rules', 'ability-eaten-hook', 'mode-lost-final']);
+});
+
 test('queued ability command remains pending when no ability adapter is supplied', () => {
   const state = createSimulationLoopState(['p1', 'p2']);
   const lifecycle = makeLifecycle();

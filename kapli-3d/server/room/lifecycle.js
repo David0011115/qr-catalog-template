@@ -9,8 +9,8 @@ const findPlayer = (room, id) => room.players.find(p => p.id === id);
 
 export function createRoomState({ roomId, code, hostId, now }) {
   if (!roomId || !code || !hostId || !Number.isFinite(now)) throw new TypeError('roomId, code, hostId and now are required');
-  const normalized = String(code).toUpperCase();
-  if (!/^[A-Z0-9]{5}$/.test(normalized)) throw new TypeError('room code must be five alphanumeric characters');
+  const normalized = String(code).trim().toUpperCase();
+  if (!normalized) throw new TypeError('room code cannot be empty');
   return {
     roomId, code: normalized, status: 'waiting', createdAt: now,
     waitingDeadlineAt: now + ROOM_RULES.waitingTimeoutMs,

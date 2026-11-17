@@ -121,7 +121,7 @@ test('queued DuoBack boost picks survive match snapshot recovery', () => {
   });
   runtime.world.modeState.offers = { host: ['sh_shield', 'mass', 'speed'], guest: ['sh_feast', 'armor', 'speed'] };
   runtime.world.modeState.picked = {};
-  assert.equal(runtime.submitBoost('user-host', { seq: 4, id: 'shield' }).ok, true);
+  assert.equal(runtime.submitBoost('user-host', { seq: 4, id: 'sh_shield' }).ok, true);
   const restored = restoreDuoMatchRuntime(runtime.serialize());
   assert.equal(restored.lastBoostSeq['user-host'], 4);
   assert.equal(restored.modeCommands.length, 1);

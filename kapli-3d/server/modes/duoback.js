@@ -81,10 +81,9 @@ export function applyDuobackBoost(player, id, state) {
 
 function regularSpawnDescriptor(type, mass, slot, rng) {
   const d = DUOBACK_REGULAR_BOSSES[type];
-  const scale = type === 'leech' ? 0.9 : 1.25;
   return {
     kind: 'regular', type, slot,
-    mass: Math.min(30000, mass * scale),
+    mass,
     life: DUOBACK_RULES.regularLife,
     dashT: 0, dashCd: 3, enr: 0, spikeT: 3, k: slot,
   };

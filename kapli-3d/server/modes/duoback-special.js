@@ -23,7 +23,7 @@ export function tickDuobackSpecialBoss(state, owner, players, dt, world, rng = M
     c.life = (c.life ?? 12) - dt;
     const inSplit = s.split?.includes(chunk.cellId);
     if (c !== main && c.life <= 0 && !inSplit) {
-      c.exp = true; world.removeCell(c); world.rebuildCells?.();
+      c.exp = true; chunk.exp = true; world.removeCell(c); world.rebuildCells?.();
       events.push({ type: 'special-chunk-expired', cellId: chunk.cellId });
     }
   }
@@ -102,7 +102,7 @@ export function tickDuobackSpecialBoss(state, owner, players, dt, world, rng = M
     if (s.splitTimer <= 0) {
       const left = s.split.filter(id => { const c = world.findCell(id); return c && !c.gone; });
       if (left.length) {
-        for (const id of left) { const c = world.findCell(id); if (c) { c.exp = true; world.removeCell(c); } }
+        for (const id of left) { const c = world.findCell(id); const chunk = chunks.find(x => x.cellId === id); if (chunk) chunk.exp = true; if (c) { c.exp = true; world.removeCell(c); } }
         s.damage = Math.max(0, s.damage - s.max * 0.2); world.rebuildCells?.();
         events.push({ type: 'special-split-regenerated', removed: left.length, damageRestored: s.max * 0.2 });
       }

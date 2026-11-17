@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ROOM_RULES, createRoomState, joinRoom, setPlayerReady, tickRoom, leaveRoom,
-  recordInvalidRoomCode, resetRoomCodeAttempts, roomSummary, reconnectRoomPlayer,
+  recordInvalidRoomCode, resetRoomCodeAttempts, roomSummary, reconnectRoomPlayer, serializeRoomState, restoreRoomState,
 } from '../../server/room/lifecycle.js';
 
 const room = now => createRoomState({ roomId: 'room-1', code: 'A2BCD', hostId: 'host', now });
@@ -92,4 +92,20 @@ test('room summary exposes only lobby and connection state', () => {
       { id: 'guest', role: 'guest', ready: false, connected: true },
     ], countdownEndsAt: null, waitingDeadlineAt: null,
   });
+});
+
+test('room snapshot preserves countdown and reconnectable paused state', () => {
+  const r = room(100); joinRoom(r, 'guest', 200);
+  setPlayerReady(r, 'host', true, 300); setPlayerReady(r, 'guest', true, 400);
+  const countdown = restoreRoomState(serializeRoomState(r));
+  assert.equal(countdown.status, 'countdown'); assert.equal(countdown.countdownEndsAt, 3400);
+  tickRoom(r, 3400, () => 'm1'); leaveRoom(r, 'guest', 3500);
+  const paused = restoreRoomState(serializeRoomState(r));
+  assert.equal(paused.status, 'paused'); assert.equal(paused.players[1].connected, false);
+  assert.equal(paused.matchId, 'm1');
+});
+
+test('room restoration rejects malformed snapshots', () => {
+  assert.throws(() => restoreRoomState({ roomId: 'r', code: 'A', status: 'unknown', players: [] }), /invalid room snapshot/);
+  assert.throws(() => restoreRoomState({ roomId: 'r', code: 'A', status: 'waiting', players: [{ id: 'x', role: 'host' }] }), /invalid room players/);
 });

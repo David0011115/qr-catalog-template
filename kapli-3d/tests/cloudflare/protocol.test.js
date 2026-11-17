@@ -57,3 +57,12 @@ test('mode and bearer parsing are strict', () => {
   assert.equal(getBearerToken('Bearer abc.def'), 'abc.def');
   assert.equal(getBearerToken('Basic abc'), null);
 });
+
+
+test('DuoBack boost commands accept only a stable offered boost identifier and sequence', () => {
+  assert.deepEqual(parseClientMessage(JSON.stringify({ type: 'boost', seq: 7, id: 'mass' })), {
+    ok: true, command: { type: 'boost', seq: 7, id: 'mass' },
+  });
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'boost', seq: 0, id: 'mass' })).reason, 'invalid-boost');
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'boost', seq: 7, id: 'not valid' })).reason, 'invalid-boost');
+});

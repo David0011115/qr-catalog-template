@@ -97,14 +97,28 @@ export function stepFoodAndDecay(world, dt, rules = {}) {
   const gridSize = rules.foodGridSize || 8;
   const gridCount = Math.ceil(2 * arenaRadius / gridSize) + 1;
   const grid = new Map();
+  const foodKeys = [];
+  const keyForFood = food => foodCellIndex(food.x, arenaRadius, gridSize, gridCount) * gridCount +
+    foodCellIndex(food.z, arenaRadius, gridSize, gridCount);
   for (let i = 0; i < foods.length; i++) {
-    const food = foods[i];
-    const gx = foodCellIndex(food.x, arenaRadius, gridSize, gridCount);
-    const gz = foodCellIndex(food.z, arenaRadius, gridSize, gridCount);
-    const key = gx * gridCount + gz;
+    const key = keyForFood(foods[i]);
+    foodKeys[i] = key;
     if (!grid.has(key)) grid.set(key, []);
     grid.get(key).push(i);
   }
+  const updateFoodBucket = index => {
+    const nextKey = keyForFood(foods[index]), oldKey = foodKeys[index];
+    if (nextKey === oldKey) return;
+    const oldBucket = grid.get(oldKey);
+    const oldIndex = oldBucket?.indexOf(index) ?? -1;
+    if (oldIndex >= 0) {
+      oldBucket[oldIndex] = oldBucket[oldBucket.length - 1];
+      oldBucket.pop();
+    }
+    if (!grid.has(nextKey)) grid.set(nextKey, []);
+    grid.get(nextKey).push(index);
+    foodKeys[index] = nextKey;
+  };
 
   let consumed = 0;
   let decayedMass = 0;
@@ -128,11 +142,12 @@ export function stepFoodAndDecay(world, dt, rules = {}) {
     for (let gx = gx0; gx <= gx1; gx++) {
       for (let gz = gz0; gz <= gz1; gz++) {
         const bucket = grid.get(gx * gridCount + gz) || [];
-        for (const index of bucket) {
-          const food = foods[index];
+        for (let j = bucket.length - 1; j >= 0; j--) {
+          const index = bucket[j], food = foods[index];
           if ((food.x - cell.x) ** 2 + (food.z - cell.z) ** 2 >= pickupRadius ** 2) continue;
           cell.mass += gain;
           foodRespawn(world, food, rules);
+          updateFoodBucket(index);
           consumed++;
           if (typeof rules.onFoodEaten === 'function') rules.onFoodEaten({ cell, food, gain, index }, world);
         }

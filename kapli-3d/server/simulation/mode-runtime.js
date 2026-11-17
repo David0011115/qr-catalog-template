@@ -19,7 +19,14 @@ export function createTerritoryRules(state) {
     },
     worldRules: {
       eatBlock: (attacker, target) => territoryBlocksEat(state, attacker, target),
-      onPlayerEaten: victimRole => territoryPlayerWasEaten(state, victimRole),
+      onCellLost: event => {
+        if (!event?.victimEliminated) return false;
+        const eater = event.attacker?.owner;
+        const victimRole = event.victim?.role;
+        if (!eater || !['host', 'guest'].includes(eater.role) || !['host', 'guest'].includes(victimRole) ||
+            eater.role === victimRole) return false;
+        return territoryPlayerWasEaten(state, victimRole);
+      },
     },
   };
 }

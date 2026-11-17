@@ -23,4 +23,4 @@ jobs:
         with:
           node-version: 22
       - name: Run server core regression tests
-        run: node --test tests/physics/*.test.js
+        run: node --test

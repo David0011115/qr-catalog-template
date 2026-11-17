@@ -6,7 +6,7 @@ import {
 import { canEat, cellRadius, clampCellToArena } from '../core/physics.js';
 
 export function createAbilityRuntimeState() {
-  return { ...createWorldAbilityEffects(), clock: 0, historyTimer: 0, history: [] };
+  return { ...createWorldAbilityEffects(), clock: 0, historyTimer: 0, history: [], lastCommandSeq: {} };
 }
 
 function mainOf(owner) {
@@ -72,15 +72,19 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
   }
   const adapter = createAbilityWorldAdapter(world, options);
   const casts = [];
+  state.lastCommandSeq ||= {};
   const ordered = [...commands].sort((a, b) =>
     String(a.ownerId).localeCompare(String(b.ownerId)) || (a.seq || 0) - (b.seq || 0));
   for (const command of ordered) {
-    const owner = adapter.ownersById.get(command.ownerId);
-    if (!owner || !Number.isInteger(command.slot) || command.slot < 0 ||
+    const owner = adapter.ownersById.get(command?.ownerId);
+    if (!owner || !Number.isSafeInteger(command.seq) || command.seq < 1 ||
+        command.seq <= (state.lastCommandSeq[command.ownerId] || 0) ||
+        !Number.isInteger(command.slot) || command.slot < 0 ||
         typeof options.resolveAbilityId !== 'function') {
-      casts.push({ ownerId: command.ownerId ?? null, ok: false, reason: 'invalid-command' });
+      casts.push({ ownerId: command?.ownerId ?? null, ok: false, reason: 'invalid-command' });
       continue;
     }
+    state.lastCommandSeq[command.ownerId] = command.seq;
     const abilityId = options.resolveAbilityId(owner, command.slot);
     if (typeof abilityId !== 'string' || !abilityId) {
       casts.push({ ownerId: owner.id, slot: command.slot, ok: false, reason: 'empty-slot' });
@@ -98,7 +102,6 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
     casts.push({ ownerId: owner.id, slot: command.slot, abilityId, ...cast });
   }
 
-  const effects = tickWorldAbilityEffects(state, adapter, dt);
   const timers = [];
   for (const owner of adapter.owners) {
     const isPlayer = options.isPlayerOwner?.(owner) ?? !!owner.isPlayer;
@@ -111,7 +114,8 @@ export function stepAbilityRuntime(world, state, dt, commands = [], options = {}
       }),
     });
   }
-  if (options.chronosArenaFor?.(options.historyOwner) && options.historyOwner) {
+  const effects = tickWorldAbilityEffects(state, adapter, dt);
+  if (options.historyOwner && options.chronosArenaFor?.(options.historyOwner)) {
     recordChronosHistory(state, options.historyOwner, adapter, dt);
   }
   world.abilityState = state;

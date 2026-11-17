@@ -139,6 +139,12 @@ test('simulation snapshots round-trip sequence, pending input and direction stat
   assert.deepEqual(restored, state);
   assert.equal(restored.pendingInputs.p2.seq, 7);
   assert.throws(() => restoreSimulationLoopState({ ...state, tick: -1 }), /invalid/);
+  const badDirection = serializeSimulationLoopState(state);
+  badDirection.directions.p1 = { x: 1, z: 1 };
+  assert.throws(() => restoreSimulationLoopState(badDirection), /invalid/);
+  const badPending = serializeSimulationLoopState(state);
+  badPending.pendingInputs.p2 = { seq: 0, x: 0, z: 1 };
+  assert.throws(() => restoreSimulationLoopState(badPending), /invalid/);
 });
 
 test('same initial state and command stream produce identical positions', () => {

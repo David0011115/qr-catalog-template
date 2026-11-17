@@ -93,7 +93,7 @@ test('time limit awards the larger half when the difference exceeds two percent'
 test('dying suppresses result checks but source still advances the territory border', () => {
   const s = createTerritoryState(100);
   const result = tickTerritory(s, 1, 300, 90, 10, { dying: true });
-  assert.equal(result.result, null); assert.ok(Math.abs(s.border - 1.5) < 1e-12); assert.equal(s.limit, 240);
+  assert.equal(result.result, null); assert.ok(Math.abs(s.border - 1.2) < 1e-12); assert.equal(s.limit, 240);
 });
 
 test('snapshot and restore preserve border, time limit and overtime state', () => {

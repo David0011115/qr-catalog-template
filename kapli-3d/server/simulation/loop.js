@@ -185,6 +185,9 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
     }
   }
 
+  const beforeWorldInteractions = options.beforeWorldInteractions?.(world, dt, {
+    tick: nextTick, directions: clone(state.directions), abilityStep,
+  }) ?? null;
   const worldStep = stepWorldInteractions(world, dt, worldRules);
   const modeStep = options.stepMode?.(world, dt, { tick: nextTick, worldStep });
   options.simulateWorld?.(world, dt, { tick: nextTick, acknowledgements: clone(acknowledgements), worldStep, abilityStep, modeStep });
@@ -200,6 +203,7 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
     acknowledgements,
     abilityAcknowledgements,
     worldStep,
+    beforeWorldInteractions,
     abilityStep: abilityStep ?? null,
     modeStep: modeStep ?? null,
     snapshotDue,

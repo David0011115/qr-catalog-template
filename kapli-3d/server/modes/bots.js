@@ -60,7 +60,7 @@ export function spawnBotOwner(owner, world, rng, options = {}) {
     : findSafeSpawn(world, () => rand(rng), running ? 22 : 14);
   const slot = owner.free.pop();
   const cell = {
-    id: `${owner.id}:cell:${slot.split(':').at(-1)}`,
+    id: `${owner.id}:cell:${slot.split(':').at(-1)}`, slotId: slot,
     x: position.x, z: position.z, mass, vx: 0, vz: 0,
     hx: 1, hz: 0, mergeT: 0, gone: false, owner,
   };

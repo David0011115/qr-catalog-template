@@ -149,6 +149,7 @@ export function validateWorldSnapshot(snapshot) {
   for (const item of snapshot.ownerTargets) {
     if (!owners.has(item.ownerId) || targetOwners.has(item.ownerId)) throw new Error('INVALID_WORLD_TARGET_OWNER');
     targetOwners.add(item.ownerId);
+    if (item.partnerId != null && !owners.has(item.partnerId)) throw new Error('DANGLING_WORLD_PARTNER');
     if (!Array.isArray(item.shHitOwnerIds) || !Array.isArray(item.spHitOwnerIds)) throw new Error('INVALID_WORLD_HIT_SET');
     if (item.target?.kind === 'cell' && !cells.has(item.target.id)) throw new Error('DANGLING_WORLD_TARGET');
     if (item.target?.kind === 'decoy' && (!Number.isInteger(item.target.index) || item.target.index < 0 || item.target.index >= (snapshot.decoys || []).length)) {

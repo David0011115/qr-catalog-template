@@ -221,21 +221,77 @@ export function duobackCanFinish(state, players) {
   return { finished: false, won: false };
 }
 
+export function validateDuobackStateSnapshot(snapshot) {
+  const fail = code => { throw new TypeError(code); };
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const finite = value => Number.isFinite(value);
+  const nonNegative = value => finite(value) && value >= 0;
+  const boostIds = new Set(Object.keys(DUOBACK_BOOSTS));
+  if (!object(snapshot) || !Number.isInteger(snapshot.difficultyIndex) || snapshot.difficultyIndex < 0 || snapshot.difficultyIndex > 2 ||
+      !Number.isInteger(snapshot.wave) || snapshot.wave < 0 || snapshot.wave > DUOBACK_RULES.maxWave ||
+      ![0, 1].includes(snapshot.phase) || !nonNegative(snapshot.breakRemaining) ||
+      !object(snapshot.team) || !object(snapshot.shared) || !object(snapshot.offers) || !object(snapshot.picked) ||
+      !Array.isArray(snapshot.regular) || !Array.isArray(snapshot.meteors) || typeof snapshot.finished !== 'boolean') {
+    fail('INVALID_DUOBACK_SNAPSHOT');
+  }
+  for (const key of ['bosses', 'specials', 'bots', 'respawns', 'specialWave5Time']) {
+    if (!nonNegative(snapshot.team[key])) fail('INVALID_DUOBACK_TEAM');
+  }
+  for (const [key, value] of Object.entries(snapshot.shared)) {
+    if (!boostIds.has(key) || !DUOBACK_BOOSTS[key].both || !nonNegative(value)) fail('INVALID_DUOBACK_SHARED_BOOST');
+  }
+  for (const role of ['host', 'guest']) {
+    const choices = snapshot.offers[role];
+    if (choices !== undefined && (!Array.isArray(choices) || choices.length > 3 ||
+        choices.some(id => !boostIds.has(id)) || new Set(choices).size !== choices.length)) fail('INVALID_DUOBACK_OFFERS');
+    const picked = snapshot.picked[role];
+    if (picked !== undefined && !boostIds.has(picked)) fail('INVALID_DUOBACK_PICK');
+  }
+  for (const boss of snapshot.regular) {
+    if (!object(boss) || !Object.hasOwn(DUOBACK_REGULAR_BOSSES, boss.type) ||
+        (boss.slot !== undefined && (!Number.isInteger(boss.slot) || boss.slot < 0 || boss.slot > 1))) fail('INVALID_DUOBACK_REGULAR_BOSS');
+  }
+  for (const meteor of snapshot.meteors) {
+    if (!object(meteor) || !finite(meteor.x) || !finite(meteor.z) ||
+        !finite(meteor.radius) || meteor.radius <= 0 || !nonNegative(meteor.t)) fail('INVALID_DUOBACK_METEOR');
+  }
+  if (snapshot.special !== null) {
+    const special = snapshot.special;
+    if (!object(special) || !DUOBACK_SPECIAL_BOSSES.some(item => item.id === special.id) ||
+        !nonNegative(special.max) || special.max <= 0 || !nonNegative(special.damage) ||
+        !finite(special.life) || !finite(special.shed) || !finite(special.attack) ||
+        !finite(special.pull) || !nonNegative(special.base) || !Array.isArray(special.chunks) ||
+        !(special.split === null || Array.isArray(special.split))) fail('INVALID_DUOBACK_SPECIAL_BOSS');
+    const chunkIds = new Set();
+    for (const chunk of special.chunks) {
+      if (!object(chunk) || typeof chunk.cellId !== 'string' || !chunk.cellId ||
+          !nonNegative(chunk.mass) || chunkIds.has(chunk.cellId)) fail('INVALID_DUOBACK_SPECIAL_CHUNK');
+      chunkIds.add(chunk.cellId);
+    }
+    if (special.split && (special.split.some(id => typeof id !== 'string' || !chunkIds.has(id)) ||
+        new Set(special.split).size !== special.split.length)) fail('INVALID_DUOBACK_SPLIT');
+  }
+  return true;
+}
+
 export function serializeDuobackState(state) {
-  return {
+  const snapshot = {
     difficultyIndex: state.difficultyIndex, wave: state.wave, phase: state.phase, breakRemaining: state.breakRemaining,
     team: { ...state.team }, shared: { ...state.shared }, offers: structuredClone(state.offers), picked: { ...state.picked },
     special: state.special ? { ...state.special, chunks: state.special.chunks.map(c => ({ ...c })), split: state.special.split ? [...state.special.split] : null } : null,
     regular: state.regular.map(b => ({ ...b })), meteors: state.meteors.map(m => ({ ...m })), finished: state.finished,
   };
+  validateDuobackStateSnapshot(snapshot);
+  return snapshot;
 }
 
 export function restoreDuobackState(snapshot) {
+  validateDuobackStateSnapshot(snapshot);
   const state = createDuobackState(snapshot.difficultyIndex);
   state.wave = snapshot.wave; state.phase = snapshot.phase; state.breakRemaining = snapshot.breakRemaining;
   state.team = { ...snapshot.team }; state.shared = { ...snapshot.shared }; state.offers = structuredClone(snapshot.offers);
   state.picked = { ...snapshot.picked }; state.special = snapshot.special ? { ...snapshot.special, chunks: snapshot.special.chunks.map(c => ({ ...c })), split: snapshot.special.split ? [...snapshot.special.split] : null } : null;
-  state.regular = snapshot.regular.map(b => ({ ...b })); state.meteors = snapshot.meteors.map(m => ({ ...m })); state.finished = !!snapshot.finished;
+  state.regular = snapshot.regular.map(b => ({ ...b })); state.meteors = snapshot.meteors.map(m => ({ ...m })); state.finished = snapshot.finished;
   return state;
 }
 

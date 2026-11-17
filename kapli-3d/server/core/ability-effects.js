@@ -346,10 +346,9 @@ export function recordChronosHistory(state, owner, world, dt) {
 // is the exception; its cooldown starts on the second jump/window expiry.
 export function castServerAbility(id, owner, world, state, options = {}) {
   if (!canCastAbility(owner, id)) return { ok: false, reason: 'cooldown-or-unavailable' };
-  const phaseWindowWasActive = id === 'x_phase' && owner.phase2 > 0;
   const result = castWorldAbility(id, owner, world, state, options);
   if (!result.ok) return result;
-  if (id !== 'x_phase' || !phaseWindowWasActive) {
+  if (id !== 'x_phase') {
     startAbilityCooldown(owner, id, { player: !!options.player, level: options.level || 0, chronosArena: !!options.chronosArena });
   }
   return result;

@@ -284,6 +284,9 @@
         const o = data.role === role ? player : rival;
         o.serverId = data.id; o.isPlayer = true; o.role = data.role;
         o.team = data.team || null; o.name = data.name || o.name;
+        if (data.db) o.db = data.db; if (data.eff) o.eff = data.eff;
+        if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
+        o.dashCd = data.dashCd || 0; o.splitCd = data.splitCd || 0;
         return owners.indexOf(o);
       }
       let o = owners.find(item => item.serverId === data.id);
@@ -299,6 +302,9 @@
       }
       o.serverId = data.id; o.kind = data.kind || o.kind; o.name = data.name || o.name;
       o.team = data.team || null; o.homeSide = data.homeSide || 0; o.persona = data.persona || o.persona;
+      if (data.db) o.db = data.db; if (data.eff) o.eff = data.eff;
+      if (data.abT) o.abT = data.abT; if (data.abCd) o.abCd = data.abCd;
+      o.dashCd = data.dashCd || 0; o.splitCd = data.splitCd || 0;
       o.dbType = data.dbType || o.dbType; o.dbSpec = !!data.dbSpec; o.dbSlot = data.dbSlot ?? o.dbSlot;
       const poolSize = Math.max(1, data.poolSize || 1);
       while (o.free.length + o.cells.length < poolSize) o.free.push(makeVis(new THREE.Color(data.kind === 'boss' ? '#ff9f43' : '#65d6ff')));
@@ -351,7 +357,7 @@
       rebuildCells();
     }
     function serverTick(dt) {
-      if (!serverMode || !on) return;
+      if (!serverMode || !on || window.KapliOnlineServer?.paused) return;
       stats.time = Math.max(stats.time, stats.serverClock || 0);
       const [dx, dz] = localDir(), now = performance.now();
       if (now - inAt > INPUT_MS) {

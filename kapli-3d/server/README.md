@@ -32,6 +32,14 @@ node --test tests
 
 The tests cover extracted movement/eating formulas and differential checks against the browser source, deterministic random restoration, virus collisions/splitting, player and bot ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, room/countdown rules, room snapshot restoration, reconnect lifecycle, snapshot consistency and event replay, world entity serialization and reference restoration.
 
+## Authoritative world interactions
+
+- Each simulation tick now runs the extracted world-interaction phase after player steering: own-cell separation/merging, food pickup, mass decay, player-vs-player/NPC eating, and non-player mass caps.
+- The rules preserve the source ordering in `js/game/07-round.js`: cell-pair interactions, food and decay, eating pass, then mass caps. Eating uses the stable cell snapshot, 48-unit broad-phase buckets, source radius threshold, 1.25 mass ratio and 80% mass transfer.
+- Food respawn uses the persisted `world.randomState` PRNG stream. A world that can consume food must be initialized with a valid random-state snapshot, or supply a deterministic `worldRules.placeFood` callback.
+- Mode- and progression-specific differences are injected through explicit `worldRules` callbacks (for example guard, magnet, food multipliers, ability checks, mode mass caps and eat hooks); no mode-specific result/stat handling is guessed by the generic core.
+- The `stepSimulationTick()` result includes interaction summaries. The optional `simulateWorld` callback runs after the generic interaction phase for later mode-specific adapters.
+
 ## Deterministic input loop
 
 - `simulation/loop.js` accepts normalized direction commands with monotonically increasing per-player sequence numbers; malformed and stale commands are rejected.

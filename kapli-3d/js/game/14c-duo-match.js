@@ -353,7 +353,7 @@
       if (s.cd) {
         player.dashCd = s.cd.d || 0; player.splitCd = s.cd.s || 0; player.abCd = s.cd.a || {};
       }
-      if (rl && rl.applyServer && s.ms) rl.applyServer(s.ms);
+      if (rl && rl.applyServer && s.ms) rl.applyServer(s.ms, s.rt || {});
       rebuildCells();
     }
     function serverTick(dt) {

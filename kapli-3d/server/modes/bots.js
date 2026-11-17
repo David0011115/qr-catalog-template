@@ -1,6 +1,7 @@
 // Source-derived bot roster, target selection and steering from 01-config.js,
 // 04-arena.js and 07-round.js. Rendering and cosmetic bot ability effects stay client-side.
-import { canEat, cellRadius, speedOf, steerCell } from '../core/physics.js';
+import { canEat, cellRadius, eatRatio, speedOf, steerCell } from '../core/physics.js';
+import { ABILITY_DATA } from '../core/abilities.js';
 import { findSafeSpawn, findTerritoryBotSpawn } from '../match/spawn.js';
 
 export const BOT_SKILL = Object.freeze({ sense: 1, lead: 0.4, careful: 1, speed: 0.92 });
@@ -26,14 +27,34 @@ export const TERRITORY_EXTRA_BOT_DEFS = Object.freeze([
 const totalMass = owner => (owner?.cells || []).reduce((sum, cell) => sum + cell.mass, 0);
 const mainCell = owner => (owner?.cells || []).reduce((best, cell) => !best || cell.mass > best.mass ? cell : best, null);
 const rand = rng => typeof rng === 'function' ? rng() : rng.next();
+const BOT_BUILD_POOL = Object.freeze([
+  'dash', 'split', 'eject', 'shield', 'pulse', 'blink',
+  'slow', 'cloak', 'push', 'shrink', 'decoy', 'trap',
+]);
+export const BOT_DEF_ABILITIES = Object.freeze([
+  'shield', 'x_ghost', 'cloak', 'decoy', 'x_refl', 'push', 'x_phase',
+  'blink', 'shrink', 'x_typhoon', 'x_ice', 'slow', 'trap', 'dash', 'eject',
+]);
+export const BOT_OFF_ABILITIES = Object.freeze([
+  'x_hunt', 'x_ice', 'slow', 'x_meteor', 'x_anchor', 'x_vamp', 'dash', 'blink', 'x_twin',
+]);
+export const BOT_FARM_ABILITIES = Object.freeze(['pulse', 'x_hole', 'x_over']);
 
-export function createBotRoster(mode = 'duoback') {
+function drawBotBuild(rng) {
+  if (!rng) return [];
+  const pool = [...BOT_BUILD_POOL], build = [];
+  while (build.length < 3) build.push(pool.splice(rng.int(pool.length), 1)[0]);
+  return build;
+}
+
+export function createBotRoster(mode = 'duoback', rng = null) {
   if (mode !== 'territory' && mode !== 'duoback') throw new TypeError('unsupported duo bot mode');
   const defs = mode === 'territory' ? [...BASE_BOT_DEFS, ...TERRITORY_EXTRA_BOT_DEFS] : [...BASE_BOT_DEFS];
   const owners = defs.map(([name, persona], index) => ({
     id: `bot:${index}`, name, kind: 'bot', persona, botIndex: index,
     homeSide: mode === 'territory' ? (index % 2 ? 1 : -1) : 0,
     cells: [], free: Array.from({ length: 4 }, (_, slot) => `bot:${index}:slot:${slot}`), freeCount: 4,
+    build: drawBotBuild(rng),
     respawn: 0, think: 0, tx: 0, tz: 0, target: null, partner: null,
     dashT: 0, dashCd: 0, splitCd: 0, spawnSh: 0, abCd: {}, abT: {}, rs: 1,
   }));
@@ -130,6 +151,18 @@ export function thinkBot(owner, world, rng, options = {}) {
   if (prey && rand(rng) < persona.chase) {
     owner.target = prey;
     owner.tx = prey.x; owner.tz = prey.z;
+    const distance = Math.hypot(prey.x - cell.x, prey.z - cell.z);
+    if (options.running !== false && owner.build?.includes('split') &&
+        persona.chase >= 0.85 && (owner.splitCd || 0) <= 0 &&
+        owner.cells.length < 4 && cell.mass / 2 > prey.mass * eatRatio(prey, options.physicsRules || {}) &&
+        distance > radius * 0.8 && distance < 6 + radius * 4) {
+      for (const part of owner.cells) {
+        const dx = prey.x - part.x, dz = prey.z - part.z, length = Math.hypot(dx, dz) || 1;
+        part.hx = dx / length; part.hz = dz / length;
+      }
+      const split = options.splitBot?.(owner);
+      if (split?.ok) return { action: 'split-chase', targetId: prey.id, splitCount: split.events?.[0]?.count || 1 };
+    }
     return { action: 'chase', targetId: prey.id };
   }
 
@@ -155,6 +188,41 @@ export function thinkBot(owner, world, rng, options = {}) {
   return { action: 'idle' };
 }
 
+export function chooseBotAbility(owner, world, rng, options = {}) {
+  if (!owner || owner.kind !== 'bot' || !owner.build?.length || !owner.cells?.length || rand(rng) > 0.35) return null;
+  const cell = mainCell(owner), persona = BOT_PERSONAS[owner.persona] || BOT_PERSONAS.normal;
+  const canBite = options.canEat || ((a, b) => canEat(a, b, options.physicsRules || {}));
+  let threat = null, threatDistance = Infinity;
+  for (const target of world.cells) {
+    if (target.owner === owner || (owner.team && target.owner?.team === owner.team) || !canBite(target, cell)) continue;
+    const distance = Math.hypot(target.x - cell.x, target.z - cell.z) - cellRadius(target);
+    if (distance < threatDistance) { threatDistance = distance; threat = target; }
+  }
+  const prey = owner.target && owner.target.owner && !owner.target.owner.decoy && !owner.target.gone
+    ? owner.target : null;
+  const preyDistance = prey ? Math.hypot(prey.x - cell.x, prey.z - cell.z) : Infinity;
+  const defensive = !!threat && threatDistance < 12 + cellRadius(cell) * 2;
+  const offensive = !!prey && preyDistance < 30;
+  const list = defensive && (persona.flee >= 1 || !offensive)
+    ? BOT_DEF_ABILITIES : offensive ? BOT_OFF_ABILITIES : defensive ? BOT_DEF_ABILITIES : BOT_FARM_ABILITIES;
+  const inRange = id => {
+    const ability = ABILITY_DATA[id];
+    if (list !== BOT_OFF_ABILITIES || !ability) return true;
+    const reach = (ability.radius || ability.dist || 20) + cellRadius(cell) * 2;
+    return id === 'dash' || id === 'blink' || preyDistance < reach;
+  };
+  const id = list.find(ability => owner.build.includes(ability) &&
+    !(owner.abCd?.[ability] > 0) && inRange(ability));
+  if (!id || (id === 'x_over' && !owner.build.some(ability => (owner.abCd?.[ability] || 0) > 0))) return null;
+  const aim = defensive ? { x: cell.x * 2 - threat.x, z: cell.z * 2 - threat.z }
+    : offensive ? prey : null;
+  if (aim) for (const part of owner.cells) {
+    const dx = aim.x - part.x, dz = aim.z - part.z, length = Math.hypot(dx, dz) || 1;
+    part.hx = dx / length; part.hz = dz / length;
+  }
+  return { id, defensive, offensive, threatId: threat?.id || null, preyId: prey?.id || null };
+}
+
 export function tickBotOwner(owner, world, dt, rng, options = {}) {
   if (!(dt > 0) || owner.kind !== 'bot') return { action: 'idle' };
   if (!owner.cells.length) {
@@ -168,6 +236,10 @@ export function tickBotOwner(owner, world, dt, rng, options = {}) {
     const decision = thinkBot(owner, world, rng, options);
     owner.think = 0.25 + rand(rng) * 0.25;
     if (owner.target && owner.target.owner && owner.target.owner.decoy) owner.target = null;
+    const ability = chooseBotAbility(owner, world, rng, options);
+    if (ability && options.castBotAbility) {
+      owner.lastBotAbility = { ...ability, result: options.castBotAbility(ability.id, owner) };
+    }
     owner.lastDecision = decision;
   }
   if (owner.target && !owner.target.gone) {

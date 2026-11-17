@@ -125,7 +125,7 @@ test('meteor impact pops large cells and pushes smaller cells', () => {
 test('shield and pulse cast set the authoritative active timers', () => {
   const p = owner('p', [cell(100)]), w = worldFor(p, [], { effects: { shield: 0 } });
   castWorldAbility('shield', p, w, createWorldAbilityEffects(), { player: true });
-  assert.equal(w.effects.shield, 6); assert.equal(p.abT.shieldB, 6.78); assert.ok(p.shHit instanceof Set);
+  assert.equal(w.effects.shield, 6); assert.ok(Math.abs(p.abT.shieldB - 6.78) < 1e-12); assert.ok(p.shHit instanceof Set);
   castWorldAbility('pulse', p, w, createWorldAbilityEffects()); assert.equal(p.abT.pulse, 5);
 });
 

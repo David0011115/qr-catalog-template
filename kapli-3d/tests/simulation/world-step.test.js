@@ -150,10 +150,11 @@ test('ejected mass feeds a virus before moving and increments its feed mass', ()
   assert.deepEqual(w.ejects, []);
 });
 
-test('virus pop creates deterministic split cells and starts its respawn timer', () => {
+test('virus pop creates deterministic split cells and allocates stable free slots', () => {
   const p = owner('p1');
+  p.free = ['slot-1', 'slot-2'];
   p.freeCount = 2;
-  const c = cell('c', p, 0, 0, 300);
+  const c = cell('c', p, 0, 0, 300, { slotId: 'slot-0' });
   const virus = { x: 0, z: 0, vx: 0, vz: 0, mass: 100, feed: 0, trap: null };
   const w = world([p], [c], { viruses: [virus] });
   const result = stepWorldInteractions(w, 1 / 30, {
@@ -167,6 +168,8 @@ test('virus pop creates deterministic split cells and starts its respawn timer',
   assert.equal(p.cells.length, 3);
   assert.equal(w.cells.length, 3);
   assert.equal(p.freeCount, 0);
+  assert.deepEqual(p.free, []);
+  assert.deepEqual(p.cells.slice(1).map(item => item.slotId), ['slot-2', 'slot-1']);
   assert.equal(w.viruses.length, 0);
   assert.equal(w.respawnTimers.length, 1);
   assert.ok(Math.abs(w.respawnTimers[0] - (10 - 1 / 30)) < 1e-9);
@@ -190,4 +193,22 @@ test('world clock advances by the exact fixed simulation step', () => {
   const w = world([p], [c], { clock: 3 });
   stepWorldInteractions(w, 1 / 30);
   assert.ok(Math.abs(w.clock - (3 + 1 / 30)) < 1e-12);
+});
+
+
+test('eaten and merged cells recycle their stable owner slot exactly once', () => {
+  const player = owner('p1');
+  player.free = ['slot-1'];
+  player.freeCount = 1;
+  const prey = cell('prey', player, 0, 0, 100, { slotId: 'slot-0' });
+  const predatorOwner = owner('p2');
+  const predator = cell('predator', predatorOwner, 0, 0, 1000);
+  const w = world([player, predatorOwner], [prey, predator]);
+  const result = stepEating(w);
+  assert.equal(result.eaten.length, 1);
+  assert.equal(prey.slotRecycled, true);
+  assert.deepEqual(player.free, ['slot-1', 'slot-0']);
+  assert.equal(player.freeCount, 2);
+  assert.equal(stepOwnerCellCollisions(w, 1 / 30).merged.length, 0);
+  assert.equal(player.freeCount, 2);
 });

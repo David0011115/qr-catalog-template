@@ -1,5 +1,6 @@
 import { matchInputAllowed, matchSimulationAllowed } from '../match/lifecycle.js';
 import { steerCell } from '../core/physics.js';
+import { stepWorldInteractions } from '../core/world-step.js';
 
 export const SIMULATION_RULES = Object.freeze({
   tickRate: 30,
@@ -104,7 +105,8 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
   }
 
   const nextTick = state.tick + 1;
-  options.simulateWorld?.(world, dt, { tick: nextTick, acknowledgements: clone(acknowledgements) });
+  const worldStep = stepWorldInteractions(world, dt, options.worldRules || {});
+  options.simulateWorld?.(world, dt, { tick: nextTick, acknowledgements: clone(acknowledgements), worldStep });
   state.tick = nextTick;
 
   const snapshotDue = state.tick % SIMULATION_RULES.snapshotEveryTicks === 0;
@@ -115,6 +117,7 @@ export function stepSimulationTick(state, lifecycle, world, options = {}) {
     tick: state.tick,
     dt,
     acknowledgements,
+    worldStep,
     snapshotDue,
     snapshotSequence: state.snapshotSequence,
   };

@@ -212,3 +212,15 @@ test('eaten and merged cells recycle their stable owner slot exactly once', () =
   assert.equal(stepOwnerCellCollisions(w, 1 / 30).merged.length, 0);
   assert.equal(player.freeCount, 2);
 });
+
+
+test('player-wide double and magnet effects apply independently to both server players', () => {
+  const player = owner('p1');
+  player.role = 'guest';
+  player.eff = { double: 1, magnet: 1 };
+  const c = cell('c', player, 0, 0, 10);
+  const w = world([player], [c], { food: [{ x: 8, z: 0 }] });
+  const result = stepFoodAndDecay(w, 1 / 30);
+  assert.equal(result.consumed, 1);
+  assert.equal(c.mass, 12);
+});

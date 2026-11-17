@@ -158,3 +158,28 @@ test('same initial state and command stream produce identical positions', () => 
   };
   assert.deepEqual(run(), run());
 });
+
+test('ability and mode adapters execute inside the fixed tick and expose their results', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  const world = makeWorld();
+  const order = [];
+  const out = stepSimulationTick(state, lifecycle, world, {
+    resolveOwner,
+    stepAbilities: (_world, dt, meta) => {
+      order.push('abilities');
+      assert.equal(dt, 1 / 30);
+      assert.equal(meta.tick, 1);
+      return { casts: [] };
+    },
+    stepMode: (_world, dt, meta) => {
+      order.push('mode');
+      assert.equal(dt, 1 / 30);
+      assert.equal(meta.tick, 1);
+      return { phase: 'wave' };
+    },
+  });
+  assert.deepEqual(order, ['abilities', 'mode']);
+  assert.deepEqual(out.abilityStep, { casts: [] });
+  assert.deepEqual(out.modeStep, { phase: 'wave' });
+});

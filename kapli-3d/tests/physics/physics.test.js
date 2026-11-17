@@ -12,7 +12,7 @@ const cell = (mass, x = 0, z = 0, own = owner()) => ({
 
 test('radius and cell radius preserve the original square-root rule', () => {
   assert.equal(radius(100), 3.8);
-  assert.equal(cellRadius(cell(100, 0, 0, owner({ rs: 0.7 }))), 2.66);
+  assert.ok(Math.abs(cellRadius(cell(100, 0, 0, owner({ rs: 0.7 }))) - 2.66) < 1e-12);
 });
 
 test('player target uses the original guard-adjusted eating ratio', () => {
@@ -81,7 +81,7 @@ test('base speed, dash scaling and environment modifiers follow the original ord
 });
 
 test('steering normalizes heading, applies inertia drag and clamps to arena', () => {
-  const c = cell(100, 0, 0, owner());
+  const c = cell(100, 30, 0, owner());
   c.vx = 10;
   steerCell(c, 100, 0, 1 / 30, { arenaRadius: 20 });
   assert.ok(Math.abs(Math.hypot(c.hx, c.hz) - 1) < 1e-12);

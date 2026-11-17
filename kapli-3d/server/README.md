@@ -32,6 +32,14 @@ node --test tests
 
 The tests cover extracted movement/eating formulas and differential checks against the browser source, deterministic random restoration, virus collisions/splitting, player and bot ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, room/countdown rules, room snapshot restoration, reconnect lifecycle, snapshot consistency and event replay, world entity serialization and reference restoration.
 
+## Deterministic input loop
+
+- `simulation/loop.js` accepts normalized direction commands with monotonically increasing per-player sequence numbers; malformed and stale commands are rejected.
+- Accepted commands are queued and acknowledged only after the authoritative tick processes them. A newer pending command replaces an older unprocessed direction for that player.
+- `stepSimulationTick()` advances exactly (1/30) second, applies the current player direction through the source-matched steering function, then invokes an optional world-step adapter for collisions, food, viruses, abilities and mode hooks.
+- Snapshot cadence is fixed at every second tick (15 Hz). The loop state, pending inputs and sequence cursors have validated JSON-safe snapshot/restore helpers.
+- The loop is a simulation-core building block, not a running server: no Durable Object scheduler, WebSocket transport, collision/world adapter or browser-client integration has been added. The existing browser game remains unchanged.
+
 ## Next implementation steps
 
 1. Define durable serialization for entity references, including owner/cell IDs and reference-based ability hit sets; the current recovery helpers validate snapshots and event replay but are not a SQLite adapter.

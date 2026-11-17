@@ -1,6 +1,7 @@
 // Rendering-free world interactions, following the update order in js/game/07-round.js.
 import { canEatAtDistance, cellRadius, eatingGain, massDecay, radius } from './physics.js';
 import { DeterministicRandom } from './random.js';
+import { createVirus, stepEjectedMass, stepViruses, canSpawnVirus } from './viruses.js';
 
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
 const alive = cell => cell && !cell.gone;
@@ -235,5 +236,83 @@ export function stepWorldInteractions(world, dt, rules = {}) {
       for (const cell of owner.cells) cell.mass *= scale;
     }
   }
-  return { collisions, food, eating };
+
+  // Original update order: ejected blobs first, then moving/colliding viruses.
+  world.ejects ||= [];
+  world.viruses ||= [];
+  world.respawnTimers ||= [];
+  const virusRules = rules.virusRules || {};
+  const ejectResult = stepEjectedMass(
+    world.ejects, world.viruses, world.cells, dt, world.arenaRadius, virusRules,
+  );
+  world.ejects = ejectResult.ejects;
+  world.viruses = ejectResult.viruses;
+
+  const random = () => {
+    if (!world.randomState) throw new TypeError('world.randomState is required for deterministic virus simulation');
+    const rng = DeterministicRandom.restore(world.randomState);
+    const value = rng.next();
+    world.randomState = rng.snapshot();
+    return value;
+  };
+  const freeCounts = new Map();
+  const getFreeCount = owner => {
+    if (!freeCounts.has(owner)) {
+      const supplied = virusRules.ownerStateFor?.(owner)?.freeCount;
+      freeCounts.set(owner, Number.isFinite(supplied) ? supplied : finite(owner.freeCount, 0));
+    }
+    return freeCounts.get(owner);
+  };
+  let spawnedCellSequence = 0;
+  const knownCellIds = new Set(world.cells.map(cell => String(cell.id)));
+  const tick = Number.isSafeInteger(rules.tick) ? rules.tick : Math.round(finite(world.clock, 0) / dt) + 1;
+  const virusResult = stepViruses(
+    [...world.viruses], world.cells, dt, world.arenaRadius, world.respawnTimers,
+    {
+      ...virusRules,
+      random,
+      ownerStateFor: owner => ({ cellsCount: owner.cells.length, freeCount: getFreeCount(owner) }),
+      onPop: event => {
+        const spawned = event.result.spawned || [];
+        for (const descriptor of spawned) {
+          let id;
+          do {
+            id = `virus-cell:${tick}:${event.cell.owner.id}:${spawnedCellSequence++}`;
+          } while (knownCellIds.has(id));
+          knownCellIds.add(id);
+          const created = { id, ...descriptor, owner: event.cell.owner, gone: false };
+          event.cell.owner.cells.push(created);
+          world.cells.push(created);
+        }
+        if (spawned.length) {
+          const owner = event.cell.owner;
+          const nextFree = Math.max(0, getFreeCount(owner) - spawned.length);
+          freeCounts.set(owner, nextFree);
+          if (Number.isFinite(owner.freeCount)) owner.freeCount = nextFree;
+        }
+        rules.onVirusPop?.(event, world);
+      },
+    },
+  );
+  world.viruses = virusResult.viruses;
+  world.respawnTimers = virusResult.respawnTimers;
+
+  let respawnedViruses = 0;
+  for (let i = 0; i < virusResult.spawnCount && canSpawnVirus(world.viruses.length); i++) {
+    let x = 0, z = 0;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const angle = random() * Math.PI * 2;
+      const distance = Math.sqrt(random()) * Math.max(0, world.arenaRadius - 12);
+      x = Math.cos(angle) * distance;
+      z = Math.sin(angle) * distance;
+      if (world.cells.every(cell => Math.hypot(cell.x - x, cell.z - z) > cellRadius(cell) + 8)) break;
+    }
+    world.viruses.push(createVirus(x, z));
+    respawnedViruses++;
+  }
+  world.clock = finite(world.clock, 0) + dt;
+  return {
+    collisions, food, eating, ejects: ejectResult, viruses: virusResult,
+    respawnedViruses,
+  };
 }

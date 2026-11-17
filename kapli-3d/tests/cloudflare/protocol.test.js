@@ -66,3 +66,12 @@ test('DuoBack boost commands accept only a stable offered boost identifier and s
   assert.equal(parseClientMessage(JSON.stringify({ type: 'boost', seq: 0, id: 'mass' })).reason, 'invalid-boost');
   assert.equal(parseClientMessage(JSON.stringify({ type: 'boost', seq: 7, id: 'not valid' })).reason, 'invalid-boost');
 });
+
+
+test('core-action protocol accepts only split, dash and eject with monotonic positive sequence numbers', () => {
+  assert.deepEqual(parseClientMessage(JSON.stringify({ type: 'action', seq: 2, action: 'split' })), {
+    ok: true, command: { type: 'action', seq: 2, action: 'split' },
+  });
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'action', seq: 0, action: 'split' })).reason, 'invalid-action');
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'action', seq: 3, action: 'teleport' })).reason, 'invalid-action');
+});

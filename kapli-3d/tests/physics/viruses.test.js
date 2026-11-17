@@ -4,7 +4,7 @@ import {
   VIRUS_RULES, createVirus, moveVirus, tickVirusTrap, canPopOnVirus,
   popCellOnVirus, feedVirusWithEject, createEjectedMass, moveEjectedMass,
   tryEjectedMassPickup, tickVirusRespawnTimers, canSpawnVirus,
-} from '../server/core/viruses.js';
+} from '../../server/core/viruses.js';
 
 const owner = extra => ({ kind: 'bot', ...(extra || {}) });
 const cell = (mass, x = 0, z = 0, own = owner()) => ({
@@ -36,7 +36,8 @@ test('virus collision checks mass, radius, spawn protection and ghost abilities'
   assert.equal(canPopOnVirus(cell(130), v), true);
   assert.equal(canPopOnVirus(cell(200, 0, 0, owner({ spawnSh: 1 })), v), false);
   assert.equal(canPopOnVirus(cell(200), v, { abilityOn: id => id === 'x_ghost' }), false);
-  assert.equal(canPopOnVirus(cell(200, 0, 0, owner({ gone: true })), v), false);
+  const gone = cell(200); gone.gone = true;
+  assert.equal(canPopOnVirus(gone, v), false);
 });
 
 test('boss without spare pieces loses 30 percent and is stunned for 2.5 seconds', () => {

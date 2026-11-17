@@ -71,8 +71,9 @@ test('remaining twin becomes enraged after its partner was active and died', () 
 
 test('regular boss expires at zero life and removes its remaining cells', () => {
   const c = cell('b', 100, 0, 0), b = boss('weaver', c, { life: 0.05 }); let removed = null;
-  const out = tickDuobackRegularBoss(b, 0.1, [], { removeCell: x => { removed = x; } });
-  assert.equal(out.expired, true); assert.equal(removed, c); assert.equal(out.events.at(-1).type, 'boss-expired');
+  let rebuilt = 0;
+  const out = tickDuobackRegularBoss(b, 0.1, [], { removeCell: x => { removed = x; }, rebuildCells: () => { rebuilt++; } });
+  assert.equal(out.expired, true); assert.equal(removed, c); assert.equal(rebuilt, 1); assert.equal(out.events.at(-1).type, 'boss-expired');
 });
 
 test('player respawn occurs only after its scheduled match time', () => {

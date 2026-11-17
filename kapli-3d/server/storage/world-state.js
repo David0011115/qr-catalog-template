@@ -95,7 +95,7 @@ export function serializeWorldState(world) {
   const ownerTargets = world.owners.map(owner => ({
     ownerId: String(owner.id),
     target: targetReference(owner.target, cellIds, decoyIndexes),
-    partnerId: owner.partner?.id == null ? null : String(owner.partner.id),
+    ...(owner.partner?.id == null ? {} : { partnerId: String(owner.partner.id) }),
     shHitOwnerIds: [...(owner.shHit || [])].map(item => String(isObject(item) ? item.id : item)),
     spHitOwnerIds: [...(owner.spHit || [])].map(item => String(isObject(item) ? item.id : item)),
   }));

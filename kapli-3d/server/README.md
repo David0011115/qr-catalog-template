@@ -6,6 +6,7 @@ This directory contains the rendering-free foundation for the authoritative mult
 
 - `core/physics.js`: mass-to-radius, movement speed, steering, arena clamping, eating eligibility, bite gain, and mass decay. Numeric rules are extracted from the current game implementation; context-dependent upgrades and mode hooks are supplied through callbacks.
 - `core/random.js`: seeded PRNG matching the generator used by the existing two-phone mode, with a serializable seed/counter snapshot.
+- `core/viruses.js`: virus movement and collisions, trap ownership/expiry, spike splitting, ejected-mass launch/drag/pickup, feeding a virus, and respawn timers. It exposes complete tick helpers while leaving entity storage and visual effects to the caller.
 
 These modules are not wired into a Worker or Durable Object yet. The browser game continues to run exactly as before.
 
@@ -19,12 +20,12 @@ From the `kapli-3d/` directory, run:
 node --test tests/physics/*.test.js
 ```
 
-The tests cover the extracted formulas and deterministic random restoration.
+The tests cover extracted movement/eating formulas, deterministic random restoration, virus collisions/splitting, ejected-mass interactions, and timer ordering.
 
 ## Next extraction steps
 
-1. Ejected mass and virus/spike state transitions.
-2. Ability effects, timers, and cooldown validation.
-3. Territory and DuoBack server-side mode rules.
-4. Complete match snapshot/event serialization and recovery.
-5. Worker/room integration after the core passes comparative tests against the browser implementation.
+1. Ability effects, timers, cooldown validation, and decoy interactions.
+2. Territory and DuoBack server-side mode rules.
+3. Complete match snapshot/event serialization and recovery.
+4. Comparative tests against the browser implementation.
+5. Worker/room integration after the core passes those tests.

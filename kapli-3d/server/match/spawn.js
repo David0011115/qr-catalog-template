@@ -28,15 +28,15 @@ export function findSafeSpawn(world, rng, minDistance = 40) {
 
 // Mirrors the Territory override: 80 attempts on the bot's home side, then its
 // deterministic home-side fallback at the same 50%-toward-home interpolation.
-export function findTerritoryBotSpawn(state, index, world, rng) {
+export function findTerritoryBotSpawn(state, index, world, rng, minDistance = 14) {
   if (!state || !world || !Array.isArray(world.cells) ||
-      !Number.isFinite(state.arenaRadius) || typeof rng !== 'function') {
+      !Number.isFinite(state.arenaRadius) || typeof rng !== 'function' || !Number.isFinite(minDistance) || minDistance < 0) {
     throw new TypeError('territory state, world and rng are required');
   }
   const home = territoryBotHome(index);
   for (let attempt = 0; attempt < 80; attempt++) {
     const point = pointInArena(rng, state.arenaRadius, 6);
-    if (territorySideAt(state, point.x) === home && isSafe(world, point, 6)) {
+    if (territorySideAt(state, point.x) === home && isSafe(world, point, minDistance)) {
       return { ...point, homeSide: home, safe: true, attempts: attempt + 1 };
     }
   }

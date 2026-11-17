@@ -16,13 +16,13 @@ export const DUO_WORLD_SOURCE = Object.freeze({
   playerParts: 10,
 });
 
-const BUILD_POOL = Object.freeze([
+export const DUO_BUILD_POOL = Object.freeze([
   'dash', 'split', 'eject', 'shield', 'pulse', 'blink',
   'slow', 'cloak', 'push', 'shrink', 'decoy', 'trap',
 ]);
 
 function drawBuild(rng) {
-  const pool = [...BUILD_POOL], result = [];
+  const pool = [...DUO_BUILD_POOL], result = [];
   while (result.length < 3) result.push(pool.splice(rng.int(pool.length), 1)[0]);
   return result;
 }
@@ -34,11 +34,14 @@ function pointInArena(rng, arenaRadius, margin) {
 }
 
 function createPlayerOwner(player, role, mode, arenaRadius, build) {
+  const upgrades = player.upgrades && typeof player.upgrades === 'object' ? player.upgrades : {};
+  const abilityLevels = player.abilityLevels && typeof player.abilityLevels === 'object' ? player.abilityLevels : {};
+  const startMass = DUO_WORLD_SOURCE.startMass + Math.max(0, Math.min(10, Number(upgrades.big) || 0));
   const home = role === 'host' ? -1 : 1;
   const spawnFactor = mode === 'territory' ? 0.6 : 0.18;
   const x = home * arenaRadius * spawnFactor;
   const cell = {
-    id: `player:${player.id}:cell:0`, slotId: `player:${player.id}:slot:0`, x, z: 0, mass: DUO_WORLD_SOURCE.startMass,
+    id: `player:${player.id}:cell:0`, slotId: `player:${player.id}:slot:0`, x, z: 0, mass: startMass,
     vx: 0, vz: 0, hx: x > 0 ? -1 : 1, hz: 0, mergeT: 0, gone: false,
   };
   const owner = {
@@ -48,6 +51,14 @@ function createPlayerOwner(player, role, mode, arenaRadius, build) {
     freeCount: DUO_WORLD_SOURCE.playerParts - 1,
     spawnSh: 3, dashT: 0, dashCd: 0, splitCd: 0, abCd: {}, abT: {}, rs: 1,
     slowT: 0, iceT: 0, freezeT: 0, phase2: 0, build: [...build],
+    skin: typeof player.skin === 'string' ? player.skin : 'coral',
+    upgrades: { ...upgrades }, abilityLevels: { ...abilityLevels }, startMass,
+    splitMaxParts: Math.min(10, 4 + Math.max(0, Number(upgrades.splitmax) || 0)),
+    mergeSeconds: 14 * (1 - 0.03 * Math.max(0, Number(upgrades.merge) || 0)),
+    dashCooldown: 4 * (1 - 0.03 * Math.max(0, Number(upgrades.dash) || 0)),
+    dashDuration: 0.35 + 0.035 * Math.max(0, Number(upgrades.light) || 0),
+    dashMassCost: 0.03 * (1 - 0.08 * Math.max(0, Number(upgrades.light) || 0)),
+    ejectSpeed: 60 * (1 + 0.065 * Math.max(0, Number(abilityLevels.eject) || 0)), ejectCooldown: 0.12, ejectCd: 0,
     eff: { speed: 0, shield: 3, double: 0, magnet: 0 },
     db: mode === 'duoback' ? { mass: 0, speed: 0, armor: 0, absorb: 0, cd: 0 } : null,
     dbAbs: mode === 'duoback' ? 1 : null,

@@ -98,14 +98,14 @@ test('player movement gets the original short-distance steering factor', () => {
 });
 
 test('speed formulas use source player upgrades, pet levels, temporary speed and shrink', () => {
-  const c = cell(10, 0, 0, player());
+  const c = cell(10, 0, 0, owner({ isPlayer: true }));
   const base = speedOf(c); assert.equal(base, 33);
   const boosted = speedOf(c, { speedUpgradeFor: () => 5, speedPetLevelFor: () => 5, playerSpeedEffect: 1, abilityOn: id => id === 'shrink' });
   assert.ok(Math.abs(boosted - 33 * 1.05 * 1.45 * 1.1 * 1.25) < 1e-10);
 });
 
 test('dash ignores normal mass slowdown and uses the source -0.1 exponent', () => {
-  const c = cell(100, 0, 0, player({ dashT: 1 }));
+  const c = cell(100, 0, 0, owner({ isPlayer: true, dashT: 1 }));
   assert.ok(Math.abs(speedOf(c) - 33 * 3.2 * Math.pow(10, -0.1)) < 1e-10);
 });
 

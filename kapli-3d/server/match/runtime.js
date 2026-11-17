@@ -81,7 +81,8 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
         resolveOwner: ownerFor,
         createModeRules(currentWorld) {
           const players = resolvePlayers(currentWorld);
-          currentModeRules = mode === 'territory'
+          currentWorld.pendingFoodChanges ||= [];
+          const modeRules = mode === 'territory'
             ? createTerritoryRules(currentWorld.modeState)
             : createDuobackRules(currentWorld.modeState, {
                 resolvePlayers: () => players,
@@ -91,6 +92,13 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
                 onPlayerLost: options.onPlayerLost,
                 onPartnerRespawnAccelerated: options.onPartnerRespawnAccelerated,
               });
+          currentModeRules = {
+            ...modeRules,
+            worldRules: {
+              ...modeRules.worldRules,
+              onFoodRespawn: food => currentWorld.pendingFoodChanges.push({ id: food.id, x: food.x, z: food.z }),
+            },
+          };
           return currentModeRules;
         },
         stepAbilities(currentWorld, dt, context) {

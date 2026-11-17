@@ -1,6 +1,6 @@
 import {
   createRoomCode, getBearerToken, normalizeRoomCode, parseMode, sanitizeNickname,
-} from './protocol.js';
+} from '../../protocol.js';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });

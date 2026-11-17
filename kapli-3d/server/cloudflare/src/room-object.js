@@ -10,6 +10,7 @@ import {
 } from '../../match/runtime.js';
 import { parseClientMessage, normalizeRoomCode, parseMode, sanitizeNickname } from '../protocol.js';
 import { persistMatchResult } from '../../supabase/results.js';
+import { territoryLeftShare } from '../../modes/territory.js';
 
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
@@ -445,7 +446,8 @@ export class GameRoom {
   resolveDisconnect(disconnected, players) {
     const connected = players.filter(player => player.connected);
     if (this.room?.mode === 'territory' && connected.length === 1) {
-      return { mode: 'territory', reason: 'reconnect-timeout', winnerRole: connected[0].role };
+      const share = territoryLeftShare(this.runtime.world.modeState);
+      return { mode: 'territory', reason: 'reconnect-timeout', winner: connected[0].role, winnerRole: connected[0].role, share };
     }
     return { mode: this.room?.mode, reason: 'reconnect-timeout', disconnected };
   }

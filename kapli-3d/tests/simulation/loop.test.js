@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SIMULATION_RULES, createSimulationLoopState, submitPlayerInput,
+  SIMULATION_RULES, createSimulationLoopState, submitPlayerInput, submitAbilityCommand,
   stepSimulationTick, serializeSimulationLoopState, restoreSimulationLoopState,
 } from '../../server/simulation/loop.js';
 import {
@@ -135,9 +135,11 @@ test('simulation snapshots round-trip sequence, pending input and direction stat
   const state = createSimulationLoopState(['p1', 'p2']);
   const lifecycle = makeLifecycle();
   submitPlayerInput(state, lifecycle, 'p2', { type: 'input', seq: 7, x: 0, z: -1 });
+  submitAbilityCommand(state, lifecycle, 'p1', { type: 'ability', seq: 3, slot: 1 });
   const restored = restoreSimulationLoopState(serializeSimulationLoopState(state));
   assert.deepEqual(restored, state);
   assert.equal(restored.pendingInputs.p2.seq, 7);
+  assert.deepEqual(restored.pendingAbilities.p1, { seq: 3, slot: 1 });
   assert.throws(() => restoreSimulationLoopState({ ...state, tick: -1 }), /invalid/);
   const badDirection = serializeSimulationLoopState(state);
   badDirection.directions.p1 = { x: 1, z: 1 };
@@ -182,4 +184,41 @@ test('ability and mode adapters execute inside the fixed tick and expose their r
   assert.deepEqual(order, ['abilities', 'mode']);
   assert.deepEqual(out.abilityStep, { casts: [] });
   assert.deepEqual(out.modeStep, { phase: 'wave' });
+});
+
+test('ability commands are validated, queued and acknowledged after the authoritative tick', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  assert.deepEqual(
+    submitAbilityCommand(state, lifecycle, 'p1', { type: 'ability', seq: 1, slot: 2 }),
+    { ok: true, acceptedSeq: 1, queued: true },
+  );
+  assert.equal(submitAbilityCommand(state, lifecycle, 'p1', { type: 'ability', seq: 1, slot: 3 }).reason,
+    'stale-ability-sequence');
+  assert.equal(submitAbilityCommand(state, lifecycle, 'p1', { type: 'ability', seq: 2, slot: -1 }).reason,
+    'invalid-ability-command');
+  let received = null;
+  const out = stepSimulationTick(state, lifecycle, makeWorld(), {
+    resolveOwner,
+    stepAbilities: (_world, dt, meta) => {
+      received = { dt, commands: meta.commands };
+      return { casts: [{ ok: true }] };
+    },
+  });
+  assert.deepEqual(received, {
+    dt: 1 / 30,
+    commands: [{ ownerId: 'owner-1', seq: 1, slot: 2 }],
+  });
+  assert.deepEqual(out.abilityAcknowledgements, [{ playerId: 'p1', processedSeq: 1 }]);
+  assert.equal(state.pendingAbilities.p1, null);
+  assert.equal(state.lastAbilityProcessedSeq.p1, 1);
+});
+
+test('queued ability command remains pending when no ability adapter is supplied', () => {
+  const state = createSimulationLoopState(['p1', 'p2']);
+  const lifecycle = makeLifecycle();
+  submitAbilityCommand(state, lifecycle, 'p1', { type: 'ability', seq: 1, slot: 0 });
+  assert.throws(() => stepSimulationTick(state, lifecycle, makeWorld(), { resolveOwner }), /stepAbilities adapter/);
+  assert.deepEqual(state.pendingAbilities.p1, { seq: 1, slot: 0 });
+  assert.equal(state.tick, 0);
 });

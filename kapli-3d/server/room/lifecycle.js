@@ -113,3 +113,17 @@ export function reconnectRoomPlayer(room, playerId) {
   if (room.players.every(p => p.connected)) { room.status = 'active'; return { ok: true, resumed: true }; }
   return { ok: true, resumed: false };
 }
+export function serializeRoomState(room) { return clone(room); }
+
+export function restoreRoomState(snapshot) {
+  const room = clone(snapshot);
+  if (!room || !room.roomId || !room.code || !['waiting', 'lobby', 'countdown', 'active', 'paused', 'closed'].includes(room.status)) {
+    throw new TypeError('invalid room snapshot');
+  }
+  if (!Array.isArray(room.players) || room.players.length > ROOM_RULES.maxPlayers ||
+      (room.status !== 'closed' && room.players.length < 1) ||
+      room.players.some(p => !p.id || !['host', 'guest'].includes(p.role) || typeof p.ready !== 'boolean' || typeof p.connected !== 'boolean')) {
+    throw new TypeError('invalid room players snapshot');
+  }
+  return room;
+}

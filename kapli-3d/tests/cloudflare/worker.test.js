@@ -5,12 +5,30 @@ import { handleWorkerRequest } from '../../server/cloudflare/src/worker.js';
 const originalFetch = globalThis.fetch;
 function authFetch(userId = '11111111-1111-4111-8111-111111111111') {
   globalThis.fetch = async (url, init) => {
-    assert.match(String(url), /\/auth\/v1\/user$/);
-    assert.equal(init.headers.authorization, 'Bearer user-access-token');
-    return new Response(JSON.stringify({
-      id: userId, email: 'player@example.com',
-      user_metadata: { nickname: 'Player One' },
-    }), { status: 200 });
+    const target = String(url);
+    if (target.endsWith('/auth/v1/user')) {
+      assert.equal(init.headers.authorization, 'Bearer user-access-token');
+      return new Response(JSON.stringify({
+        id: userId, email: 'player@example.com',
+        user_metadata: { nickname: 'Player One' },
+      }), { status: 200 });
+    }
+    if (target.includes('/rest/v1/player_profiles?')) {
+      assert.equal(init.headers.authorization, 'Bearer user-access-token');
+      return new Response(JSON.stringify([{ nickname: 'Profile Nick' }]), { status: 200 });
+    }
+    if (target.includes('/rest/v1/player_saves?')) {
+      assert.equal(init.headers.authorization, 'Bearer user-access-token');
+      return new Response(JSON.stringify([{
+        save_data: {
+          skin: 'mint', skins: ['coral', 'mint'],
+          build: ['shield', 'split', 'shield'],
+          abil: { owned: ['dash', 'split', 'shield'], lv: { shield: 3, eject: 2 } },
+          up: { big: 2, speed: 4, splitmax: 2, merge: 1, light: 3, guard: 2, digest: 4, magnet: 1 },
+        },
+      }]), { status: 200 });
+    }
+    throw new Error('Unexpected Supabase request: ' + target);
   };
 }
 function envFor(stub) {
@@ -79,9 +97,14 @@ test('Worker validates Supabase user and forwards room creation to the named Dur
     assert.equal(response.headers.get('access-control-allow-origin'), 'https://game.example');
     assert.equal(captured.url, '/internal/create');
     assert.equal(captured.userId, '11111111-1111-4111-8111-111111111111');
-    assert.equal(captured.nickname, 'Player One');
+    assert.equal(captured.nickname, 'Profile Nick');
     assert.equal(captured.body.mode, 'territory');
     assert.match(captured.body.code, /^[A-Z2-9]+$/);
+    assert.deepEqual(captured.body.player.build, ['shield', 'split', null]);
+    assert.equal(captured.body.player.upgrades.big, 2);
+    assert.equal(captured.body.player.upgrades.speed, 4);
+    assert.equal(captured.body.player.abilityLevels.shield, 3);
+    assert.equal(captured.body.player.skin, 'mint');
   } finally { globalThis.fetch = originalFetch; }
 });
 

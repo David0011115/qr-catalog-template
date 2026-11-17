@@ -6,7 +6,7 @@ import { castBotUtilityAbility } from '../core/utility-abilities.js';
 import { DeterministicRandom } from '../core/random.js';
 import { tickBotOwner } from '../modes/bots.js';
 import { territorySideAt, restoreTerritoryState, serializeTerritoryState } from '../modes/territory.js';
-import { restoreDuobackState, serializeDuobackState } from '../modes/duoback.js';
+import { chooseDuobackBoost, restoreDuobackState, serializeDuobackState } from '../modes/duoback.js';
 import {
   createTerritoryRules, createDuobackRules, stepTerritoryRuntime, stepDuobackRuntime,
 } from '../simulation/mode-runtime.js';
@@ -43,7 +43,7 @@ function finishMatch(lifecycle, result, now) {
   return true;
 }
 
-function attachRuntime({ mode, lifecycle, simulation, world, abilityState, options = {} }) {
+function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeCommands = [], lastBoostSeq = {}, options = {} }) {
   world.mode = mode;
   world.abilityState = abilityState;
   world.respawnTimers ||= [];
@@ -52,12 +52,29 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
 
   const resolvePlayers = currentWorld => playersFor(currentWorld);
   const runtime = {
-    mode, lifecycle, simulation, world, abilityState,
+    mode, lifecycle, simulation, world, abilityState, modeCommands, lastBoostSeq,
     submitInput(playerId, command) {
       return submitPlayerInput(simulation, lifecycle, playerId, command);
     },
     submitAbility(playerId, command) {
       return submitAbilityCommand(simulation, lifecycle, playerId, command);
+    },
+    submitBoost(playerId, command) {
+      if (mode !== 'duoback') return { ok: false, reason: 'mode-does-not-support-boosts' };
+      const player = ownerFor(world, playerId);
+      if (!player || !Number.isSafeInteger(command?.seq) || command.seq < 1 ||
+          typeof command.id !== 'string' || !/^[a-z0-9_]{1,32}$/.test(command.id)) {
+        return { ok: false, reason: 'invalid-boost-command' };
+      }
+      const previous = lastBoostSeq[playerId] || 0;
+      if (command.seq <= previous) return { ok: false, reason: 'replayed-command' };
+      const choices = world.modeState.offers?.[player.role];
+      if (!Array.isArray(choices) || !choices.includes(command.id) || world.modeState.picked?.[player.role]) {
+        return { ok: false, reason: 'boost-not-offered' };
+      }
+      lastBoostSeq[playerId] = command.seq;
+      modeCommands.push({ playerId, seq: command.seq, id: command.id });
+      return { ok: true, acceptedSeq: command.seq, queued: true };
     },
     disconnect(playerId, now = Date.now()) {
       const result = disconnectMatchPlayer(lifecycle, playerId, now);
@@ -175,6 +192,12 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
             );
             if (result.result) finishMatch(lifecycle, result.result, Date.now());
           } else {
+            const boostEvents = [];
+            for (const command of modeCommands.splice(0)) {
+              const player = ownerFor(currentWorld, command.playerId);
+              const ok = player && chooseDuobackBoost(currentWorld.modeState, resolvePlayers(currentWorld), player.role, command.id);
+              boostEvents.push({ playerId: command.playerId, role: player?.role || null, id: command.id, accepted: !!ok, seq: command.seq });
+            }
             result = stepDuobackRuntime(currentWorld.modeState, currentWorld, dt, {
               resolvePlayers,
               random: () => rng.next(),
@@ -185,6 +208,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
               onResult: options.onResult,
             });
             if (result.finish?.finished) finishMatch(lifecycle, result.finish, Date.now());
+            result.boostEvents = boostEvents;
           }
           currentWorld.randomState = rng.snapshot();
           return result;
@@ -202,6 +226,8 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, optio
         version: MATCH_RUNTIME_VERSION, mode,
         lifecycle: serializeMatchLifecycle(lifecycle),
         simulation: serializeSimulationLoopState(simulation),
+        modeCommands: modeCommands.map(command => ({ ...command })),
+        lastBoostSeq: { ...lastBoostSeq },
         world: worldSnapshot,
       };
     },
@@ -237,6 +263,9 @@ export function restoreDuoMatchRuntime(snapshot, options = {}) {
   const abilityState = world.abilityState || createAbilityRuntimeState();
   world.abilityState = abilityState;
   return attachRuntime({
-    mode: snapshot.mode, lifecycle, simulation, world, abilityState, options,
+    mode: snapshot.mode, lifecycle, simulation, world, abilityState,
+    modeCommands: Array.isArray(snapshot.modeCommands) ? snapshot.modeCommands : [],
+    lastBoostSeq: snapshot.lastBoostSeq && typeof snapshot.lastBoostSeq === 'object' ? { ...snapshot.lastBoostSeq } : {},
+    options,
   });
 }

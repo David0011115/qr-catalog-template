@@ -130,3 +130,11 @@ test('bot, star, minion, daily, cyber, storm and mode speed multipliers match so
   const globalBoosts = { dailySpeed: true, cyberArena: true, stormEvent: true, modeBotSpeedK: () => 2 };
   assert.ok(Math.abs(speedOf(minion, globalBoosts) - 33 * 1.05 * 1.3 * 1.1 * 1.4 * 2) < 1e-10);
 });
+
+test('temporary speed effects can be resolved separately for host and guest owners', () => {
+  const guest = cell(10, 0, 0, owner({ isPlayer: true, role: 'guest', eff: { speed: 1 } }));
+  const host = cell(10, 0, 0, owner({ isPlayer: true, role: 'host', eff: { speed: 0 } }));
+  const rules = { playerSpeedEffectFor: owner => owner.eff?.speed > 0 };
+  assert.equal(speedOf(guest, rules), 33 * 1.45);
+  assert.equal(speedOf(host, rules), 33);
+});

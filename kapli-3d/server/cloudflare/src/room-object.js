@@ -29,7 +29,7 @@ function ownerSummary(owner) {
     id: owner.id, name: owner.name, kind: owner.kind, role: owner.role || null,
     team: owner.team || null, isPlayer: !!owner.isPlayer,
     homeSide: owner.homeSide || 0, mass: totalMass(owner),
-    cellCount: owner.cells.length, poolSize: owner.free.length + owner.cells.length,
+    cellCount: owner.cells.length, poolSize: owner.free.length + owner.cells.length, rs: owner.rs || 1,
     build: owner.build || [], persona: owner.persona || null,
     db: owner.db || null, eff: owner.eff || null, abT: owner.abT || null,
     abCd: owner.abCd || null, dashCd: owner.dashCd || 0, splitCd: owner.splitCd || 0,

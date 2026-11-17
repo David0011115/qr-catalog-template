@@ -5,7 +5,8 @@ import {
 } from '../modes/territory.js';
 import {
   tickDuobackPhase, tickDuobackMeteors, duobackRegularBossDefeated,
-  duobackCanFinish,
+  duobackCanFinish, duobackBlocksBossEat, duobackPlayerSpeedMultiplier,
+  duobackBossSpeedMultiplier, duobackCooldownMultiplier,
 } from '../modes/duoback.js';
 import { tickDuobackRegularBoss, tickDuobackPlayerRespawn } from '../modes/duoback-bosses.js';
 import { tickDuobackSpecialBoss } from '../modes/duoback-special.js';
@@ -46,10 +47,38 @@ export function stepTerritoryRuntime(state, world, dt, elapsedSeconds, options =
 
 // Boss references are resolved by the host adapter because entity slots and
 // object pools belong to the room implementation, not the mode rules.
+export function createDuobackRules(state, options = {}) {
+  const physics = options.physicsRules || {};
+  const interactions = options.worldRules || {};
+  return {
+    physicsRules: {
+      ...physics,
+      duoSpeedK: cell => (physics.duoSpeedK?.(cell) ?? 1) *
+        duobackPlayerSpeedMultiplier(cell.owner),
+      bossSpeedFor: owner => (physics.bossSpeedFor?.(owner) ?? 1) *
+        duobackBossSpeedMultiplier(owner, state.wave),
+    },
+    worldRules: {
+      ...interactions,
+      eatBlock: (attacker, target) =>
+        !!interactions.eatBlock?.(attacker, target) || duobackBlocksBossEat(attacker, target),
+    },
+    abilityOptions: {
+      ...options.abilityOptions,
+      cooldownMultiplierFor: owner =>
+        (options.abilityOptions?.cooldownMultiplierFor?.(owner) ?? 1) *
+        duobackCooldownMultiplier(owner),
+    },
+  };
+}
+
 export function stepDuobackRuntime(state, world, dt, options = {}) {
   const players = options.resolvePlayers?.(world);
   if (!Array.isArray(players) || players.length !== 2) {
     throw new TypeError('duoback requires exactly two resolved players');
+  }
+  if (typeof options.random !== 'function') {
+    throw new TypeError('duoback requires the persisted deterministic random stream');
   }
   const events = [];
   const removeCell = cell => options.removeCell?.(world, cell);

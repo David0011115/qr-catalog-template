@@ -4,7 +4,7 @@ import {
   DUOBACK_DIFFICULTIES, DUOBACK_REGULAR_BOSSES, DUOBACK_SPECIAL_BOSSES, DUOBACK_RULES,
   createDuobackState, duobackLateStep, duobackBaseMass, duobackBreakDuration,
   duobackRespawnSeconds, duobackPlayerSpeedMultiplier, duobackAbsorbMultiplier,
-  duobackCooldownMultiplier, duobackBossSpeedMultiplier, duobackBlocksBossEat,
+  duobackCooldownMultiplier, duobackBossBaseSpeed, duobackBossSpeedMultiplier, duobackBlocksBossEat,
   drawDuobackBoostChoices, applyDuobackBoost, startDuobackWave, startDuobackBreak,
   chooseDuobackBoost, duobackPlayerLost, duobackBotEaten, tickDuobackMeteors,
   duobackCanFinish, serializeDuobackState, restoreDuobackState, duobackRegularBossDefeated, tickDuobackPhase,
@@ -110,6 +110,8 @@ test('late special bosses are enhanced and regular late-wave extras scale', () =
   const s = createDuobackState(0); s.wave = 29;
   const out = startDuobackWave(s, [player('host'), player('guest')], () => 0.99);
   assert.equal(s.wave, 30); assert.equal(s.special.enhanced, true);
+  assert.equal(duobackBossBaseSpeed({ dbType: 'weaver' }), 0.85);
+  assert.equal(duobackBossBaseSpeed({ dbType: 'vortex' }), 0.55);
   assert.equal(duobackBossSpeedMultiplier({ dbType: 'weaver' }, 30), 1.03);
   assert.equal(duobackBossSpeedMultiplier({ dbType: 'twins', enr: 1 }, 30), 1.3905);
 });

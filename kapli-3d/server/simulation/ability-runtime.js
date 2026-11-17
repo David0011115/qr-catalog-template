@@ -31,7 +31,7 @@ export function createAbilityRuleAdapters(world, options = {}) {
     physicsRules: {
       ...physics,
       abilityOn: physics.abilityOn || abilityOn,
-      playerSpeedEffect: physics.playerSpeedEffect,
+      playerSpeedEffect: Number.isFinite(world?.effects?.speed) ? world.effects.speed : physics.playerSpeedEffect,
       playerSpeedEffectFor: physics.playerSpeedEffectFor ||
         (owner => (owner?.eff?.speed || 0) > 0 || (owner?.role === 'host' && (world?.effects?.speed || 0) > 0)),
     },
@@ -39,7 +39,7 @@ export function createAbilityRuleAdapters(world, options = {}) {
       ...interactions,
       abilityOn: interactions.abilityOn || abilityOn,
       playerShieldActive: interactions.playerShieldActive ||
-        (owner => !!owner?.isPlayer && ((owner?.eff?.shield || 0) > 0 || (owner?.role === 'host' && (world?.effects?.shield || 0) > 0))),
+        (owner => !!owner?.isPlayer && ((owner?.eff?.shield || 0) > 0 || (world?.effects?.shield || 0) > 0)),
     },
   };
 }

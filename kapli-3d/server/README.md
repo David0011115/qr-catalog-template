@@ -6,7 +6,7 @@ This directory contains the rendering-free foundation for the authoritative mult
 
 - `core/physics.js`: mass-to-radius, movement speed, steering, arena clamping, eating eligibility, bite gain, and mass decay. Numeric rules are extracted from the current game implementation; context-dependent upgrades and mode hooks are supplied through callbacks.
 - `core/random.js`: seeded PRNG matching the generator used by the existing two-phone mode, with a serializable seed/counter snapshot.
-- `core/viruses.js`: virus movement and collisions, trap ownership/expiry, spike splitting, ejected-mass launch/drag/pickup, feeding a virus, and respawn timers. It exposes complete tick helpers while leaving entity storage and visual effects to the caller.
+- `core/viruses.js`: virus movement and collisions, trap ownership/expiry, spike splitting, player forward ejection, bot backward ejection, ejected-mass drag/pickup, feeding a virus, and respawn timers. It exposes complete tick helpers while leaving entity storage and visual effects to the caller.
 - `core/abilities.js`: source-derived ability cooldown/power formulas, active timers, shrink-size easing, phase-jump cooldown timing, and decoy movement/collision.
 - `core/ability-effects.js`: validated ability casting/cooldowns and source-derived world effects for shield, pulse, slow, push, blink/phase, shrink/cloak, decoy, traps, overload, black hole, anchor, meteors, mirror twin, vampirism, typhoon, ice trail, ghost expiration, Chronos gear wall/rewind/swap, plus serializable effect/history state. The module uses injected world/entity callbacks and is not yet wired into the live game loop or Durable Object.
 - `modes/territory.js`: server-authoritative territory border movement, circular area-share formula, home-side bot restrictions/spawns, foreign-side speed penalty, eaten-player border jumps, 80% early win, 4-minute timer and one 30-second overtime, plus snapshot/restore.
@@ -29,7 +29,7 @@ From the `kapli-3d/` directory, run:
 node --test tests
 ```
 
-The tests cover extracted movement/eating formulas, deterministic random restoration, virus collisions/splitting, ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, room/countdown rules, reconnect lifecycle, snapshot consistency and event replay.
+The tests cover extracted movement/eating formulas and differential checks against the browser source, deterministic random restoration, virus collisions/splitting, player and bot ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, room/countdown rules, room snapshot restoration, reconnect lifecycle, snapshot consistency and event replay.
 
 ## Next extraction steps
 

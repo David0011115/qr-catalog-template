@@ -133,23 +133,29 @@ export function restoreSimulationLoopState(snapshot) {
   }
 
   const ids = Object.keys(snapshot.lastReceivedSeq);
-  if (ids.length !== 2 || ids.some(id =>
-    !Number.isSafeInteger(snapshot.lastReceivedSeq[id]) || snapshot.lastReceivedSeq[id] < 0 ||
-    !Number.isSafeInteger(snapshot.lastProcessedSeq[id]) || snapshot.lastProcessedSeq[id] < 0 ||
-    snapshot.lastProcessedSeq[id] > snapshot.lastReceivedSeq[id] ||
-    !(snapshot.pendingInputs[id] === null ||
-      (isRecord(snapshot.pendingInputs[id]) &&
-       Number.isSafeInteger(snapshot.pendingInputs[id].seq) &&
-       snapshot.pendingInputs[id].seq > snapshot.lastProcessedSeq[id] &&
-       snapshot.pendingInputs[id].seq <= snapshot.lastReceivedSeq[id] &&
-       Number.isFinite(snapshot.pendingInputs[id].x) &&
-       Number.isFinite(snapshot.pendingInputs[id].z))) ||
-    !isRecord(snapshot.directions[id]) ||
-    !Number.isFinite(snapshot.directions[id].x) ||
-    !Number.isFinite(snapshot.directions[id].z) ||
-    Math.abs(snapshot.directions[id].x) > 1 ||
-    Math.abs(snapshot.directions[id].z) > 1
-  )) {
+  const samePlayers = [snapshot.lastProcessedSeq, snapshot.pendingInputs, snapshot.directions]
+    .every(record => Object.keys(record).length === ids.length && ids.every(id => Object.hasOwn(record, id)));
+  if (ids.length !== 2 || !samePlayers ||
+      snapshot.snapshotSequence !== Math.floor(snapshot.tick / SIMULATION_RULES.snapshotEveryTicks) ||
+      ids.some(id => {
+        const pending = snapshot.pendingInputs[id];
+        const direction = snapshot.directions[id];
+        return !Number.isSafeInteger(snapshot.lastReceivedSeq[id]) || snapshot.lastReceivedSeq[id] < 0 ||
+          !Number.isSafeInteger(snapshot.lastProcessedSeq[id]) || snapshot.lastProcessedSeq[id] < 0 ||
+          snapshot.lastProcessedSeq[id] > snapshot.lastReceivedSeq[id] ||
+          !(pending === null ||
+            (isRecord(pending) &&
+             Number.isSafeInteger(pending.seq) &&
+             pending.seq > snapshot.lastProcessedSeq[id] &&
+             pending.seq <= snapshot.lastReceivedSeq[id] &&
+             Number.isFinite(pending.x) && Number.isFinite(pending.z) &&
+             Math.abs(pending.x) <= 1 && Math.abs(pending.z) <= 1 &&
+             Math.hypot(pending.x, pending.z) <= 1.000001)) ||
+          !isRecord(direction) ||
+          !Number.isFinite(direction.x) || !Number.isFinite(direction.z) ||
+          Math.abs(direction.x) > 1 || Math.abs(direction.z) > 1 ||
+          Math.hypot(direction.x, direction.z) > 1.000001;
+      })) {
     throw new TypeError('invalid simulation player input state');
   }
   return clone(snapshot);

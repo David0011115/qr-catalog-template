@@ -87,11 +87,12 @@ export function spawnDuobackBossChunk(world, owner, descriptor, requestedSlot) {
   }
   const slot = requestedSlot ?? owner.free.pop();
   if (slot === undefined) return null;
-  if (requestedSlot !== undefined) {
-    const index = owner.free.indexOf(requestedSlot);
-    if (index < 0) throw new RangeError('requested DuoBack boss slot is not free');
-    owner.free.splice(index, 1);
+  if (!Number.isInteger(slot) || slot < 0 || slot >= owner.parts ||
+      owner.cells.some(cell => cell.slot === slot)) {
+    throw new RangeError('requested DuoBack boss slot is not free');
   }
+  const index = owner.free.indexOf(slot);
+  if (index >= 0) owner.free.splice(index, 1);
   try {
     return addBossCell(world, owner, descriptor, slot);
   } catch (error) {
@@ -101,7 +102,8 @@ export function spawnDuobackBossChunk(world, owner, descriptor, requestedSlot) {
 }
 
 export function removeDuobackWorldCell(world, cell) {
-  if (!cell || cell.gone) return false;
+  if (!cell) return false;
+  const wasGone = !!cell.gone;
   cell.gone = true;
   const owner = cell.owner;
   const ownerIndex = owner?.cells?.indexOf(cell) ?? -1;
@@ -109,7 +111,7 @@ export function removeDuobackWorldCell(world, cell) {
   const worldIndex = world?.cells?.indexOf(cell) ?? -1;
   if (worldIndex >= 0) world.cells.splice(worldIndex, 1);
   if (owner && Number.isInteger(cell.slot) && !owner.free.includes(cell.slot)) owner.free.push(cell.slot);
-  return true;
+  return !wasGone || ownerIndex >= 0 || worldIndex >= 0;
 }
 
 export function removeDuobackBossEntity(world, owner) {
@@ -138,7 +140,9 @@ export function applyDuobackBossSteering(boss, steering, dt, physicsRules = {}) 
   };
   let moved = 0;
   for (const cell of boss.cells || []) {
-    if (!cell || cell.gone) continue;
+    if (!cell || cell.gone || !finite(cell.x) || !finite(cell.z)) continue;
+    if (!finite(cell.hx)) cell.hx = 1;
+    if (!finite(cell.hz)) cell.hz = 0;
     steerCell(cell, boss.tx, boss.tz, dt, rules);
     moved++;
   }

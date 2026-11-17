@@ -48,7 +48,7 @@ test('ability tick decrements timers and eases shrink scale back toward 0.7', ()
 });
 
 test('phase jump starts its cooldown only when the second-jump window expires', () => {
-  const p = owner('p1', { phase2: 0.5, abCd: { x_phase: 0 } });
+  const p = owner('p1', { cells: [{}], phase2: 0.5, abCd: { x_phase: 0 } });
   const result = tickAbilityOwner(p, 0.5, { player: true, level: 0 });
   assert.equal(result.phaseCooldownStarted, true);
   assert.equal(p.phase2, 0);
@@ -104,4 +104,10 @@ test('decoy batch removes expired decoys and keeps active ones', () => {
   const result = stepDecoys([active, expired], map, [source], 0.1, 100);
   assert.deepEqual(result.decoys, [active]);
   assert.equal(result.events.length, 1);
+});
+
+test('phase-two timer does not advance for owners without cells', () => {
+  const npc = { phase2: 1, abT: {}, abCd: {}, cells: [] };
+  tickAbilityOwner(npc, 0.5);
+  assert.equal(npc.phase2, 1); assert.equal(npc.abCd.x_phase, undefined);
 });

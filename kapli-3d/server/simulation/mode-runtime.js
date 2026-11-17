@@ -7,7 +7,7 @@ import {
   tickDuobackPhase, tickDuobackMeteors, duobackRegularBossDefeated,
   duobackCanFinish, duobackBlocksBossEat, duobackPlayerLost, duobackBotEaten,
   duobackPlayerSpeedMultiplier,
-  duobackBossSpeedMultiplier, duobackCooldownMultiplier,
+  duobackBossBaseSpeed, duobackBossSpeedMultiplier, duobackCooldownMultiplier,
 } from '../modes/duoback.js';
 import { tickDuobackRegularBoss, tickDuobackPlayerRespawn } from '../modes/duoback-bosses.js';
 import { tickDuobackSpecialBoss, duobackSpecialChunkEaten } from '../modes/duoback-special.js';
@@ -56,7 +56,7 @@ export function createDuobackRules(state, options = {}) {
       ...physics,
       duoSpeedK: cell => (physics.duoSpeedK?.(cell) ?? 1) *
         duobackPlayerSpeedMultiplier(cell.owner),
-      bossSpeedFor: owner => (physics.bossSpeedFor?.(owner) ?? 1) *
+      bossSpeedFor: owner => (physics.bossSpeedFor?.(owner) ?? duobackBossBaseSpeed(owner)) *
         duobackBossSpeedMultiplier(owner, state.wave),
     },
     worldRules: {

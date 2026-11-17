@@ -51,7 +51,16 @@ export function territoryHomeSide(owner) {
   return 0;
 }
 
-export function territoryBotHome(index) { return index % 2 ? 1 : -1; }
+export function territoryBotHome(index) {
+  if (!Number.isInteger(index) || index < 0 || index >= TERRITORY_RULES.botCount) {
+    throw new RangeError('territory bot index must be an integer from 0 to 23');
+  }
+  return index % 2 ? 1 : -1;
+}
+
+export function territoryBotSpawnX(state, index) {
+  return territorySpawnX(state, { homeSide: territoryBotHome(index) });
+}
 
 export function territorySpawnX(state, owner) {
   const home = territoryHomeSide(owner);
@@ -109,7 +118,50 @@ export function territorySnapshot(state) {
   return { bx: Math.round(state.border * 10) / 10, lim: state.limit };
 }
 
+export function validateTerritorySnapshot(snapshot, arenaRadius) {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    throw new TypeError('territory snapshot must be an object');
+  }
+  const hasBorder = Object.hasOwn(snapshot, 'bx');
+  const hasLimit = Object.hasOwn(snapshot, 'lim');
+  if (!hasBorder && !hasLimit) throw new TypeError('territory snapshot has no recognized fields');
+  if (hasBorder && (!Number.isFinite(snapshot.bx) ||
+      Math.abs(snapshot.bx) > TERRITORY_RULES.borderLimit * arenaRadius)) {
+    throw new RangeError('territory snapshot border is outside the arena limit');
+  }
+  if (hasLimit && snapshot.lim !== TERRITORY_RULES.durationSeconds &&
+      snapshot.lim !== TERRITORY_RULES.durationSeconds + TERRITORY_RULES.overtimeSeconds) {
+    throw new RangeError('territory snapshot time limit is invalid');
+  }
+  return snapshot;
+}
+
+export function validateTerritoryStateSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    throw new TypeError('territory state snapshot must be an object');
+  }
+  if (!Number.isFinite(snapshot.arenaRadius) || snapshot.arenaRadius <= 0) {
+    throw new RangeError('territory arena radius must be positive and finite');
+  }
+  if (snapshot.playerRole !== 'host' && snapshot.playerRole !== 'guest') {
+    throw new TypeError('territory player role is invalid');
+  }
+  if (!Number.isFinite(snapshot.border) ||
+      Math.abs(snapshot.border) > TERRITORY_RULES.borderLimit * snapshot.arenaRadius) {
+    throw new RangeError('territory state border is invalid');
+  }
+  if (snapshot.limit !== TERRITORY_RULES.durationSeconds &&
+      snapshot.limit !== TERRITORY_RULES.durationSeconds + TERRITORY_RULES.overtimeSeconds) {
+    throw new RangeError('territory state time limit is invalid');
+  }
+  if (typeof snapshot.overtime !== 'boolean' || typeof snapshot.finished !== 'boolean') {
+    throw new TypeError('territory state flags must be booleans');
+  }
+  return snapshot;
+}
+
 export function applyTerritorySnapshot(state, snapshot, elapsedSeconds = 0) {
+  validateTerritorySnapshot(snapshot, state.arenaRadius);
   if (Number.isFinite(snapshot?.lim) && snapshot.lim && snapshot.lim !== state.limit) {
     const more = snapshot.lim > state.limit && elapsedSeconds > 1;
     state.limit = snapshot.lim;
@@ -120,13 +172,16 @@ export function applyTerritorySnapshot(state, snapshot, elapsedSeconds = 0) {
 }
 
 export function serializeTerritoryState(state) {
-  return {
+  const snapshot = {
     arenaRadius: state.arenaRadius, playerRole: state.playerRole,
     border: state.border, limit: state.limit, overtime: state.overtime, finished: state.finished,
   };
+  validateTerritoryStateSnapshot(snapshot);
+  return snapshot;
 }
 
 export function restoreTerritoryState(snapshot) {
+  validateTerritoryStateSnapshot(snapshot);
   const state = createTerritoryState(snapshot.arenaRadius, { role: snapshot.playerRole });
   state.border = finite(snapshot.border, 0);
   state.limit = finite(snapshot.limit, TERRITORY_RULES.durationSeconds);

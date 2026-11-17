@@ -110,3 +110,25 @@ test('DuoBack boss pools, chunks and mode references survive world snapshot reco
   assert.equal(restoredChunk.life, 12);
   assert.equal(restoredChunk.slot, reservedSlot);
 });
+
+
+test('bot partner links are serialized by stable owner ID and restored without circular JSON', () => {
+  const world = makeWorld();
+  world.owners[0].partner = world.owners[1];
+  world.owners[1].partner = world.owners[0];
+  const snapshot = serializeWorldState(world);
+  assert.doesNotThrow(() => JSON.stringify(snapshot));
+  assert.equal(snapshot.ownerTargets[0].partnerId, 'guest');
+  assert.equal(snapshot.ownerTargets[1].partnerId, 'host');
+  const restored = restoreWorldState(snapshot);
+  const host = restored.ownersById.get('host');
+  const guest = restored.ownersById.get('guest');
+  assert.equal(host.partner, guest);
+  assert.equal(guest.partner, host);
+});
+
+test('world snapshot rejects dangling bot partner references', () => {
+  const snapshot = serializeWorldState(makeWorld());
+  snapshot.ownerTargets[0].partnerId = 'missing';
+  assert.throws(() => validateWorldSnapshot(snapshot), /DANGLING_WORLD_PARTNER/);
+});

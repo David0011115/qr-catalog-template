@@ -45,13 +45,12 @@ cp .env.example .env.production
 ```sh
 cd kapli-3d/server/cloudflare
 npm install
-npm install --global cf@latest
-cf auth login
-cf build
-cf deploy --secrets-file .env.production
+npx cf auth login
+npm run build
+npm run deploy -- --secrets-file .env.production
 ```
 
-`cf build` только собирает и проверяет проект. `cf deploy` создаёт/обновляет Worker и его Durable Object в выбранном аккаунте Cloudflare. Команда выведет адрес Worker.
+`npm run build` только собирает и проверяет проект. `npm run deploy -- --secrets-file .env.production` создаёт/обновляет Worker и его Durable Object в выбранном аккаунте Cloudflare. Команда выведет адрес Worker.
 
 Для локальной разработки создай локальный `.dev.vars` с теми же четырьмя переменными и запускай `cf dev`.
 

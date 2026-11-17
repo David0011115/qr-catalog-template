@@ -13,6 +13,9 @@ This directory contains the rendering-free foundation for the authoritative mult
 - `modes/duoback.js`: Duoback difficulty, 50-wave progression, boss spawn scaling, 5-wave special cadence, boost choices/effects, shared pair boosts, break/respawn timing, meteor strike damage, phase transitions, boss-defeat hooks and mode-state snapshot.
 - `modes/duoback-bosses.js`: regular boss target selection, wedge/devourer dashes, leech mass drain, weaver spike spawning, twin enrage and boss life/melt.
 - `modes/duoback-special.js`: special-boss chunk damage/lifetime, shedding, vortex pull, meteor warnings, split/re-split phases, defeat/escape outcomes. World entity creation/removal is injected through callbacks.
+- `room/lifecycle.js`: two-player room lifecycle, readiness/countdown, five-minute waiting timeout, creator/guest leave rules, invalid-code blocking and reconnect handoff.
+- `match/lifecycle.js`: immediate pause on disconnect, 30-second reconnect deadline, resume only after both players reconnect, paused-time accounting and mode-specific timeout result callback.
+- `storage/recovery.js`: versioned snapshot envelopes, five-second/critical snapshot policy, sequence-checked event replay and recovery gap detection.
 
 These modules are not wired into a Worker or Durable Object yet. The browser game continues to run exactly as before.
 
@@ -26,7 +29,7 @@ From the `kapli-3d/` directory, run:
 node --test tests/physics/*.test.js
 ```
 
-The tests cover extracted movement/eating formulas, deterministic random restoration, virus collisions/splitting, ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, and timer ordering.
+The tests cover extracted movement/eating formulas, deterministic random restoration, virus collisions/splitting, ejected-mass interactions, ability timing, decoy behavior, ability casting, active world effects, Chronos interactions, territory scoring, border movement, overtime, Duoback wave scaling, boss AI, special attacks, boosts, room/countdown rules, reconnect lifecycle, snapshot consistency and event replay.
 
 ## Next extraction steps
 

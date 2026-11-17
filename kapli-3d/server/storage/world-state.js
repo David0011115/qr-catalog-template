@@ -79,8 +79,16 @@ export function serializeWorldState(world) {
     return { id, ownerId: String(cell.owner.id), data: copyFields(cell, new Set(['owner', 'vis', 'mesh', 'group', 'object3d'])) };
   });
   for (const cell of cells) if (!ownerIds.has(cell.ownerId)) throw new TypeError('cell references unknown owner: ' + cell.ownerId);
+  const assignedCells = new Map();
   for (const owner of owners) {
-    for (const id of owner.cellIds) if (!cellIds.has(id)) throw new TypeError('owner references unknown cell: ' + id);
+    for (const id of owner.cellIds) {
+      if (!cellIds.has(id)) throw new TypeError('owner references unknown cell: ' + id);
+      if (assignedCells.has(id)) throw new TypeError('cell is listed by multiple owners: ' + id);
+      assignedCells.set(id, owner.id);
+    }
+  }
+  for (const cell of cells) {
+    if (assignedCells.get(cell.id) !== cell.ownerId) throw new TypeError('owner/cell membership mismatch: ' + cell.id);
   }
   const decoys = dataClone(world.abilityState?.decoys || []);
   const decoyIndexes = new Map((world.abilityState?.decoys || []).map((decoy, index) => [decoy, index]));
@@ -121,20 +129,26 @@ export function validateWorldSnapshot(snapshot) {
   }
   const owners = new Set(), cells = new Set();
   for (const owner of snapshot.owners) {
-    if (!owner?.id || owners.has(owner.id) || !Array.isArray(owner.cellIds)) throw new Error('INVALID_WORLD_OWNER');
+    if (!owner?.id || owners.has(owner.id) || !Array.isArray(owner.cellIds) || new Set(owner.cellIds).size !== owner.cellIds.length) throw new Error('INVALID_WORLD_OWNER');
     owners.add(owner.id);
   }
   for (const cell of snapshot.cells) {
     if (!cell?.id || cells.has(cell.id) || !owners.has(cell.ownerId)) throw new Error('INVALID_WORLD_CELL');
     cells.add(cell.id);
   }
+  const assignedCells = new Map();
   for (const owner of snapshot.owners) {
-    if (owner.cellIds.some(id => !cells.has(id))) throw new Error('INVALID_WORLD_OWNER_CELLS');
+    for (const id of owner.cellIds) {
+      if (!cells.has(id) || assignedCells.has(id)) throw new Error('INVALID_WORLD_OWNER_CELLS');
+      assignedCells.set(id, owner.id);
+    }
   }
+  for (const cell of snapshot.cells) if (assignedCells.get(cell.id) !== cell.ownerId) throw new Error('INVALID_WORLD_OWNER_CELLS');
   const targetOwners = new Set();
   for (const item of snapshot.ownerTargets) {
     if (!owners.has(item.ownerId) || targetOwners.has(item.ownerId)) throw new Error('INVALID_WORLD_TARGET_OWNER');
     targetOwners.add(item.ownerId);
+    if (!Array.isArray(item.shHitOwnerIds) || !Array.isArray(item.spHitOwnerIds)) throw new Error('INVALID_WORLD_HIT_SET');
     if (item.target?.kind === 'cell' && !cells.has(item.target.id)) throw new Error('DANGLING_WORLD_TARGET');
     if (item.target?.kind === 'decoy' && (!Number.isInteger(item.target.index) || item.target.index < 0 || item.target.index >= (snapshot.decoys || []).length)) {
       throw new Error('DANGLING_WORLD_TARGET');

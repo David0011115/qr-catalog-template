@@ -58,8 +58,8 @@ test('shared boosts increment pair-wide levels and armor blocks boss bites by th
   applyDuobackBoost(p, 'sh_shield', s); applyDuobackBoost(p, 'sh_link', s);
   assert.equal(s.shared.sh_shield, 1); assert.equal(s.shared.sh_link, 1);
   applyDuobackBoost(p, 'armor', s); applyDuobackBoost(p, 'armor', s);
-  assert.equal(duobackBlocksBossEat({ dbType: 'wedge', mass: 150 }, { db: p.db, mass: 100 }), true);
-  assert.equal(duobackBlocksBossEat({ dbType: 'wedge', mass: 160 }, { db: p.db, mass: 100 }), false);
+  assert.equal(duobackBlocksBossEat({ owner: { dbType: 'wedge' }, mass: 150 }, { owner: { db: p.db }, mass: 100 }), true);
+  assert.equal(duobackBlocksBossEat({ owner: { dbType: 'wedge' }, mass: 160 }, { owner: { db: p.db }, mass: 100 }), false);
 });
 
 test('boost draw returns three unique choices and may replace the third with a shared boost', () => {

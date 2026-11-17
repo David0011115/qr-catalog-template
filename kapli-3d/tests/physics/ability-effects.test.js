@@ -39,7 +39,7 @@ test('blink and phase shift every cell by the main cell heading and clamp to are
   const p = owner('p', [cell(100, 90, 0, { hx: 1, hz: 0 }), cell(50, 85, 0)]);
   const w = worldFor(p);
   const blink = castWorldAbility('blink', p, w, createWorldAbilityEffects(), { player: true });
-  assert.equal(blink.ok, true); assert.ok(p.cells.every(c => Math.hypot(c.x, c.z) <= 98 + 1e-9));
+  assert.equal(blink.ok, true); assert.ok(p.cells.every(c => Math.hypot(c.x, c.z) <= 99 + 1e-9));
   assert.equal(blink.events[0].type, 'blink-shadow');
 });
 

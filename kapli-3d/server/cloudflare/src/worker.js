@@ -1,8 +1,10 @@
 import {
   createRoomCode, getBearerToken, normalizeRoomCode, parseMode, sanitizeNickname,
 } from '../protocol.js';
+import { DUO_BUILD_POOL } from '../../match/duo-world.js';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+const UPGRADE_MAX = Object.freeze({ big: 10, speed: 10, dash: 8, greed: 10, magnet: 8, splitmax: 6, bonus: 8, digest: 10, merge: 8, life: 3, light: 6, spike: 4, guard: 8, keep: 8, armor: 8 });
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 
 function allowedOrigin(request, env) {
@@ -54,7 +56,58 @@ async function authenticate(request, env) {
   const metadata = user.user_metadata || {};
   return {
     id: user.id,
+    accessToken: token,
     nickname: sanitizeNickname(metadata.nickname || metadata.display_name || metadata.full_name || user.email?.split('@')[0]),
+  };
+}
+
+async function loadPlayerGameData(user, env) {
+  const base = String(env.SUPABASE_URL).replace(/\\/$/, '');
+  const headers = { apikey: env.SUPABASE_ANON_KEY, authorization: `Bearer ${user.accessToken}` };
+  const query = new URLSearchParams({ user_id: `eq.${user.id}` });
+  const profileUrl = `${base}/rest/v1/player_profiles?${new URLSearchParams({ ...Object.fromEntries(query), select: 'nickname' })}`;
+  const saveUrl = `${base}/rest/v1/player_saves?${new URLSearchParams({ ...Object.fromEntries(query), select: 'save_data' })}`;
+  let profileRows = [], saveRows = [];
+  try {
+    const [profileResponse, saveResponse] = await Promise.all([
+      fetch(profileUrl, { headers }), fetch(saveUrl, { headers }),
+    ]);
+    if (!profileResponse.ok || !saveResponse.ok) {
+      console.error(JSON.stringify({ event: 'player-data-read-failed', profileStatus: profileResponse.status, saveStatus: saveResponse.status }));
+      return null;
+    }
+    [profileRows, saveRows] = await Promise.all([profileResponse.json(), saveResponse.json()]);
+  } catch (error) {
+    console.error(JSON.stringify({ event: 'player-data-read-error', message: String(error?.message || error) }));
+    return null;
+  }
+  let save = saveRows?.[0]?.save_data || {};
+  if (typeof save === 'string') { try { save = JSON.parse(save); } catch { save = {}; } }
+  if (!save || typeof save !== 'object' || Array.isArray(save)) save = {};
+  const owned = new Set(Array.isArray(save.abil?.owned) ? save.abil.owned : ['dash', 'split']);
+  owned.add('dash'); owned.add('split');
+  const rawBuild = Array.isArray(save.build) ? save.build : ['dash', 'split', null];
+  const used = new Set();
+  const build = Array.from({ length: 3 }, (_, index) => {
+    const id = rawBuild[index];
+    if (typeof id !== 'string' || !DUO_BUILD_POOL.includes(id) || !owned.has(id) || used.has(id)) return null;
+    used.add(id); return id;
+  });
+  const rawUpgrades = save.up && typeof save.up === 'object' ? save.up : {};
+  const upgrades = Object.fromEntries(Object.entries(UPGRADE_MAX).map(([id, max]) => {
+    const value = Number(rawUpgrades[id]);
+    return [id, Number.isFinite(value) ? Math.max(0, Math.min(max, Math.floor(value))) : 0];
+  }));
+  const rawLevels = save.abil?.lv && typeof save.abil.lv === 'object' ? save.abil.lv : {};
+  const abilityLevels = Object.fromEntries(DUO_BUILD_POOL.map(id => {
+    const value = Number(rawLevels[id]);
+    return [id, Number.isFinite(value) ? Math.max(0, Math.min(5, Math.floor(value))) : 0];
+  }));
+  const ownedSkins = Array.isArray(save.skins) ? save.skins : ['coral'];
+  const skin = typeof save.skin === 'string' && ownedSkins.includes(save.skin) ? save.skin : 'coral';
+  return {
+    nickname: sanitizeNickname(profileRows?.[0]?.nickname || user.nickname),
+    build, upgrades, abilityLevels, skin,
   };
 }
 
@@ -98,9 +151,12 @@ export async function handleWorkerRequest(request, env) {
     if (!mode || !Number.isInteger(difficultyIndex) || difficultyIndex < 0 || difficultyIndex > 2) {
       return withCors(json({ error: 'invalid-room-options' }, 400), request, env);
     }
+    const player = await loadPlayerGameData(user, env);
+    if (!player) return withCors(json({ error: 'account-data-unavailable' }, 503), request, env);
+    const roomUser = { ...user, nickname: player.nickname };
     for (let attempt = 0; attempt < 5; attempt++) {
       const code = createRoomCode(length => crypto.getRandomValues(new Uint8Array(length)));
-      const response = await callRoom(env, code, '/internal/create', 'POST', user, { code, mode, difficultyIndex });
+      const response = await callRoom(env, code, '/internal/create', 'POST', roomUser, { code, mode, difficultyIndex, player });
       if (response.status === 409) continue;
       return withCors(response, request, env);
     }
@@ -126,7 +182,10 @@ export async function handleWorkerRequest(request, env) {
   if (action === 'state' && request.method === 'GET') {
     response = await callRoom(env, code, '/internal/state', 'GET', user);
   } else if (action === 'join' && request.method === 'POST') {
-    response = await callRoom(env, code, '/internal/join', 'POST', user, {});
+    const player = await loadPlayerGameData(user, env);
+    if (!player) return withCors(json({ error: 'account-data-unavailable' }, 503), request, env);
+    const roomUser = { ...user, nickname: player.nickname };
+    response = await callRoom(env, code, '/internal/join', 'POST', roomUser, { player });
   } else if (action === 'ready' && request.method === 'POST') {
     const body = await readJson(request);
     if (typeof body?.ready !== 'boolean') return withCors(json({ error: 'ready-boolean-required' }, 400), request, env);

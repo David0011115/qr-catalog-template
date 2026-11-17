@@ -48,7 +48,6 @@ export function territoryHomeSide(owner) {
   if (owner?.role === 'host') return -1;
   if (owner?.role === 'guest') return 1;
   if (owner?.homeSide === -1 || owner?.homeSide === 1) return owner.homeSide;
-  if (owner?.kind === 'bot' && Number.isInteger(owner.botIndex)) return owner.botIndex % 2 ? 1 : -1;
   return 0;
 }
 

@@ -1,10 +1,9 @@
 import {
   createRoomState, joinRoom, setPlayerReady, tickRoom, leaveRoom,
-  recordInvalidRoomCode, resetRoomCodeAttempts, roomSummary, restoreRoomState,
-  reconnectRoomPlayer, ROOM_RULES,
+  recordInvalidRoomCode, roomSummary, restoreRoomState, reconnectRoomPlayer,
 } from '../../room/lifecycle.js';
 import {
-  tickMatchLifecycle, MATCH_LIFECYCLE_RULES,
+  tickMatchLifecycle,
 } from '../../match/lifecycle.js';
 import {
   createDuoMatchRuntime, restoreDuoMatchRuntime,
@@ -119,6 +118,10 @@ export class GameRoom {
     }
     this.lastPersistAt = Date.now();
     if (this.room?.status === 'paused' && this.runtime) await this.scheduleReconnectAlarm();
+    if (this.room?.status === 'closed' && this.runtime?.lifecycle.status === 'finished' && !this.room.resultPersistence) {
+      await this.ctx.storage.setAlarm(Date.now() + RESULT_RETRY_MS);
+      this.room.resultPersistence = { status: 'pending', reason: 'recovery-retry' };
+    }
   }
 
   restorePayload(payload) {
@@ -150,6 +153,12 @@ export class GameRoom {
       'INSERT INTO room_state(id, payload, updated_at) VALUES(1, ?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at',
       payload, now,
     );
+    const keep = this.sql('SELECT sequence FROM snapshots ORDER BY sequence DESC LIMIT 2').toArray();
+    if (keep.length === 2) {
+      const oldestKept = Number(keep[1].sequence);
+      this.sql('DELETE FROM event_log WHERE sequence <= ?', oldestKept);
+      this.sql('DELETE FROM snapshots WHERE sequence < ?', oldestKept);
+    }
     this.lastPersistAt = now;
   }
 
@@ -252,7 +261,6 @@ export class GameRoom {
     if (!result.ok) return json({ error: result.reason }, 409);
     const player = playerFor(this.room, userId);
     player.nickname = nickname;
-    resetRoomCodeAttempts({}, userId);
     this.sql('DELETE FROM invalid_attempts WHERE user_id = ?', userId);
     await this.ctx.storage.deleteAlarm();
     await this.appendEvent('player-joined', { playerId: userId, role: 'guest' }, true);
@@ -407,7 +415,7 @@ export class GameRoom {
     this.room.status = 'paused';
     this.stopLoop();
     await this.appendEvent('player-disconnected', { playerId: userId, result }, true);
-    this.scheduleReconnectAlarm();
+    await this.scheduleReconnectAlarm();
     this.broadcast({ type: 'match-paused', playerId: userId, reconnectUntil: result?.reconnectUntil });
   }
 
@@ -505,7 +513,15 @@ export class GameRoom {
       }
       let ticks = 0;
       while (performance.now() >= this.nextTickAt && ticks < 5) {
-        const out = this.runtime.step();
+        let out;
+        try { out = this.runtime.step(); }
+        catch (error) {
+          this.loopTimer = null;
+          this.room.status = 'closed'; this.room.closedAt = Date.now(); this.room.closeReason = 'simulation-error';
+          this.appendEvent('simulation-error', { message: String(error?.message || error) }, true).catch(() => {});
+          this.broadcast({ type: 'match-error', error: 'simulation-error' });
+          return;
+        }
         ticks++;
         this.nextTickAt += TICK_MS;
         if (out.snapshotDue && out.advanced) this.broadcast(this.snapshotMessage(out));

@@ -181,7 +181,7 @@ test('gear wall pushes colliding cells and removes five percent mass once per ce
   const w = worldFor(p, [foe]), s = createWorldAbilityEffects();
   castWorldAbility('cr_gearwall', p, w, s);
   const effect = s.effects[0], c = foe.cells[0];
-  c.x = effect.segs[1].x; c.z = effect.segs[1].z;
+  c.x = effect.segs[1].x + 1; c.z = effect.segs[1].z;
   tickWorldAbilityEffects(s, w, 1 / 30); assert.equal(c.mass, 95); assert.ok(c.vx > 0 || c.vz !== 0);
   tickWorldAbilityEffects(s, w, 1 / 30); assert.equal(c.mass, 95);
 });
@@ -195,7 +195,7 @@ test('Chronos rewind restores previous position and only increases mass', () => 
 
 test('Chronos swap only selects the nearest target in front and outside boss/minion classes', () => {
   const p = owner('p', [cell(100, 0, 0, { hx: 1, hz: 0 })]);
-  const behind = owner('behind', [cell(20, -5, 0)]), front = owner('front', [cell(20, 8, 0)]);
+  const behind = owner('behind', [cell(20, -5, 0, { id: 'behind-cell' })]), front = owner('front', [cell(20, 8, 0, { id: 'front-cell' })]);
   const w = worldFor(p, [behind, front]), s = createWorldAbilityEffects();
   const result = castWorldAbility('cr_swap', p, w, s);
   assert.equal(result.ok, true); assert.equal(result.targetId, front.cells[0].id);

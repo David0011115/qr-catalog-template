@@ -33,10 +33,12 @@ export function createTerritoryRules(state) {
     },
     worldRules: {
       eatBlock: (attacker, target) => territoryBlocksEat(state, attacker, target),
-      onCellLost: event => {
+      onCellLost: (event, world) => {
         if (!event?.victimEliminated) return false;
+        const victim = event.victim;
+        if (victim?.isPlayer) victim.respawnAt = (world?.clock ?? 0) + 2.5;
         const eater = event.attacker?.owner;
-        const victimRole = event.victim?.role;
+        const victimRole = victim?.role;
         if (!eater || !['host', 'guest'].includes(eater.role) || !['host', 'guest'].includes(victimRole) ||
             eater.role === victimRole) return false;
         return territoryPlayerWasEaten(state, victimRole);
@@ -53,9 +55,15 @@ export function stepTerritoryRuntime(state, world, dt, elapsedSeconds, options =
     state, dt, elapsedSeconds, totalMass(host), totalMass(guest),
     { dying: !!options.dying },
   );
+  const respawned = [];
+  for (const player of [host, guest]) {
+    if (!player.cells.length && Number.isFinite(player.respawnAt) && elapsedSeconds >= player.respawnAt) {
+      if (options.spawnPlayer?.(player, world)) respawned.push(player.role);
+    }
+  }
   if (result.result) options.onResult?.(result.result, world);
   if (result.overtimeStarted) options.onOvertime?.(state, world);
-  return { ...result, hostMass: totalMass(host), guestMass: totalMass(guest) };
+  return { ...result, respawned, hostMass: totalMass(host), guestMass: totalMass(guest) };
 }
 
 // Boss references are resolved by the host adapter because entity slots and

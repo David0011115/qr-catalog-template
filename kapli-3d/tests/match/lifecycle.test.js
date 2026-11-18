@@ -77,3 +77,35 @@ test('finished match rejects further disconnect and reconnect actions', () => {
   assert.equal(disconnectMatchPlayer(s, 'p1', 33000).reason, 'match-ended');
   assert.equal(reconnectMatchPlayer(s, 'p2', 33000).reason, 'match-not-paused');
 });
+
+test('match lifecycle creation rejects duplicate identities and invalid roles', () => {
+  assert.throws(() => createMatchLifecycleState({
+    matchId: 'm', roomId: 'r', startedAt: 0,
+    players: [{ id: 'same', role: 'host' }, { id: 'same', role: 'guest' }],
+  }), /unique host\/guest players/);
+  assert.throws(() => createMatchLifecycleState({
+    matchId: 'm', roomId: 'r', startedAt: 0,
+    players: [{ id: 'p1', role: 'host' }, { id: 'p2', role: 'admin' }],
+  }), /unique host\/guest players/);
+});
+
+test('match lifecycle restore rejects malformed connection deadlines and inconsistent statuses', () => {
+  const active = serializeMatchLifecycle(make());
+  const duplicate = structuredClone(active);
+  duplicate.players[1].id = duplicate.players[0].id;
+  assert.throws(() => restoreMatchLifecycle(duplicate), /invalid match players/);
+
+  const disconnected = structuredClone(active);
+  disconnected.players[1].connected = false;
+  disconnected.players[1].disconnectedAt = 2000;
+  disconnected.players[1].reconnectUntil = 1000;
+  disconnected.status = 'paused';
+  disconnected.pausedAt = 2000;
+  assert.throws(() => restoreMatchLifecycle(disconnected), /invalid match players/);
+
+  const inconsistent = structuredClone(active);
+  inconsistent.status = 'paused';
+  inconsistent.pausedAt = 2000;
+  assert.throws(() => restoreMatchLifecycle(inconsistent), /inconsistent match lifecycle state/);
+});
+

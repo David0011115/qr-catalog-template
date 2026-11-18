@@ -519,6 +519,12 @@ export class GameRoom {
     const attachment = socket.deserializeAttachment();
     const userId = attachment?.userId;
     const parsed = parseClientMessage(typeof raw === 'string' ? raw : '');
+    // The runtime lifecycle is authoritative. A delayed room-state transition
+    // must not reject valid movement after the simulation has already started.
+    if (this.runtime?.lifecycle.status === 'active' && this.room &&
+        !['paused', 'closed'].includes(this.room.status)) {
+      this.room.status = 'active';
+    }
     if (!userId || !this.runtime || this.runtime.lifecycle.status !== 'active' || this.room?.status !== 'active') {
       // The client can still produce a few movement samples while its local
       // scene is opening. Ignore those during the lobby/countdown instead of

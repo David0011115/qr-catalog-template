@@ -45,7 +45,7 @@ test('room creation preserves the authenticated host build, upgrades, levels and
 test('match player projection validates role and supplies safe profile defaults', () => {
   assert.deepEqual(roomPlayerForMatch({ id: 'guest-user', role: 'guest' }), {
     id: 'guest-user', role: 'guest', nickname: 'Игрок',
-    build: ['dash', 'split', null], upgrades: {}, abilityLevels: {}, skin: 'coral',
+    build: null, upgrades: {}, abilityLevels: {}, skin: 'coral',
   });
   assert.throws(() => roomPlayerForMatch({ id: 'x', role: 'admin' }), /valid room player/);
 });

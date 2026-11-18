@@ -1,3 +1,4 @@
+
 import { bindings, defineConfig, exports } from 'cf/config';
 import * as entrypoint from './src/index.js' with { type: 'cf-worker' };
 
@@ -6,7 +7,7 @@ export default defineConfig({
     name: 'kapli-3d-online-test',
     compatibilityDate: '2026-11-17',
     compatibilityFlags: ['nodejs_compat'],
-    workersDev: false,
+    workersDev: true,
     previewUrls: false,
     entrypoint,
 

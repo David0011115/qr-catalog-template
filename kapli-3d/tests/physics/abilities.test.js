@@ -140,3 +140,12 @@ test('all server ability cooldowns and shared tuning constants stay aligned with
   }
 });
 
+test('unknown ability IDs cannot create cooldown entries for NPCs or players', () => {
+  const npc = owner('npc');
+  const player = owner('player');
+  assert.equal(startAbilityCooldown(npc, 'not-an-ability'), false);
+  assert.equal(startAbilityCooldown(player, 'not-an-ability', { player: true }), false);
+  assert.deepEqual(npc.abCd, {});
+  assert.deepEqual(player.abCd, {});
+});
+

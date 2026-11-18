@@ -24,7 +24,7 @@ test('server match tick and existing Duo lobby delegate to the authoritative onl
   const online = await read('../../js/game/14g-online-server.js');
   assert.match(round, /if \(DuoM\.server\) \{ DuoM\.serverTick\(dt\); return; \}/);
   assert.match(duo, /KapliOnlineServer\.openLobby\(id\)/);
-  assert.match(match, /serverBegin, serverIndex, serverApply: applyServer, serverTick/);
+  assert.match(match, /serverBegin, serverIndex, serverApply: applyServer, serverBonusIndex: type => BONUS_IDS.indexOf(type), serverTick/);
   assert.match(online, /window\.KapliOnlineServer = \{/);
   assert.match(online, /sendInput, useAbility, useAction, pickBoost/);
 });

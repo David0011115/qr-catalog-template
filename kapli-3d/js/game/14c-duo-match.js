@@ -416,8 +416,9 @@
         }
       }
       for (const virus of viruses) if (virus.mesh) virus.mesh.position.set(virus.x, radius(virus.mass), virus.z);
+      const ejectK = Math.min(1, dt * 18);
       for (const e of ejects) if (e.tx !== undefined) {
-        e.x += (e.tx - e.x) * k; e.z += (e.tz - e.z) * k;
+        e.x += (e.tx - e.x) * ejectK; e.z += (e.tz - e.z) * ejectK;
         if (e.mesh) e.mesh.position.set(e.x, radius(e.mass), e.z);
       }
       if (rl && rl.view) rl.view(dt);

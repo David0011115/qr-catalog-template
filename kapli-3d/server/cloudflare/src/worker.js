@@ -155,6 +155,16 @@ export async function handleWorkerRequest(request, env) {
     if (!allowedOrigin(request, env)) return json({ error: 'origin-not-allowed' }, 403);
     return withCors(json({ ok: true, service: 'kapli-3d-online', protocol: 1 }), request, env);
   }
+  // Safe test-only diagnostic: report presence/match only, never reveal secret values.
+  if (url.pathname === '/health/config-check' && request.method === 'GET') {
+    if (!allowedOrigin(request, env)) return json({ error: 'origin-not-allowed' }, 403);
+    const configuredUrl = String(env.SUPABASE_URL || '').trim().replace(/\\/$/, '');
+    const expectedUrl = 'https://kprkslsptcnxajdllwje.supabase.co';
+    return withCors(json({
+      supabaseUrl: !configuredUrl ? 'missing' : configuredUrl === expectedUrl ? 'match' : 'mismatch',
+      anonKeyConfigured: Boolean(env.SUPABASE_ANON_KEY),
+    }), request, env);
+  }
   if (request.method === 'OPTIONS') {
     if (!allowedOrigin(request, env)) return json({ error: 'origin-not-allowed' }, 403);
     return withCors(new Response(null, { status: 204 }), request, env);

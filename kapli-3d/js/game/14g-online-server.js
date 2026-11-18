@@ -47,7 +47,15 @@
     try { data = await response.json(); } catch {}
     if (!response.ok) {
       const messages = {
-        unauthorized: 'Сессия не найдена. Войди в аккаунт и попробуй снова.',
+        unauthorized: data.authReason === 'missing-bearer'
+          ? 'Браузер не передал сессию аккаунта. Обнови страницу и войди заново.'
+          : data.authReason === 'supabase-unreachable'
+            ? 'Не удалось связаться с Supabase для проверки аккаунта.'
+            : data.authReason?.startsWith('supabase-rejected-')
+              ? `Supabase отклонил сессию (${data.authReason.replace('supabase-rejected-', 'HTTP ')}). Выйди из аккаунта и войди снова.`
+              : data.authReason
+                ? `Не удалось проверить аккаунт (${data.authReason}).`
+                : 'Сессия не найдена. Войди в аккаунт и попробуй снова.',
         'room-not-found': 'Комната не найдена. Проверь код.',
         'room-code-blocked': 'Слишком много неверных кодов. Попробуй через минуту.',
         'room-code-allocation-failed': 'Не удалось создать комнату. Попробуй ещё раз.',

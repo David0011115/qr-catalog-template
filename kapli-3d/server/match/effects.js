@@ -1,5 +1,7 @@
 // Deterministic world side effects shared by bosses and abilities.
 import { canSpawnVirus, createVirus } from '../core/viruses.js';
+import { BONUS_EFFECT_SECONDS, BONUS_TYPES } from '../core/bonuses.js';
+import { cellRadius } from '../core/physics.js';
 
 export function spawnBossVirus(world, event) {
   if (!world || !Array.isArray(world.viruses) ||
@@ -36,4 +38,26 @@ export function burstFoodInWorld(world, random, x, z, radius, count, inner = 0) 
     moved++;
   }
   return moved;
+}
+
+
+export function applyBonusPickup(world, owner, bonus, random) {
+  if (!world || !owner || !bonus || !BONUS_TYPES.includes(bonus.type)) return false;
+  if (bonus.type === 'fountain') {
+    const cells = owner.cells || [];
+    if (!cells.length) return false;
+    const total = cells.reduce((sum, cell) => sum + cell.mass, 0);
+    const main = cells.reduce((largest, cell) => !largest || cell.mass > largest.mass ? cell : largest, null);
+    const x = cells.reduce((sum, cell) => sum + cell.x * cell.mass, 0) / Math.max(1, total);
+    const z = cells.reduce((sum, cell) => sum + cell.z * cell.mass, 0) / Math.max(1, total);
+    const radius = cellRadius(main);
+    const count = Math.round(Math.min(160, 60 + total / 40));
+    burstFoodInWorld(world, random, x, z, radius * 1.8 + 12, count, radius + 1.5);
+    return true;
+  }
+  owner.eff ||= { speed: 0, shield: 0, double: 0, magnet: 0 };
+  const duration = BONUS_EFFECT_SECONDS[bonus.type];
+  const cap = bonus.type === 'shield' ? 10 : 30;
+  owner.eff[bonus.type] = Math.min(cap, Math.max(0, Number(owner.eff[bonus.type]) || 0) + duration);
+  return true;
 }

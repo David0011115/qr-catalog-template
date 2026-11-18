@@ -297,3 +297,31 @@ test('action and boost commands are rejected while a player is disconnected or t
   assert.equal(duoback.modeCommands.length, 0);
 });
 
+test('runtime does not process already-queued utility actions while a match is paused', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-paused-action', matchId: 'match-paused-action',
+    players: [
+      { id: 'user-host', role: 'host', build: ['dash', 'split', 'eject'] },
+      { id: 'user-guest', role: 'guest', build: ['dash', 'split', 'eject'] },
+    ],
+    mode: 'territory', seed: 994, startedAt: 1000,
+  });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  host.cells[0].mass = 100;
+  assert.equal(runtime.submitAction('user-host', { seq: 1, action: 'split' }).ok, true);
+  assert.equal(runtime.disconnect('user-guest', 1100).ok, true);
+
+  const paused = runtime.step();
+  assert.equal(paused.advanced, false);
+  assert.equal(paused.reason, 'match-not-active');
+  assert.equal(host.cells.length, 1);
+  assert.equal(host.cells[0].mass, 100);
+  assert.equal(runtime.actionQueue.length, 1);
+
+  assert.equal(runtime.reconnect('user-guest', 1200).resumed, true);
+  const resumed = runtime.step();
+  assert.equal(resumed.actionEvents[0].ok, true);
+  assert.equal(host.cells.length, 2);
+  assert.equal(runtime.actionQueue.length, 0);
+});
+

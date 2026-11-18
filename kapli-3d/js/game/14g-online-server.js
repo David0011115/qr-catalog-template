@@ -201,16 +201,23 @@
     const wsBase = apiBase.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
     const ws = new WebSocket(wsBase + '/api/rooms/' + room.code + '/socket?ticket=' + encodeURIComponent(ticketData.ticket));
     socket = ws;
-    ws.onopen = () => { connected = true; reconnectDelay = 1000; };
+    ws.onopen = () => {
+      if (socket !== ws) return;
+      connected = true; reconnectDelay = 1000;
+    };
     ws.onmessage = event => {
+      if (socket !== ws) return;
       let message;
       try { message = JSON.parse(event.data); } catch { return; }
       handleMessage(message);
     };
-    ws.onerror = () => { connected = false; };
+    ws.onerror = () => { if (socket === ws) connected = false; };
     ws.onclose = () => {
+      // The DO closes an older socket after accepting its replacement. Events
+      // from that obsolete socket must not pause the new live connection.
+      if (socket !== ws) return;
+      socket = null;
       connected = false;
-      if (socket === ws) socket = null;
       if (leaving || !room || room.status === 'closed') return;
       if (matchStarted) { paused = true; if (room) room.status = 'paused'; showLobbyCard(); }
       scheduleReconnect();

@@ -207,7 +207,7 @@ export async function handleWorkerRequest(request, env) {
     return withCors(json({ error: 'room-code-allocation-failed' }, 503), request, env);
   }
 
-  const match = /^\/api\/rooms\/([^/]+)(?:\/(join|ready|leave|socket-ticket|socket))?$/.exec(url.pathname);
+  const match = /^\/api\/rooms\/([^/]+)(?:\/(join|ready|leave|finish|socket-ticket|socket))?$/.exec(url.pathname);
   if (!match) return withCors(json({ error: 'not-found' }, 404), request, env);
   let decodedCode;
   try { decodedCode = decodeURIComponent(match[1]); }
@@ -251,6 +251,8 @@ export async function handleWorkerRequest(request, env) {
     response = await callRoom(env, code, '/internal/ready', 'POST', user, { ready: body.ready });
   } else if (action === 'leave' && request.method === 'POST') {
     response = await callRoom(env, code, '/internal/leave', 'POST', user, {});
+  } else if (action === 'finish' && request.method === 'POST') {
+    response = await callRoom(env, code, '/internal/finish', 'POST', user, {});
   } else if (action === 'socket-ticket' && request.method === 'POST') {
     response = await callRoom(env, code, '/internal/ticket', 'POST', user, {});
   } else {

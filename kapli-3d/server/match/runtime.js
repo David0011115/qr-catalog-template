@@ -1,11 +1,12 @@
 // Runtime composition for an authoritative two-player match.
 // Cloudflare transports and persists this plain state; this module owns the rules.
-import { canEat } from '../core/physics.js';
+import { canEat, cellRadius } from '../core/physics.js';
 import { castServerAbility } from '../core/ability-effects.js';
 import { castBotUtilityAbility, castUtilityAbility } from '../core/utility-abilities.js';
 import { DeterministicRandom } from '../core/random.js';
-import { burstFoodInWorld, spawnBossVirus } from './effects.js';
-import { respawnDuoPlayerOwner } from './spawn.js';
+import { applyBonusPickup, burstFoodInWorld, spawnBossVirus } from './effects.js';
+import { BONUS_SPAWN_SECONDS, spawnBonuses, tickBonusEffects } from '../core/bonuses.js';
+import { findDuobackBossSpawn, respawnDuoPlayerOwner } from './spawn.js';
 import { tickBotOwner } from '../modes/bots.js';
 import { territorySideAt, restoreTerritoryState, serializeTerritoryState } from '../modes/territory.js';
 import { chooseDuobackBoost, restoreDuobackState, serializeDuobackState } from '../modes/duoback.js';
@@ -125,9 +126,21 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
         createModeRules(currentWorld) {
           const players = resolvePlayers(currentWorld);
           currentWorld.pendingFoodChanges ||= [];
+          const bonusRules = {
+            onBonusPickup: (event, targetWorld) => {
+              const bonusRng = DeterministicRandom.restore(targetWorld.randomState);
+              const applied = applyBonusPickup(targetWorld, event.owner, event.bonus, bonusRng);
+              targetWorld.randomState = bonusRng.snapshot();
+              return applied;
+            },
+          };
           const modeRules = mode === 'territory'
-            ? createTerritoryRules(currentWorld.modeState)
+            ? (() => {
+                const rules = createTerritoryRules(currentWorld.modeState);
+                return { ...rules, worldRules: { ...rules.worldRules, ...bonusRules } };
+              })()
             : createDuobackRules(currentWorld.modeState, {
+                worldRules: bonusRules,
                 resolvePlayers: () => players,
                 matchTimeForWorld: current => current.clock || 0,
                 onSpecialChunkEaten: options.onSpecialChunkEaten,
@@ -145,6 +158,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
           return currentModeRules;
         },
         stepAbilities(currentWorld, dt, context) {
+          tickBonusEffects(currentWorld, dt);
           const rng = DeterministicRandom.restore(currentWorld.randomState);
           const abilityResult = stepAbilityRuntime(currentWorld, abilityState, dt, context.commands, {
             burstFood: (targetWorld, x, z, radius, count) =>
@@ -216,6 +230,11 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
         stepMode(currentWorld, dt) {
           currentWorld.matchTime = currentWorld.clock || 0;
           const rng = DeterministicRandom.restore(currentWorld.randomState);
+          currentWorld.bonusTimer = Math.max(0, (Number(currentWorld.bonusTimer) || 0) - dt);
+          if (currentWorld.bonusTimer <= 0) {
+            spawnBonuses(currentWorld, rng, 1);
+            currentWorld.bonusTimer = BONUS_SPAWN_SECONDS;
+          }
           let result;
           if (mode === 'territory') {
             result = stepTerritoryRuntime(
@@ -244,6 +263,28 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
                 burstFoodInWorld(targetWorld, rng, x, z, radius, count),
               isShielded: player => (player.eff?.shield || 0) > 0 || (player.abT?.shield || 0) > 0,
               spawnPlayer: (player, targetWorld) => respawnDuoPlayerOwner(player, targetWorld),
+              spawnPositionForBoss: options.spawnPositionForBoss ||
+                ((_request, targetWorld, random) => findDuobackBossSpawn(targetWorld, random)),
+              spawnBonuses: count => spawnBonuses(currentWorld, rng, count),
+              spawnBreakFood: (perPlayer, arenaFood) => {
+                for (const player of resolvePlayers(currentWorld)) {
+                  const cells = player.cells || [];
+                  if (!cells.length) continue;
+                  const total = cells.reduce((sum, cell) => sum + cell.mass, 0);
+                  const main = cells.reduce((largest, cell) =>
+                    !largest || cell.mass > largest.mass ? cell : largest, null);
+                  const x = cells.reduce((sum, cell) => sum + cell.x * cell.mass, 0) / Math.max(1, total);
+                  const z = cells.reduce((sum, cell) => sum + cell.z * cell.mass, 0) / Math.max(1, total);
+                  burstFoodInWorld(currentWorld, rng, x, z, 70, perPlayer, cellRadius(main) + 4);
+                }
+                burstFoodInWorld(currentWorld, rng, 0, 0, currentWorld.arenaRadius * 0.6, arenaFood);
+              },
+              grantPairShield: seconds => {
+                for (const player of resolvePlayers(currentWorld)) {
+                  player.eff ||= { speed: 0, shield: 0, double: 0, magnet: 0 };
+                  player.eff.shield = Math.max(Number(player.eff.shield) || 0, seconds);
+                }
+              },
               onSpecialBossResult: options.onSpecialBossResult,
               onMeteorHit: options.onMeteorHit,
               onRegularBossExpired: options.onRegularBossExpired,

@@ -374,3 +374,24 @@ test('Durable Object alarm waits for reconnect deadline persistence before retur
   assert.equal(persisted, true);
 });
 
+test('closed room rejects WebSocket commands even if the runtime lifecycle is still active', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = { status: 'closed' };
+  roomObject.runtime = {
+    lifecycle: { status: 'active' },
+    submitInput() { throw new Error('closed room must not accept commands'); },
+  };
+  const messages = [];
+  const socket = {
+    readyState: 1,
+    deserializeAttachment: () => ({ userId: 'player-1' }),
+    send: value => messages.push(JSON.parse(value)),
+  };
+
+  await roomObject.webSocketMessage(socket, JSON.stringify({
+    type: 'input', seq: 1, x: 1, z: 0,
+  }));
+  assert.deepEqual(messages, [{ type: 'error', error: 'match-not-active' }]);
+});
+

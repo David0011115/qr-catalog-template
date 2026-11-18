@@ -483,7 +483,7 @@ export class GameRoom {
     if (this.runtime?.lifecycle.status === 'active' && this.room?.status === 'active') this.startLoop();
     const attachment = socket.deserializeAttachment();
     const userId = attachment?.userId;
-    if (!userId || !this.runtime || this.runtime.lifecycle.status !== 'active') {
+    if (!userId || !this.runtime || this.runtime.lifecycle.status !== 'active' || this.room?.status !== 'active') {
       this.send(socket, { type: 'error', error: 'match-not-active' });
       return;
     }

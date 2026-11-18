@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GameRoom, roomPlayerForMatch } from '../../server/cloudflare/src/room-object.js';
+import { GameRoom, roomPlayerForMatch, replayMatchEvents } from '../../server/cloudflare/src/room-object.js';
 import worker, { GameRoom as ExportedGameRoom } from '../../server/cloudflare/src/index.js';
 
 test('Cloudflare entrypoint exports the SQLite room object and Worker fetch handler', () => {
@@ -154,4 +154,51 @@ test('world init resumes from received sequence numbers and snapshots acknowledg
   assert.deepEqual(snapshot.bonuses, [{ id: 'bonus:7', type: 'shield', x: 4, z: 5 }]);
   assert.deepEqual(snapshot.receivedSeqs.ability, { host: 3, guest: 1 });
   assert.deepEqual(snapshot.processedSeqs.action, { host: 5, guest: 0 });
+});
+
+
+test('SQLite recovery replays accepted commands at their server tick and catches up to the recovery clock', () => {
+  const received = [];
+  const runtime = {
+    simulation: { tick: 120 },
+    lifecycle: { status: 'active' },
+    step() { this.simulation.tick++; },
+    submitInput(playerId, command) { received.push(['input', playerId, command.seq, this.simulation.tick]); return { ok: true }; },
+    submitAbility(playerId, command) { received.push(['ability', playerId, command.seq, this.simulation.tick]); return { ok: true }; },
+    submitBoost(playerId, command) { received.push(['boost', playerId, command.seq, this.simulation.tick]); return { ok: true }; },
+    submitAction(playerId, command) { received.push(['action', playerId, command.seq, this.simulation.tick]); return { ok: true }; },
+  };
+  const events = [
+    { type: 'input-command', payload: JSON.stringify({ playerId: 'host', command: { type: 'input', seq: 1, x: 1, z: 0 } }), created_at: 1040 },
+    { type: 'ability-command', payload: { playerId: 'guest', command: { type: 'ability', seq: 1, slot: 0 } }, created_at: 1110 },
+    { type: 'action-command', payload: { playerId: 'host', command: { type: 'action', seq: 2, action: 'dash' } }, created_at: 1110 },
+    { type: 'room-note', payload: '{}', created_at: 1150 },
+    { type: 'boost-command', payload: { playerId: 'guest', command: { type: 'boost', seq: 1, id: 'sh_shield' } }, created_at: 1190 },
+  ];
+  const result = replayMatchEvents(runtime, events, 1000, 1200);
+  assert.deepEqual(received, [
+    ['input', 'host', 1, 121],
+    ['ability', 'guest', 1, 123],
+    ['action', 'host', 2, 123],
+    ['boost', 'guest', 1, 125],
+  ]);
+  assert.deepEqual(result, { replayedTicks: 6, replayedCommands: 4, fromTick: 120, toTick: 126 });
+});
+
+test('SQLite recovery stops replaying world ticks once a replayed command ends the match', () => {
+  const runtime = {
+    simulation: { tick: 0 },
+    lifecycle: { status: 'active' },
+    step() { this.simulation.tick++; },
+    submitInput() { this.lifecycle.status = 'finished'; return { ok: true }; },
+    submitAbility() { throw new Error('commands after match end must not be replayed'); },
+    submitBoost() { throw new Error('commands after match end must not be replayed'); },
+    submitAction() { throw new Error('commands after match end must not be replayed'); },
+  };
+  const result = replayMatchEvents(runtime, [
+    { type: 'input-command', payload: { playerId: 'host', command: { type: 'input', seq: 1, x: 1, z: 0 } }, created_at: 1000 },
+    { type: 'ability-command', payload: { playerId: 'host', command: { type: 'ability', seq: 1, slot: 0 } }, created_at: 1100 },
+  ], 1000, 1200);
+  assert.equal(runtime.simulation.tick, 0);
+  assert.equal(result.replayedCommands, 0);
 });

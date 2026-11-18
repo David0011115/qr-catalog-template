@@ -133,6 +133,17 @@ export function validateWorldSnapshot(snapshot) {
   if (!Array.isArray(snapshot.owners) || !Array.isArray(snapshot.cells) || !Array.isArray(snapshot.ownerTargets)) {
     throw new Error('INVALID_WORLD_SNAPSHOT');
   }
+  if (!Number.isFinite(snapshot.arenaRadius) || snapshot.arenaRadius <= 0 ||
+      !Number.isFinite(snapshot.clock) || snapshot.clock < 0) {
+    throw new Error('INVALID_WORLD_GEOMETRY_OR_CLOCK');
+  }
+  for (const key of ['viruses', 'ejects', 'food', 'bonuses', 'decoys', 'pendingFoodChanges', 'respawnTimers']) {
+    if (!Array.isArray(snapshot[key])) throw new Error('INVALID_WORLD_' + key.toUpperCase());
+  }
+  if (snapshot.abilityState !== null &&
+      (typeof snapshot.abilityState !== 'object' || Array.isArray(snapshot.abilityState))) {
+    throw new Error('INVALID_WORLD_ABILITY_STATE');
+  }
   if (snapshot.bonuses !== undefined) {
     if (!Array.isArray(snapshot.bonuses)) throw new Error('INVALID_WORLD_BONUSES');
     const bonusIds = new Set();

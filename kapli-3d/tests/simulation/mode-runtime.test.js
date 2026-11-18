@@ -403,3 +403,23 @@ test('Weaver creates a server virus by default when no room callback is supplied
   assert.ok(Math.abs(world.viruses[0].x - (20 - sourceRadius - 5)) < 1e-9);
   assert.equal(world.viruses[0].z, 10);
 });
+
+
+test('Territory elimination schedules a source-duration respawn and runtime restores the player', () => {
+  const state = createTerritoryState(100);
+  const host = { id: 'host', role: 'host', isPlayer: true, cells: [], respawnAt: undefined };
+  const guest = { id: 'guest', role: 'guest', isPlayer: true, cells: [{ mass: 100 }] };
+  const rules = createTerritoryRules(state);
+  const lost = rules.worldRules.onCellLost({
+    victim: host, victimEliminated: true, attacker: { owner: guest },
+  }, { clock: 10 });
+  assert.equal(lost, true);
+  assert.equal(host.respawnAt, 12.5);
+  const world = { owners: [host, guest], modeState: state };
+  const out = stepTerritoryRuntime(state, world, 1 / 30, 12.5, {
+    resolvePlayer: (_world, role) => role === 'host' ? host : guest,
+    spawnPlayer: player => { player.cells.push({ mass: 10 }); delete player.respawnAt; return true; },
+  });
+  assert.deepEqual(out.respawned, ['host']);
+  assert.equal(host.cells.length, 1);
+});

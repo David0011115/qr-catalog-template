@@ -262,3 +262,38 @@ test('DuoBack runtime respawns an eliminated player through the room spawn adapt
   assert.equal(host.spawnSh, 3);
   assert.ok(runtime.world.cells.includes(host.cells[0]));
 });
+
+test('action and boost commands are rejected while a player is disconnected or the match has finished', () => {
+  const territory = createDuoMatchRuntime({
+    roomId: 'room-action-state', matchId: 'match-action-state',
+    players: [
+      { id: 'user-host', role: 'host', build: ['dash', 'split', 'eject'] },
+      { id: 'user-guest', role: 'guest', build: ['dash', 'split', 'eject'] },
+    ],
+    mode: 'territory', seed: 992, startedAt: 1000,
+  });
+  assert.equal(territory.disconnect('user-host', 1100).ok, true);
+  assert.deepEqual(territory.submitAction('user-host', { seq: 1, action: 'dash' }), {
+    ok: false, reason: 'invalid-action-command',
+  });
+  assert.equal(territory.actionQueue.length, 0);
+  territory.lifecycle.status = 'finished';
+  assert.equal(territory.submitAction('user-guest', { seq: 1, action: 'split' }).ok, false);
+  assert.equal(territory.actionQueue.length, 0);
+
+  const duoback = createDuoMatchRuntime({
+    roomId: 'room-boost-state', matchId: 'match-boost-state', players,
+    mode: 'duoback', seed: 993, startedAt: 1000,
+  });
+  duoback.world.modeState.offers = { host: ['mass'], guest: ['speed'] };
+  duoback.world.modeState.picked = {};
+  assert.equal(duoback.disconnect('user-host', 1100).ok, true);
+  assert.deepEqual(duoback.submitBoost('user-host', { seq: 1, id: 'mass' }), {
+    ok: false, reason: 'invalid-boost-command',
+  });
+  assert.equal(duoback.modeCommands.length, 0);
+  duoback.lifecycle.status = 'finished';
+  assert.equal(duoback.submitBoost('user-guest', { seq: 1, id: 'speed' }).ok, false);
+  assert.equal(duoback.modeCommands.length, 0);
+});
+

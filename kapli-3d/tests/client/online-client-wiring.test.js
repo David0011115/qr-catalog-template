@@ -39,3 +39,8 @@ test('obsolete WebSocket callbacks cannot pause or overwrite the replacement con
   assert.match(online, /ws\.onclose = \(\) => \{\s*\/\/ The DO closes an older socket[\s\S]*?if \(socket !== ws\) return;\s*socket = null;/);
 });
 
+test('fatal server simulation errors close the client socket and clear stale room recovery data', async () => {
+  const online = await read('../../js/game/14g-online-server.js');
+  assert.match(online, /message\.type === 'match-error'[\s\S]*?room\.status = 'closed'[\s\S]*?clearSavedRoom\(\)[\s\S]*?socket = null[\s\S]*?showLobbyCard\(\)/);
+});
+

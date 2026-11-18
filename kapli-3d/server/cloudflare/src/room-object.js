@@ -528,9 +528,11 @@ export class GameRoom {
       // The client can still produce a few movement samples while its local
       // scene is opening. Ignore those during the lobby/countdown instead of
       // surfacing a misleading "Match not active" error to the player.
-      if (userId && parsed.ok && parsed.command.type === 'input' &&
+      const gameplayCommand = parsed.ok && ['input', 'ability', 'action', 'boost'].includes(parsed.command.type);
+      if (userId && gameplayCommand &&
           (['waiting', 'lobby', 'countdown'].includes(this.room?.status) ||
-           this.runtime?.lifecycle.status === 'paused' || this.room?.status === 'paused')) return;
+           this.runtime?.lifecycle.status === 'paused' || this.room?.status === 'paused' ||
+           (this.runtime?.lifecycle.status === 'finished' && this.room?.status === 'closed'))) return;
       this.send(socket, { type: 'error', error: 'match-not-active' });
       return;
     }

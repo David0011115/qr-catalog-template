@@ -423,3 +423,27 @@ test('Territory elimination schedules a source-duration respawn and runtime rest
   assert.deepEqual(out.respawned, ['host']);
   assert.equal(host.cells.length, 1);
 });
+
+test('DuoBack reconciles and removes a regular boss entity whose cells are already gone', () => {
+  const state = createDuobackState();
+  state.wave = 2;
+  state.phase = 0;
+  state.regular = [{ kind: 'regular', type: 'weaver', slot: 0 }];
+  const boss = { id: 'empty-weaver', kind: 'boss', dbType: 'weaver', slot: 0, cells: [], free: [] };
+  const world = { owners: [boss], cells: [] };
+  let defeated = 0;
+  const out = stepDuobackRuntime(state, world, 1 / 30, {
+    resolvePlayers: () => [
+      { role: 'host', cells: [{ mass: 100 }] },
+      { role: 'guest', cells: [{ mass: 100 }] },
+    ],
+    random: () => 0.5,
+    resolveRegularBoss: () => boss,
+    onRegularBossDefeated: () => { defeated++; },
+  });
+  assert.equal(defeated, 1);
+  assert.equal(world.owners.includes(boss), false);
+  assert.deepEqual(state.regular, []);
+  assert.ok(out.events.some(event => event.type === 'regular-boss-defeated'));
+});
+

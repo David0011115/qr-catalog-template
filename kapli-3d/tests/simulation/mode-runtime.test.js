@@ -468,3 +468,21 @@ test('DuoBack syncs the persisted twin-enrage descriptor onto the surviving boss
   assert.equal(boss.enr, 1);
 });
 
+test('DuoBack rejects regular boss entities that omit their stable slot identity', () => {
+  const state = createDuobackState();
+  state.wave = 2;
+  state.phase = 0;
+  state.regular = [{ kind: 'regular', type: 'twins', slot: 1 }];
+  assert.throws(() => stepDuobackRuntime(state, {}, 1 / 30, {
+    resolvePlayers: () => [
+      { role: 'host', cells: [{ mass: 100 }] },
+      { role: 'guest', cells: [{ mass: 100 }] },
+    ],
+    random: () => 0.5,
+    resolveRegularBoss: () => ({
+      id: 'twin-without-slot', dbType: 'twins',
+      cells: [{ id: 'cell', mass: 100 }], life: 20,
+    }),
+  }), /does not match its stable descriptor/);
+});
+

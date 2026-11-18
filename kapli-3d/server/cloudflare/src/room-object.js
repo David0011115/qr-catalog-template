@@ -569,6 +569,7 @@ export class GameRoom {
       cells: world.cells.map(cellSnapshot),
       food: world.food.map(food => ({ id: food.id, x: food.x, z: food.z })),
       viruses: world.viruses.map(virus => ({ ...virus })),
+      bonuses: world.bonuses || [],
       ejects: world.ejects.map(item => ({ ...item })),
       modeState: world.modeState, respawnTimers: world.respawnTimers || {},
       tick: this.runtime.simulation.tick, clock: world.clock || 0,
@@ -593,7 +594,7 @@ export class GameRoom {
       owners: world.owners.map(ownerSummary),
       viruses: world.viruses.map(virus => ({ ...virus })),
       ejects: world.ejects.map(item => ({ ...item })),
-      foodChanges, modeState: world.modeState, respawnTimers: world.respawnTimers || {},
+      foodChanges, bonuses: world.bonuses || [], modeState: world.modeState, respawnTimers: world.respawnTimers || {},
       receivedSeqs: {
         input: { ...this.runtime.simulation.lastReceivedSeq },
         ability: { ...this.runtime.simulation.lastAbilityReceivedSeq },

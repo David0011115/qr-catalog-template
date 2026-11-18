@@ -50,3 +50,8 @@ test('service worker cache version is bumped and includes the online client', as
   assert.match(serviceWorker, /js\/game\/14g-online-server\.js/);
 });
 
+test('DuoM routes dedicated dash split and eject controls separately from ability slots', async () => {
+  const match = await read('../../js/game/14c-duo-match.js');
+  assert.match(match, /act: \(k, i\) => \{ if \(serverMode\) \{ if \(k === 'slot'\) window\.KapliOnlineServer\?\.useAbility\(k, i\); else window\.KapliOnlineServer\?\.useAction\(k\); \}/);
+});
+

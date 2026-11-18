@@ -90,7 +90,8 @@ export function getBearerToken(header) {
 
 
 export const SOCKET_MESSAGE_LIMIT_PER_SECOND = 80;
-export const SOCKET_INPUT_LIMIT_PER_SECOND = 35;
+// Leave enough headroom for 30 Hz movement samples and browser scheduling bursts.
+export const SOCKET_INPUT_LIMIT_PER_SECOND = 60;
 
 export function consumeSocketMessageBudget(windows, userId, now, type = 'other') {
   if (!(windows instanceof Map) || typeof userId !== 'string' || !userId || !Number.isFinite(now)) {

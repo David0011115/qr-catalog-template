@@ -116,6 +116,20 @@ function getRoomStub(env, code) {
   return env.ROOMS.get(id);
 }
 
+function getUserRateStub(env, userId) {
+  const id = env.ROOMS.idFromName(`rate:${userId}`);
+  return env.ROOMS.get(id);
+}
+
+async function callUserRate(env, userId, action) {
+  const request = new Request('https://rate.internal/invalid-attempt', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-kapli-user-id': userId },
+    body: JSON.stringify({ action }),
+  });
+  return getUserRateStub(env, userId).fetch(request);
+}
+
 async function callRoom(env, code, path, method, user, body) {
   const headers = new Headers({ 'content-type': 'application/json' });
   if (user) {
@@ -185,7 +199,18 @@ export async function handleWorkerRequest(request, env) {
     const player = await loadPlayerGameData(user, env);
     if (!player) return withCors(json({ error: 'account-data-unavailable' }, 503), request, env);
     const roomUser = { ...user, nickname: player.nickname };
+    const rateCheck = await callUserRate(env, user.id, 'check');
+    if (rateCheck.status === 429) return withCors(rateCheck, request, env);
+    if (!rateCheck.ok) return withCors(json({ error: 'room-code-check-unavailable' }, 503), request, env);
     response = await callRoom(env, code, '/internal/join', 'POST', roomUser, { player });
+    if (response.status === 404) {
+      const rateResult = await callUserRate(env, user.id, 'record');
+      if (rateResult.status === 429) response = rateResult;
+      else if (!rateResult.ok) response = json({ error: 'room-code-check-unavailable' }, 503);
+    } else if (response.ok) {
+      // A successful join clears this user's invalid-code history across every room code.
+      try { await callUserRate(env, user.id, 'reset'); } catch {}
+    }
   } else if (action === 'ready' && request.method === 'POST') {
     const body = await readJson(request);
     if (typeof body?.ready !== 'boolean') return withCors(json({ error: 'ready-boolean-required' }, 400), request, env);

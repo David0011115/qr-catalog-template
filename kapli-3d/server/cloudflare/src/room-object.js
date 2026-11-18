@@ -18,6 +18,41 @@ const SNAPSHOT_RATE = 15;
 const PERSIST_INTERVAL_MS = 5000;
 const RESULT_RETRY_MS = 60000;
 
+export function replayMatchEvents(runtime, events, snapshotAt, now = Date.now(), tickRate = TICK_RATE) {
+  if (!runtime || !Array.isArray(events) || !Number.isFinite(snapshotAt) ||
+      !Number.isFinite(now) || now < snapshotAt || !Number.isInteger(tickRate) || tickRate < 1) {
+    throw new TypeError('runtime, ordered events, snapshot time and valid replay clock are required');
+  }
+  const initialTick = runtime.simulation.tick;
+  const targetTickAt = timestamp => initialTick +
+    Math.max(0, Math.floor((Math.max(snapshotAt, timestamp) - snapshotAt) * tickRate / 1000));
+  let replayedTicks = 0, replayedCommands = 0;
+  const advanceTo = target => {
+    while (runtime.simulation.tick < target && runtime.lifecycle.status === 'active') {
+      runtime.step();
+      replayedTicks++;
+    }
+  };
+  for (const event of events) {
+    const type = event?.type;
+    if (!['input-command', 'ability-command', 'boost-command', 'action-command'].includes(type)) continue;
+    const item = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+    if (!item || typeof item.playerId !== 'string' || !item.command || !Number.isFinite(Number(event.created_at))) continue;
+    advanceTo(targetTickAt(Number(event.created_at)));
+    if (runtime.lifecycle.status !== 'active') break;
+    const accepted = type === 'input-command'
+      ? runtime.submitInput(item.playerId, item.command)
+      : type === 'ability-command'
+        ? runtime.submitAbility(item.playerId, item.command)
+        : type === 'boost-command'
+          ? runtime.submitBoost(item.playerId, item.command)
+          : runtime.submitAction(item.playerId, item.command);
+    if (accepted?.ok) replayedCommands++;
+  }
+  advanceTo(targetTickAt(now));
+  return { replayedTicks, replayedCommands, fromTick: initialTick, toTick: runtime.simulation.tick };
+}
+
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
 });

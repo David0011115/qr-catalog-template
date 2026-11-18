@@ -1,6 +1,7 @@
 name: Kapli 3D server core tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - kapli-3d-online-test

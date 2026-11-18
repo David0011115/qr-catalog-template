@@ -720,6 +720,9 @@ export class GameRoom {
     this.room.closeReason ||= 'match-finished';
     const result = this.runtime.lifecycle.result;
     await this.appendEvent('match-finished', { matchId: this.runtime.lifecycle.matchId, result }, true);
+    // Deliver the exact terminal counters/mode state before the result screen
+    // reads the last replicated snapshot on each client.
+    this.broadcast(this.snapshotMessage());
     this.broadcast({ type: 'match-ended', matchId: this.runtime.lifecycle.matchId, result });
     await this.persistResult();
   }

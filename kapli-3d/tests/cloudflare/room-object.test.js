@@ -84,3 +84,34 @@ test('Durable Object rate-limit endpoint blocks the fifth invalid code and reset
   assert.equal(cleared.status, 200);
   assert.equal((await cleared.json()).remaining, 5);
 });
+
+
+test('guest profile is preserved when joining the room and projected into the match', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.room = null;
+  roomObject.seed = null;
+  roomObject.ctx = { storage: { setAlarm: async () => {}, deleteAlarm: async () => {} } };
+  roomObject.appendEvent = async () => {};
+  roomObject.broadcast = () => {};
+  await roomObject.createRoom('host-user', 'Host', {
+    code: 'ABCDE', mode: 'territory', difficultyIndex: 0,
+    player: { build: ['dash', 'split', null], upgrades: { big: 1 }, abilityLevels: {}, skin: 'coral' },
+  });
+  const response = await roomObject.join('guest-user', 'Guest', {
+    nickname: 'Guest Profile',
+    build: ['pulse', 'shield', 'blink'],
+    upgrades: { speed: 5 },
+    abilityLevels: { pulse: 3 },
+    skin: 'mint',
+  });
+  assert.equal(response.status, 200);
+  const guest = roomObject.room.players.find(player => player.role === 'guest');
+  assert.equal(guest.nickname, 'Guest Profile');
+  assert.deepEqual(roomPlayerForMatch(guest), {
+    id: 'guest-user', role: 'guest', nickname: 'Guest Profile',
+    build: ['pulse', 'shield', 'blink'],
+    upgrades: { speed: 5 },
+    abilityLevels: { pulse: 3 },
+    skin: 'mint',
+  });
+});

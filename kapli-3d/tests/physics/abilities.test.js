@@ -149,3 +149,33 @@ test('unknown ability IDs cannot create cooldown entries for NPCs or players', (
   assert.deepEqual(player.abCd, {});
 });
 
+test('all numeric ability parameters mirror the browser ability catalog', () => {
+  const sourceAbilityData = {
+    shield: { cd: 25, dur: 6 },
+    pulse: { cd: 24, dur: 5 },
+    blink: { cd: 18, dist: 24 },
+    slow: { cd: 22, dur: 15, radius: 36 },
+    cloak: { cd: 28, dur: 4 },
+    push: { cd: 22, radius: 29, force: 100, stun: 0.6 },
+    shrink: { cd: 24, dur: 4, size: 0.3 },
+    decoy: { cd: 28, dur: 5 },
+    trap: { cd: 32, dur: 10 },
+    x_hole: { cd: 35, dur: 4, dist: 20, radius: 20 },
+    x_ice: { cd: 30, dur: 4, radius: 5 },
+    x_over: { cd: 45, dur: 3 },
+    x_refl: { cd: 30, dur: 3, force: 45 },
+    x_meteor: { cd: 38, dist: 22, radius: 10, force: 50 },
+    x_twin: { cd: 28, dur: 5 },
+    x_ghost: { cd: 40, dur: 3, radius: 22, force: 45 },
+    x_anchor: { cd: 35, dur: 4, radius: 22 },
+    x_hunt: { cd: 22, radius: 60, force: 80 },
+    x_vamp: { cd: 40, dur: 5, radius: 12 },
+    x_typhoon: { cd: 35, dur: 3, radius: 18 },
+    x_phase: { cd: 28, dist: 14 },
+    cr_gearwall: { cd: 26, dur: 5, dmg: 0.05 },
+    cr_rewind: { cd: 40, back: 4 },
+    cr_swap: { cd: 30, radius: 25 },
+  };
+  assert.deepEqual(ABILITY_DATA, sourceAbilityData);
+});
+

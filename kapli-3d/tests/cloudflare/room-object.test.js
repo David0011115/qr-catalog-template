@@ -396,7 +396,7 @@ test('closed room rejects WebSocket commands even if the runtime lifecycle is st
   assert.deepEqual(messages, [{ type: 'error', error: 'match-not-active' }]);
 });
 
-test('Durable Object countdown creates an authoritative match and publishes its initial world', async () => {
+test('Durable Object countdown starts a match, publishes its world and processes a player input', async () => {
   const now = Date.now();
   const roomObject = Object.create(GameRoom.prototype);
   roomObject.ready = Promise.resolve();
@@ -429,5 +429,23 @@ test('Durable Object countdown creates an authoritative match and publishes its 
   assert.equal(init.owners.filter(owner => owner.isPlayer).length, 2);
   const playerIds = new Set(init.owners.filter(owner => owner.isPlayer).map(owner => owner.id));
   assert.equal(init.cells.filter(cell => playerIds.has(cell.ownerId)).length, 2);
+
+  roomObject.messageRates = new Map();
+  const host = roomObject.runtime.world.owners.find(owner => owner.playerId === 'host-user');
+  const beforeX = host.cells[0].x;
+  const socketMessages = [];
+  const socket = {
+    readyState: 1,
+    deserializeAttachment: () => ({ userId: 'host-user' }),
+    send: value => socketMessages.push(JSON.parse(value)),
+  };
+  await roomObject.webSocketMessage(socket, JSON.stringify({
+    type: 'input', seq: 1, x: 1, z: 0,
+  }));
+  assert.equal(socketMessages[0].type, 'input-queued');
+  const tick = roomObject.runtime.step();
+  assert.equal(tick.advanced, true);
+  assert.equal(roomObject.runtime.simulation.lastProcessedSeq['host-user'], 1);
+  assert.ok(host.cells[0].x > beforeX);
 });
 

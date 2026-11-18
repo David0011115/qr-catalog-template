@@ -156,7 +156,6 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
             chronosArenaFor: options.chronosArenaFor,
             cooldownMultiplierFor: currentModeRules.abilityOptions?.cooldownMultiplierFor,
             effectsFor: owner => owner.eff,
-            burstFood: options.burstFood,
             popCell: options.popCell,
             spawnChunk: options.spawnChunk,
             rebuildCells: options.rebuildCells,

@@ -2,7 +2,7 @@
   // The local save (SAVE_KEY + persist) stays the only game save. The cloud copy in player_saves is
   // synced on top of it: compare-and-swap on updated_at, so an older device never overwrites a newer save.
   {
-    const SB_URL = 'https://kprkslsptcnxajdllwje.supabase.co', SB_KEY = 'sb_publishable_C6dIYs3B1t1tkMYl4AgzzA_hVtZLBaj';
+    const SB_URL = 'https://kccwtpveezsrgwfnflhf.supabase.co', SB_KEY = 'sb_publishable_oyO2ubBpXo3h1IBB-DPdsQ_gnYaO0Mf';
     const SB_LIB = 'supabase.js';
     const META_KEY = SAVE_KEY + '-cloud', APP_SAVE_VER = 170;
     const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'rbuild', 'hardcore', 'royale'];

@@ -22,7 +22,7 @@ import {
 } from '../simulation/loop.js';
 import {
   createMatchLifecycleState, disconnectMatchPlayer, reconnectMatchPlayer,
-  matchElapsedMs, matchInputAllowed, serializeMatchLifecycle, restoreMatchLifecycle,
+  matchElapsedMs, matchInputAllowed, matchSimulationAllowed, serializeMatchLifecycle, restoreMatchLifecycle,
 } from './lifecycle.js';
 import { createDuoWorld } from './duo-world.js';
 import { serializeWorldState, restoreWorldState } from '../storage/world-state.js';
@@ -109,6 +109,9 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
     },
     elapsedMs(now = Date.now()) { return matchElapsedMs(lifecycle, now); },
     step() {
+      if (!matchSimulationAllowed(lifecycle)) {
+        return { advanced: false, reason: 'match-not-active', tick: simulation.tick, actionEvents: [] };
+      }
       const actionEvents = [];
       while (actionQueue.length) {
         const command = actionQueue.shift();

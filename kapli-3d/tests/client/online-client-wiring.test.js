@@ -41,7 +41,7 @@ test('obsolete WebSocket callbacks cannot pause or overwrite the replacement con
 
 test('fatal server simulation errors close the client socket and clear stale room recovery data', async () => {
   const online = await read('../../js/game/14g-online-server.js');
-  assert.match(online, /message\.type === 'match-error'[\s\S]*?room\.status = 'closed'[\s\S]*?clearSavedRoom\(\)[\s\S]*?socket = null[\s\S]*?showLobbyCard\(\)/);
+  assert.match(online, /message\.type === 'match-error'[\s\S]*?room\.status = 'closed'[\s\S]*?clearSavedRoom\(\)[\s\S]*?socket = null[\s\S]*?DuoM\.serverAbort\?\.\(\)[\s\S]*?showLobbyCard\(\)/);
 });
 
 test('service worker cache version is bumped and includes the online client', async () => {

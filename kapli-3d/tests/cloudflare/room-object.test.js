@@ -115,3 +115,40 @@ test('guest profile is preserved when joining the room and projected into the ma
     skin: 'mint',
   });
 });
+
+
+test('world init resumes from received sequence numbers and snapshots acknowledge processed commands', () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.runtime = {
+    mode: 'territory',
+    lifecycle: { matchId: 'match-ack' },
+    world: {
+      arenaRadius: 300, build: [], owners: [], cells: [], food: [], viruses: [], ejects: [],
+      modeState: {}, respawnTimers: {}, clock: 12, pendingFoodChanges: [],
+    },
+    simulation: {
+      tick: 360,
+      lastReceivedSeq: { host: 9, guest: 7 },
+      lastProcessedSeq: { host: 8, guest: 7 },
+      lastAbilityReceivedSeq: { host: 3, guest: 1 },
+      lastAbilityProcessedSeq: { host: 2, guest: 1 },
+    },
+    abilityState: { lastCommandSeq: { host: 2, guest: 1 } },
+    lastBoostSeq: { host: 4, guest: 0 },
+    lastBoostProcessedSeq: { host: 3, guest: 0 },
+    lastActionSeq: { host: 6, guest: 0 },
+    lastActionProcessedSeq: { host: 5, guest: 0 },
+    elapsedMs: () => 12000,
+  };
+  const init = roomObject.worldInitMessage();
+  assert.deepEqual(init.abilitySeqs, { host: 3, guest: 1 });
+  assert.deepEqual(init.processedSeqs, {
+    input: { host: 8, guest: 7 },
+    ability: { host: 2, guest: 1 },
+    boost: { host: 3, guest: 0 },
+    action: { host: 5, guest: 0 },
+  });
+  const snapshot = roomObject.snapshotMessage({ tick: 361 });
+  assert.deepEqual(snapshot.receivedSeqs.ability, { host: 3, guest: 1 });
+  assert.deepEqual(snapshot.processedSeqs.action, { host: 5, guest: 0 });
+});

@@ -77,12 +77,16 @@ test('core-action protocol accepts only split, dash and eject with monotonic pos
 });
 
 
-test('WebSocket command budget allows normal 20 Hz input and rejects message floods', async () => {
+test('WebSocket command budget allows 30 Hz movement with scheduling headroom and rejects floods', async () => {
   const { consumeSocketMessageBudget, SOCKET_INPUT_LIMIT_PER_SECOND, SOCKET_MESSAGE_LIMIT_PER_SECOND } =
     await import('../../server/cloudflare/protocol.js');
   const windows = new Map();
   for (let i = 0; i < 20; i++) {
     assert.equal(consumeSocketMessageBudget(windows, 'player', 1000 + i * 40, 'input').ok, true);
+  }
+  const burstWindows = new Map();
+  for (let i = 0; i < 40; i++) {
+    assert.equal(consumeSocketMessageBudget(burstWindows, 'burst-player', 1500, 'input').ok, true);
   }
   const inputWindows = new Map();
   let result;

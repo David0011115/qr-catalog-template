@@ -521,8 +521,7 @@ export class GameRoom {
     const parsed = parseClientMessage(typeof raw === 'string' ? raw : '');
     // The runtime lifecycle is authoritative. A delayed room-state transition
     // must not reject valid movement after the simulation has already started.
-    if (this.runtime?.lifecycle.status === 'active' && this.room &&
-        !['paused', 'closed'].includes(this.room.status)) {
+    if (this.runtime?.lifecycle.status === 'active' && this.room?.status !== 'closed') {
       this.room.status = 'active';
     }
     if (!userId || !this.runtime || this.runtime.lifecycle.status !== 'active' || this.room?.status !== 'active') {
@@ -530,7 +529,8 @@ export class GameRoom {
       // scene is opening. Ignore those during the lobby/countdown instead of
       // surfacing a misleading "Match not active" error to the player.
       if (userId && parsed.ok && parsed.command.type === 'input' &&
-          ['waiting', 'lobby', 'countdown'].includes(this.room?.status)) return;
+          (['waiting', 'lobby', 'countdown'].includes(this.room?.status) ||
+           this.runtime?.lifecycle.status === 'paused' || this.room?.status === 'paused')) return;
       this.send(socket, { type: 'error', error: 'match-not-active' });
       return;
     }

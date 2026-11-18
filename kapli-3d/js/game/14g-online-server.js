@@ -330,7 +330,13 @@
     for (const owner of payload.owners) {
       const index = ownerIndices.get(owner.id);
       const ownCells = (cellsByOwner.get(owner.id) || [])
-        .sort((a, b) => String(a.slotId ?? a.id).localeCompare(String(b.slotId ?? b.id), undefined, { numeric: true }));
+        .sort((a, b) => {
+          const av = a.slotId ?? a.id, bv = b.slotId ?? b.id;
+          const an = Number(av), bn = Number(bv);
+          if (Number.isFinite(an) && Number.isFinite(bn)) return an - bn;
+          const as = String(av), bs = String(bv);
+          return as < bs ? -1 : as > bs ? 1 : 0;
+        });
       const row = [index];
       for (const cell of ownCells) row.push(cell.x, cell.z, cell.mass);
       rows.push(row);

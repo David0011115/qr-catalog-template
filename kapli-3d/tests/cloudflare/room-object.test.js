@@ -373,6 +373,25 @@ test('Durable Object alarm waits for reconnect deadline persistence before retur
   assert.equal(persisted, true);
 });
 
+test('pre-match movement samples are ignored during the room countdown', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = { status: 'countdown' };
+  roomObject.runtime = null;
+  const messages = [];
+  const socket = {
+    readyState: 1,
+    deserializeAttachment: () => ({ userId: 'player-1' }),
+    send: value => messages.push(JSON.parse(value)),
+  };
+
+  await roomObject.webSocketMessage(socket, JSON.stringify({
+    type: 'input', seq: 1, x: 1, z: 0,
+  }));
+
+  assert.deepEqual(messages, []);
+});
+
 test('closed room rejects WebSocket commands even if the runtime lifecycle is still active', async () => {
   const roomObject = Object.create(GameRoom.prototype);
   roomObject.ready = Promise.resolve();

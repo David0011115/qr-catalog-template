@@ -518,11 +518,16 @@ export class GameRoom {
     if (this.runtime?.lifecycle.status === 'active' && this.room?.status === 'active') this.startLoop();
     const attachment = socket.deserializeAttachment();
     const userId = attachment?.userId;
+    const parsed = parseClientMessage(typeof raw === 'string' ? raw : '');
     if (!userId || !this.runtime || this.runtime.lifecycle.status !== 'active' || this.room?.status !== 'active') {
+      // The client can still produce a few movement samples while its local
+      // scene is opening. Ignore those during the lobby/countdown instead of
+      // surfacing a misleading "Match not active" error to the player.
+      if (userId && parsed.ok && parsed.command.type === 'input' &&
+          ['waiting', 'lobby', 'countdown'].includes(this.room?.status)) return;
       this.send(socket, { type: 'error', error: 'match-not-active' });
       return;
     }
-    const parsed = parseClientMessage(typeof raw === 'string' ? raw : '');
     const budget = consumeSocketMessageBudget(
       this.messageRates, userId, Date.now(), parsed.ok ? parsed.command.type : 'invalid',
     );

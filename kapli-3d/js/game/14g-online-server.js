@@ -283,8 +283,12 @@
     }
   }
 
+  function canSendGameplay() {
+    return connected && matchStarted && !paused;
+  }
+
   function sendInput(x, z) {
-    if (!connected) return false;
+    if (!canSendGameplay()) return false;
     const seq = inputSeq + 1;
     if (!sendMessage({ type: 'input', seq, x, z })) return false;
     inputSeq = seq;
@@ -292,7 +296,7 @@
   }
 
   function useAbility(kind, slot) {
-    if (!connected || kind !== 'slot' || !Number.isInteger(Number(slot))) return false;
+    if (!canSendGameplay() || kind !== 'slot' || !Number.isInteger(Number(slot))) return false;
     const seq = abilitySeq + 1;
     if (!sendMessage({ type: 'ability', seq, slot: Number(slot) })) return false;
     abilitySeq = seq;
@@ -300,7 +304,7 @@
   }
 
   function useAction(action) {
-    if (!connected || !['dash', 'split', 'eject'].includes(action)) return false;
+    if (!canSendGameplay() || !['dash', 'split', 'eject'].includes(action)) return false;
     const seq = actionSeq + 1;
     if (!sendMessage({ type: 'action', seq, action })) return false;
     actionSeq = seq;
@@ -308,7 +312,7 @@
   }
 
   function pickBoost(id) {
-    if (!connected || typeof id !== 'string') return false;
+    if (!canSendGameplay() || typeof id !== 'string') return false;
     const seq = boostSeq + 1;
     if (!sendMessage({ type: 'boost', seq, id })) return false;
     boostSeq = seq;

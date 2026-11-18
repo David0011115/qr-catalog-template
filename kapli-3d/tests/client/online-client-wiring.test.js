@@ -55,3 +55,8 @@ test('DuoM routes dedicated dash split and eject controls separately from abilit
   assert.match(match, /act: \(k, i\) => \{ if \(serverMode\) \{ if \(k === 'slot'\) window\.KapliOnlineServer\?\.useAbility\(k, i\); else window\.KapliOnlineServer\?\.useAction\(k\); \}/);
 });
 
+test('a replaced room socket does not start an automatic reconnect loop in the old tab', async () => {
+  const online = await read('../../js/game/14g-online-server.js');
+  assert.match(online, /ws\.onclose = event => \{[\s\S]*?if \(event\?\.code === 4001\)[\s\S]*?Подключение открыто в другом окне[\s\S]*?return;[\s\S]*?scheduleReconnect\(\)/);
+});
+

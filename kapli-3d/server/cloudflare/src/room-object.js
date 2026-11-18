@@ -594,7 +594,7 @@ export class GameRoom {
       if (result.ended) {
         this.room.status = 'closed'; this.room.closedAt = now; this.room.closeReason = 'match-ended';
         await this.finishMatch();
-      } else this.scheduleReconnectAlarm();
+      } else await this.scheduleReconnectAlarm();
       return;
     }
     if (!this.room) return;

@@ -31,7 +31,7 @@ function authFetch(userId = '11111111-1111-4111-8111-111111111111') {
     throw new Error('Unexpected Supabase request: ' + target);
   };
 }
-function envFor(stub) {
+function envFor(stub, rateStub = stub) {
   return {
     SUPABASE_URL: 'https://project.supabase.co',
     SUPABASE_ANON_KEY: 'anon-key',
@@ -39,8 +39,9 @@ function envFor(stub) {
     ROOMS: {
       idFromName(name) { return { name }; },
       get(id) {
-        assert.match(id.name, /^room:/);
-        return stub;
+        if (id.name.startsWith('room:')) return stub;
+        if (id.name.startsWith('rate:')) return rateStub;
+        throw new Error('Unexpected Durable Object name: ' + id.name);
       },
     },
   };
@@ -189,5 +190,84 @@ test('Worker refuses to create a room when existing account save data cannot be 
     );
     assert.equal(response.status, 503);
     assert.equal((await response.json()).error, 'account-data-unavailable');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+
+test('invalid room-code attempts are counted per user across different room codes', async () => {
+  authFetch();
+  const userId = '11111111-1111-4111-8111-111111111111';
+  let attempts = 0, roomCalls = 0;
+  const rateNames = new Set();
+  const roomStub = { async fetch() { roomCalls++; return new Response(JSON.stringify({ error: 'room-not-found' }), { status: 404 }); } };
+  const rateStub = {
+    async fetch(internal) {
+      rateNames.add(new URL(internal.url).pathname + ':' + internal.headers.get('x-kapli-user-id'));
+      const action = JSON.parse(await internal.text()).action;
+      if (action === 'check') return new Response(JSON.stringify({ blocked: false, attempts, remaining: 5 - attempts }));
+      if (action === 'record') {
+        attempts++;
+        const blocked = attempts >= 5;
+        return new Response(JSON.stringify({ blocked, attempts, remaining: Math.max(0, 5 - attempts) }), { status: blocked ? 429 : 200 });
+      }
+      if (action === 'reset') { attempts = 0; return new Response(JSON.stringify({ ok: true })); }
+      throw new Error('Unexpected rate action: ' + action);
+    },
+  };
+  try {
+    const codes = ['AAAAA', 'BBBBB', 'CCCCC', 'DDDDD', 'EEEEE'];
+    const statuses = [];
+    for (const code of codes) {
+      const response = await handleWorkerRequest(
+        request(`https://worker.example/api/rooms/${code}/join`, 'POST', {}),
+        envFor(roomStub, rateStub),
+      );
+      statuses.push(response.status);
+    }
+    assert.deepEqual(statuses, [404, 404, 404, 404, 429]);
+    assert.equal(attempts, 5);
+    assert.equal(roomCalls, 5);
+    assert.equal(rateNames.size, 1);
+    assert.ok(rateNames.has('/internal/invalid-attempt:' + userId));
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('a user blocked by invalid room codes cannot bypass the block with a valid code', async () => {
+  authFetch();
+  let roomCalls = 0;
+  const roomStub = { async fetch() { roomCalls++; return new Response(JSON.stringify({ room: {} }), { status: 200 }); } };
+  const rateStub = {
+    async fetch() {
+      return new Response(JSON.stringify({ blocked: true, remainingMs: 30000 }), { status: 429 });
+    },
+  };
+  try {
+    const response = await handleWorkerRequest(
+      request('https://worker.example/api/rooms/ABCDE/join', 'POST', {}),
+      envFor(roomStub, rateStub),
+    );
+    assert.equal(response.status, 429);
+    assert.equal(roomCalls, 0);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('successful room join resets the user-scoped invalid-code counter', async () => {
+  authFetch();
+  const actions = [];
+  const roomStub = { async fetch() { return new Response(JSON.stringify({ room: { code: 'ABCDE' } }), { status: 200 }); } };
+  const rateStub = {
+    async fetch(internal) {
+      const action = JSON.parse(await internal.text()).action;
+      actions.push(action);
+      return new Response(JSON.stringify({ blocked: false, ok: true }));
+    },
+  };
+  try {
+    const response = await handleWorkerRequest(
+      request('https://worker.example/api/rooms/ABCDE/join', 'POST', {}),
+      envFor(roomStub, rateStub),
+    );
+    assert.equal(response.status, 200);
+    assert.deepEqual(actions, ['check', 'reset']);
   } finally { globalThis.fetch = originalFetch; }
 });

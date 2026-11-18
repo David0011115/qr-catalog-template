@@ -209,3 +209,54 @@ test('special boss defeat bursts food into stable world slots for both online cl
   assert.ok(runtime.world.pendingFoodChanges.length > before);
   assert.ok(runtime.world.pendingFoodChanges.every(change => /^food:\d+$/.test(change.id)));
 });
+
+
+test('authoritative match picks bonuses, ticks their timers and spawns them on schedule', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-bonus-pickup', matchId: 'match-bonus-pickup',
+    players, mode: 'territory', seed: 812, startedAt: 100,
+  });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  const cell = host.cells[0];
+  runtime.world.bonuses = [{ id: 'bonus:test-speed', type: 'speed', x: cell.x, z: cell.z }];
+  runtime.step();
+  assert.equal(runtime.world.bonuses.length, 0);
+  assert.ok(host.eff.speed > 6.9 && host.eff.speed <= 7);
+  runtime.step();
+  assert.ok(host.eff.speed < 7 && host.eff.speed > 6.9);
+});
+
+test('DuoBack break callback creates the source food bursts and two bonus pickups', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-duoback-break', matchId: 'match-duoback-break',
+    players, mode: 'duoback', seed: 813, startedAt: 100,
+  });
+  const state = runtime.world.modeState;
+  state.wave = 1;
+  state.phase = 0;
+  state.regular = [];
+  state.special = null;
+  runtime.step();
+  assert.equal(state.phase, 1);
+  assert.ok(runtime.world.pendingFoodChanges.length >= 180);
+  assert.ok(runtime.world.bonuses.length >= 2);
+  assert.equal(runtime.world.bonusTimer, 9);
+});
+
+test('DuoBack runtime respawns an eliminated player through the room spawn adapter', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-duoback-respawn', matchId: 'match-duoback-respawn',
+    players, mode: 'duoback', seed: 814, startedAt: 100,
+  });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  const old = host.cells[0];
+  runtime.world.cells = runtime.world.cells.filter(cell => cell.owner !== host);
+  host.cells = [];
+  host.free.push(old.slotId);
+  host.respawnAt = 0;
+  runtime.step();
+  assert.equal(host.cells.length, 1);
+  assert.equal(host.cells[0].mass, 10);
+  assert.equal(host.spawnSh, 3);
+  assert.ok(runtime.world.cells.includes(host.cells[0]));
+});

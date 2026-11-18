@@ -447,3 +447,24 @@ test('DuoBack reconciles and removes a regular boss entity whose cells are alrea
   assert.ok(out.events.some(event => event.type === 'regular-boss-defeated'));
 });
 
+test('DuoBack syncs the persisted twin-enrage descriptor onto the surviving boss entity', () => {
+  const state = createDuobackState();
+  state.wave = 3;
+  state.phase = 0;
+  state.regular = [{ kind: 'regular', type: 'twins', slot: 1, enr: 1 }];
+  const boss = {
+    id: 'twin-1', kind: 'boss', dbType: 'twins', slot: 1, enr: 0,
+    cells: [{ id: 'twin-cell', mass: 100, x: 0, z: 0, hx: 1, hz: 0 }],
+    free: [], life: 20, dashT: 0, dashCd: 0, spikeT: 10,
+  };
+  stepDuobackRuntime(state, { cells: boss.cells, owners: [boss] }, 1 / 30, {
+    resolvePlayers: () => [
+      { role: 'host', cells: [{ mass: 100, x: 40, z: 0 }] },
+      { role: 'guest', cells: [{ mass: 100, x: 80, z: 0 }] },
+    ],
+    random: () => 0.5,
+    resolveRegularBoss: () => boss,
+  });
+  assert.equal(boss.enr, 1);
+});
+

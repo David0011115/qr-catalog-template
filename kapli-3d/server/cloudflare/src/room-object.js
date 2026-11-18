@@ -24,6 +24,21 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 const playerFor = (room, id) => room?.players.find(player => player.id === id) || null;
 const totalMass = owner => owner.cells.reduce((sum, cell) => sum + cell.mass, 0);
 
+export function roomPlayerForMatch(player) {
+  if (!player || typeof player.id !== 'string' || !['host', 'guest'].includes(player.role)) {
+    throw new TypeError('a valid room player is required');
+  }
+  return {
+    id: player.id,
+    role: player.role,
+    nickname: player.nickname || 'Игрок',
+    build: Array.isArray(player.build) ? player.build.slice(0, 3) : ['dash', 'split', null],
+    upgrades: player.upgrades && typeof player.upgrades === 'object' ? { ...player.upgrades } : {},
+    abilityLevels: player.abilityLevels && typeof player.abilityLevels === 'object' ? { ...player.abilityLevels } : {},
+    skin: typeof player.skin === 'string' ? player.skin : 'coral',
+  };
+}
+
 function ownerSummary(owner) {
   return {
     id: owner.id, name: owner.name, kind: owner.kind, role: owner.role || null,
@@ -250,7 +265,7 @@ export class GameRoom {
     }
     if (this.room) return json({ error: 'room-code-already-used' }, 409);
     this.room = createRoomState({ roomId: crypto.randomUUID(), code, hostId: userId, now: Date.now() });
-    this.room.players[0].nickname = nickname;
+    this.applyPlayerProfile(this.room.players[0], nickname, body.player);
     this.room.mode = mode;
     this.room.difficultyIndex = difficultyIndex;
     this.seed = null;
@@ -493,9 +508,7 @@ export class GameRoom {
       this.seed = crypto.getRandomValues(new Uint32Array(1))[0];
       this.runtime = createDuoMatchRuntime({
         roomId: this.room.roomId, matchId: result.matchId,
-        players: result.players.map(player => ({
-          id: player.id, role: player.role, nickname: player.nickname || 'Игрок',
-        })),
+        players: result.players.map(roomPlayerForMatch),
         mode: this.room.mode, seed: this.seed, startedAt: now,
         difficultyIndex: this.room.difficultyIndex,
         options: { resolveDisconnect: this.resolveDisconnect.bind(this) },

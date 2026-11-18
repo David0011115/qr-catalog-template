@@ -42,17 +42,18 @@ async function readJson(request, maxBytes = 4096) {
 
 async function authenticate(request, env) {
   const token = getBearerToken(request.headers.get('authorization'));
-  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return null;
+  if (!token) return { authError: 'missing-bearer' };
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return { authError: 'server-auth-config-missing' };
   let response;
   try {
     response = await fetch(`${String(env.SUPABASE_URL).replace(/\/$/, '')}/auth/v1/user`, {
       headers: { apikey: env.SUPABASE_ANON_KEY, authorization: `Bearer ${token}` },
     });
-  } catch { return null; }
-  if (!response.ok) return null;
+  } catch { return { authError: 'supabase-unreachable' }; }
+  if (!response.ok) return { authError: `supabase-rejected-${response.status}` };
   let user;
-  try { user = await response.json(); } catch { return null; }
-  if (!user?.id || typeof user.id !== 'string') return null;
+  try { user = await response.json(); } catch { return { authError: 'supabase-invalid-response' }; }
+  if (!user?.id || typeof user.id !== 'string') return { authError: 'supabase-user-missing' };
   const metadata = user.user_metadata || {};
   return {
     id: user.id,
@@ -186,7 +187,7 @@ export async function handleWorkerRequest(request, env) {
 
   if (url.pathname === '/api/rooms' && request.method === 'POST') {
     const user = await authenticate(request, env);
-    if (!user) return withCors(json({ error: 'unauthorized' }, 401), request, env);
+    if (!user || user.authError) return withCors(json({ error: 'unauthorized', authReason: user?.authError || 'unknown' }, 401), request, env);
     const body = await readJson(request);
     const mode = parseMode(body?.mode);
     const difficultyIndex = body?.difficultyIndex ?? 0;
@@ -223,7 +224,7 @@ export async function handleWorkerRequest(request, env) {
   }
 
   const user = await authenticate(request, env);
-  if (!user) return withCors(json({ error: 'unauthorized' }, 401), request, env);
+  if (!user || user.authError) return withCors(json({ error: 'unauthorized', authReason: user?.authError || 'unknown' }, 401), request, env);
   let response;
   if (action === 'state' && request.method === 'GET') {
     response = await callRoom(env, code, '/internal/state', 'GET', user);

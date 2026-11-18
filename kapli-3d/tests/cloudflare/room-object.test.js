@@ -347,3 +347,30 @@ test('room WebSocket handler dispatches ability, action and boost commands and a
   assert.equal(messages[3].sentAt, 1234);
 });
 
+test('Durable Object alarm waits for reconnect deadline persistence before returning', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = { status: 'paused' };
+  roomObject.runtime = {
+    lifecycle: {
+      status: 'paused',
+      players: [
+        { id: 'host', role: 'host', connected: true, reconnectUntil: null },
+        { id: 'guest', role: 'guest', connected: false, reconnectUntil: Date.now() + 60000 },
+      ],
+    },
+  };
+  let persisted = false;
+  roomObject.ctx = {
+    storage: {
+      async setAlarm() {
+        await new Promise(resolve => setImmediate(resolve));
+        persisted = true;
+      },
+    },
+  };
+
+  await roomObject.alarm();
+  assert.equal(persisted, true);
+});
+

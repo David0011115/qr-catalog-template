@@ -58,7 +58,7 @@ The regression suite covers physics/source-parity formulas, deterministic random
 
 The code and automated test suite are not proof of a live multiplayer release. The following still require the owner's service accounts or real devices:
 
-1. Apply `../ONLINE-SERVER-RESULTS-MIGRATION.sql` in the intended Supabase project after the existing Duo records migration.
+1. Verify `../PRIVACY-CONSENT-MIGRATION.sql` has been applied (the Worker requires `kapli_has_privacy_consent()`), and apply `../ONLINE-SERVER-RESULTS-MIGRATION.sql` after the existing Duo records migration.
 2. Configure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and `ALLOWED_ORIGINS` as Worker secrets.
 3. Deploy the Worker/SQLite Durable Object from `cloudflare/`.
 4. Run a two-account end-to-end test for room creation/join, both modes, abilities/actions/boosts, disconnect/reconnect and result persistence.

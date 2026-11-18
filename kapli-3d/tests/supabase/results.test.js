@@ -82,3 +82,24 @@ test('Supabase RPC errors are returned as retryable persistence failures', async
     assert.equal(result.reason, 'supabase-rpc-error');
   } finally { globalThis.fetch = originalFetch; }
 });
+
+
+test('Territory reconnect timeout preserves the actual share while recording the connection-rule winner', async () => {
+  const originalFetch = globalThis.fetch;
+  let body;
+  globalThis.fetch = async (_url, init) => {
+    body = JSON.parse(init.body);
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+  try {
+    const result = await persistMatchResult(
+      { SUPABASE_URL: 'https://project.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'service-key' },
+      runtime('territory', { winner: 'guest', reason: 'reconnect-timeout' }, { border: 100, arenaRadius: 356.25 }),
+      { mode: 'territory' },
+    );
+    assert.equal(result.ok, true);
+    assert.equal(body.p_host_result, 'loss');
+    assert.equal(body.p_host_share, 67);
+    assert.equal(body.p_extra.reason, 'reconnect-timeout');
+  } finally { globalThis.fetch = originalFetch; }
+});

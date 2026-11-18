@@ -440,7 +440,7 @@ test('Durable Object countdown starts a match, publishes its world and processes
   await roomObject.webSocketMessage(socket, JSON.stringify({
     type: 'input', seq: 1, x: 1, z: 0,
   }));
-  assert.equal(socketMessages[0].type, 'input-queued');
+  assert.equal(socketMessages.length, 0);
   const tick = roomObject.runtime.step();
   assert.equal(tick.advanced, true);
   assert.equal(roomObject.runtime.simulation.lastProcessedSeq['host-user'], 1);

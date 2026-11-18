@@ -125,6 +125,7 @@ test('world init resumes from received sequence numbers and snapshots acknowledg
     world: {
       arenaRadius: 300, build: [], owners: [], cells: [], food: [], viruses: [], ejects: [],
       modeState: {}, respawnTimers: {}, clock: 12, pendingFoodChanges: [],
+      bonuses: [{ id: 'bonus:7', type: 'shield', x: 4, z: 5 }],
     },
     simulation: {
       tick: 360,
@@ -141,6 +142,7 @@ test('world init resumes from received sequence numbers and snapshots acknowledg
     elapsedMs: () => 12000,
   };
   const init = roomObject.worldInitMessage();
+  assert.deepEqual(init.bonuses, [{ id: 'bonus:7', type: 'shield', x: 4, z: 5 }]);
   assert.deepEqual(init.abilitySeqs, { host: 3, guest: 1 });
   assert.deepEqual(init.processedSeqs, {
     input: { host: 8, guest: 7 },
@@ -149,6 +151,7 @@ test('world init resumes from received sequence numbers and snapshots acknowledg
     action: { host: 5, guest: 0 },
   });
   const snapshot = roomObject.snapshotMessage({ tick: 361 });
+  assert.deepEqual(snapshot.bonuses, [{ id: 'bonus:7', type: 'shield', x: 4, z: 5 }]);
   assert.deepEqual(snapshot.receivedSeqs.ability, { host: 3, guest: 1 });
   assert.deepEqual(snapshot.processedSeqs.action, { host: 5, guest: 0 });
 });

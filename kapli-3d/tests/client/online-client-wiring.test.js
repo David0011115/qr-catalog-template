@@ -11,6 +11,9 @@ test('server-authoritative online client is loaded after the game runtime is def
   assert.ok(ordered.indexOf('14c-duo-match.js') >= 0);
   assert.ok(ordered.indexOf('15-boot.js') >= 0);
   assert.ok(ordered.indexOf('14g-online-server.js') > ordered.indexOf('15-boot.js'));
+  const serviceWorker = await read('../../sw.js');
+  assert.match(serviceWorker, /kapli3d-v309/);
+  assert.match(serviceWorker, /js\\/game\\/14g-online-server\\.js/);
 });
 
 test('server match tick and existing Duo lobby delegate to the authoritative online client', async () => {

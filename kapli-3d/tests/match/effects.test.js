@@ -43,3 +43,30 @@ test('burstFood rejects invalid geometry instead of creating non-finite food coo
   const world = { arenaRadius: 100, food: [{ id: 'food:0', x: 0, z: 0 }] };
   assert.throws(() => burstFoodInWorld(world, new DeterministicRandom(1), 0, 0, 10, 1, 11), /valid burst geometry/);
 });
+
+
+test('bonus pickup applies source durations and source stack caps', async () => {
+  const { applyBonusPickup } = await import('../../server/match/effects.js');
+  const owner = { cells: [{ x: 0, z: 0, mass: 100 }], eff: { speed: 28, shield: 8, double: 0, magnet: 0 } };
+  assert.equal(applyBonusPickup({ food: [], pendingFoodChanges: [], arenaRadius: 100 }, owner, { type: 'speed' }, new DeterministicRandom(1)), true);
+  assert.equal(owner.eff.speed, 30);
+  assert.equal(applyBonusPickup({ food: [], pendingFoodChanges: [], arenaRadius: 100 }, owner, { type: 'shield' }, new DeterministicRandom(1)), true);
+  assert.equal(owner.eff.shield, 10);
+  assert.equal(applyBonusPickup({ food: [], pendingFoodChanges: [], arenaRadius: 100 }, owner, { type: 'unknown' }, new DeterministicRandom(1)), false);
+});
+
+test('fountain bonus bursts food around the owner mass centre', async () => {
+  const { applyBonusPickup } = await import('../../server/match/effects.js');
+  const world = {
+    arenaRadius: 200,
+    food: Array.from({ length: 200 }, (_, i) => ({ id: 'food:' + i, x: 0, z: 0 })),
+    pendingFoodChanges: [],
+  };
+  const owner = { cells: [
+    { x: -10, z: 0, mass: 100 },
+    { x: 10, z: 0, mass: 100 },
+  ] };
+  assert.equal(applyBonusPickup(world, owner, { type: 'fountain' }, new DeterministicRandom(7)), true);
+  assert.ok(world.pendingFoodChanges.length > 0);
+  assert.ok(world.pendingFoodChanges.every(change => /^food:\d+$/.test(change.id)));
+});

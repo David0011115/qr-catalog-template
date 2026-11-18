@@ -1,11 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  PHYSICS, radius, cellRadius, eatRatio, canEat, massDecay, speedOf, steerCell,
+  radius, cellRadius, eatRatio, canEat, massDecay, speedOf, steerCell,
 } from '../../server/core/physics.js';
 
 // Oracle formulas transcribed from js/game/03-scene.js (speedOf, radius, cellR)
 // and js/game/04-arena.js / js/game/07-round.js (steer, eatRatio, canEat, decay).
+// Source constants are intentionally literal here so the oracle cannot inherit a server regression.
+const SOURCE_START_MASS = 10;
+const SOURCE_BASE_SPEED = 11 * 3;
+const SOURCE_DASH_MULT = 3.2;
 // This deliberately keeps the browser implementation as the reference contract.
 const sourceRadius = mass => 0.38 * Math.sqrt(mass);
 const sourceCellRadius = c => 0.38 * Math.sqrt(c.mass) * (c.owner && c.owner.rs || 1);
@@ -21,9 +25,9 @@ const sourceCanEat = (a, b, rules = {}) =>
 
 function sourceSpeedOf(c, rules = {}) {
   const o = c.owner;
-  let v = PHYSICS.BASE_SPEED * Math.pow(c.mass / PHYSICS.START_MASS, -0.15);
+  let v = SOURCE_BASE_SPEED * Math.pow(c.mass / SOURCE_START_MASS, -0.15);
   if (o.isPlayer || o.kind === 'rival') {
-    if (o.dashT > 0) v = PHYSICS.BASE_SPEED * PHYSICS.DASH_MULT * Math.pow(Math.max(1, c.mass / PHYSICS.START_MASS), -0.1);
+    if (o.dashT > 0) v = SOURCE_BASE_SPEED * SOURCE_DASH_MULT * Math.pow(Math.max(1, c.mass / SOURCE_START_MASS), -0.1);
     if (o.isPlayer) v *= (1 + 0.01 * (rules.speedUpgradeFor?.(o) || 0)) *
       (rules.playerSpeedEffect > 0 ? 1.45 : 1) *
       (1 + 0.02 * (rules.speedPetLevelFor?.(o) || 0)) *

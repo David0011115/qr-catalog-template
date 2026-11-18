@@ -4,7 +4,7 @@
   // late) and draws everything else from the host's snapshots, smoothing between them. Crumbs are laid out from one shared
   // seed; after that the host sends only the crumbs that moved. Abilities: the same three random ones for both, no upgrades.
   const DuoM = (() => {
-    const SNAP_MS = 66, INPUT_MS = 50, RESPAWN_S = 2.5;
+    const SNAP_MS = 66, INPUT_MS = 33, RESPAWN_S = 2.5;
     const rival = makeOwner('Соперник', 'rival', null);
     // 2.6: the drops and bosses of the modes for two are built at the first match, not at the start of the game
     // (less memory and a faster start for everyone who never plays them). The order is always the same on both phones,
@@ -392,9 +392,21 @@
         inAt = now;
         window.KapliOnlineServer?.sendInput(dx, dz);
       }
-      const k = Math.min(1, dt * 12);
+      // Predict our own movement locally with the same steering helper used by
+      // the offline game. The server remains authoritative and corrects drift.
+      const moving = Math.hypot(dx, dz) > 0.05;
+      for (const cell of player.cells) {
+        const sx = moving ? dx : (Number.isFinite(cell.hx) ? cell.hx : 0);
+        const sz = moving ? dz : (Number.isFinite(cell.hz) ? cell.hz : 0);
+        steer(cell, cell.x + sx * 10, cell.z + sz * 10, dt);
+      }
+
+      // Remote cells follow snapshots more tightly; our predicted cells use a
+      // softer correction so round-trip latency does not pull the controls back.
       for (const cell of cells) {
         if (cell.tx === undefined) continue;
+        const correctionRate = cell.owner === player ? 5 : 18;
+        const k = Math.min(1, dt * correctionRate);
         const ex = cell.tx - cell.x, ez = cell.tz - cell.z, distance = Math.hypot(ex, ez);
         if (distance > 40) { cell.x = cell.tx; cell.z = cell.tz; }
         else if (distance > 0.02) { cell.x += ex * k; cell.z += ez * k; }

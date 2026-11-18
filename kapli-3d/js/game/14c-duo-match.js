@@ -247,14 +247,20 @@
         let o = owners[row[0]]; if (row[0] === PLAYER_I) o = rival; else if (row[0] === RIVAL_I) o = player;   // the host's own drop is the rival here, and the other way round
         if (!o) continue; seen.add(o);
         const n = (row.length - 1) / 3;
-        while (o.cells.length > n) removeCell(o.cells[o.cells.length - 1]);
+        while (o.cells.length > n) {
+          removeCell(o.cells[o.cells.length - 1]);
+          topologyChanged = true;
+        }
         for (let k = 0; k < n; k++) {
           const x = row[1 + k * 3], z = row[2 + k * 3], m = row[3 + k * 3];
           let c = o.cells[k]; if (!c) { if (!o.free.length) break; c = addCell(o, x, z, m, o.free.pop()); }
           c.tx = x; c.tz = z; c.mass = m;
         }
       }
-      for (const o of owners) if (!seen.has(o) && o.cells.length) [...o.cells].forEach(removeCell);
+      for (const o of owners) if (!seen.has(o) && o.cells.length) {
+        [...o.cells].forEach(removeCell);
+        topologyChanged = true;
+      }
       if (s.f) for (let j = 0; j < s.f.length; j += 3) setFood(s.f[j], s.f[j + 1], s.f[j + 2]);
       if (s.v) {
         const n = s.v.length / 3;
@@ -327,6 +333,7 @@
       stats.serverClock = s.tm || 0;
       stats.time = Math.max(stats.time, stats.serverClock);
       const seen = new Set();
+      let topologyChanged = false;
       for (const row of s.o || []) {
         const index = row[0];
         const o = index === PLAYER_I ? player : index === RIVAL_I ? rival : owners[index];
@@ -341,6 +348,7 @@
           if (!cell) {
             if (!o.free.length) o.free.push(makeVis(new THREE.Color('#65d6ff')));
             cell = addCell(o, x, z, m, o.free.pop());
+            topologyChanged = true;
           }
           const info = meta[k] || {};
           cell.tx = x; cell.tz = z; cell.mass = m;
@@ -382,7 +390,9 @@
         player.dashCd = s.cd.d || 0; player.splitCd = s.cd.s || 0; player.abCd = s.cd.a || {};
       }
       if (rl && rl.applyServer && s.ms) rl.applyServer(s.ms, s.rt || {});
-      rebuildCells();
+      // The flat cells array is only needed after a split, merge, spawn or removal.
+      // Rebuilding it on every 15 Hz snapshot caused avoidable main-thread work.
+      if (topologyChanged) rebuildCells();
     }
     function serverTick(dt) {
       if (!serverMode || !on || window.KapliOnlineServer?.paused) return;

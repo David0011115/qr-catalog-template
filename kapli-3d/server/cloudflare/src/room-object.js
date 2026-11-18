@@ -163,28 +163,46 @@ export class GameRoom {
   sql(query, ...values) { return this.ctx.storage.sql.exec(query, ...values); }
 
   async load() {
-    const latest = this.sql('SELECT sequence, payload FROM snapshots ORDER BY sequence DESC LIMIT 1').toArray()[0];
+    const latest = this.sql('SELECT sequence, payload, created_at FROM snapshots ORDER BY sequence DESC LIMIT 1').toArray()[0];
     let sequence = 0;
     let payload = null;
+    let snapshotAt = Date.now();
     if (latest) {
       sequence = Number(latest.sequence);
       payload = JSON.parse(latest.payload);
+      snapshotAt = Number(latest.created_at) || snapshotAt;
     } else {
-      const row = this.sql('SELECT payload FROM room_state WHERE id = 1').toArray()[0];
-      if (row) payload = JSON.parse(row.payload);
+      const row = this.sql('SELECT payload, updated_at FROM room_state WHERE id = 1').toArray()[0];
+      if (row) {
+        payload = JSON.parse(row.payload);
+        snapshotAt = Number(row.updated_at) || snapshotAt;
+      }
     }
     if (payload) this.restorePayload(payload);
     if (this.runtime && latest) {
       const events = this.sql(
-        'SELECT sequence, type, payload FROM event_log WHERE sequence > ? ORDER BY sequence ASC',
+        'SELECT sequence, type, payload, created_at FROM event_log WHERE sequence > ? ORDER BY sequence ASC',
         sequence,
       ).toArray();
-      for (const event of events) {
-        const item = JSON.parse(event.payload);
-        if (event.type === 'input-command') this.runtime.submitInput(item.playerId, item.command);
-        if (event.type === 'ability-command') this.runtime.submitAbility(item.playerId, item.command);
-        if (event.type === 'boost-command') this.runtime.submitBoost(item.playerId, item.command);
-        if (event.type === 'action-command') this.runtime.submitAction(item.playerId, item.command);
+      if (this.room?.status === 'active' && this.runtime.lifecycle.status === 'active') {
+        replayMatchEvents(this.runtime, events, snapshotAt, Date.now());
+        if (this.runtime.lifecycle.status === 'finished') {
+          this.room.status = 'closed';
+          this.room.closedAt = this.runtime.lifecycle.endedAt || Date.now();
+          this.room.closeReason = this.runtime.lifecycle.endReason || 'recovered-match-finished';
+          await this.finishMatch();
+          return;
+        }
+        // Fold replay into a new checkpoint so the same command log is not applied twice.
+        await this.writeSnapshot();
+      } else {
+        for (const event of events) {
+          const item = JSON.parse(event.payload);
+          if (event.type === 'input-command') this.runtime.submitInput(item.playerId, item.command);
+          if (event.type === 'ability-command') this.runtime.submitAbility(item.playerId, item.command);
+          if (event.type === 'boost-command') this.runtime.submitBoost(item.playerId, item.command);
+          if (event.type === 'action-command') this.runtime.submitAction(item.playerId, item.command);
+        }
       }
     }
     this.lastPersistAt = Date.now();

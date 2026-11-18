@@ -186,7 +186,10 @@ export async function handleWorkerRequest(request, env) {
 
   const match = /^\/api\/rooms\/([^/]+)(?:\/(join|ready|leave|socket-ticket|socket))?$/.exec(url.pathname);
   if (!match) return withCors(json({ error: 'not-found' }, 404), request, env);
-  const code = normalizeRoomCode(decodeURIComponent(match[1]));
+  let decodedCode;
+  try { decodedCode = decodeURIComponent(match[1]); }
+  catch { return withCors(json({ error: 'invalid-room-code' }, 400), request, env); }
+  const code = normalizeRoomCode(decodedCode);
   if (!code) return withCors(json({ error: 'invalid-room-code' }, 400), request, env);
   const action = match[2] || 'state';
 

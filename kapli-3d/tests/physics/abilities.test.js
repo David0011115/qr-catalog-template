@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ABILITY_DATA, abilityOn, abilityPower, abilityCooldown, canCastAbility,
+  ABILITY_DATA, ABILITY_TUNING, abilityOn, abilityPower, abilityCooldown, canCastAbility,
   setAbilityActive, startAbilityCooldown, tickAbilityOwner, createDecoy,
   stepDecoy, stepDecoys,
 } from '../../server/core/abilities.js';
@@ -111,3 +111,32 @@ test('phase-two timer does not advance for owners without cells', () => {
   tickAbilityOwner(npc, 0.5);
   assert.equal(npc.phase2, 1); assert.equal(npc.abCd.x_phase, undefined);
 });
+
+test('all server ability cooldowns and shared tuning constants stay aligned with the browser catalog', () => {
+  const sourceCooldowns = {
+    shield: 25, pulse: 24, blink: 18, slow: 22, cloak: 28,
+    push: 22, shrink: 24, decoy: 28, trap: 32,
+    x_hole: 35, x_ice: 30, x_over: 45, x_refl: 30,
+    x_meteor: 38, x_twin: 28, x_ghost: 40, x_anchor: 35,
+    x_hunt: 22, x_vamp: 40, x_typhoon: 35, x_phase: 28,
+    cr_gearwall: 26, cr_rewind: 40, cr_swap: 30,
+  };
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(ABILITY_DATA).map(([id, data]) => [id, data.cd])),
+    sourceCooldowns,
+  );
+  assert.deepEqual(ABILITY_TUNING, {
+    cooldownPerLevel: 0.04,
+    powerPerLevel: 0.065,
+    chronosCooldownMultiplier: 0.9,
+    decoySpeed: 0.55,
+    shrinkScale: 0.3,
+    maxTraps: 2,
+    baseSpeed: 33,
+  });
+  for (const [id, cooldown] of Object.entries(sourceCooldowns)) {
+    assert.equal(abilityCooldown(id, 0), cooldown, id + ' base cooldown');
+    assert.equal(abilityCooldown(id, 5, true), cooldown * 0.8 * 0.9, id + ' max-level Chronos cooldown');
+  }
+});
+

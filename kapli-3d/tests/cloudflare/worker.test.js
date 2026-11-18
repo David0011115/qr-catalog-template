@@ -157,12 +157,20 @@ test('Worker rejects unauthenticated room operations', async () => {
 test('Worker attaches the authenticated guest save to a room join without trusting client-supplied build data', async () => {
   authFetch('22222222-2222-4222-8222-222222222222');
   let captured;
-  const env = envFor({
+  const actions = [];
+  const roomStub = {
     async fetch(internal) {
       captured = { path: new URL(internal.url).pathname, body: JSON.parse(await internal.text()) };
       return new Response(JSON.stringify({ room: { code: 'ABCDE', status: 'lobby' } }), { status: 200 });
     },
-  });
+  };
+  const rateStub = {
+    async fetch(internal) {
+      actions.push(JSON.parse(await internal.text()).action);
+      return new Response(JSON.stringify({ blocked: false, ok: true }));
+    },
+  };
+  const env = envFor(roomStub, rateStub);
   try {
     const response = await handleWorkerRequest(
       request('https://worker.example/api/rooms/ABCDE/join', 'POST', { build: ['unknown', 'unknown', 'unknown'] }),
@@ -170,6 +178,7 @@ test('Worker attaches the authenticated guest save to a room join without trusti
     );
     assert.equal(response.status, 200);
     assert.equal(captured.path, '/internal/join');
+    assert.deepEqual(actions, ['check', 'reset']);
     assert.deepEqual(captured.body.player.build, ['shield', 'split', null]);
     assert.equal(captured.body.player.upgrades.big, 2);
   } finally { globalThis.fetch = originalFetch; }

@@ -97,15 +97,8 @@ async function loadPlayerGameData(user, env) {
   let save = saveRows?.[0]?.save_data || {};
   if (typeof save === 'string') { try { save = JSON.parse(save); } catch { save = {}; } }
   if (!save || typeof save !== 'object' || Array.isArray(save)) save = {};
-  const owned = new Set(Array.isArray(save.abil?.owned) ? save.abil.owned : ['dash', 'split']);
-  owned.add('dash'); owned.add('split');
-  const rawBuild = Array.isArray(save.build) ? save.build : ['dash', 'split', null];
-  const used = new Set();
-  const build = Array.from({ length: 3 }, (_, index) => {
-    const id = rawBuild[index];
-    if (typeof id !== 'string' || !DUO_BUILD_POOL.includes(id) || !owned.has(id) || used.has(id)) return null;
-    used.add(id); return id;
-  });
+  // DuoBack/Territory use the source's shared random 3-ability build, drawn once per match.
+  // Do not reuse a profile's single-player build or require the abilities to be owned.
   const rawUpgrades = save.up && typeof save.up === 'object' ? save.up : {};
   const upgrades = Object.fromEntries(Object.entries(UPGRADE_MAX).map(([id, max]) => {
     const value = Number(rawUpgrades[id]);
@@ -120,7 +113,7 @@ async function loadPlayerGameData(user, env) {
   const skin = typeof save.skin === 'string' && ownedSkins.includes(save.skin) ? save.skin : 'coral';
   return {
     nickname: sanitizeNickname(profileRows?.[0]?.nickname || user.nickname),
-    build, upgrades, abilityLevels, skin,
+    build: null, upgrades, abilityLevels, skin,
   };
 }
 

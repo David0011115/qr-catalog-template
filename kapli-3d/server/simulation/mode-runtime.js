@@ -165,6 +165,9 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
         (descriptor.slot !== undefined && boss.slot !== undefined && boss.slot !== descriptor.slot)) {
       throw new TypeError('DuoBack regular boss entity does not match its stable descriptor');
     }
+    // Twin defeat is stored in the durable mode descriptor by the eating hook;
+    // mirror that state onto the entity before its next AI tick.
+    if (descriptor.enr) boss.enr = 1;
     if (!boss.cells?.length) {
       const defeated = duobackRegularBossDefeated(state, boss);
       if (defeated) {

@@ -142,3 +142,16 @@ test('world snapshot rejects dangling bot partner references', () => {
   snapshot.ownerTargets[0].partnerId = 'missing';
   assert.throws(() => validateWorldSnapshot(snapshot), /DANGLING_WORLD_PARTNER/);
 });
+
+test('world snapshot validation rejects invalid arena geometry, clock and collection shapes', () => {
+  const base = serializeWorldState(makeWorld());
+  const noArena = structuredClone(base); noArena.arenaRadius = null;
+  assert.throws(() => validateWorldSnapshot(noArena), /INVALID_WORLD_GEOMETRY_OR_CLOCK/);
+  const negativeClock = structuredClone(base); negativeClock.clock = -1;
+  assert.throws(() => validateWorldSnapshot(negativeClock), /INVALID_WORLD_GEOMETRY_OR_CLOCK/);
+  const badDecoys = structuredClone(base); badDecoys.decoys = {};
+  assert.throws(() => validateWorldSnapshot(badDecoys), /INVALID_WORLD_DECOYS/);
+  const badFood = structuredClone(base); badFood.food = null;
+  assert.throws(() => validateWorldSnapshot(badFood), /INVALID_WORLD_FOOD/);
+});
+

@@ -22,7 +22,7 @@ import {
 } from '../simulation/loop.js';
 import {
   createMatchLifecycleState, disconnectMatchPlayer, reconnectMatchPlayer,
-  matchElapsedMs, serializeMatchLifecycle, restoreMatchLifecycle,
+  matchElapsedMs, matchInputAllowed, serializeMatchLifecycle, restoreMatchLifecycle,
 } from './lifecycle.js';
 import { createDuoWorld } from './duo-world.js';
 import { serializeWorldState, restoreWorldState } from '../storage/world-state.js';
@@ -64,7 +64,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
     },
     submitAction(playerId, command) {
       const owner = ownerFor(world, playerId);
-      if (lifecycle.status !== 'active' || !owner?.isPlayer || !['dash', 'split', 'eject'].includes(command?.action) ||
+      if (!matchInputAllowed(lifecycle, playerId) || !owner?.isPlayer || !['dash', 'split', 'eject'].includes(command?.action) ||
           !Number.isSafeInteger(command?.seq) || command.seq < 1) {
         return { ok: false, reason: 'invalid-action-command' };
       }
@@ -77,7 +77,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
     submitBoost(playerId, command) {
       if (mode !== 'duoback') return { ok: false, reason: 'mode-does-not-support-boosts' };
       const player = ownerFor(world, playerId);
-      if (!player || !Number.isSafeInteger(command?.seq) || command.seq < 1 ||
+      if (!matchInputAllowed(lifecycle, playerId) || !player || !Number.isSafeInteger(command?.seq) || command.seq < 1 ||
           typeof command.id !== 'string' || !/^[a-z0-9_]{1,32}$/.test(command.id)) {
         return { ok: false, reason: 'invalid-boost-command' };
       }

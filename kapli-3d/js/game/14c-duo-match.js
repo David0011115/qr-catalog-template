@@ -465,7 +465,10 @@
     function linkState() { stallView(); if (on && !botMate && Duo.state !== 'ready') endMatch('Связь со вторым телефоном потеряна', false, false); }
     // the match cannot stop: the pause button opens the menu while the round goes on; «Завершить» leaves the match for both
     function menu() { renderPauseInfo(); showCard('pauseCard'); $('overlay').hidden = false; setGameUi(false); $('resumeBtn').focus(); }
-    $('quitBtn').addEventListener('click', () => { if (on) { Duo.send({ t: 'end' }); cleanup(); } }, true);
+    $('quitBtn').addEventListener('click', () => {
+      if (serverMode) { window.KapliOnlineServer?.finishMatch(); return; }
+      if (on) { Duo.send({ t: 'end' }); cleanup(); }
+    }, true);
     window.duoStartMatch = startAsHost; window.duoPractice = practice;
 
     return { get on() { return on; }, get server() { return serverMode; }, get serverRole() { return role; }, serverBegin, serverIndex, serverApply: applyServer, serverBonusIndex: type => BONUS_IDS.indexOf(type), serverTick, serverEnd, serverAbort, get serverInput() { return localDir(); }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,

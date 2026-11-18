@@ -87,3 +87,27 @@ export function getBearerToken(header) {
   const match = /^Bearer\s+([^\s]+)$/i.exec(header.trim());
   return match ? match[1] : null;
 }
+
+
+export const SOCKET_MESSAGE_LIMIT_PER_SECOND = 80;
+export const SOCKET_INPUT_LIMIT_PER_SECOND = 35;
+
+export function consumeSocketMessageBudget(windows, userId, now, type = 'other') {
+  if (!(windows instanceof Map) || typeof userId !== 'string' || !userId || !Number.isFinite(now)) {
+    throw new TypeError('socket rate window, user ID and timestamp are required');
+  }
+  let window = windows.get(userId);
+  if (!window || now < window.startedAt || now - window.startedAt >= 1000) {
+    window = { startedAt: now, messages: 0, inputs: 0 };
+  }
+  window.messages++;
+  if (type === 'input') window.inputs++;
+  windows.set(userId, window);
+  if (window.messages > SOCKET_MESSAGE_LIMIT_PER_SECOND) {
+    return { ok: false, reason: 'message-rate-limit', messages: window.messages, inputs: window.inputs };
+  }
+  if (window.inputs > SOCKET_INPUT_LIMIT_PER_SECOND) {
+    return { ok: false, reason: 'input-rate-limit', messages: window.messages, inputs: window.inputs };
+  }
+  return { ok: true, messages: window.messages, inputs: window.inputs };
+}

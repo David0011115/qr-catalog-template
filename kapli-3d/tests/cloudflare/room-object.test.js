@@ -431,7 +431,7 @@ test('Durable Object countdown starts a match, publishes its world and processes
   assert.equal(init.cells.filter(cell => playerIds.has(cell.ownerId)).length, 2);
 
   roomObject.messageRates = new Map();
-  const host = roomObject.runtime.world.owners.find(owner => owner.playerId === 'host-user');
+  const host = roomObject.runtime.world.owners.find(owner => owner.id === 'host-user');
   const beforeX = host.cells[0].x;
   const socketMessages = [];
   const socket = {

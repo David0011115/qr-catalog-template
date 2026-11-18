@@ -85,6 +85,7 @@ export class GameRoom {
     this.loopTimer = null;
     this.nextTickAt = 0;
     this.lastPersistAt = 0;
+    this.messageRates = new Map();
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS room_state (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -427,6 +428,13 @@ export class GameRoom {
       return;
     }
     const parsed = parseClientMessage(typeof raw === 'string' ? raw : '');
+    const budget = consumeSocketMessageBudget(
+      this.messageRates, userId, Date.now(), parsed.ok ? parsed.command.type : 'invalid',
+    );
+    if (!budget.ok) {
+      try { socket.close(1008, budget.reason); } catch {}
+      return;
+    }
     if (!parsed.ok) {
       this.send(socket, { type: 'command-rejected', reason: parsed.reason });
       return;
@@ -464,6 +472,7 @@ export class GameRoom {
     const stillConnected = this.ctx.getWebSockets().some(other =>
       other !== socket && other.readyState === 1 && other.deserializeAttachment()?.userId === userId);
     if (stillConnected) return;
+    this.messageRates?.delete(userId);
     await this.onDisconnect(userId);
   }
 

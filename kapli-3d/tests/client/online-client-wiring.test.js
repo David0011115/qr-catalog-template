@@ -36,7 +36,7 @@ test('obsolete WebSocket callbacks cannot pause or overwrite the replacement con
   assert.match(online, /ws\.onopen = \(\) => \{\s*if \(socket !== ws\) return;/);
   assert.match(online, /ws\.onmessage = event => \{\s*if \(socket !== ws\) return;/);
   assert.match(online, /ws\.onerror = \(\) => \{ if \(socket === ws\) connected = false; \};/);
-  assert.match(online, /ws\.onclose = \(\) => \{\s*\/\/ The DO closes an older socket[\s\S]*?if \(socket !== ws\) return;\s*socket = null;/);
+  assert.match(online, /ws\.onclose = event => \{\s*\/\/ The DO closes an older socket[\s\S]*?if \(socket !== ws\) return;\s*socket = null;/);
 });
 
 test('fatal server simulation errors close the client socket and clear stale room recovery data', async () => {

@@ -114,6 +114,11 @@ export function serializeWorldState(world) {
     viruses: dataClone(world.viruses || []),
     ejects: dataClone(world.ejects || []),
     food: dataClone(world.food || []),
+    bonuses: dataClone(world.bonuses || []),
+    bonusTimer: Number.isFinite(world.bonusTimer) ? world.bonusTimer : 0,
+    nextEntitySequence: Number.isSafeInteger(world.nextEntitySequence) && world.nextEntitySequence > 0
+      ? world.nextEntitySequence : Math.max(1, (world.cells?.length || 0) + 1),
+    pendingFoodChanges: dataClone(world.pendingFoodChanges || []),
     respawnTimers: dataClone(world.respawnTimers || []),
     decoys,
     abilityState,
@@ -127,6 +132,28 @@ export function validateWorldSnapshot(snapshot) {
   if (!snapshot || snapshot.version !== WORLD_SNAPSHOT_VERSION) throw new Error('UNSUPPORTED_WORLD_SNAPSHOT_VERSION');
   if (!Array.isArray(snapshot.owners) || !Array.isArray(snapshot.cells) || !Array.isArray(snapshot.ownerTargets)) {
     throw new Error('INVALID_WORLD_SNAPSHOT');
+  }
+  if (snapshot.bonuses !== undefined) {
+    if (!Array.isArray(snapshot.bonuses)) throw new Error('INVALID_WORLD_BONUSES');
+    const bonusIds = new Set();
+    for (const bonus of snapshot.bonuses) {
+      if (!bonus?.id || bonusIds.has(bonus.id) ||
+          !['speed', 'shield', 'double', 'magnet', 'fountain'].includes(bonus.type) ||
+          !Number.isFinite(bonus.x) || !Number.isFinite(bonus.z)) throw new Error('INVALID_WORLD_BONUS');
+      bonusIds.add(bonus.id);
+    }
+  }
+  if (snapshot.bonusTimer !== undefined && (!Number.isFinite(snapshot.bonusTimer) || snapshot.bonusTimer < 0)) {
+    throw new Error('INVALID_WORLD_BONUS_TIMER');
+  }
+  if (snapshot.nextEntitySequence !== undefined &&
+      (!Number.isSafeInteger(snapshot.nextEntitySequence) || snapshot.nextEntitySequence < 1)) {
+    throw new Error('INVALID_WORLD_ENTITY_SEQUENCE');
+  }
+  if (snapshot.pendingFoodChanges !== undefined &&
+      (!Array.isArray(snapshot.pendingFoodChanges) || snapshot.pendingFoodChanges.some(item =>
+        !item?.id || !Number.isFinite(item.x) || !Number.isFinite(item.z)))) {
+    throw new Error('INVALID_WORLD_FOOD_CHANGES');
   }
   const owners = new Set(), cells = new Set();
   for (const owner of snapshot.owners) {
@@ -190,6 +217,11 @@ export function restoreWorldState(snapshot) {
     viruses: dataClone(snapshot.viruses || []),
     ejects: dataClone(snapshot.ejects || []),
     food: dataClone(snapshot.food || []),
+    bonuses: dataClone(snapshot.bonuses || []),
+    bonusTimer: Number.isFinite(snapshot.bonusTimer) ? snapshot.bonusTimer : 0,
+    nextEntitySequence: Number.isSafeInteger(snapshot.nextEntitySequence) && snapshot.nextEntitySequence > 0
+      ? snapshot.nextEntitySequence : Math.max(1, (snapshot.cells?.length || 0) + 1),
+    pendingFoodChanges: dataClone(snapshot.pendingFoodChanges || []),
     respawnTimers: dataClone(snapshot.respawnTimers || []),
     abilityState: snapshot.abilityState ? { ...dataClone(snapshot.abilityState), decoys } : { decoys },
     modeState: dataClone(snapshot.modeState),

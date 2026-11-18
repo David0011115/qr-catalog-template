@@ -25,7 +25,7 @@ export function replayMatchEvents(runtime, events, snapshotAt, now = Date.now(),
   }
   const initialTick = runtime.simulation.tick;
   const targetTickAt = timestamp => initialTick +
-    Math.max(0, Math.floor((Math.max(snapshotAt, timestamp) - snapshotAt) * tickRate / 1000));
+    Math.max(0, Math.floor((Math.min(now, Math.max(snapshotAt, timestamp)) - snapshotAt) * tickRate / 1000));
   let replayedTicks = 0, replayedCommands = 0;
   const advanceTo = target => {
     while (runtime.simulation.tick < target && runtime.lifecycle.status === 'active') {
@@ -179,7 +179,7 @@ export class GameRoom {
       }
     }
     if (payload) this.restorePayload(payload);
-    if (this.runtime && latest) {
+    if (this.runtime && payload) {
       const events = this.sql(
         'SELECT sequence, type, payload, created_at FROM event_log WHERE sequence > ? ORDER BY sequence ASC',
         sequence,

@@ -260,6 +260,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
             }
             result = stepDuobackRuntime(currentWorld.modeState, currentWorld, dt, {
               resolvePlayers,
+              matchTime: currentWorld.clock || 0,
               random: () => rng.next(),
               spawnVirus: (event, targetWorld) => spawnBossVirus(targetWorld, event),
               burstFood: (targetWorld, x, z, radius, count) =>

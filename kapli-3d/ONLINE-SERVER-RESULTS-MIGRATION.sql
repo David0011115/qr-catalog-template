@@ -58,6 +58,19 @@ begin
     else 'draw'
   end;
 
+  -- Return idempotently before the per-player rate limit, so a retry after a
+  -- successful commit is acknowledged immediately instead of appearing pending.
+  if exists (select 1 from public.kapli_duo_server_matches where match_id = p_match_id) then
+    if exists (
+      select 1 from public.kapli_duo_server_matches
+      where match_id = p_match_id and mode = 'territory'
+        and host_user_id = p_host_user_id and guest_user_id = p_guest_user_id
+    ) then
+      return jsonb_build_object('ok', true, 'alreadyRecorded', true);
+    end if;
+    return jsonb_build_object('ok', false, 'reason', 'match-id-collision');
+  end if;
+
   if exists (
     select 1 from public.kapli_duo_territory
     where user_id in (p_host_user_id, p_guest_user_id)
@@ -142,14 +155,27 @@ begin
   end if;
   if p_match_id is null or p_host_user_id is null or p_guest_user_id is null
      or p_host_user_id = p_guest_user_id
-     or p_diff not between 0 and 2
-     or p_waves not between 0 and 500
-     or p_time not between 1 and 36000
+     or p_diff is null or p_diff not between 0 and 2
+     or p_waves is null or p_waves not between 0 and 500
+     or p_time is null or p_time not between 1 and 36000
+     or p_bosses is null or p_bots is null or p_respawns is null
      or p_waves * 12 > p_time
-     or coalesce(p_bosses, 0) not between 0 and p_waves * 5 + 5
-     or coalesce(p_bots, 0) not between 0 and p_time * 3
-     or coalesce(p_respawns, 0) not between 0 and p_time / 4 + 1 then
+     or p_bosses not between 0 and p_waves * 5 + 5
+     or p_bots not between 0 and p_time * 3
+     or p_respawns not between 0 and p_time / 4 + 1 then
     return jsonb_build_object('ok', false, 'reason', 'invalid-match-result');
+  end if;
+
+  -- A duplicate match ID is an acknowledged retry only for the same mode and pair.
+  if exists (select 1 from public.kapli_duo_server_matches where match_id = p_match_id) then
+    if exists (
+      select 1 from public.kapli_duo_server_matches
+      where match_id = p_match_id and mode = 'duoback'
+        and host_user_id = p_host_user_id and guest_user_id = p_guest_user_id
+    ) then
+      return jsonb_build_object('ok', true, 'alreadyRecorded', true);
+    end if;
+    return jsonb_build_object('ok', false, 'reason', 'match-id-collision');
   end if;
 
   select max(created_at) into v_prev

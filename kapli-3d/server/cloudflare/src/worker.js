@@ -64,6 +64,19 @@ async function authenticate(request, env) {
 async function loadPlayerGameData(user, env) {
   const base = String(env.SUPABASE_URL).replace(/\/$/, '');
   const headers = { apikey: env.SUPABASE_ANON_KEY, authorization: `Bearer ${user.accessToken}` };
+  try {
+    const consentResponse = await fetch(`${base}/rest/v1/rpc/kapli_has_privacy_consent`, {
+      method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: '{}',
+    });
+    if (!consentResponse.ok) {
+      console.error(JSON.stringify({ event: 'privacy-consent-check-failed', status: consentResponse.status }));
+      return null;
+    }
+    if (await consentResponse.json() !== true) return { consentRequired: true };
+  } catch (error) {
+    console.error(JSON.stringify({ event: 'privacy-consent-check-error', message: String(error?.message || error) }));
+    return null;
+  }
   const query = new URLSearchParams({ user_id: `eq.${user.id}` });
   const profileUrl = `${base}/rest/v1/player_profiles?${new URLSearchParams({ ...Object.fromEntries(query), select: 'nickname' })}`;
   const saveUrl = `${base}/rest/v1/player_saves?${new URLSearchParams({ ...Object.fromEntries(query), select: 'save_data' })}`;
@@ -166,6 +179,7 @@ export async function handleWorkerRequest(request, env) {
       return withCors(json({ error: 'invalid-room-options' }, 400), request, env);
     }
     const player = await loadPlayerGameData(user, env);
+    if (player?.consentRequired) return withCors(json({ error: 'privacy-consent-required' }, 403), request, env);
     if (!player) return withCors(json({ error: 'account-data-unavailable' }, 503), request, env);
     const roomUser = { ...user, nickname: player.nickname };
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -197,6 +211,7 @@ export async function handleWorkerRequest(request, env) {
     response = await callRoom(env, code, '/internal/state', 'GET', user);
   } else if (action === 'join' && request.method === 'POST') {
     const player = await loadPlayerGameData(user, env);
+    if (player?.consentRequired) return withCors(json({ error: 'privacy-consent-required' }, 403), request, env);
     if (!player) return withCors(json({ error: 'account-data-unavailable' }, 503), request, env);
     const roomUser = { ...user, nickname: player.nickname };
     const rateCheck = await callUserRate(env, user.id, 'check');

@@ -114,6 +114,7 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
     mode, arenaScale: scale, arenaRadius,
     owners: [host, guest], cells: [...host.cells, ...guest.cells],
     food: [], viruses: [], ejects: [], bonuses: [],
+    bonusTimer: 0, pendingFoodChanges: [],
     modeState, time: 0, tick: 0, nextEntitySequence: 1,
     build: [...fallbackBuild], randomState: rng.snapshot(),
   };

@@ -5,6 +5,7 @@ import { castServerAbility } from '../core/ability-effects.js';
 import { castBotUtilityAbility, castUtilityAbility } from '../core/utility-abilities.js';
 import { DeterministicRandom } from '../core/random.js';
 import { burstFoodInWorld, spawnBossVirus } from './effects.js';
+import { respawnDuoPlayerOwner } from './spawn.js';
 import { tickBotOwner } from '../modes/bots.js';
 import { territorySideAt, restoreTerritoryState, serializeTerritoryState } from '../modes/territory.js';
 import { chooseDuobackBoost, restoreDuobackState, serializeDuobackState } from '../modes/duoback.js';
@@ -223,6 +224,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
                 resolvePlayer: (targetWorld, role) => targetWorld.owners.find(owner => owner.role === role && owner.isPlayer),
                 onResult: options.onResult,
                 onOvertime: options.onOvertime,
+                spawnPlayer: (player, targetWorld) => respawnDuoPlayerOwner(player, targetWorld),
               },
             );
             if (result.result) finishMatch(lifecycle, result.result, Date.now());
@@ -241,6 +243,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
               burstFood: (targetWorld, x, z, radius, count) =>
                 burstFoodInWorld(targetWorld, rng, x, z, radius, count),
               isShielded: player => (player.eff?.shield || 0) > 0 || (player.abT?.shield || 0) > 0,
+              spawnPlayer: (player, targetWorld) => respawnDuoPlayerOwner(player, targetWorld),
               onSpecialBossResult: options.onSpecialBossResult,
               onMeteorHit: options.onMeteorHit,
               onRegularBossExpired: options.onRegularBossExpired,

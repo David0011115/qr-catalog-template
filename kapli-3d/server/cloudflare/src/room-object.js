@@ -1,6 +1,6 @@
 import {
   createRoomState, joinRoom, setPlayerReady, tickRoom, leaveRoom,
-  recordInvalidRoomCode, roomSummary, restoreRoomState, reconnectRoomPlayer,
+  recordInvalidRoomCode, roomSummary, restoreRoomState, reconnectRoomPlayer, ROOM_RULES,
 } from '../../room/lifecycle.js';
 import {
   tickMatchLifecycle,
@@ -234,7 +234,7 @@ export class GameRoom {
 
     if (url.pathname === '/internal/invalid-attempt' && request.method === 'POST') {
       if (!userId) return json({ error: 'unauthorized' }, 401);
-      if (body.action === 'check') return json(this.checkInvalidAttempt(userId));
+      if (body.action === 'check') { const result = this.checkInvalidAttempt(userId); return json(result, result.blocked ? 429 : 200); }
       if (body.action === 'record') {
         const result = await this.recordInvalidAttempt(userId);
         return json(result, result.blocked ? 429 : 200);

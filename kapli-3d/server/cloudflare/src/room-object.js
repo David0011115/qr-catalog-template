@@ -15,6 +15,10 @@ import { territoryLeftShare } from '../../modes/territory.js';
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 const SNAPSHOT_RATE = 15;
+// Movement is simulated at 30 Hz, but the recovery log only needs a recent
+// direction sample every 100 ms (10 Hz) per player. Gameplay still receives
+// every input; this only bounds SQLite event-log writes during normal play.
+const INPUT_EVENT_MIN_INTERVAL_MS = 100;
 const PERSIST_INTERVAL_MS = 5000;
 const RESULT_RETRY_MS = 60000;
 
@@ -121,6 +125,7 @@ export class GameRoom {
     this.nextTickAt = 0;
     this.lastPersistAt = 0;
     this.messageRates = new Map();
+    this.lastInputEventAt = new Map();
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS room_state (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -536,15 +541,26 @@ export class GameRoom {
       this.send(socket, { type: 'command-rejected', reason: result.reason, seq: parsed.command.seq });
       return;
     }
-    await this.appendEvent(
-      parsed.command.type === 'input' ? 'input-command' : parsed.command.type === 'ability' ? 'ability-command' : parsed.command.type === 'action' ? 'action-command' : 'boost-command',
-      { playerId: userId, command: parsed.command },
-      false,
-    );
-    this.send(socket, {
-      type: parsed.command.type === 'input' ? 'input-queued' : parsed.command.type === 'ability' ? 'ability-queued' : parsed.command.type === 'action' ? 'action-queued' : 'boost-queued',
-      seq: parsed.command.seq,
-    });
+    const isInput = parsed.command.type === 'input';
+    const now = Date.now();
+    const lastInputEventAt = this.lastInputEventAt.get(userId);
+    // Keep a bounded recovery trail for continuous movement without writing
+    // every 30 Hz joystick sample to SQLite. Abilities/actions remain lossless.
+    if (!isInput || lastInputEventAt === undefined || now - lastInputEventAt >= INPUT_EVENT_MIN_INTERVAL_MS) {
+      if (isInput) this.lastInputEventAt.set(userId, now);
+      const eventType = isInput ? 'input-command'
+        : parsed.command.type === 'ability' ? 'ability-command'
+          : parsed.command.type === 'action' ? 'action-command' : 'boost-command';
+      await this.appendEvent(eventType, { playerId: userId, command: parsed.command }, false);
+    }
+    // Input is already acknowledged by authoritative snapshots; avoid an
+    // extra WebSocket response for every movement sample.
+    if (!isInput) {
+      this.send(socket, {
+        type: parsed.command.type === 'ability' ? 'ability-queued' : parsed.command.type === 'action' ? 'action-queued' : 'boost-queued',
+        seq: parsed.command.seq,
+      });
+    }
   }
 
   async webSocketClose(socket) {
@@ -555,6 +571,7 @@ export class GameRoom {
       other !== socket && other.readyState === 1 && other.deserializeAttachment()?.userId === userId);
     if (stillConnected) return;
     this.messageRates?.delete(userId);
+    this.lastInputEventAt?.delete(userId);
     await this.onDisconnect(userId);
   }
 

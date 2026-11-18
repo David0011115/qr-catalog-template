@@ -10,7 +10,7 @@
   let activeMode = null, room = null, role = '', userId = '', socket = null;
   let paused = false, matchStarted = false, leaving = false, connected = false;
   let inputSeq = 0, abilitySeq = 0, boostSeq = 0, actionSeq = 0, reconnectDelay = 1000, reconnectTimer = null;
-  let lastModeState = null, lastClock = 0, lastMatchId = null;
+  let lastModeState = null, lastClock = 0, lastMatchId = null, lastProcessedSeqs = null;
 
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -312,6 +312,7 @@
         peerName: peer?.name || 'Напарник', peerSkin: peer?.skin || null,
       });
     }
+    lastProcessedSeqs = payload.processedSeqs || null;
     inputSeq = payload.inputSeqs?.[userId] || 0;
     abilitySeq = payload.abilitySeqs?.[userId] || 0;
     boostSeq = payload.boostSeqs?.[userId] || 0;
@@ -349,6 +350,7 @@
     else if (message.type === 'match-started') { lastMatchId = message.matchId; matchStarted = true; }
     else if (message.type === 'world-init') startClientMatch(message);
     else if (message.type === 'snapshot') {
+      lastProcessedSeqs = message.processedSeqs || lastProcessedSeqs;
       lastModeState = message.modeState || lastModeState;
       lastClock = message.clock || lastClock;
       applySnapshot(message, false);
@@ -438,6 +440,7 @@
     get paused() { return paused || !!room && room.status === 'paused'; },
     get active() { return !!activeMode; },
     get room() { return room; },
+    get processedSeqs() { return lastProcessedSeqs; },
     get apiBase() { return apiBase; },
   };
 })();

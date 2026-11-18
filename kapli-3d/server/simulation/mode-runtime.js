@@ -168,6 +168,7 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
     if (!boss.cells?.length) {
       const defeated = duobackRegularBossDefeated(state, boss);
       if (defeated) {
+        removeDuobackBossEntity(world, boss);
         events.push({ type: 'regular-boss-defeated', bossId: boss.id, ...defeated });
         options.onRegularBossDefeated?.(boss, defeated, world);
       }

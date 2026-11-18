@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "cf dev",
     "build": "cf build",
-    "deploy": "cf deploy",
+    "deploy": "cf deploy --force",
     "test": "node --test ../../tests/cloudflare/*.test.js"
   },
   "devDependencies": {

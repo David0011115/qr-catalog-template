@@ -126,7 +126,7 @@ test('queued DuoBack boost picks survive match snapshot recovery', () => {
   assert.equal(restored.lastBoostSeq['user-host'], 4);
   assert.equal(restored.modeCommands.length, 1);
   restored.step();
-  assert.equal(restored.world.modeState.picked.host, 'shield');
+  assert.equal(restored.world.modeState.picked.host, 'sh_shield');
   assert.equal(restored.modeCommands.length, 0);
 });
 

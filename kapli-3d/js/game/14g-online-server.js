@@ -212,12 +212,17 @@
       handleMessage(message);
     };
     ws.onerror = () => { if (socket === ws) connected = false; };
-    ws.onclose = () => {
+    ws.onclose = event => {
       // The DO closes an older socket after accepting its replacement. Events
       // from that obsolete socket must not pause the new live connection.
       if (socket !== ws) return;
       socket = null;
       connected = false;
+      if (event?.code === 4001) {
+        if (matchStarted && room) { paused = true; room.status = 'paused'; showLobbyCard(); }
+        toast('Подключение открыто в другом окне');
+        return;
+      }
       if (leaving || !room || room.status === 'closed') return;
       if (matchStarted) { paused = true; if (room) room.status = 'paused'; showLobbyCard(); }
       scheduleReconnect();

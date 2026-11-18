@@ -75,3 +75,29 @@ test('core-action protocol accepts only split, dash and eject with monotonic pos
   assert.equal(parseClientMessage(JSON.stringify({ type: 'action', seq: 0, action: 'split' })).reason, 'invalid-action');
   assert.equal(parseClientMessage(JSON.stringify({ type: 'action', seq: 3, action: 'teleport' })).reason, 'invalid-action');
 });
+
+
+test('WebSocket command budget allows normal 20 Hz input and rejects message floods', async () => {
+  const { consumeSocketMessageBudget, SOCKET_INPUT_LIMIT_PER_SECOND, SOCKET_MESSAGE_LIMIT_PER_SECOND } =
+    await import('../../server/cloudflare/protocol.js');
+  const windows = new Map();
+  for (let i = 0; i < 20; i++) {
+    assert.equal(consumeSocketMessageBudget(windows, 'player', 1000 + i * 40, 'input').ok, true);
+  }
+  const inputWindows = new Map();
+  let result;
+  for (let i = 0; i < SOCKET_INPUT_LIMIT_PER_SECOND + 1; i++) {
+    result = consumeSocketMessageBudget(inputWindows, 'player', 2000, 'input');
+  }
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'input-rate-limit');
+  const messageWindows = new Map();
+  for (let i = 0; i < SOCKET_MESSAGE_LIMIT_PER_SECOND; i++) {
+    result = consumeSocketMessageBudget(messageWindows, 'player', 3000, 'ability');
+  }
+  assert.equal(result.ok, true);
+  result = consumeSocketMessageBudget(messageWindows, 'player', 3000, 'ability');
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'message-rate-limit');
+  assert.equal(consumeSocketMessageBudget(messageWindows, 'player', 4000, 'ping').ok, true);
+});

@@ -232,6 +232,16 @@ export class GameRoom {
     const body = request.method === 'GET' ? {} : await this.readJson(request);
     if (request.method !== 'GET' && !body) return json({ error: 'invalid-json' }, 400);
 
+    if (url.pathname === '/internal/invalid-attempt' && request.method === 'POST') {
+      if (!userId) return json({ error: 'unauthorized' }, 401);
+      if (body.action === 'check') return json(this.checkInvalidAttempt(userId));
+      if (body.action === 'record') {
+        const result = await this.recordInvalidAttempt(userId);
+        return json(result, result.blocked ? 429 : 200);
+      }
+      if (body.action === 'reset') return json(this.resetInvalidAttempt(userId));
+      return json({ error: 'invalid-attempt-action' }, 400);
+    }
     if (url.pathname === '/internal/create' && request.method === 'POST') return this.createRoom(userId, nickname, body);
     if (url.pathname === '/internal/join' && request.method === 'POST') return this.join(userId, nickname, body.player);
     if (url.pathname === '/internal/state' && request.method === 'GET') {
@@ -274,9 +284,24 @@ export class GameRoom {
     return json({ room: this.roomView() }, 201);
   }
 
-  async recordInvalidAttempt(userId) {
+  invalidAttemptState(userId) {
     const row = this.sql('SELECT count, blocked_until FROM invalid_attempts WHERE user_id = ?', userId).toArray()[0];
-    const attempts = { [userId]: row ? { count: Number(row.count), blockedUntil: Number(row.blocked_until) } : { count: 0, blockedUntil: 0 } };
+    return row
+      ? { count: Number(row.count) || 0, blockedUntil: Number(row.blocked_until) || 0 }
+      : { count: 0, blockedUntil: 0 };
+  }
+
+  checkInvalidAttempt(userId) {
+    const current = this.invalidAttemptState(userId);
+    const now = Date.now();
+    if (now < current.blockedUntil) {
+      return { blocked: true, blockedUntil: current.blockedUntil, remainingMs: current.blockedUntil - now };
+    }
+    return { blocked: false, attempts: current.count, remaining: Math.max(0, ROOM_RULES.invalidCodeLimit - current.count) };
+  }
+
+  async recordInvalidAttempt(userId) {
+    const attempts = { [userId]: this.invalidAttemptState(userId) };
     const result = recordInvalidRoomCode(attempts, userId, Date.now());
     const next = attempts[userId];
     this.sql(
@@ -286,17 +311,18 @@ export class GameRoom {
     return result;
   }
 
+  resetInvalidAttempt(userId) {
+    this.sql('DELETE FROM invalid_attempts WHERE user_id = ?', userId);
+    return { ok: true };
+  }
+
   async join(userId, nickname, profile) {
     if (!userId) return json({ error: 'unauthorized' }, 401);
-    if (!this.room) {
-      const attempt = await this.recordInvalidAttempt(userId);
-      return json({ error: attempt.blocked ? 'room-code-blocked' : 'room-not-found', ...attempt }, attempt.blocked ? 429 : 404);
-    }
+    if (!this.room) return json({ error: 'room-not-found' }, 404);
     const result = joinRoom(this.room, userId, Date.now());
     if (!result.ok) return json({ error: result.reason }, 409);
     const player = playerFor(this.room, userId);
     this.applyPlayerProfile(player, nickname, profile);
-    this.sql('DELETE FROM invalid_attempts WHERE user_id = ?', userId);
     await this.ctx.storage.deleteAlarm();
     await this.appendEvent('player-joined', { playerId: userId, role: 'guest' }, true);
     this.broadcast({ type: 'room-state', room: this.roomView() });

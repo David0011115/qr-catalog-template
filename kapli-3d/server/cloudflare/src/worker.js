@@ -122,7 +122,7 @@ function getUserRateStub(env, userId) {
 }
 
 async function callUserRate(env, userId, action) {
-  const request = new Request('https://rate.internal/invalid-attempt', {
+  const request = new Request('https://rate.internal/internal/invalid-attempt', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-kapli-user-id': userId },
     body: JSON.stringify({ action }),

@@ -4,8 +4,12 @@ export const MATCH_LIFECYCLE_RULES = Object.freeze({ reconnectWindowMs: 30 * 100
 const findPlayer = (state, id) => state.players.find(p => p.id === id);
 
 export function createMatchLifecycleState({ matchId, roomId, players, startedAt }) {
-  if (!matchId || !roomId || !Array.isArray(players) || players.length !== 2 || !Number.isFinite(startedAt)) {
-    throw new TypeError('matchId, roomId, two players and startedAt are required');
+  if (typeof matchId !== 'string' || !matchId || typeof roomId !== 'string' || !roomId ||
+      !Array.isArray(players) || players.length !== 2 || !Number.isFinite(startedAt) ||
+      players.some(player => !player || typeof player.id !== 'string' || !player.id || !['host', 'guest'].includes(player.role)) ||
+      new Set(players.map(player => player.id)).size !== 2 ||
+      new Set(players.map(player => player.role)).size !== 2) {
+    throw new TypeError('matchId, roomId, two unique host/guest players and startedAt are required');
   }
   return {
     matchId, roomId, status: 'active', startedAt, pausedAt: null, pausedMs: 0,
@@ -70,8 +74,35 @@ export function matchElapsedMs(state, now) {
 export function serializeMatchLifecycle(state) { return structuredClone(state); }
 
 export function restoreMatchLifecycle(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    throw new TypeError('invalid match lifecycle snapshot');
+  }
   const state = structuredClone(snapshot);
-  if (!['active', 'paused', 'finished', 'ended'].includes(state.status)) throw new TypeError('invalid match lifecycle status');
-  if (!Array.isArray(state.players) || state.players.length !== 2) throw new TypeError('invalid match players');
+  if (typeof state.matchId !== 'string' || !state.matchId || typeof state.roomId !== 'string' || !state.roomId ||
+      !['active', 'paused', 'finished', 'ended'].includes(state.status) ||
+      !Number.isFinite(state.startedAt) || !Number.isFinite(state.pausedMs) || state.pausedMs < 0 ||
+      !(state.pausedAt === null || Number.isFinite(state.pausedAt)) ||
+      !(state.endedAt === null || Number.isFinite(state.endedAt)) ||
+      !(state.endReason === null || typeof state.endReason === 'string')) {
+    throw new TypeError('invalid match lifecycle metadata');
+  }
+  if (!Array.isArray(state.players) || state.players.length !== 2 ||
+      state.players.some(player => !player || typeof player.id !== 'string' || !player.id ||
+        !['host', 'guest'].includes(player.role) || typeof player.connected !== 'boolean' ||
+        !(player.disconnectedAt === null || Number.isFinite(player.disconnectedAt)) ||
+        !(player.reconnectUntil === null || Number.isFinite(player.reconnectUntil)) ||
+        (player.connected && (player.disconnectedAt !== null || player.reconnectUntil !== null)) ||
+        (!player.connected && (!Number.isFinite(player.disconnectedAt) ||
+          !Number.isFinite(player.reconnectUntil) || player.reconnectUntil < player.disconnectedAt))) ||
+      new Set(state.players.map(player => player.id)).size !== 2 ||
+      new Set(state.players.map(player => player.role)).size !== 2) {
+    throw new TypeError('invalid match players');
+  }
+  const disconnected = state.players.some(player => !player.connected);
+  if ((state.status === 'active' && (disconnected || state.pausedAt !== null || state.endedAt !== null)) ||
+      (state.status === 'paused' && (!disconnected || !Number.isFinite(state.pausedAt) || state.endedAt !== null)) ||
+      (['finished', 'ended'].includes(state.status) && (!Number.isFinite(state.endedAt) || state.pausedAt !== null))) {
+    throw new TypeError('inconsistent match lifecycle state');
+  }
   return state;
 }

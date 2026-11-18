@@ -190,7 +190,14 @@ export class GameRoom {
           this.room.status = 'closed';
           this.room.closedAt = this.runtime.lifecycle.endedAt || Date.now();
           this.room.closeReason = this.runtime.lifecycle.endReason || 'recovered-match-finished';
-          await this.finishMatch();
+          this.room.resultPersistence = { status: 'pending', reason: 'recovery-replay-finished' };
+          await this.appendEvent('match-finished', {
+            matchId: this.runtime.lifecycle.matchId,
+            result: this.runtime.lifecycle.result,
+            recovered: true,
+          }, true);
+          await this.ctx.storage.setAlarm(Date.now() + 1);
+          this.broadcast({ type: 'match-ended', matchId: this.runtime.lifecycle.matchId, result: this.runtime.lifecycle.result });
           return;
         }
         // Fold replay into a new checkpoint so the same command log is not applied twice.

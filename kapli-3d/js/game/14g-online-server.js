@@ -49,6 +49,7 @@
         'room-not-found': 'Комната не найдена. Проверь код.',
         'room-code-blocked': 'Слишком много неверных кодов. Попробуй через минуту.',
         'room-code-allocation-failed': 'Не удалось создать комнату. Попробуй ещё раз.',
+        'privacy-consent-required': 'Для сетевой игры сначала прими Политику конфиденциальности в окне аккаунта.',
       };
       throw new Error(messages[data.error] || data.error || ('Ошибка сервера: ' + response.status));
     }

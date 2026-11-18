@@ -21,6 +21,9 @@ function makeWorld() {
     viruses: [{ x: 0, z: 0, mass: 100, trap: { ownerId: 'host', ttl: 3 } }],
     ejects: [{ id: 'e1', x: 2, z: 2, vx: 4, vz: 0, mass: 8 }],
     food: [{ id: 'f1', x: 7, z: 8, mass: 1 }],
+    bonuses: [{ id: 'bonus:41', type: 'shield', x: 9, z: 10 }],
+    bonusTimer: 4.25, nextEntitySequence: 42,
+    pendingFoodChanges: [{ id: 'f1', x: 11, z: 12 }],
     respawnTimers: [4.5],
     abilityState: { decoys: [decoy], effects: [{ id: 'x_hole', t: 2, ownerId: 'host' }], history: [{ t: 1, x: 2, z: 3, mass: 50 }] },
     modeState: { mode: 'duoback', wave: 5 }, randomState: { seed: 123, counter: 7 }, clock: 10,
@@ -47,6 +50,9 @@ test('restoration rebuilds circular object links and Sets without duplicating en
   assert.equal(host.target, b); assert.equal(guest.target, restored.abilityState.decoys[0]);
   assert.equal([...host.shHit][0], guest); assert.equal([...guest.spHit][0], host);
   assert.equal(restored.modeState.wave, 5); assert.deepEqual(restored.randomState, { seed: 123, counter: 7 });
+  assert.deepEqual(restored.bonuses, [{ id: 'bonus:41', type: 'shield', x: 9, z: 10 }]);
+  assert.equal(restored.bonusTimer, 4.25); assert.equal(restored.nextEntitySequence, 42);
+  assert.deepEqual(restored.pendingFoodChanges, [{ id: 'f1', x: 11, z: 12 }]);
   assert.equal(restored.abilityState.effects[0].ownerId, 'host');
 });
 
@@ -57,6 +63,10 @@ test('snapshot validation rejects unsupported versions, duplicate ids and dangli
   assert.throws(() => validateWorldSnapshot(duplicate), /INVALID_WORLD_CELL/);
   const dangling = structuredClone(snapshot); dangling.ownerTargets[0].target.id = 'missing';
   assert.throws(() => validateWorldSnapshot(dangling), /DANGLING_WORLD_TARGET/);
+  const duplicateBonus = structuredClone(snapshot); duplicateBonus.bonuses.push({ ...duplicateBonus.bonuses[0] });
+  assert.throws(() => validateWorldSnapshot(duplicateBonus), /INVALID_WORLD_BONUS/);
+  const invalidTimer = structuredClone(snapshot); invalidTimer.bonusTimer = -1;
+  assert.throws(() => validateWorldSnapshot(invalidTimer), /INVALID_WORLD_BONUS_TIMER/);
 });
 
 test('serialization rejects unstable entity ids, missing owners and non-JSON values', () => {

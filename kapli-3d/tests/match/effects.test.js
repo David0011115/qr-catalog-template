@@ -36,7 +36,7 @@ test('burstFood relocates existing stable food slots deterministically and publi
     assert.ok(distance >= 10 && distance <= 30);
     assert.ok(distance <= 98.5);
   }
-  assert.ok(first.pendingFoodChanges.every(change => /^food:\\d+$/.test(change.id)));
+  assert.ok(first.pendingFoodChanges.every(change => /^food:\d+$/.test(change.id)));
 });
 
 test('burstFood rejects invalid geometry instead of creating non-finite food coordinates', () => {

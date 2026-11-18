@@ -264,9 +264,17 @@
     // Refreshing them at 10 Hz removes repeated canEat() scans when players split.
     const relationRefresh = now - (draw.relationAt || 0) >= 100;
     if (relationRefresh) draw.relationAt = now;
-    decorateHoliday();
+    // Cosmetics and ambient particles do not need 60 Hz updates. Keeping
+    // transforms/camera at display rate while animating detail at 30 Hz
+    // avoids bursts of material writes when many cells move together.
+    const cosmeticRefresh = now - (draw.cosmeticAt || 0) >= 33;
+    if (cosmeticRefresh) {
+      draw.cosmeticAt = now;
+      decorateHoliday();
+      animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000));
+      draw.lastP = now;
+    }
     shineT.value = now / 1000;
-    animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
     zoneLine.visible = zoneOut.visible = running && mode === 'royale';
     if (zoneLine.visible) { const Z = ModeX.zoneC; zoneLine.position.set(Z.x, .06, Z.z); zoneOut.position.set(Z.x, .06, Z.z); zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
@@ -278,10 +286,10 @@
         const crownMode = mode === 'crown' && running;
         v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
         if (!c.owner.isPlayer) { const show = QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show; if (v.shine) v.shine.visible = show && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
-        if (v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
-        if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
+        if (cosmeticRefresh && v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
+        if (cosmeticRefresh && v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
         if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');
-        if (animateVisible) {
+        if (animateVisible && cosmeticRefresh) {
           animateAura(v, now); animateHead(v, now);
           if (lk.pulse) { const k = .5 + .5 * Math.sin(now / 280); v.mesh.material.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }
           if (lk.holo) { const h = ((lk.holoBase ?? .5) + (lk.holoSpan ?? .17) * (1 + Math.sin(now / 900 + c.x * .05))) % 1; v.mesh.material.color.setHSL(h, 1, .62); v.mesh.material.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
@@ -309,7 +317,7 @@
           v.ring.material.color.set(mergeTone ? BONUS.shield.color : '#ffffff');
           v._mergeTone = mergeTone;
         }
-        v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
+        if (cosmeticRefresh) v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
       } else if (player.cells.length && (relationRefresh || v._ringTone === undefined)) {
         // Cache the expensive per-player canEat scans between render frames.
         let tone = 0; // neutral
@@ -331,7 +339,7 @@
     if (meteorRing.visible) { meteorRing.scale.setScalar(22 + Math.sin(now / 200) * .8); meteorRing.material.opacity = ev.active ? .9 : .4 + .4 * Math.abs(Math.sin(now / 150)); }
     if (hole.visible) { holeRing.rotation.z = now / 400; }
     for (const e of ejects) e.mesh.position.set(e.x, radius(EJECT_MASS) * 0.9, e.z);
-    for (const b of bonuses) {
+    if (cosmeticRefresh) for (const b of bonuses) {
       b.mesh.position.y = 1.2 + Math.sin(now / 300 + b.x) * 0.25;
       b.mesh.children[0].rotation.y = now / 500;
       b.mesh.children[1].rotation.x = now / 700; b.mesh.children[1].rotation.y = now / 900;
@@ -363,7 +371,10 @@
     scene.fog.far = camDist * 3.2 + 90;
     if (ev.active === 'eclipse') { scene.fog.near = camDist * 0.75; scene.fog.far = camDist * 1.45; }
     if (dailyIs('fog')) { scene.fog.near = camDist * 0.9; scene.fog.far = camDist * 1.7; }
-    { const fdt = Math.min(0.05, (now - (draw.last || now)) / 1000); updateParticles(fdt); updateFx(fdt); } draw.last = now;
+    if (cosmeticRefresh) {
+      const fdt = Math.min(0.05, (now - (draw.fxAt || now)) / 1000);
+      updateParticles(fdt); updateFx(fdt); draw.fxAt = now;
+    }
     pMat.size = 0.7 + camDist * 0.015;
     // the crown in «Захват короны» floats over the holder's biggest part
     crownMesh.visible = running && mode === 'crown' && (!!ModeX.crownGround || (!!crownHolder && crownHolder.cells.length > 0));

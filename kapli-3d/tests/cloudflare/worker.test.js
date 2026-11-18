@@ -13,6 +13,11 @@ function authFetch(userId = '11111111-1111-4111-8111-111111111111') {
         user_metadata: { nickname: 'Player One' },
       }), { status: 200 });
     }
+    if (target.endsWith('/rest/v1/rpc/kapli_has_privacy_consent')) {
+      assert.equal(init.method, 'POST');
+      assert.equal(init.headers.authorization, 'Bearer user-access-token');
+      return new Response('true', { status: 200 });
+    }
     if (target.includes('/rest/v1/player_profiles?')) {
       assert.equal(init.headers.authorization, 'Bearer user-access-token');
       return new Response(JSON.stringify([{ nickname: 'Profile Nick' }]), { status: 200 });
@@ -278,5 +283,27 @@ test('successful room join resets the user-scoped invalid-code counter', async (
     );
     assert.equal(response.status, 200);
     assert.deepEqual(actions, ['check', 'reset']);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+
+test('Worker blocks online matchmaking until the existing privacy policy consent is accepted', async () => {
+  globalThis.fetch = async url => {
+    if (String(url).endsWith('/auth/v1/user')) return new Response(JSON.stringify({
+      id: '11111111-1111-4111-8111-111111111111', user_metadata: { nickname: 'Player' },
+    }), { status: 200 });
+    if (String(url).endsWith('/rest/v1/rpc/kapli_has_privacy_consent')) return new Response('false', { status: 200 });
+    throw new Error('save/profile data must not be read before consent');
+  };
+  let roomCalls = 0;
+  const env = envFor({ fetch: async () => { roomCalls++; return new Response('{}'); } });
+  try {
+    const response = await handleWorkerRequest(
+      request('https://worker.example/api/rooms', 'POST', { mode: 'territory', difficultyIndex: 0 }),
+      env,
+    );
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).error, 'privacy-consent-required');
+    assert.equal(roomCalls, 0);
   } finally { globalThis.fetch = originalFetch; }
 });

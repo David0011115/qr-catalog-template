@@ -158,7 +158,8 @@ export async function handleWorkerRequest(request, env) {
   // Safe test-only diagnostic: report presence/match only, never reveal secret values.
   if (url.pathname === '/health/config-check' && request.method === 'GET') {
     if (!allowedOrigin(request, env)) return json({ error: 'origin-not-allowed' }, 403);
-    const configuredUrl = String(env.SUPABASE_URL || '').trim().replace(/\\/$/, '');
+    const configuredUrlRaw = String(env.SUPABASE_URL || '').trim();
+    const configuredUrl = configuredUrlRaw.endsWith('/') ? configuredUrlRaw.slice(0, -1) : configuredUrlRaw;
     const expectedUrl = 'https://kprkslsptcnxajdllwje.supabase.co';
     return withCors(json({
       supabaseUrl: !configuredUrl ? 'missing' : configuredUrl === expectedUrl ? 'match' : 'mismatch',

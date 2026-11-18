@@ -327,3 +327,32 @@ test('Worker does not substitute a single-player saved build for the source rand
     assert.equal(captured.player.build, null);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Worker rejects a WebSocket connection without a one-time ticket before contacting the room', async () => {
+  let roomCalls = 0;
+  const env = envFor({ async fetch() { roomCalls++; return new Response('{}'); } });
+  const response = await handleWorkerRequest(
+    new Request('https://worker.example/api/rooms/ABCDE/socket', {
+      method: 'GET', headers: { origin: 'https://game.example' },
+    }),
+    env,
+  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, 'websocket-ticket-required');
+  assert.equal(roomCalls, 0);
+});
+
+test('Worker rejects WebSocket ticket use from an unapproved origin', async () => {
+  let roomCalls = 0;
+  const env = envFor({ async fetch() { roomCalls++; return new Response('{}'); } });
+  const response = await handleWorkerRequest(
+    new Request('https://worker.example/api/rooms/ABCDE/socket?ticket=' + 'a'.repeat(64), {
+      method: 'GET',
+      headers: { origin: 'https://evil.example', upgrade: 'websocket' },
+    }),
+    env,
+  );
+  assert.equal(response.status, 403);
+  assert.equal(roomCalls, 0);
+});
+

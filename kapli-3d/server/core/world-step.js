@@ -226,6 +226,24 @@ export function stepEating(world, rules = {}) {
   return { eaten };
 }
 
+function stepBonusPickups(world, rules) {
+  if (!Array.isArray(world.bonuses) || world.bonuses.length === 0 || typeof rules.onBonusPickup !== 'function') return [];
+  const events = [];
+  const players = (world.owners || [])
+    .filter(owner => owner?.isPlayer && owner.cells?.length)
+    .sort((a, b) => (a.role === 'host' ? 0 : 1) - (b.role === 'host' ? 0 : 1));
+  for (let i = world.bonuses.length - 1; i >= 0; i--) {
+    const bonus = world.bonuses[i];
+    const owner = players.find(player => player.cells.some(cell =>
+      Math.hypot(cell.x - bonus.x, cell.z - bonus.z) < cellRadius(cell) + 1));
+    if (!owner) continue;
+    if (rules.onBonusPickup({ owner, bonus }, world) === false) continue;
+    world.bonuses.splice(i, 1);
+    events.push({ type: 'bonus-picked', bonusId: bonus.id, bonusType: bonus.type, ownerId: owner.id, role: owner.role });
+  }
+  return events;
+}
+
 export function stepWorldInteractions(world, dt, rules = {}) {
   if (!world || !Array.isArray(world.owners) || !Array.isArray(world.cells) ||
       !Number.isFinite(world.arenaRadius) || !(dt > 0)) {
@@ -233,6 +251,7 @@ export function stepWorldInteractions(world, dt, rules = {}) {
   }
   const collisions = stepOwnerCellCollisions(world, dt, rules);
   const food = stepFoodAndDecay(world, dt, rules);
+  const bonuses = stepBonusPickups(world, rules);
   const eating = stepEating(world, rules);
 
   for (const cell of world.cells) {
@@ -327,7 +346,7 @@ export function stepWorldInteractions(world, dt, rules = {}) {
   }
   world.clock = finite(world.clock, 0) + dt;
   return {
-    collisions, food, eating, ejects: ejectResult, viruses: virusResult,
+    collisions, food, bonuses, eating, ejects: ejectResult, viruses: virusResult,
     respawnedViruses,
   };
 }

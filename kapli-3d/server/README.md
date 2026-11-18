@@ -24,7 +24,17 @@ This directory contains the rendering-free foundation for the authoritative mult
 - `storage/recovery.js`: versioned snapshot envelopes, five-second/critical snapshot policy, sequence-checked event replay and recovery gap detection.
 - `storage/world-state.js`: JSON-safe world snapshots with stable owner/cell IDs, restored circular owner↔cell links, cell/decoy target references, defensive hit sets, and validation that rejects dangling or mismatched entity references.
 
-These modules are now callable from the fixed simulation tick through `stepAbilities` and `stepMode` adapters. They are not yet wired into a Worker or Durable Object, and the browser game continues to run exactly as before. A room host must still provide authoritative slot/build resolution, entity spawn/remove callbacks, mode-specific steering, and reward/stat persistence.
+## Online transport and browser integration
+
+The Cloudflare adapter now lives in `cloudflare/`:
+
+- `src/worker.js` validates the Supabase access token, loads the signed-in player's profile/save through the user's own session, applies origin checks, and routes room operations to a named Durable Object.
+- `src/room-object.js` implements the two-player room, one-time WebSocket tickets, WebSocket command intake, the fixed 30 Hz simulation scheduler, 15 Hz world snapshots, SQLite snapshots/event log, reconnect alarms and retryable result persistence.
+- `src/index.js` exports the Worker and SQLite-backed `GameRoom` Durable Object. `cloudflare.config.ts` declares the SQLite Durable Object and secret bindings.
+- `js/game/14g-online-server.js` is loaded by `js/loader.js` after the existing game runtime. The normal round loop delegates to `DuoM.serverTick()` in server mode; the client sends normalized direction, ability-slot, action and offered-boost commands, then renders server snapshots.
+- `ONLINE-SERVER-RESULTS-MIGRATION.sql` adds an idempotency ledger and service-role-only RPCs that write authoritative Territory/DuoBack results into the existing statistics tables.
+
+The Worker does not accept client coordinates or a client-declared match result. The server reads player profile/build data from the authenticated Supabase session and uses the Durable Object as the match authority. The browser module is wired into the source loader, but live two-account operation still requires the owner's Cloudflare/Supabase configuration and an end-to-end test after deployment.
 
 **Balance invariant:** player cells have no per-cell mass cap and may merge even when their combined mass exceeds the old `MAX_MASS` value. Keep the existing bot and boss caps separate; do not reintroduce a player cap.
 
@@ -71,10 +81,12 @@ The tests cover extracted movement/eating formulas and differential checks again
 - `createDuobackRules(state)` supplies the movement, armor and cooldown modifiers to the generic simulation and ability adapters. `stepDuobackRuntime` advances regular and special boss rules, meteor damage, player respawn timers and wave/break progression. It requires a persisted deterministic random function. The room adapter must resolve boss entities and implement spawn/remove, steering, food/virus and reward callbacks.
 - These are server-side rule adapters, not a completed online mode. Their callbacks still need to be bound to the actual room entity model and validated against full source-level gameplay parity.
 
-## Next implementation steps
+## Remaining owner-side setup and verification
 
-1. Define durable serialization for entity references, including owner/cell IDs and reference-based ability hit sets; the current recovery helpers validate snapshots and event replay but are not a SQLite adapter.
-2. Build the deterministic simulation orchestrator around the approved 30 Hz server tick, 15 Hz snapshots, input sequence numbers and acknowledgements.
-3. Connect the audited physics, mass caps, viruses, abilities and mode hooks through explicit world/entity adapters.
-4. Add end-to-end tests for command validation, match recovery and cross-mode state transitions.
-5. Only after separate approval, add the Worker/Durable Object entry points and connect the existing Supabase services. No Cloudflare or Supabase resources have been changed.
+1. Apply `ONLINE-SERVER-RESULTS-MIGRATION.sql` in the intended Supabase project after the existing Duo records migration.
+2. Configure the four Worker secrets from `.env.example` and set the exact game-site origin.
+3. Build and deploy the Worker from `cloudflare/`; this creates/updates the Cloudflare Worker and SQLite Durable Object only when the owner runs the deploy command.
+4. Test with two real signed-in accounts: create/join, ready/countdown, both game modes, ability/action/boost commands, reconnect within 30 seconds, and final result persistence.
+5. Check real device/browser behavior and load/latency before public release.
+
+Automated tests cover the extracted game rules, Worker request validation, room lifecycle, client-loader wiring, snapshot recovery and Supabase result adapter. They do not substitute for a live Cloudflare/Supabase deployment test. No Cloudflare or Supabase resources are changed by repository edits.

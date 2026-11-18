@@ -4,6 +4,7 @@ import { canEat } from '../core/physics.js';
 import { castServerAbility } from '../core/ability-effects.js';
 import { castBotUtilityAbility, castUtilityAbility } from '../core/utility-abilities.js';
 import { DeterministicRandom } from '../core/random.js';
+import { burstFoodInWorld, spawnBossVirus } from './effects.js';
 import { tickBotOwner } from '../modes/bots.js';
 import { territorySideAt, restoreTerritoryState, serializeTerritoryState } from '../modes/territory.js';
 import { chooseDuobackBoost, restoreDuobackState, serializeDuobackState } from '../modes/duoback.js';
@@ -143,7 +144,12 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
           return currentModeRules;
         },
         stepAbilities(currentWorld, dt, context) {
+          const rng = DeterministicRandom.restore(currentWorld.randomState);
           const abilityResult = stepAbilityRuntime(currentWorld, abilityState, dt, context.commands, {
+            burstFood: (targetWorld, x, z, radius, count) =>
+              burstFoodInWorld(targetWorld, rng, x, z, radius, count),
+            onFoodMove: (targetWorld, food) =>
+              (targetWorld.pendingFoodChanges ||= []).push({ id: food.id, x: food.x, z: food.z }),
             resolveAbilityId: (owner, slot) => owner.build?.[slot] || null,
             isPlayerOwner: owner => !!owner.isPlayer,
             abilityLevelFor: options.abilityLevelFor,
@@ -155,6 +161,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
             spawnChunk: options.spawnChunk,
             rebuildCells: options.rebuildCells,
           });
+          currentWorld.randomState = rng.snapshot();
           currentAbilityRules = createAbilityRuleAdapters(currentWorld, {
             physicsRules: currentModeRules.physicsRules,
             worldRules: currentModeRules.worldRules,
@@ -173,7 +180,12 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
             ...currentAbilityRules.worldRules,
           };
           const botResults = [];
-          const botAbilityWorld = createAbilityWorldAdapter(currentWorld);
+          const botAbilityWorld = createAbilityWorldAdapter(currentWorld, {
+            burstFood: (targetWorld, x, z, radius, count) =>
+              burstFoodInWorld(targetWorld, rng, x, z, radius, count),
+            onFoodMove: (targetWorld, food) =>
+              (targetWorld.pendingFoodChanges ||= []).push({ id: food.id, x: food.x, z: food.z }),
+          });
           const castBotAbility = (id, bot) => ['dash', 'eject', 'split'].includes(id)
             ? castBotUtilityAbility(id, bot, currentWorld, { rebuildCells: botAbilityWorld.rebuildCells })
             : castServerAbility(id, bot, botAbilityWorld, abilityState, { player: false, level: 0 });
@@ -226,6 +238,9 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
             result = stepDuobackRuntime(currentWorld.modeState, currentWorld, dt, {
               resolvePlayers,
               random: () => rng.next(),
+              spawnVirus: (event, targetWorld) => spawnBossVirus(targetWorld, event),
+              burstFood: (targetWorld, x, z, radius, count) =>
+                burstFoodInWorld(targetWorld, rng, x, z, radius, count),
               isShielded: player => (player.eff?.shield || 0) > 0 || (player.abT?.shield || 0) > 0,
               onSpecialBossResult: options.onSpecialBossResult,
               onMeteorHit: options.onMeteorHit,

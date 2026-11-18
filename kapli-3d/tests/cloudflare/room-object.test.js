@@ -49,3 +49,38 @@ test('match player projection validates role and supplies safe profile defaults'
   });
   assert.throws(() => roomPlayerForMatch({ id: 'x', role: 'admin' }), /valid room player/);
 });
+
+
+test('Durable Object rate-limit endpoint blocks the fifth invalid code and resets after a successful join', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = null;
+  let row = null;
+  roomObject.sql = (query, ...values) => {
+    if (query.startsWith('SELECT count, blocked_until')) {
+      return { toArray: () => row ? [{ count: row.count, blocked_until: row.blockedUntil }] : [] };
+    }
+    if (query.startsWith('INSERT INTO invalid_attempts')) {
+      row = { count: values[1], blockedUntil: values[2] };
+      return { toArray: () => [] };
+    }
+    if (query.startsWith('DELETE FROM invalid_attempts')) {
+      row = null;
+      return { toArray: () => [] };
+    }
+    throw new Error('Unexpected SQL: ' + query);
+  };
+  const call = async action => roomObject.fetch(new Request('https://room.internal/internal/invalid-attempt', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-kapli-user-id': 'user-1' },
+    body: JSON.stringify({ action }),
+  }));
+  assert.equal((await call('check')).status, 200);
+  for (let i = 0; i < 4; i++) assert.equal((await call('record')).status, 200);
+  assert.equal((await call('record')).status, 429);
+  assert.equal((await call('check')).status, 429);
+  assert.equal((await call('reset')).status, 200);
+  const cleared = await call('check');
+  assert.equal(cleared.status, 200);
+  assert.equal((await cleared.json()).remaining, 5);
+});

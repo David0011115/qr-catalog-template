@@ -51,3 +51,52 @@ test('DuoBack boss spawn uses the source 40-unit safety distance', () => {
   assert.ok(Math.abs(result.x) < 1e-12);
   assert.ok(result.z > 0);
 });
+
+
+test('Territory respawn uses the current border and the source 60-percent home interpolation', async () => {
+  const { respawnDuoPlayerOwner } = await import('../../server/match/spawn.js');
+  const player = {
+    id: 'host', role: 'host', isPlayer: true, cells: [],
+    free: Array.from({ length: 10 }, (_, i) => `player:host:slot:${i}`),
+    eff: { speed: 0, shield: 0, double: 0, magnet: 0 }, respawnAt: 5,
+  };
+  const w = { mode: 'territory', arenaRadius: 100, modeState: { border: 20 }, cells: [], nextEntitySequence: 1 };
+  const cell = respawnDuoPlayerOwner(player, w);
+  assert.equal(cell.x, -52);
+  assert.equal(cell.z, 0);
+  assert.equal(cell.mass, 10);
+  assert.equal(cell.hx, 1);
+  assert.equal(player.spawnSh, 3);
+  assert.equal(player.eff.shield, 3);
+  assert.equal(player.cells[0], cell);
+  assert.equal(w.cells[0], cell);
+  assert.equal(player.freeCount, 9);
+  assert.equal(player.respawnAt, undefined);
+});
+
+test('DuoBack respawn uses the source 18-percent home spawn and unique cell sequence', async () => {
+  const { respawnDuoPlayerOwner } = await import('../../server/match/spawn.js');
+  const player = {
+    id: 'guest', role: 'guest', isPlayer: true, cells: [],
+    free: Array.from({ length: 10 }, (_, i) => `player:guest:slot:${i}`),
+    eff: { speed: 0, shield: 0, double: 0, magnet: 0 },
+  };
+  const w = { mode: 'duoback', arenaRadius: 100, modeState: {}, cells: [], nextEntitySequence: 8 };
+  const first = respawnDuoPlayerOwner(player, w);
+  assert.equal(first.x, 18);
+  assert.equal(first.id, 'player:guest:cell:8');
+  assert.equal(w.nextEntitySequence, 9);
+  player.cells = [];
+  player.free.push('player:guest:slot:recycled');
+  const second = respawnDuoPlayerOwner(player, w);
+  assert.equal(second.id, 'player:guest:cell:9');
+});
+
+test('respawn refuses a living player or an owner without a recycled slot', async () => {
+  const { respawnDuoPlayerOwner } = await import('../../server/match/spawn.js');
+  const player = { id: 'host', role: 'host', isPlayer: true, cells: [{ id: 'alive' }], free: [] };
+  const w = { mode: 'duoback', arenaRadius: 100, cells: [], nextEntitySequence: 1 };
+  assert.equal(respawnDuoPlayerOwner(player, w), false);
+  player.cells = [];
+  assert.equal(respawnDuoPlayerOwner(player, w), false);
+});

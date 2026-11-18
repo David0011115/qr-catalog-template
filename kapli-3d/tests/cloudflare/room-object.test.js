@@ -392,6 +392,36 @@ test('pre-match movement samples are ignored during the room countdown', async (
   assert.deepEqual(messages, []);
 });
 
+test('late gameplay samples are ignored after a player voluntarily ends the match', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = { status: 'closed', closeReason: 'player-ended' };
+  roomObject.runtime = {
+    lifecycle: { status: 'finished' },
+    submitInput() { throw new Error('finished match must not accept movement'); },
+    submitAbility() { throw new Error('finished match must not accept abilities'); },
+    submitAction() { throw new Error('finished match must not accept actions'); },
+    submitBoost() { throw new Error('finished match must not accept boosts'); },
+  };
+  const messages = [];
+  const socket = {
+    readyState: 1,
+    deserializeAttachment: () => ({ userId: 'remaining-player' }),
+    send: value => messages.push(JSON.parse(value)),
+  };
+
+  for (const command of [
+    { type: 'input', seq: 2, x: 1, z: 0 },
+    { type: 'ability', seq: 1, slot: 0 },
+    { type: 'action', seq: 1, action: 'dash' },
+    { type: 'boost', seq: 1, id: 'sh_shield' },
+  ]) {
+    await roomObject.webSocketMessage(socket, JSON.stringify(command));
+  }
+
+  assert.deepEqual(messages, []);
+});
+
 test('closed room rejects WebSocket commands even if the runtime lifecycle is still active', async () => {
   const roomObject = Object.create(GameRoom.prototype);
   roomObject.ready = Promise.resolve();

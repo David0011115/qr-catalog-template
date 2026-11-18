@@ -218,6 +218,7 @@ test('authoritative match picks bonuses, ticks their timers and spawns them on s
   });
   const host = runtime.world.owners.find(owner => owner.role === 'host');
   const cell = host.cells[0];
+  runtime.world.bonusTimer = 9;
   runtime.world.bonuses = [{ id: 'bonus:test-speed', type: 'speed', x: cell.x, z: cell.z }];
   runtime.step();
   assert.equal(runtime.world.bonuses.length, 0);

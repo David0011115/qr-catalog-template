@@ -311,6 +311,7 @@ export class GameRoom {
     }
     if (url.pathname === '/internal/ready' && request.method === 'POST') return this.readyPlayer(userId, body.ready);
     if (url.pathname === '/internal/leave' && request.method === 'POST') return this.leavePlayer(userId);
+    if (url.pathname === '/internal/finish' && request.method === 'POST') return this.finishPlayer(userId);
     if (url.pathname === '/internal/ticket' && request.method === 'POST') return this.issueTicket(userId);
     return json({ error: 'not-found' }, 404);
   }
@@ -423,6 +424,27 @@ export class GameRoom {
     }
     this.broadcast({ type: 'room-state', room: this.roomView(), event: result });
     return json({ room: this.roomView(), event: result });
+  }
+
+  async finishPlayer(userId) {
+    if (!this.requireRoomPlayer(userId)) return json({ error: 'room-or-player-not-found' }, 404);
+    if (!this.runtime || !['active', 'paused'].includes(this.runtime.lifecycle.status) ||
+        !['active', 'paused'].includes(this.room?.status)) {
+      return json({ error: 'match-not-active' }, 409);
+    }
+    const now = Date.now();
+    const result = this.room.mode === 'territory'
+      ? { winner: 'draw', share: territoryLeftShare(this.runtime.world.modeState), reason: 'player-ended' }
+      : { won: false, reason: 'player-ended' };
+    this.runtime.lifecycle.status = 'finished';
+    this.runtime.lifecycle.endedAt = now;
+    this.runtime.lifecycle.endReason = 'player-ended';
+    this.runtime.lifecycle.result = result;
+    this.room.status = 'closed';
+    this.room.closedAt = now;
+    this.room.closeReason = 'player-ended';
+    await this.finishMatch();
+    return json({ ok: true });
   }
 
   async issueTicket(userId) {

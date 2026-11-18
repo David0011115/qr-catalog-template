@@ -356,3 +356,14 @@ test('Worker rejects WebSocket ticket use from an unapproved origin', async () =
   assert.equal(roomCalls, 0);
 });
 
+test('Worker treats malformed percent-encoding in a room code as a 400 client error', async () => {
+  const response = await handleWorkerRequest(
+    new Request('https://worker.example/api/rooms/%ZZ', {
+      headers: { origin: 'https://game.example' },
+    }),
+    { ALLOWED_ORIGINS: 'https://game.example' },
+  );
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: 'invalid-room-code' });
+});
+

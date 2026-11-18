@@ -1,12 +1,15 @@
+
 // Kapli-3D · authenticated Cloudflare Durable Object multiplayer client.
 (() => {
-  const API_STORAGE_KEY = 'kapli-online-api';
   const ROOM_STORAGE_KEY = 'kapli-online-room';
+  const API_BASE = 'https://kapli-3d-online-test.mistari501.workers.dev';
+
   const MODES = {
     territory: 'Захват территории',
     duoback: 'Спина к спине',
   };
-  let apiBase = String(window.KAPLI_ONLINE_API || localStorage.getItem(API_STORAGE_KEY) || '').replace(/\/$/, '');
+
+  let apiBase = API_BASE;
   let activeMode = null, room = null, role = '', userId = '', socket = null;
   let paused = false, matchStarted = false, leaving = false, connected = false;
   let inputSeq = 0, abilitySeq = 0, boostSeq = 0, actionSeq = 0, reconnectDelay = 1000, reconnectTimer = null;
@@ -30,7 +33,6 @@
   }
 
   async function api(path, method = 'GET', body) {
-    if (!apiBase) throw new Error('Укажи адрес Cloudflare Worker');
     const token = await sessionInfo();
     const response = await fetch(apiBase + path, {
       method,
@@ -62,41 +64,33 @@
       return value && value.code && value.mode ? value : null;
     } catch { return null; }
   }
+
   function saveRoom() {
     if (room?.code && activeMode) localStorage.setItem(ROOM_STORAGE_KEY, JSON.stringify({
       code: room.code, mode: activeMode, difficultyIndex: room.difficultyIndex || 0,
     }));
   }
-  function clearSavedRoom() { localStorage.removeItem(ROOM_STORAGE_KEY); }
 
-  function setApiBase(value) {
-    const parsed = new URL(String(value || '').trim());
-    if (!['https:', 'http:'].includes(parsed.protocol) || parsed.pathname !== '/' || parsed.search || parsed.hash) throw new Error('Укажи корневой адрес Cloudflare Worker без дополнительных путей');
-    apiBase = parsed.origin.replace(/\/$/, '');
-    localStorage.setItem(API_STORAGE_KEY, apiBase);
+  function clearSavedRoom() {
+    localStorage.removeItem(ROOM_STORAGE_KEY);
   }
 
   function render() {
     const body = $('duoBody');
     if (!body || !activeMode) return;
+
     if (room?.status === 'active' && matchStarted && !paused) {
       if ($('duoCard')) $('duoCard').hidden = true;
       return;
     }
-
-    const apiPanel = `
-      <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin:0 0 14px">
-        <input id="serverApiBase" type="url" value="${esc(apiBase)}" placeholder="https://ваш-worker.workers.dev"
-          aria-label="Адрес Cloudflare Worker" style="min-width:0;width:100%;box-sizing:border-box">
-        <button id="serverApiSave" type="button" class="duo-action">Подключить</button>
-      </div>`;
 
     if (!room) {
       const saved = savedRoom();
       const resume = saved && saved.mode === activeMode
         ? `<button id="serverReconnect" type="button" class="duo-action" style="width:100%;margin:0 0 12px">Вернуться в комнату ${esc(saved.code)}</button>`
         : '';
-      body.innerHTML = apiPanel + resume + `
+
+      body.innerHTML = resume + `
         <div class="duo-hint" style="margin:0 0 12px">Серверный онлайн: физика, столкновения и правила матча рассчитываются на сервере. Для входа нужен аккаунт игры.</div>
         ${activeMode === 'duoback' ? `
           <label style="display:block;margin:10px 0 6px">Сложность</label>
@@ -109,6 +103,7 @@
             placeholder="Код комнаты" aria-label="Код комнаты" style="min-width:0;text-transform:uppercase">
           <button id="serverJoin" type="button" class="duo-action">Войти</button>
         </div>`;
+
       if ($('serverDifficulty')) $('serverDifficulty').value = String(saved?.difficultyIndex ?? 0);
       return;
     }
@@ -116,6 +111,7 @@
     const players = room.players || [];
     const me = players.find(player => player.id === userId);
     role = me?.role || role;
+
     const statusText = {
       waiting: 'Ожидаем второго игрока',
       lobby: 'Оба игрока в комнате. Нажмите «Готов».',
@@ -124,21 +120,26 @@
       paused: 'Матч приостановлен. Ожидаем переподключение игрока.',
       closed: 'Комната закрыта',
     }[room.status] || 'Комната';
+
     const playersHtml = players.map(player => `
       <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #ffffff18">
         <span>${esc(player.nickname || 'Игрок')} · ${player.role === 'host' ? 'создатель' : 'гость'}</span>
         <b>${player.ready ? 'Готов' : 'Не готов'} ${player.connected ? '' : '· нет связи'}</b>
       </div>`).join('');
+
     const countdown = room.status === 'countdown'
       ? `<div style="font-size:26px;font-weight:800;text-align:center;margin:12px 0">${Math.max(0, Math.ceil(((room.countdownEndsAt || Date.now()) - Date.now()) / 1000))}</div>`
       : '';
+
     const readyButton = ['waiting', 'lobby'].includes(room.status)
       ? `<button id="serverReady" type="button" class="duo-action" style="width:100%;margin:12px 0">${me?.ready ? 'Снять готовность' : 'Готов'}</button>`
       : '';
+
     const reconnectButton = room.status === 'paused'
       ? `<button id="serverReconnectSocket" type="button" class="duo-action" style="width:100%;margin:12px 0">Переподключиться</button>`
       : '';
-    body.innerHTML = apiPanel + `
+
+    body.innerHTML = `
       <div style="text-align:center;margin:4px 0 14px">
         <div class="duo-hint">Код комнаты</div>
         <div style="font-size:32px;letter-spacing:7px;font-weight:900">${esc(room.code)}</div>
@@ -197,34 +198,54 @@
   async function connectSocket() {
     if (!room || !apiBase || leaving) return;
     if (socket && socket.readyState <= 1) return;
+
     const ticketData = await api('/api/rooms/' + room.code + '/socket-ticket', 'POST', {});
     const wsBase = apiBase.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
     const ws = new WebSocket(wsBase + '/api/rooms/' + room.code + '/socket?ticket=' + encodeURIComponent(ticketData.ticket));
     socket = ws;
+
     ws.onopen = () => {
       if (socket !== ws) return;
-      connected = true; reconnectDelay = 1000;
+      connected = true;
+      reconnectDelay = 1000;
     };
+
     ws.onmessage = event => {
       if (socket !== ws) return;
       let message;
       try { message = JSON.parse(event.data); } catch { return; }
       handleMessage(message);
     };
-    ws.onerror = () => { if (socket === ws) connected = false; };
+
+    ws.onerror = () => {
+      if (socket === ws) connected = false;
+    };
+
     ws.onclose = event => {
       // The DO closes an older socket after accepting its replacement. Events
       // from that obsolete socket must not pause the new live connection.
       if (socket !== ws) return;
       socket = null;
       connected = false;
+
       if (event?.code === 4001) {
-        if (matchStarted && room) { paused = true; room.status = 'paused'; showLobbyCard(); }
+        if (matchStarted && room) {
+          paused = true;
+          room.status = 'paused';
+          showLobbyCard();
+        }
         toast('Подключение открыто в другом окне');
         return;
       }
+
       if (leaving || !room || room.status === 'closed') return;
-      if (matchStarted) { paused = true; if (room) room.status = 'paused'; showLobbyCard(); }
+
+      if (matchStarted) {
+        paused = true;
+        if (room) room.status = 'paused';
+        showLobbyCard();
+      }
+
       scheduleReconnect();
     };
   }
@@ -233,15 +254,25 @@
     if (reconnectTimer || leaving || !room || room.status === 'closed') return;
     const delay = reconnectDelay;
     reconnectDelay = Math.min(8000, reconnectDelay * 2);
+
     reconnectTimer = setTimeout(async () => {
       reconnectTimer = null;
-      try { await connectSocket(); } catch (error) { scheduleReconnect(); }
+      try {
+        await connectSocket();
+      } catch (error) {
+        scheduleReconnect();
+      }
     }, delay);
   }
 
   function sendMessage(message) {
     if (!socket || socket.readyState !== WebSocket.OPEN) return false;
-    try { socket.send(JSON.stringify(message)); return true; } catch { return false; }
+    try {
+      socket.send(JSON.stringify(message));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function sendInput(x, z) {
@@ -280,6 +311,7 @@
     if (!payload || !Array.isArray(payload.owners) || typeof DuoM === 'undefined') return;
     const ownerIndices = new Map();
     for (const owner of payload.owners) ownerIndices.set(owner.id, DuoM.serverIndex(owner));
+
     const rows = [], cellMeta = {};
     for (const owner of payload.owners) {
       const index = ownerIndices.get(owner.id);
@@ -293,6 +325,7 @@
         mergeT: cell.mergeT, rs: cell.rs, spawnShield: cell.spawnShield, dashT: cell.dashT,
       }));
     }
+
     const foodItems = initial ? (payload.food || []) : (payload.foodChanges || []);
     const food = [];
     for (const item of foodItems) {
@@ -300,10 +333,12 @@
       const index = Number(match?.[1]);
       if (Number.isInteger(index) && index >= 0) food.push(index, item.x, item.z);
     }
+
     const viruses = payload.viruses || [];
     const local = payload.owners.find(owner => owner.role === role);
     lastModeState = payload.modeState || lastModeState;
     lastClock = payload.clock || lastClock;
+
     DuoM.serverApply({
       tm: payload.clock || 0, o: rows, cm: cellMeta, f: food,
       b: Array.isArray(payload.bonuses)
@@ -320,6 +355,7 @@
     activeMode = payload.mode || activeMode || room.mode;
     const self = payload.owners.find(owner => owner.role === role);
     const peer = payload.owners.find(owner => owner.isPlayer && owner.role !== role);
+
     if (!DuoM.server) {
       DuoM.serverBegin(role, {
         m: activeMode, diff: room.difficultyIndex || 0, seed: 1,
@@ -327,6 +363,7 @@
         peerName: peer?.name || 'Напарник', peerSkin: peer?.skin || null,
       });
     }
+
     lastProcessedSeqs = payload.processedSeqs || null;
     inputSeq = payload.inputSeqs?.[userId] || 0;
     abilitySeq = payload.abilitySeqs?.[userId] || 0;
@@ -335,12 +372,14 @@
     matchStarted = true;
     paused = room.status === 'paused';
     applySnapshot(payload, true);
+
     if (paused) showLobbyCard();
     else if ($('duoCard')) $('duoCard').hidden = true;
   }
 
   function endClientMatch(result) {
     paused = false;
+
     if (activeMode === 'territory') {
       const winner = result?.winner || result?.winnerRole || 'draw';
       const share = Number.isFinite(result?.share) ? result.share : 0.5;
@@ -355,36 +394,64 @@
         df: state.difficultyIndex || 0, won: !!result?.won,
       });
     }
+
     matchStarted = false;
-    room = null; role = ''; clearSavedRoom();
-    if (socket) { const old = socket; socket = null; try { old.close(1000, 'match-ended'); } catch {} }
+    room = null;
+    role = '';
+    clearSavedRoom();
+
+    if (socket) {
+      const old = socket;
+      socket = null;
+      try { old.close(1000, 'match-ended'); } catch {}
+    }
   }
 
   function handleMessage(message) {
     if (message.type === 'room-state') updateRoom(message.room);
-    else if (message.type === 'match-started') { lastMatchId = message.matchId; matchStarted = true; }
+    else if (message.type === 'match-started') {
+      lastMatchId = message.matchId;
+      matchStarted = true;
+    }
     else if (message.type === 'world-init') startClientMatch(message);
     else if (message.type === 'snapshot') {
       lastProcessedSeqs = message.processedSeqs || lastProcessedSeqs;
       lastModeState = message.modeState || lastModeState;
       lastClock = message.clock || lastClock;
       applySnapshot(message, false);
-    } else if (message.type === 'match-paused') {
-      paused = true; if (room) room.status = 'paused'; showLobbyCard();
-    } else if (message.type === 'match-resumed') {
-      paused = false; if (room) room.status = 'active';
+    }
+    else if (message.type === 'match-paused') {
+      paused = true;
+      if (room) room.status = 'paused';
+      showLobbyCard();
+    }
+    else if (message.type === 'match-resumed') {
+      paused = false;
+      if (room) room.status = 'active';
       if ($('duoCard')) $('duoCard').hidden = true;
-    } else if (message.type === 'match-ended') endClientMatch(message.result || {});
+    }
+    else if (message.type === 'match-ended') endClientMatch(message.result || {});
     else if (message.type === 'room-closed') {
       if (room) room.status = 'closed';
-      clearSavedRoom(); render();
-    } else if (message.type === 'command-rejected') toast('Команда не принята: ' + (message.reason || 'ошибка'));
+      clearSavedRoom();
+      render();
+    }
+    else if (message.type === 'command-rejected') toast('Команда не принята: ' + (message.reason || 'ошибка'));
     else if (message.type === 'match-error') {
       toast('Сервер остановил матч из-за внутренней ошибки');
-      if (room) { room.status = 'closed'; room.closeReason = 'simulation-error'; }
+      if (room) {
+        room.status = 'closed';
+        room.closeReason = 'simulation-error';
+      }
       clearSavedRoom();
-      matchStarted = false; paused = false; connected = false;
-      if (socket) { const old = socket; socket = null; try { old.close(1011, 'simulation-error'); } catch {} }
+      matchStarted = false;
+      paused = false;
+      connected = false;
+      if (socket) {
+        const old = socket;
+        socket = null;
+        try { old.close(1011, 'simulation-error'); } catch {}
+      }
       DuoM.serverAbort?.();
       showLobbyCard();
     }
@@ -403,42 +470,60 @@
     leaving = true;
     const wasServerMatch = !!DuoM.server;
     const wasActive = !!room && ['active', 'paused'].includes(room.status);
+
     if (room && room.status !== 'closed') {
       try { await api('/api/rooms/' + room.code + '/leave', 'POST', {}); } catch {}
     }
-    if (socket) { const old = socket; socket = null; try { old.close(1000, 'leaving-room'); } catch {} }
-    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+    if (socket) {
+      const old = socket;
+      socket = null;
+      try { old.close(1000, 'leaving-room'); } catch {}
+    }
+
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+
     if (wasServerMatch) DuoM.serverAbort();
     if (!wasActive) clearSavedRoom();
-    room = null; role = ''; connected = false; paused = false; matchStarted = false;
+
+    room = null;
+    role = '';
+    connected = false;
+    paused = false;
+    matchStarted = false;
     activeMode = null;
+
     if (fromBack && window.closeDuoServerCard) window.closeDuoServerCard();
     leaving = false;
   }
 
   function openLobby(mode) {
     if (!MODES[mode]) return;
-    activeMode = mode; room = null; role = ''; paused = false; matchStarted = false;
-    connected = false; leaving = false; lastModeState = null; lastClock = 0; lastMatchId = null;
+    activeMode = mode;
+    room = null;
+    role = '';
+    paused = false;
+    matchStarted = false;
+    connected = false;
+    leaving = false;
+    lastModeState = null;
+    lastClock = 0;
+    lastMatchId = null;
     showLobbyCard();
   }
 
-  async function saveApi() {
-    setApiBase($('serverApiBase')?.value || '');
-    const response = await fetch(apiBase + '/health', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Cloudflare Worker не отвечает');
-    toast('Cloudflare Worker подключён');
-    render();
-  }
-
   const body = $('duoBody');
+
   if (body) body.addEventListener('click', event => {
     if (!activeMode) return;
     const button = event.target.closest('button');
     if (!button) return;
+
     const id = button.id;
     const actions = {
-      serverApiSave: () => saveApi(),
       serverCreate: () => createRoom(),
       serverJoin: () => joinRoom($('serverRoomCode')?.value || ''),
       serverReady: () => readyToggle(),
@@ -446,15 +531,21 @@
       serverReconnect: () => reconnectSavedRoom(),
       serverReconnectSocket: () => connectSocket(),
     };
+
     if (!actions[id]) return;
-    event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
     Promise.resolve(actions[id]()).catch(error => toast(error?.message || 'Не удалось выполнить действие'));
   }, true);
 
   const back = $('duoBack');
+
   if (back) back.addEventListener('click', event => {
     if (!activeMode) return;
-    event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
     leaveRoom(true).catch(error => toast(error?.message || 'Не удалось выйти из комнаты'));
   }, true);
 

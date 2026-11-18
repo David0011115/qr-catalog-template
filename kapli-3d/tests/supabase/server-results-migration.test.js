@@ -28,3 +28,13 @@ test('DuoBack result RPC rejects null counters instead of relying on table const
   }
   assert.match(coop, /reason', 'match-id-collision'/);
 });
+
+
+test('Territory reconnect-timeout results are decided by the connection rule, not the territory share', () => {
+  const start = sql.indexOf('create or replace function public.kapli_duo_territory_submit_server');
+  const end = sql.indexOf('create or replace function public.kapli_duo_coop_submit_server');
+  const territory = sql.slice(start, end);
+  assert.match(territory, /coalesce\(v_extra->>'reason', ''\) <> 'reconnect-timeout'/);
+  assert.match(territory, /p_host_share not between 48 and 52/);
+  assert.match(territory, /'reason', 'result-share-mismatch'/);
+});

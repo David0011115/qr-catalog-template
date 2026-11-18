@@ -161,9 +161,20 @@ export async function handleWorkerRequest(request, env) {
     const configuredUrlRaw = String(env.SUPABASE_URL || '').trim();
     const configuredUrl = configuredUrlRaw.endsWith('/') ? configuredUrlRaw.slice(0, -1) : configuredUrlRaw;
     const expectedUrl = 'https://kprkslsptcnxajdllwje.supabase.co';
+    let anonKeyStatus = !env.SUPABASE_ANON_KEY ? 'missing' : 'not-checked';
+    if (env.SUPABASE_ANON_KEY && configuredUrl === expectedUrl) {
+      try {
+        const keyCheck = await fetch(`${configuredUrl}/auth/v1/settings`, {
+          headers: { apikey: env.SUPABASE_ANON_KEY },
+        });
+        anonKeyStatus = keyCheck.ok ? 'valid' : `rejected-${keyCheck.status}`;
+      } catch {
+        anonKeyStatus = 'unreachable';
+      }
+    }
     return withCors(json({
       supabaseUrl: !configuredUrl ? 'missing' : configuredUrl === expectedUrl ? 'match' : 'mismatch',
-      anonKeyConfigured: Boolean(env.SUPABASE_ANON_KEY),
+      anonKeyStatus,
     }), request, env);
   }
   if (request.method === 'OPTIONS') {

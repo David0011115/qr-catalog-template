@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const sql = await readFile(new URL('../../ONLINE-SERVER-RESULTS-MIGRATION.sql', import.meta.url), 'utf8');
+const privacySql = await readFile(new URL('../../PRIVACY-CONSENT-MIGRATION.sql', import.meta.url), 'utf8');
+const connectGuide = await readFile(new URL('../../ONLINE-SERVER-CONNECT.md', import.meta.url), 'utf8');
 
 test('server result RPCs acknowledge matching retries before applying player rate limits', () => {
   const territoryStart = sql.indexOf('create or replace function public.kapli_duo_territory_submit_server');
@@ -38,3 +40,12 @@ test('Territory reconnect-timeout results are decided by the connection rule, no
   assert.match(territory, /p_host_share not between 48 and 52/);
   assert.match(territory, /'reason', 'result-share-mismatch'/);
 });
+
+test('online Worker privacy prerequisite has an authenticated consent RPC and is documented', () => {
+  assert.match(privacySql, /create or replace function public\.kapli_has_privacy_consent\(\)/);
+  assert.match(privacySql, /revoke all on function public\.kapli_has_privacy_consent\(\) from public, anon/);
+  assert.match(privacySql, /grant execute on function public\.kapli_has_privacy_consent\(\) to authenticated/);
+  assert.match(connectGuide, /PRIVACY-CONSENT-MIGRATION\.sql/);
+  assert.match(connectGuide, /kapli_has_privacy_consent\(\)/);
+});
+

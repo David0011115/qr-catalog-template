@@ -112,6 +112,7 @@ test('DuoBack boost picks are validated, sequenced and applied by the authoritat
   assert.equal(host.db.mass, 1);
   assert.ok(host.cells[0].mass > beforeMass);
   assert.equal(runtime.lastBoostSeq['user-host'], 1);
+  assert.equal(runtime.lastBoostProcessedSeq['user-host'], 1);
 });
 
 test('queued DuoBack boost picks survive match snapshot recovery', () => {
@@ -125,8 +126,10 @@ test('queued DuoBack boost picks survive match snapshot recovery', () => {
   const restored = restoreDuoMatchRuntime(runtime.serialize());
   assert.equal(restored.lastBoostSeq['user-host'], 4);
   assert.equal(restored.modeCommands.length, 1);
+  assert.equal(restored.lastBoostProcessedSeq['user-host'] || 0, 0);
   restored.step();
   assert.equal(restored.world.modeState.picked.host, 'sh_shield');
+  assert.equal(restored.lastBoostProcessedSeq['user-host'], 4);
   assert.equal(restored.modeCommands.length, 0);
 });
 
@@ -148,6 +151,7 @@ test('match runtime processes sequenced split and eject actions before the autho
   assert.equal(runtime.submitAction('user-host', { seq: 1, action: 'eject' }).reason, 'replayed-command');
   const splitTick = runtime.step();
   assert.equal(splitTick.actionEvents[0].ok, true);
+  assert.equal(runtime.lastActionProcessedSeq['user-host'], 1);
   assert.equal(host.cells.length, 2);
   assert.equal(host.cells[0].mass, 50);
   assert.equal(host.cells[1].mass, 50);
@@ -159,8 +163,10 @@ test('match runtime processes sequenced split and eject actions before the autho
   const restored = restoreDuoMatchRuntime(snapshot);
   assert.equal(restored.lastActionSeq['user-host'], 2);
   assert.equal(restored.actionQueue.length, 1);
+  assert.equal(restored.lastActionProcessedSeq['user-host'] || 0, 1);
   const ejectTick = restored.step();
   assert.equal(ejectTick.actionEvents[0].ok, true);
+  assert.equal(restored.lastActionProcessedSeq['user-host'], 2);
   assert.equal(restored.world.ejects.length, 2);
   assert.equal(restored.lastActionSeq['user-host'], 2);
 });

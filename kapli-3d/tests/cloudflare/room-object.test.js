@@ -449,3 +449,21 @@ test('Durable Object countdown starts a match, publishes its world and processes
   assert.ok(host.cells[0].x > beforeX);
 });
 
+test('match completion sends the final authoritative snapshot before the result event', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.stopLoop = () => {};
+  roomObject.room = { status: 'active' };
+  roomObject.runtime = { lifecycle: { matchId: 'match-final', result: { won: true } } };
+  const messages = [];
+  roomObject.appendEvent = async () => {};
+  roomObject.snapshotMessage = () => ({ type: 'snapshot', modeState: { team: { bosses: 7 } } });
+  roomObject.broadcast = message => messages.push(message);
+  roomObject.persistResult = async () => {};
+
+  await roomObject.finishMatch();
+
+  assert.equal(roomObject.room.status, 'closed');
+  assert.deepEqual(messages.map(message => message.type), ['snapshot', 'match-ended']);
+  assert.equal(messages[0].modeState.team.bosses, 7);
+});
+

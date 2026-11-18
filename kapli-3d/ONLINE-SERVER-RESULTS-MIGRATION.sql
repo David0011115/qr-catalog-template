@@ -92,7 +92,16 @@ begin
   on conflict (match_id) do nothing;
   get diagnostics v_inserted = row_count;
   if v_inserted = 0 then
-    return jsonb_build_object('ok', true, 'alreadyRecorded', true);
+    -- A concurrent insert may have won after the earlier idempotency check.
+    -- Confirm that it belongs to this exact mode and player pair before acknowledging it.
+    if exists (
+      select 1 from public.kapli_duo_server_matches
+      where match_id = p_match_id and mode = 'territory'
+        and host_user_id = p_host_user_id and guest_user_id = p_guest_user_id
+    ) then
+      return jsonb_build_object('ok', true, 'alreadyRecorded', true);
+    end if;
+    return jsonb_build_object('ok', false, 'reason', 'match-id-collision');
   end if;
 
   insert into public.kapli_duo_territory as current_stats
@@ -200,7 +209,16 @@ begin
   on conflict (match_id) do nothing;
   get diagnostics v_inserted = row_count;
   if v_inserted = 0 then
-    return jsonb_build_object('ok', true, 'alreadyRecorded', true);
+    -- A concurrent insert may have won after the earlier idempotency check.
+    -- Confirm that it belongs to this exact mode and player pair before acknowledging it.
+    if exists (
+      select 1 from public.kapli_duo_server_matches
+      where match_id = p_match_id and mode = 'duoback'
+        and host_user_id = p_host_user_id and guest_user_id = p_guest_user_id
+    ) then
+      return jsonb_build_object('ok', true, 'alreadyRecorded', true);
+    end if;
+    return jsonb_build_object('ok', false, 'reason', 'match-id-collision');
   end if;
 
   insert into public.kapli_duo_coop

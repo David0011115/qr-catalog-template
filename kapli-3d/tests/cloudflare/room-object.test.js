@@ -189,16 +189,16 @@ test('SQLite recovery stops replaying world ticks once a replayed command ends t
   const runtime = {
     simulation: { tick: 0 },
     lifecycle: { status: 'active' },
-    step() { this.simulation.tick++; },
-    submitInput() { this.lifecycle.status = 'finished'; return { ok: true }; },
+    step() { this.simulation.tick++; this.lifecycle.status = 'finished'; },
+    submitInput() { throw new Error('command after match end must not be replayed'); },
     submitAbility() { throw new Error('commands after match end must not be replayed'); },
     submitBoost() { throw new Error('commands after match end must not be replayed'); },
     submitAction() { throw new Error('commands after match end must not be replayed'); },
   };
   const result = replayMatchEvents(runtime, [
-    { type: 'input-command', payload: { playerId: 'host', command: { type: 'input', seq: 1, x: 1, z: 0 } }, created_at: 1000 },
+    { type: 'input-command', payload: { playerId: 'host', command: { type: 'input', seq: 1, x: 1, z: 0 } }, created_at: 1040 },
     { type: 'ability-command', payload: { playerId: 'host', command: { type: 'ability', seq: 1, slot: 0 } }, created_at: 1100 },
   ], 1000, 1200);
-  assert.equal(runtime.simulation.tick, 0);
+  assert.equal(runtime.simulation.tick, 1);
   assert.equal(result.replayedCommands, 0);
 });

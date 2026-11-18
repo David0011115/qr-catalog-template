@@ -267,3 +267,39 @@ test('WebSocket tickets cannot be issued to non-members and expired tickets are 
   assert.equal(tickets.size, 0);
 });
 
+test('room WebSocket handler accepts authoritative input and enforces the per-second input budget', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = { status: 'active' };
+  roomObject.runtime = {
+    lifecycle: { status: 'active' },
+    submitInput(userId, command) {
+      assert.equal(userId, 'player-1');
+      return { ok: true, seq: command.seq };
+    },
+  };
+  roomObject.messageRates = new Map();
+  roomObject.startLoop = () => {};
+  const events = [], messages = [];
+  roomObject.appendEvent = async (...args) => { events.push(args); };
+  const socket = {
+    readyState: 1,
+    deserializeAttachment: () => ({ userId: 'player-1' }),
+    send: value => messages.push(JSON.parse(value)),
+    close: (code, reason) => { socket.closed = { code, reason }; },
+  };
+
+  const now = Date.now();
+  for (let seq = 1; seq <= 36; seq++) {
+    await roomObject.webSocketMessage(socket, JSON.stringify({ type: 'input', seq, x: 1, z: 0 }));
+  }
+
+  assert.equal(events.length, 35);
+  assert.equal(messages.length, 35);
+  assert.equal(messages[0].type, 'input-queued');
+  assert.equal(messages[0].seq, 1);
+  assert.deepEqual(socket.closed, { code: 1008, reason: 'input-rate-limit' });
+  assert.equal(roomObject.messageRates.get('player-1').inputs, 36);
+  assert.ok(now <= Date.now());
+});
+

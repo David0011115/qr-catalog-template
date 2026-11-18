@@ -276,8 +276,11 @@ export function stepDuobackRuntime(state, world, dt, options = {}) {
   }
   if (phase.result) options.onResult?.(phase.result, world);
   const finish = phase.result
-    ? { finished: true, won: !!phase.result.won }
+    ? { finished: true, won: !!phase.result.won, reason: phase.result.reason }
     : duobackCanFinish(state, players);
+  if (finish.finished && !finish.reason) {
+    finish.reason = finish.won ? 'all-waves-cleared' : 'both-players-dead';
+  }
   if (finish.finished && !state.finished) {
     state.finished = true;
     options.onResult?.({

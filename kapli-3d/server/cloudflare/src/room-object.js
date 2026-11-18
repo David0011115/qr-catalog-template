@@ -8,7 +8,7 @@ import {
 import {
   createDuoMatchRuntime, restoreDuoMatchRuntime,
 } from '../../match/runtime.js';
-import { parseClientMessage, normalizeRoomCode, parseMode, sanitizeNickname } from '../protocol.js';
+import { parseClientMessage, normalizeRoomCode, parseMode, sanitizeNickname, consumeSocketMessageBudget } from '../protocol.js';
 import { persistMatchResult } from '../../supabase/results.js';
 import { territoryLeftShare } from '../../modes/territory.js';
 

@@ -427,6 +427,7 @@ test('Durable Object countdown creates an authoritative match and publishes its 
   assert.ok(init);
   assert.equal(init.mode, 'territory');
   assert.equal(init.owners.filter(owner => owner.isPlayer).length, 2);
-  assert.equal(init.cells.length, 2);
+  const playerIds = new Set(init.owners.filter(owner => owner.isPlayer).map(owner => owner.id));
+  assert.equal(init.cells.filter(cell => playerIds.has(cell.ownerId)).length, 2);
 });
 

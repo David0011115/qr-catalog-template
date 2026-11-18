@@ -573,8 +573,14 @@ export class GameRoom {
       modeState: world.modeState, respawnTimers: world.respawnTimers || {},
       tick: this.runtime.simulation.tick, clock: world.clock || 0,
       inputSeqs: { ...this.runtime.simulation.lastReceivedSeq },
-      abilitySeqs: { ...this.runtime.abilityState.lastCommandSeq },
+      abilitySeqs: { ...this.runtime.simulation.lastAbilityReceivedSeq },
       boostSeqs: { ...this.runtime.lastBoostSeq }, actionSeqs: { ...this.runtime.lastActionSeq },
+      processedSeqs: {
+        input: { ...this.runtime.simulation.lastProcessedSeq },
+        ability: { ...this.runtime.simulation.lastAbilityProcessedSeq },
+        boost: { ...this.runtime.lastBoostProcessedSeq },
+        action: { ...this.runtime.lastActionProcessedSeq },
+      },
     };
   }
 
@@ -588,6 +594,18 @@ export class GameRoom {
       viruses: world.viruses.map(virus => ({ ...virus })),
       ejects: world.ejects.map(item => ({ ...item })),
       foodChanges, modeState: world.modeState, respawnTimers: world.respawnTimers || {},
+      receivedSeqs: {
+        input: { ...this.runtime.simulation.lastReceivedSeq },
+        ability: { ...this.runtime.simulation.lastAbilityReceivedSeq },
+        boost: { ...this.runtime.lastBoostSeq },
+        action: { ...this.runtime.lastActionSeq },
+      },
+      processedSeqs: {
+        input: { ...this.runtime.simulation.lastProcessedSeq },
+        ability: { ...this.runtime.simulation.lastAbilityProcessedSeq },
+        boost: { ...this.runtime.lastBoostProcessedSeq },
+        action: { ...this.runtime.lastActionProcessedSeq },
+      },
       elapsedMs: this.runtime.elapsedMs(),
     };
   }

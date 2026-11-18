@@ -471,7 +471,7 @@
     return { get on() { return on; }, get server() { return serverMode; }, get serverRole() { return role; }, serverBegin, serverIndex, serverApply: applyServer, serverBonusIndex: type => BONUS_IDS.indexOf(type), serverTick, serverEnd, serverAbort, get serverInput() { return localDir(); }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
       later: f => { if (built) f(); else lazy.push(f); },
       get paused() { return on && !botMate && Duo.stalled; }, get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, get practice() { return botMate; }, rules, rivalPick, result,
-      steerRival, act: (k, i) => { if (serverMode) window.KapliOnlineServer?.useAbility(k, i); else if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
+      steerRival, act: (k, i) => { if (serverMode) { if (k === 'slot') window.KapliOnlineServer?.useAbility(k, i); else window.KapliOnlineServer?.useAction(k); } else if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
       // a hook in canEat: the rules of the mode may forbid a bite; the second player's shield bonus counts like yours
       eatBlock: (a, b) => on && ((b.owner === rival && role === 'host' && rival.eff.shield > 0) || !!(rl && rl.eatBlock && rl.eatBlock(a, b))),
       speedK: c => { if (!on) return 1; let k = c.owner === rival && role === 'host' && rival.eff.speed > 0 ? 1.45 : 1; if (rl && rl.speedK) k *= rl.speedK(c); return k; },

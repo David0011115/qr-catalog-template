@@ -50,3 +50,38 @@ export function findTerritoryBotSpawn(state, index, world, rng, minDistance = 14
 export function findDuobackBossSpawn(world, rng) {
   return findSafeSpawn(world, rng, 40);
 }
+
+
+// Mirrors DuoM.place() for a player returning after respawn.
+export function respawnDuoPlayerOwner(player, world) {
+  if (!player?.isPlayer || !world || !Array.isArray(world.cells) ||
+      !Array.isArray(player.cells) || !Array.isArray(player.free) || player.cells.length) return false;
+  const home = player.homeSide ?? (player.role === 'host' ? -1 : 1);
+  let x;
+  if (world.mode === 'territory') {
+    const border = Number.isFinite(world.modeState?.border) ? world.modeState.border : 0;
+    x = border + (home * world.arenaRadius - border) * 0.6;
+  } else {
+    x = home * world.arenaRadius * 0.18;
+  }
+  const slotId = player.free.pop();
+  if (slotId == null) return false;
+  const sequence = Number.isSafeInteger(world.nextEntitySequence) && world.nextEntitySequence > 0
+    ? world.nextEntitySequence++ : (world.nextEntitySequence = 2, 1);
+  const cell = {
+    id: `player:${player.id}:cell:${sequence}`,
+    slotId,
+    x, z: 0, mass: 10,
+    vx: 0, vz: 0, hx: x > 0 ? -1 : 1, hz: 0,
+    mergeT: 0, gone: false, owner: player,
+  };
+  player.cells.push(cell);
+  world.cells.push(cell);
+  player.freeCount = player.free.length;
+  player.spawnSh = 3;
+  player.eff ||= { speed: 0, shield: 0, double: 0, magnet: 0 };
+  player.eff.shield = Math.max(0, Number(player.eff.shield) || 0, 3);
+  player.target = null;
+  delete player.respawnAt;
+  return cell;
+}

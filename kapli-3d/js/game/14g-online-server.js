@@ -321,9 +321,15 @@
     for (const owner of payload.owners) ownerIndices.set(owner.id, DuoM.serverIndex(owner));
 
     const rows = [], cellMeta = {};
+    const cellsByOwner = new Map();
+    for (const cell of payload.cells || []) {
+      let ownCells = cellsByOwner.get(cell.ownerId);
+      if (!ownCells) cellsByOwner.set(cell.ownerId, ownCells = []);
+      ownCells.push(cell);
+    }
     for (const owner of payload.owners) {
       const index = ownerIndices.get(owner.id);
-      const ownCells = (payload.cells || []).filter(cell => cell.ownerId === owner.id)
+      const ownCells = (cellsByOwner.get(owner.id) || [])
         .sort((a, b) => String(a.slotId ?? a.id).localeCompare(String(b.slotId ?? b.id), undefined, { numeric: true }));
       const row = [index];
       for (const cell of ownCells) row.push(cell.x, cell.z, cell.mass);
@@ -466,6 +472,16 @@
     else if (message.type === 'error') toast(message.error || 'Ошибка онлайн-соединения');
   }
 
+  async function finishMatch() {
+    if (!room?.code || !matchStarted || leaving) return;
+    const code = room.code;
+    try {
+      await api('/api/rooms/' + code + '/finish', 'POST', {});
+    } catch (error) {
+      toast(error?.message || 'Не удалось завершить матч для обоих игроков');
+    }
+  }
+
   async function readyToggle() {
     const me = room?.players?.find(player => player.id === userId);
     if (!room || !me) return;
@@ -558,7 +574,7 @@
   }, true);
 
   window.KapliOnlineServer = {
-    openLobby, sendInput, useAbility, useAction, pickBoost,
+    openLobby, sendInput, useAbility, useAction, pickBoost, finishMatch,
     get paused() { return paused || !!room && room.status === 'paused'; },
     get active() { return !!activeMode; },
     get room() { return room; },

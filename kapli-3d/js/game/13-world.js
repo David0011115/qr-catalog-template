@@ -260,6 +260,10 @@
   }
   function draw(now) {
     if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode === 'raid' || bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu'); }
+    // Relationship rings and hidden-boss visibility do not need 60 Hz checks.
+    // Refreshing them at 10 Hz removes repeated canEat() scans when players split.
+    const relationRefresh = now - (draw.relationAt || 0) >= 100;
+    if (relationRefresh) draw.relationAt = now;
     decorateHoliday();
     shineT.value = now / 1000;
     animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
@@ -285,9 +289,10 @@
           animateLook(v, now, c);
         }
       }
-      if (c.owner.bossType === 'chameleon') {
-        // invisible until you are close: fades in over the last 20 units
-        let dmin = Infinity; for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
+      if (c.owner.bossType === 'chameleon' && (relationRefresh || c.seen === undefined)) {
+        // Invisible until you are close: 10 Hz is enough for this proximity fade.
+        let dmin = Infinity;
+        for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
         const al = !player.cells.length ? .9 : Math.max(.05, Math.min(.9, (30 - dmin) / 20));
         c.vis.mesh.material.opacity = al; c.vis.glow.material.opacity = al * .9; c.vis.crown.visible = al > .5; c.vis.ring.visible = al > .3; c.seen = al > .3;
       }
@@ -299,12 +304,26 @@
       v.ring.scale.setScalar(r);
       if (c.owner.isPlayer) {
         v.shield.visible = shieldOn;
-        v.ring.material.color.set(c.mergeT > 0 ? BONUS.shield.color : '#ffffff');
+        const mergeTone = c.mergeT > 0 ? 1 : 0;
+        if (v._mergeTone !== mergeTone) {
+          v.ring.material.color.set(mergeTone ? BONUS.shield.color : '#ffffff');
+          v._mergeTone = mergeTone;
+        }
         v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
-      } else if (player.cells.length) {
-        const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
-        if (c.owner.team && c.owner.team === player.team) v.ring.material.color.set(ALLY_COLOR);
-        else v.ring.material.color.copy(danger ? THREAT : food ? PREY : NEUTRAL);
+      } else if (player.cells.length && (relationRefresh || v._ringTone === undefined)) {
+        // Cache the expensive per-player canEat scans between render frames.
+        let tone = 0; // neutral
+        if (c.owner.team && c.owner.team === player.team) tone = 1; // ally
+        else {
+          const danger = player.cells.some(p => canEat(c, p));
+          const food = !danger && player.cells.some(p => canEat(p, c));
+          tone = danger ? 2 : food ? 3 : 0;
+        }
+        if (v._ringTone !== tone) {
+          if (tone === 1) v.ring.material.color.set(ALLY_COLOR);
+          else v.ring.material.color.copy(tone === 2 ? THREAT : tone === 3 ? PREY : NEUTRAL);
+          v._ringTone = tone;
+        }
       }
     }
     ejectMat.color.set(skin().color); ejectMat.emissive.set(skin().color);
@@ -323,7 +342,10 @@
       for (const c of player.cells) { m += c.mass; x += c.x * c.mass; z += c.z * c.mass; }
       focus = { x: x / m, z: z / m, m };
     } else if (!running) focus.m = 40;
-    const spread = player.cells.length > 1 ? Math.max(...player.cells.map(c => Math.hypot(c.x - focus.x, c.z - focus.z))) : 0;
+    let spread = 0;
+    if (player.cells.length > 1) {
+      for (const c of player.cells) spread = Math.max(spread, Math.hypot(c.x - focus.x, c.z - focus.z));
+    }
     const fr = radius(focus.m);
     let h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 2.2 * (camera.aspect < 1 ? 1 + Math.min(.6, (1 - camera.aspect) * 1.1) : 1);   // giants get extra zoom-out; 120% farther for everyone (1.7.0); narrow portrait screens (phones) up to 60% more
     h = Math.min(h, 330);   // never leave the starry sky or lose the far edge of the arena

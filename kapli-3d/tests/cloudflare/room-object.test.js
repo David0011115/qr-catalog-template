@@ -202,3 +202,68 @@ test('SQLite recovery stops replaying world ticks once a replayed command ends t
   assert.equal(runtime.simulation.tick, 1);
   assert.equal(result.replayedCommands, 0);
 });
+
+test('WebSocket tickets are hashed at rest, bound to their player and consumed exactly once', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.room = { players: [{ id: 'player-1' }] };
+  const tickets = new Map();
+  roomObject.sql = (query, ...values) => {
+    if (query.startsWith('INSERT INTO socket_tickets')) {
+      tickets.set(values[0], { user_id: values[1], expires_at: values[2] });
+      return { toArray: () => [] };
+    }
+    if (query.startsWith('SELECT user_id, expires_at FROM socket_tickets')) {
+      const row = tickets.get(values[0]);
+      return { toArray: () => row ? [{ ...row }] : [] };
+    }
+    if (query.startsWith('DELETE FROM socket_tickets')) {
+      tickets.delete(values[0]);
+      return { toArray: () => [] };
+    }
+    throw new Error('Unexpected SQL: ' + query);
+  };
+
+  const issued = await roomObject.issueTicket('player-1');
+  assert.equal(issued.status, 200);
+  const { ticket, expiresAt } = await issued.json();
+  assert.match(ticket, /^[a-f0-9]{64}$/);
+  assert.ok(expiresAt > Date.now());
+  assert.equal(tickets.size, 1);
+  const [storedHash, stored] = [...tickets.entries()][0];
+  assert.notEqual(storedHash, ticket);
+  assert.equal(stored.user_id, 'player-1');
+
+  assert.equal(await roomObject.consumeTicket(ticket), 'player-1');
+  assert.equal(tickets.size, 0);
+  assert.equal(await roomObject.consumeTicket(ticket), null);
+});
+
+test('WebSocket tickets cannot be issued to non-members and expired tickets are rejected', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.room = { players: [{ id: 'player-1' }] };
+  const tickets = new Map();
+  roomObject.sql = (query, ...values) => {
+    if (query.startsWith('INSERT INTO socket_tickets')) {
+      tickets.set(values[0], { user_id: values[1], expires_at: values[2] });
+      return { toArray: () => [] };
+    }
+    if (query.startsWith('SELECT user_id, expires_at FROM socket_tickets')) {
+      const row = tickets.get(values[0]);
+      return { toArray: () => row ? [{ ...row }] : [] };
+    }
+    if (query.startsWith('DELETE FROM socket_tickets')) {
+      tickets.delete(values[0]);
+      return { toArray: () => [] };
+    }
+    throw new Error('Unexpected SQL: ' + query);
+  };
+
+  assert.equal((await roomObject.issueTicket('stranger')).status, 404);
+  const issued = await roomObject.issueTicket('player-1');
+  const { ticket } = await issued.json();
+  const [hash, row] = [...tickets.entries()][0];
+  tickets.set(hash, { ...row, expires_at: Date.now() - 1 });
+  assert.equal(await roomObject.consumeTicket(ticket), null);
+  assert.equal(tickets.size, 0);
+});
+

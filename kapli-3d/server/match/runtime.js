@@ -43,7 +43,7 @@ function finishMatch(lifecycle, result, now) {
   return true;
 }
 
-function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeCommands = [], lastBoostSeq = {}, actionQueue = [], lastActionSeq = {}, options = {} }) {
+function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeCommands = [], lastBoostSeq = {}, lastBoostProcessedSeq = {}, actionQueue = [], lastActionSeq = {}, lastActionProcessedSeq = {}, options = {} }) {
   world.mode = mode;
   world.abilityState = abilityState;
   world.respawnTimers ||= [];
@@ -52,7 +52,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
 
   const resolvePlayers = currentWorld => playersFor(currentWorld);
   const runtime = {
-    mode, lifecycle, simulation, world, abilityState, modeCommands, lastBoostSeq, actionQueue, lastActionSeq,
+    mode, lifecycle, simulation, world, abilityState, modeCommands, lastBoostSeq, lastBoostProcessedSeq, actionQueue, lastActionSeq, lastActionProcessedSeq,
     submitInput(playerId, command) {
       return submitPlayerInput(simulation, lifecycle, playerId, command);
     },
@@ -116,6 +116,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
           rebuildCells: options.rebuildCells,
         }) : { ok: false, reason: 'owner-not-found' };
         actionEvents.push({ playerId: command.playerId, seq: command.seq, action: command.action, ...result });
+        lastActionProcessedSeq[command.playerId] = command.seq;
       }
       const out = stepSimulationTick(simulation, lifecycle, world, {
         resolveOwner: ownerFor,
@@ -220,6 +221,7 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
               const player = ownerFor(currentWorld, command.playerId);
               const ok = player && chooseDuobackBoost(currentWorld.modeState, resolvePlayers(currentWorld), player.role, command.id);
               boostEvents.push({ playerId: command.playerId, role: player?.role || null, id: command.id, accepted: !!ok, seq: command.seq });
+              lastBoostProcessedSeq[command.playerId] = command.seq;
             }
             result = stepDuobackRuntime(currentWorld.modeState, currentWorld, dt, {
               resolvePlayers,
@@ -252,8 +254,10 @@ function attachRuntime({ mode, lifecycle, simulation, world, abilityState, modeC
         simulation: serializeSimulationLoopState(simulation),
         modeCommands: modeCommands.map(command => ({ ...command })),
         lastBoostSeq: { ...lastBoostSeq },
+        lastBoostProcessedSeq: { ...lastBoostProcessedSeq },
         actionQueue: actionQueue.map(command => ({ ...command })),
         lastActionSeq: { ...lastActionSeq },
+        lastActionProcessedSeq: { ...lastActionProcessedSeq },
         world: worldSnapshot,
       };
     },
@@ -292,8 +296,10 @@ export function restoreDuoMatchRuntime(snapshot, options = {}) {
     mode: snapshot.mode, lifecycle, simulation, world, abilityState,
     modeCommands: Array.isArray(snapshot.modeCommands) ? snapshot.modeCommands : [],
     lastBoostSeq: snapshot.lastBoostSeq && typeof snapshot.lastBoostSeq === 'object' ? { ...snapshot.lastBoostSeq } : {},
+    lastBoostProcessedSeq: snapshot.lastBoostProcessedSeq && typeof snapshot.lastBoostProcessedSeq === 'object' ? { ...snapshot.lastBoostProcessedSeq } : {},
     actionQueue: Array.isArray(snapshot.actionQueue) ? snapshot.actionQueue.map(command => ({ ...command })) : [],
     lastActionSeq: snapshot.lastActionSeq && typeof snapshot.lastActionSeq === 'object' ? { ...snapshot.lastActionSeq } : {},
+    lastActionProcessedSeq: snapshot.lastActionProcessedSeq && typeof snapshot.lastActionProcessedSeq === 'object' ? { ...snapshot.lastActionProcessedSeq } : {},
     options,
   });
 }

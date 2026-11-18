@@ -82,3 +82,12 @@ test('Duo world keeps authenticated loadouts while disabling account upgrades in
   assert.equal(host.abilityLevels.shield, 2);
   assert.equal(guest.skin, 'mint');
 });
+
+
+test('server-drawn online build is shared by both players when no explicit build is supplied', () => {
+  const { world, players: owners, build } = createDuoWorld({ mode: 'territory', players, seed: 24680 });
+  assert.equal(build.length, 3);
+  assert.deepEqual(owners.host.build, build);
+  assert.deepEqual(owners.guest.build, build);
+  assert.deepEqual(owners.host.build, owners.guest.build);
+});

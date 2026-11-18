@@ -374,7 +374,14 @@
       if (room) room.status = 'closed';
       clearSavedRoom(); render();
     } else if (message.type === 'command-rejected') toast('Команда не принята: ' + (message.reason || 'ошибка'));
-    else if (message.type === 'match-error') toast('Сервер остановил матч из-за внутренней ошибки');
+    else if (message.type === 'match-error') {
+      toast('Сервер остановил матч из-за внутренней ошибки');
+      if (room) { room.status = 'closed'; room.closeReason = 'simulation-error'; }
+      clearSavedRoom();
+      matchStarted = false; paused = false; connected = false;
+      if (socket) { const old = socket; socket = null; try { old.close(1011, 'simulation-error'); } catch {} }
+      showLobbyCard();
+    }
     else if (message.type === 'error') toast(message.error || 'Ошибка онлайн-соединения');
   }
 

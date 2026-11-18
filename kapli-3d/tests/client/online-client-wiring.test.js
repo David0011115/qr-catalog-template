@@ -46,7 +46,7 @@ test('fatal server simulation errors close the client socket and clear stale roo
 
 test('service worker cache version is bumped and includes the online client', async () => {
   const serviceWorker = await read('../../sw.js');
-  assert.match(serviceWorker, /const CACHE = ["']kapli3d-v312["']/);
+  assert.match(serviceWorker, /const CACHE = ["']kapli3d-v313["']/);
   assert.match(serviceWorker, /js\/game\/14g-online-server\.js/);
 });
 

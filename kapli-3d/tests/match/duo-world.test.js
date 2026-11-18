@@ -47,7 +47,7 @@ test('world generation rejects unsupported modes and invalid player identities',
 });
 
 
-test('Duo world uses each authenticated player loadout and source-derived progression', () => {
+test('Duo world keeps authenticated loadouts while disabling account upgrades in two-player modes', () => {
   const world = createDuoWorld({
     mode: 'duoback', seed: 77, players: [
       {
@@ -70,15 +70,15 @@ test('Duo world uses each authenticated player loadout and source-derived progre
   const guest = world.players.guest;
   assert.deepEqual(host.build, ['dash', 'shield', 'eject']);
   assert.deepEqual(guest.build, ['split', 'pulse', null]);
-  assert.equal(host.cells[0].mass, 13);
-  assert.equal(guest.cells[0].mass, 11);
-  assert.equal(host.splitMaxParts, 6);
-  assert.equal(host.mergeSeconds, 12.74);
-  assert.equal(host.dashCooldown, 3.76);
-  assert.equal(host.dashDuration, 0.49);
-  assert.ok(Math.abs(host.dashMassCost - 0.0204) < 1e-12);
+  assert.equal(host.cells[0].mass, 10);
+  assert.equal(guest.cells[0].mass, 10);
+  assert.equal(host.splitMaxParts, 4);
+  assert.equal(host.mergeSeconds, 14);
+  assert.equal(host.dashCooldown, 4);
+  assert.equal(host.dashDuration, 0.35);
+  assert.equal(host.dashMassCost, 0.03);
   assert.equal(host.ejectSpeed, 75.6);
-  assert.equal(host.upgrades.guard, 3);
+  assert.deepEqual(host.upgrades, {});
   assert.equal(host.abilityLevels.shield, 2);
   assert.equal(guest.skin, 'mint');
 });

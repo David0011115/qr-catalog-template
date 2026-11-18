@@ -325,3 +325,28 @@ test('runtime does not process already-queued utility actions while a match is p
   assert.equal(runtime.actionQueue.length, 0);
 });
 
+test('DuoBack match completion preserves the exact win or defeat reason for persistence', () => {
+  const won = createDuoMatchRuntime({
+    roomId: 'room-final-wave', matchId: 'match-final-wave', players,
+    mode: 'duoback', seed: 995, startedAt: 1000,
+  });
+  won.world.modeState.wave = 50;
+  won.world.modeState.phase = 0;
+  won.world.modeState.regular = [];
+  won.world.modeState.special = null;
+  won.world.modeState.finished = false;
+  const winStep = won.step();
+  assert.equal(winStep.modeStep.finish.reason, 'all-waves-cleared');
+  assert.equal(won.lifecycle.result.reason, 'all-waves-cleared');
+
+  const lost = createDuoMatchRuntime({
+    roomId: 'room-both-dead', matchId: 'match-both-dead', players,
+    mode: 'duoback', seed: 996, startedAt: 1000,
+  });
+  for (const player of lost.world.owners.filter(owner => owner.isPlayer)) player.cells = [];
+  lost.world.cells = lost.world.cells.filter(cell => !cell.owner.isPlayer);
+  const lossStep = lost.step();
+  assert.equal(lossStep.modeStep.finish.reason, 'both-players-dead');
+  assert.equal(lost.lifecycle.result.reason, 'both-players-dead');
+});
+

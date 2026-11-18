@@ -69,10 +69,11 @@ export function setAbilityActive(owner, id, duration) {
 }
 
 export function startAbilityCooldown(owner, id, options = {}) {
+  if (!ABILITY_DATA[id] || !owner?.abCd) return false;
   const duration = options.player
     ? abilityCooldown(id, options.level || 0, !!options.chronosArena)
-    : (ABILITY_DATA[id]?.cd ?? null) * (options.chronosArena ? ABILITY_TUNING.chronosCooldownMultiplier : 1);
-  if (duration == null || !owner?.abCd) return false;
+    : ABILITY_DATA[id].cd * (options.chronosArena ? ABILITY_TUNING.chronosCooldownMultiplier : 1);
+  if (duration == null || !Number.isFinite(duration)) return false;
   owner.abCd[id] = duration;
   return true;
 }

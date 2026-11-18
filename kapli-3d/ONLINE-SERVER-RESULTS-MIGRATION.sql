@@ -236,3 +236,9 @@ revoke all on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid
 revoke all on function public.kapli_duo_coop_submit_server(uuid, uuid, uuid, integer, integer, integer, integer, integer, integer, jsonb) from public, anon, authenticated;
 grant execute on function public.kapli_duo_territory_submit_server(uuid, uuid, uuid, text, integer, jsonb) to service_role;
 grant execute on function public.kapli_duo_coop_submit_server(uuid, uuid, uuid, integer, integer, integer, integer, integer, integer, jsonb) to service_role;
+
+
+-- Close the legacy client-authenticated result entry points. Online duo results
+-- are now accepted only through the service-role functions called by Cloudflare.
+revoke all on function public.kapli_duo_territory_submit(text, integer) from public, anon, authenticated;
+revoke all on function public.kapli_duo_coop_submit(integer, bigint, integer, integer, integer, integer, integer) from public, anon, authenticated;

@@ -15,11 +15,9 @@ import { territoryLeftShare } from '../../modes/territory.js';
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 const SNAPSHOT_RATE = 15;
-// Movement is simulated at 30 Hz, but the recovery log only needs a recent
-// direction sample every 100 ms (10 Hz) per player. Gameplay still receives
-// every input; this only bounds SQLite event-log writes during normal play.
-const INPUT_EVENT_MIN_INTERVAL_MS = 100;
-const PERSIST_INTERVAL_MS = 5000;
+// Movement inputs stay in memory. Persist a full authoritative checkpoint every 1.5 s
+// so an evicted Durable Object can recover without a high-volume input event log.
+const PERSIST_INTERVAL_MS = 1500;
 const RESULT_RETRY_MS = 60000;
 
 export function replayMatchEvents(runtime, events, snapshotAt, now = Date.now(), tickRate = TICK_RATE) {
@@ -125,7 +123,6 @@ export class GameRoom {
     this.nextTickAt = 0;
     this.lastPersistAt = 0;
     this.messageRates = new Map();
-    this.lastInputEventAt = new Map();
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS room_state (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -483,10 +480,21 @@ export class GameRoom {
     if (this.runtime?.lifecycle.status === 'paused' && !player.connected) {
       const resumed = this.runtime.reconnect(userId, Date.now());
       if (resumed.ok) reconnectRoomPlayer(this.room, userId);
-      else if (resumed.reason !== 'match-not-paused') return json({ error: resumed.reason }, 409);
+      else if (resumed.reason === 'reconnect-window-expired' && this.runtime.lifecycle.status === 'finished') {
+        this.room.status = 'closed';
+        this.room.closedAt = Date.now();
+        this.room.closeReason = 'reconnect-timeout';
+        await this.finishMatch();
+        return json({ error: resumed.reason }, 409);
+      } else if (resumed.reason !== 'match-not-paused') return json({ error: resumed.reason }, 409);
     }
     player.connected = true;
-    if (this.room.status === 'paused' && this.room.players.every(item => item.connected)) this.room.status = 'active';
+    if (this.room.status === 'paused' && this.room.players.every(item => item.connected)) {
+      this.room.status = 'active';
+      await this.ctx.storage.deleteAlarm();
+    } else if (this.room.status === 'paused') {
+      await this.scheduleReconnectAlarm();
+    }
 
     const pair = new WebSocketPair();
     const client = pair[0], server = pair[1];
@@ -542,19 +550,15 @@ export class GameRoom {
       return;
     }
     const isInput = parsed.command.type === 'input';
-    const now = Date.now();
-    const lastInputEventAt = this.lastInputEventAt.get(userId);
-    // Keep a bounded recovery trail for continuous movement without writing
-    // every 30 Hz joystick sample to SQLite. Abilities/actions remain lossless.
-    if (!isInput || lastInputEventAt === undefined || now - lastInputEventAt >= INPUT_EVENT_MIN_INTERVAL_MS) {
-      if (isInput) this.lastInputEventAt.set(userId, now);
-      const eventType = isInput ? 'input-command'
-        : parsed.command.type === 'ability' ? 'ability-command'
-          : parsed.command.type === 'action' ? 'action-command' : 'boost-command';
+    // Continuous movement is held in the authoritative runtime and captured by
+    // periodic checkpoints; only discrete gameplay commands enter the event log.
+    if (!isInput) {
+      const eventType = parsed.command.type === 'ability' ? 'ability-command'
+        : parsed.command.type === 'action' ? 'action-command' : 'boost-command';
       await this.appendEvent(eventType, { playerId: userId, command: parsed.command }, false);
     }
-    // Input is already acknowledged by authoritative snapshots; avoid an
-    // extra WebSocket response for every movement sample.
+    // Movement is acknowledged by authoritative snapshots; discrete commands
+    // receive an explicit queued acknowledgement.
     if (!isInput) {
       this.send(socket, {
         type: parsed.command.type === 'ability' ? 'ability-queued' : parsed.command.type === 'action' ? 'action-queued' : 'boost-queued',
@@ -571,7 +575,6 @@ export class GameRoom {
       other !== socket && other.readyState === 1 && other.deserializeAttachment()?.userId === userId);
     if (stillConnected) return;
     this.messageRates?.delete(userId);
-    this.lastInputEventAt?.delete(userId);
     await this.onDisconnect(userId);
   }
 
@@ -604,12 +607,12 @@ export class GameRoom {
     this.broadcast({ type: 'match-paused', playerId: userId, reconnectUntil: result?.reconnectUntil });
   }
 
-  scheduleReconnectAlarm() {
-    if (!this.runtime) return;
-    const deadlines = this.runtime.lifecycle.players
+  async scheduleReconnectAlarm() {
+    const deadlines = this.runtime?.lifecycle.players
       .filter(player => !player.connected && Number.isFinite(player.reconnectUntil))
-      .map(player => player.reconnectUntil);
-    if (deadlines.length) return this.ctx.storage.setAlarm(Math.min(...deadlines));
+      .map(player => player.reconnectUntil) || [];
+    if (deadlines.length) await this.ctx.storage.setAlarm(Math.min(...deadlines));
+    else await this.ctx.storage.deleteAlarm();
   }
 
   resolveDisconnect(disconnected, players) {

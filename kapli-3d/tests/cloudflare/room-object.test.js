@@ -268,7 +268,7 @@ test('WebSocket tickets cannot be issued to non-members and expired tickets are 
   assert.equal(tickets.size, 0);
 });
 
-test('room WebSocket handler accepts authoritative input and enforces the per-second input budget', async () => {
+test('room WebSocket handler accepts movement in memory without persisting or acknowledging every sample', async () => {
   const roomObject = Object.create(GameRoom.prototype);
   roomObject.ready = Promise.resolve();
   roomObject.room = { status: 'active' };
@@ -295,10 +295,8 @@ test('room WebSocket handler accepts authoritative input and enforces the per-se
     await roomObject.webSocketMessage(socket, JSON.stringify({ type: 'input', seq, x: 1, z: 0 }));
   }
 
-  assert.equal(events.length, 35);
-  assert.equal(messages.length, 35);
-  assert.equal(messages[0].type, 'input-queued');
-  assert.equal(messages[0].seq, 1);
+  assert.equal(events.length, 0);
+  assert.equal(messages.length, 0);
   assert.deepEqual(socket.closed, { code: 1008, reason: 'input-rate-limit' });
   assert.equal(roomObject.messageRates.get('player-1').inputs, 36);
   assert.ok(now <= Date.now());
@@ -467,3 +465,56 @@ test('match completion sends the final authoritative snapshot before the result 
   assert.equal(messages[0].modeState.team.bosses, 7);
 });
 
+
+
+test('reconnect alarm ends a match when both players disconnect and their deadlines expire', async () => {
+  const now = Date.now();
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = { status: 'paused', mode: 'territory' };
+  roomObject.runtime = {
+    lifecycle: {
+      status: 'paused', pausedAt: now - 31000, pausedMs: 0,
+      players: [
+        { id: 'host', role: 'host', connected: false, disconnectedAt: now - 31000, reconnectUntil: now - 1000 },
+        { id: 'guest', role: 'guest', connected: false, disconnectedAt: now - 30000, reconnectUntil: now },
+      ],
+    },
+  };
+  roomObject.resolveDisconnect = (disconnected, players) => ({
+    reason: 'reconnect-timeout', disconnected, connected: players.filter(player => player.connected).length,
+  });
+  let finished = 0;
+  roomObject.finishMatch = async () => { finished++; };
+  roomObject.ctx = { storage: { setAlarm: async () => {}, deleteAlarm: async () => {} } };
+
+  await roomObject.alarm();
+
+  assert.equal(roomObject.runtime.lifecycle.status, 'finished');
+  assert.equal(roomObject.runtime.lifecycle.endReason, 'reconnect-timeout');
+  assert.equal(roomObject.runtime.lifecycle.result.connected, 0);
+  assert.deepEqual(roomObject.runtime.lifecycle.result.disconnected.map(player => player.role), ['host', 'guest']);
+  assert.equal(roomObject.room.status, 'closed');
+  assert.equal(finished, 1);
+});
+
+test('reconnect alarm is moved to the nearest remaining deadline and cleared after full reconnect', async () => {
+  const calls = [];
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.runtime = {
+    lifecycle: { players: [
+      { connected: false, reconnectUntil: 5000 },
+      { connected: false, reconnectUntil: 7000 },
+    ] },
+  };
+  roomObject.ctx = { storage: {
+    setAlarm: async at => calls.push(['set', at]),
+    deleteAlarm: async () => calls.push(['delete']),
+  } };
+
+  await roomObject.scheduleReconnectAlarm();
+  roomObject.runtime.lifecycle.players.forEach(player => { player.connected = true; player.reconnectUntil = null; });
+  await roomObject.scheduleReconnectAlarm();
+
+  assert.deepEqual(calls, [['set', 5000], ['delete']]);
+});

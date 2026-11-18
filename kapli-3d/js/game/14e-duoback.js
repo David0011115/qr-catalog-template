@@ -406,7 +406,6 @@
         list.push({ w, t: x.t || 0, b: x.b || 0, s: x.s || 0, k: x.k || 0, r: x.r || 0, n: String(rival().name || '').slice(0, 24), d: Date.now() });
         list.sort((a, b) => b.w - a.w || a.t - b.t); list.length = Math.min(5, list.length);
         persist();
-        if (!DuoM.server && !DuoM.practice && DuoM.role === 'host') Net.duoCoop(x.df || 0, rival().pid, w, x.t || 0, (x.b || 0) + (x.s || 0), x.k || 0, x.r || 0);   // the room's creator sends the pair's run
         stats.duoHero = { v: w, l: 'волн пройдено' }; stats.duoWave = w; stats.duoSpecial5T = x.s5 || 0;
         stats.bossCoins = 0; stats.bossXp = Math.round((w * 8 + (x.s || 0) * 30) * df.coins);   // the same reward for both players
         const won = !!x.won;

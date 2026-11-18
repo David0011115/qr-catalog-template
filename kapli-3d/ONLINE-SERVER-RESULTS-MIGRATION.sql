@@ -47,9 +47,14 @@ begin
   end if;
 
   v_host_result := p_host_result;
-  if (v_host_result = 'win' and p_host_share < 51)
-     or (v_host_result = 'loss' and p_host_share > 49)
-     or (v_host_result = 'draw' and p_host_share not between 48 and 52) then
+  -- A reconnect-timeout is decided by the connection rule, not the current
+  -- territory percentage. Keep the actual share for statistics, but do not
+  -- reject a valid forfeit winner (or double-disconnect draw) for that reason.
+  if coalesce(v_extra->>'reason', '') <> 'reconnect-timeout' and (
+       (v_host_result = 'win' and p_host_share < 51)
+       or (v_host_result = 'loss' and p_host_share > 49)
+       or (v_host_result = 'draw' and p_host_share not between 48 and 52)
+     ) then
     return jsonb_build_object('ok', false, 'reason', 'result-share-mismatch');
   end if;
   v_guest_result := case v_host_result

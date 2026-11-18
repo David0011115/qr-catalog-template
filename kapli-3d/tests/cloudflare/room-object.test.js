@@ -303,3 +303,47 @@ test('room WebSocket handler accepts authoritative input and enforces the per-se
   assert.ok(now <= Date.now());
 });
 
+test('room WebSocket handler dispatches ability, action and boost commands and answers ping', async () => {
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = { status: 'active' };
+  const calls = [], events = [], messages = [];
+  roomObject.runtime = {
+    lifecycle: { status: 'active' },
+    submitAbility: (userId, command) => { calls.push(['ability', userId, command.slot]); return { ok: true }; },
+    submitAction: (userId, command) => { calls.push(['action', userId, command.action]); return { ok: true }; },
+    submitBoost: (userId, command) => { calls.push(['boost', userId, command.id]); return { ok: true }; },
+  };
+  roomObject.messageRates = new Map();
+  roomObject.startLoop = () => {};
+  roomObject.appendEvent = async (...args) => { events.push(args); };
+  const socket = {
+    readyState: 1,
+    deserializeAttachment: () => ({ userId: 'player-2' }),
+    send: value => messages.push(JSON.parse(value)),
+    close: () => { throw new Error('valid commands must not close the socket'); },
+  };
+
+  for (const message of [
+    { type: 'ability', seq: 1, slot: 2 },
+    { type: 'action', seq: 1, action: 'dash' },
+    { type: 'boost', seq: 1, id: 'sh_shield' },
+    { type: 'ping', sentAt: 1234 },
+  ]) {
+    await roomObject.webSocketMessage(socket, JSON.stringify(message));
+  }
+
+  assert.deepEqual(calls, [
+    ['ability', 'player-2', 2],
+    ['action', 'player-2', 'dash'],
+    ['boost', 'player-2', 'sh_shield'],
+  ]);
+  assert.deepEqual(events.map(event => event[0]), [
+    'ability-command', 'action-command', 'boost-command',
+  ]);
+  assert.deepEqual(messages.map(message => message.type), [
+    'ability-queued', 'action-queued', 'boost-queued', 'pong',
+  ]);
+  assert.equal(messages[3].sentAt, 1234);
+});
+

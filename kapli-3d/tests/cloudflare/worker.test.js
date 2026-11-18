@@ -106,7 +106,7 @@ test('Worker validates Supabase user and forwards room creation to the named Dur
     assert.equal(captured.nickname, 'Profile Nick');
     assert.equal(captured.body.mode, 'territory');
     assert.match(captured.body.code, /^[A-Z2-9]+$/);
-    assert.deepEqual(captured.body.player.build, ['shield', 'split', null]);
+    assert.equal(captured.body.player.build, null);
     assert.equal(captured.body.player.upgrades.big, 2);
     assert.equal(captured.body.player.upgrades.speed, 4);
     assert.equal(captured.body.player.abilityLevels.shield, 3);
@@ -184,7 +184,7 @@ test('Worker attaches the authenticated guest save to a room join without trusti
     assert.equal(response.status, 200);
     assert.equal(captured.path, '/internal/join');
     assert.deepEqual(actions, ['check', 'reset']);
-    assert.deepEqual(captured.body.player.build, ['shield', 'split', null]);
+    assert.equal(captured.body.player.build, null);
     assert.equal(captured.body.player.upgrades.big, 2);
   } finally { globalThis.fetch = originalFetch; }
 });
@@ -305,5 +305,25 @@ test('Worker blocks online matchmaking until the existing privacy policy consent
     assert.equal(response.status, 403);
     assert.equal((await response.json()).error, 'privacy-consent-required');
     assert.equal(roomCalls, 0);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+
+test('Worker does not substitute a single-player saved build for the source random Duo build', async () => {
+  authFetch();
+  let captured;
+  const env = envFor({
+    async fetch(internal) {
+      captured = JSON.parse(await internal.text());
+      return new Response(JSON.stringify({ room: { code: captured.code } }), { status: 201 });
+    },
+  });
+  try {
+    const response = await handleWorkerRequest(
+      request('https://worker.example/api/rooms', 'POST', { mode: 'duoback', difficultyIndex: 0 }),
+      env,
+    );
+    assert.equal(response.status, 201);
+    assert.equal(captured.player.build, null);
   } finally { globalThis.fetch = originalFetch; }
 });

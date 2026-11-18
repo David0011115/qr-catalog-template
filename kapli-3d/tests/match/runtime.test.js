@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   createDuoMatchRuntime, restoreDuoMatchRuntime,
 } from '../../server/match/runtime.js';
+import { spawnDuobackBossEntity } from '../../server/modes/duoback-entities.js';
 
 const players = [
   { id: 'user-host', role: 'host', nickname: 'Host' },
@@ -169,4 +170,42 @@ test('match runtime processes sequenced split and eject actions before the autho
   assert.equal(restored.lastActionProcessedSeq['user-host'], 2);
   assert.equal(restored.world.ejects.length, 2);
   assert.equal(restored.lastActionSeq['user-host'], 2);
+});
+
+
+test('authoritative DuoBack runtime spawns weaver viruses from boss attack events', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-weaver-virus', matchId: 'match-weaver-virus',
+    players, mode: 'duoback', seed: 710, startedAt: 100,
+  });
+  const state = runtime.world.modeState;
+  state.wave = 1;
+  state.regular = [{ type: 'weaver', slot: 0 }];
+  const { owner } = spawnDuobackBossEntity(runtime.world, {
+    kind: 'regular', type: 'weaver', slot: 0, mass: 120, life: 100, spikeT: 0.001,
+  }, { x: 0, z: 0 }, 1);
+  const before = runtime.world.viruses.length;
+  runtime.step();
+  assert.equal(owner.dbType, 'weaver');
+  assert.equal(runtime.world.viruses.length, before + 1);
+  assert.ok(runtime.world.viruses.some(virus => Number.isFinite(virus.x) && Number.isFinite(virus.z)));
+});
+
+test('special boss defeat bursts food into stable world slots for both online clients', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-special-food', matchId: 'match-special-food',
+    players, mode: 'duoback', seed: 711, startedAt: 100,
+  });
+  const state = runtime.world.modeState;
+  state.wave = 4;
+  state.phase = 1;
+  state.breakRemaining = 0.01;
+  runtime.step();
+  assert.ok(state.special);
+  state.special.damage = state.special.max;
+  const before = runtime.world.pendingFoodChanges.length;
+  runtime.step();
+  assert.equal(state.special, null);
+  assert.ok(runtime.world.pendingFoodChanges.length > before);
+  assert.ok(runtime.world.pendingFoodChanges.every(change => /^food:\d+$/.test(change.id)));
 });

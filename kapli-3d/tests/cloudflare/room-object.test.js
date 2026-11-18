@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GameRoom, roomPlayerForMatch, replayMatchEvents } from '../../server/cloudflare/src/room-object.js';
 import worker, { GameRoom as ExportedGameRoom } from '../../server/cloudflare/src/index.js';
+import { createRoomState, joinRoom, setPlayerReady } from '../../server/room/lifecycle.js';
 
 test('Cloudflare entrypoint exports the SQLite room object and Worker fetch handler', () => {
   assert.equal(GameRoom, ExportedGameRoom);
@@ -393,5 +394,39 @@ test('closed room rejects WebSocket commands even if the runtime lifecycle is st
     type: 'input', seq: 1, x: 1, z: 0,
   }));
   assert.deepEqual(messages, [{ type: 'error', error: 'match-not-active' }]);
+});
+
+test('Durable Object countdown creates an authoritative match and publishes its initial world', async () => {
+  const now = Date.now();
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = createRoomState({ roomId: 'room-e2e', code: 'ABCDE', hostId: 'host-user', now });
+  roomObject.room.mode = 'territory';
+  roomObject.room.difficultyIndex = 0;
+  joinRoom(roomObject.room, 'guest-user', now + 1);
+  setPlayerReady(roomObject.room, 'host-user', true, now + 2);
+  setPlayerReady(roomObject.room, 'guest-user', true, now + 3);
+  roomObject.room.countdownEndsAt = now - 1;
+  roomObject.seed = null;
+  roomObject.env = {};
+  roomObject.ctx = { storage: { setAlarm: async () => {} } };
+  const events = [], messages = [];
+  roomObject.appendEvent = async (...args) => { events.push(args); };
+  roomObject.broadcast = message => { messages.push(message); };
+  roomObject.startLoop = () => {};
+
+  await roomObject.alarm();
+
+  assert.equal(roomObject.room.status, 'active');
+  assert.ok(roomObject.room.matchId);
+  assert.equal(roomObject.runtime.lifecycle.status, 'active');
+  assert.equal(roomObject.runtime.mode, 'territory');
+  assert.equal(roomObject.runtime.world.owners.filter(owner => owner.isPlayer).length, 2);
+  assert.ok(events.some(event => event[0] === 'match-started'));
+  const init = messages.find(message => message.type === 'world-init');
+  assert.ok(init);
+  assert.equal(init.mode, 'territory');
+  assert.equal(init.owners.filter(owner => owner.isPlayer).length, 2);
+  assert.equal(init.cells.length, 2);
 });
 

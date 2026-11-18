@@ -293,6 +293,8 @@
     lastClock = payload.clock || lastClock;
     DuoM.serverApply({
       tm: payload.clock || 0, o: rows, cm: cellMeta, f: food,
+      b: Array.isArray(payload.bonuses)
+        ? payload.bonuses.flatMap(bonus => [DuoM.serverBonusIndex(bonus.type), bonus.x, bonus.z]) : undefined,
       v: viruses.flatMap(virus => [virus.x, virus.z, virus.mass]),
       vm: viruses, ms: payload.modeState, rt: payload.respawnTimers || {},
       cd: local ? { d: local.dashCd || 0, s: local.splitCd || 0, a: local.abCd || {} } : null,

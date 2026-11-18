@@ -380,6 +380,7 @@
       clearSavedRoom();
       matchStarted = false; paused = false; connected = false;
       if (socket) { const old = socket; socket = null; try { old.close(1011, 'simulation-error'); } catch {} }
+      DuoM.serverAbort?.();
       showLobbyCard();
     }
     else if (message.type === 'error') toast(message.error || 'Ошибка онлайн-соединения');

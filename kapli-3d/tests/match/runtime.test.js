@@ -350,3 +350,25 @@ test('DuoBack match completion preserves the exact win or defeat reason for pers
   assert.equal(lost.lifecycle.result.reason, 'both-players-dead');
 });
 
+test('DuoBack players respawn when their authoritative match clock reaches respawnAt', () => {
+  const runtime = createDuoMatchRuntime({
+    roomId: 'room-respawn-clock', matchId: 'match-respawn-clock', players,
+    mode: 'duoback', seed: 997, startedAt: 1000,
+  });
+  const host = runtime.world.owners.find(owner => owner.role === 'host');
+  for (const cell of [...host.cells]) {
+    const index = runtime.world.cells.indexOf(cell);
+    if (index >= 0) runtime.world.cells.splice(index, 1);
+  }
+  host.cells = [];
+  host.respawnAt = 1;
+  runtime.world.clock = 1.1;
+
+  const step = runtime.step();
+  assert.equal(step.advanced, true);
+  assert.equal(host.cells.length, 1);
+  assert.equal(host.cells[0].mass, 10);
+  assert.equal(host.spawnSh, 3);
+  assert.equal(host.respawnAt, undefined);
+});
+

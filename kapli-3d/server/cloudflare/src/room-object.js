@@ -67,7 +67,7 @@ export function roomPlayerForMatch(player) {
     id: player.id,
     role: player.role,
     nickname: player.nickname || 'Игрок',
-    build: Array.isArray(player.build) ? player.build.slice(0, 3) : ['dash', 'split', null],
+    build: Array.isArray(player.build) && player.build.length === 3 ? player.build.slice(0, 3) : null,
     upgrades: player.upgrades && typeof player.upgrades === 'object' ? { ...player.upgrades } : {},
     abilityLevels: player.abilityLevels && typeof player.abilityLevels === 'object' ? { ...player.abilityLevels } : {},
     skin: typeof player.skin === 'string' ? player.skin : 'coral',
@@ -394,7 +394,7 @@ export class GameRoom {
     if (!player) return;
     const value = profile && typeof profile === 'object' ? profile : {};
     player.nickname = String(value.nickname || nickname || 'Игрок').slice(0, 24);
-    player.build = Array.isArray(value.build) ? value.build.slice(0, 3) : ['dash', 'split', null];
+    player.build = Array.isArray(value.build) && value.build.length === 3 ? value.build.slice(0, 3) : null;
     player.upgrades = value.upgrades && typeof value.upgrades === 'object' ? { ...value.upgrades } : {};
     player.abilityLevels = value.abilityLevels && typeof value.abilityLevels === 'object' ? { ...value.abilityLevels } : {};
     player.skin = typeof value.skin === 'string' ? value.skin : 'coral';

@@ -30,3 +30,12 @@ test('server match tick and existing Duo lobby delegate to the authoritative onl
   assert.match(online, /window\.KapliOnlineServer = \{/);
   assert.match(online, /sendInput, useAbility, useAction, pickBoost/);
 });
+
+test('obsolete WebSocket callbacks cannot pause or overwrite the replacement connection', async () => {
+  const online = await read('../../js/game/14g-online-server.js');
+  assert.match(online, /ws\.onopen = \(\) => \{\s*if \(socket !== ws\) return;/);
+  assert.match(online, /ws\.onmessage = event => \{\s*if \(socket !== ws\) return;/);
+  assert.match(online, /ws\.onerror = \(\) => \{ if \(socket === ws\) connected = false; \};/);
+  assert.match(online, /ws\.onclose = \(\) => \{\s*\/\/ The DO closes an older socket[\s\S]*?if \(socket !== ws\) return;\s*socket = null;/);
+});
+

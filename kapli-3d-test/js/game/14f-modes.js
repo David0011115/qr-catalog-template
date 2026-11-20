@@ -133,12 +133,13 @@
       const candidates = preferred && preferred.length ? preferred : player.cells, origin = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b);
       return candidates.reduce((best, c) => !best || Math.hypot(c.x - origin.x, c.z - origin.z) < Math.hypot(best.x - origin.x, best.z - origin.z) ? c : best, null);
     }
+    // 2.7: in every mode (it was «Хардкор» only) the spikes leave the field for good once you — or the other player of a match for two — reach 10 000
     const hcSpikesDisabled = () => {
-      if (mode === 'hardcore' && !hcSpikesOff && total(player) >= 10000) {
+      if (!hcSpikesOff && running && (total(player) >= 10000 || (DuoM.on && DuoM.rival && total(DuoM.rival) >= 10000))) {
         hcSpikesOff = true;
         toast('10 000 массы! Все шипы исчезли до конца раунда');
       }
-      return mode === 'hardcore' && hcSpikesOff;
+      return hcSpikesOff;
     };
     const hcReset = () => { hc = {}; hcN = {}; Object.entries(HC_BOOST).forEach(([k, b]) => { hc[k] = b[3] === '+' ? 0 : 1; hcN[k] = 0; }); hcD = { melt: 0, slow: 0, absorb: 0, magnet: 0, dashLen: 0, sense: 0 }; hcCurse = null; hcCurseT = 75; hcCurseUi(); };
     // 2.7: one of the two cards at a milestone is «risky» — its bonus is ×1.5, with a minus; the minus is smaller for a rarer card

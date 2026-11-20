@@ -22,7 +22,7 @@
     Sound.play(lk.sfx);
   }
   function abReset() {
-    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
+    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
     crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
@@ -56,7 +56,7 @@
   function decoyCaught(d) {
     for (const x of foesOf(d.src)) for (const c of x.cells) if (cellR(c) > d.r * .9 && Math.hypot(c.x - d.x, c.z - d.z) < cellR(c)) {
       scene.remove(d.mesh); d.gone = true; emit(d.x, d.r, d.z, '#ffffff', 26, 9, .5);
-      if (!d.still) { burstFood(d.x, d.z, d.r + 4, 18); if (x.kind !== 'boss') x.slowT = Math.max(x.slowT || 0, 2); }
+      if (!d.still) { burstFood(d.x, d.z, d.r + 4, 18); if (x.kind !== 'boss') ccSlow(x, 2); }
       owners.forEach(o => { if (o.target === d) o.target = null; }); return true; }
     return false;
   }
@@ -79,7 +79,7 @@
       for (const x of foesOf(o)) {
         if (!nearOf(o, x, rad)) continue;
         // The wave suppresses movement and dash acceleration; it does not push targets physically.
-        x.slowT = Math.max(x.slowT || 0, a.dur * pw);
+        ccSlow(x, a.dur * pw);
       }
       // Clearly visible expanding ground rings; particle bursts alone were too subtle.
       [1, .78, .56].forEach((k, i) => {
@@ -100,7 +100,7 @@
       const rad = a.radius * pw;
       for (const x of foesOf(o)) for (const c of x.cells) {
         const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1, edge = d - cellR(c);
-        if (edge < rad + Math.sqrt(total(o)) * .4) { const massBoost = Math.min(1.6, Math.pow(Math.max(1, c.mass / 25), .12)); const f = a.force * pw * massBoost * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; if (x.kind !== 'boss') x.freezeT = Math.max(x.freezeT || 0, a.stun); }
+        if (edge < rad + Math.sqrt(total(o)) * .4) { const massBoost = Math.min(1.6, Math.pow(Math.max(1, c.mass / 25), .12)); const f = a.force * pw * massBoost * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; if (x.kind !== 'boss') ccFreeze(x, a.stun); }
       }
       emit(px, 2, pz, a.color, 70, rad, .7);
     } else if (id === 'shrink' || id === 'cloak') { o.abT[id] = a.dur * pw; if (id === 'cloak') { o.cloakBonus = true; owners.forEach(x => { if (x.target && x.target.owner === o) x.target = null; }); } }
@@ -219,7 +219,7 @@
     const pullFood = (x, z, rad, sp) => { for (let i = 0; i < FOOD; i++) { const fd = foods[i], dx = x - fd.x, dz = z - fd.z, d = Math.hypot(dx, dz);
       if (d < rad && d > .3) { const st = Math.min(d, sp * dt); fd.x += dx / d * st; fd.z += dz / d * st; fgSet(i); dummy.position.set(fd.x, .35, fd.z); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix); foodMoved = true; } } };
     for (const o of owners) {
-      if (o.freezeT) o.freezeT = Math.max(0, o.freezeT - dt);
+      if (o.freezeT) { const was = o.freezeT; o.freezeT = Math.max(0, o.freezeT - dt); if (!o.freezeT) ccWore(o, was); }
       if (!o.abT || !o.cells.length) continue;
       if (o.huntT > 0) o.huntT -= dt;
       // «Фантом»: a shock wave when it ends
@@ -337,10 +337,18 @@
     el.innerHTML = `<small>${label || 'Хаос-лига · твои способности на этот бой'}</small><div>` + runBuild.map((id, i) => { const a = abilById(id); return `<span style="--ac:${a.color}"><i>${a.icon}</i><b>${a.name}</b><small>${ABIL_CFG.slotKeyName[i]}</small></span>`; }).join('') + '</div>';
     el.hidden = false; clearTimeout(chaosBanner.t); chaosBanner.t = setTimeout(() => { el.hidden = true; }, CHAOS_CFG.showSec * 1000);
   }
+  // 2.7: control on a player (you or the other player of a match for two): slows last 35% of their time (at most 4 s),
+  // stuns 60%; when one wears off there are 2.5 s in which a new slow or stun does not land — no more chains of slowdowns
+  const CC = { slowK: .35, slowMax: 4, stunK: .6, immune: 2.5 };
+  const ccPl = x => !!x && (x.isPlayer || x.kind === 'rival');
+  function ccSlow(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
+  function ccFreeze(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
+  function ccWore(o, was) { if (was > 0 && ccPl(o) && !(o.slowT > 0) && !(o.freezeT > 0)) o.ccImm = CC.immune; }
   function abTick(dt) {
     xaTick(dt); crTick(dt); if (TEST_MODE && testEatShow) testEatTick(dt);
     for (const o of owners) {
-      if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
+      if (o.slowT) { const was = o.slowT; o.slowT = Math.max(0, o.slowT - dt); if (!o.slowT) ccWore(o, was); }
+      if (o.ccImm) o.ccImm = Math.max(0, o.ccImm - dt);
       if (o.iceT) o.iceT = Math.max(0, o.iceT - dt);
       if (!o.abCd) continue;
       for (const k in o.abCd) o.abCd[k] = Math.max(0, o.abCd[k] - dt);

@@ -1,6 +1,7 @@
   // ================= abilities: runtime =================
   let runBuild = [...ABIL_CFG.oldBuild], decoy = null;
-  const abLv = id => stats && stats.ranked ? 0 : save.abil.lv[id] || 0;
+  let rbLvUp = {};   // 2.7 «Случайный билд»: levels added for this round by a milestone swap
+  const abLv = id => stats && stats.ranked ? 0 : Math.min(ABIL_CFG.levels, (save.abil.lv[id] || 0) + (rbLvUp[id] || 0));
   const arenaCd = () => arenaIs('chronos') ? .9 : 1;   // arena «Часовой механизм»: every cooldown is 10% shorter
   const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd();
   const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);

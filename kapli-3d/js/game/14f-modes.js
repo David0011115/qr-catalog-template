@@ -20,6 +20,45 @@
       { id: 'feast', name: 'Пир', about: 'крошки дают в полтора раза больше' },
     ];
     let rule = null, mile = 0, esc = 0, rushOn = false, breakAt = 0;
+    // 2.7 «Случайный билд»: at 5 mass milestones the game pauses and offers 2 new abilities; pick one, then the slot it replaces (or keep the build).
+    // The later the milestone, the more levels the new ability gets for this round.
+    const RB_MILES = [3000, 8000, 15000, 25000, 40000], RB_LV = [1, 1, 2, 2, 3];
+    let rbMile = 0, rbOffer = null, rbT = 0;
+    const rbPool = () => ABILITIES.filter(a => !a.xa && !a.cr && !runBuild.includes(a.id)).map(a => a.id);
+    const rbLvText = (id, add) => { const a = abilById(id); if (a.branches) return 'улучшения как у тебя'; const base = save.abil.lv[id] || 0, lv = Math.min(ABIL_CFG.levels, base + add); return `уровень ${lv}/${ABIL_CFG.levels}${lv > base ? ` · +${lv - base} в раунде` : ''}`; };
+    function rbPanel() {
+      let el = document.getElementById('rbPick');
+      if (!el) {
+        el = document.createElement('div'); el.id = 'rbPick'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Замена способности'); document.body.appendChild(el);
+        el.addEventListener('pointerdown', e => e.stopPropagation());
+        el.addEventListener('click', e => { const b = e.target.closest('[data-rb]'); if (b) rbChoose(b.dataset.rb); });
+      }
+      if (!rbOffer || !running) { el.hidden = true; return; }
+      const card = (key, id, sub) => { const a = abilById(id); return `<button type="button" data-rb="${key}" style="--ac:${a.color}"><span class="ic" style="color:${a.color}">${a.icon}</span><b>${a.name}</b><small>${sub}</small></button>`; };
+      const head = `<p>Случайный билд · веха ${RB_MILES[rbMile - 1].toLocaleString('ru-RU')} · игра на паузе · <b id="rbPickT">${Math.max(0, Math.ceil(rbT))}</b> с</p>`;
+      el.innerHTML = rbOffer.pick === null
+        ? head + `<small class="rb-step">1. Выбери новую способность</small><div class="db-opts two">${rbOffer.ids.map((id, i) => card('n' + i, id, rbLvText(id, rbOffer.lv))).join('')}</div><button type="button" class="rb-keep" data-rb="keep">Оставить свои способности</button>`
+        : head + `<small class="rb-step">2. Какую заменить на «${abilById(rbOffer.ids[rbOffer.pick]).name}»?</small><div class="db-opts">${runBuild.map((id, i) => id ? card('s' + i, id, 'заменить · ' + ABIL_CFG.slotKeyName[i]) : '').join('')}</div><button type="button" class="rb-keep" data-rb="back">← назад</button>`;
+      el.hidden = false;
+    }
+    function rbChoose(k) {
+      if (!rbOffer) return;
+      if (k === 'keep') { rbOffer = null; rbPanel(); toast('Билд не изменился'); return; }
+      if (k === 'back') { rbOffer.pick = null; rbPanel(); return; }
+      if (k[0] === 'n') { rbOffer.pick = +k.slice(1); rbPanel(); return; }
+      const slot = +k.slice(1), id = rbOffer.ids[rbOffer.pick], old = runBuild[slot]; if (!id || old === undefined) return;
+      runBuild[slot] = id; if (!abilById(id).branches) rbLvUp[id] = (rbLvUp[id] || 0) + rbOffer.lv;
+      if (player.abT) delete player.abT[old]; if (player.abCd) player.abCd[id] = 0;
+      (stats.rbSwaps = stats.rbSwaps || []).push([Math.round(stats.time), old, id]);
+      if (TEST_MODE) try { TLog.ev('замена', old + '→' + id); } catch (e) {}
+      rbOffer = null; rbPanel(); renderSlots(); toast(`«${abilById(old).name}» → «${abilById(id).name}»`); Sound.play('level');
+    }
+    function rbTick() {
+      if (rbOffer || rbMile >= RB_MILES.length || total(player) < RB_MILES[rbMile]) return;
+      const pool = rbPool(), ids = []; while (pool.length && ids.length < 2) ids.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      const lv = RB_LV[rbMile]; rbMile++; if (ids.length < 2) return;
+      rbOffer = { ids, lv, pick: null }; rbT = 15; rbPanel(); toast(`Масса ${RB_MILES[rbMile - 1].toLocaleString('ru-RU')}: можно заменить способность`); Sound.play('level');
+    }
     // «Захват короны»: the crown lies in the middle until someone takes it, then passes only to whoever eats its holder
     let crownGround = null, crownLast = { x: 0, z: 0 };
     // «Хардкор»: small boosts at 2 000 … 25 000 mass (pick one of two), no shields and no second lives (2.7: three more steps and «Таяние −10%»)
@@ -213,7 +252,7 @@
     const solo = () => !stats.ranked && !stats.tutorial && !stats.chaos && !DuoM.on;
 
     function start() {
-      rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = [];
+      rule = null; mile = 0; esc = 0; rushOn = false; breakAt = 0; comboOrder = []; rbMile = 0; rbOffer = null; rbLvUp = {}; rbPanel();
       hcBossStage = 0; hcSplitDone = false; hcRevive = null; hcPackT = 0; hcFreezeT = 0; hcLastOffer = -99; hcFuseT = 0; hcFuseCd = 0; hcWinT = 0; hcFuseHold = 0; hcFuseUi(); hcWinUi(null); HC_BOSS_MASS_CAP = 23000; bots.forEach(o => o.hcPack = 0); stats.hcSplitAt = null; stats.hcHalfPeak = [0, 0]; stats.hcVictory = false; clGoalDone = false; CL_BOSS_MASS_CAP = BOSS_MASS_CAP;
       document.body.classList.toggle('q-low', save.settings.quality === 'low');
       stats.modeXCoins = 0; tether.visible = false;
@@ -296,6 +335,7 @@
         const e = Math.min(ESC_MAX, Math.floor(stats.time / ESC_S));
         if (e > esc) { esc = e; stats.modeXCoins += 20 * esc; toast(`Арена накаляется: уровень ${esc + 1}. Боты быстрее, боссы чаще, награда выше (+${20 * esc} ◆)`); Sound.play('boss'); }
       }
+      if (mode === 'rbuild' && solo()) rbTick();
       if (mode === 'timed' && !rushOn && stats.time >= TIMED_LEN - RUSH_S) { rushOn = true; toast(`Финальный рывок! ${RUSH_S} секунд, крошки вдвое сытнее`); Sound.play('level'); }
       if (mode === 'timed' && stats.midRank === undefined && stats.time >= TIMED_LEN / 2) stats.midRank = rankOf();
       if (mode === 'crown') for (const o of bossOwners) for (const c of o.cells) c.mass = Math.max(20, c.mass * (1 - .008 * dt));   // the crown's bosses melt too
@@ -356,7 +396,7 @@
     }
     // the end of a round: the hardcore series reward
     function end() {
-      hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } { const w = document.getElementById('hcWin'); if (w) w.hidden = true; } hcWinUi(null); hcCurse = null; hcCurseUi(); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
+      rbOffer = null; rbPanel(); hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } { const w = document.getElementById('hcWin'); if (w) w.hidden = true; } hcWinUi(null); hcCurse = null; hcCurseUi(); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
       if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] }; delete rec.next; hcLog = null; if (TEST_MODE) TLog.extra('hardcore', rec);   // bites: [time, who, its mass, the part it ate]
         try { const L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); L.push(rec); localStorage.setItem('kapli3d-hcstats', JSON.stringify(L.slice(-30))); } catch (e) {}
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
@@ -427,7 +467,7 @@
       dayMode, dayMark: id => (id === dayMode() ? DAY_MARK : ''),
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
       // 2.7: what the ⓘ window of «Режимы» tells about each mode
-      info: () => ({ CL_GOAL, CL_GOAL_COINS, MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
+      info: () => ({ RB_MILES, RB_LV, CL_GOAL, CL_GOAL_COINS, MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
       HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) * hcDK("melt") * (curseOn("hunger") ? 1.5 : 1) : hcK("melt")) * hcMeltUp(), hcK,
       hcCurseSoon: () => { hcCurse = null; hcCurseT = 3; },
       hcCurseId: () => mode === 'hardcore' && hcCurse ? hcCurse.id : null,   // 2.7 test journal
@@ -439,8 +479,8 @@
       hcPackTarget, botCap: o => (splitMode() && o.hcPack ? Math.max(BOT_MASS_CAP, hcRef() * 1.4) : BOT_MASS_CAP),
       hcPackMerge: (a, b) => splitMode() && a.owner.hcPack && b.owner.hcPack && a.owner !== b.owner && a.mass >= b.mass,
       // the choice of a hardcore card stops the world; the 15 s countdown runs in real time
-      hcFrozen: () => mode === 'hardcore' && !!hcOffer, hcFusing: () => splitMode() && hcFuseT > 0, hcPairBite,
-      hcFreezeTick(dt) { hcT -= dt; const el = document.getElementById('hcPickT'); if (el) el.textContent = Math.max(0, Math.ceil(hcT)); if (hcT <= 0) hcPick(0); }, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
+      hcFrozen: () => (mode === 'hardcore' && !!hcOffer) || (mode === 'rbuild' && !!rbOffer), hcFusing: () => splitMode() && hcFuseT > 0, hcPairBite,
+      hcFreezeTick(dt) { if (rbOffer) { rbT -= dt; const t = document.getElementById('rbPickT'); if (t) t.textContent = Math.max(0, Math.ceil(rbT)); if (rbT <= 0) { rbOffer = null; rbPanel(); toast('Время вышло — билд не изменился'); } return; } hcT -= dt; const el = document.getElementById('hcPickT'); if (el) el.textContent = Math.max(0, Math.ceil(hcT)); if (hcT <= 0) hcPick(0); }, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
       hcBossPressure, hcBossSenseK: () => (hcSplitDone ? 2 : 1 + .5 * hcBossPressure()), hcBossTurnK: () => (hcSplitDone ? 1.8 : 1 + .55 * hcBossPressure()), hcPackSpeedK: o => (splitMode() && o.hcPack ? (mode === 'classic' ? 1.1 : 1.15) : 1),
       hcBossSpawnInterval: () => (hcSplitDone ? 6 : total(player) >= 10000 ? 10 : 40 - 16 * hcBossPressure()), hcBossTarget,
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,

@@ -642,3 +642,11 @@
 .ab-tiles .ab-txt b { font-size: .84rem; }
 .ab-tiles .ab-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .72rem; line-height: 1.3; }
 .ab-tiles .now { font-size: .7rem; }
+
+/* 2.7 «Случайный билд»: swap an ability at a milestone */
+#rbPick { position: fixed; left: 50%; top: 86px; transform: translateX(-50%); z-index: 41; width: min(460px, calc(100vw - 32px)); padding: 6px 10px 8px; border-radius: 18px; background: rgba(12, 8, 32, .92); border: 2px solid #b26bff; box-shadow: 0 0 28px rgba(178, 107, 255, .4); text-align: center; }
+#rbPick p { margin: 0 0 4px; font: 400 14px 'Russo One', sans-serif; color: #d7b8ff; }
+#rbPick .rb-step { display: block; margin: 0 0 5px; color: #cfc8f5; font-size: 12px; }
+#rbPick .db-opts.two { grid-template-columns: repeat(2, 1fr); }
+#rbPick .db-opts button { border: 2px solid color-mix(in srgb, var(--ac) 70%, transparent); box-shadow: 0 0 12px -4px var(--ac); }
+#rbPick .rb-keep { margin-top: 6px; min-height: 36px; padding: 4px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .06); color: #fff; font: 700 12px var(--body); cursor: pointer; }

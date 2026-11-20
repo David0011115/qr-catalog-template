@@ -87,7 +87,10 @@
     const hcRef = () => { if (!player.cells.length) return 0; if (hcSplitDone && hcFuseT > 0) return total(player) / 2;   // 2.7 fix: while fused, a «half» is half of the drop (it was the whole drop — bosses grew to 160 000)
       if (hcSplitDone) { const hm = hcHalfMass().filter(v => v > 0); return hm.length ? Math.min(...hm) : 0; } return mainOf(player).mass; };
     // melt is ×1 up to 20 000 and rises smoothly to ×1.45 at 30 000 total mass
-    const hcMeltUp = () => { const m = total(player); if (mode === 'classic' && solo()) return 1 + .3 * Math.max(0, Math.min(1, (m - 15000) / 15000)) + .25 * Math.max(0, Math.min(1, (m - 50000) / 20000));   // «Классика»: ×1.3 at 30 000, ×1.55 at 70 000
+    // 2.7: slower growth in every solo mode but «Хардкор» (it has its own) and «Босс-рейд» (its damage is the eaten mass); the owner's aim — 50 000 by the 5th–6th minute of a good round
+    const growOn = () => mode !== 'hardcore' && mode !== 'raid' && !DuoM.on && !(stats && stats.tutorial);
+    const cl01 = (m, a, b) => Math.max(0, Math.min(1, (m - a) / (b - a)));
+    const hcMeltUp = () => { const m = total(player); if (growOn()) return 1 + .5 * cl01(m, 10000, 30000) + .4 * cl01(m, 40000, 70000);   // ×1.5 at 30 000, ×1.9 from 70 000
       if (mode !== 'hardcore') return 1; return 1 + .45 * Math.max(0, Math.min(1, (m - 15000) / 10000)) + .35 * Math.max(0, Math.min(1, (m - 50000) / 10000)) + .6 * Math.max(0, Math.min(1, (m - 80000) / 20000)); };   // ×1.45 at 30 000, ×1.8 at 60 000, ×2.4 at 100 000
     // packs: after 30 000, three bots hunt the smaller half together and can swallow each other to become a real threat
     const hcPackBots = () => bots.filter(o => o.hcPack && o.cells.length);
@@ -109,8 +112,8 @@
       const a = (o.hcPackI || 0) * 2.1 + stats.time * .15, d = cellR(t) * 1.8;   // members come from three sides
       const m = mainOf(o); return Math.hypot(m.x - t.x, m.z - t.z) < d * 1.4 ? { t, x: t.x, z: t.z } : { t, x: t.x + Math.cos(a) * d, z: t.z + Math.sin(a) * d };
     }
-    // «Классика»: crumbs and bots feed less from 15 000 (×0.75 at 30 000, ×0.6 at 60 000)
-    const clGainK = () => { const m = total(player); return 1 - .25 * Math.max(0, Math.min(1, (m - 15000) / 15000)) - .15 * Math.max(0, Math.min(1, (m - 30000) / 30000)); };
+    // crumbs and bots feed less from 10 000: ×0.6 at 25 000, ×0.45 at 50 000, ×0.35 from 80 000
+    const clGainK = () => { const m = total(player); return 1 - .4 * cl01(m, 10000, 25000) - .15 * cl01(m, 25000, 50000) - .1 * cl01(m, 50000, 80000); };
     const HC_BOSS_MILESTONES = [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000];
     const hcBossPressure = () => mode === 'hardcore' ? Math.min(1, hcBossStage / HC_BOSS_MILESTONES.length) : 0;
     const hcHalfMass = () => [0, 1].map(h => player.cells.reduce((s, c) => s + (c.hcHalf === h ? c.mass : 0), 0));
@@ -478,8 +481,8 @@
       hcMagnetK: () => (mode === 'hardcore' ? hcDM("magnet") : 1), hcDashLenK: () => (mode === 'hardcore' ? hcDM("dashLen") : 1), hcNoDash: () => curseOn("nodash"),
       hcSenseK: () => (mode === 'hardcore' ? hcDK("sense") * (curseOn("hunted") ? 1.5 : 1) : 1),
       hcBossMass: mass => { const ref = hcRef(); return hcSplitDone || ref >= 20000 ? Math.min(HC_BOSS_MASS_CAP, Math.max(3000, ref * (.85 + .35 * hcBossPressure()))) : mass; },   // after 20 000: 85–120% of the smaller half (more with the threat stage)
-      clBossGainK: pair => (mode === 'classic' && solo() && total(player) >= 15000 ? (pair || hcFuseT > 0 ? .4 : .5) : 1),   // «Классика» from 15 000: a boss feeds half (like «Хардкор»)
-      clGainK: () => (mode === 'classic' && solo() ? clGainK() : 1), clAngry: () => mode === 'classic' && solo() && total(player) >= 20000, splitMode,
+      clBossGainK: pair => { if (!growOn()) return 1; const m = total(player); return m < 10000 ? 1 : (pair || hcFuseT > 0 ? .35 : m >= 30000 ? .4 : .5); },   // from 10 000 a boss feeds half, from 30 000 — 40%
+      clGainK: () => (growOn() ? clGainK() : 1), clAngry: () => mode === 'classic' && solo() && total(player) >= 20000, splitMode,
       hcPackTarget, botCap: o => (splitMode() && o.hcPack ? Math.max(BOT_MASS_CAP, hcRef() * 1.4) : BOT_MASS_CAP),
       hcPackMerge: (a, b) => splitMode() && a.owner.hcPack && b.owner.hcPack && a.owner !== b.owner && a.mass >= b.mass,
       // the choice of a hardcore card stops the world; the 15 s countdown runs in real time
@@ -502,7 +505,7 @@
       },
       raidDmgK: () => (twinsLinked() ? .5 : 1) * raidPerk().dmg,
       cdK: o => (o === player ? hcK('cd') : 1),
-      gainK: () => (mode === 'classic' && solo() ? clGainK() : mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') * (total(player) >= 50000 ? .5 : .75) * hcDM('absorb') : 1),
+      gainK: () => (growOn() ? clGainK() : 1) * (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') * (total(player) >= 50000 ? .5 : .75) * hcDM('absorb') : 1),
       bonusK: () => (rule && rule.id === 'bonus2' ? .5 : 1),
       botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? hcK('speed') * (hcPredT > 0 ? hcK('predator') : 1) * hcDM('slow') * (curseOn('slow') ? .8 : 1) : 1) *
         (o.kind === 'bot' ? (mode === 'classic' ? 1 + .04 * esc : rule && rule.id === 'fastbots' ? 1.15 : 1) : 1),

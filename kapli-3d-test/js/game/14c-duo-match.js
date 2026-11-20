@@ -336,7 +336,12 @@
       while (o.free.length + o.cells.length < poolSize) o.free.push(makeVis(new THREE.Color(data.kind === 'boss' ? '#ff9f43' : '#65d6ff')));
       return owners.indexOf(o);
     }
+    // 2.7: snapshots on a phone come in bursts (gaps of ~300 ms every second at a ping of ~180 ms). Each cell remembers its last
+    // server position and the speed between the last two snapshots, and keeps moving at that speed until the next one (≤ 0.35 s),
+    // instead of reaching the old point and standing still. Own cells are compared with the server position moved ahead by half the ping.
+    let snapTm = null;
     function applyServer(s) {
+      const dtS = snapTm === null ? 0 : (s.tm || 0) - snapTm, nowMs = performance.now(); snapTm = s.tm || 0;
       stats.serverClock = s.tm || 0;
       stats.time = Math.max(stats.time, stats.serverClock);
       const seen = new Set();
@@ -358,6 +363,11 @@
             topologyChanged = true;
           }
           const info = meta[k] || {};
+          if (cell.stx !== undefined && dtS > .02 && dtS < .6) {
+            const vx = (x - cell.stx) / dtS, vz = (z - cell.stz) / dtS, sp = Math.hypot(vx, vz);
+            if (sp < 300) { cell.evx = vx; cell.evz = vz; } else cell.evx = cell.evz = 0;   // a jump (split, respawn): no guessing
+          } else if (cell.stx === undefined) cell.evx = cell.evz = 0;
+          cell.stx = x; cell.stz = z; cell.sAt = nowMs;
           cell.tx = x; cell.tz = z; cell.mass = m;
           cell.serverId = info.id || null; cell.serverSlotId = info.slotId || null;
           cell.thx = info.hx; cell.thz = info.hz;
@@ -420,9 +430,14 @@
 
       // Remote cells follow snapshots more tightly; our predicted cells use a
       // softer correction so round-trip latency does not pull the controls back.
+      const lead = Math.min(.25, (window.KapliOnlineServer?.rtt || 0) / 2000);
       for (const cell of cells) {
         if (cell.tx === undefined) continue;
-        const correctionRate = cell.owner === player ? 5 : 18;
+        if (cell.stx !== undefined && cell.evx !== undefined) {
+          const age = Math.min(.35, (now - (cell.sAt || now)) / 1000) + (cell.owner === player ? lead : 0);
+          cell.tx = cell.stx + cell.evx * age; cell.tz = cell.stz + cell.evz * age;
+        }
+        const correctionRate = cell.owner === player ? 5 : 12;
         const k = Math.min(1, dt * correctionRate);
         const ex = cell.tx - cell.x, ez = cell.tz - cell.z, distance = Math.hypot(ex, ez);
         if (distance > 40) { cell.x = cell.tx; cell.z = cell.tz; }

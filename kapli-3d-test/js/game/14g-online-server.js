@@ -288,6 +288,7 @@
   // 2.7: a silent server must never leave a player in a frozen match that still «plays». After 3 s without a
   // snapshot the drop stops guessing its way forward and a sign says so; after 8 s the socket is dropped, which
   // starts the usual pause card and reconnect (and shows the result if the match ended meanwhile).
+  let rtt = 0;   // smoothed round trip to the server, ms
   let lastSnapAt = 0, stalled = false, watchdog = null, stallLogged = false, pingAt = 0, loggedWave = -1;
   function stallSign(show, seconds) {
     let el = $('srvStall');
@@ -301,7 +302,7 @@
     const silent = performance.now() - lastSnapAt;
     stalled = silent > 3000;
     if (TEST_MODE && stalled && !stallLogged) { stallLogged = true; TLog.ev('сеть: тишина сервера 3 с'); } if (!stalled) stallLogged = false;
-    if (TEST_MODE && matchStarted && performance.now() - pingAt > 2000) { pingAt = performance.now(); sendMessage({ type: 'ping', sentAt: Date.now() }); }   // test journal: ping every 2 s
+    if (matchStarted && performance.now() - pingAt > 2000) { pingAt = performance.now(); sendMessage({ type: 'ping', sentAt: Date.now() }); }   // 2.7: ping every 2 s — the smoothing leads own cells by half of it (and the test journal logs it)
     stallSign(stalled, Math.round(silent / 1000));
     if (silent > 8000 && socket) { const old = socket; try { old.close(4000, 'server-silent'); } catch {} }
   }
@@ -518,7 +519,7 @@
       lastClock = message.clock || lastClock;
       applySnapshot(message, false);
     }
-    else if (message.type === 'pong') { if (TEST_MODE && Number.isFinite(message.sentAt)) TLog.net('ping', Date.now() - message.sentAt); }
+    else if (message.type === 'pong') { if (Number.isFinite(message.sentAt)) { const v = Date.now() - message.sentAt; if (v >= 0 && v < 3000) rtt = rtt ? rtt * .7 + v * .3 : v; if (TEST_MODE) TLog.net('ping', v); } }
     else if (message.type === 'match-paused') {
       if (TEST_MODE) TLog.ev('сеть: пауза', message.playerId === userId ? 'я отключился' : 'соперник отключился');
       paused = true;
@@ -723,6 +724,7 @@
     get active() { return !!activeMode; },
     get room() { return room; },
     get processedSeqs() { return lastProcessedSeqs; },
+    get rtt() { return rtt; },
     get apiBase() { return apiBase; },
   };
 })();

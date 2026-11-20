@@ -1312,14 +1312,15 @@
       TLog.begin({ mode, name: (MODES[mode] || {}).name || mode, how, role: DuoM.role || null,
         diff: mode === 'duoback' && DuoM.rules.duoback?.diffNow ? DuoM.rules.duoback.diffNow() : null,
         ranked: !!stats.ranked, chaos: !!stats.chaos, arena: stats.arena || null, quality: save.settings.quality,
-        build: runBuild.filter(Boolean), startMass: Math.round(total(player)) });
+        build: runBuild.filter(Boolean), startMass: Math.round(total(player)),
+        look: { skin: save.skin, form: (save.evo || {})[save.skin] || null, hat: save.hat || null, aura: save.fx.aura || null, trail: save.fx.trail || null, eat: save.fx.eat || null, pet: save.pet || null } });   // 2.7 FPS: what the player wears
       tlAlive = player.cells.length > 0; tlShareT = 0;
     }
     if (paused) return;
     let m = 0, v = 0;
     for (const c of player.cells) { m += c.mass; v += speedOf(c) * c.mass; }
     const pct = m ? v / m / BASE_SPEED * 100 : 100, causes = [];
-    if (player.freezeT > 0) causes.push('оглушение'); if (player.slowT > 0) causes.push('замедление'); if (player.iceT > 0) causes.push('лёд');
+    if (player.freezeT > 0) causes.push('оглушение'); if (player.slowT > 0) causes.push((player.auraT || 0) > 0 ? 'облако мороза' : 'замедление'); if (player.iceT > 0) causes.push('лёд');
     if (ModeX.hcCurseId?.() === 'slow') causes.push('проклятие «Вязкость»');
     TLog.tick(dt, pct, m, causes);
     const alive = player.cells.length > 0;

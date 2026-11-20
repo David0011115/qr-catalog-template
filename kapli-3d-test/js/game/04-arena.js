@@ -3,19 +3,16 @@
   const virusCore = new THREE.SphereGeometry(1, 20, 14), virusSpike = new THREE.ConeGeometry(.2, .55, 6);
   const virusMat = new THREE.MeshStandardMaterial({ color: VIRUS_COLOR, emissive: VIRUS_COLOR, emissiveIntensity: .5, roughness: .3, transparent: true, opacity: .85 });
   const virusSpikeMat = new THREE.MeshBasicMaterial({ color: '#b6ffcb' });
+  const virusSpikesGeo = mergeGeo(Array.from({ length: 16 }, (_, i) => {   // spikes on a fibonacci sphere
+    const n = 16, y = 1 - (i + .5) / n * 2, r = Math.sqrt(1 - y * y), a = i * 2.39996, dir = new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    return [virusSpike, new THREE.Matrix4().compose(dir.clone().multiplyScalar(1.12), q, new THREE.Vector3(1, 1, 1))];
+  }));
   let viruses = [];
   function makeVirusMesh() {
     const g = new THREE.Group();
     g.add(new THREE.Mesh(virusCore, virusMat));
-    const n = 16;
-    for (let i = 0; i < n; i++) {   // spikes on a fibonacci sphere
-      const y = 1 - (i + .5) / n * 2, r = Math.sqrt(1 - y * y), a = i * 2.39996;
-      const dir = new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
-      const sp = new THREE.Mesh(virusSpike, virusSpikeMat);
-      sp.position.copy(dir).multiplyScalar(1.12);
-      sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-      g.add(sp);
-    }
+    g.add(new THREE.Mesh(virusSpikesGeo, virusSpikeMat));   // 2.7 FPS: the 16 spikes are one mesh (were 16 draw calls per spike ball)
     g.add(glowSprite(VIRUS_COLOR, 3, .5));
     scene.add(g);
     return g;

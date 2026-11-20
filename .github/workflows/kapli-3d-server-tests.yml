@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - kapli-3d-online-test
+      - feature/2.7-online
     paths:
       - 'kapli-3d/server/**'
       - 'kapli-3d/tests/**'

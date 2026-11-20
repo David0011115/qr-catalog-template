@@ -342,6 +342,7 @@
           if (o.dbType === 'twins') regOwners.forEach(x => { if (x !== o && x.dbType === 'twins' && x.cells.length) x.enr = 1; });
         }
       },
+      diffs: DIFF,   // 2.7: the online room shows the same difficulty names and descriptions
       bossCap: () => bossCap(baseMass()),   // 2.7: the core's limit for a boss drop in this mode
       eatBlock(a, b) {   // «Броня»: a boss must be clearly bigger to eat a player who took it
         const n = b.owner.db && b.owner.db.armor;

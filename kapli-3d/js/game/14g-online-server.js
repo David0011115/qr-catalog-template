@@ -94,25 +94,29 @@
 
     if (!room) {
       const saved = savedRoom();
+      const diffs = DuoM.rules?.duoback?.diffs || [{ name: 'Обычный' }, { name: 'Сложный' }, { name: 'Безумие' }];
+      const cur = Math.max(0, Math.min(2, Number(saved?.difficultyIndex ?? save?.duoDiff ?? 0) || 0));
       const resume = saved && saved.mode === activeMode
-        ? `<button id="serverReconnect" type="button" class="duo-action" style="width:100%;margin:0 0 12px">Вернуться в комнату ${esc(saved.code)}</button>`
+        ? `<button id="serverReconnect" type="button" class="btn srv-resume">↩ Вернуться в комнату <b>${esc(saved.code)}</b></button>`
         : '';
-
+      // 2.7: the same look as the room for two phones — pills for the difficulty, the game's buttons and code field
       body.innerHTML = resume + `
-        <div class="duo-hint" style="margin:0 0 12px">Серверный онлайн: физика, столкновения и правила матча рассчитываются на сервере. Для входа нужен аккаунт игры.</div>
+        <div class="srv-intro"><span class="srv-ic" aria-hidden="true">🌐</span>
+          <p>Матч считает сервер игры: честный рейтинг и возврат в комнату, если связь пропала. Нужен аккаунт игры у обоих.</p></div>
         ${activeMode === 'duoback' ? `
-          <label style="display:block;margin:10px 0 6px">Сложность</label>
-          <select id="serverDifficulty" style="width:100%;margin-bottom:12px">
-            <option value="0">Обычный</option><option value="1">Сложный</option><option value="2">Безумие</option>
-          </select>` : ''}
-        <button id="serverCreate" type="button" class="duo-action" style="width:100%;margin-bottom:12px">Создать комнату</button>
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px">
-          <input id="serverRoomCode" maxlength="5" autocapitalize="characters" autocomplete="off"
-            placeholder="Код комнаты" aria-label="Код комнаты" style="min-width:0;text-transform:uppercase">
-          <button id="serverJoin" type="button" class="duo-action">Войти</button>
-        </div>`;
-
-      if ($('serverDifficulty')) $('serverDifficulty').value = String(saved?.difficultyIndex ?? 0);
+          <div class="srv-sec">
+            <p class="srv-lbl">Сложность</p>
+            <div class="db-diff" role="group" aria-label="Сложность">${diffs.map((d, i) =>
+              `<button type="button" class="db-df${i === cur ? ' on' : ''}" data-sdf="${i}" aria-pressed="${i === cur}">${esc(d.name)}</button>`).join('')}</div>
+            ${diffs[cur].about ? `<p class="hint srv-about" id="serverDiffAbout">${esc(diffs[cur].about)}</p>` : ''}
+            <input type="hidden" id="serverDifficulty" value="${cur}">
+          </div>` : ''}
+        <button id="serverCreate" type="button" class="btn">Создать комнату</button>
+        <div class="duo-join">
+          <input id="serverRoomCode" maxlength="5" inputmode="latin" autocapitalize="characters" autocomplete="off" placeholder="Код" aria-label="Код комнаты">
+          <button id="serverJoin" type="button" class="btn ghost">Войти по коду</button>
+        </div>
+        <p class="hint srv-foot">Первый игрок создаёт комнату и говорит код второму. Матч начнётся, когда оба нажмут «Готов».</p>`;
       return;
     }
 
@@ -121,42 +125,43 @@
     role = me?.role || role;
 
     const statusText = {
-      waiting: 'Ожидаем второго игрока',
-      lobby: 'Оба игрока в комнате. Нажмите «Готов».',
-      countdown: 'Оба игрока готовы. Матч скоро начнётся.',
-      active: matchStarted ? 'Матч запущен' : 'Подключаем матч…',
-      paused: 'Матч приостановлен. Ожидаем переподключение игрока.',
+      waiting: 'Ждём второго игрока…',
+      lobby: 'Оба в комнате — нажмите «Готов»',
+      countdown: 'Оба готовы — матч начинается',
+      active: matchStarted ? 'Матч идёт' : 'Подключаем матч…',
+      paused: 'Пауза: ждём, пока игрок переподключится',
       closed: 'Комната закрыта',
     }[room.status] || 'Комната';
 
-    const playersHtml = players.map(player => `
-      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #ffffff18">
-        <span>${esc(player.nickname || 'Игрок')} · ${player.role === 'host' ? 'создатель' : 'гость'}</span>
-        <b>${player.ready ? 'Готов' : 'Не готов'} ${player.connected ? '' : '· нет связи'}</b>
-      </div>`).join('');
+    const seat = player => `
+      <li class="srv-pl${player.id === userId ? ' me' : ''}${player.connected === false ? ' off' : ''}">
+        <span class="srv-dot" aria-hidden="true"></span>
+        <span class="srv-nm"><b>${esc(player.nickname || 'Игрок')}</b><small>${player.role === 'host' ? 'создатель' : 'гость'}${player.id === userId ? ' · ты' : ''}${player.connected === false ? ' · нет связи' : ''}</small></span>
+        <span class="srv-rd${player.ready ? ' on' : ''}">${player.ready ? '✓ Готов' : 'Не готов'}</span>
+      </li>`;
+    const playersHtml = players.map(seat).join('') +
+      (players.length < 2 ? '<li class="srv-pl empty"><span class="srv-dot" aria-hidden="true"></span><span class="srv-nm"><b>Свободное место</b><small>второй игрок войдёт по коду</small></span></li>' : '');
 
+    const diffs = DuoM.rules?.duoback?.diffs;
+    const di = room.difficultyIndex || 0;
     const countdown = room.status === 'countdown'
-      ? `<div style="font-size:26px;font-weight:800;text-align:center;margin:12px 0">${Math.max(0, Math.ceil(((room.countdownEndsAt || Date.now()) - Date.now()) / 1000))}</div>`
+      ? `<div class="srv-count" aria-live="polite">${Math.max(0, Math.ceil(((room.countdownEndsAt || Date.now()) - Date.now()) / 1000))}</div>`
       : '';
-
     const readyButton = ['waiting', 'lobby'].includes(room.status)
-      ? `<button id="serverReady" type="button" class="duo-action" style="width:100%;margin:12px 0">${me?.ready ? 'Снять готовность' : 'Готов'}</button>`
+      ? `<button id="serverReady" type="button" class="btn${me?.ready ? ' ghost' : ''}">${me?.ready ? 'Снять готовность' : '✓ Готов'}</button>`
       : '';
-
     const reconnectButton = room.status === 'paused'
-      ? `<button id="serverReconnectSocket" type="button" class="duo-action" style="width:100%;margin:12px 0">Переподключиться</button>`
+      ? '<button id="serverReconnectSocket" type="button" class="btn">Переподключиться</button>'
       : '';
 
     body.innerHTML = `
-      <div style="text-align:center;margin:4px 0 14px">
-        <div class="duo-hint">Код комнаты</div>
-        <div style="font-size:32px;letter-spacing:7px;font-weight:900">${esc(room.code)}</div>
-        <div class="duo-hint">${esc(statusText)}</div>
-      </div>
-      <div>${playersHtml}</div>
-      ${activeMode === 'duoback' ? `<p class="duo-hint">Сложность: ${['Обычный', 'Сложный', 'Безумие'][room.difficultyIndex || 0]}</p>` : ''}
+      ${room.status === 'waiting' ? '<p class="hint srv-say">Скажи этот код второму игроку:</p>' : ''}
+      <div class="duo-code srv-code" aria-label="Код комнаты">${esc(room.code)}</div>
+      <p class="srv-status st-${esc(room.status)}" role="status">${esc(statusText)}</p>
+      <ul class="srv-pls">${playersHtml}</ul>
+      ${activeMode === 'duoback' ? `<p class="srv-diff">Сложность: <b>${esc((diffs?.[di]?.name) || ['Обычный', 'Сложный', 'Безумие'][di])}</b>${diffs?.[di]?.about ? `<small>${esc(diffs[di].about)}</small>` : ''}</p>` : ''}
       ${countdown}${readyButton}${reconnectButton}
-      <button id="serverLeave" type="button" class="duo-action" style="width:100%;opacity:.8">Выйти из комнаты</button>`;
+      <button id="serverLeave" type="button" class="btn ghost">Выйти из комнаты</button>`;
   }
 
   function showLobbyCard() {
@@ -555,6 +560,15 @@
     if (!activeMode) return;
     const button = event.target.closest('button');
     if (!button) return;
+    if (button.dataset.sdf !== undefined) {   // 2.7: a difficulty pill on the first screen
+      event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+      const i = Number(button.dataset.sdf) || 0, diffs = DuoM.rules?.duoback?.diffs;
+      if ($('serverDifficulty')) $('serverDifficulty').value = String(i);
+      save.duoDiff = i; persist();   // remembered for the next room
+      body.querySelectorAll('[data-sdf]').forEach(x => { const on = x === button; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+      if ($('serverDiffAbout') && diffs?.[i]?.about) $('serverDiffAbout').textContent = diffs[i].about;
+      return;
+    }
 
     const id = button.id;
     const actions = {

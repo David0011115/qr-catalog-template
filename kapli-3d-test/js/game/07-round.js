@@ -523,6 +523,7 @@
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
         const bossCap = bossMassCap();
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
+        if (TEST_MODE && a.owner.isPlayer && gain >= 1500) TLog.ev('съел', (b.owner.kind === 'boss' ? 'босс ' + b.owner.bossType : b.owner.hcPack ? 'стая' : b.owner.kind) + ' ' + Math.round(b.mass) + ' → +' + Math.round(gain));   // 2.7: where the big jumps of mass come from
         if (pairMate) { const share = gain * pairMate.mass / (a.mass - gain + pairMate.mass); a.mass -= share; pairMate.mass += share; pairMate.vis.jig = 1; toast('🔗 Двойной укус! Половины съели босса вместе'); }
         const victim = b.owner, lastMass = b.mass;
         if (mode === 'crown') ModeX.crownBite(a, b, victim, lastMass);

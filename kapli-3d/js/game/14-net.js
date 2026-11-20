@@ -881,7 +881,7 @@
       decorateWho(list);
       if (!sess) { $('rankMe').textContent = 'Войди в аккаунт, чтобы твои матчи попали в рейтинг.'; return; }
       if (m === 'territory') { const me = await sb.rpc('kapli_duo_territory_me'); const row = me.data && me.data[0]; $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.total} · побед ${row.wins} из ${row.games} · лучшая доля ${row.best_share}%` : 'У тебя пока нет побед в этом режиме.'; }
-      else { const mine = data.find(r => r.is_me); $('rankMe').textContent = mine ? `Ваша лучшая пара: ${mine.place}-е место · ${mine.waves} волн` : 'Рейтинг пар: в него попадает забег, который отправил создатель комнаты.'; }
+      else { const mine = data.find(r => r.is_me); $('rankMe').textContent = mine ? `Ваша лучшая пара: ${mine.place}-е место · ${mine.waves} волн` : 'Рейтинг пар: забег засчитывает сервер игры, когда матч закончен. Матчи напрямую — без рейтинга.'; }
     }
     async function loadRank(m) {
       rankMode = m; document.querySelectorAll('[data-rm]').forEach(b => b.setAttribute('aria-pressed', b.dataset.rm === m));

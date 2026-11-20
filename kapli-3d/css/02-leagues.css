@@ -358,3 +358,10 @@
  #chaosCard .league-current-emblem{width:46px!important;height:46px!important}
  #chaosCard .league-current-copy>b{font-size:clamp(1rem,5vw,1.35rem)!important}
 }
+
+/* 2.7: the header no longer runs past the card (the back-button indent), and the season points move up next to the rank —
+   one row less, so the path through the leagues and the play button fit without scrolling */
+#leagueCard .league-screen-head, #chaosCard .league-screen-head { box-sizing: border-box; }
+#leagueCard .league-screen-head .tab-info-btn, #chaosCard .league-screen-head .tab-info-btn { flex: none; }
+#leagueCard .league-points { position: absolute; top: 12px; right: 14px; border: 0; padding: 0; z-index: 1; }
+#leagueCard .league-points strong { font-size: 1.9rem; }

@@ -1,7 +1,7 @@
 // Thin orchestration layer for the already-audited server mode rule modules.
 // Spawning, owner lookup and reward persistence remain explicit host callbacks.
 import {
-  tickTerritory, territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,
+  TERRITORY_RULES, tickTerritory, territoryBlocksEat, territorySpeedMultiplier, territoryPlayerWasEaten,
    territoryBotHome, territoryBotSpawnX,
 } from '../modes/territory.js';
 import {
@@ -30,8 +30,10 @@ export function createTerritoryRules(state) {
     botSpawnX: index => territoryBotSpawnX(state, index),
     physicsRules: {
       duoSpeedK: cell => territorySpeedMultiplier(state, cell.owner, cell.x),
+      botSpeed: TERRITORY_RULES.botSpeed,
     },
     worldRules: {
+      magnetFor: owner => (owner?.isPlayer ? TERRITORY_RULES.playerMagnet : 0),
       eatBlock: (attacker, target) => territoryBlocksEat(state, attacker, target),
       onCellLost: (event, world) => {
         if (!event?.victimEliminated) return false;

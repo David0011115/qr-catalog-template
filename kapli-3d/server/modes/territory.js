@@ -12,7 +12,9 @@ export const TERRITORY_RULES = Object.freeze({
   earlyWinShare: 0.9,          // 2.7: was 0.8
   earlyWinAfterSeconds: 120,   // 2.7: no early win before 2:00
   fullSpeedMassGap: 1500,      // 2.7: the border moves at full speed only with this much mass between the two
-  foodMultiplier: 1.4,         // 2.7: crumbs give more here (owner.dbAbs)
+  foodMultiplier: 2,           // 2.7: crumbs give more here (owner.dbAbs); 1.4 → 2 after the owner's test (388 mass in 2 min: no upgrades online)
+  playerMagnet: 4,             // 2.7: crumbs are pulled from a little further (solo players have upgrades for it)
+  botSpeed: 0.83,              // 2.7: bots 10% slower than the usual 0.92 («боты быстрые»)
   tieThreshold: 0.02,
   botCount: 30,                // 2.7: was 24
 });

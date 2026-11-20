@@ -146,6 +146,7 @@ test('match runtime processes sequenced split and eject actions before the autho
   });
   const host = runtime.world.owners.find(owner => owner.role === 'host');
   host.cells[0].mass = 100;
+  runtime.world.food.length = 0;   // 2.7: Territory players pull crumbs from a little further — keep this test about the split alone
   assert.deepEqual(runtime.submitAction('user-host', { seq: 1, action: 'split' }), {
     ok: true, acceptedSeq: 1, queued: true,
   });

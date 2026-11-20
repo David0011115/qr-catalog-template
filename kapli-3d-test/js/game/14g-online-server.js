@@ -283,6 +283,27 @@
     };
   }
 
+  // 2.7: a silent server must never leave a player in a frozen match that still «plays». After 3 s without a
+  // snapshot the drop stops guessing its way forward and a sign says so; after 8 s the socket is dropped, which
+  // starts the usual pause card and reconnect (and shows the result if the match ended meanwhile).
+  let lastSnapAt = 0, stalled = false, watchdog = null;
+  function stallSign(show, seconds) {
+    let el = $('srvStall');
+    if (!show) { if (el) el.hidden = true; return; }
+    if (!el) { el = document.createElement('div'); el.id = 'srvStall'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.hidden = false;
+    el.innerHTML = `<b>Нет связи с сервером</b><small>Ждём ответа… ${seconds} с</small>`;
+  }
+  function checkSilence() {
+    if (!matchStarted || !room || room.status !== 'active' || paused) { if (stalled) { stalled = false; stallSign(false); } return; }
+    const silent = performance.now() - lastSnapAt;
+    stalled = silent > 3000;
+    stallSign(stalled, Math.round(silent / 1000));
+    if (silent > 8000 && socket) { const old = socket; try { old.close(4000, 'server-silent'); } catch {} }
+  }
+  function startWatchdog() { lastSnapAt = performance.now(); if (!watchdog) watchdog = setInterval(checkSilence, 500); }
+  function stopWatchdog() { if (watchdog) clearInterval(watchdog); watchdog = null; stalled = false; stallSign(false); }
+
   function scheduleReconnect() {
     if (reconnectTimer || leaving || !room || room.status === 'closed') return;
     const delay = reconnectDelay;
@@ -427,7 +448,7 @@
   }
 
   function endClientMatch(result) {
-    paused = false;
+    paused = false; stopWatchdog();
 
     if (activeMode === 'territory') {
       const winner = result?.winner || result?.winnerRole || 'draw';
@@ -462,8 +483,9 @@
       lastMatchId = message.matchId;
       matchStarted = true;
     }
-    else if (message.type === 'world-init') startClientMatch(message);
+    else if (message.type === 'world-init') { startClientMatch(message); startWatchdog(); }
     else if (message.type === 'snapshot') {
+      lastSnapAt = performance.now();
       lastProcessedSeqs = message.processedSeqs || lastProcessedSeqs;
       lastModeState = message.modeState || lastModeState;
       lastClock = message.clock || lastClock;
@@ -487,6 +509,7 @@
     }
     else if (message.type === 'command-rejected') toast('Команда не принята: ' + (message.reason || 'ошибка'));
     else if (message.type === 'match-error') {
+      stopWatchdog();
       toast('Сервер остановил матч из-за внутренней ошибки');
       if (room) {
         room.status = 'closed';
@@ -526,7 +549,7 @@
 
   async function leaveRoom(fromBack = false) {
     if (leaving) return;
-    leaving = true;
+    leaving = true; stopWatchdog();
     const wasServerMatch = !!DuoM.server;
     const wasActive = !!room && ['active', 'paused'].includes(room.status);
 
@@ -627,7 +650,7 @@
 
   window.KapliOnlineServer = {
     openLobby, sendInput, useAbility, useAction, pickBoost, finishMatch,
-    get paused() { return paused || !!room && room.status === 'paused'; },
+    get paused() { return paused || stalled || !!room && room.status === 'paused'; },
     get active() { return !!activeMode; },
     get room() { return room; },
     get processedSeqs() { return lastProcessedSeqs; },

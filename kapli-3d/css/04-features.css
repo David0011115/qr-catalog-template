@@ -453,6 +453,9 @@
 #itemModal .im-view { min-height: 180px; }
 #itemModal .im-view { position: relative; }
 #itemModal .im-view canvas { position: absolute; inset: 0; margin: auto; width: auto !important; height: 100% !important; max-width: 100%; aspect-ratio: 1; }
+/* 2.7: a profile background keeps its own 16:9 box (the square rule above squeezed it and left the avatar outside the picture) */
+#itemModal .im-view .im-pbg { width: min(100%, 460px); }
+#itemModal .im-view .im-pbg canvas { width: 100% !important; height: 100% !important; max-width: none; aspect-ratio: auto; }
 .mi-boosts { list-style: none !important; padding: 0 !important; display: grid; gap: 8px !important; }
 .mi-boosts li { display: grid; grid-template-columns: 30px 1fr; gap: 8px; align-items: start; }
 .mib-ic { font-size: 1.15rem; text-align: center; } .mib-tx b { display: block; font-size: .78rem; } .mib-tx small { display: block; font-size: .7rem; color: var(--muted); line-height: 1.35; }

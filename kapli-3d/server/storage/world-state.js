@@ -98,8 +98,9 @@ export function serializeWorldState(world) {
     ownerId: String(owner.id),
     target: targetReference(owner.target, cellIds, decoyIndexes),
     ...(owner.partner?.id == null ? {} : { partnerId: String(owner.partner.id) }),
-    shHitOwnerIds: [...(owner.shHit || [])].map(item => String(isObject(item) ? item.id : item)),
-    spHitOwnerIds: [...(owner.spHit || [])].map(item => String(isObject(item) ? item.id : item)),
+    // 2.7: an owner that left the world (a defeated duoback boss) is a stale hit, not corruption — drop it instead of failing the checkpoint
+    shHitOwnerIds: [...(owner.shHit || [])].map(item => String(isObject(item) ? item.id : item)).filter(id => ownerIds.has(id)),
+    spHitOwnerIds: [...(owner.spHit || [])].map(item => String(isObject(item) ? item.id : item)).filter(id => ownerIds.has(id)),
   }));
   for (const ref of ownerTargets) {
     if (!ownerIds.has(ref.ownerId)) throw new TypeError('target owner is missing');

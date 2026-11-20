@@ -735,8 +735,9 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     if (v.extra) v.extra.children.forEach(o => { const u = o.userData;
       if (u.wobble) o.scale.set(1.06 + Math.sin(t * 5) * .035, 1.06 + Math.sin(t * 5 + 1.6) * .045, 1.06 + Math.sin(t * 4 + .7) * .035);
       else if (u.gear) o.rotation.z = t * u.gear;
-      else if (u.sand !== undefined) { const p = (u.sand + t * .3) % 1; o.position.set(u.bx * (1 - p * .6), -.8 + p * 1.55, u.bz * (1 - p * .6)); o.visible = p < .97; }
-      else if (u.pile) { const p = (t / 9) % 1; o.scale.set(.4 + p * .6, .1 + p * .5, .4 + p * .6); }
+      else if (u.sand !== undefined) { const p = (u.sand + t * .3) % 1, tf = t - (liveState.sandFlip ?? -99), fl = tf >= 0 && tf < .5 ? Math.cos(Math.PI * tf / .5) : 1;   // 2.7: turns over on a bite
+        o.position.set(u.bx * (1 - p * .6), (-.8 + p * 1.55) * fl, u.bz * (1 - p * .6)); o.visible = p < .97; }
+      else if (u.pile) { const tf = t - (liveState.sandFlip ?? -99), p = tf >= 0 && tf < 9 ? tf / 9 : (t / 9) % 1; o.scale.set(.4 + p * .6, .1 + p * .5, .4 + p * .6); }
       else if (u.bub !== undefined) { const p = (u.bub + t * .22) % 1; o.position.set(u.bx * (1 - p * .5), -.75 + p * 1.5, u.bz * (1 - p * .5)); o.scale.setScalar(.5 + p * .8); }
       else if (u.twin) { o.position.set(Math.sin(t * 13) * .14, Math.sin(t * 7) * .05, Math.cos(t * 9) * .14); o.visible = Math.random() > .35; }
       else if (u.pearl) { o.material.uniforms.uCol.value.setHSL((t * .08) % 1, .9, .7); o.material.uniforms.uK.value = .9; }
@@ -1028,7 +1029,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     const d = iconPool[iconNext]; iconNext = (iconNext + 1) % iconPool.length;
     d.sp.material.map = ICONS[icon]; d.sp.material.color.set(color); d.sp.material.needsUpdate = true; d.sp.material.rotation = Math.random() * 6.28;
     d.sp.position.set(x + (Math.random() - .5), y, z + (Math.random() - .5)); d.vx = (Math.random() - .5) * 2; d.vz = (Math.random() - .5) * 2; d.vy = 3.5 * fall;
-    d.size = size * (.7 + Math.random() * .5); d.life = d.max = 1 + Math.random() * .5; d.sp.visible = true;
+    d.size = size * (.7 + Math.random() * .5); d.life = d.max = 1 + Math.random() * .5; d.sp.visible = true; d.spin = 0; return d;
   }
   const waves = Array.from({ length: 8 }, () => {
     const m = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 72), decal(new THREE.MeshBasicMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
@@ -1047,7 +1048,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       if (!d.sp.visible) continue;
       d.life -= dt;
       if (d.life <= 0) { d.sp.visible = false; continue; }
-      d.sp.position.x += d.vx * dt; d.sp.position.y += d.vy * dt; d.sp.position.z += d.vz * dt;
+      d.sp.position.x += d.vx * dt; d.sp.position.y += d.vy * dt; d.sp.position.z += d.vz * dt; if (d.spin) d.sp.material.rotation += d.spin * dt;
       d.vy -= 9 * dt; d.vx *= 0.97; d.vz *= 0.97;
       const f = d.life / d.max; d.sp.material.opacity = Math.min(1, f * 1.6); d.sp.scale.setScalar(d.size * (0.6 + 0.4 * f));
     }
@@ -1129,7 +1130,12 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       if (!o.isPlayer && !nearView(x, z)) continue;
       switch (id) {
         case 'sparksTrail': emit(x, r * .5, z, cellColor(c), 2, 2.5, .5); break;
-        case 'cr_cogs': if (Math.random() < .14 + .32 * Math.min(1, Math.hypot(c.vx || 0, c.vz || 0) / (BASE_SPEED * 1.4))) trailIcon(x, r * .5, z, 'gear', Math.random() < .6 ? '#ffd27a' : '#e8b05a', 1 + r * .1, .25); break;
+        case 'cr_cogs': {   // 2.7: gears come in meshing pairs turning against each other (pairs at half the rate — no more sprites than before)
+          const k = Math.min(1, Math.hypot(c.vx || 0, c.vz || 0) / (BASE_SPEED * 1.4)); if (Math.random() > (.07 + .16 * k)) break;
+          const sz = 1 + r * .1, a = trailIcon(x, r * .5, z, 'gear', '#ffd27a', sz, .25); if (!a || !a.sp) break;
+          const b = trailIcon(x, r * .5, z, 'gear', '#e8b05a', sz * .7, .25); if (!b || !b.sp) break;
+          const off = (a.size + b.size) * .36; b.sp.position.set(a.sp.position.x - c.hz * off, a.sp.position.y, a.sp.position.z + c.hx * off);
+          b.vx = a.vx; b.vy = a.vy; b.vz = a.vz; b.life = b.max = a.max; a.spin = 3 + 4 * k; b.spin = -a.spin * a.size / b.size; break; }
         case 'cr_marks': { o._mkT = (o._mkT || 0) + 1; if (o._mkT % 6) break; o._mkN = ((o._mkN || 0) + 1) % 36; const n = o._mkN, num = n % 3 === 0, rot = Math.atan2(c.hx, c.hz);
           const icon = num ? 'n' + (12 - (n / 3) % 12) : 'tick', size = (num ? 2.2 : 1.6) + r * .45;
           if (fxTarget) fxTarget.icons(x, .1, z, icon, '#ffd27a', 1, size, true); else crMark(x, z, icon, size, rot, num ? '#fff6d8' : '#ffd27a'); break; }

@@ -344,13 +344,13 @@
   const ccPl = x => !!x && (x.isPlayer || x.kind === 'rival');
   function ccSlow(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
   function ccFreeze(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
-  // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 2.5 s of immunity
+  // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 5 s of immunity
   //  (it was renewed every frame, so the immunity never came: a 46 s slowdown in the owner's report)
   function ccAura(x, dt) {
     if (!ccPl(x)) { x.slowT = Math.max(x.slowT || 0, .35); return; }
     if ((x.ccImm || 0) > 0) return;
     x.auraT = (x.auraT || 0) + dt * 1.5;   // decays at 0.5 per second outside (abTick): 3 s inside fills it
-    if (x.auraT >= 3) { x.auraT = 0; x.slowT = 0; x.ccImm = CC.immune; return; }
+    if (x.auraT >= 3) { x.auraT = 0; x.slowT = 0; x.ccImm = 5; return; }   // 2.7: 5 s of immunity after a cloud (2.5 left the player slowed over half the time)
     x.slowT = Math.max(x.slowT || 0, .35);
   }
   function ccWore(o, was) { if (was > 0 && ccPl(o) && !(o.slowT > 0) && !(o.freezeT > 0)) o.ccImm = CC.immune; }

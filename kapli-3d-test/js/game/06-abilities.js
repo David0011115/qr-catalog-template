@@ -1,6 +1,7 @@
   // ================= abilities: runtime =================
   let runBuild = [...ABIL_CFG.oldBuild], decoy = null;
-  const abLv = id => stats && stats.ranked ? 0 : save.abil.lv[id] || 0;
+  let rbLvUp = {};   // 2.7 «Случайный билд»: levels added for this round by a milestone swap
+  const abLv = id => stats && stats.ranked ? 0 : Math.min(ABIL_CFG.levels, (save.abil.lv[id] || 0) + (rbLvUp[id] || 0));
   const arenaCd = () => arenaIs('chronos') ? .9 : 1;   // arena «Часовой механизм»: every cooldown is 10% shorter
   const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd();
   const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);
@@ -425,20 +426,26 @@
     const cExtra = [];
     let raidLine = '';
     if (mode === 'raid') {
-      const rs = raidState(), dmg = stats.raidDmg || 0;
-      rs.dmg = Math.min(RAID_HP, rs.dmg + dmg); coins += Math.round(dmg / 25); if (dmg) cExtra.push(['Урон в рейде', Math.round(dmg / 25)]);
-      if (rs.dmg >= RAID_HP && !rs.done) {
+      // 2.7: a ladder — a step's reward once a week; coins for damage only while the step is not cleared yet (no farming of a cleared step)
+      const rs = raidState(), dmg = stats.raidDmg || 0, ti = (stats.raidTier || 1) - 1, T = RAID_TIERS[ti], first = !rs.cleared.includes(ti + 1), won = dmg >= T.hp;
+      if (first && dmg) { coins += Math.round(dmg / 25); cExtra.push(['Урон в рейде', Math.round(dmg / 25)]); }
+      if (won && first) {
+        rs.cleared.push(ti + 1); coins += T.coins; cExtra.push([`Ступень ${RAID_ROMAN[ti]}`, T.coins]);
+        raidLine = `<li class="done"><span>Ступень ${RAID_ROMAN[ti]} пройдена!</span><span class="rw">+${T.coins.toLocaleString('ru-RU')} ◆</span></li>`;
+        if (ti === 4) { save.special.push({ kind: 'challenge', rar: 'legendary', title: 'Рейд V' }); if (!save.decor.includes('tt_raidlord')) save.decor.push('tt_raidlord'); raidLine += '<li class="done"><span>Высшая ступень рейда</span><span class="rw">легендарный сундук · титул «Гроза колоссов»</span></li>'; }
+      }
+      if (won && first && ti === 2 && !rs.done) {
         rs.done = true; const id = ensureRaidSkin(rs.week), had = save.skins.includes(id);
         if (!had) save.skins.push(id); else { coins += RARITY.epic.dup; cExtra.push(['Трофей уже есть', RARITY.epic.dup]); }
         coins += 1500; cExtra.push(['Победа в рейде', 1500]); save.special.push({ kind: 'challenge', rar: 'epic', title: 'Рейд' });
-        raidLine = `<li class="done"><span>Босс недели повержен! Скин «${SKINS.find(k => k.id === id).name}»</span><span class="rw">+1500 ◆ + эпический сундук</span></li>`;
+        raidLine += `<li class="done"><span>Трофей недели! Скин «${SKINS.find(k => k.id === id).name}»</span><span class="rw">+1500 ◆ + эпический сундук</span></li>`;
         save.raidWins = (save.raidWins || 0) + 1;
         const extra = save.raidWins >= 1 && !save.fxOwned.includes('raidAura') ? (save.fxOwned.push('raidAura'), 'аура «Аура рейдера»')
           : save.raidWins >= 3 && !save.hats.includes('helm') ? (save.hats.push('helm'), 'предмет «Шлем рейдера»')
           : save.raidWins >= 5 && !save.hats.includes('banner') ? (save.hats.push('banner'), save.pets.includes('raid_p') || save.pets.push('raid_p'), 'предмет «Знамя рейда» и питомец «Рейдер»') : '';
         if (extra) raidLine += `<li class="done"><span>Награда за ${save.raidWins}-ю победу в рейде</span><span class="rw">${extra}</span></li>`;
       }
-      stats.raidLeft = RAID_HP - rs.dmg;
+      stats.raidLeft = Math.max(0, T.hp - dmg); stats.raidHp = T.hp;
     }
     let xp = (arenaIs('galaxy') ? 1.1 : 1) * (mode === 'rbuild' ? 1.2 : 1) * Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
     xp = Math.round(xp * (1 + 0.05 * petLv('xp')) * (1 + starBonus('xp') / 100));
@@ -565,7 +572,7 @@
     if (stats.ejects) cellsHtml.push(['Выбросов', stats.ejects]);
     if (placeBonus) cellsHtml.push(['Бонус режима', `+${placeBonus} ◆`]);
     if (mode === 'crown') cellsHtml.push(['С короной', fmtTime(player.crownT)]);
-    if (mode === 'raid') cellsHtml.push(['Урон боссу', stats.raidDmg || 0], ['Здоровье босса', `${Math.ceil(stats.raidLeft / RAID_HP * 100)}%`], ['Попыток сегодня', `${RAID_TRIES - raidState().tries} из ${RAID_TRIES}`]);
+    if (mode === 'raid') cellsHtml.push(['Урон боссу', stats.raidDmg || 0], ['Здоровье близнецов', `${Math.ceil(stats.raidLeft / (stats.raidHp || 1) * 100)}%`], ['Ступени недели', `${raidState().cleared.length} из 5`]);
     if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×1,6']);
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     // tap the coins to see what they were made of

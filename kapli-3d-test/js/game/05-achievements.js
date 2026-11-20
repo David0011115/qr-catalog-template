@@ -83,8 +83,9 @@
     colossus.name = name; colossus2.name = `${name}-близнец`; BOSS_TYPES_EXTRA.colossus2.color = c2;
     for (const [o, col] of [[colossus, color], [colossus2, c2]]) for (const v of [...o.free, ...o.cells.map(c => c.vis)]) { v.mesh.material.color.set(col); v.mesh.material.emissive.set(col); v.glow.material.color.set(col); }
   }
+  let pendingRaidTier = null;
   function spawnRaidChunk() {
-    const r = raidState(), dealt = stats.raidDmg || 0, left = Math.min(RAID_HP - r.dmg - dealt, RAID_ATTEMPT_CAP - dealt);
+    const dealt = stats.raidDmg || 0, left = RaidX.tier().hp - dealt;
     if (left <= 0) return false;
     const [x, z] = safeSpot(45), a = Math.random() * 6.283;
     raidTwins.forEach((o, k) => {   // the twins come together, side by side
@@ -98,13 +99,10 @@
   function startRound() {
     fixModeForLeague();
     if (!pendingRanked && !pendingTut && MODES[save.mode].lvl && playerLevel() < MODES[save.mode].lvl) { toast(`«${MODES[save.mode].name}» откроется на ${MODES[save.mode].lvl} уровне`); return; }
-    if (!pendingRanked && !pendingTut && save.mode === 'raid') {
-      const r = raidState();
-      if (r.done) { toast('Босс этой недели уже повержен. Новый — в понедельник'); return; }
-      const extra = raidPerk().tries && r.bonusWeek !== r.week ? 1 : 0;   // «Шлем рейдера»: one more try a week
-      if (r.tries >= RAID_TRIES + extra) { toast('Попытки на сегодня закончились. Приходи завтра'); return; }
-      r.tries++; if (r.tries > RAID_TRIES) { r.bonusWeek = r.week; toast('Использована недельная попытка «Шлема рейдера»'); } persist();
+    if (!pendingRanked && !pendingTut && save.mode === 'raid' && pendingRaidTier === null) {   // 2.7: pick a step of the ladder first
+      RaidX.picker(t => { pendingRaidTier = t; startRound(); }); return;
     }
+    const raidTierNow = pendingRaidTier || 0; pendingRaidTier = null;
     const isTut = pendingTut; pendingTut = false; tut = null;
     const isChaos = pendingChaos && pendingRanked; pendingChaos = false;
     const isRb = !isTut && !isChaos && !pendingRanked && save.mode === 'rbuild';
@@ -151,7 +149,7 @@
     { const sb = bots.find(o => o.star && o.cells.length); if (sb) setTimeout(() => { if (running) toast(`На арене звезда «${sb.name}»: съешь её за +${STAR_COINS} ◆`); }, 1500); }
     if (mode === 'raid') {
       const b = raidBoss(raidWeek()); setColossusLook(b.name, b.color);
-      stats.raidDmg = 0; spawnRaidChunk();
+      stats.raidDmg = 0; RaidX.start(raidTierNow); spawnRaidChunk();
       const pk = raidPerk();
       toast(`Рейд: ${b.name} и близнец. Разведи их — пока они рядом, связь гасит половину урона${pk.dmg > 1 ? `. Твой бонус: урон +${Math.round((pk.dmg - 1) * 100)}%` : ''}`);
     }

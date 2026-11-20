@@ -308,9 +308,10 @@
     if (mode === 'raid') {
       if (stats.raidSpawned && !colossus.cells.length && !colossus2.cells.length) {
         if (spawnRaidChunk()) toast('Босс собирается снова!');
-        else { finishRound(`${colossus.name} повержен!`, 0, true); return true; }
+        else { finishRound(`Ступень ${['I', 'II', 'III', 'IV', 'V'][RaidX.tierI()]} пройдена!`, 0, true); return true; }
       }
-      if (stats.time >= RAID_LEN) { finishRound('Время рейда вышло', 0, false); return true; }
+      if (stats.raidDmg >= RaidX.tier().hp) { finishRound(`Ступень ${['I', 'II', 'III', 'IV', 'V'][RaidX.tierI()]} пройдена!`, 0, true); return true; }
+      if (stats.time >= RAID_LEN + raidPerk().time) { finishRound('Время рейда вышло', 0, false); return true; }
     }
     if (mode === 'raid') {
       // the colossus splits a part off whenever the player swims close
@@ -516,12 +517,7 @@
       const coverK = b.owner.isPlayer && !a.owner.isPlayer ? Math.max(0, .35 * (2 - a.mass / b.mass) / .75) : .35;
       if (pairMate || Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * coverK) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
-          stats.raidDmg = Math.min(RAID_ATTEMPT_CAP, (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK()));
-          const raidLeft = RAID_HP - raidState().dmg - stats.raidDmg;
-          if (stats.raidDmg >= RAID_ATTEMPT_CAP && raidLeft > 0) {
-            toast('Колосс отступает! Урон сохранён для следующей попытки');
-            finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
-          }
+          stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK());
         } }
         const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && (b.owner.hcPack || total(player) >= 50000) ? .5 : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() * (b.owner.hcPack && mode === 'classic' ? .5 : 1) : 1) * (a.owner.isPlayer && b.owner.kind === 'boss' ? ModeX.clBossGainK(pairMate) : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
@@ -664,7 +660,7 @@
       if (mode === 'royale') modeChip = `${ModeX.zoneChip()} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
       if (mode === 'crown') modeChip = ModeX.crownChip();
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
-      if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `Близнецы ${Math.ceil(left / RAID_HP * 100)}% · заход ${Math.round(stats.raidDmg || 0).toLocaleString('ru-RU')}/${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')}`; }
+      if (mode === 'raid') { const hp = RaidX.tier().hp, left = Math.max(0, hp - (stats.raidDmg || 0)); modeChip = `Ступень ${['I', 'II', 'III', 'IV', 'V'][RaidX.tierI()]} · близнецы ${Math.ceil(left / hp * 100)}% · фаза ${RaidX.phase()}`; }
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
       if (mode === 'territory') { modeChip = DuoM.chip(); if (DuoM.on) timer = DuoM.rules.territory.timer(); }
       if (mode === 'duoback') { modeChip = DuoM.chip(); timer = `⏱ ${fmtTime(stats.time)}`; }

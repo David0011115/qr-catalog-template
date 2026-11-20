@@ -414,6 +414,10 @@
     function serverTick(dt) {
       if (!serverMode || !on || window.KapliOnlineServer?.paused) return;
       stats.time = Math.max(stats.time, stats.serverClock || 0);
+      // 2.7: the bonus timers (the 3 s start shield too) never ran down in a server match — «вечная неуязвимость» on the HUD;
+      // they tick here, and what the server says about this player wins
+      for (const k in effects) effects[k] = Math.max(0, effects[k] - dt);
+      if (player.eff) for (const k of ['speed', 'shield', 'double', 'magnet']) if (Number.isFinite(player.eff[k])) effects[k] = player.eff[k];
       const [dx, dz] = localDir(), now = performance.now();
       if (now - inAt > INPUT_MS) {
         inAt = now;

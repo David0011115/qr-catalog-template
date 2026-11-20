@@ -371,6 +371,9 @@
     return `class="fr fn ${d.cls || ''}" style="${d.css}"${g ? ` data-g="${g}"` : ''}`; };
   const titleTag = id => { const d = decorById(id); return d ? `<em class="ttl ${d.cls || ''} tt-r-${decoRarity(d)}" style="color:${d.color};--a:${d.a || d.color};--b:${d.b || '#fff'}">${d.ico ? `<i class="tt-i">${d.ico}</i>` : ''}${d.name}</em>` : ''; };
   const decoPreview = d => d.kind === 'frame' ? `<span class="deco-pv"><span ${frameAttr(d.id)}>Ты</span></span>` : `<span class="deco-pv">${titleTag(d.id)}</span>`;
+  const spSig = c => [c.kind, c.title, c.rar, c.league ?? ''].join('|');
+  const spOpts = c => { const o = c.kind === 'league' ? { league: c.league } : { rar: c.rar };
+    o.src = c.kind === 'league' ? 'league' : /^Уровень /.test(c.title) ? 'level' : c.title === 'Неделя' ? 'week' : c.title === 'Рейд' ? 'raid' : 'challenge'; return o; };
   function chestRows() {
     const rows = [];
     const daily = save.dailyChestDay !== today;
@@ -379,9 +382,13 @@
     if (save.shardChests) rows.push({ key: 'shard', look: chestLook('shard'), title: `Сундук осколков ×${save.shardChests}`, sub: '20–30 осколков', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.shardChests) });
     if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.chests) });
     (save.giftBoxes || []).forEach(id => { const ev = GIFT_EVENTS.find(e => e.id === id); if (ev) rows.unshift({ key: 'gift' + id, look: chestLook('gift', null, ev), title: `${ev.cake} ${ev.box}`, sub: 'Подарок от разработчика — открой!', btn: 'Открыть', gift: true }); });
-    save.special.forEach((c, i) => rows.push(c.kind === 'league'
-      ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть' }
-      : { key: 'sp' + i, look: chestLook('challenge', c.rar), title: `Сундук испытания «${c.title}»`, sub: `Редкость: ${RARITY[c.rar].name}`, btn: 'Открыть' }));
+    // 2.7: the same special chests (kind, name, rarity) make one row «×N» with «open» and «×5» — they were a long list one by one
+    const groups = new Map();
+    save.special.forEach((c, i) => { const k = spSig(c); if (groups.has(k)) groups.get(k).n++; else groups.set(k, { c, i, n: 1 }); });
+    for (const { c, i, n } of groups.values()) { const x = n > 1 ? ` ×${n}` : '', multi = Math.min(CHEST_MULTI, n);
+      rows.push(c.kind === 'league'
+        ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»${x}`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть', multi }
+        : { key: 'sp' + i, look: chestLook('challenge', c.rar), title: `Сундук испытания «${c.title}»${x}`, sub: `Редкость: ${RARITY[c.rar].name}`, btn: 'Открыть', multi }); }
     return rows;
   }
   function renderChest() {
@@ -671,10 +678,18 @@
   // 2.3: open up to CHEST_MULTI round chests or shard chests in one go; the reveal shows everything at once
   function openChestMany(key) {
     if (chestBusy) return;
-    const left = key === 'shard' ? save.shardChests : save.chests, n = Math.min(CHEST_MULTI, left || 0); if (n < 2) return openChest(key);
-    if (key === 'shard') save.shardChests -= n; else save.chests -= n;
+    let specs = null, look = null;
+    if (key.startsWith('sp')) {   // 2.7: several special chests of one kind at once
+      const c0 = save.special[+key.slice(2)]; if (!c0) return;
+      const idx = save.special.map((c, i) => spSig(c) === spSig(c0) ? i : -1).filter(i => i >= 0).slice(0, CHEST_MULTI);
+      if (idx.length < 2) return openChest(key);
+      specs = idx.map(i => spOpts(save.special[i])); [...idx].sort((a, b) => b - a).forEach(i => save.special.splice(i, 1));
+      look = c0.kind === 'league' ? chestLook('league') : chestLook('challenge', c0.rar);
+    }
+    const left = key === 'shard' ? save.shardChests : save.chests, n = specs ? specs.length : Math.min(CHEST_MULTI, left || 0); if (n < 2) return openChest(key);
+    if (specs) {} else if (key === 'shard') save.shardChests -= n; else save.chests -= n;
     chestBusy = true;
-    const box = $('chestBox'); $('reveal').hidden = true; box.classList.remove('gift'); box.setAttribute('style', chestLook(key === 'shard' ? 'shard' : 'normal')); box.dataset.kind = key;
+    const box = $('chestBox'); $('reveal').hidden = true; box.classList.remove('gift'); box.setAttribute('style', look || chestLook(key === 'shard' ? 'shard' : 'normal')); box.dataset.kind = specs ? (specs[0].league ? 'league' : 'challenge') : key;
     box.classList.remove('open', 'empty'); void box.offsetWidth; box.classList.add('shake');
     buzz(60); Sound.play('chest'); $('overlay').scrollTop = 0;
     setTimeout(() => {
@@ -686,7 +701,7 @@
         el.style.setProperty('--rc', '#22e6ff'); box.style.setProperty('--rc', got.legendary ? RARITY.legendary.color : '#22e6ff');
         el.innerHTML = `<span class="rar">Сундуков осколков: ${n} · ${tot} шт.</span><div class="ws-bal" style="width:100%">${RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 30)}<b>+${got[k]}</b>${RARITY[k].name}</span>`).join('')}</div><small>Создавать предметы — в «Мастерской» в главном меню.</small>`;
       } else {
-        const res = []; for (let c = 0; c < n; c++) { const r = rollChest({}); logChest('normal', r.rar); res.push(r); }
+        const res = []; for (let c = 0; c < n; c++) { const o = specs ? specs[c] : {}; const r = rollChest(o); logChest(specs ? o.src : 'normal', r.rar); res.push(r); }
         const best = res.reduce((a, r) => RAR_KEYS.indexOf(r.rar) > RAR_KEYS.indexOf(a.rar) ? r : a, res[0]), coins = res.reduce((a, r) => a + (r.coins || 0), 0);
         el.style.setProperty('--rc', RARITY[best.rar].color); box.style.setProperty('--rc', RARITY[best.rar].color);
         el.innerHTML = `<span class="rar">Открыто сундуков: ${n}</span><div class="rv-multi">${res.map(r => { const R2 = RARITY[r.rar];

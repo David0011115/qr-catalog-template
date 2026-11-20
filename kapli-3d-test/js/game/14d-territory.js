@@ -134,7 +134,7 @@
         return !!h && b.owner.kind === 'bot' && sideAt(b.x) !== h;
       },
       shareNow: () => myShare(),   // 2.7 test journal
-      speedK(c) { const h = homeOf(c.owner); return h && sideAt(c.x) !== h ? FOREIGN_K : 1; },
+      speedK(c) { const h = homeOf(c.owner); return (c.owner && (c.owner.isPlayer || c.owner.kind === 'rival') ? 1.12 : 1) * (h && sideAt(c.x) !== h ? FOREIGN_K : 1); },   // 2.7: players 12% faster (server: TERRITORY_RULES.playerSpeed)
       cross(dt) {   // a short sign in the middle of the screen when your drop crosses the border
         if (!player.cells.length) { lastSide = 0; return; }
         const sd = sideAt(centerOf(player)[0]);

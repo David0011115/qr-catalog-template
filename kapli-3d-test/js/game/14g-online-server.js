@@ -263,7 +263,7 @@
       if (socket !== ws) return;
       socket = null;
       connected = false;
-      if (TEST_MODE) TLog.ev('сеть: соединение закрыто', event?.code || 0);
+      if (TEST_MODE) TLog.ev('сеть: соединение закрыто', (event?.code || 0) + (event?.reason ? ' ' + event.reason : '') + (event?.code === 1008 ? ' · отправлено за секунду: ' + JSON.stringify(sendWin.by) : ''));
 
       if (event?.code === 4001) {
         if (matchStarted && room) {
@@ -354,8 +354,19 @@
     }, delay);
   }
 
+  // 2.7: the server cuts a socket over 80 messages a second (close 1008) — in «Спина к спине» it happened 4 times in 2 s.
+  // Never send more than 60 a second (inputs and pings first), and tell the journal what was held back.
+  const sendWin = { at: 0, n: 0, by: {}, dropped: {} };
   function sendMessage(message) {
     if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    const t = performance.now();
+    if (t - sendWin.at >= 1000) {
+      if (TEST_MODE && Object.keys(sendWin.dropped).length) TLog.ev('сеть: придержал сообщения', JSON.stringify({ sent: sendWin.by, held: sendWin.dropped }));
+      sendWin.at = t; sendWin.n = 0; sendWin.by = {}; sendWin.dropped = {};
+    }
+    const type = message?.type || '?';
+    if (sendWin.n >= 60 && type !== 'ping') { sendWin.dropped[type] = (sendWin.dropped[type] || 0) + 1; return false; }
+    sendWin.n++; sendWin.by[type] = (sendWin.by[type] || 0) + 1;
     try {
       socket.send(JSON.stringify(message));
       return true;
@@ -370,6 +381,7 @@
 
   function sendInput(x, z) {
     if (!canSendGameplay()) return false;
+    if (socket && socket.bufferedAmount > 2048) return false;   // 2.7: the network is stalled — do not pile up moves that would arrive as one burst
     const seq = inputSeq + 1;
     if (!sendMessage({ type: 'input', seq, x, z })) return false;
     inputSeq = seq;

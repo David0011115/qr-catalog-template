@@ -63,7 +63,7 @@
     });
 
     let D = DIFF[0], Di = 0, pHome = -1, wv = 0, ph = 1, bt = 6, team = null, spec = null, meteors = [], offers = {}, picked = {}, shared = null;
-    let co = null, prevCo = null;   // what both phones show: [phase, wv, break left, bosses, special hp %, special kind, host player's return, rival's return]
+    let co = null, prevCo = null, serverOfferKey = '';   // what both phones show: [phase, wv, break left, bosses, special hp %, special kind, host player's return, rival's return]
     const rival = () => DuoM.rival;
     const active = () => DuoM.mode === 'duoback';
     const pl = () => [player, rival()].filter(o => o.cells.length);
@@ -108,7 +108,12 @@
     }
     function choose(id) {
       panel(null);
-      if (DuoM.role === 'host') { if (picked.p) return; picked.p = id; applyBoost(player, id); }
+      if (DuoM.server) {
+        const key = DuoM.serverRole === 'host' ? 'p' : 'r';
+        if (picked[key] || !offers[key]?.includes(id)) return;
+        picked[key] = id;
+        window.KapliOnlineServer?.pickBoost(id);
+      } else if (DuoM.role === 'host') { if (picked.p) return; picked.p = id; applyBoost(player, id); }
       else Duo.send({ t: 'bp', id });
       Sound.play('level');
     }
@@ -280,6 +285,7 @@
       arena: .8,   // a smaller field: the pair stays close and the bosses find them
       goExtra: () => ({ diff: save.duoDiff || 0 }),
       pre(role, g) {
+        serverOfferKey = '';
         Di = Math.max(0, Math.min(2, +g.diff || 0)); D = DIFF[Di]; pHome = role === 'host' ? -1 : 1;
         wv = 0; ph = 1; bt = 6; spec = null; meteors = []; offers = {}; picked = {}; shared = {}; co = prevCo = null;
         team = { bosses: 0, specials: 0, bots: 0, resp: 0, s5: 0, hp: 0, hg: 0 };   // hp / hg: help points of the host and of the guest
@@ -314,11 +320,12 @@
           DuoM.result('coop', 0, 'dead', { w: Math.max(0, passed), t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5, hp: team.hp, hg: team.hg });
         }
       },
-      // 2.7: a run that one of the two left early still goes to the rating with the waves already cleared (the host sends it)
+      // 2.7: a run that one of the two left early still counts with the waves already cleared. Online the room server does it
+      // (player-ended → persistResult); this path stays only for a phone-to-phone match, if a build still sends results from the phone
       abandon() {
         if (DuoM.practice || DuoM.role !== 'host' || dying || !team) return;
         const passed = Math.max(0, ph === 1 ? wv : wv - 1);
-        if (passed > 0) Net.duoCoop(Di, rival().pid, passed, Math.round(stats.time), team.bosses + team.specials, team.bots, team.resp);
+        if (passed > 0 && typeof Net.duoCoop === 'function') Net.duoCoop(Di, rival().pid, passed, Math.round(stats.time), team.bosses + team.specials, team.bots, team.resp);
       },
       lost(o) { team.resp++; },
       anyLost(o, eater) {
@@ -335,6 +342,7 @@
           if (o.dbType === 'twins') regOwners.forEach(x => { if (x !== o && x.dbType === 'twins' && x.cells.length) x.enr = 1; });
         }
       },
+      diffs: DIFF,   // 2.7: the online room shows the same difficulty names and descriptions
       bossCap: () => bossCap(baseMass()),   // 2.7: the core's limit for a boss drop in this mode
       eatBlock(a, b) {   // «Броня»: a boss must be clearly bigger to eat a player who took it
         const n = b.owner.db && b.owner.db.armor;
@@ -350,6 +358,35 @@
         s.co = co ? co.map(v => Math.round(v * 10) / 10) : null;
         s.ds = rival().db ? rival().db.speed : 0;
         s.mt = meteors.flatMap(m => [Math.round(m.x), Math.round(m.z), Math.round(m.r), Math.round(m.t * 10) / 10]);
+      },
+      applyServer(state, respawnTimers = {}) {
+        const oldWave = wv;
+        Di = Math.max(0, Math.min(2, Number(state.difficultyIndex) || 0)); D = DIFF[Di];
+        wv = state.wave || 0; ph = state.phase ?? 1; bt = state.breakRemaining || 0;
+        team = {
+          bosses: state.team?.bosses || 0, specials: state.team?.specials || 0,
+          bots: state.team?.bots || 0, resp: state.team?.respawns || 0,
+          s5: state.team?.specialWave5Time || 0,
+        };
+        shared = state.shared || {};
+        offers = { p: state.offers?.host || null, r: state.offers?.guest || null };
+        picked = { p: state.picked?.host || null, r: state.picked?.guest || null };
+        meteors = (state.meteors || []).map(m => ({ x: m.x, z: m.z, r: m.r, t: m.t }));
+        const special = state.special || null;
+        const specialPercent = special ? Math.max(0, Math.min(100, 100 * (special.damage || special.dmg || 0) / Math.max(1, special.max || 1))) : -1;
+        const specialIndex = special ? Math.max(0, SPEC.findIndex(d => d.id === special.type || d.id === special.id)) : -1;
+        const regularCount = (state.regularBosses || state.regular || []).length;
+        co = [ph, wv, bt, regularCount, specialPercent, specialIndex,
+          respawnTimers.host || 0, respawnTimers.guest || 0];
+        const localRole = DuoM.serverRole;
+        const mine = localRole === 'host' ? 'p' : 'r';
+        const ids = offers[mine];
+        const pickedMine = !!picked[mine];
+        const offerKey = pickedMine ? 'picked' : Array.isArray(ids) ? ids.join('|') : '';
+        if (offerKey !== serverOfferKey) { serverOfferKey = offerKey; panel(pickedMine ? null : ids); }
+        if (wv !== oldWave && ph === 0) sign(`Волна ${wv}`, `Боссов: ${regularCount}`, '#ff3d6e');
+        if (state.special && specialPercent >= 0) spec = { d: SPEC[Math.max(0, specialIndex)], dmg: (specialPercent / 100) * (special.max || 1), max: special.max || 1 };
+        else spec = null;
       },
       apply(s) {
         if (s.co) co = s.co;
@@ -394,7 +431,6 @@
         list.push({ w, t: x.t || 0, b: x.b || 0, s: x.s || 0, k: x.k || 0, r: x.r || 0, n: String(rival().name || '').slice(0, 24), d: Date.now() });
         list.sort((a, b) => b.w - a.w || a.t - b.t); list.length = Math.min(5, list.length);
         persist();
-        if (!DuoM.practice && DuoM.role === 'host') Net.duoCoop(x.df || 0, rival().pid, w, x.t || 0, (x.b || 0) + (x.s || 0), x.k || 0, x.r || 0);   // the room's creator sends the pair's run
         stats.duoHero = { v: w, l: 'волн пройдено' }; stats.duoWave = w; stats.duoSpecial5T = x.s5 || 0;
         // 2.7: help points — 15 ◆ each (× difficulty); over all runs: «Надёжное плечо» at 100, the frame «Плечом к плечу» at 300
         const myHelp = Math.max(0, Math.min(500, +(DuoM.role === 'host' ? x.hp : x.hg) || 0));

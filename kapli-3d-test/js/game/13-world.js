@@ -260,9 +260,21 @@
   }
   function draw(now) {
     if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode === 'raid' || bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu'); }
-    decorateHoliday();
+    // Relationship rings and hidden-boss visibility do not need 60 Hz checks.
+    // Refreshing them at 10 Hz removes repeated canEat() scans when players split.
+    const relationRefresh = now - (draw.relationAt || 0) >= 100;
+    if (relationRefresh) draw.relationAt = now;
+    // Cosmetics and ambient particles do not need 60 Hz updates. Keeping
+    // transforms/camera at display rate while animating detail at 30 Hz
+    // avoids bursts of material writes when many cells move together.
+    const cosmeticRefresh = now - (draw.cosmeticAt || 0) >= 33;
+    if (cosmeticRefresh) {
+      draw.cosmeticAt = now;
+      decorateHoliday();
+      animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000));
+      draw.lastP = now;
+    }
     shineT.value = now / 1000;
-    animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
     zoneLine.visible = zoneOut.visible = running && mode === 'royale';
     if (zoneLine.visible) { const Z = ModeX.zoneC; zoneLine.position.set(Z.x, .06, Z.z); zoneOut.position.set(Z.x, .06, Z.z); zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
@@ -274,10 +286,10 @@
         const crownMode = mode === 'crown' && running;
         v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
         if (!c.owner.isPlayer) { const show = QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show; if (v.shine) v.shine.visible = show && !v.evo && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
-        if (v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
-        if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
+        if (cosmeticRefresh && v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
+        if (cosmeticRefresh && v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
         if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');
-        if (animateVisible) {
+        if (animateVisible && cosmeticRefresh) {
           animateAura(v, now); animateHead(v, now);
           if (lk.pulse) { const k = .5 + .5 * Math.sin(now / 280); v.mesh.material.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }
           if (lk.holo) { const h = ((lk.holoBase ?? .5) + (lk.holoSpan ?? .17) * (1 + Math.sin(now / 900 + c.x * .05))) % 1; v.mesh.material.color.setHSL(h, 1, .62); v.mesh.material.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
@@ -285,9 +297,10 @@
           animateLook(v, now, c);
         }
       }
-      if (c.owner.bossType === 'chameleon') {
-        // invisible until you are close: fades in over the last 20 units
-        let dmin = Infinity; for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - visualCellR(pc) - r);
+      if (c.owner.bossType === 'chameleon' && (relationRefresh || c.seen === undefined)) {
+        // Invisible until you are close: 10 Hz is enough for this proximity fade.
+        let dmin = Infinity;
+        for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
         const al = !player.cells.length ? .9 : Math.max(.05, Math.min(.9, (30 - dmin) / 20));
         c.vis.mesh.material.opacity = al; c.vis.glow.material.opacity = al * .9; c.vis.crown.visible = al > .5; c.vis.ring.visible = al > .3; c.seen = al > .3;
       }
@@ -299,22 +312,36 @@
       v.ring.scale.setScalar(r);
       if (c.owner.isPlayer) {
         v.shield.visible = shieldOn;
-        v.ring.material.color.set(player.freezeT > 0 || player.slowT > 0 ? '#7fdcff' : c.mergeT > 0 ? BONUS.shield.color : '#ffffff');   // 2.7: an icy ring while slowed
-        v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
-      } else if (player.cells.length) {
-        const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
-        if (c.owner.team && c.owner.team === player.team) v.ring.material.color.set(ALLY_COLOR);
-        else v.ring.material.color.copy(danger ? THREAT : food ? PREY : NEUTRAL);
-        // 2.7: in the modes for two the ring of a drop you can eat (green) or that can eat you (red) pulses and stands out past the edge
-        if (DuoM.mode && (danger || food) && !(c.owner.team && c.owner.team === player.team)) v.ring.scale.setScalar(r * (1.1 + .07 * Math.sin(now / 170)));
+        const mergeTone = player.freezeT > 0 || player.slowT > 0 ? 2 : c.mergeT > 0 ? 1 : 0;   // 2.7: an icy ring while slowed
+        if (v._mergeTone !== mergeTone) {
+          v.ring.material.color.set(mergeTone === 2 ? '#7fdcff' : mergeTone ? BONUS.shield.color : '#ffffff');
+          v._mergeTone = mergeTone;
+        }
+        if (cosmeticRefresh) v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
+      } else if (player.cells.length && (relationRefresh || v._ringTone === undefined)) {
+        // Cache the expensive per-player canEat scans between render frames.
+        let tone = 0; // neutral
+        if (c.owner.team && c.owner.team === player.team) tone = 1; // ally
+        else {
+          const danger = player.cells.some(p => canEat(c, p));
+          const food = !danger && player.cells.some(p => canEat(p, c));
+          tone = danger ? 2 : food ? 3 : 0;
+        }
+        if (v._ringTone !== tone) {
+          if (tone === 1) v.ring.material.color.set(ALLY_COLOR);
+          else v.ring.material.color.copy(tone === 2 ? THREAT : tone === 3 ? PREY : NEUTRAL);
+          v._ringTone = tone;
+        }
       }
+      // 2.7: in the modes for two the ring of a drop you can eat (green) or that can eat you (red) pulses and stands out past the edge
+      if (DuoM.mode && !c.owner.isPlayer && (v._ringTone === 2 || v._ringTone === 3)) v.ring.scale.setScalar(r * (1.1 + .07 * Math.sin(now / 170)));
     }
     ejectMat.color.set(skin().color); ejectMat.emissive.set(skin().color);
     for (const v of viruses) { const rv = radius(v.mass); v.mesh.position.set(v.x, rv * .9, v.z); v.mesh.scale.setScalar(rv); v.mesh.rotation.y = now / 2000 + v.x; }
     if (meteorRing.visible) { meteorRing.scale.setScalar(22 + Math.sin(now / 200) * .8); meteorRing.material.opacity = ev.active ? .9 : .4 + .4 * Math.abs(Math.sin(now / 150)); }
     if (hole.visible) { holeRing.rotation.z = now / 400; }
     for (const e of ejects) e.mesh.position.set(e.x, radius(EJECT_MASS) * 0.9, e.z);
-    for (const b of bonuses) {
+    if (cosmeticRefresh) for (const b of bonuses) {
       b.mesh.position.y = 1.2 + Math.sin(now / 300 + b.x) * 0.25;
       b.mesh.children[0].rotation.y = now / 500;
       b.mesh.children[1].rotation.x = now / 700; b.mesh.children[1].rotation.y = now / 900;
@@ -325,7 +352,10 @@
       for (const c of player.cells) { m += c.mass; x += c.x * c.mass; z += c.z * c.mass; }
       focus = { x: x / m, z: z / m, m };
     } else if (!running) focus.m = 40;
-    const spread = player.cells.length > 1 ? Math.max(...player.cells.map(c => Math.hypot(c.x - focus.x, c.z - focus.z))) : 0;
+    let spread = 0;
+    if (player.cells.length > 1) {
+      for (const c of player.cells) spread = Math.max(spread, Math.hypot(c.x - focus.x, c.z - focus.z));
+    }
     const fr = radius(focus.m);
     let h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 2.2 * (camera.aspect < 1 ? 1 + Math.min(.6, (1 - camera.aspect) * 1.1) : 1);   // giants get extra zoom-out; 120% farther for everyone (1.7.0); narrow portrait screens (phones) up to 60% more
     h = Math.min(h, 330);   // never leave the starry sky or lose the far edge of the arena
@@ -343,7 +373,10 @@
     scene.fog.far = camDist * 3.2 + 90;
     if (ev.active === 'eclipse') { scene.fog.near = camDist * 0.75; scene.fog.far = camDist * 1.45; }
     if (dailyIs('fog')) { scene.fog.near = camDist * 0.9; scene.fog.far = camDist * 1.7; }
-    { const fdt = Math.min(0.05, (now - (draw.last || now)) / 1000); updateParticles(fdt); updateFx(fdt); } draw.last = now;
+    if (cosmeticRefresh) {
+      const fdt = Math.min(0.05, (now - (draw.fxAt || now)) / 1000);
+      updateParticles(fdt); updateFx(fdt); draw.fxAt = now;
+    }
     pMat.size = 0.7 + camDist * 0.015;
     // the crown in «Захват короны» floats over the holder's biggest part
     crownMesh.visible = running && mode === 'crown' && (!!ModeX.crownGround || (!!crownHolder && crownHolder.cells.length > 0));

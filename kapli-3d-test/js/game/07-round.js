@@ -73,7 +73,7 @@
   ABIL_CFG.slotBtn.forEach((bid, i) => $(bid).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSlot(i); }));
 
   function dash() {
-    if (DuoM.guest) { DuoM.act('dash'); return; }
+    if (DuoM.server || DuoM.guest) { DuoM.act('dash'); return; }
     if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
     if (ModeX.hcNoDash()) { toast('⛓ Оковы: рывок недоступен'); return; }
     player.dashT = (0.35 + 0.035 * U.light) * ModeX.hcDashLenK(); player.dashCd = dashCdBase * ModeX.hcK('dash'); stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
@@ -101,7 +101,7 @@
     return did;
   }
   function split() {
-    if (DuoM.guest) { DuoM.act('split'); return; }
+    if (DuoM.server || DuoM.guest) { DuoM.act('split'); return; }
     if (dailyIs('dashonly')) return;
     if (!running || paused || !player.cells.length || player.splitCd > 0) return;
     if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; abUsed('split'); rebuildCells(); buzz(20); { const [x, z] = pCenterXZ(); abFlash('split', x, z, null, 'split'); } }
@@ -338,6 +338,7 @@
   const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatCandidates = [];
   const eatGridKey = (x, z) => ((x & 65535) << 16) | (z & 65535);
   function update(dt) {
+    if (DuoM.server) { DuoM.serverTick(dt); return; }
     if (DuoM.paused) return;   // a match for two waits while the link to the other phone is silent
     if (DuoM.guest) { DuoM.guestTick(dt); return; }   // the second phone of a match for two only draws what the host sends
     stats.time += dt;

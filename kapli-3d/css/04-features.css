@@ -670,3 +670,7 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 #rbPick .hc-card .hc-rar { position: absolute; top: 3px; right: 8px; font: 800 .6rem var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--rc); }
 #rbPick .hc-card.r3 { background: linear-gradient(160deg, rgba(255, 210, 63, .25), rgba(255, 79, 216, .12)); animation: hcLeg 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { #rbPick .hc-card.r3 { animation: none; } }
+
+/* 2.7: share a server room */
+.srv-share { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
+.srv-share .btn { min-height: 44px; padding: 8px 10px; font-size: .86rem; }

@@ -512,7 +512,9 @@
       if (dying || a.gone || b.gone || a.owner === b.owner) continue;
       const pairMate = !canEat(a, b) && !ModeX.hcPackMerge(a, b) ? ModeX.hcPairBite(a, b) : null;
       if (!(canEat(a, b) || ModeX.hcPackMerge(a, b) || pairMate)) continue;
-      if (pairMate || Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
+      // 2.7: above 20 000 the radius grows slowly, so a far heavier eater barely looks bigger — the more it outweighs the player, the less of them it must cover (×2 and more: the centre inside is enough)
+      const coverK = b.owner.isPlayer && !a.owner.isPlayer ? Math.max(0, .35 * (2 - a.mass / b.mass) / .75) : .35;
+      if (pairMate || Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * coverK) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
           stats.raidDmg = Math.min(RAID_ATTEMPT_CAP, (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK()));
           const raidLeft = RAID_HP - raidState().dmg - stats.raidDmg;

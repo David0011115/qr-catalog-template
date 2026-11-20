@@ -1295,7 +1295,71 @@
     const list = FX.filter(f => f.slot === 'eat'), f = list[testEatI++ % list.length], m = mainOf(player), d = cellR(m) + 8;
     eatFx(m.x + m.hx * d, m.z + m.hz * d, radius(14), '#ff8a5c', f.id); toast(`${testEatI}/${list.length} · ${f.name}`);
   }
-  function testAdd(title, buttons) { TEST_GROUPS.push({ title, buttons }); }
+  // 2.7: the panel is split into sections; one section is shown at a time (no long list to swipe)
+  const TEST_TABS = [['reports', '📋 Отчёты'], ['progress', 'Прогресс'], ['collect', 'Коллекции'], ['modes', 'Режимы'], ['tech', 'Графика'], ['reset', 'Сброс']];
+  const TEST_TAB_OF = { 'Уровень и престиж': 'progress', 'Всё сразу': 'progress', 'Цели': 'progress', 'Монеты и сундуки': 'progress',
+    'Достижения': 'collect', 'Мастерская': 'collect', 'Эволюции': 'collect', 'Старт раунда': 'modes', 'Хардкор': 'modes', 'Графика': 'tech', 'Сохранение': 'reset' };
+  let testTab = 'reports', testFilter = 'all';
+  function testAdd(title, buttons) { TEST_GROUPS.push({ title, buttons, tab: TEST_TAB_OF[title] || 'modes' }); }
+
+  // ---- 2.7: the round journal (TLog in 01-config.js) ----
+  // every frame of a round: starts the record, samples speed and mass, notes what slowed you down, territory share, being eaten
+  let tlAlive = false, tlShareT = 0;
+  function testLogTick(dt) {
+    if (!running || dying) return;
+    if (!TLog.on) {
+      const how = DuoM.server ? 'сервер' : DuoM.practice ? 'с ботом' : DuoM.on ? 'напрямую' : '';
+      TLog.begin({ mode, name: (MODES[mode] || {}).name || mode, how, role: DuoM.role || null,
+        diff: mode === 'duoback' && DuoM.rules.duoback?.diffNow ? DuoM.rules.duoback.diffNow() : null,
+        ranked: !!stats.ranked, chaos: !!stats.chaos, arena: stats.arena || null, quality: save.settings.quality,
+        build: runBuild.filter(Boolean), startMass: Math.round(total(player)) });
+      tlAlive = player.cells.length > 0; tlShareT = 0;
+    }
+    if (paused) return;
+    let m = 0, v = 0;
+    for (const c of player.cells) { m += c.mass; v += speedOf(c) * c.mass; }
+    const pct = m ? v / m / BASE_SPEED * 100 : 100, causes = [];
+    if (player.freezeT > 0) causes.push('оглушение'); if (player.slowT > 0) causes.push('замедление'); if (player.iceT > 0) causes.push('лёд');
+    if (ModeX.hcCurseId?.() === 'slow') causes.push('проклятие «Вязкость»');
+    TLog.tick(dt, pct, m, causes);
+    const alive = player.cells.length > 0;
+    if (tlAlive && !alive) TLog.ev('меня съели');
+    tlAlive = alive;
+    if (DuoM.mode === 'territory' && (tlShareT -= dt) <= 0) { tlShareT = 10; const sh = DuoM.rules.territory?.shareNow?.(); if (Number.isFinite(sh)) TLog.ev('моя доля поля %', Math.round(sh * 100)); }
+  }
+  const tlTime = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+  const tlDate = t => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const tlLabel = r => `${r.name || r.mode}${r.how ? ' · ' + r.how : ''}${r.diff ? ' · ' + r.diff : ''}`;
+  function tlText(list) {
+    const head = `=== Капли 3D · отчёты (${list.length}) · ${new Date().toLocaleString('ru-RU')} ===`;
+    return [head, ...list.map((r, i) => `#${i + 1} [${tlLabel(r)}] ${tlDate(r.at)} · ${tlTime(r.dur || 0)} · ${r.end || ''}\n` + JSON.stringify(r))].join('\n');
+  }
+  function tlCopy(list) {
+    if (!list.length) return 'пока нет отчётов — сыграй раунд до конца';
+    const txt = tlText(list);
+    const fallback = () => { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true"><h2>Отчёты</h2><p>Выдели всё и скопируй вручную:</p><textarea class="tl-area" readonly></textarea><button type="button" class="btn">Закрыть</button></div>';
+      m.querySelector('textarea').value = txt; m.querySelector('button').onclick = () => m.remove(); document.body.appendChild(m); m.querySelector('textarea').select(); };
+    try { navigator.clipboard.writeText(txt).then(() => toast(`Скопировано отчётов: ${list.length} — вставь в чат`), fallback); } catch (e) { fallback(); }
+    return `скопировано: ${list.length}`;
+  }
+  const tlFiltered = () => TLog.list().filter(r => testFilter === 'all' || r.mode === testFilter);
+  function tlRow(r, i) {
+    const flags = [r.slow?.length ? `🐢 ${r.slow.length}` : '', r.fps?.lowSec ? `📉 ${r.fps.lowSec} с` : '', r.net ? `📶 ${r.net.pingAvg ?? '—'} мс` : '', r.net?.gap1000 ? `⏸ ${r.net.gap1000}` : ''].filter(Boolean).join(' ');
+    return `<li class="tl-row"><button type="button" data-tlone="${i}" title="Скопировать этот отчёт"><b>${escHtml(tlLabel(r))}</b>
+      <small>${tlDate(r.at)} · ${tlTime(r.dur || 0)} · пик ${Math.round(r.peak || 0).toLocaleString('ru-RU')} · ${escHtml(r.end || '')}</small>${flags ? `<i>${flags}</i>` : ''}</button></li>`;
+  }
+  function tlRender() {
+    const all = TLog.list(), modes = [...new Set(all.map(r => r.mode))], list = tlFiltered(), shown = list.slice(-12).reverse();
+    if (testFilter !== 'all' && !modes.includes(testFilter)) testFilter = 'all';
+    return `<div class="tl">
+      <p class="test-lead">Каждый раунд записывается сам · хранятся последние 40</p>
+      <div class="tl-chips" role="group" aria-label="Режим"><button type="button" data-tlf="all" class="${testFilter === 'all' ? 'on' : ''}">Все · ${all.length}</button>${modes.map(m =>
+        `<button type="button" data-tlf="${m}" class="${testFilter === m ? 'on' : ''}">${escHtml((MODES[m] || {}).name || m)} · ${all.filter(r => r.mode === m).length}</button>`).join('')}</div>
+      <div class="tl-btns"><button type="button" data-tlc="1">📋 Последний</button><button type="button" data-tlc="5">📋 Последние 5</button><button type="button" data-tlc="0">📋 Все${testFilter === 'all' ? '' : ' этого режима'}</button><button type="button" data-tlclear class="warn">Очистить</button></div>
+      ${shown.length ? `<ol class="tl-list">${shown.map(r => tlRow(r, list.indexOf(r))).join('')}</ol>` : '<p class="hint">Пока пусто — сыграй любой раунд до конца, отчёт появится здесь.</p>'}
+      <p class="hint">🐢 — сколько раз скорость падала ниже 40%, 📉 — секунды с FPS ниже 30, 📶 — средний пинг онлайна, ⏸ — пропуски связи дольше 1 с. Нажми на строку — скопируется один отчёт.</p></div>`;
+  }
+
   const xpForPs = (t, n) => XP_AT_MAX + (t === 1 ? n * PS.star : PS.star * PS.max + n * PS.nova) + 1;
   testAdd('Уровень и престиж', [
     ['Ур. 9', () => { save.xp = xpForLevel(9); }], ['Ур. 30', () => { save.xp = xpForLevel(30); }], ['Ур. 50', () => { save.xp = XP_AT_MAX; }],
@@ -1320,24 +1384,6 @@
     ['Все на III', () => { ACH.forEach(a => { save.achT[a.id] = a.steps.length; if (!save.ach.includes(a.id)) save.ach.push(a.id); }); }],
     ['Сбросить', () => { ACH.forEach(a => { save.achT[a.id] = 0; }); save.ach = save.ach.filter(id => !achById(id)); save.pc = { ...(save.pc || {}), shelf: [] }; }],
     ['Витрина: 3 трофея', () => { const got = ACH.filter(a => achTier(a)).sort((x, y) => achMetal(y, achTier(y)) - achMetal(x, achTier(x))); save.pc = { ...(save.pc || {}), shelf: got.slice(0, 3).map(a => a.id) }; return got.length ? 'открой Профиль' : 'сначала выдай достижения'; }]]);
-  testAdd('Итоги сезона', [
-    ['Показать пример', () => {
-      const id = Math.max(2, save.season.id), base = { n: seasonData(id - 1).name };
-      save.recaps = [{ id: id - 1, n: seasonData(id - 1).name, r: 116, t: 31200, m: 2950, w: 24, c: 12400, x: 16800, ch: { common: 4, rare: 2, epic: 1 }, fav: ['classic', 52], lg: 3, pts: 9100 },
-        { id, n: seasonData(id).name, r: 148, t: 39600, m: 3812, w: 41, c: 18450, x: 21300, ch: { legendary: 1, epic: 2, rare: 3, common: 3 }, fav: ['crown', 61], lg: 4, pts: 16300 }];
-      void base; persist(); openRecap(save.recaps[1]); $('testModal').hidden = true; return 'так окно появится после конца сезона';
-    }],
-    ['Из моих раундов', () => { const S = save.ss; if (!S || !S.r) return 'сначала сыграй пару раундов';
-      const fav = Object.entries(S.md).sort((a, b) => b[1] - a[1])[0]; save.recaps.push({ id: S.id, n: seasonData(S.id).name, r: S.r, t: Math.round(S.t), m: S.m, w: S.w, c: S.c, x: S.x, ch: S.ch, fav: fav || null, lg: save.season.pts > 0 ? leagueOf(save.season.pts) : -1, pts: save.season.pts });
-      save.recaps = save.recaps.slice(-6); persist(); openRecap(save.recaps[save.recaps.length - 1]); $('testModal').hidden = true; }],
-    ['Очистить', () => { save.recaps = []; delete save.recapShow; }]]);
-  testAdd('Календарь активности', [
-    ['Заполнить месяц', () => { save.act = {}; let r = 11; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280; const now = new Date();
-      for (let i = 0; i < 182; i++) { const x = rnd(); if (i > 8 && x < .35) continue; const n = i <= 8 ? 2 + Math.floor(rnd() * 6) : x < .65 ? 1 + Math.floor(rnd() * 2) : x < .85 ? 3 + Math.floor(rnd() * 3) : x < .96 ? 6 + Math.floor(rnd() * 5) : 11 + Math.floor(rnd() * 6);
-        save.act[dayKey(dayShift(now, -i))] = [n, n * (150 + Math.floor(rnd() * 120)), 800 + Math.floor(rnd() * 4000)]; }
-      save.actDays = Object.keys(save.act).length; save.actBest = 0; save.actBest = actBestStreak(); return 'открой Профиль → Активность'; }],
-    ['Серия 30 дней', () => { const now = new Date(); for (let i = 0; i < 30; i++) { const k = dayKey(dayShift(now, -i)); if (!save.act[k]) save.act[k] = [3, 600, 1500]; } save.actBest = actBestStreak(); }],
-    ['Очистить', () => { save.act = {}; save.actDays = 0; save.actBest = 0; }]]);
   testAdd('Мастерская', [
     ['Открыть мастерскую', () => { $('testModal').hidden = true; openWorkshop(); return 'открыта'; }],
     ['+5 сундуков осколков', () => { save.shardChests = (save.shardChests || 0) + 5; return 'Сундуки → «Сундук осколков»'; }],
@@ -1347,35 +1393,21 @@
     ['Забрать всё созданное', () => { const crIds = new Set(Object.keys(CR_PRICE)); const drop = l => l.filter(id => !crIds.has(id));
       save.skins = drop(save.skins); save.fxOwned = drop(save.fxOwned); save.pets = drop(save.pets); save.decor = drop(save.decor); save.pbg = drop(save.pbg || []); save.abil.owned = drop(save.abil.owned);
       if (crIds.has(save.skin)) { save.skin = 'coral'; refreshSkin(); } ['trail', 'aura', 'eat'].forEach(sl => { if (crIds.has(save.fx[sl])) save.fx[sl] = null; }); applyAura();
-      if (crIds.has(save.pet)) { save.pet = null; applyPet(); } if (crIds.has(save.frame)) save.frame = null; if (save.pc && crIds.has(save.pc.bg)) save.pc.bg = 'bg_base'; save.build = save.build.map(id => crIds.has(id) ? null : id); return 'можно создавать заново'; }],
-    ...[['Надеть набор 1', 'cr_moon', 'cr_marks', 'cr_foucault', 'cr_freeze', 'cr_p_owl'], ['Надеть набор 2', 'cr_watch', 'cr_cogs', 'cr_cogwings', 'cr_tick', 'cr_p_cuckoo'],
-      ['Надеть набор 3', 'cr_spiral', 'cr_marks', 'cr_halo', 'cr_tick', 'cr_p_mouse'], ['Надеть набор 4', 'cr_skeleton', 'cr_cogs', 'cr_halo', 'cr_freeze', 'cr_p_owl'],
-      ['Надеть набор 5', 'cr_sandup', 'cr_cogs', 'cr_cogwings', 'cr_tick', 'cr_p_cuckoo'], ['Надеть набор 6', 'cr_engrave', 'cr_marks', 'cr_foucault', 'cr_freeze', 'cr_p_mouse'], ['Надеть набор 7', 'cr_windup', 'cr_cogs', 'cr_halo', 'cr_tick', 'cr_p_owl']]
-      .map(([label, sk, tr, au, ea, pet]) => [label, () => { [[save.skins, sk], [save.fxOwned, tr], [save.fxOwned, au], [save.fxOwned, ea], [save.pets, pet]].forEach(([l, id]) => { if (!l.includes(id)) l.push(id); });
-        save.skin = sk; save.hat = null; save.fx.trail = tr; save.fx.aura = au; save.fx.eat = ea; save.pet = pet; refreshSkin(); applyPet(); return `${SKINS.find(k => k.id === sk).name} · ${PETS.find(x => x.id === pet).name}`; }]),
-    ['Билд: 3 способности Хронос', () => { CR_ABIL.forEach(a => { if (!save.abil.owned.includes(a.id)) save.abil.owned.push(a.id); }); save.build = CR_ABIL.map(a => a.id); return 'Пробел — стена, E — перемотка, Q — рокировка'; }]]);
-  testAdd('Эффекты поедания', [
-    ['Показать все в раунде', () => { testEatShow = !testEatShow; testEatI = 0; testEatT = 1; return testEatShow ? 'начни раунд: каждые 1,6 с перед каплей сработает следующий эффект' : 'выключено'; }],
+      if (crIds.has(save.pet)) { save.pet = null; applyPet(); } if (crIds.has(save.frame)) save.frame = null; if (save.pc && crIds.has(save.pc.bg)) save.pc.bg = 'bg_base'; save.build = save.build.map(id => crIds.has(id) ? null : id); return 'можно создавать заново'; }]]);
+  testAdd('Старт раунда', [
     ['Старт: масса 10', () => { testStartMass = 0; }], ['Старт: масса 1 000', () => { testStartMass = 1000; }], ['Старт: масса 5 000', () => { testStartMass = 5000; }], ['Старт: масса 15 000', () => { testStartMass = 15000; }]]);
-  testAdd('Бонусы на арене', [['Только «Фонтан», сразу под каплей', () => { testOnlyBonus = 'fountain'; return 'в раунде каждые 9 с «Фонтан» появляется прямо под тобой'; }], ['Все бонусы как обычно', () => { testOnlyBonus = null; }]]);
-  // 2.7: the hardcore round records — copied as text to paste into the chat (the site's test copy has no artifact storage)
-  const hcCopy = n => { let L = []; try { L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); } catch (e) {}
-    if (!L.length) return 'пока нет записей — сыграй раунд «Хардкора» до конца';
-    const txt = 'hcstats ' + JSON.stringify(L.slice(-n));
-    const fallback = () => { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true"><h2>Статистика «Хардкора»</h2><p>Выдели текст и скопируй:</p><textarea readonly style="width:100%;height:40vh;font-size:11px"></textarea><button class="btn" type="button">Закрыть</button></div>';
-      m.querySelector('textarea').value = txt; m.querySelector('button').onclick = () => m.remove(); document.body.appendChild(m); m.querySelector('textarea').select(); };
-    try { navigator.clipboard.writeText(txt).then(() => toast(`Скопировано: ${Math.min(n, L.length)} раунд(ов) — вставь в чат`), fallback); } catch (e) { fallback(); }
-    return `раундов в записи: ${L.length}`; };
   testAdd('Эволюции', [['🧬 Окно: новая форма', () => { const id = 'hc_berserk'; if (!save.skins.includes(id)) save.skins.push(id); (save.evoQ = save.evoQ || []).push({ id, f: 2, from: 1 }); save.evoNew = { ...(save.evoNew || {}), [id]: 2 }; setTimeout(evoShowQueue, 300); return 'после закрытия панели — окно «Эволюция» Берсерка (I → II)'; }],
     ['🧬 Окно: новый скин', () => { const id = 'duo_twin'; if (!save.skins.includes(id)) save.skins.push(id); (save.evoQ = save.evoQ || []).push({ id, f: 1, from: 0, fresh: true }); save.evoNew = { ...(save.evoNew || {}), [id]: 1 }; setTimeout(evoShowQueue, 300); return 'окно «Новый скин с эволюцией» — Близнецы'; }],
     ['🧬 Момент в раунде', () => { evoTestT = 6; return 'запусти раунд: через 6 с капля перейдёт в следующую форму прямо на арене'; }],
     ['🧬 Метки «новое»', () => { save.evoNew = {}; Object.keys(EVO).forEach(id => { if (save.skins.includes(id)) save.evoNew[id] = Math.max(1, evoOpen(id)); }); return 'метки на плитках Гардероба и точка на кнопке Гардероба'; }]]);
   testAdd('Хардкор', [['☠ Проклятие через 3 с', () => { ModeX.hcCurseSoon(); return 'в раунде «Хардкора» через 3 с наложится случайное проклятие'; }]]);
-  testAdd('Статистика «Хардкора»', [['📋 Последний раунд', () => hcCopy(1)], ['📋 Последние 5', () => hcCopy(5)], ['📋 Все (до 30)', () => hcCopy(30)]]);
   testAdd('Сохранение', [['Сбросить тестовое сохранение', () => 'reset', 'warn']]);
   function testRender() {
-    $('testGroups').innerHTML = TEST_GROUPS.map((g, gi) => `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');
+    const tabs = `<div class="test-tabs" role="tablist">${TEST_TABS.map(([id, t]) => `<button type="button" role="tab" data-ttab="${id}" aria-selected="${testTab === id}" class="${testTab === id ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+    const body = testTab === 'reports' ? tlRender() : TEST_GROUPS.map((g, gi) => g.tab !== testTab ? '' : `<div class="test-grp"><small>${g.title}</small><div>${g.buttons.map(([t, , cls], bi) => `<button type="button" data-tb="${gi}:${bi}" class="${cls || ''}">${t}</button>`).join('')}</div></div>`).join('');
+    $('testGroups').innerHTML = tabs + `<div class="test-body">${body}</div>`;
   }
+
   let testResetArm = 0;
   // test build: everything collectable is open (profile backgrounds and badges too)
   function testUnlockAll() {
@@ -1400,6 +1432,15 @@
     $('testClose').addEventListener('click', () => { $('testModal').hidden = true; });
     $('testModal').addEventListener('click', e => {
       if (e.target === $('testModal')) { $('testModal').hidden = true; return; }
+      // 2.7: sections and the round journal
+      const tab = e.target.closest('[data-ttab]'); if (tab) { testTab = tab.dataset.ttab; testRender(); $('testState').textContent = ''; return; }
+      const tf = e.target.closest('[data-tlf]'); if (tf) { testFilter = tf.dataset.tlf; testRender(); return; }
+      const tc = e.target.closest('[data-tlc]'); if (tc) { const n = +tc.dataset.tlc, L = tlFiltered(); $('testState').textContent = tlCopy(n ? L.slice(-n) : L); return; }
+      const t1 = e.target.closest('[data-tlone]'); if (t1) { const r = tlFiltered()[+t1.dataset.tlone]; $('testState').textContent = tlCopy(r ? [r] : []); return; }
+      if (e.target.closest('[data-tlclear]')) {
+        if (Date.now() - testResetArm > 4000) { testResetArm = Date.now(); $('testState').textContent = 'Нажми «Очистить» ещё раз, чтобы удалить все отчёты'; return; }
+        testResetArm = 0; TLog.clear(); testRender(); $('testState').textContent = 'Отчёты удалены'; return;
+      }
       const b = e.target.closest('[data-tb]'); if (!b) return;
       const [gi, bi] = b.dataset.tb.split(':').map(Number), [label, fn] = TEST_GROUPS[gi].buttons[bi];
       let r; try { r = fn(); } catch (er) { $('testState').textContent = 'Ошибка: ' + er.message; return; }

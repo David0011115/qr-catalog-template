@@ -149,6 +149,7 @@
         Sound.play('boss');
       }
       rebuildCells();
+      if (TEST_MODE) TLog.ev('волна', { w: wv, боссы: allBoss.filter(o => o.cells.length).map(o => o.dbType + ':' + Math.round(total(o))), пара: [Math.round(total(player)), Math.round(total(rival()))] });
     }
     function spawnReg(type, m) {
       const o = regOwners.find(x => x.dbType === type && !x.cells.length); if (!o) return;
@@ -254,6 +255,7 @@
       const s = spec, o = s.o, main = big(o);
       if (main) burstFood(main.x, main.z, cellR(main) + 30, 160);
       [...o.cells].forEach(c => { c.exp = true; removeCell(c); }); rebuildCells();
+      if (TEST_MODE) TLog.ev('особый босс повержен', s.d.name);
       team.specials++; if (wv === 5 && !team.s5) team.s5 = Math.round(stats.time);
       toast(`${s.d.name} повержен! Награда обоим`); Sound.play('bossDown');
       spec = null;
@@ -268,7 +270,7 @@
             if (shieldOf(p) || stats.time < (p.mtSafe || 0)) continue;
             let hit = false;
             for (const pc of p.cells) if (Math.hypot(pc.x - m.x, pc.z - m.z) < m.r) { pc.mass = Math.max(10, pc.mass * .7); hit = true; }
-            if (hit) p.mtSafe = stats.time + 2.5;
+            if (hit) { p.mtSafe = stats.time + 2.5; if (TEST_MODE) TLog.ev('метеор', { кто: p === player ? 'я' : 'напарник', масса: Math.round(total(p)) }); }
           }
         }
       }
@@ -342,7 +344,7 @@
           if (o.dbType === 'twins') regOwners.forEach(x => { if (x !== o && x.dbType === 'twins' && x.cells.length) x.enr = 1; });
         }
       },
-      diffs: DIFF,   // 2.7: the online room shows the same difficulty names and descriptions
+      diffs: DIFF, diffNow: () => D.name,   // 2.7: the online room shows the same difficulty names and descriptions
       bossCap: () => bossCap(baseMass()),   // 2.7: the core's limit for a boss drop in this mode
       eatBlock(a, b) {   // «Броня»: a boss must be clearly bigger to eat a player who took it
         const n = b.owner.db && b.owner.db.armor;

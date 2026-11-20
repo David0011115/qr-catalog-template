@@ -399,6 +399,7 @@
     perf.frames++;
     if (now - perf.t0 < 1000) return;
     perf.fps = perf.frames * 1000 / (now - perf.t0); perf.frames = 0; perf.t0 = now;
+    if (TEST_MODE && running && !paused) TLog.fps(perf.fps);   // 2.7 test journal
     if (save.settings.showFps) { const el = $('fps'); el.textContent = `${Math.round(perf.fps)} FPS`; el.classList.toggle('slow', perf.fps < 40); }
     if (!running || paused || document.hidden || !save.settings.autoQ || save.settings.quality === 'low') { perf.low = 0; return; }
     perf.cool = Math.max(0, perf.cool - 1);
@@ -423,6 +424,7 @@
       lookTick(now);
       trackFps(now);
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
+      if (TEST_MODE) testLogTick(dt);   // 2.7 test journal (14-net.js)
       if (running && !paused && !dying) { if (ModeX.hcFrozen()) ModeX.hcFreezeTick(dt); else update(dt); }
       else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
       else if (!running) idle(dt);

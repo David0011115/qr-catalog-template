@@ -163,6 +163,7 @@
         const ids = Object.keys(HC_CURSES), id = ids[Math.floor(Math.random() * ids.length)], c = HC_CURSES[id];
         hcCurse = { id, t: 15 }; hcCurseT = 60 + Math.random() * 30; toast(`${c[0]} Проклятие «${c[1]}»: ${c[2]} на 15 с`); Sound.play('boss');
         if (hcLog) (hcLog.curses = hcLog.curses || []).push([Math.round(stats.time), id]);
+        if (TEST_MODE) TLog.ev('проклятие', id);
       }
       if ((hcCurseUiT -= dt) <= 0) { hcCurseUiT = .25; hcCurseUi(); }
     }
@@ -321,7 +322,7 @@
     // the end of a round: the hardcore series reward
     function end() {
       hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } hcWinUi(null); hcCurse = null; hcCurseUi(); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
-      if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] }; delete rec.next; hcLog = null;   // bites: [time, who, its mass, the part it ate]
+      if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] }; delete rec.next; hcLog = null; if (TEST_MODE) TLog.extra('hardcore', rec);   // bites: [time, who, its mass, the part it ate]
         try { const L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); L.push(rec); localStorage.setItem('kapli3d-hcstats', JSON.stringify(L.slice(-30))); } catch (e) {}
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
       if (mode !== 'hardcore' || stats.ranked || stats.tutorial) return;
@@ -394,6 +395,7 @@
       info: () => ({ MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
       HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) * hcDK("melt") * (curseOn("hunger") ? 1.5 : 1) : hcK("melt")) * hcMeltUp(), hcK,
       hcCurseSoon: () => { hcCurse = null; hcCurseT = 3; },
+      hcCurseId: () => mode === 'hardcore' && hcCurse ? hcCurse.id : null,   // 2.7 test journal
       hcMagnetK: () => (mode === 'hardcore' ? hcDM("magnet") : 1), hcDashLenK: () => (mode === 'hardcore' ? hcDM("dashLen") : 1), hcNoDash: () => curseOn("nodash"),
       hcSenseK: () => (mode === 'hardcore' ? hcDK("sense") * (curseOn("hunted") ? 1.5 : 1) : 1),
       hcBossMass: mass => { const ref = hcRef(); return hcSplitDone || ref >= 20000 ? Math.min(HC_BOSS_MASS_CAP, Math.max(3000, ref * (.85 + .35 * hcBossPressure()))) : mass; },   // after 20 000: 85–120% of the smaller half (more with the threat stage)

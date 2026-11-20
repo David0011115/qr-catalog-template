@@ -440,6 +440,9 @@
       return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
     coinsAdd(coins, 'round'); save.xp += xp;
+    if (TEST_MODE) TLog.end({ dur: Math.round(stats.time), peak: Math.round(stats.maxMass), final: Math.round(total(player)),
+      place: stats.finalRank || (stats.bestRank < 99 ? stats.bestRank : null), kills: stats.kills, bosses: stats.bosses || 0, minions: stats.minions,
+      coins, xp, win: !!stats.win, end: stats.endTitle || '', abUsed: stats.abUsed, splits: stats.splits, duoWave: stats.duoWave ?? null });   // 2.7 test journal
     if (seasonStarted && save.ss) { const S = save.ss; S.r++; S.t += stats.time; S.m = Math.max(S.m, Math.round(stats.maxMass)); S.w += stats.win ? 1 : 0; S.c += coins; S.x += xp; S.md[mode] = (S.md[mode] || 0) + 1; }
     const t = save.totals;
     t.splits += stats.splits; if (mode === 'timed' && stats.win) t.timedWins++;

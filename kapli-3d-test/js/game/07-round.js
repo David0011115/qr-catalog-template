@@ -612,12 +612,12 @@
   let boardOpen = false;   // in-battle leaderboard: top 3 + you, «ещё N» shows the top 6
   const meName = () => DuoM.on && Net.nick ? escHtml(Net.nick) : 'Ты';   // matches for two: your nickname, like the other player sees it
   function updateHud(now) {
-    $('mass').textContent = Math.round(total(player));
+    setText('mass', String(Math.round(total(player))));   // 2.7 FPS: the HUD is written only when it changes (it was rewritten every frame)
     if (player.cells.length) {
       let m = 0, v = 0;
       for (const c of player.cells) { m += c.mass; v += speedOf(c) * c.mass; }
       const sp = $('speed');
-      sp.textContent = `${Math.round(v / m / BASE_SPEED * 100)}%`;
+      setText('speed', `${Math.round(v / m / BASE_SPEED * 100)}%`);
       sp.classList.toggle('boost', player.dashT > 0 || effects.speed > 0);
       const parts = [];
       if (U.speed) parts.push(`+${U.speed}% улучш.`);
@@ -628,12 +628,12 @@
       const slowTxt = player.freezeT > 0 ? `💫 оглушение ${player.freezeT.toFixed(1)} с` : player.slowT > 0 ? `❄ замедление −${Math.round((1 - ABIL_CFG.slowFactor) * 100)}% · ${Math.ceil(player.slowT)} с` : player.iceT > 0 ? `❄ лёд · ${Math.ceil(player.iceT)} с` : '';
       setText('buff', slowTxt || (mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : ''));
       $('buff').classList.toggle('debuff', !!slowTxt);
-      sp.title = parts.join(', ') || 'Без бафов';
-    } else $('speed').textContent = '–';
+      { const t = parts.join(', ') || 'Без бафов'; if (sp.title !== t) sp.title = t; }
+    } else setText('speed', '–');
     if (player.abCd) runBuild.forEach((id, i) => {
       if (!id) return;
       const v = slotView(id), b = $(ABIL_CFG.slotBtn[i]);
-      b.style.setProperty('--ready', Math.max(0, Math.min(1, v.ready)).toFixed(3)); b.classList.toggle('off', v.off);
+      { const r = Math.max(0, Math.min(1, v.ready)).toFixed(2); if (b._rd !== r) { b._rd = r; b.style.setProperty('--ready', r); } } if (b._off !== !!v.off) { b._off = !!v.off; b.classList.toggle('off', !!v.off); }
       setText('slotSub' + i, v.sub || (finePointer ? ABIL_CFG.slotKeyName[i] : 'готов'));
     });
     if (now - hudT < 250) return;

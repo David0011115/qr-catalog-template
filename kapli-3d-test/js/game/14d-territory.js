@@ -63,7 +63,7 @@
     }
 
     DuoM.rules.territory = {
-      arena: 1.5,   // 2.5: was ×2 — too much empty field for two
+      arena: 1.25,   // 2.5: was ×2; 2.7: 1.5 → 1.25 after the owner's test (server: TERRITORY_ARENA)
       pre(role) { player.dbAbs = DuoM.rival.dbAbs = FOOD_K; lastSide = 0; bx = bxView = 0; flash = 0; limit = MATCH_S; ot = false; pHome = role === 'host' ? -1 : 1; },
       begin() {
         if (!mesh) makeMesh();

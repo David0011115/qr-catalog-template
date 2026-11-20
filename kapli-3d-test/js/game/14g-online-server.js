@@ -98,11 +98,13 @@
     localStorage.removeItem(ROOM_STORAGE_KEY);
   }
 
+  // 2.7: the arena of this phone is really running (the start message and the world have arrived)
+  const clientRunning = () => { try { return !!running; } catch { return false; } };
   function render() {
     const body = $('duoBody');
     if (!body || !activeMode) return;
 
-    if (room?.status === 'active' && matchStarted && !paused) {
+    if (room?.status === 'active' && matchStarted && !paused && clientRunning()) {
       if ($('duoCard')) $('duoCard').hidden = true;
       return;
     }
@@ -148,7 +150,7 @@
       waiting: 'Ждём второго игрока…',
       lobby: 'Оба в комнате — нажмите «Готов»',
       countdown: 'Оба готовы — матч начинается',
-      active: matchStarted ? 'Матч идёт' : 'Подключаем матч…',
+      active: matchStarted && clientRunning() ? 'Матч идёт' : 'Подключаем матч…',
       paused: 'Пауза: ждём, пока игрок переподключится',
       closed: 'Комната закрыта',
     }[room.status] || 'Комната';
@@ -170,7 +172,7 @@
     const readyButton = ['waiting', 'lobby'].includes(room.status)
       ? `<button id="serverReady" type="button" class="btn${me?.ready ? ' ghost' : ''}">${me?.ready ? 'Снять готовность' : '✓ Готов'}</button>`
       : '';
-    const reconnectButton = room.status === 'paused'
+    const reconnectButton = room.status === 'paused' || (room.status === 'active' && !clientRunning())
       ? '<button id="serverReconnectSocket" type="button" class="btn">Переподключиться</button>'
       : '';
 
@@ -289,6 +291,10 @@
   // snapshot the drop stops guessing its way forward and a sign says so; after 8 s the socket is dropped, which
   // starts the usual pause card and reconnect (and shows the result if the match ended meanwhile).
   let rtt = 0;   // smoothed round trip to the server, ms
+  let initGuard = null;
+  // close a socket that looks alive but is not: onclose reconnects, and the server sends the room and the world to a new socket
+  let forcedAt = 0;
+  function forceReconnect() { const t = performance.now(); if (t - forcedAt < 6000) return; forcedAt = t; const old = socket; if (old && old.readyState <= 1) { try { old.close(4000, 'client-resync'); } catch {} } else connectSocket().catch(() => {}); }
   let lastSnapAt = 0, stalled = false, watchdog = null, stallLogged = false, pingAt = 0, loggedWave = -1;
   function stallSign(show, seconds) {
     let el = $('srvStall');
@@ -321,7 +327,11 @@
     lobbyBusy = true;
     const code = room.code;
     api('/api/rooms/' + code).then(data => {
-      if (!data || !data.room || !room || room.code !== code || matchStarted || data.room.status === 'active') return;
+      if (!data || !data.room || !room || room.code !== code || matchStarted) return;
+      if (data.room.status === 'active' || data.room.status === 'paused') {   // 2.7: the match began without us (the start message was lost)
+        if (TEST_MODE) TLog.ev('лобби: матч уже идёт — подключаюсь');
+        updateRoom(data.room); forceReconnect(); return;
+      }
       if (lobbyKey(data.room) !== lobbyKey(room)) { if (TEST_MODE) TLog.ev('лобби: обновлено опросом', data.room.status); updateRoom(data.room); }
     }).catch(() => {}).finally(() => { lobbyBusy = false; });
   }
@@ -509,6 +519,8 @@
       lastMatchId = message.matchId;
       matchStarted = true;
       if (room && room.status !== 'paused') room.status = 'active';   // 2.7: it stayed «countdown», so the silence watchdog and the ping never ran
+      clearTimeout(initGuard); initGuard = setTimeout(() => { if (matchStarted && !clientRunning() && !paused && room && room.status !== 'closed') { if (TEST_MODE) TLog.ev('сеть: мир не пришёл — переподключаюсь'); forceReconnect(); } }, 4000);
+      render();
     }
     else if (message.type === 'world-init') { startClientMatch(message); startWatchdog(); }
     else if (message.type === 'snapshot') {

@@ -666,3 +666,7 @@
 #raidTiers .rt-list button.done { border-color: #3dffa2; background: rgba(61, 255, 162, .08); }
 #raidTiers .rt-list button:disabled { opacity: .45; cursor: default; }
 body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter .4s; }
+#rbPick .hc-card { position: relative; padding-top: 16px; border: 2px solid var(--rc) !important; box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 45%, transparent); }
+#rbPick .hc-card .hc-rar { position: absolute; top: 3px; right: 8px; font: 800 .6rem var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--rc); }
+#rbPick .hc-card.r3 { background: linear-gradient(160deg, rgba(255, 210, 63, .25), rgba(255, 79, 216, .12)); animation: hcLeg 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { #rbPick .hc-card.r3 { animation: none; } }

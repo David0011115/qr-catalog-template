@@ -337,7 +337,7 @@
       return owners.indexOf(o);
     }
     // 2.7: snapshots on a phone come in bursts (gaps of ~300 ms every second at a ping of ~180 ms). Each cell remembers its last
-    // server position and the speed between the last two snapshots, and keeps moving at that speed until the next one (≤ 0.35 s),
+    // server position and the speed between the last two snapshots, and keeps moving at that speed until the next one (≤ 0.5 s),
     // instead of reaching the old point and standing still. Own cells are compared with the server position moved ahead by half the ping.
     let snapTm = null;
     function applyServer(s) {
@@ -434,7 +434,7 @@
       for (const cell of cells) {
         if (cell.tx === undefined) continue;
         if (cell.stx !== undefined && cell.evx !== undefined) {
-          const age = Math.min(.35, (now - (cell.sAt || now)) / 1000) + (cell.owner === player ? lead : 0);
+          const age = Math.min(.5, (now - (cell.sAt || now)) / 1000) + (cell.owner === player ? lead : 0);
           cell.tx = cell.stx + cell.evx * age; cell.tz = cell.stz + cell.evz * age;
         }
         const correctionRate = cell.owner === player ? 5 : 12;

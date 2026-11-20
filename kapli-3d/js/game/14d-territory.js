@@ -133,6 +133,7 @@
         const h = homeOf(a.owner);
         return !!h && b.owner.kind === 'bot' && sideAt(b.x) !== h;
       },
+      shareNow: () => myShare(),   // 2.7 test journal
       speedK(c) { const h = homeOf(c.owner); return h && sideAt(c.x) !== h ? FOREIGN_K : 1; },
       cross(dt) {   // a short sign in the middle of the screen when your drop crosses the border
         if (!player.cells.length) { lastSide = 0; return; }

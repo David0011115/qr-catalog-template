@@ -260,6 +260,7 @@
       if (socket !== ws) return;
       socket = null;
       connected = false;
+      if (TEST_MODE) TLog.ev('сеть: соединение закрыто', event?.code || 0);
 
       if (event?.code === 4001) {
         if (matchStarted && room) {
@@ -286,7 +287,7 @@
   // 2.7: a silent server must never leave a player in a frozen match that still «plays». After 3 s without a
   // snapshot the drop stops guessing its way forward and a sign says so; after 8 s the socket is dropped, which
   // starts the usual pause card and reconnect (and shows the result if the match ended meanwhile).
-  let lastSnapAt = 0, stalled = false, watchdog = null;
+  let lastSnapAt = 0, stalled = false, watchdog = null, stallLogged = false, pingAt = 0, loggedWave = -1;
   function stallSign(show, seconds) {
     let el = $('srvStall');
     if (!show) { if (el) el.hidden = true; return; }
@@ -298,13 +299,16 @@
     if (!matchStarted || !room || room.status !== 'active' || paused) { if (stalled) { stalled = false; stallSign(false); } return; }
     const silent = performance.now() - lastSnapAt;
     stalled = silent > 3000;
+    if (TEST_MODE && stalled && !stallLogged) { stallLogged = true; TLog.ev('сеть: тишина сервера 3 с'); } if (!stalled) stallLogged = false;
+    if (TEST_MODE && matchStarted && performance.now() - pingAt > 2000) { pingAt = performance.now(); sendMessage({ type: 'ping', sentAt: Date.now() }); }   // test journal: ping every 2 s
     stallSign(stalled, Math.round(silent / 1000));
     if (silent > 8000 && socket) { const old = socket; try { old.close(4000, 'server-silent'); } catch {} }
   }
-  function startWatchdog() { lastSnapAt = performance.now(); if (!watchdog) watchdog = setInterval(checkSilence, 500); }
+  function startWatchdog() { lastSnapAt = performance.now(); loggedWave = -1; if (!watchdog) watchdog = setInterval(checkSilence, 500); }
   function stopWatchdog() { if (watchdog) clearInterval(watchdog); watchdog = null; stalled = false; stallSign(false); }
 
   function scheduleReconnect() {
+    if (TEST_MODE) TLog.ev('сеть: переподключение');
     if (reconnectTimer || leaving || !room || room.status === 'closed') return;
     const delay = reconnectDelay;
     reconnectDelay = Math.min(8000, reconnectDelay * 2);
@@ -485,23 +489,27 @@
     }
     else if (message.type === 'world-init') { startClientMatch(message); startWatchdog(); }
     else if (message.type === 'snapshot') {
-      lastSnapAt = performance.now();
+      { const t = performance.now(); if (TEST_MODE && lastSnapAt) TLog.net('gap', t - lastSnapAt); lastSnapAt = t; }
+      if (TEST_MODE && message.modeState && activeMode === 'duoback' && message.modeState.wave !== loggedWave) { loggedWave = message.modeState.wave; TLog.ev('волна', loggedWave); }
       lastProcessedSeqs = message.processedSeqs || lastProcessedSeqs;
       lastModeState = message.modeState || lastModeState;
       lastClock = message.clock || lastClock;
       applySnapshot(message, false);
     }
+    else if (message.type === 'pong') { if (TEST_MODE && Number.isFinite(message.sentAt)) TLog.net('ping', Date.now() - message.sentAt); }
     else if (message.type === 'match-paused') {
+      if (TEST_MODE) TLog.ev('сеть: пауза', message.playerId === userId ? 'я отключился' : 'соперник отключился');
       paused = true;
       if (room) room.status = 'paused';
       showLobbyCard();
     }
     else if (message.type === 'match-resumed') {
+      if (TEST_MODE) TLog.ev('сеть: матч продолжен');
       paused = false;
       if (room) room.status = 'active';
       if ($('duoCard')) $('duoCard').hidden = true;
     }
-    else if (message.type === 'match-ended') endClientMatch(message.result || {});
+    else if (message.type === 'match-ended') { if (TEST_MODE) TLog.ev('сеть: конец матча', message.result?.reason || ''); endClientMatch(message.result || {}); }
     else if (message.type === 'room-closed') {
       if (room) room.status = 'closed';
       clearSavedRoom();
@@ -531,6 +539,7 @@
   }
 
   async function finishMatch() {
+    if (TEST_MODE) TLog.ev('я нажал «Выход»');
     if (!room?.code || !matchStarted || leaving) return;
     const code = room.code;
     try {

@@ -1,6 +1,56 @@
   // TEST MODE: everything unlocked, saved under a separate key so real progress is untouched.
   const TEST_MODE = false;   // ВНИМАНИЕ: перед заливкой в репозиторий вернуть false (сборка PWA проверяет это)
   const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';
+  // 2.7 test build: a journal of every round, for every mode — the basics, slowdowns and hitches, what is special
+  // in the mode, and the network of online matches. Kept on this device (last 40), copied as text from «ТЕСТ → Отчёты».
+  // In the real game (TEST_MODE false) every call returns at once and nothing is recorded.
+  const TLog = (() => {
+    const KEY = 'kapli3d-tlog', MAX = 40, LIM = { ev: 300, samples: 240, slow: 120 };
+    let cur = null, sampleT = 0, slowEp = null;
+    const now = () => Math.round((typeof stats !== 'undefined' && stats && stats.time) || 0);
+    const r1 = v => Math.round(v * 10) / 10;
+    const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+    const store = L => { try { localStorage.setItem(KEY, JSON.stringify(L.slice(-MAX))); } catch (e) {} };
+    function begin(info) {
+      if (!TEST_MODE) return;
+      cur = Object.assign({ at: Date.now(), ver: 'v2.7-online', ev: [], samples: [], slow: [], fps: { min: 999, sum: 0, n: 0, low: 0 }, net: null, x: {} }, info);
+      sampleT = 0; slowEp = null;
+    }
+    function ev(type, data) { if (cur && cur.ev.length < LIM.ev) cur.ev.push(data === undefined ? [now(), type] : [now(), type, data]); }
+    function extra(key, value) { if (cur) cur.x[key] = value; }
+    function fps(f) { if (!cur) return; const F = cur.fps; F.min = Math.min(F.min, Math.round(f)); F.sum += f; F.n++; if (f < 30) F.low++; }
+    // the network of a server match: snapshot gaps, ping, pauses, reconnects
+    function net(kind, value) {
+      if (!cur) return;
+      const N = cur.net = cur.net || { gaps: 0, gapMax: 0, gap250: 0, gap1000: 0, ping: [], pings: 0, pingSum: 0, pingMax: 0 };
+      if (kind === 'gap') { N.gaps++; N.gapMax = Math.max(N.gapMax, Math.round(value)); if (value > 250) N.gap250++; if (value > 1000) N.gap1000++; }
+      if (kind === 'ping') { N.pings++; N.pingSum += value; N.pingMax = Math.max(N.pingMax, Math.round(value)); if (N.ping.length < 60) N.ping.push([now(), Math.round(value)]); }
+    }
+    // every frame of a round: samples every 5 s, and episodes when the speed falls under 40% (with what caused it)
+    function tick(dt, speedPct, mass, causes) {
+      if (!cur) return;
+      sampleT -= dt;
+      if (sampleT <= 0 && cur.samples.length < LIM.samples) { sampleT = 5; cur.samples.push([now(), Math.round(mass), Math.round(speedPct)]); }
+      if (speedPct < 40 && mass > 0) {
+        if (!slowEp) slowEp = { t: now(), min: speedPct, causes: new Set(causes), mass: Math.round(mass) };
+        slowEp.min = Math.min(slowEp.min, speedPct); causes.forEach(c => slowEp.causes.add(c));
+      } else if (slowEp) closeSlow();
+    }
+    function closeSlow() {
+      if (slowEp && cur && cur.slow.length < LIM.slow) cur.slow.push({ t: slowEp.t, sec: Math.max(0, now() - slowEp.t), min: Math.round(slowEp.min), why: [...slowEp.causes].join('+') || 'масса/другое', mass: slowEp.mass });
+      slowEp = null;
+    }
+    function end(summary) {
+      if (!cur) return;
+      closeSlow();
+      const F = cur.fps; cur.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low };
+      if (cur.net) { const N = cur.net; N.pingAvg = N.pings ? Math.round(N.pingSum / N.pings) : null; delete N.pingSum; }
+      Object.assign(cur, summary);
+      if (!Object.keys(cur.x).length) delete cur.x;
+      const L = load(); L.push(cur); store(L); cur = null;
+    }
+    return { begin, ev, extra, fps, net, tick, end, get on() { return !!cur; }, list: load, clear: () => store([]), r1 };
+  })();
   // the field's radius and the number of crumbs change with the mode (setArenaSize): «Захват территории» ×1,5, «Спина к спине» ×0,8
   let R = 237.5, FOOD = 5250;
   const R_BASE = R, FOOD_BASE = FOOD, R_MAX = R * 2, FOOD_MAX = 12000, START_MASS = 10, MAX_BONUS = 6;

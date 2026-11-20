@@ -563,13 +563,13 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
         for (let i = 0; i < 40; i++) { x.fillStyle = 'rgba(34,230,255,' + (.2 + .3 * Math.abs(Math.sin(t * 2 + i))) + ')'; x.fillRect((i * 53) % W, 50 + (i * 29) % 78, 1.6, 1.6); }
         const k = .55 + .45 * Math.sin(t * 3); c.strokeStyle = `rgba(34,230,255,${.5 + .5 * k})`; c.lineWidth = 2.6; c.shadowColor = A; c.shadowBlur = 6 + 6 * k;
         c.beginPath(); for (let a = 0; a < 5.5 * Math.PI * 2; a += .12) { const r = 3 + a * 1.75; c.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } c.stroke(); c.shadowBlur = 0;
-        const p = (t * .35) % 1, a = p * 5.5 * Math.PI * 2, r = 3 + a * 1.75; c.fillStyle = '#ffffff'; c.shadowColor = '#ffffff'; c.shadowBlur = 10; c.beginPath(); c.arc(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 3.4, 0, 6.29); c.fill(); c.shadowBlur = 0;
+        const p = (Math.floor(t) * .055) % 1, a = p * 5.5 * Math.PI * 2, r = 3 + a * 1.75;   // 2.7: the hand steps once a second, like a real clock c.fillStyle = '#ffffff'; c.shadowColor = '#ffffff'; c.shadowBlur = 10; c.beginPath(); c.arc(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 3.4, 0, 6.29); c.fill(); c.shadowBlur = 0;
         c.fillStyle = '#ffd27a'; c.beginPath(); c.arc(64, 64, 4, 0, 6.29); c.fill(); break;
       }
       case 'moon': {   // blue enamel, gold stars, a moon-phase window on top; full moon flashes
         g.addColorStop(0, '#24308a'); g.addColorStop(1, '#0a0e36'); x.fillStyle = g; x.fillRect(0, 0, W, H);
         for (let i = 0; i < 46; i++) { const tw = .4 + .6 * Math.abs(Math.sin(t * 1.3 + i * 1.7)); x.globalAlpha = tw; x.fillStyle = i % 4 ? '#ffd27a' : '#ffffff'; const sx = (i * 67) % W, sy = 30 + (i * 41) % 96; x.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr = k % 2 ? 1 : 3; x.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr); } x.fill(); } x.globalAlpha = 1;
-        const ph = (t / 12) % 1, full = Math.max(0, 1 - Math.abs(ph - .5) * 8); liveState[s.id] = full;
+        const ph = ((() => { try { return running && stats ? stats.time / 360 : null; } catch (e) { return null; } })() ?? t / 12) % 1, full = Math.max(0, 1 - Math.abs(ph - .5) * 8); liveState[s.id] = full;   // 2.7: in a round the moon goes through its phases over 6 minutes (full at 3:00); in the menus a quick cycle
         c.save(); c.beginPath(); c.arc(64, 70, 44, Math.PI, 0); c.closePath(); c.clip(); c.fillStyle = '#060a26'; c.fillRect(0, 0, 128, 128);
         for (let i = 0; i < 9; i++) { c.fillStyle = '#fff'; c.globalAlpha = .4 + .6 * Math.abs(Math.sin(t * 2 + i)); c.fillRect(24 + (i * 37) % 80, 34 + (i * 23) % 30, 1.6, 1.6); } c.globalAlpha = 1;
         const mx = 64 + (ph - .5) * 150; c.fillStyle = '#fff6d8'; c.shadowColor = '#fff6d8'; c.shadowBlur = 8 + 12 * full; c.beginPath(); c.arc(mx, 58, 20, 0, 6.29); c.fill(); c.shadowBlur = 0;
@@ -994,8 +994,11 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     let s0 = 7; const r = () => (s0 = (s0 * 16807) % 2147483647) / 2147483647; for (let k = 0; k < 12; k++) { let px = r() * 256, py = r() * 128; x.beginPath(); x.moveTo(px, py); for (let i = 0; i < 6; i++) { px += (r() - .5) * 50; py += (r() - .5) * 34; x.lineTo(px, py); } x.stroke(); } return new THREE.CanvasTexture(cv); })();
   const crFrozen = Array.from({ length: 4 }, () => { const m = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ map: crackTex, color: '#c8c4e8', transparent: true, opacity: .9 })); m.visible = false; scene.add(m); return { m, life: 0, done: true }; });
   let crFrozenNext = 0;
-  function crFreeze(x, z, r, k = 1) { const d = crFrozen[crFrozenNext]; d.k = k; crFrozenNext = (crFrozenNext + 1) % crFrozen.length; d.m.position.set(x, r * .92, z); d.m.scale.setScalar(r); d.r = r; d.life = .55; d.done = false; d.m.visible = true; }
+  let crFreezeTxt = null, crFreezeTxtT = 0;   // 2.7 «Стоп-кадр»: «00:00» over the frozen drop — time stopped
+  function crFreeze(x, z, r, k = 1) { if (!crFreezeTxt) crFreezeTxt = textSprite('00:00', '#22e6ff'); const sz = 2.6 + r * .35; crFreezeTxt.scale.set(sz, sz / 4, 1); crFreezeTxt.position.set(x, r * 2 + 1.4, z); crFreezeTxt.visible = true; crFreezeTxtT = .7;
+    const d = crFrozen[crFrozenNext]; d.k = k; crFrozenNext = (crFrozenNext + 1) % crFrozen.length; d.m.position.set(x, r * .92, z); d.m.scale.setScalar(r); d.r = r; d.life = .55; d.done = false; d.m.visible = true; }
   function crFxTick(dt) {
+    if (crFreezeTxt && crFreezeTxt.visible) { crFreezeTxtT -= dt; crFreezeTxt.material.opacity = Math.min(1, crFreezeTxtT / .25); crFreezeTxt.position.y += dt * .8; if (crFreezeTxtT <= 0) crFreezeTxt.visible = false; }
     for (const d of crMarks) { if (!d.m.visible) continue; d.life -= dt; if (d.life <= 0) { d.m.visible = false; continue; } d.m.material.opacity = Math.min(1, d.life / d.max * 1.8); }
     for (const d of crDials) { if (!d.g.visible) continue; d.life -= dt; if (d.life <= 0) { d.g.visible = false; continue; } const p = 1 - d.life; d.g.quaternion.copy(camera.quaternion);
       d.hand.rotation.z = -p * Math.PI * 2.2; d.face.material.opacity = d.hand.material.opacity = p < .15 ? p / .15 : Math.min(1, d.life / .3); }
@@ -1126,7 +1129,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       if (!o.isPlayer && !nearView(x, z)) continue;
       switch (id) {
         case 'sparksTrail': emit(x, r * .5, z, cellColor(c), 2, 2.5, .5); break;
-        case 'cr_cogs': if (Math.random() < .3) trailIcon(x, r * .5, z, 'gear', Math.random() < .6 ? '#ffd27a' : '#e8b05a', 1 + r * .1, .25); break;
+        case 'cr_cogs': if (Math.random() < .14 + .32 * Math.min(1, Math.hypot(c.vx || 0, c.vz || 0) / (BASE_SPEED * 1.4))) trailIcon(x, r * .5, z, 'gear', Math.random() < .6 ? '#ffd27a' : '#e8b05a', 1 + r * .1, .25); break;
         case 'cr_marks': { o._mkT = (o._mkT || 0) + 1; if (o._mkT % 6) break; o._mkN = ((o._mkN || 0) + 1) % 36; const n = o._mkN, num = n % 3 === 0, rot = Math.atan2(c.hx, c.hz);
           const icon = num ? 'n' + (12 - (n / 3) % 12) : 'tick', size = (num ? 2.2 : 1.6) + r * .45;
           if (fxTarget) fxTarget.icons(x, .1, z, icon, '#ffd27a', 1, size, true); else crMark(x, z, icon, size, rot, num ? '#fff6d8' : '#ffd27a'); break; }

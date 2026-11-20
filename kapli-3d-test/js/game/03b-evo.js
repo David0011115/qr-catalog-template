@@ -28,7 +28,7 @@
   };
   // forms II–III of the black hole glow a warm gold, brighter (as in the reference): [colour from form II, strength I, strength II–III]
   const EVO_RIM2 = { lg_worlds: ['#ffb070', 1.5, 2.2] };
-  const EVO_RIM = { lg_worlds: '#ff6a3d', lg_eternal: '#9fd8ff', cs_q4: '#ff4fd8', hc_berserk: '#ff1a1a', duo_twin: '#7affd0', duo_shield: '#5affc8', duo_const: '#8aa8ff' };
+  const EVO_RIM = { cr_skeleton: '#ffd27a', lg_worlds: '#ff6a3d', lg_eternal: '#9fd8ff', cs_q4: '#ff4fd8', hc_berserk: '#ff1a1a', duo_twin: '#7affd0', duo_shield: '#5affc8', duo_const: '#8aa8ff' };
 
   // ---- the extras of each form: (g, F, full) adds meshes to g and returns a tick (t, dt) ----
   const ring = (r, w, c, op) => new THREE.Mesh(new THREE.TorusGeometry(r, w, 8, 96), evoGlow(c, op));
@@ -136,6 +136,34 @@
       const orb = orbitOf(crown, .6, .6, 1.3, .05);
       return (t, dt) => { body.rotation.y += dt * .1; if (outer) outer.rotation.y -= dt * .12; orb(t); if (aur) aur.material.color.setHSL((.42 + .1 * Math.sin(t * .5)) % 1, .9, .6); };
     },
+    // 2.7 «Хронос 2.0»: the skeleton watch grows its movement — II: more gears, a balance wheel and rubies; III: a tourbillon cage and a golden glow
+    cr_skeleton(g, F, full) {
+      const gm = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .9, metalness: .6, roughness: .3 });
+      const gears = [];
+      const gear = (x, y, z, r, n, sp) => { const ge = new THREE.Mesh(gearGeo(r, n, .07), gm); ge.position.set(x, y, z); ge.rotation.x = Math.PI / 2; ge.userData.sp = sp; g.add(ge); gears.push(ge); return ge; };
+      let balance = null, cage = null, glow = null; const rubies = [];
+      if (F >= 2) {
+        gear(-.42, -.3, -.12, .22, 8, 2.6); gear(.05, -.5, .2, .18, 7, -3.1); if (full) gear(.48, .02, .2, .16, 6, 3.4);
+        balance = new THREE.Mesh(new THREE.TorusGeometry(.24, .025, 6, 32), gm); balance.position.set(.05, .1, .32); g.add(balance);
+        const rm = new THREE.MeshStandardMaterial({ color: '#ff3d6e', emissive: '#ff1a4a', emissiveIntensity: 1.2, roughness: .2 });
+        [[-.55, .35, .25], [.6, -.3, .1], [0, .6, .2]].forEach(([x, y, z]) => { const rb = new THREE.Mesh(new THREE.SphereGeometry(.05, 10, 8), rm); rb.position.set(x, y, z); g.add(rb); rubies.push(rb); });
+      }
+      if (F >= 3) {
+        cage = new THREE.Group(); const tilt = new THREE.Group(); tilt.rotation.x = -1.15; tilt.position.y = .32; tilt.add(cage); g.add(tilt);   // lies under the glass facing the camera, not standing up like a halo
+        cage.add(new THREE.Mesh(new THREE.TorusGeometry(.36, .03, 8, 48), gm));
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(.72, .05, .05), gm); cage.add(bar);
+        [-.2, .2].forEach(y => { const ge = new THREE.Mesh(gearGeo(.11, 6, .06), gm); ge.position.y = y; ge.rotation.x = Math.PI / 2; ge.userData.sp = -5; cage.add(ge); gears.push(ge); });
+        const core = new THREE.Mesh(new THREE.SphereGeometry(.08, 12, 10), new THREE.MeshStandardMaterial({ color: '#ff3d6e', emissive: '#ff1a4a', emissiveIntensity: 1.4 })); cage.add(core);
+        if (full) { glow = glowSprite('#ffd27a', 3.2, .45); g.add(glow); }
+      }
+      return (t, dt) => {
+        gears.forEach(o => { o.rotation.z += dt * o.userData.sp * (F >= 3 ? 1.5 : 1); });
+        if (balance) balance.rotation.z = Math.sin(t * 9) * .9;   // the balance wheel swings back and forth like in a real watch
+        rubies.forEach((o, i) => { o.material.emissiveIntensity = .9 + .6 * Math.sin(t * 3 + i * 2); });
+        if (cage) cage.rotation.z += dt * .9;
+        if (glow) glow.material.opacity = .32 + .18 * Math.sin(t * 2);
+      };
+    },
   };
 
   // ---- what opens each form ----
@@ -155,10 +183,13 @@
     hc_berserk:  { forms: () => evoSteps(save.hcPeak || 0, [40000, 50000, 70000]), need: ['40 000', '50 000', '70 000'], unit: 'массы за раунд «Хардкора»', c: '#ff2d2d', c2: '#ff9a3d', rar: 'Хардкор', grant: 'Берсерк' },
     duo_twin:    { forms: () => evoSteps(evoDuoBest('normal'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Обычный»', c: '#7affd0', c2: '#22e6ff', grant: 'Близнецы' },
     duo_shield:  { forms: () => evoSteps(evoDuoBest('hard'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Сложный»', c: '#5affc8', c2: '#2ab8a0', grant: 'Щит союза' },
+    // 2.7: the workshop's flagship — forms by how much of the «Хронос» series you own (23 items)
+    cr_skeleton: { forms: () => !save.skins.includes('cr_skeleton') ? 0 : 1 + evoSteps(wsSeriesN(), [15, 23]), need: ['создать «Скелетон»', '15 предметов серии', 'вся серия · 23'], unit: '', c: '#ffd27a', c2: '#ff3d6e' },
     duo_const:   { forms: () => evoSteps(evoDuoBest('mad'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Безумие»', c: '#ffe08a', c2: '#b26bff', grant: 'Созвездие' },
   };
   // their swatches in the wardrobe and the lists (a CSS picture of the body)
   const EVO_SW = {
+    cr_skeleton: 'background:radial-gradient(circle at 34% 30%, rgba(255,255,255,.45) 0 8%, transparent 22%), radial-gradient(circle at 42% 46%, #ffd27a 0 9%, #7a4a12 10% 12%, transparent 13%), radial-gradient(circle at 64% 62%, #e8b05a 0 7%, #7a4a12 8% 10%, transparent 11%), radial-gradient(circle at 60% 38%, #ff3d6e 0 3%, transparent 4%), radial-gradient(circle at 50% 50%, #4a3a20, #1b1208 70%);box-shadow:0 0 0 2px #ffd27a inset,0 0 10px rgba(255,210,122,.6)',
     lg_worlds: 'background:radial-gradient(circle at 50% 50%, #000 0 34%, #ffb070 38%, #ff3d6e 46%, rgba(255,60,110,0) 62%), radial-gradient(ellipse 100% 24% at 50% 52%, #ffd27a 0 30%, #ff3d6e 55%, transparent 70%), #05020c;box-shadow:0 0 14px #ff6a3d;',
     lg_eternal: 'background:radial-gradient(circle at 35% 30%, #fff 0 12%, transparent 40%), repeating-linear-gradient(125deg, transparent 0 9px, rgba(90,160,255,.75) 9px 10.5px, transparent 10.5px 21px), #e6eeff;box-shadow:0 0 12px #9fd8ff;',
     hc_berserk: 'background:radial-gradient(circle at 50% 50%, #ff2d2d 0 6%, transparent 7%), conic-gradient(from 0deg, #2a0306 0 6%, #ff1a1a 6% 8%, #2a0306 8% 18%, #ff1a1a 18% 20%, #2a0306 20% 31%, #ff1a1a 31% 33%, #2a0306 33% 45%, #ff1a1a 45% 47%, #2a0306 47% 58%, #ff1a1a 58% 60%, #2a0306 60% 72%, #ff1a1a 72% 74%, #2a0306 74% 86%, #ff1a1a 86% 88%, #2a0306 88%);box-shadow:0 0 14px #ff1a1a;',

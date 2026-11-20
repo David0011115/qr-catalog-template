@@ -1,6 +1,9 @@
   // TEST MODE: everything unlocked, saved under a separate key so real progress is untouched.
   const TEST_MODE = true;   // ВНИМАНИЕ: перед заливкой в репозиторий вернуть false (сборка PWA проверяет это)
   const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';
+  // 2.7 «Хронос 2.0»: items taken out of the workshop. Whoever crafted them keeps them; nobody can craft them any more,
+  // and the lists of things to get no longer show them to players who don't own them.
+  const CR_RETIRED = new Set(['cr_engrave', 'cr_watch', 'cr_windup', 'cr_marks', 'cr_cogwings', 'cr_halo', 'cr_tick', 'bg_cr_gears', 'bg_cr_behind', 'fr_cr_dial', 'fr_cr_pend', 'emo_wait', 'emo_late']);
   // 2.7 test build: a journal of every round, for every mode — the basics, slowdowns and hitches, what is special
   // in the mode, and the network of online matches. Kept on this device (last 40), copied as text from «ТЕСТ → Отчёты».
   // In the real game (TEST_MODE false) every call returns at once and nothing is recorded.
@@ -385,7 +388,7 @@
     { id: 'cr_engrave',  name: 'Гравировка',      color: '#3a1a08', accent: '#ffd27a', pattern: 'live', live: 'engrave', craft: 'epic', sig: 'светящиеся гравированные шестерни вращаются' },
     { id: 'cr_watch',    name: 'Карманные часы',  color: '#e8b05a', accent: '#7a4a12', pattern: 'live', live: 'watch', craft: 'rare', sig: 'циферблат, стрелки идут на макушке' },
     { id: 'cr_windup',   name: 'Заводная капля',  color: '#e8b05a', accent: '#7a4a12', pattern: 'brass', head: 'windkey', craft: 'rare', sig: 'заводной ключ крутится на ходу' },
-    { id: 'cr_skeleton', name: 'Скелетон',        color: '#e8b05a', accent: '#7a4a12', mat: 'skeleton', craft: 'epic', sig: 'прозрачный корпус, внутри крутится механизм' },
+    { id: 'cr_skeleton', name: 'Скелетон',        color: '#e8b05a', accent: '#7a4a12', mat: 'skeleton', craft: 'legendary', sig: 'прозрачный корпус, внутри крутится механизм; 🧬 три формы по прогрессу серии' },   // 2.7: legendary — it has an evolution
     { id: 'cr_sandup',   name: 'Время вспять',    color: '#bff8ff', accent: '#ffd27a', mat: 'sandglass', craft: 'epic', sig: 'песок сыплется вверх и копится у макушки' },
     { id: 'cr_spiral',   name: 'Часовая спираль', color: '#160c30', accent: '#22e6ff', pattern: 'live', live: 'spring', glow: true, craft: 'legendary', sig: 'пульсирует пружина, по ней бежит стрелка' },
     { id: 'cr_moon',     name: 'Лунная фаза',     color: '#141c5a', accent: '#ffd27a', pattern: 'live', live: 'moon', glow: true, craft: 'legendary', sig: 'окошко с фазами луны, в полнолуние вспышка' },

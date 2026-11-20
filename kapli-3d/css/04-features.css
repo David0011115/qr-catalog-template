@@ -631,3 +631,11 @@
 .pw-pet b { font-size: .72rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .pw-pet small { font-size: .62rem; color: var(--muted); line-height: 1.2; }
 .pw-pet.own small { color: var(--prey); }
+
+/* ---- 2.7 «Способности»: owned abilities as compact tiles ---- */
+.ab-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 6px; margin: 0 0 6px; }
+.ab-tiles .ab-row { margin: 0; padding: 7px 9px; gap: 8px; align-items: start; }
+.ab-tiles .ab-big { font-size: 1.15rem; width: 26px; text-align: center; padding-top: 2px; }
+.ab-tiles .ab-txt b { font-size: .84rem; }
+.ab-tiles .ab-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .72rem; line-height: 1.3; }
+.ab-tiles .now { font-size: .7rem; }

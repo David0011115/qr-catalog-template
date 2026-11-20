@@ -1456,16 +1456,17 @@
   const abLevelText = a => a.branches ? 'улучшения: ' + a.branches.map(id => { const u = UPG.find(x => x.id === id); return `«${u.name}» ${save.up[id]}/${u.cost.length}`; }).join(', ') : `уровень ${save.abil.lv[a.id] || 0}/${ABIL_CFG.levels}`;
   const abLooksText = a => { const n = [0, 1, 2].filter(k => save.abil.looks.includes(lookOf(a, k).id)).length; return n ? ` · обликов ${n}/3` : ''; };
   // «Коллекция → Способности»: the build + what you own, split into upgradable and not upgradable
+  // 2.7: owned abilities as compact tiles in a grid (two lines of description, the full text on hover / long press)
   function myAbilHtml() {
-    const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small><small class="now">${extra}</small></div></div>`;
+    const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small class="ab-desc" title="${a.desc.replace(/"/g, '&quot;')}.">${a.desc}.</small><small class="now">${extra}</small></div></div>`;
     const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id)), crafted = CR_ABIL.filter(a => own.includes(a.id));
     return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +
       `<p class="empty-note">Билд меняется только здесь, между боями. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p>` +
-      `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') +
+      `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + '<div class="ab-tiles">' + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') + '</div>' +
       `<p class="empty-note">Улучшать — в «Магазине» → «Способности». Новые способности тоже там.</p>` +
-      `<h3>Без улучшений · ${fixed.length} из ${XA_ABIL.length}</h3>` + (fixed.length ? fixed.map(a => row(a, `эксклюзив Хаос-лиги · перезарядка ${a.cd} с${abLooksText(a)}`)).join('')
+      `<h3>Без улучшений · ${fixed.length} из ${XA_ABIL.length}</h3>` + (fixed.length ? '<div class="ab-tiles">' + fixed.map(a => row(a, `эксклюзив Хаос-лиги · перезарядка ${a.cd} с${abLooksText(a)}`)).join('') + '</div>'
         : '<p class="empty-note">Эксклюзивные способности даёт «Сингулярность» в Хаос-лиге — по одной за сезон.</p>') +
-      `<h3>Из мастерской · ${crafted.length} из ${CR_ABIL.length}</h3>` + (crafted.length ? crafted.map(a => row(a, `создана из осколков · только обычные режимы · перезарядка ${a.cd} с`)).join('')
+      `<h3>Из мастерской · ${crafted.length} из ${CR_ABIL.length}</h3>` + (crafted.length ? '<div class="ab-tiles">' + crafted.map(a => row(a, `создана из осколков · только обычные режимы · перезарядка ${a.cd} с`)).join('') + '</div>'
         : '<p class="empty-note">Эти способности создаются из осколков в «Мастерской» (плитка в главном меню).</p>');
   }
   // «Магазин → Способности»: buy new ones; upgrades of owned ones in drawers

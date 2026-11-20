@@ -1,0 +1,46 @@
+name: Kapli 3D server core tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - kapli-3d-online-test
+    paths:
+      - 'kapli-3d/server/**'
+      - 'kapli-3d/tests/**'
+      - 'kapli-3d/js/game/**'
+      - 'kapli-3d/js/loader.js'
+      - 'kapli-3d/index.html'
+      - 'kapli-3d/*.sql'
+      - 'kapli-3d/README.md'
+      - 'kapli-3d/ONLINE-SERVER-*.md'
+      - 'kapli-3d/ONLINE-SERVER-*.sql'
+      - 'kapli-3d/server/cloudflare/**'
+      - '.github/workflows/kapli-3d-server-tests.yml'
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kapli-3d
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check browser and server JavaScript syntax
+        run: |
+          find js/game -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --check js/loader.js
+          find server -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Install Cloudflare Worker tooling
+        working-directory: kapli-3d/server/cloudflare
+        run: npm install --no-package-lock
+      - name: Build Cloudflare Worker
+        working-directory: kapli-3d/server/cloudflare
+        run: npm run build
+      - name: Run server core regression tests
+        run: node --test

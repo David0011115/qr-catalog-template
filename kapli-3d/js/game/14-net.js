@@ -184,15 +184,7 @@
       if (!error) { meta.recSent[m] = score; saveMeta(); return true; }
       return false;
     }
-    // modes for two (2.5): their own tables on the server (DUO-RECORDS-MIGRATION.sql)
-    async function duoTerritory(result, share) {
-      if (!sb || !sess || privacyPending || !['win', 'loss', 'draw'].includes(result)) return;
-      try { await sb.rpc('kapli_duo_territory_submit', { p_result: result, p_share: Math.round(share) }); } catch (e) {}
-    }
-    async function duoCoop(diff, matePid, waves, time, bosses, bots, respawns) {
-      if (!sb || !sess || privacyPending || !(waves > 0)) return;
-      try { await sb.rpc('kapli_duo_coop_submit', { p_diff: diff, p_mate_pid: matePid || null, p_waves: waves, p_time: Math.max(1, Math.round(time)), p_bosses: bosses, p_bots: bots, p_respawns: respawns }); } catch (e) {}
-    }
+    // Duo online ratings are submitted only by the authoritative Cloudflare room server.
     async function syncBests() { for (const m of RANK_MODES) { const v = save.bests[m] || 0; if (v > 0 && meta.recSent[m] !== v) await submitRecord(m, v); } }
 
     // ---------- launch screen ----------
@@ -1040,7 +1032,7 @@
       } catch (e) {}
     }
     setTimeout(errFlush, 15000); setInterval(errFlush, 5 * 60000);
-    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, duoTerritory, duoCoop, redeemPromo, walletSoon, walletSync, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
+    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, redeemPromo, walletSoon, walletSync, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
     renderChip();
   }
 

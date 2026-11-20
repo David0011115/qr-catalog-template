@@ -91,8 +91,10 @@
     const mine = { x: .3, y: .5 }, theirs = { x: .7, y: .5, seen: 0 }; let raf = 0, sentAt = 0, drawn = '';
     // the same room screen serves two ways in: the hidden connection test (Settings) and a mode for two (Play with a «вдвоём» mode selected)
     let lobby = null;   // null = connection test, else the mode id
-    window.openDuoLobby = id => { lobby = id; drawn = ''; $('duoTitle').innerHTML = `${MODES[id].name} <span class="duo-badge">👥 вдвоём · локально</span>`; showCard('duoCard'); render();
+    window.openDuoLobby = id => { if (window.KapliOnlineServer?.openLobby) { window.KapliOnlineServer.openLobby(id); return; } lobby = id; drawn = ''; $('duoTitle').innerHTML = `${MODES[id].name} <span class="duo-badge">👥 вдвоём · локально</span>`; showCard('duoCard'); render();
       if (!save.duoHowSeen) setTimeout(() => duoHow(id), 350); };
+    window.openDuoServerCard = (id, title) => { lobby = id; drawn = ''; $('duoTitle').innerHTML = title; showCard('duoCard'); };
+    window.closeDuoServerCard = () => { showCard('menuCard'); $('startBtn').focus(); };
     // how to connect two phones: shown once on the first visit of a room, and from «Как играть вдвоём?» any time
     Duo.how = id => duoHow(id);   // 2.7: the «Вдвоём» tab of «Режимы» opens it too
     function duoHow(id) {

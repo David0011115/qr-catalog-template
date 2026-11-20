@@ -91,6 +91,12 @@
         else if (!ot) { ot = true; limit += OVERTIME_S; toast('Почти поровну! Ещё 30 секунд'); Sound.play('level'); }
         else DuoM.result('draw', hs, 'time');
       },
+      applyServer(state) {
+        bx = Number(state.border) || 0; bxView = bx;
+        limit = Number(state.limit) || MATCH_S; ot = !!state.overtime;
+        pHome = DuoM.serverRole === 'host' ? -1 : 1;
+        if (mesh && mat?.uniforms) { mat.uniforms.uBx.value = bx; mat.uniforms.uMe.value = pHome; }
+      },
       timer: () => `⏱ ${fmtTime(Math.max(0, limit - stats.time))}${ot ? ' · +30 с' : ''}`,
       finish(me, sh, why) {   // personal stats of this mode, then the title of the result screen
         const p = Math.round(sh * 100);
@@ -100,7 +106,6 @@
         t.top.push({ p, r: me, n: String(DuoM.rival.name || '').slice(0, 24), d: Date.now(), e: why === 'early' ? 1 : 0 });
         t.top.sort((a, b) => b.p - a.p || b.d - a.d); t.top.length = Math.min(5, t.top.length);
         persist(); stats.duoHero = { v: p, l: 'твоя доля поля, %' };
-        if (!DuoM.practice) Net.duoTerritory(me, p);   // the rating of the mode (each player sends their own match)
         return { bonus: me === 'win' ? 60 : me === 'draw' ? 25 : 10,
           title: me === 'win' ? (why === 'early' ? `Досрочная победа: ${p}% поля!` : `Победа! Твоя территория ${p}%`) : me === 'loss' ? `Поражение: у тебя ${p}% поля` : `Ничья: ${p}% на ${100 - p}%` };
       },

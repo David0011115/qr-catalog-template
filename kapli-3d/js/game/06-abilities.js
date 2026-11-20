@@ -39,6 +39,7 @@
     });
   }
   function useSlot(i) {
+    if (DuoM.server) { if (running && !dying) DuoM.act('slot', i); return; }
     if (DuoM.guest) { if (running && !dying) DuoM.act('slot', i); return; }
     const id = runBuild[i];
     if (!id || !running || paused || dying || slotBlocked(id)) return;

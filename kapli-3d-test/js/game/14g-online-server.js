@@ -197,7 +197,7 @@
     const me = room.players?.find(player => player.id === userId);
     if (me) role = me.role;
     saveRoom();
-    if (room.status === 'closed') clearSavedRoom();
+    if (room.status === 'closed') clearSavedRoom(); else startLobbyPoll();
     render();
   }
 
@@ -306,6 +306,25 @@
   }
   function startWatchdog() { lastSnapAt = performance.now(); loggedWave = -1; if (!watchdog) watchdog = setInterval(checkSilence, 500); }
   function stopWatchdog() { if (watchdog) clearInterval(watchdog); watchdog = null; stalled = false; stallSign(false); }
+
+  // 2.7: the lobby must not depend on one WebSocket message. On a phone the socket can die quietly (screen off, network switch),
+  // and the creator then kept «Ждём второго игрока…» after the guest had joined. While the lobby is open the room is asked
+  // every 2.5 s, a dead socket is reopened, and coming back to the app refreshes at once.
+  let lobbyPoll = null, lobbyBusy = false;
+  const lobbyKey = r => r ? r.status + '|' + (r.players || []).map(p => p.id + ':' + (p.ready ? 1 : 0) + ':' + (p.connected === false ? 0 : 1)).join(',') : '';
+  function lobbyTick() {
+    if (!room || leaving || !activeMode || room.status === 'closed') { if (lobbyPoll) { clearInterval(lobbyPoll); lobbyPoll = null; } return; }
+    if (matchStarted || document.hidden || lobbyBusy) return;
+    if (!socket || socket.readyState > 1) connectSocket().catch(() => {});
+    lobbyBusy = true;
+    const code = room.code;
+    api('/api/rooms/' + code).then(data => {
+      if (!data || !data.room || !room || room.code !== code || matchStarted || data.room.status === 'active') return;
+      if (lobbyKey(data.room) !== lobbyKey(room)) { if (TEST_MODE) TLog.ev('лобби: обновлено опросом', data.room.status); updateRoom(data.room); }
+    }).catch(() => {}).finally(() => { lobbyBusy = false; });
+  }
+  function startLobbyPoll() { if (!lobbyPoll) lobbyPoll = setInterval(lobbyTick, 2500); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) lobbyTick(); });
 
   function scheduleReconnect() {
     if (TEST_MODE) TLog.ev('сеть: переподключение');

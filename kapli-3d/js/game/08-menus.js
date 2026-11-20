@@ -724,7 +724,7 @@
     if (lk.holo) { const h = ((lk.holoBase ?? .5) + (lk.holoSpan ?? .17) * (1 + Math.sin(now / 900))) % 1; m.color.setHSL(h, 1, .62); m.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
     if (lk.rainbow) { const h = (now / 4000) % 1; m.color.setHSL(h, 1, .6); m.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
     animateLook(v, now, null);
-    MB.r.render(MB.scene, MB.cam);
+    alphaSafe(MB.scene); MB.r.render(MB.scene, MB.cam);
   })(performance.now());
   $('menuBlob').addEventListener('click', () => openView('wardrobe', 'wskin'));
   function checkSpecialBadges() {

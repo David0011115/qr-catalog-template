@@ -177,6 +177,7 @@
     body.innerHTML = `
       ${room.status === 'waiting' ? '<p class="hint srv-say">Скажи этот код второму игроку:</p>' : ''}
       <div class="duo-code srv-code" aria-label="Код комнаты">${esc(room.code)}</div>
+      ${['waiting', 'lobby'].includes(room.status) && players.length < 2 ? `<div class="srv-share"><button id="serverCopyCode" type="button" class="btn ghost">📋 Скопировать код</button><button id="serverShare" type="button" class="btn ghost">🔗 Поделиться ссылкой</button></div>` : ''}
       <p class="srv-status st-${esc(room.status)}" role="status">${esc(statusText)}</p>
       <ul class="srv-pls">${playersHtml}</ul>
       ${activeMode === 'duoback' ? `<p class="srv-diff">Сложность: <b>${esc((diffs?.[di]?.name) || ['Обычный', 'Сложный', 'Безумие'][di])}</b>${diffs?.[di]?.about ? `<small>${esc(diffs[di].about)}</small>` : ''}</p>` : ''}
@@ -612,6 +613,42 @@
     leaving = false;
   }
 
+  // 2.7: share the room — the code, or a link that opens the game straight into this room
+  const roomLink = () => { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('room', room.code); u.searchParams.set('m', activeMode); return u.toString(); };
+  async function copyText(text, done) {
+    if (!text) return;
+    try { await navigator.clipboard.writeText(text); toast(done); }
+    catch { const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch {} t.remove(); toast(ok ? done : 'Не получилось скопировать — код: ' + text); }
+  }
+  async function shareRoom() {
+    if (!room) return;
+    const url = roomLink(), text = `Заходи в «${modeName(activeMode)}» в «Капли 3D»! Код комнаты: ${room.code}`;
+    if (navigator.share) { try { await navigator.share({ title: 'Капли 3D', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    copyText(text + '\n' + url, 'Ссылка на комнату скопирована');
+  }
+  // a link with ?room=CODE&m=mode: open the lobby of that mode and join the room (after the game has started up)
+  function joinFromLink() {
+    let code = '', mode = '';
+    try { const p = new URLSearchParams(location.search); code = (p.get('room') || '').trim().toUpperCase(); mode = p.get('m') || ''; } catch { return; }
+    if (!code) return;
+    try { const u = new URL(location.href); u.searchParams.delete('room'); u.searchParams.delete('m'); window.history.replaceState(null, '', u.toString()); } catch {}   // window.: the game has its own «history» (the mass graph)
+    if (!MODES[mode] || !/^[A-HJ-NP-Z2-9]{5}$/.test(code)) { setTimeout(() => toast('Ссылка на комнату устарела или неверная'), 2500); return; }
+    let tries = 0;
+    const go = () => {
+      if (typeof running !== 'undefined' && running) return;   // a round is on: the link is dropped
+      const blocked = document.querySelectorAll('.modal:not([hidden])').length || ($('tour') && !$('tour').hidden);
+      if (blocked && tries++ < 40) { setTimeout(go, 1500); return; }
+      try { save.mode = mode; persist(); } catch {}
+      openLobby(mode);
+      const box = $('serverRoomCode'); if (box) box.value = code;
+      toast(`Входим в комнату ${code}…`);
+      joinRoom(code).catch(error => { try { networkGuard(error); } catch (e) { toast(e?.message || 'Не удалось войти в комнату'); } const b = $('serverRoomCode'); if (b) b.value = code; });
+    };
+    setTimeout(go, 2500);
+  }
+  joinFromLink();
+
   function openLobby(mode) {
     if (!MODES[mode]) return;
     activeMode = mode;
@@ -652,6 +689,8 @@
     const id = button.id;
     const actions = {
       serverCreate: () => createRoom().catch(networkGuard),
+      serverCopyCode: () => copyText(room?.code || '', 'Код комнаты скопирован'),
+      serverShare: () => shareRoom(),
       serverJoin: () => joinRoom($('serverRoomCode')?.value || '').catch(networkGuard),
       serverDirect: () => { const mode = activeMode; activeMode = null; window.openDuoLobbyDirect?.(mode); },
       serverRetry: () => { health = 'unknown'; render(); return checkHealth(true).then(render); },

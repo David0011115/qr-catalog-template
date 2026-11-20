@@ -1,3 +1,4 @@
+import { ccSlow, ccWore } from './ability-effects.js';
 // Server-side ability timing and non-visual decoy physics.
 // Gameplay effects that touch entities are represented as deterministic state operations.
 
@@ -82,7 +83,8 @@ export function startAbilityCooldown(owner, id, options = {}) {
 // cooldowns and active ability timers tick only when abCd exists.
 export function tickAbilityOwner(owner, dt, options = {}) {
   if (!(dt > 0) || !owner) return { phaseCooldownStarted: false };
-  if (owner.slowT) owner.slowT = Math.max(0, owner.slowT - dt);
+  if (owner.slowT) { const was = owner.slowT; owner.slowT = Math.max(0, owner.slowT - dt); if (!owner.slowT) ccWore(owner, was); }
+  if (owner.ccImm) owner.ccImm = Math.max(0, owner.ccImm - dt);
   if (owner.iceT) owner.iceT = Math.max(0, owner.iceT - dt);
 
   let phaseCooldownStarted = false;
@@ -138,7 +140,7 @@ export function stepDecoy(decoy, source, foes, dt, arenaRadius) {
       if (cellRadius(cell) <= decoy.r * 0.9 ||
           Math.hypot(cell.x - decoy.x, cell.z - decoy.z) >= cellRadius(cell)) continue;
       const movingDecoy = !decoy.still;
-      if (movingDecoy && foe.kind !== 'boss') foe.slowT = Math.max(foe.slowT || 0, 2);
+      if (movingDecoy && foe.kind !== 'boss') ccSlow(foe, 2);
       return {
         alive: false, decoy, caughtBy: foe,
         foodBurst: movingDecoy ? 18 : 0,

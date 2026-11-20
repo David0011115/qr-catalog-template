@@ -330,6 +330,9 @@ export function stepWorldInteractions(world, dt, rules = {}) {
   );
   world.viruses = virusResult.viruses;
   world.respawnTimers = virusResult.respawnTimers;
+  // 2.7: once a player reaches 10 000 the spikes leave the field for good (traps of abilities stay)
+  if (!world.spikesOff && world.owners.some(o => o.isPlayer && (o.cells || []).reduce((sum, c) => sum + c.mass, 0) >= 10000)) world.spikesOff = true;
+  if (world.spikesOff) { world.viruses = world.viruses.filter(v => v.trap); world.respawnTimers = []; virusResult.spawnCount = 0; }
 
   let respawnedViruses = 0;
   for (let i = 0; i < virusResult.spawnCount && canSpawnVirus(world.viruses.length); i++) {

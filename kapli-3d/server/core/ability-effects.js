@@ -1,3 +1,9 @@
+// 2.7 (same as js/game/06-abilities.js): slows on a player last 35% (at most 4 s), stuns 60%; 2.5 s without new control after one wears off
+export const CC_RULES = Object.freeze({ slowK: 0.35, slowMax: 4, stunK: 0.6, immune: 2.5 });
+const ccPlayer = x => !!x && (x.isPlayer || x.kind === 'player');
+export function ccSlow(x, d) { if (ccPlayer(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC_RULES.slowMax, d * CC_RULES.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
+export function ccFreeze(x, d) { if (ccPlayer(x)) { if ((x.ccImm || 0) > 0) return; d *= CC_RULES.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
+export function ccWore(o, was) { if (was > 0 && ccPlayer(o) && !(o.slowT > 0) && !(o.freezeT > 0)) o.ccImm = CC_RULES.immune; }
 // Deterministic, rendering-free ability world effects extracted from js/game/06-abilities.js.
 // Entity creation/removal, food-grid updates, mode hooks and presentation are callbacks.
 import { cellRadius } from './physics.js';
@@ -92,7 +98,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
   }
   if (id === 'slow') {
     const rad = a.radius * power;
-    for (const foe of foes) if (world.nearOf(owner, foe, rad)) foe.slowT = Math.max(foe.slowT || 0, a.dur * power);
+    for (const foe of foes) if (world.nearOf(owner, foe, rad)) ccSlow(foe, a.dur * power);
     return { ok: true, events };
   }
   if (id === 'push') {
@@ -103,7 +109,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
         const massBoost = Math.min(1.6, Math.pow(Math.max(1, c.mass / 25), 0.12));
         const force = a.force * power * massBoost * Math.max(0.35, 1 - edge / (rad * 1.5));
         c.vx += u.x * force; c.vz += u.z * force;
-        if (foe.kind !== 'boss') foe.freezeT = Math.max(foe.freezeT || 0, a.stun);
+        if (foe.kind !== 'boss') ccFreeze(foe, a.stun);
       }
     }
     return { ok: true, events };
@@ -214,7 +220,7 @@ export function tickWorldAbilityEffects(state, world, dt) {
     }
   }
   for (const owner of owners) {
-    if (owner.freezeT) owner.freezeT = Math.max(0, owner.freezeT - dt);
+    if (owner.freezeT) { const was = owner.freezeT; owner.freezeT = Math.max(0, owner.freezeT - dt); if (!owner.freezeT) ccWore(owner, was); }
     if (owner.huntT > 0) owner.huntT -= dt;
     const ghostOn = abilityOn(owner, 'x_ghost');
     if (state.ghostWasOn[owner.id] && !ghostOn) {

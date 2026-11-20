@@ -15,9 +15,11 @@ import { territoryLeftShare } from '../../modes/territory.js';
 const TICK_RATE = 30;
 const TICK_MS = 1000 / TICK_RATE;
 const SNAPSHOT_RATE = 15;
-// Movement inputs stay in memory. Persist a full authoritative checkpoint every 1.5 s
+// Movement inputs stay in memory. Persist a full authoritative checkpoint every 5 s
 // so an evicted Durable Object can recover without a high-volume input event log.
-const PERSIST_INTERVAL_MS = 1500;
+// 2.7: was 1.5 s — a territory checkpoint is about 1 MB of JSON written twice, and the loop stood still meanwhile,
+// which players saw as a hitch every 1.5 s. Critical moments (pause, end, reconnect) still save at once.
+const PERSIST_INTERVAL_MS = 5000;
 const RESULT_RETRY_MS = 60000;
 
 export function replayMatchEvents(runtime, events, snapshotAt, now = Date.now(), tickRate = TICK_RATE) {
@@ -95,12 +97,24 @@ function ownerSummary(owner) {
   };
 }
 
+// 2.7: in the 15-per-second snapshots a bot or boss carries only what changes; its upgrades, ability levels, build,
+// persona, skin and split/dash constants never change in a match and already came with world-init (the client keeps them)
+const OWNER_STATIC = ['upgrades', 'abilityLevels', 'build', 'persona', 'skin', 'splitMaxParts', 'mergeSeconds', 'dashCooldown', 'dashDuration', 'dashMassCost', 'ejectSpeed'];
+function ownerSnapshot(owner) {
+  const summary = ownerSummary(owner);
+  if (summary.isPlayer) return summary;
+  for (const key of OWNER_STATIC) delete summary[key];
+  summary.mass = Math.round(summary.mass * 100) / 100;
+  return summary;
+}
+// 2.7: snapshots go out 15 times a second; full float precision made them ~40% bigger for nothing on a phone link
+const round = (value, digits) => { const k = 10 ** digits; return Math.round((Number(value) || 0) * k) / k; };
 function cellSnapshot(cell) {
   return {
-    id: cell.id, slotId: cell.slotId ?? cell.slot ?? null, ownerId: cell.owner.id, x: cell.x, z: cell.z, mass: cell.mass,
-    hx: cell.hx || 0, hz: cell.hz || 0, vx: cell.vx || 0, vz: cell.vz || 0,
-    mergeT: cell.mergeT || 0, rs: cell.owner.rs || 1, gone: !!cell.gone,
-    spawnShield: cell.owner.spawnSh || 0, dashT: cell.owner.dashT || 0,
+    id: cell.id, slotId: cell.slotId ?? cell.slot ?? null, ownerId: cell.owner.id, x: round(cell.x, 2), z: round(cell.z, 2), mass: round(cell.mass, 2),
+    hx: round(cell.hx, 3), hz: round(cell.hz, 3), vx: round(cell.vx, 2), vz: round(cell.vz, 2),
+    mergeT: round(cell.mergeT, 2), rs: cell.owner.rs || 1, gone: !!cell.gone,
+    spawnShield: round(cell.owner.spawnSh, 2), dashT: round(cell.owner.dashT, 2),
   };
 }
 
@@ -615,9 +629,11 @@ export class GameRoom {
     if (player) player.connected = false;
     this.room.status = 'paused';
     this.stopLoop();
-    await this.appendEvent('player-disconnected', { playerId: userId, result }, true);
-    await this.scheduleReconnectAlarm();
+    // 2.7: tell the other player first — a failed checkpoint must never leave them in a silent, frozen match
     this.broadcast({ type: 'match-paused', playerId: userId, reconnectUntil: result?.reconnectUntil });
+    try { await this.appendEvent('player-disconnected', { playerId: userId, result }, true); }
+    catch (error) { console.error(JSON.stringify({ event: 'checkpoint-error', at: 'pause', message: String(error?.message || error) })); }
+    await this.scheduleReconnectAlarm();
   }
 
   async scheduleReconnectAlarm() {
@@ -700,13 +716,13 @@ export class GameRoom {
     };
   }
 
-  snapshotMessage(out) {
+  snapshotMessage(out = null) {   // 2.7: finishMatch calls it without a step result — it used to throw there
     const world = this.runtime.world;
     const foodChanges = (world.pendingFoodChanges || []).splice(0);
     return {
-      type: 'snapshot', tick: out.tick, clock: world.clock || 0,
+      type: 'snapshot', tick: out?.tick ?? this.runtime.simulation?.tick ?? world.tick ?? 0, clock: world.clock || 0,
       cells: world.cells.map(cellSnapshot),
-      owners: world.owners.map(ownerSummary),
+      owners: world.owners.map(ownerSnapshot),
       viruses: world.viruses.map(virus => ({ ...virus })),
       ejects: world.ejects.map(item => ({ ...item })),
       foodChanges, bonuses: world.bonuses || [], modeState: world.modeState, respawnTimers: world.respawnTimers || {},
@@ -774,11 +790,14 @@ export class GameRoom {
     this.room.closedAt ||= Date.now();
     this.room.closeReason ||= 'match-finished';
     const result = this.runtime.lifecycle.result;
-    await this.appendEvent('match-finished', { matchId: this.runtime.lifecycle.matchId, result }, true);
     // Deliver the exact terminal counters/mode state before the result screen
-    // reads the last replicated snapshot on each client.
-    this.broadcast(this.snapshotMessage());
+    // reads the last replicated snapshot on each client. 2.7: the result goes out before the checkpoint,
+    // and neither a snapshot nor a checkpoint error can keep «match-ended» from both players.
+    try { this.broadcast(this.snapshotMessage()); }
+    catch (error) { console.error(JSON.stringify({ event: 'final-snapshot-error', message: String(error?.message || error) })); }
     this.broadcast({ type: 'match-ended', matchId: this.runtime.lifecycle.matchId, result });
+    try { await this.appendEvent('match-finished', { matchId: this.runtime.lifecycle.matchId, result }, true); }
+    catch (error) { console.error(JSON.stringify({ event: 'checkpoint-error', at: 'finish', message: String(error?.message || error) })); }
     await this.persistResult();
   }
 

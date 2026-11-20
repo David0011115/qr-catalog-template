@@ -61,7 +61,9 @@ function targetReference(target, cellIds, decoyIndexes) {
   if (target.id !== undefined && cellIds.has(String(target.id))) return { kind: 'cell', id: String(target.id) };
   const index = decoyIndexes.get(target);
   if (index !== undefined) return { kind: 'decoy', index };
-  throw new TypeError('owner target must reference a saved cell or decoy');
+  // 2.7: a target that was eaten or merged since the last think is stale, not corrupt — save it as «no target»
+  // (the owner simply picks a new one). Throwing here used to break every checkpoint, the pause and the match end.
+  return null;
 }
 
 export function serializeWorldState(world) {

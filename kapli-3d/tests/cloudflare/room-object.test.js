@@ -569,3 +569,65 @@ test('reconnect alarm is moved to the nearest remaining deadline and cleared aft
 
   assert.deepEqual(calls, [['set', 5000], ['delete']]);
 });
+
+// ---- 2.7: a player who leaves through «Выход» ends the match for the other one too ----
+async function liveRoom(mode, ticks) {
+  const now = Date.now();
+  const roomObject = Object.create(GameRoom.prototype);
+  roomObject.ready = Promise.resolve();
+  roomObject.room = createRoomState({ roomId: 'room-live', code: 'ABCDE', hostId: 'host-user', now });
+  roomObject.room.mode = mode; roomObject.room.difficultyIndex = 2;
+  joinRoom(roomObject.room, 'guest-user', now + 1);
+  setPlayerReady(roomObject.room, 'host-user', true, now + 2);
+  setPlayerReady(roomObject.room, 'guest-user', true, now + 3);
+  roomObject.room.countdownEndsAt = now - 1;
+  roomObject.seed = null; roomObject.env = {};
+  roomObject.ctx = { storage: { setAlarm: async () => {}, deleteAlarm: async () => {} }, getWebSockets: () => [] };
+  const messages = [];
+  roomObject.appendEvent = async () => {};
+  roomObject.broadcast = message => messages.push(message);
+  roomObject.startLoop = () => {}; roomObject.stopLoop = () => {};
+  roomObject.persistResult = async () => {};
+  await roomObject.alarm();
+  for (let i = 0; i < ticks; i++) roomObject.runtime.step();
+  messages.length = 0;
+  return { roomObject, messages };
+}
+
+for (const mode of ['territory', 'duoback']) {
+  test(`2.7: «Выход» in ${mode} sends the final snapshot and «match-ended» to both players`, async () => {
+    const { roomObject, messages } = await liveRoom(mode, 90);
+    const response = await roomObject.finishPlayer('guest-user');
+    assert.equal(response.status, 200);
+    assert.deepEqual(messages.map(message => message.type), ['snapshot', 'match-ended']);
+    assert.equal(roomObject.room.status, 'closed');
+  });
+
+  test(`2.7: a full ${mode} checkpoint never fails during a long match (stale targets, wave transitions)`, async () => {
+    const { roomObject } = await liveRoom(mode, 0);
+    for (let i = 0; i < 1800; i++) {
+      roomObject.runtime.step();
+      if (i % 10 === 0) assert.doesNotThrow(() => JSON.stringify(roomObject.exportPayload()), `tick ${i}`);
+    }
+  });
+}
+
+test('2.7: the other player hears about a pause and the end even when the checkpoint write fails', async () => {
+  const { roomObject, messages } = await liveRoom('territory', 30);
+  roomObject.appendEvent = async () => { throw new Error('disk full'); };
+  await roomObject.pauseForDisconnect('guest-user');
+  assert.equal(messages.at(-1).type, 'match-paused');
+  messages.length = 0;
+  await roomObject.finishPlayer('host-user');
+  assert.ok(messages.some(message => message.type === 'match-ended'));
+});
+
+test('2.7: snapshots keep bot and boss constants out after world-init and round coordinates', async () => {
+  const { roomObject } = await liveRoom('territory', 30);
+  const snapshot = roomObject.snapshotMessage();
+  const bot = snapshot.owners.find(owner => owner.kind === 'bot');
+  const human = snapshot.owners.find(owner => owner.isPlayer);
+  assert.equal(bot.upgrades, undefined); assert.equal(bot.build, undefined);
+  assert.ok(human.upgrades && Array.isArray(human.build));
+  for (const cell of snapshot.cells) assert.equal(cell.x, Math.round(cell.x * 100) / 100);
+});

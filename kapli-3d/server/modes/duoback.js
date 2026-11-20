@@ -307,7 +307,7 @@ export function validateDuobackStateSnapshot(snapshot) {
 
 export function serializeDuobackState(state) {
   const snapshot = {
-    difficultyIndex: state.difficultyIndex, wave: state.wave, phase: state.phase, breakRemaining: state.breakRemaining,
+    difficultyIndex: state.difficultyIndex, wave: state.wave, phase: state.phase, breakRemaining: Math.max(0, state.breakRemaining),   // 2.7: it dips below 0 on the tick a wave starts
     team: { ...state.team }, shared: { ...state.shared }, offers: structuredClone(state.offers), picked: { ...state.picked },
     special: state.special ? { ...state.special, chunks: state.special.chunks.map(c => ({ ...c })), split: state.special.split ? [...state.special.split] : null } : null,
     regular: state.regular.map(b => ({ ...b })), meteors: state.meteors.map(m => ({ ...m })), finished: state.finished,

@@ -66,6 +66,21 @@
     return data;
   }
 
+  // 2.7: is the game server there? 'unknown' while checking, 'ok', or 'down' (no answer, an error, or this site not allowed)
+  let health = 'unknown', healthAt = 0;
+  async function checkHealth(force = false) {
+    if (!force && health !== 'unknown' && Date.now() - healthAt < 30000) return health;
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = setTimeout(() => ctl?.abort(), 6000);
+    try {
+      const response = await fetch(apiBase + '/health', { cache: 'no-store', signal: ctl?.signal });
+      health = response.ok ? 'ok' : 'down';
+    } catch { health = 'down'; }
+    finally { clearTimeout(timer); healthAt = Date.now(); }
+    return health;
+  }
+  function serverDown() { health = 'down'; healthAt = Date.now(); if (!room) render(); }
+
   function savedRoom() {
     try {
       const value = JSON.parse(localStorage.getItem(ROOM_STORAGE_KEY) || 'null');
@@ -111,6 +126,11 @@
             ${diffs[cur].about ? `<p class="hint srv-about" id="serverDiffAbout">${esc(diffs[cur].about)}</p>` : ''}
             <input type="hidden" id="serverDifficulty" value="${cur}">
           </div>` : ''}
+        ${health === 'down' ? `<div class="srv-down" role="status"><b>Сервер игры сейчас не отвечает</b>
+          <span>Можно сыграть напрямую между телефонами — такой матч не попадёт в рейтинг. Или попробуй позже.</span>
+          <button id="serverDirect" type="button" class="btn ghost">👥 Играть напрямую · без рейтинга</button>
+          <button id="serverRetry" type="button" class="link-btn">Проверить сервер ещё раз</button></div>`
+          : health === 'unknown' ? '<p class="hint srv-check">Проверяю сервер игры…</p>' : ''}
         <button id="serverCreate" type="button" class="btn">Создать комнату</button>
         <div class="duo-join">
           <input id="serverRoomCode" maxlength="5" inputmode="latin" autocapitalize="characters" autocomplete="off" placeholder="Код" aria-label="Код комнаты">
@@ -552,6 +572,12 @@
     lastClock = 0;
     lastMatchId = null;
     showLobbyCard();
+    checkHealth().then(() => { if (activeMode === mode && !room) render(); });
+  }
+  // a request that never reached the server (no network, server down, site not allowed) offers the direct match
+  function networkGuard(error) {
+    if (error instanceof TypeError || /fetch|network|Failed/i.test(error?.message || '')) { serverDown(); throw new Error('Сервер игры не отвечает. Можно сыграть напрямую — без рейтинга.'); }
+    throw error;
   }
 
   const body = $('duoBody');
@@ -572,8 +598,10 @@
 
     const id = button.id;
     const actions = {
-      serverCreate: () => createRoom(),
-      serverJoin: () => joinRoom($('serverRoomCode')?.value || ''),
+      serverCreate: () => createRoom().catch(networkGuard),
+      serverJoin: () => joinRoom($('serverRoomCode')?.value || '').catch(networkGuard),
+      serverDirect: () => { const mode = activeMode; activeMode = null; window.openDuoLobbyDirect?.(mode); },
+      serverRetry: () => { health = 'unknown'; render(); return checkHealth(true).then(render); },
       serverReady: () => readyToggle(),
       serverLeave: () => leaveRoom(true),
       serverReconnect: () => reconnectSavedRoom(),

@@ -219,6 +219,10 @@
 .srv-rd.on { color: #0b0820; background: linear-gradient(90deg, #3dffa2, #22e6ff); border-color: transparent; }
 .srv-diff { margin: 0; text-align: center; font-size: .86rem; color: #dcd6ff; }
 .srv-diff b { color: #3dffa2; } .srv-diff small { display: block; margin-top: 2px; font-size: .74rem; color: #a59ccc; }
+.srv-down { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 210, 122, .08); border: 1px solid rgba(255, 210, 122, .45); text-align: center; }
+.srv-down b { color: #ffd27a; } .srv-down span { font-size: .8rem; color: #dcd6ff; } .srv-down .btn { margin: 2px 0 0; }
+.srv-check { margin: 0; text-align: center; }
+.duo-badge.direct { background: linear-gradient(90deg, #ffb02e, #ff4fd8); }
 @media (max-height: 500px) { .srv-code { font-size: 1.9rem; padding: 8px 8px 8px calc(8px + .22em); } .srv-pl { padding: 6px 12px; } }
 .srv-count { text-align: center; font: 400 3rem/1 var(--display); color: #3dffa2; text-shadow: 0 0 22px rgba(61, 255, 162, .6); }
 @media (prefers-reduced-motion: reduce) { .srv-status.st-waiting::after { animation: none; } }

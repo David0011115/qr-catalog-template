@@ -195,12 +195,12 @@
   bots[7].partner = bots[8]; bots[8].partner = bots[7];
   // bosses: up to two on the arena at once, never two of the same kind
   const BOSS_TYPES = {
-    giant:    { name: 'Громила',   color: '#c2416b', speed: .78, life: 90, parts: 1, coins: 20, xp: 30, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(220, p * 1.4)), about: 'огромный и медленный' },
-    hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
-    queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
-    frost:    { name: 'Морозец',   color: '#9ff0ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'ледяное облако вокруг замедляет всех, кто подплыл близко' },   // 2.5: replaces «Телепорт»
-    chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
-    splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
+    giant:    { name: 'Громила',   color: '#c2416b', speed: .78, life: 90, parts: 1, coins: 20, xp: 30, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(220, p * 1.4)), about: 'огромный и медленный' },
+    hunter:   { name: 'Шустрик',   color: '#ff6b3d', speed: 1.2, life: 70, parts: 1, coins: 15, xp: 25, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(90, p * 1.5)),  about: 'быстрый, охотится на тебя и делает рывки' },
+    queen:    { name: 'Матка роя', color: '#9b5de5', speed: .7,  life: 90, parts: 1, coins: 15, xp: 25, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(180, p * 1.35)), about: 'выпускает прислужников, при гибели рассыпает еду' },
+    frost:    { name: 'Морозец',   color: '#9ff0ff', speed: .9,  life: 80, parts: 1, coins: 20, xp: 30, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'ледяное облако вокруг замедляет всех, кто подплыл близко' },   // 2.5: replaces «Телепорт»
+    chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
+    splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : BOSS_MASS_CAP, Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
   };
   // two of each kind, so survival can field duplicates in later waves
   let BOSS_TYPES_EXTRA = {};
@@ -374,7 +374,7 @@
       v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1) * (DuoM.speedK ? DuoM.speedK(c) : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
     }
     else if (o.freezeT > 0) v *= .05;
-    if (o.hcPack) v *= ModeX.hcPackSpeedK(o);   // 2.7 «Хардкор»: a pack hunts 15% faster
+    if (o.hcPack) v *= ModeX.hcPackSpeedK(o);   // 2.7: a pack hunts 15% faster («Классика»: 10%)
     else if (o.slowT > 0) v *= ABIL_CFG.slowFactor * (o.kind === 'boss' ? bossInfo(o).speed : 1);
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;

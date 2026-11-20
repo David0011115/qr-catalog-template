@@ -29,18 +29,19 @@
       if (kind === 'gap') { N.gaps++; N.gapMax = Math.max(N.gapMax, Math.round(value)); if (value > 250) N.gap250++; if (value > 1000) N.gap1000++; }
       if (kind === 'ping') { N.pings++; N.pingSum += value; N.pingMax = Math.max(N.pingMax, Math.round(value)); if (N.ping.length < 60) N.ping.push([now(), Math.round(value)]); }
     }
-    // every frame of a round: samples every 5 s, and episodes when the speed falls under 40% (with what caused it)
+    // every frame of a round: samples every 5 s, and slowdown episodes — only while a real cause is on (stun, slow, ice, curse);
+    // the plain speed of a big drop is not a slowdown (2.7: it filled the journal with «масса/другое»)
     function tick(dt, speedPct, mass, causes) {
       if (!cur) return;
       sampleT -= dt;
       if (sampleT <= 0 && cur.samples.length < LIM.samples) { sampleT = 5; cur.samples.push([now(), Math.round(mass), Math.round(speedPct)]); }
-      if (speedPct < 40 && mass > 0) {
+      if (causes.length && mass > 0) {
         if (!slowEp) slowEp = { t: now(), min: speedPct, causes: new Set(causes), mass: Math.round(mass) };
         slowEp.min = Math.min(slowEp.min, speedPct); causes.forEach(c => slowEp.causes.add(c));
       } else if (slowEp) closeSlow();
     }
     function closeSlow() {
-      if (slowEp && cur && cur.slow.length < LIM.slow) cur.slow.push({ t: slowEp.t, sec: Math.max(0, now() - slowEp.t), min: Math.round(slowEp.min), why: [...slowEp.causes].join('+') || 'масса/другое', mass: slowEp.mass });
+      if (slowEp && cur && cur.slow.length < LIM.slow) cur.slow.push({ t: slowEp.t, sec: Math.max(0, now() - slowEp.t), min: Math.round(slowEp.min), why: [...slowEp.causes].join('+'), mass: slowEp.mass });
       slowEp = null;
     }
     function end(summary) {
@@ -60,6 +61,7 @@
   const MAX_MASS = 15000;   // fallback cap for non-player cell types; player cells have no mass cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
   const BOSS_MASS_CAP = 12000; // ordinary bosses outside Hardcore; survival and raid have separate caps
+  let CL_BOSS_MASS_CAP = 12000; // 2.7 «Классика»: from 10 000 follows the player (main part or the smaller half) ×1.2
   let HC_BOSS_MASS_CAP = 23000; // Hardcore only: total mass cap for each ordinary boss; after 20 000 it follows the player's smaller half (ModeX)
   const PLAYER_SPEED_MASS_CAP = 20000, PLAYER_VISUAL_MASS_CAP = 20000;
   const MODES = {
@@ -602,6 +604,7 @@
     tt('tt_invincible', 'Непобедимый', 'legendary', '#ffd23f', '#ffffff', '★', { legend: 'wins2' }),
     tt('tt_millionaire', 'Миллионер', 'legendary', '#ffd23f', '#3dffa2', '★', { legend: 'coins2' }),
     // achievement lines, step III
+    tt('tt_twinpeak', 'Две вершины', 'legendary', '#3dffa2', '#ffd23f', '▲▲', { src: '«Классика»: после деления вырасти обе половины до 50 000.' }),
     tt('tt_summit', 'Вершина', 'legendary', '#ffd23f', '#22e6ff', '▲', { src: '«Классика»: возьми последнюю веху — 30 000 массы.' }),
     tt('tt_shoulder', 'Надёжное плечо', 'epic', '#3dffa2', '#22e6ff', '❂', { src: '«Спина к спине»: 100 очков помощи напарнику за все забеги.' }),
     fr('fr_shoulder', 'Плечом к плечу', 'legendary', '#3dffa2', '#22e6ff', { src: '«Спина к спине»: 300 очков помощи напарнику за все забеги.' }),

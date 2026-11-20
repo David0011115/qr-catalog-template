@@ -2,7 +2,7 @@
   const bonusCore = new THREE.OctahedronGeometry(0.7);
   const bonusRing = new THREE.TorusGeometry(1.1, 0.08, 8, 32);
   // the mass limit of an ordinary boss (per drop) in this mode; 2.7: «Спина к спине» sets its own one that follows the pair (it used to stop at 12 000)
-  const bossMassCap = () => mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : (DuoM.bossCap && DuoM.bossCap()) || BOSS_MASS_CAP;
+  const bossMassCap = () => mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : (DuoM.bossCap && DuoM.bossCap()) || BOSS_MASS_CAP;
   function spawnBonus() {
     if (mode === 'hardcore') return;
     if (bonuses.length >= MAX_BONUS) return;
@@ -113,9 +113,9 @@
   const botSkill = () => BOT_SKILL.normal;
   const botLead = o => botSkill().lead * (o.persona === 'hunter' || o.star ? 1.5 : 1);
   function think(o) {
-    const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.5 + .2), flee: p0.flee * .6 } : p0;
+    const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.5 + .2), flee: p0.flee * .6 } : ModeX.clAngry() && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.3 + .1), flee: p0.flee * .75 } : p0;   // «Классика» after 20 000: bolder bots
     const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1) * (o.kind === 'bot' || o.kind === 'boss' ? ModeX.hcSenseK() : 1);
-    if (o.hcPack && mode === 'hardcore') { const p = ModeX.hcPackTarget(o); if (p) { o.target = p.t; o.tx = p.x; o.tz = p.z; return; } }
+    if (o.hcPack && ModeX.splitMode()) { const p = ModeX.hcPackTarget(o); if (p) { o.target = p.t; o.tx = p.x; o.tz = p.z; return; } }
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
       // 2.7: bosses go for the holder wherever it is; a bot bigger than the holder hunts it across the whole arena;
       // a smaller bot goes for any piece of the holder it can swallow (after a split) within a wide range
@@ -405,7 +405,7 @@
       const ra = cellR(a), rb = cellR(b);
       let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 0.001;
       const mergeCap = o.isPlayer ? Infinity : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? bossMassCap() : MAX_MASS;
-      const hcDifferentHalves = mode === 'hardcore' && o.isPlayer && a.hcHalf !== undefined && b.hcHalf !== undefined && a.hcHalf !== b.hcHalf && !ModeX.hcFusing();
+      const hcDifferentHalves = ModeX.splitMode() && o.isPlayer && a.hcHalf !== undefined && b.hcHalf !== undefined && a.hcHalf !== b.hcHalf && !ModeX.hcFusing();
       if (hcDifferentHalves || a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > mergeCap) {   // parts that would exceed this owner's cap stay apart
         if (d < ra + rb) {
           const push = (ra + rb - d) / 2 * Math.min(1, dt * 10); dx /= d; dz /= d;
@@ -521,7 +521,7 @@
             finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
           }
         } }
-        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && (b.owner.hcPack || total(player) >= 50000) ? .5 : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && (b.owner.hcPack || total(player) >= 50000) ? .5 : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
         const bossCap = bossMassCap();
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
@@ -568,12 +568,12 @@
       const cap = c.owner.kind === 'bot' ? ModeX.botCap(c.owner)
         : c.owner.kind === 'boss' ? bossMassCap()
         : MAX_MASS;
-      if (!c.owner.isPlayer && c.mass > cap && !(mode === 'hardcore' && c.owner.kind === 'boss')) c.mass = cap;
+      if (!c.owner.isPlayer && c.mass > cap && !((mode === 'hardcore' || mode === 'classic') && c.owner.kind === 'boss')) c.mass = cap;
     }
     // The regular bot limit is shared by all of its parts, not repeated per part.
-    if (mode === 'hardcore') for (const o of bossOwners) {
-      const mass = total(o);
-      if (mass > HC_BOSS_MASS_CAP) { const k = Math.max(HC_BOSS_MASS_CAP / mass, 1 - .01 * dt); for (const c of o.cells) c.mass *= k; }   // 2.7: melts down 1%/s, a comeback stays possible
+    if (mode === 'hardcore' || mode === 'classic') for (const o of bossOwners) {
+      const mass = total(o), cap = mode === 'classic' ? CL_BOSS_MASS_CAP : HC_BOSS_MASS_CAP;
+      if (mass > cap) { const k = Math.max(cap / mass, 1 - .01 * dt); for (const c of o.cells) c.mass *= k; }   // 2.7: melts down 1%/s, a comeback stays possible
     }
     for (const o of bots) {
       const mass = total(o), bcap = ModeX.botCap(o);

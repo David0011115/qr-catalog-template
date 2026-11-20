@@ -7,6 +7,7 @@ export const TERRITORY_RULES = Object.freeze({
   eatenJump: 0.06,
   borderLimit: 0.9,
   foreignSpeed: 0.85,
+  playerSpeed: 1.12,           // 2.7: players 12% faster here (owner: «увеличь скорость игрокам»)
   durationSeconds: 240,
   overtimeSeconds: 30,
   earlyWinShare: 0.9,          // 2.7: was 0.8
@@ -80,7 +81,7 @@ export function territoryBlocksEat(state, attacker, target) {
 
 export function territorySpeedMultiplier(state, owner, x) {
   const home = territoryHomeSide(owner);
-  return home && territorySideAt(state, x) !== home ? TERRITORY_RULES.foreignSpeed : 1;
+  return (owner?.isPlayer ? TERRITORY_RULES.playerSpeed : 1) * (home && territorySideAt(state, x) !== home ? TERRITORY_RULES.foreignSpeed : 1);
 }
 
 export function territoryPlayerWasEaten(state, victimRole) {

@@ -10,6 +10,7 @@ import {
 } from '../../match/runtime.js';
 import { parseClientMessage, normalizeRoomCode, parseMode, sanitizeNickname, consumeSocketMessageBudget } from '../protocol.js';
 import { persistMatchResult } from '../../supabase/results.js';
+const SOCKET_HARD_LIMIT_PER_SECOND = 240;   // 2.7: only a real flood closes the socket
 import { territoryLeftShare } from '../../modes/territory.js';
 
 const TICK_RATE = 30;
@@ -553,8 +554,9 @@ export class GameRoom {
     const budget = consumeSocketMessageBudget(
       this.messageRates, userId, Date.now(), parsed.ok ? parsed.command.type : 'invalid',
     );
+    if (!budget.ok && budget.messages <= SOCKET_HARD_LIMIT_PER_SECOND) return;   // 2.7: a phone flushes queued messages in a burst after a network stall — drop the extra ones, keep the player
     if (!budget.ok) {
-      try { socket.close(1008, budget.reason); } catch {}
+      try { socket.close(1008, `${budget.reason} m${budget.messages} i${budget.inputs} ${parsed.ok ? parsed.command.type : 'invalid'}`.slice(0, 120)); } catch {}   // 2.7: the counts go to the test journal
       return;
     }
     if (!parsed.ok) {

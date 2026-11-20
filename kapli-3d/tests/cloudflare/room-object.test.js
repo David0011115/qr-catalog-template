@@ -292,14 +292,21 @@ test('room WebSocket handler accepts movement in memory without persisting or ac
   };
 
   const now = Date.now();
-  const sent = SOCKET_INPUT_LIMIT_PER_SECOND + 1;   // one over the per-second movement budget
-  for (let seq = 1; seq <= sent; seq++) {
+  // 2.7: a burst just over the budget (a phone flushing after a stall) is dropped quietly; only a real flood closes the socket
+  const burst = SOCKET_INPUT_LIMIT_PER_SECOND + 1;
+  for (let seq = 1; seq <= burst; seq++) {
+    await roomObject.webSocketMessage(socket, JSON.stringify({ type: 'input', seq, x: 1, z: 0 }));
+  }
+  assert.equal(socket.closed, undefined);
+  const sent = 241;
+  for (let seq = burst + 1; seq <= sent; seq++) {
     await roomObject.webSocketMessage(socket, JSON.stringify({ type: 'input', seq, x: 1, z: 0 }));
   }
 
   assert.equal(events.length, 0);
   assert.equal(messages.length, 0);
-  assert.deepEqual(socket.closed, { code: 1008, reason: 'input-rate-limit' });
+  assert.equal(socket.closed.code, 1008);
+  assert.match(socket.closed.reason, /rate-limit/);   // 2.7: the reason carries the counts for the test journal
   assert.equal(roomObject.messageRates.get('player-1').inputs, sent);
   assert.ok(now <= Date.now());
 });

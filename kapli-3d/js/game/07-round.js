@@ -646,9 +646,10 @@
       if (rank === 1 && !stats.leader) { stats.leader = 1; toast('Ты лидер арены!'); }
     }
     $('leaders').innerHTML = ranked.slice(0, boardOpen ? 6 : 3).map((o, i) => {
-      const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
-      const fr = o.isPlayer ? save.frame : o.frame, lvl = o.isPlayer ? playerLevel() : o.lvl;
-      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.isPlayer ? meName() : o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
+      const me = o === player;   // 2.7: online the other player is «isPlayer» too — it showed your nickname and frame
+      const tag = me ? '' : o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
+      const fr = me ? save.frame : o.frame, lvl = me ? playerLevel() : o.lvl;
+      return `<li class="${me ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${me ? meName() : o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
     }).join('') + (rank > (boardOpen ? 6 : 3) ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>${meName()}</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '') +
       (ranked.length > 3 ? `<li class="bd-more"><button type="button" id="boardMore" aria-expanded="${boardOpen}">${boardOpen ? '▴ свернуть' : `▾ ещё ${Math.min(ranked.length, 6) - 3}`}</button></li>` : '');
     // ---- in-battle HUD: one short mode line, a separate mode timer with a clock, and round icon badges with a countdown ring ----

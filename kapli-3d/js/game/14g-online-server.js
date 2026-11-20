@@ -635,18 +635,32 @@
     if (!code) return;
     try { const u = new URL(location.href); u.searchParams.delete('room'); u.searchParams.delete('m'); window.history.replaceState(null, '', u.toString()); } catch {}   // window.: the game has its own «history» (the mass graph)
     if (!MODES[mode] || !/^[A-HJ-NP-Z2-9]{5}$/.test(code)) { setTimeout(() => toast('Ссылка на комнату устарела или неверная'), 2500); return; }
-    let tries = 0;
+    // 2.7 after the owner's test: it waited behind start-up windows for up to a minute and gave up at once without a session.
+    // Now it waits at most 4 s for windows, then opens the lobby anyway; without a session it keeps trying every 2 s
+    // (up to 5 minutes) and joins as soon as the player has signed in.
+    let tries = 0, authTries = 0, hinted = false;
+    const fill = () => { const b = $('serverRoomCode'); if (b && !b.value) b.value = code; };
+    const attempt = () => {
+      if (activeMode !== mode || room) return;   // the player left the lobby or is in a room already
+      sessionInfo().then(() => joinRoom(code)).catch(error => {
+        if (/войди в аккаунт/i.test(error?.message || '') && authTries++ < 150) {
+          if (!hinted) { hinted = true; toast(`Войди в аккаунт игры — и сразу попадёшь в комнату ${code}`); }
+          fill(); setTimeout(attempt, 2000); return;
+        }
+        try { networkGuard(error); } catch (e) { toast(e?.message || 'Не удалось войти в комнату'); }
+        fill();
+      });
+    };
     const go = () => {
       if (typeof running !== 'undefined' && running) return;   // a round is on: the link is dropped
       const blocked = document.querySelectorAll('.modal:not([hidden])').length || ($('tour') && !$('tour').hidden);
-      if (blocked && tries++ < 40) { setTimeout(go, 1500); return; }
+      if (blocked && tries++ < 4) { setTimeout(go, 1000); return; }
       try { save.mode = mode; persist(); } catch {}
-      openLobby(mode);
-      const box = $('serverRoomCode'); if (box) box.value = code;
+      openLobby(mode); fill();
       toast(`Входим в комнату ${code}…`);
-      joinRoom(code).catch(error => { try { networkGuard(error); } catch (e) { toast(e?.message || 'Не удалось войти в комнату'); } const b = $('serverRoomCode'); if (b) b.value = code; });
+      attempt();
     };
-    setTimeout(go, 2500);
+    setTimeout(go, 1500);
   }
   joinFromLink();
 

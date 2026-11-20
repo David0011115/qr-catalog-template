@@ -601,3 +601,33 @@
 .tl-row b { font-size: .82rem; } .tl-row small { font-size: .7rem; color: #a59ccc; } .tl-row i { font-style: normal; font-size: .7rem; color: #ffd27a; }
 .tl-area { width: 100%; min-height: 160px; font: .7rem/1.3 monospace; }
 @media (max-width: 520px) { .tl-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---- 2.7 shop «Улучшения»: tiles under group titles instead of drawers ---- */
+.up-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); align-items: start; gap: 10px 12px; }
+.up-h { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; font: 800 .78rem/1 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.up-h .cnt { font-weight: 600; letter-spacing: 0; text-transform: none; }
+.up-h .dr-ic { margin: 0; }
+.up-tiles { display: grid; gap: 6px; }
+.up-tiles .up { margin: 0; align-self: stretch; }
+
+/* ---- 2.7 build slots: one compact row — the icon on the left, the slot name and the picker on the right, ✕ in the corner ---- */
+.b-slot { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "ico lbl" "ico pick" "look look"; justify-items: stretch; align-items: center; gap: 3px 9px; padding: 7px 9px; }
+.b-slot > small { grid-area: lbl; text-align: left; padding-right: 26px; }
+.b-slot > .b-ico { grid-area: ico; font-size: 1.45rem; width: 30px; text-align: center; }
+.b-slot > .build-picker { grid-area: pick; }
+.b-slot > select { grid-area: look; }
+.b-slot .buy.b-clear { position: absolute; top: 5px; right: 6px; width: 24px; min-width: 0; height: 22px; padding: 0; font-size: .72rem; line-height: 22px; border-radius: 7px; }
+.b-slot .build-picker-trigger { min-height: 34px; padding: 5px 8px; }
+
+/* ---- 2.7 pets «Где получить»: a card per source, pets as small tiles ---- */
+.pw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 8px; align-items: start; }
+.pw-sec { padding: 8px 10px 10px; border-radius: 14px; background: var(--row); border: 1px solid var(--line); }
+.pw-sec h3 { margin: 0 0 6px; font-size: .78rem; text-transform: none; letter-spacing: 0; line-height: 1.25; color: var(--fg); display: flex; justify-content: space-between; gap: 6px; }
+.pw-sec h3 small { color: var(--muted); font-weight: 600; }
+.pw-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.pw-pet { display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: 10px; background: rgba(10, 6, 30, .45); border: 1px solid transparent; text-align: center; cursor: pointer; min-width: 0; }
+.pw-pet:hover, .pw-pet:focus-visible { border-color: #22e6ff; outline: none; }
+.pw-pet .ico { width: 40px; height: 40px; } .pw-pet .ico img { width: 100%; height: 100%; }
+.pw-pet b { font-size: .72rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pw-pet small { font-size: .62rem; color: var(--muted); line-height: 1.2; }
+.pw-pet.own small { color: var(--prey); }

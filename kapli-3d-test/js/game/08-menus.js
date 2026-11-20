@@ -19,7 +19,7 @@
   const TUT_COINS = 500;
   const MODE_SHORT = {
     classic: 'До поражения: вехи массы до 30 000 с наградой', timed: '5 минут, случайное правило раунда', survival: 'Волна боссов каждые 15 секунд, связки боссов',
-    crown: 'Держи корону как можно дольше — на тебя охотятся все', rbuild: '3 случайные способности, опыт ×1,2', hardcore: 'Без бонусов и шипов, боты злее, монеты ×1,6',
+    crown: 'Держи корону как можно дольше — на тебя охотятся все', rbuild: '3 случайные способности, опыт ×1,2', hardcore: 'Без бонусов, шипы до 10 000; на 50 000 — две половины, проклятия, монеты ×1,6',
     raid: 'Пара колоссов недели, 3 попытки в день', royale: 'Зона сужается, побеждает последний', territory: 'Двигай границу поля к сопернику, 4 минуты',
     duoback: 'Вдвоём против 50 волн боссов',
   };
@@ -371,9 +371,20 @@
   // every entry is marked by scale: patch (small fixes), update (content and balance), season (big systems)
   const NEWS_KIND = { patch: ['k-patch', '🟢 Патч'], update: ['k-update', '🔵 Обновление'], season: ['k-season', '⭐ Сезон'] };
   const newsKind = n => { const k = NEWS_KIND[n.kind || 'update']; return `<i class="news-kind ${k[0]}">${k[1]}</i>`; };
+  // 2.7: compact — one line per entry (type mark · version · title · date), the first 6 changes shown, the rest under «ещё N»
+  const NEWS_SHOW = 6;
   function newsHtml(list) {
-    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.title}<small>${newsKind(n)}${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul${n.kinds ? ' class="news-kinds"' : ''}>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${newsGift(n) ? `<p class="news-gift">Подарок за обновление: +${newsGift(n)} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}${n.refundKey && save[n.refundKey] ? `<p class="news-gift">Тебе возвращено: +${save[n.refundKey]} ◆</p>` : ''}${n.id === 170 && save.mig170 && save.mig170.replaced ? `<p class="news-gift">Обновлён гардероб: заменено предметов — ${save.mig170.replaced}${save.mig170.coins ? `, за повторы начислено +${save.mig170.coins} ◆` : ''}.</p>` : ''}</details>`).join('');
+    const legend = '<p class="news-legend"><span><i class="nk k-patch"></i>патч</span><span><i class="nk k-update"></i>обновление</span><span><i class="nk k-season"></i>большое обновление</span></p>';
+    const ul = (items, kinds) => `<ul${kinds ? ' class="news-kinds"' : ''}>${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+    return legend + list.map((n, k) => {
+      const kc = NEWS_KIND[n.kind || 'update'][0], head = n.items.slice(0, NEWS_SHOW), rest = n.items.slice(NEWS_SHOW);
+      return `<details class="news-item"${k === 0 ? ' open' : ''}><summary><i class="nk ${kc}" title="${NEWS_KIND[n.kind || 'update'][1]}"></i><b class="nv">${n.ver}</b><span class="nt">${n.title}</span><small>${n.date}</small></summary>` +
+        (n.lead ? `<p>${n.lead}</p>` : '') + ul(head, n.kinds) +
+        (rest.length ? `<details class="news-more"><summary>ещё ${rest.length} ${(m => m > 10 && m < 20 ? 'изменений' : m % 10 === 1 ? 'изменение' : m % 10 >= 2 && m % 10 <= 4 ? 'изменения' : 'изменений')(rest.length % 100)}</summary>${ul(rest, n.kinds)}</details>` : '') +
+        (newsGift(n) ? `<p class="news-gift">🎁 Подарок: ${newsGift(n)} ◆</p>` : '') + '</details>';
+    }).join('');
   }
+
   // gift: given once; giftBefore — only to players who had not seen that older announcement yet
   const newsGift = n => ((save.newsGot || {})[n.id]) || (n.gift && n.id > (save.newsSeen || 0) && (!n.giftBefore || (save.newsSeen || 0) < n.giftBefore) ? n.gift : 0);
   // 1.6.2–1.6.4 were merged into one entry: whoever already read them does not get it again
@@ -477,7 +488,7 @@
       sec('Серия', `<ul>${li('3 раунда подряд с массой 3 000+ — титул «Несгибаемый»')}${li('5 раундов подряд — рамка «Закалка»')}</ul>`);
     if (id === 'raid') return sec('Рейд недели', `<ul>${li('пара колоссов-близнецов, общее здоровье 100 000')}${li('пока близнецы рядом, их связь гасит половину урона — разводи их')}${li('3 попытки в день по 4 минуты, урон копится')}${li('за победу: 1 500 ◆, эпический сундук, награды рейда за 1-ю, 3-ю и 5-ю победу')}</ul>`);
     if (id === 'royale') return sec('Правила', `<ul>${li('зона сужается ступенями и смещается — следующий круг виден заранее')}${li('в новом круге падают бонусы')}${li('боты не возрождаются, побеждает последний')}${li('только в лиге, в свой сезон')}</ul>`);
-    if (id === 'territory') return sec('Матч', `<ul>${li('4 минуты, вдвоём на двух телефонах')}${li('ешь ботов на своей половине — граница ползёт к сопернику')}${li('90% поля — досрочная победа, но не раньше 2:00')}${li('20 матчей — фон чата «Граница»')}</ul>`);
+    if (id === 'territory') return sec('Матч', `<ul>${li('4 минуты, вдвоём через сервер игры')}${li('ешь ботов на своей половине — граница ползёт к сопернику')}${li('90% поля — досрочная победа, но не раньше 2:00')}${li('20 матчей — фон чата «Граница»')}</ul>`);
     if (id === 'duoback') return sec('Забег', `<ul>${li('вместе против 50 волн боссов, три сложности')}${li('каждая 5-я волна — особый босс, 50-я — финал')}${li('перерывы с едой и усилениями')}</ul>`) +
       sec('Помощь напарнику', tbl([['ешь ботов, пока он ждёт возвращения', '+1 очко'], ['съешь босса, который гнался за ним', '+3 очка'], ['каждое очко', '+15 ◆ (× сложность)'], ['100 очков за все забеги', 'титул «Надёжное плечо»'], ['300 очков', 'рамка «Плечом к плечу»']]));
     return '';
@@ -1128,21 +1139,20 @@
             `<button class="buy ${sel ? 'sel' : ''}" id="pet-${pt.id}" data-pet="${pt.id}">${sel ? 'Убрать' : 'Взять'}</button></div>`; }).join(''))
           : '<p class="empty-note">Пока пусто: дойди до лиги «Платина» в любом сезоне.</p>');
     } else if (shopTab === 'pcat') {
-      const rows = [0, 1, 2, 3, 4, 5].map(k => save.season.id + k).map(id => {
-        const sd = seasonData(id), hk = sd.holiday;
-        return drawer('pc_' + id, `Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''} <small class="cnt">${sd.pets.filter(pt => save.pets.includes(pt.id)).length}/${sd.pets.length}</small>`, sd.pets.map((pt, i) => {
-          const own = save.pets.includes(pt.id), lg = lgView(i ? 5 : 3, hk);
-          return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex" style="color:${lg.color}">${lg.name}</span></span>` +
-            `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
-            `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : `лига «${lg.name}»`}</span></div>`;
-        }).join(''));
-      }).join('');
-      const cp = PETS.filter(pt => pt.chest || pt.lchest);
-      const chestRows = drawer('pc_chest', `Из сундуков и сундуков лиги <small class="cnt">${cp.filter(pt => save.pets.includes(pt.id)).length}/${cp.length}</small>`, cp.map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest || pt.lchest];
-        return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-r" style="color:${rc.color}">${rc.name}</span></span>` +
-          `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
-          `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join(''));
-      $('shop').innerHTML = rows + chestRows;
+      // 2.7: one card per source in a grid (seasons ahead, chests, the workshop, holidays, legends, the raid), pets as small tiles
+      const pwPet = (pt, note) => { const own = save.pets.includes(pt.id);
+        return `<div class="pw-pet${own ? ' own' : ''}" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span>` +
+          `<b>${pt.name}</b><small>${own ? '✓ есть' : note}</small></div>`; };
+      const sec = (title, pets, note, extra = '') => !pets.length ? '' : `<section class="pw-sec"><h3>${title} <small>${pets.filter(pt => save.pets.includes(pt.id)).length}/${pets.length}</small></h3>${extra}<div class="pw-list">${pets.map(pt => pwPet(pt, typeof note === 'function' ? note(pt) : note)).join('')}</div></section>`;
+      const seasons = [0, 1, 2, 3, 4, 5].map(k => save.season.id + k).map(id => { const sd = seasonData(id), hk = sd.holiday;
+        return sec(`📅 Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''}`, sd.pets, pt => `лига «${lgView(sd.pets.indexOf(pt) ? 5 : 3, hk).name}»`); }).join('');
+      const by = f => PETS.filter(f);
+      $('shop').innerHTML = '<div class="pw-grid">' + seasons +
+        sec('🎁 Из сундуков', by(pt => pt.chest || pt.lchest), pt => pt.lchest ? 'сундук лиги' : `сундук · ${RARITY[pt.chest].name.toLowerCase()}`) +
+        sec('🛠 Мастерская', by(pt => pt.craft), 'создаётся из осколков') +
+        sec('🎉 Праздники', by(pt => pt.holiday), 'в праздничный сезон') +
+        sec('👑 Легендарные', by(pt => pt.legend), 'легендарное достижение') +
+        sec('⚔ Босс-рейд', by(pt => pt.raid), '5 побед над боссом недели') + '</div>';
     } else if (shopTab === 'arena' || shopTab === 'warena') {
       const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.id !== 'default' && !save.arenas.includes(a.id) : a.id === 'default' || save.arenas.includes(a.id)).sort((x, y) => (x.price || 1e9) - (y.price || 1e9));
       $('shop').innerHTML = (list.length ? list.map(a => {
@@ -1218,7 +1228,7 @@
       if (lv < ARCHIVE_LVL) {
         $('shop').innerHTML = `<p class="empty-note">🔒 Архив сезонов откроется на ${ARCHIVE_LVL}-м уровне (сейчас ${lv}-й). В нём за монеты можно получить награды сезонов, которые ты пропустил.</p>`;
       } else if (!seasonStarted || seasonNow === 1) {
-        $('shop').innerHTML = `<p class="empty-note">Архив пока пуст: у тебя ещё не закончился ни один сезон. Здесь будут награды прошедших сезонов, которые ты не успел получить в лиге.</p>` + preview;
+        $('shop').innerHTML = `<p class="empty-note">Архив пока пуст: у тебя ещё не закончился ни один сезон. Здесь будут награды прошедших сезонов, которые ты не успел получить в лиге.</p>` + (nOffers.length ? preview : '');   // 2.7: an empty archive no longer also says «у тебя есть все награды»
       } else {
         const all = archiveOffers(), show = archiveShowcase(), days = Math.max(1, Math.ceil(((raidWeek() + 1) * 7 - 3) - Date.now() / 864e5));
         const left = archBuysLeft(), tok = save.archTok || 0;
@@ -1291,14 +1301,15 @@
     } else if (shopTab === 'mab') {
       $('shop').innerHTML = myAbilHtml();
     } else {
-      $('shop').innerHTML = CATS.map(([title, ids]) => drawer('up_' + title, `${title} <small class="cnt">${ids.map(id => `${save.up[id]}/${UPG.find(u => u.id === id).cost.length}`).join(' · ')}</small>`, ids.map(id => UPG.find(u => u.id === id)).map(u => {
+      // 2.7: every upgrade on screen at once — tiles under short group titles (they used to hide in four drawers)
+      $('shop').innerHTML = '<div class="up-grid">' + CATS.map(([title, ids]) => `<section class="up-sec"><h3 class="up-h">${drawerIcon(title)}${title} <small class="cnt">${ids.map(id => `${save.up[id]}/${UPG.find(u => u.id === id).cost.length}`).join(' · ')}</small></h3><div class="up-tiles">` + ids.map(id => UPG.find(u => u.id === id)).map(u => {
         const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
         const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
         const label = locked ? `С ур. ${u.lvl}` : l >= max ? 'Макс.' : `${price} ◆`;
         const dis = locked || l >= max || save.coins < price ? 'disabled' : '';
         return `<div class="up ${locked ? 'locked' : ''}"><span class="name">${u.name}</span><span class="desc">${u.desc}${u.info ? `<br><span class="now">Сейчас: ${u.info(l)}${l < max ? ` → дальше: ${u.info(l + 1)}` : ''}</span>` : ''}</span>
           <span class="pips">${pips}</span><button class="buy" id="buy-${u.id}" data-up="${u.id}" ${dis}>${label}</button></div>`;
-      }).join(''))).join('');
+      }).join('') + '</div></section>').join('') + '</div>';
     }
     const tName = (view.tabs.find(t => t[0] === shopTab) || [, view.title])[1];
     if (TAB_INFO[shopTab]) $('shop').insertAdjacentHTML('afterbegin', `<button class="tab-info-btn" id="tabInfoBtn" data-tabinfo="${shopTab}">ⓘ Информация · ${tName}</button>`);
@@ -1405,8 +1416,8 @@
     const cur = keys.includes(catSel[prefix]) ? catSel[prefix] : keys[0];
     return catChips(prefix, keys.map(k => [k, list.filter(x => keyOf(x) === k).length]), cur) + render(list.filter(x => keyOf(x) === cur));
   }
-  const PET_SRC = pt => pt.craft ? 'Мастерская' : pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
-  const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные', 'Мастерская'];
+  const PET_SRC = pt => pt.raid ? 'Рейд' : pt.craft ? 'Мастерская' : pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
+  const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные', 'Мастерская', 'Рейд'];
   function upRowHtml(u, lv) {
     const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
     const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
@@ -1439,7 +1450,7 @@
       return `<div class="b-slot" style="--ac:${a ? a.color : 'var(--line)'}"><small>Слот ${i + 1} · ${ABIL_CFG.slotKeyName[i]}</small><span class="b-ico">${a ? a.icon : '＋'}</span>` +
         `<div class="build-picker"><button type="button" class="build-picker-trigger" data-picker-toggle="${i}" aria-label="Выбрать способность для слота ${i + 1}" aria-haspopup="listbox" aria-expanded="false" aria-controls="build-picker-list-${i}"><span class="build-picker-current">${a ? a.name : 'Выбрать способность'}</span><span class="build-picker-arrow" aria-hidden="true">⌄</span></button><div class="build-picker-menu" id="build-picker-list-${i}" role="listbox" aria-label="Способности для слота ${i + 1}" hidden><button type="button" class="build-picker-option" role="option" aria-selected="${!id}" data-build-option="${i}" data-abil=""><span class="build-picker-option-icon">＋</span><span>Пусто</span>${!id ? '<span aria-hidden="true">✓</span>' : ''}</button>${options}</div></div>` +
         (a && [0, 1, 2].some(k => save.abil.looks.includes(lookOf(a, k).id)) ? `<select data-look="${a.id}" aria-label="Облик: ${a.name}"><option value="">Стандартный облик</option>${[0, 1, 2].map(k => lookOf(a, k)).filter(l => save.abil.looks.includes(l.id)).map(l => `<option value="${l.id}" ${save.abil.lookOn[a.id] === l.id ? 'selected' : ''}>${l.name.split(': ')[1]}</option>`).join('')}</select>` : '') +
-        `<button class="buy" data-slotclear="${i}" ${a ? '' : 'disabled'}>Очистить слот</button></div>`;
+        `<button class="buy b-clear" data-slotclear="${i}" ${a ? '' : 'disabled'} aria-label="Очистить слот ${i + 1}" title="Очистить слот">✕</button></div>`;   // 2.7: a small ✕ in the corner instead of a full-width button
     }).join('');
   }
   const abLevelText = a => a.branches ? 'улучшения: ' + a.branches.map(id => { const u = UPG.find(x => x.id === id); return `«${u.name}» ${save.up[id]}/${u.cost.length}`; }).join(', ') : `уровень ${save.abil.lv[a.id] || 0}/${ABIL_CFG.levels}`;

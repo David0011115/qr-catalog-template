@@ -395,11 +395,15 @@
   let last = performance.now();
   // frame rate: shown on demand; when it stays under 40 for 5 s in a round, graphics step down once per 10 s
   const perf = { frames: 0, t0: 0, fps: 60, low: 0, cool: 0 };
+  const r1q = v => Math.round(v * 100) / 100;
   function trackFps(now) {
     perf.frames++;
     if (now - perf.t0 < 1000) return;
     perf.fps = perf.frames * 1000 / (now - perf.t0); perf.frames = 0; perf.t0 = now;
-    if (TEST_MODE && running && !paused) TLog.fps(perf.fps);   // 2.7 test journal
+    if (TEST_MODE && running && !paused) TLog.fps(perf.fps, () => {   // 2.7 test journal: what was on screen during a drop
+      const ri = renderer.info.render, mem = performance.memory;
+      return { q: QUALITY, mass: Math.round(total(player)), cells: cells.length, mine: player.cells.length, bots: bots.filter(o => o.cells.length).length, boss: bossOwners.filter(o => o.cells.length).length + raidTwins.filter(o => o.cells.length).length,
+        fx: pActive.length + eActive.length, calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) + 'MB' : undefined, px: r1q(renderer.getPixelRatio()) }; });
     if (save.settings.showFps) { const el = $('fps'); el.textContent = `${Math.round(perf.fps)} FPS`; el.classList.toggle('slow', perf.fps < 40); }
     if (!running || paused || document.hidden || !save.settings.autoQ || save.settings.quality === 'low') { perf.low = 0; return; }
     perf.cool = Math.max(0, perf.cool - 1);
@@ -407,6 +411,7 @@
     if (perf.low >= 5 && !perf.cool) {
       save.settings.quality = save.settings.quality === 'high' ? 'medium' : 'low'; persist(); applySettings();
       toast(`Игра шла медленно — графика снижена до «${save.settings.quality === 'medium' ? 'Среднее' : 'Низкое'}»`);
+      if (TEST_MODE) TLog.ev('графика снижена', save.settings.quality);
       perf.low = 0; perf.cool = 10;
     }
   }
@@ -423,6 +428,7 @@
       if (sceneryAnim) sceneryAnim(now);
       lookTick(now);
       trackFps(now);
+      if (TEST_MODE && running && !paused && !document.hidden) TLog.frame(now - last);   // 2.7: hitches for the FPS analysis
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
       if (TEST_MODE) testLogTick(dt);   // 2.7 test journal (14-net.js)
       if (running && !paused && !dying) { if (ModeX.hcFrozen()) ModeX.hcFreezeTick(dt); else update(dt); }

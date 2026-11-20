@@ -8,20 +8,42 @@
   // in the mode, and the network of online matches. Kept on this device (last 40), copied as text from «ТЕСТ → Отчёты».
   // In the real game (TEST_MODE false) every call returns at once and nothing is recorded.
   const TLog = (() => {
-    const KEY = 'kapli3d-tlog', MAX = 40, LIM = { ev: 300, samples: 240, slow: 120 };
-    let cur = null, sampleT = 0, slowEp = null;
+    const KEY = 'kapli3d-tlog', MAX = 40, LIM = { ev: 300, samples: 240, slow: 120, drops: 40 };
+    let cur = null, sampleT = 0, slowEp = null, lastFps = 60, dropEp = null;
+    // 2.7: FPS analysis — the device, frame times (hitches), and every drop under 30 FPS with what was on screen at that moment
+    let devCache = null;
+    function device() {
+      if (devCache) return devCache;
+      let gpu = '';
+      try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); } catch (e) {}
+      const ua = navigator.userAgent || '', os = (/Android [\d.]+|iPhone OS [\d_]+|iPad|Windows NT [\d.]+|Mac OS X [\d_]+|Linux/.exec(ua) || [''])[0].replace(/_/g, '.');
+      const br = (/(YaBrowser|SamsungBrowser|Edg|OPR|Firefox|CriOS|Chrome|Version)\/[\d]+/.exec(ua) || [''])[0];
+      return devCache = { os, br, scr: `${screen.width}×${screen.height}`, dpr: r1(devicePixelRatio || 1), cores: navigator.hardwareConcurrency || null, mem: navigator.deviceMemory || null, gpu: String(gpu).slice(0, 80) };
+    }
     const now = () => Math.round((typeof stats !== 'undefined' && stats && stats.time) || 0);
     const r1 = v => Math.round(v * 10) / 10;
     const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const store = L => { try { localStorage.setItem(KEY, JSON.stringify(L.slice(-MAX))); } catch (e) {} };
     function begin(info) {
       if (!TEST_MODE) return;
-      cur = Object.assign({ at: Date.now(), ver: 'v2.7-online', ev: [], samples: [], slow: [], fps: { min: 999, sum: 0, n: 0, low: 0 }, net: null, x: {} }, info);
-      sampleT = 0; slowEp = null;
+      cur = Object.assign({ at: Date.now(), ver: 'v2.7-online', dev: device(), ev: [], samples: [], slow: [], drops: [], fps: { min: 999, sum: 0, n: 0, low: 0, h50: 0, h100: 0, worst: 0, frames: 0, ms: [] }, net: null, x: {} }, info);
+      sampleT = 0; slowEp = null; dropEp = null; lastFps = 60;
     }
     function ev(type, data) { if (cur && cur.ev.length < LIM.ev) cur.ev.push(data === undefined ? [now(), type] : [now(), type, data]); }
     function extra(key, value) { if (cur) cur.x[key] = value; }
-    function fps(f) { if (!cur) return; const F = cur.fps; F.min = Math.min(F.min, Math.round(f)); F.sum += f; F.n++; if (f < 30) F.low++; }
+    // once a second: FPS; ctx() says what is on screen (only asked during a drop)
+    function fps(f, ctx) {
+      if (!cur) return; const F = cur.fps; lastFps = f; F.min = Math.min(F.min, Math.round(f)); F.sum += f; F.n++;
+      if (f < 30) { F.low++;
+        if (!dropEp) { let c = {}; try { c = ctx ? ctx() : {}; } catch (e) {} dropEp = { t: now(), sec: 0, min: Math.round(f), ...c }; }
+        dropEp.sec++; dropEp.min = Math.min(dropEp.min, Math.round(f));
+      } else if (dropEp) { if (cur.drops.length < LIM.drops) cur.drops.push(dropEp); dropEp = null; }
+    }
+    // every frame of a round: its time in ms — frames over 50 ms are felt as a hitch, over 100 ms as a freeze
+    function frame(ms) {
+      if (!cur || !(stats && stats.time >= 1)) return; const F = cur.fps; F.frames++;   // the first second (round set-up) is not a hitch
+      if (ms > 50) { F.h50++; if (ms > 100) F.h100++; if (ms > F.worst) F.worst = Math.round(ms); if (F.ms.length < 60) F.ms.push([now(), Math.round(ms)]); }
+    }
     // the network of a server match: snapshot gaps, ping, pauses, reconnects
     function net(kind, value) {
       if (!cur) return;
@@ -34,7 +56,7 @@
     function tick(dt, speedPct, mass, causes) {
       if (!cur) return;
       sampleT -= dt;
-      if (sampleT <= 0 && cur.samples.length < LIM.samples) { sampleT = 5; cur.samples.push([now(), Math.round(mass), Math.round(speedPct)]); }
+      if (sampleT <= 0 && cur.samples.length < LIM.samples) { sampleT = 5; cur.samples.push([now(), Math.round(mass), Math.round(speedPct), Math.round(lastFps)]); }   // [time, mass, speed %, FPS]
       if (causes.length && mass > 0) {
         if (!slowEp) slowEp = { t: now(), min: speedPct, causes: new Set(causes), mass: Math.round(mass) };
         slowEp.min = Math.min(slowEp.min, speedPct); causes.forEach(c => slowEp.causes.add(c));
@@ -47,13 +69,15 @@
     function end(summary) {
       if (!cur) return;
       closeSlow();
-      const F = cur.fps; cur.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low };
+      if (dropEp && cur.drops.length < LIM.drops) cur.drops.push(dropEp); dropEp = null;
+      const F = cur.fps; cur.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low, hitch50: F.h50, hitch100: F.h100, worstMs: F.worst, hitches: F.ms };
+      if (!cur.drops.length) delete cur.drops;
       if (cur.net) { const N = cur.net; N.pingAvg = N.pings ? Math.round(N.pingSum / N.pings) : null; delete N.pingSum; }
       Object.assign(cur, summary);
       if (!Object.keys(cur.x).length) delete cur.x;
       const L = load(); L.push(cur); store(L); cur = null;
     }
-    return { begin, ev, extra, fps, net, tick, end, get on() { return !!cur; }, list: load, clear: () => store([]), r1 };
+    return { begin, ev, extra, fps, frame, net, tick, end, get on() { return !!cur; }, list: load, clear: () => store([]), r1 };
   })();
   // the field's radius and the number of crumbs change with the mode (setArenaSize): «Захват территории» ×1,5, «Спина к спине» ×0,8
   let R = 237.5, FOOD = 5250;

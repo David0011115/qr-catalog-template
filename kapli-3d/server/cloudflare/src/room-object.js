@@ -721,6 +721,7 @@ export class GameRoom {
     const foodChanges = (world.pendingFoodChanges || []).splice(0);
     return {
       type: 'snapshot', tick: out?.tick ?? this.runtime.simulation?.tick ?? world.tick ?? 0, clock: world.clock || 0,
+      lag: (() => { const v = Math.round(this.loopLateMax || 0); this.loopLateMax = 0; return v; })(),   // 2.7: how late the game loop ran since the last snapshot (ms), for the test journal
       cells: world.cells.map(cellSnapshot),
       owners: world.owners.map(ownerSnapshot),
       viruses: world.viruses.map(virus => ({ ...virus })),
@@ -750,6 +751,7 @@ export class GameRoom {
         this.loopTimer = null; return;
       }
       let ticks = 0;
+      { const late = performance.now() - this.nextTickAt; if (late > (this.loopLateMax || 0)) this.loopLateMax = late; }
       while (performance.now() >= this.nextTickAt && ticks < 5) {
         let out;
         try { out = this.runtime.step(); }

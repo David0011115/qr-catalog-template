@@ -45,10 +45,12 @@
       if (ms > 50) { F.h50++; if (ms > 100) F.h100++; if (ms > F.worst) F.worst = Math.round(ms); if (F.ms.length < 60) F.ms.push([now(), Math.round(ms)]); }
     }
     // the network of a server match: snapshot gaps, ping, pauses, reconnects
-    function net(kind, value) {
+    function net(kind, value, extra) {
       if (!cur) return;
-      const N = cur.net = cur.net || { gaps: 0, gapMax: 0, gap250: 0, gap1000: 0, ping: [], pings: 0, pingSum: 0, pingMax: 0 };
-      if (kind === 'gap') { N.gaps++; N.gapMax = Math.max(N.gapMax, Math.round(value)); if (value > 250) N.gap250++; if (value > 1000) N.gap1000++; }
+      const N = cur.net = cur.net || { gaps: 0, gapMax: 0, gap250: 0, gap1000: 0, big: [], lagMax: 0, ping: [], pings: 0, pingSum: 0, pingMax: 0 };
+      // 2.7: every pause over 250 ms with its time (second, ms) and how late the server loop was — the same second on both phones means the server
+      if (kind === 'gap') { N.gaps++; N.gapMax = Math.max(N.gapMax, Math.round(value)); if (value > 250) { N.gap250++; if (N.big.length < 60) N.big.push([r1(stats && stats.time || 0), Math.round(value), extra ?? null]); } if (value > 1000) N.gap1000++; }
+      if (kind === 'gap' && Number.isFinite(extra)) N.lagMax = Math.max(N.lagMax, extra);
       if (kind === 'ping') { N.pings++; N.pingSum += value; N.pingMax = Math.max(N.pingMax, Math.round(value)); if (N.ping.length < 60) N.ping.push([now(), Math.round(value)]); }
     }
     // every frame of a round: samples every 5 s, and slowdown episodes — only while a real cause is on (stun, slow, ice, curse);

@@ -464,6 +464,7 @@
     actionSeq = payload.actionSeqs?.[userId] || 0;
     matchStarted = true;
     paused = room.status === 'paused';
+    if (!paused && room.status !== 'active') room.status = 'active';   // 2.7: see «match-started»
     applySnapshot(payload, true);
 
     if (paused) showLobbyCard();
@@ -505,10 +506,11 @@
     else if (message.type === 'match-started') {
       lastMatchId = message.matchId;
       matchStarted = true;
+      if (room && room.status !== 'paused') room.status = 'active';   // 2.7: it stayed «countdown», so the silence watchdog and the ping never ran
     }
     else if (message.type === 'world-init') { startClientMatch(message); startWatchdog(); }
     else if (message.type === 'snapshot') {
-      { const t = performance.now(); if (TEST_MODE && lastSnapAt) TLog.net('gap', t - lastSnapAt); lastSnapAt = t; }
+      { const t = performance.now(); if (TEST_MODE && lastSnapAt) TLog.net('gap', t - lastSnapAt, Number.isFinite(message.lag) ? message.lag : undefined); lastSnapAt = t; }
       if (TEST_MODE && message.modeState && activeMode === 'duoback' && message.modeState.wave !== loggedWave) { loggedWave = message.modeState.wave; TLog.ev('волна', loggedWave); }
       lastProcessedSeqs = message.processedSeqs || lastProcessedSeqs;
       lastModeState = message.modeState || lastModeState;

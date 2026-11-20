@@ -20,7 +20,7 @@
   const MODE_SHORT = {
     classic: 'Вехи до 50 000, на 50 000 — две половины; цель — обе по 50 000', timed: '5 минут, случайное правило раунда', survival: 'Волна боссов каждые 15 секунд, связки боссов',
     crown: 'Держи корону как можно дольше — на тебя охотятся все', rbuild: '3 случайные способности, замена на 5 вехах, опыт ×1,2', hardcore: 'Без бонусов; на 50 000 — две половины, проклятия, монеты ×1,6',
-    raid: 'Пара колоссов недели, 3 попытки в день', royale: 'Зона сужается, побеждает последний', territory: 'Двигай границу поля к сопернику, 4 минуты',
+    raid: 'Колоссы недели: 5 ступеней, фазы и атаки', royale: 'Зона сужается, побеждает последний', territory: 'Двигай границу поля к сопернику, 4 минуты',
     duoback: 'Вдвоём против 50 волн боссов',
   };
   let modesTabPick = null;
@@ -489,7 +489,9 @@
       sec(`Улучшения — ${Object.keys(X.HC_BOOST).length} видов`, `<ul class="mi-boosts">${Object.entries(X.HC_BOOST).map(([k, [ic, nm, v, kd]]) => `<li><span class="mib-ic">${ic}</span><span class="mib-tx"><b>${nm}</b><small>${HC_DESC[k] || X.HC_ABOUT[k]}</small><span class="mib-v">${v.map((x, r) => `<i class="r${r}">${(kd === '+' ? '+' : '−') + x + '%'}</i>`).join('')}</span></span></li>`).join('')}</ul>` +
         `<small>Цвета: обычное · <span style="color:#4d7cff">редкое</span> · <span style="color:#b26bff">эпическое</span> · <span style="color:#ffd23f">легендарное</span>. Каждая веха — 2 карточки на выбор, редкость не ниже указанной в «Вехах». Одно улучшение — не больше ${X.HC_CAP} раз за раунд, одинаковые складываются. Не успел выбрать за 12 с — возьмётся первое.</small>`) +
       sec('Серия', `<ul>${li('3 раунда подряд с массой 3 000+ — титул «Несгибаемый»')}${li('5 раундов подряд — рамка «Закалка»')}</ul>`);
-    if (id === 'raid') return sec('Рейд недели', `<ul>${li('пара колоссов-близнецов, общее здоровье 100 000')}${li('пока близнецы рядом, их связь гасит половину урона — разводи их')}${li('3 попытки в день по 4 минуты, урон копится')}${li('за победу: 1 500 ◆, эпический сундук, награды рейда за 1-ю, 3-ю и 5-ю победу')}</ul>`);
+    if (id === 'raid') return sec('Ступени недели', `<ul>${li('5 ступеней: каждая — один бой на 4 минуты, попыток сколько угодно')}${li('следующая открывается, когда пройдена предыдущая; награда за ступень — раз в неделю')}${li('монеты за урон — пока ступень не пройдена')}</ul>` + tbl(RAID_TIERS.map((t, i) => [`${RAID_ROMAN[i]} · ${n(t.hp)} урона`, `+${n(t.coins)} ◆${i === 2 ? ' · трофей недели, эпический сундук, +1 500 ◆' : i === 4 ? ' · легендарный сундук, титул «Гроза колоссов»' : ''}`]))) +
+      sec('Бой с близнецами', `<ul>${li('пока близнецы рядом, их связь гасит половину урона — разводи их')}${li('3 фазы: с ⅓ и ⅔ урона атаки чаще, появляются прислужники')}${li('атаки видно заранее: кольцо-волна, рывок, взрывы на полу')}${li('✦ слабые ядра у колоссов: съешь — урон ×3')}${li('у каждого босса недели своя особая атака: ' + RAID_SPECIAL.map((s, i) => `${RAID_NAMES[i]} — «${s[1]}»`).join(', '))}</ul>`) +
+      sec('Награды за победы в рейде', `<ul>${li('каждая победа (ступень III): +2% урона, до +10%')}${li('1-я: «Аура рейдера» (+3% монет в рейде)')}${li('3-я: «Шлем рейдера» (+20 с к бою)')}${li('5-я: «Знамя рейда» и питомец «Рейдер»')}</ul>`);
     if (id === 'royale') return sec('Правила', `<ul>${li('зона сужается ступенями и смещается — следующий круг виден заранее')}${li('в новом круге падают бонусы')}${li('боты не возрождаются, побеждает последний')}${li('только в лиге, в свой сезон')}</ul>`);
     if (id === 'territory') return sec('Матч', `<ul>${li('4 минуты, вдвоём через сервер игры')}${li('ешь ботов на своей половине — граница ползёт к сопернику')}${li('90% поля — досрочная победа, но не раньше 2:00')}${li('20 матчей — фон чата «Граница»')}</ul>`);
     if (id === 'duoback') return sec('Забег', `<ul>${li('вместе против 50 волн боссов, три сложности')}${li('каждая 5-я волна — особый босс, 50-я — финал')}${li('перерывы с едой и усилениями')}</ul>`) +
@@ -778,7 +780,7 @@
         const a = modeArt(id), ms = modeMastery(id), on = save.mode === id;
         const lock = id === 'royale' && !TEST_MODE ? `<span>🔒</span>Только в лиге<small>сезон ${nextSeasonOf('royale')}</small>` : m.lvl && plv < m.lvl ? `<span>🔒</span>С ${m.lvl} уровня<small>сейчас ${plv}</small>` : '';
         const chips = (id === leagueMode() ? '<span class="mchip lg">🏆 режим лиги</span>' : '') + (id === ModeX.dayMode() ? '<span class="mchip day">🔥 режим дня · ◆×1,25</span>' : '') + (a.isNew && !lock ? '<span class="mchip fresh">новый</span>' : '');
-        const raid = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="m-raid">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })() : '';
+        const raid = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="m-raid">${b.name} · ступени ${rs.cleared.length}/5${rs.cleared.length >= 5 ? ' — всё пройдено, новый босс в понедельник' : ''}</span>`; })() : '';
         return `<button class="mode mcard m27${m.duo ? ' duo' : ''}" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
           `<span class="art">${modeIcon(id)}<span class="minf" data-minfo="${id}" role="button" tabindex="0" aria-label="Подробнее о режиме «${m.name}»">i</span>${on ? '<span class="sel" aria-hidden="true">✓</span>' : ''}</span>` +
           `<span class="tx">${chips ? `<span class="mchips">${chips}</span>` : ''}<b>${m.name}</b><small>${MODE_SHORT[id] || m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${raid}</span>` +

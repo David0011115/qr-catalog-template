@@ -3,8 +3,8 @@
   // «На время»: one random rule per round, a final rush in the last 30 s, a reward for every place and for climbing.
   // «Выживание»: bosses grow gentler, melt while they live (so they can be eaten late), every 5th wave is special and a break follows.
   // «Босс-рейд» perks earned by beating the weekly twins (like skin stars: small, never game-breaking)
-  //  every win: +2% damage to the twins (up to +10%) · 1 win («Аура рейдера»): +3% coins in the raid · 3 wins («Шлем рейдера»): one more try a week
-  function raidPerk() { const w = save.raidWins || 0; return { dmg: 1 + .02 * Math.min(5, w), coins: w >= 1, tries: w >= 3 }; }
+  //  every win: +2% damage to the twins (up to +10%) · 1 win («Аура рейдера»): +3% coins in the raid · 3 wins («Шлем рейдера»): +20 s to a raid fight
+  function raidPerk() { const w = save.raidWins || 0; return { dmg: 1 + .02 * Math.min(5, w), coins: w >= 1, time: w >= 3 ? 20 : 0 }; }   // 2.7: «Шлем рейдера» — +20 s to every raid fight (there are no daily tries any more)
   // «Режим дня»: one solo mode a day pays ×1,25 coins (the badge moves to another mode every day)
   const DAY_POOL = ['classic', 'timed', 'survival', 'crown', 'rbuild', 'hardcore'];
   const dayMode = () => { let h = 7; for (const ch of today) h = (h * 31 + ch.charCodeAt(0)) % 100003; return DAY_POOL[h % DAY_POOL.length]; };
@@ -336,6 +336,7 @@
         if (e > esc) { esc = e; stats.modeXCoins += 20 * esc; toast(`Арена накаляется: уровень ${esc + 1}. Боты быстрее, боссы чаще, награда выше (+${20 * esc} ◆)`); Sound.play('boss'); }
       }
       if (mode === 'rbuild' && solo()) rbTick();
+      if (mode === 'raid') RaidX.tick(dt);
       if (mode === 'timed' && !rushOn && stats.time >= TIMED_LEN - RUSH_S) { rushOn = true; toast(`Финальный рывок! ${RUSH_S} секунд, крошки вдвое сытнее`); Sound.play('level'); }
       if (mode === 'timed' && stats.midRank === undefined && stats.time >= TIMED_LEN / 2) stats.midRank = rankOf();
       if (mode === 'crown') for (const o of bossOwners) for (const c of o.cells) c.mass = Math.max(20, c.mass * (1 - .008 * dt));   // the crown's bosses melt too
@@ -396,7 +397,7 @@
     }
     // the end of a round: the hardcore series reward
     function end() {
-      rbOffer = null; rbPanel(); hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } { const w = document.getElementById('hcWin'); if (w) w.hidden = true; } hcWinUi(null); hcCurse = null; hcCurseUi(); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
+      rbOffer = null; rbPanel(); RaidX.end(); hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } { const w = document.getElementById('hcWin'); if (w) w.hidden = true; } hcWinUi(null); hcCurse = null; hcCurseUi(); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
       if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] }; delete rec.next; hcLog = null; if (TEST_MODE) TLog.extra('hardcore', rec);   // bites: [time, who, its mass, the part it ate]
         try { const L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); L.push(rec); localStorage.setItem('kapli3d-hcstats', JSON.stringify(L.slice(-30))); } catch (e) {}
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
@@ -523,3 +524,126 @@
   })();
   // «Хардкор»: «Перезарядка −10%» shortens a fresh cooldown of an ability
   { const cast1 = castAbility; castAbility = (id, o = player) => { const before = o.abCd ? o.abCd[id] || 0 : 0, r = cast1(id, o); const k = ModeX.cdK(o); if (k < 1 && o.abCd && (o.abCd[id] || 0) > before) o.abCd[id] *= k; return r; }; }
+  // ================= 2.7 «Босс-рейд»: a ladder of 5 steps + a colossus that fights back =================
+  // Each week: steps I–V, each one fight of 4 minutes, as many tries as you like; the reward of a step — once a week.
+  // The twins have 3 phases (from ⅓ and ⅔ of the damage) with telegraphed attacks, weak cores (×3 damage) and one special attack of the week's boss.
+  const RAID_TIERS = [
+    { hp: 12000, spd: 1,    atk: 1,    coins: 300 },
+    { hp: 20000, spd: 1.05, atk: 1.15, coins: 500 },
+    { hp: 30000, spd: 1.1,  atk: 1.3,  coins: 800 },    // step III: the weekly trophy and the raid wins (as the old weekly victory)
+    { hp: 42000, spd: 1.15, atk: 1.5,  coins: 1200 },
+    { hp: 55000, spd: 1.2,  atk: 1.75, coins: 2000 },   // step V: a legendary chest, the title «Гроза колоссов» once
+  ];
+  const RAID_ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+  // the special attack of each weekly boss (same order as RAID_NAMES)
+  const RAID_SPECIAL = [
+    ['pull', 'Притяжение', 'затягивает капли к себе'], ['ink', 'Чернила', 'гасит мини-карту и затемняет поле'], ['crystal', 'Кристаллы', 'кристаллы на полу оглушают'],
+    ['tentacles', 'Щупальца', 'вокруг тебя вырастают щупальца-прислужники'], ['blink', 'Прыжок', 'исчезает и появляется рядом с тобой'], ['ice', 'Лёд', 'ледяные поля замедляют'],
+    ['lava', 'Лава', 'лужи лавы сжигают массу'], ['ghost', 'Призрак', 'на 3 с становится неуязвимым и быстрым'],
+  ];
+  const RaidX = (() => {
+    let tierI = 0, phase = 1, atkT = 6, coreT = 10, zones = [], cores = [], inkT = 0, pullT = 0, ghostT = 0;
+    const zoneGeo = new THREE.CircleGeometry(1, 48), ringGeo = new THREE.RingGeometry(.94, 1, 64), coreGeo = new THREE.OctahedronGeometry(1);
+    const ZC = { burst: '#ff3d6e', lava: '#ff6a00', ice: '#9ff0ff', crystal: '#c58bff', blink: '#ffffff', ring: '#ffd23f' };
+    const tier = () => RAID_TIERS[tierI], special = () => RAID_SPECIAL[raidWeek() % RAID_SPECIAL.length];
+    const twinsAlive = () => raidTwins.filter(o => o.cells.length);
+    const bigPart = () => { let b = null; for (const o of raidTwins) for (const c of o.cells) if (!b || c.mass > b.mass) b = c; return b; };
+    const pMain = () => player.cells.length ? mainOf(player) : null;
+    function addZone(x, z, r, kind, delay, dur) {
+      const m = new THREE.Mesh(zoneGeo, decal(new THREE.MeshBasicMaterial({ color: ZC[kind], transparent: true, opacity: .12, depthWrite: false })));
+      const ring = new THREE.Mesh(ringGeo, decal(new THREE.MeshBasicMaterial({ color: ZC[kind], transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide })));
+      [m, ring].forEach(o => { o.rotation.x = -Math.PI / 2; o.position.set(x, .09, z); o.scale.setScalar(r); scene.add(o); });
+      zones.push({ x, z, r, kind, t: delay, dur, m, ring, on: false });
+    }
+    function dropZone(zn) { scene.remove(zn.m); scene.remove(zn.ring); zn.m.material.dispose(); zn.ring.material.dispose(); }
+    const inZone = (zn, c) => Math.hypot(c.x - zn.x, c.z - zn.z) < zn.r + cellR(c) * .3;
+    function aroundPlayer(n, r, kind, delay, dur) {
+      const m = pMain(); if (!m) return;
+      for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, d = k === 0 ? 0 : 30 + Math.random() * 50; let x = m.x + Math.cos(a) * d, z = m.z + Math.sin(a) * d; const L = Math.hypot(x, z); if (L > R - r) { x *= (R - r) / L; z *= (R - r) / L; } addZone(x, z, r, kind, delay, dur); }
+    }
+    function attack() {
+      const b = bigPart(), m = pMain(); if (!b || !m) return;
+      const sp = special(), list = ['ring', 'charge', 'burst', ...(phase >= 2 ? ['minions'] : [])];
+      const pick = Math.random() < .45 ? sp[0] : list[Math.floor(Math.random() * list.length)];
+      const r0 = Math.max(18, cellR(m) * 1.2);
+      if (pick === 'ring') { addZone(b.x, b.z, cellR(b) + 110, 'ring', 1, 0); wave(b.x, b.z, ZC.ring, cellR(b), cellR(b) + 110, 1); }
+      else if (pick === 'charge') { const o = b.owner; o.dashT = 1.1 + .2 * phase; o.target = m; o.think = 1.5; emit(b.x, cellR(b), b.z, '#ff3d6e', 16, 10, .6); toast('⚠ Колосс несётся на тебя!'); }
+      else if (pick === 'burst') aroundPlayer(1 + phase, r0, 'burst', 1.3, 0);
+      else if (pick === 'minions' || pick === 'tentacles') { const n = pick === 'tentacles' ? 4 : 2 + phase; for (let k = 0; k < n; k++) { spawnMinion(b.owner); const mi = minions.filter(o => o.cells.length).pop(); if (mi) { const c = mi.cells[0]; c.mass = Math.max(c.mass, Math.min(2500, m.mass * .3)); if (pick === 'tentacles') { const a = k / n * 6.283; c.x = m.x + Math.cos(a) * (cellR(m) + 40); c.z = m.z + Math.sin(a) * (cellR(m) + 40); } } } }
+      else if (pick === 'pull') { pullT = 2.5; wave(b.x, b.z, '#c2416b', cellR(b) + 140, cellR(b), 1); }
+      else if (pick === 'ink') { inkT = 6; }
+      else if (pick === 'crystal') aroundPlayer(2 + phase, r0 * .8, 'crystal', 1.2, 0);
+      else if (pick === 'blink') { const a = Math.random() * 6.283, d = cellR(m) + cellR(b) + 40; addZone(m.x + Math.cos(a) * d, m.z + Math.sin(a) * d, cellR(b), 'blink', 1.1, 0); zones[zones.length - 1].part = b; }
+      else if (pick === 'ice') aroundPlayer(2 + phase, r0 * 1.3, 'ice', 1.2, 5);
+      else if (pick === 'lava') aroundPlayer(2 + phase, r0, 'lava', 1.2, 5);
+      else if (pick === 'ghost') { ghostT = 3; raidTwins.forEach(o => { if (o.cells.length) { o.spawnSh = 3; o.dashT = 3; } }); wave(b.x, b.z, '#ffffff', cellR(b), cellR(b) + 30, .8); toast('👻 Колоссы неуязвимы 3 с'); }
+      if (TEST_MODE) try { TLog.ev('атака', pick); } catch (e) {}
+    }
+    function zoneFire(zn) {
+      const P = player.cells;
+      if (zn.kind === 'ring') { const b = bigPart(); if (b) for (const c of P) { const d = Math.hypot(c.x - zn.x, c.z - zn.z); if (d < zn.r && d > cellR(b) * .6) { ccSlow(player, 1.5); const k = 30 / (d || 1); c.vx = (c.vx || 0) + (c.x - zn.x) * k; c.vz = (c.vz || 0) + (c.z - zn.z) * k; } } }
+      else if (zn.kind === 'burst') { let hit = false; for (const c of P) if (inZone(zn, c)) { c.mass = Math.max(20, c.mass * .9); hit = true; } emit(zn.x, 1, zn.z, ZC.burst, 14, 12, .6); if (hit) { buzz(40); toast('💥 Взрыв: −10% массы'); } }
+      else if (zn.kind === 'crystal') { let hit = false; for (const c of P) if (inZone(zn, c)) hit = true; if (hit) ccFreeze(player, 1.4); emit(zn.x, 1, zn.z, ZC.crystal, 12, 10, .6); }
+      else if (zn.kind === 'blink' && zn.part && !zn.part.gone) { zn.part.x = zn.x; zn.part.z = zn.z; zn.part.vx = zn.part.vz = 0; emit(zn.x, 1, zn.z, '#ffffff', 18, 12, .7); }
+    }
+    function coreSpawn() {
+      const b = bigPart(); if (!b || cores.length >= 2) return;
+      const a = Math.random() * 6.283, d = cellR(b) + 25 + Math.random() * 40;
+      let x = b.x + Math.cos(a) * d, z = b.z + Math.sin(a) * d; const L = Math.hypot(x, z); if (L > R - 10) { x *= (R - 10) / L; z *= (R - 10) / L; }
+      const m = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: '#ffd23f' })); m.scale.setScalar(5); m.position.set(x, 4, z); scene.add(m);
+      cores.push({ x, z, t: 10, m }); toast('✦ Слабое ядро! Съешь его — урон ×3');
+    }
+    function coreHit(k) {
+      const cr = cores[k]; scene.remove(cr.m); cr.m.material.dispose(); cores.splice(k, 1);
+      const parts = raidTwins.flatMap(o => o.cells), tw = parts.reduce((s, c) => s + c.mass, 0); if (!tw) return;
+      const dmg = Math.min(tw * .9, Math.round(tier().hp * .06 * raidPerk().dmg));
+      for (const c of parts) c.mass = Math.max(20, c.mass * (1 - dmg / tw));
+      stats.raidDmg = (stats.raidDmg || 0) + dmg; stats.raidCores = (stats.raidCores || 0) + 1;
+      emit(cr.x, 4, cr.z, '#ffd23f', 24, 14, .8); wave(cr.x, cr.z, '#ffd23f', 4, 40, .6); Sound.play('level'); toast(`✦ Ядро: ${dmg.toLocaleString('ru-RU')} урона`);
+      if (TEST_MODE) try { TLog.ev('ядро', dmg); } catch (e) {}
+    }
+    function clear() { zones.forEach(dropZone); zones = []; cores.forEach(c => { scene.remove(c.m); c.m.material.dispose(); }); cores = []; inkT = 0; pullT = 0; ghostT = 0; document.body.classList.remove('raid-ink'); const mm = document.getElementById('miniWrap'); if (mm) mm.classList.remove('fog'); }
+    function start(t) {
+      clear(); tierI = Math.max(0, Math.min(4, t | 0)); phase = 1; atkT = 7; coreT = 12; stats.raidTier = tierI + 1; stats.raidCores = 0;
+      setTimeout(() => { if (running && mode === 'raid') { const s = special(); toast(`Ступень ${RAID_ROMAN[tierI]} · ${tier().hp.toLocaleString('ru-RU')} урона · особая атака босса: «${s[1]}» — ${s[2]}`); } }, 3200);
+    }
+    function tick(dt) {
+      if (mode !== 'raid' || !running) return;
+      const dealt = stats.raidDmg || 0, ph = dealt >= tier().hp * 2 / 3 ? 3 : dealt >= tier().hp / 3 ? 2 : 1;
+      if (ph > phase) { phase = ph; atkT = Math.min(atkT, 2); toast(phase === 2 ? 'Фаза 2: колоссы злятся — атаки чаще, появляются прислужники' : 'Фаза 3: последний рывок — атаки ещё чаще, ядра появляются быстрее'); Sound.play('boss'); if (TEST_MODE) try { TLog.ev('фаза', phase); } catch (e) {} }
+      for (const o of raidTwins) if (o.cells.length && o.dashT > 0) o.dashT -= dt;
+      if (twinsAlive().length && (atkT -= dt) <= 0) { atkT = (9 - 2 * (phase - 1)) / tier().atk * (.85 + Math.random() * .3); attack(); }
+      if ((coreT -= dt) <= 0) { coreT = phase === 3 ? 10 : 14; coreSpawn(); }
+      for (let k = zones.length - 1; k >= 0; k--) {
+        const zn = zones[k]; zn.t -= dt;
+        if (!zn.on) { const f = Math.max(0, zn.t); zn.ring.material.opacity = .5 + .4 * Math.abs(Math.sin(f * 9)); zn.m.material.opacity = .1 + .25 * (1 - Math.min(1, f)); if (zn.t <= 0) { zn.on = true; zoneFire(zn); zn.t = zn.dur; zn.m.material.opacity = zn.dur ? .38 : 0; } }
+        else {
+          if (zn.kind === 'lava') for (const c of player.cells) if (inZone(zn, c)) c.mass = Math.max(20, c.mass * (1 - .05 * dt));
+          if (zn.kind === 'ice') for (const c of player.cells) if (inZone(zn, c)) player.slowT = Math.max(player.slowT || 0, .25);
+        }
+        if (zn.on && zn.t <= 0) { dropZone(zn); zones.splice(k, 1); }
+      }
+      for (let k = cores.length - 1; k >= 0; k--) {
+        const cr = cores[k]; cr.t -= dt; cr.m.rotation.y += dt * 2; cr.m.position.y = 4 + Math.sin(stats.time * 4) * .8;
+        if (cr.t <= 0) { scene.remove(cr.m); cr.m.material.dispose(); cores.splice(k, 1); continue; }
+        if (player.cells.some(c => Math.hypot(c.x - cr.x, c.z - cr.z) < cellR(c) + 4)) coreHit(k);
+      }
+      if (pullT > 0) { pullT -= dt; const b = bigPart(); if (b) for (const c of player.cells) { const dx = b.x - c.x, dz = b.z - c.z, d = Math.hypot(dx, dz) || 1; c.x += dx / d * 22 * dt; c.z += dz / d * 22 * dt; } }
+      if (inkT > 0) { inkT -= dt; document.body.classList.toggle('raid-ink', inkT > 0); const mm = document.getElementById('miniWrap'); if (mm) mm.classList.toggle('fog', inkT > 0); }
+      if (ghostT > 0) ghostT -= dt;
+      if (dealt >= tier().hp) { finishRound(`Ступень ${RAID_ROMAN[tierI]} пройдена!`, 0, true); }
+    }
+    // the step picker before a raid round
+    function picker(go) {
+      let el = document.getElementById('raidTiers');
+      if (!el) { el = document.createElement('div'); el.id = 'raidTiers'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Выбор ступени рейда'); document.body.appendChild(el);
+        el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-rt-x]')) { el.hidden = true; return; } const b = e.target.closest('[data-rt]'); if (b && !b.disabled) { el.hidden = true; go(+b.dataset.rt); } }); }
+      const rs = raidState(), bs = raidBoss(rs.week), sp = special();
+      el.innerHTML = `<div class="rt-box"><button type="button" class="rt-x" data-rt-x aria-label="Закрыть">✕</button><h3>${bs.name} и близнец</h3><p>Особая атака недели: <b>«${sp[1]}»</b> — ${sp[2]}. Попыток сколько угодно, награда за ступень — раз в неделю.</p><div class="rt-list">` +
+        RAID_TIERS.map((t, i) => { const done = rs.cleared.includes(i + 1), open = TEST_MODE || i === 0 || rs.cleared.includes(i);
+          const extra = i === 2 ? ' + трофей недели' : i === 4 ? ' + легендарный сундук' : '';
+          return `<button type="button" data-rt="${i}" class="${done ? 'done' : ''}" ${open ? '' : 'disabled'}><b>${RAID_ROMAN[i]}</b><span>${t.hp.toLocaleString('ru-RU')} урона за 4 мин<small>${done ? '✓ пройдена на этой неделе' : open ? `награда: ${t.coins.toLocaleString('ru-RU')} ◆${extra}` : '🔒 сначала пройди ступень ' + RAID_ROMAN[i - 1]}</small></span></button>`; }).join('') + '</div></div>';
+      el.hidden = false;
+    }
+    return { start, tick, end: clear, picker, phase: () => phase, tier, tierI: () => tierI, special };
+  })();

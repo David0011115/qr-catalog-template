@@ -167,7 +167,8 @@
   save.raid = save.raid || { week: 0, dmg: 0, done: false, day: '', tries: 0 };
   function raidState() {
     const r = save.raid, w = raidWeek();
-    if (r.week !== w) Object.assign(r, { week: w, dmg: 0, done: false });
+    if (r.week !== w) Object.assign(r, { week: w, dmg: 0, done: false, cleared: [] });
+    if (!Array.isArray(r.cleared)) r.cleared = r.done ? [1, 2, 3] : [];   // 2.7: the weekly pool became a ladder of 5 steps; an old win counts as steps I–III
     if (r.day !== today) Object.assign(r, { day: today, tries: 0 });
     return r;
   }

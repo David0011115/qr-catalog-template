@@ -364,7 +364,7 @@
 
   function speedOf(c) {
     const o = c.owner;
-    const speedMass = o.isPlayer ? Math.min(c.mass, PLAYER_SPEED_MASS_CAP) : c.mass;
+    const speedMass = o.isPlayer || (o.kind === 'boss' && mode === 'classic') ? Math.min(c.mass, PLAYER_SPEED_MASS_CAP) : c.mass;   // 2.7 «Классика»: a huge boss is no slower than a 20 000 drop
     let v = BASE_SPEED * Math.pow(speedMass / START_MASS, -0.15);
     if (o.isPlayer || o.kind === 'rival') {   // the second player of a match for two moves exactly like you (no upgrades: they are off in modes for two)
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed

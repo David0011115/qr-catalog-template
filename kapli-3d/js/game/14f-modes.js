@@ -42,7 +42,8 @@
     let clGoalDone = false;
     let hcBossStage = 0, hcSplitDone = false, hcRevive = null, hcPackT = 0, hcFreezeT = 0, hcLastOffer = -99, hcFuseT = 0, hcFuseCd = 0, hcWinT = 0, hcFuseHold = 0;
     // 2.7: the player's smaller half (or main part before the split) — what bosses and packs measure themselves against
-    const hcRef = () => { if (!player.cells.length) return 0; if (hcSplitDone) { const hm = hcHalfMass().filter(v => v > 0); return hm.length ? Math.min(...hm) : 0; } return mainOf(player).mass; };
+    const hcRef = () => { if (!player.cells.length) return 0; if (hcSplitDone && hcFuseT > 0) return total(player) / 2;   // 2.7 fix: while fused, a «half» is half of the drop (it was the whole drop — bosses grew to 160 000)
+      if (hcSplitDone) { const hm = hcHalfMass().filter(v => v > 0); return hm.length ? Math.min(...hm) : 0; } return mainOf(player).mass; };
     // melt is ×1 up to 20 000 and rises smoothly to ×1.45 at 30 000 total mass
     const hcMeltUp = () => { const m = total(player); if (mode === 'classic' && solo()) return 1 + .3 * Math.max(0, Math.min(1, (m - 15000) / 15000)) + .25 * Math.max(0, Math.min(1, (m - 50000) / 20000));   // «Классика»: ×1.3 at 30 000, ×1.55 at 70 000
       if (mode !== 'hardcore') return 1; return 1 + .45 * Math.max(0, Math.min(1, (m - 15000) / 10000)) + .35 * Math.max(0, Math.min(1, (m - 50000) / 10000)) + .6 * Math.max(0, Math.min(1, (m - 80000) / 20000)); };   // ×1.45 at 30 000, ×1.8 at 60 000, ×2.4 at 100 000
@@ -433,6 +434,7 @@
       hcMagnetK: () => (mode === 'hardcore' ? hcDM("magnet") : 1), hcDashLenK: () => (mode === 'hardcore' ? hcDM("dashLen") : 1), hcNoDash: () => curseOn("nodash"),
       hcSenseK: () => (mode === 'hardcore' ? hcDK("sense") * (curseOn("hunted") ? 1.5 : 1) : 1),
       hcBossMass: mass => { const ref = hcRef(); return hcSplitDone || ref >= 20000 ? Math.min(HC_BOSS_MASS_CAP, Math.max(3000, ref * (.85 + .35 * hcBossPressure()))) : mass; },   // after 20 000: 85–120% of the smaller half (more with the threat stage)
+      clBossGainK: pair => (mode === 'classic' && solo() && total(player) >= 15000 ? (pair || hcFuseT > 0 ? .4 : .5) : 1),   // «Классика» from 15 000: a boss feeds half (like «Хардкор»)
       clGainK: () => (mode === 'classic' && solo() ? clGainK() : 1), clAngry: () => mode === 'classic' && solo() && total(player) >= 20000, splitMode,
       hcPackTarget, botCap: o => (splitMode() && o.hcPack ? Math.max(BOT_MASS_CAP, hcRef() * 1.4) : BOT_MASS_CAP),
       hcPackMerge: (a, b) => splitMode() && a.owner.hcPack && b.owner.hcPack && a.owner !== b.owner && a.mass >= b.mass,

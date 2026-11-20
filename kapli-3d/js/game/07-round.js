@@ -521,7 +521,7 @@
             finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
           }
         } }
-        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && (b.owner.hcPack || total(player) >= 50000) ? .5 : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && (b.owner.hcPack || total(player) >= 50000) ? .5 : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() * (b.owner.hcPack && mode === 'classic' ? .5 : 1) : 1) * (a.owner.isPlayer && b.owner.kind === 'boss' ? ModeX.clBossGainK(pairMate) : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
         const bossCap = bossMassCap();
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
@@ -573,6 +573,7 @@
     // The regular bot limit is shared by all of its parts, not repeated per part.
     if (mode === 'hardcore' || mode === 'classic') for (const o of bossOwners) {
       const mass = total(o), cap = mode === 'classic' ? CL_BOSS_MASS_CAP : HC_BOSS_MASS_CAP;
+      if (mode === 'classic' && mass > cap * 1.5) { const k = cap * 1.5 / mass; for (const c of o.cells) c.mass *= k; }   // 2.7: never far above the cap
       if (mass > cap) { const k = Math.max(cap / mass, 1 - .01 * dt); for (const c of o.cells) c.mass *= k; }   // 2.7: melts down 1%/s, a comeback stays possible
     }
     for (const o of bots) {

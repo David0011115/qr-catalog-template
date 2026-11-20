@@ -6,10 +6,14 @@
   // takes a second off. Both eaten at once — the run is over.
   (() => {
     const DIFF = [
-      { id: 'normal', name: 'Обычный', hp: 1,   brk: 15, resp: 15, coins: 1 },
-      { id: 'hard',   name: 'Сложный', hp: 1.4, brk: 12, resp: 20, coins: 1.4 },
-      { id: 'mad',    name: 'Безумие', hp: 2,   brk: 10, resp: 25, coins: 1.8 },
+      { id: 'normal', name: 'Обычный', hp: 1,   brk: 15, resp: 15, coins: 1,   bm: 1,    cap: 1.3, bs: 1,    melt: 1,   life: 1,    more: 0, gain: 1,   pm: 0,    pmAt: 0,     atk: 1,   about: 'боссы чуть больше вас и быстро тают' },
+      { id: 'hard',   name: 'Сложный', hp: 1.4, brk: 12, resp: 20, coins: 1.4, bm: 1.3,  cap: 1.6, bs: 1.12, melt: .7,  life: 1.15, more: 1, gain: .85, pm: .003, pmAt: 20000, atk: .85, about: 'боссы больше и быстрее, тают медленнее; еда −15%; после 20K вы таете' },
+      { id: 'mad',    name: 'Безумие', hp: 2,   brk: 10, resp: 25, coins: 1.8, bm: 1.65, cap: 2,   bs: 1.25, melt: .5,  life: 1.3,  more: 2, gain: .7,  pm: .006, pmAt: 15000, atk: .7,  about: 'боссы огромные и злые, их больше; еда −30%; после 15K вы таете вдвое быстрее' },
     ];
+    // 2.7: the switch really changes the run. bm: boss mass, cap: the boss mass limit as a share of your mass (no more fixed 30K —
+    // at 100K you meet 130–200K bosses), bs: boss speed, melt / life: how fast they melt and how long they stay, more: extra
+    // bosses per wave, gain: food for you, pm / pmAt: you melt above this mass (per second), atk: special bosses attack this much more often
+    const bossCap = base => Math.max(30000, base * D.cap);
     // regular bosses of this mode (and nowhere else)
     const REG = {
       twins:  { name: 'Близнец',   color: '#ff7ad9', speed: .95, coins: 12, xp: 14, about: 'приходят парой, каждый охотится на своего; съешь одного — второй злится' },
@@ -89,7 +93,7 @@
       if (b.both) { shared[id] = (shared[id] || 0) + 1; toast(`${o === player ? 'Ты выбрал' : rival().name + ' выбрал'}: «${b.name}» — для обоих`); return; }
       o.db[id] = (o.db[id] || 0) + 1;
       if (id === 'mass') o.cells.forEach(c => c.mass *= 1.15);
-      if (id === 'absorb') o.dbAbs = 1 + .25 * o.db.absorb;
+      if (id === 'absorb') o.dbAbs = D.gain * (1 + .25 * o.db.absorb);
     }
     function panel(ids) {   // your choice, on your phone; the round does not stop
       let el = document.getElementById('dbPick');
@@ -123,14 +127,14 @@
         const d = SPEC[(wv / 5 - 1) % SPEC.length], o = specOwners[(wv / 5 - 1) % SPEC.length];
         [...o.cells].forEach(removeCell);
         const [x, z] = safeSpot(40);
-        const main = addCell(o, x, z, Math.min(30000, base * 1.9 * grow), o.free.pop()); main.mergeT = 1e9;
+        const main = addCell(o, x, z, Math.min(bossCap(base), base * 1.9 * grow * D.bm), o.free.pop()); main.mergeT = 1e9;
         spec = { o, d, enh: wv >= LATE, final: wv >= MAX_WAVE, max: base * 2.4 * D.hp * Math.min(3.3, 1 + .05 * (wv - 5)) * (wv >= MAX_WAVE ? 1.3 : 1), dmg: 0, life: SPEC_LIFE, shed: 2, atk: 4, pull: 0, cells: new Map(), split: null, base };
         o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3;
         Sound.play('boss');
         if (wv >= 10) spawnReg(['twins', 'leech', 'wedge', 'weaver'][(Math.random() * 4) | 0], base * grow);
         if (wv >= MAX_WAVE) spawnReg(['leech', 'wedge', 'weaver'][(Math.random() * 3) | 0], base * grow);   // the final: one more
       } else {
-        const n = Math.min(4, 1 + Math.floor((wv - 1) / 2) + (Di === 2 && wv >= 3 ? 1 : 0));
+        const n = Math.min(4 + D.more, 1 + Math.floor((wv - 1) / 2) + (D.more && wv >= 3 ? 1 : 0) + (D.more > 1 && wv >= 15 ? 1 : 0));
         const types = Object.keys(REG);
         for (let k = 0; k < n;) {
           const t = types[(Math.random() * types.length) | 0];
@@ -144,8 +148,8 @@
     function spawnReg(type, m) {
       const o = regOwners.find(x => x.dbType === type && !x.cells.length); if (!o) return;
       const [x, z] = safeSpot(40);
-      addCell(o, x, z, Math.min(30000, m * (type === 'leech' ? .9 : 1.25) * Math.sqrt(D.hp)), o.free.pop());
-      o.life = REG_LIFE; o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3; o.enr = 0; o.spikeT = 3; o.k = regOwners.filter(x => x.dbType === type && x.cells.length).length - 1;
+      addCell(o, x, z, Math.min(bossCap(baseMass()), m * (type === 'leech' ? .9 : 1.25) * D.bm), o.free.pop());
+      o.life = REG_LIFE * D.life; o.think = 0; o.target = null; o.dashT = 0; o.dashCd = 3; o.enr = 0; o.spikeT = 3; o.k = regOwners.filter(x => x.dbType === type && x.cells.length).length - 1;
     }
     function startBreak() {
       ph = 1; bt = Math.max(6, D.brk - lateStep());
@@ -179,7 +183,7 @@
     }
     function tickReg(o, dt) {
       o.dashT -= dt; o.dashCd = Math.max(0, o.dashCd - dt); o.life -= dt;
-      for (const c of o.cells) c.mass = Math.max(8, c.mass * (1 - MELT * dt));
+      for (const c of o.cells) c.mass = Math.max(8, c.mass * (1 - MELT * D.melt * dt));
       steerBoss(o, dt);
       if (o.dbType === 'weaver') { o.spikeT -= dt; if (o.spikeT <= 0) { const c = big(o), r = cellR(c); spawnVirus(c.x - c.hx * (r + 5), c.z - c.hz * (r + 5)); o.spikeT = 3.5; } }
       if (o.dbType === 'leech') {
@@ -224,7 +228,7 @@
       }
       if (s.d.id === 'meteor' && s.atk <= 0 && ps.length) {
         const t = big(ps[(Math.random() * ps.length) | 0]); meteors.push({ x: t.x, z: t.z, r: 14 + cellR(t), t: 1.6 });
-        if (s.enh) for (const p of ps) { const q = big(p); if (q !== t) meteors.push({ x: q.x + (Math.random() - .5) * 20, z: q.z + (Math.random() - .5) * 20, r: 14 + cellR(q), t: 1.9 }); else meteors.push({ x: q.x + q.hx * 30, z: q.z + q.hz * 30, r: 16, t: 2 }); }   // stronger: one for each player, and ahead of you s.atk = Math.max(3, 5.5 - wv * .05);
+        if (s.enh) for (const p of ps) { const q = big(p); if (q !== t) meteors.push({ x: q.x + (Math.random() - .5) * 20, z: q.z + (Math.random() - .5) * 20, r: 14 + cellR(q), t: 1.9 }); else meteors.push({ x: q.x + q.hx * 30, z: q.z + q.hz * 30, r: 16, t: 2 }); } s.atk = Math.max(3, 5.5 - wv * .05) * D.atk;   // stronger: one for each player, and ahead of you; 2.7 fix: the comment used to swallow this reset — meteors fell every frame
       }
       if (s.d.id === 'split' && s.enh && s.split && !s.split2 && s.splitT <= 0 && s.dmg >= s.max * .75) { s.split = null; s.split2 = true; }   // stronger: it breaks apart a second time at a quarter
       if (s.d.id === 'split' && !s.split && s.dmg >= s.max * (s.split2 ? .75 : .5)) {
@@ -254,7 +258,13 @@
         m.t -= dt;
         if (m.t <= 0) {
           wave(m.x, m.z, '#ff9a3d', 2, m.r + 6, .6); emit(m.x, 3, m.z, '#ff9a3d', 50, 20, .8);
-          for (const p of pl()) if (!shieldOf(p)) for (const pc of p.cells) if (Math.hypot(pc.x - m.x, pc.z - m.z) < m.r) pc.mass = Math.max(10, pc.mass * .7);
+          // 2.7: one volley takes at most 30% of a player's mass — a second meteor within 2.5 s of a hit does nothing to them
+          for (const p of pl()) {
+            if (shieldOf(p) || stats.time < (p.mtSafe || 0)) continue;
+            let hit = false;
+            for (const pc of p.cells) if (Math.hypot(pc.x - m.x, pc.z - m.z) < m.r) { pc.mass = Math.max(10, pc.mass * .7); hit = true; }
+            if (hit) p.mtSafe = stats.time + 2.5;
+          }
         }
       }
       meteors = meteors.filter(m => m.t > 0);
@@ -273,7 +283,7 @@
         Di = Math.max(0, Math.min(2, +g.diff || 0)); D = DIFF[Di]; pHome = role === 'host' ? -1 : 1;
         wv = 0; ph = 1; bt = 6; spec = null; meteors = []; offers = {}; picked = {}; shared = {}; co = prevCo = null;
         team = { bosses: 0, specials: 0, bots: 0, resp: 0, s5: 0, hp: 0, hg: 0 };   // hp / hg: help points of the host and of the guest
-        for (const o of [player, rival()]) { o.db = { mass: 0, speed: 0, armor: 0, absorb: 0, cd: 0 }; o.dbAbs = 1; }
+        for (const o of [player, rival()]) { o.db = { mass: 0, speed: 0, armor: 0, absorb: 0, cd: 0 }; o.dbAbs = D.gain; o.mtSafe = 0; }
         allBoss.forEach(o => { [...o.cells].forEach(removeCell); o.wasOn = false; });
       },
       begin(role) {
@@ -292,6 +302,7 @@
         for (const o of regOwners) { if (o.cells.length) { o.wasOn = true; tickReg(o, dt); } else if (o.wasOn && ph === 1) o.wasOn = false; }
         if (spec) tickSpec(dt);
         tickMeteors(dt);
+        if (D.pm) for (const o of pl()) { const m = total(o); if (m > D.pmAt) { const k = 1 - D.pm * Math.min(2, m / D.pmAt) * dt; o.cells.forEach(c => c.mass *= k); } }   // 2.7: on «Сложный» and «Безумие» a big pair melts
         if (ph === 1) { bt -= dt; if (bt <= 0) startWave(); }
         else if (!spec && !regOwners.some(o => o.cells.length)) {
           if (wv >= MAX_WAVE && running) { DuoM.result('coop', 0, 'win', { w: MAX_WAVE, t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5, hp: team.hp, hg: team.hg, won: 1 }); return; }
@@ -302,6 +313,12 @@
           const passed = ph === 1 ? wv : wv - 1;
           DuoM.result('coop', 0, 'dead', { w: Math.max(0, passed), t: Math.round(stats.time), b: team.bosses, s: team.specials, k: team.bots, r: team.resp, df: Di, s5: team.s5, hp: team.hp, hg: team.hg });
         }
+      },
+      // 2.7: a run that one of the two left early still goes to the rating with the waves already cleared (the host sends it)
+      abandon() {
+        if (DuoM.practice || DuoM.role !== 'host' || dying || !team) return;
+        const passed = Math.max(0, ph === 1 ? wv : wv - 1);
+        if (passed > 0) Net.duoCoop(Di, rival().pid, passed, Math.round(stats.time), team.bosses + team.specials, team.bots, team.resp);
       },
       lost(o) { team.resp++; },
       anyLost(o, eater) {
@@ -318,6 +335,7 @@
           if (o.dbType === 'twins') regOwners.forEach(x => { if (x !== o && x.dbType === 'twins' && x.cells.length) x.enr = 1; });
         }
       },
+      bossCap: () => bossCap(baseMass()),   // 2.7: the core's limit for a boss drop in this mode
       eatBlock(a, b) {   // «Броня»: a boss must be clearly bigger to eat a player who took it
         const n = b.owner.db && b.owner.db.armor;
         return !!n && !!a.owner.dbType && a.mass < b.mass * (1.25 + .15 * n);
@@ -325,7 +343,7 @@
       speedK(c) {
         const o = c.owner;
         if (o.db && o.db.speed) return 1 + .08 * o.db.speed;
-        if (o.dbType) return (o.dbType === 'twins' && o.enr ? 1.35 : 1) * (1 + .03 * lateStep());
+        if (o.dbType) return (o.dbType === 'twins' && o.enr ? 1.35 : 1) * (1 + .03 * lateStep()) * D.bs;
         return 1;
       },
       snap(s) {
@@ -401,12 +419,13 @@
       lobbyHtml(role) {
         if (role !== 'host') return '<p class="hint" style="margin:0">Сложность выбирает создатель комнаты.</p>';
         const cur = save.duoDiff || 0;
-        return `<div class="db-diff" role="group" aria-label="Сложность">${DIFF.map((d, i) => `<button type="button" class="db-df${i === cur ? ' on' : ''}" data-df="${i}" aria-pressed="${i === cur}">${d.name}</button>`).join('')}</div>`;
+        return `<div class="db-diff" role="group" aria-label="Сложность">${DIFF.map((d, i) => `<button type="button" class="db-df${i === cur ? ' on' : ''}" data-df="${i}" aria-pressed="${i === cur}">${d.name}</button>`).join('')}</div><p class="hint db-df-about" style="margin:6px 0 0">${DIFF[cur].about}</p>`;
       },
       lobbyClick(e) {
         const b = e.target.closest('[data-df]'); if (!b) return false;
         save.duoDiff = +b.dataset.df; persist();
         document.querySelectorAll('.db-df').forEach(x => { const on = +x.dataset.df === save.duoDiff; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+        document.querySelectorAll('.db-df-about').forEach(x => { x.textContent = DIFF[save.duoDiff].about; });
         return true;
       },
       statsHtml() {

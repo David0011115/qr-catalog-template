@@ -2,7 +2,7 @@
   // The room's host runs the whole round. The second player is one more owner of drops on the host («rival»), steered by the
   // controls the other phone sends. The other phone does not simulate: it moves its own drop at once (so steering never feels
   // late) and draws everything else from the host's snapshots, smoothing between them. Crumbs are laid out from one shared
-  // seed; after that the host sends only the crumbs that moved. Abilities: the same three random ones for both, no upgrades.
+  // seed; after that the host sends only the crumbs that moved. Abilities: three random ones each (2.7: never the same for the two players), no upgrades.
   const DuoM = (() => {
     const SNAP_MS = 66, INPUT_MS = 50, RESPAWN_S = 2.5;
     const rival = makeOwner('Соперник', 'rival', null);
@@ -75,7 +75,7 @@
     function practice(id) {
       if (!TEST_MODE) return;
       const sk = SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft);
-      const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, build: rbuildDraw(), name: Net.nick || 'Игрок', skin: save.skin, peerName: id === 'duoback' ? 'Бот-напарник' : 'Бот-соперник', peerSkin: sk[(Math.random() * sk.length) | 0].id };
+      const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, ...duoBuilds(), name: Net.nick || 'Игрок', skin: save.skin, peerName: id === 'duoback' ? 'Бот-напарник' : 'Бот-соперник', peerSkin: sk[(Math.random() * sk.length) | 0].id };
       if (rules[id] && rules[id].goExtra) Object.assign(g, rules[id].goExtra());
       botMate = true; botGoal = null; begin('host', g);
     }
@@ -99,9 +99,16 @@
       botGoal = best ? { x: best.x, z: best.z } : { x: 0, z: 0 }; aim(m, botGoal);
     }
     function aim(m, g) { const dx = g.x - m.x, dz = g.z - m.z, l = Math.hypot(dx, dz) || 1; inp = { x: dx / l, z: dz / l }; }
+    // 2.7: each player gets their own three abilities (build: the host's, build2: the other phone's), never the same ones
+    let rivalBuild = [];
+    function duoBuilds() {
+      const build = rbuildDraw(), pool = ABILITIES.filter(a => !a.xa && !a.cr && !build.includes(a.id)).map(a => a.id), build2 = [];
+      while (build2.length < 3 && pool.length) build2.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { build, build2 };
+    }
     function startAsHost(id) {
       if (Duo.state !== 'ready' || Duo.role !== 'host') { toast('Сначала дождитесь второго игрока'); return; }
-      const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, build: rbuildDraw(), name: Net.nick || 'Игрок', skin: save.skin };
+      const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, ...duoBuilds(), name: Net.nick || 'Игрок', skin: save.skin };
       if (rules[id] && rules[id].goExtra) Object.assign(g, rules[id].goExtra());
       Duo.send(g); begin('host', g);
     }
@@ -115,7 +122,7 @@
       pendingRanked = false;
       startRound();
       if (!running) { cleanup(); return; }
-      U = ZERO_UP; lives = 0; stats.duo = true; effects.shield = 3; runBuild = g.build.slice(); abReset(); renderSlots();
+      U = ZERO_UP; lives = 0; stats.duo = true; effects.shield = 3; const b2 = g.build2 && g.build2.length === 3 ? g.build2 : g.build; runBuild = (r === 'host' ? g.build : b2).slice(); rivalBuild = (r === 'host' ? b2 : g.build).slice(); abReset(); renderSlots();
       layout(g.seed);
       sideX = { p: (r === 'host' ? -1 : 1) * R * .55, r: (r === 'host' ? 1 : -1) * R * .55 };
       if (rl && rl.begin) rl.begin(r, g);
@@ -203,7 +210,7 @@
     }
     function act(k, i) {   // host: an action from the other phone
       const o = rival; if (!o.cells.length || role !== 'host') return;
-      const id = k === 'slot' ? runBuild[i] : k;
+      const id = k === 'slot' ? rivalBuild[i] : k;
       if (id === 'split') { if (o.splitCd <= 0 && splitOwner(o, playerMaxParts(), playerMergeTime())) rebuildCells(); }
       else if (id === 'dash') { if (o.dashCd <= 0) { o.dashT = .35; o.dashCd = 4; o.cells.forEach(c => c.mass = Math.max(START_MASS * .5, c.mass * .97)); } }
       else if (id && id !== 'eject') castAbility(id, o);
@@ -293,7 +300,7 @@
       if (m.t === 'dr') { if (role === 'guest') redress(m); return true; }
       if (m.t === 'res') { if (role === 'guest') result(m.w, +m.sh || 0, m.why, m.x); return true; }
       if (rl && rl.msg && rl.msg(m)) return true;
-      if (m.t === 'end') { endMatch(`${rival.name} вышел из матча`, true, false); return true; }
+      if (m.t === 'end') { if (role === 'host' && rl && rl.abandon) rl.abandon(); endMatch(`${rival.name} вышел из матча`, true, false); return true; }
       return false;
     }
     // 2.6: a short loss of the link pauses the match on both phones instead of ending it
@@ -307,7 +314,7 @@
     function linkState() { stallView(); if (on && !botMate && Duo.state !== 'ready') endMatch('Связь со вторым телефоном потеряна', false, false); }
     // the match cannot stop: the pause button opens the menu while the round goes on; «Завершить» leaves the match for both
     function menu() { renderPauseInfo(); showCard('pauseCard'); $('overlay').hidden = false; setGameUi(false); $('resumeBtn').focus(); }
-    $('quitBtn').addEventListener('click', () => { if (on) { Duo.send({ t: 'end' }); cleanup(); } }, true);
+    $('quitBtn').addEventListener('click', () => { if (on) { if (role === 'host' && rl && rl.abandon) rl.abandon(); Duo.send({ t: 'end' }); cleanup(); } }, true);   // 2.7: a run left early still counts (abandon)
     window.duoStartMatch = startAsHost; window.duoPractice = practice;
 
     return { get on() { return on; }, get guest() { return on && role === 'guest'; }, get host() { return on && role === 'host'; }, rival,
@@ -315,6 +322,7 @@
       get paused() { return on && !botMate && Duo.stalled; }, get mode() { return on ? modeId : ''; }, get role() { return on ? role : ''; }, get practice() { return botMate; }, rules, rivalPick, result,
       steerRival, act: (k, i) => { if (role === 'guest') Duo.send({ t: 'a', k, i }); }, lost, guestTick, msg, linkState, menu,
       // a hook in canEat: the rules of the mode may forbid a bite; the second player's shield bonus counts like yours
+      bossCap: () => on && rl && rl.bossCap ? rl.bossCap() : 0,
       eatBlock: (a, b) => on && ((b.owner === rival && role === 'host' && rival.eff.shield > 0) || !!(rl && rl.eatBlock && rl.eatBlock(a, b))),
       speedK: c => { if (!on) return 1; let k = c.owner === rival && role === 'host' && rival.eff.speed > 0 ? 1.45 : 1; if (rl && rl.speedK) k *= rl.speedK(c); return k; },
       chip: () => on && rl && rl.chip ? rl.chip() : '' };

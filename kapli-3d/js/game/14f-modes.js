@@ -321,7 +321,7 @@
     // the end of a round: the hardcore series reward
     function end() {
       hcPanel(null); { const b = document.getElementById('hcFuse'); if (b) b.hidden = true; } hcWinUi(null); hcCurse = null; hcCurseUi(); tether.visible = false; nextRing.visible = false; { const d = document.getElementById('hcDbg'); if (d) d.remove(); }
-      if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] };   // bites: [time, who, its mass, the part it ate] delete rec.next; hcLog = null;
+      if (hcLog) { const rec = { ...hcLog, peak: Math.round(stats.maxMass), time: Math.round(stats.time), miles: hcMile, kills: stats.kills, bosses: stats.bosses || 0, splitAt: stats.hcSplitAt ?? null, halfPeak: stats.hcHalfPeak || [0, 0], victory: !!stats.hcVictory, end: stats.endTitle || '', bites: stats.bites || [] }; delete rec.next; hcLog = null;   // bites: [time, who, its mass, the part it ate]
         try { const L = JSON.parse(localStorage.getItem('kapli3d-hcstats') || '[]'); L.push(rec); localStorage.setItem('kapli3d-hcstats', JSON.stringify(L.slice(-30))); } catch (e) {}
         (async () => { try { const db = window.claude && window.claude.use && await window.claude.use('db'); if (db) { await db.collection('hcstats').add(rec); toast('Статистика «Хардкора» сохранена'); } } catch (e) {} })(); }
       if (mode !== 'hardcore' || stats.ranked || stats.tutorial) return;

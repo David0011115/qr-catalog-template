@@ -1,6 +1,8 @@
   // ================= bonuses =================
   const bonusCore = new THREE.OctahedronGeometry(0.7);
   const bonusRing = new THREE.TorusGeometry(1.1, 0.08, 8, 32);
+  // the mass limit of an ordinary boss (per drop) in this mode; 2.7: «Спина к спине» sets its own one that follows the pair (it used to stop at 12 000)
+  const bossMassCap = () => mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : (DuoM.bossCap && DuoM.bossCap()) || BOSS_MASS_CAP;
   function spawnBonus() {
     if (mode === 'hardcore') return;
     if (bonuses.length >= MAX_BONUS) return;
@@ -401,7 +403,7 @@
       if (a.gone || b.gone) continue;
       const ra = cellR(a), rb = cellR(b);
       let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 0.001;
-      const mergeCap = o.isPlayer ? Infinity : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP) : MAX_MASS;
+      const mergeCap = o.isPlayer ? Infinity : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? bossMassCap() : MAX_MASS;
       const hcDifferentHalves = mode === 'hardcore' && o.isPlayer && a.hcHalf !== undefined && b.hcHalf !== undefined && a.hcHalf !== b.hcHalf && !ModeX.hcFusing();
       if (hcDifferentHalves || a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > mergeCap) {   // parts that would exceed this owner's cap stay apart
         if (d < ra + rb) {
@@ -520,7 +522,7 @@
         } }
         const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .3125 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' && (b.owner.hcPack || total(player) >= 50000) ? .5 : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
-        const bossCap = mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP;
+        const bossCap = bossMassCap();
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
         if (pairMate) { const share = gain * pairMate.mass / (a.mass - gain + pairMate.mass); a.mass -= share; pairMate.mass += share; pairMate.vis.jig = 1; toast('🔗 Двойной укус! Половины съели босса вместе'); }
         const victim = b.owner, lastMass = b.mass;
@@ -562,7 +564,7 @@
 
     for (const c of cells) {
       const cap = c.owner.kind === 'bot' ? ModeX.botCap(c.owner)
-        : c.owner.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : BOSS_MASS_CAP)
+        : c.owner.kind === 'boss' ? bossMassCap()
         : MAX_MASS;
       if (!c.owner.isPlayer && c.mass > cap && !(mode === 'hardcore' && c.owner.kind === 'boss')) c.mass = cap;
     }
@@ -620,7 +622,10 @@
       if (effects.speed > 0) parts.push('+45% бонус');
       if (player.dashT > 0) parts.push('рывок');
       const mult = (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (player.dashT > 0 ? DASH_MULT / Math.pow(Math.max(1, m / player.cells.length) / START_MASS, -0.15) : 1);
-      setText('buff', mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : '');
+      // 2.7: what slows you down right now, with the seconds left (stun from «Отражение», the frost boss and slowing abilities, ice)
+      const slowTxt = player.freezeT > 0 ? `💫 оглушение ${player.freezeT.toFixed(1)} с` : player.slowT > 0 ? `❄ замедление −${Math.round((1 - ABIL_CFG.slowFactor) * 100)}% · ${Math.ceil(player.slowT)} с` : player.iceT > 0 ? `❄ лёд · ${Math.ceil(player.iceT)} с` : '';
+      setText('buff', slowTxt || (mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : ''));
+      $('buff').classList.toggle('debuff', !!slowTxt);
       sp.title = parts.join(', ') || 'Без бафов';
     } else $('speed').textContent = '–';
     if (player.abCd) runBuild.forEach((id, i) => {

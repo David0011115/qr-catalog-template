@@ -161,9 +161,12 @@ export async function handleWorkerRequest(request, env) {
     if (!allowedOrigin(request, env)) return json({ error: 'origin-not-allowed' }, 403);
     const configuredUrlRaw = String(env.SUPABASE_URL || '').trim();
     const configuredUrl = configuredUrlRaw.endsWith('/') ? configuredUrlRaw.slice(0, -1) : configuredUrlRaw;
-    const expectedUrl = 'https://kprkslsptcnxajdllwje.supabase.co';
+    // 2.7: no hard-coded project — say which Supabase project this Worker uses (the project address is public,
+    // it is in the game's own code), so a test Worker on the test project is not reported as «mismatch»
+    const project = (/^https:\/\/([a-z0-9]+)\.supabase\.co$/.exec(configuredUrl) || [])[1] || null;
+    const knownProjects = { kprkslsptcnxajdllwje: 'main', kccwtpveezsrgwfnflhf: 'test' };
     let anonKeyStatus = !env.SUPABASE_ANON_KEY ? 'missing' : 'not-checked';
-    if (env.SUPABASE_ANON_KEY && configuredUrl === expectedUrl) {
+    if (env.SUPABASE_ANON_KEY && project) {
       try {
         const keyCheck = await fetch(`${configuredUrl}/auth/v1/settings`, {
           headers: { apikey: env.SUPABASE_ANON_KEY },
@@ -174,7 +177,10 @@ export async function handleWorkerRequest(request, env) {
       }
     }
     return withCors(json({
-      supabaseUrl: !configuredUrl ? 'missing' : configuredUrl === expectedUrl ? 'match' : 'mismatch',
+      supabaseUrl: !configuredUrl ? 'missing' : project ? 'ok' : 'invalid',
+      supabaseProject: project ? (knownProjects[project] || 'other') : null,
+      serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY ? 'present' : 'missing',
+      allowedOrigins: String(env.ALLOWED_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean).length,
       anonKeyStatus,
     }), request, env);
   }

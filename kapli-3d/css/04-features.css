@@ -674,3 +674,8 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 /* 2.7: share a server room */
 .srv-share { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
 .srv-share .btn { min-height: 44px; padding: 8px 10px; font-size: .86rem; }
+/* 2.7: the two hardcore cards are always the same width (a long «риск» line used to squeeze the other card), and the rarity label never covers the name */
+#hcPick .db-opts.two, #rbPick .db-opts.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#hcPick .hc-card { padding-top: 20px; }
+#hcPick .hc-card.risk { padding-top: 26px; }
+#hcPick .hc-card .hc-debuff { white-space: normal; }

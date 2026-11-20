@@ -23,7 +23,7 @@
     Sound.play(lk.sfx);
   }
   function abReset() {
-    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
+    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.auraT = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
     crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
@@ -344,12 +344,22 @@
   const ccPl = x => !!x && (x.isPlayer || x.kind === 'rival');
   function ccSlow(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
   function ccFreeze(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
+  // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 2.5 s of immunity
+  //  (it was renewed every frame, so the immunity never came: a 46 s slowdown in the owner's report)
+  function ccAura(x, dt) {
+    if (!ccPl(x)) { x.slowT = Math.max(x.slowT || 0, .35); return; }
+    if ((x.ccImm || 0) > 0) return;
+    x.auraT = (x.auraT || 0) + dt * 1.5;   // decays at 0.5 per second outside (abTick): 3 s inside fills it
+    if (x.auraT >= 3) { x.auraT = 0; x.slowT = 0; x.ccImm = CC.immune; return; }
+    x.slowT = Math.max(x.slowT || 0, .35);
+  }
   function ccWore(o, was) { if (was > 0 && ccPl(o) && !(o.slowT > 0) && !(o.freezeT > 0)) o.ccImm = CC.immune; }
   function abTick(dt) {
     xaTick(dt); crTick(dt); if (TEST_MODE && testEatShow) testEatTick(dt);
     for (const o of owners) {
       if (o.slowT) { const was = o.slowT; o.slowT = Math.max(0, o.slowT - dt); if (!o.slowT) ccWore(o, was); }
       if (o.ccImm) o.ccImm = Math.max(0, o.ccImm - dt);
+      if (o.auraT) o.auraT = Math.max(0, o.auraT - dt * .5);
       if (o.iceT) o.iceT = Math.max(0, o.iceT - dt);
       if (!o.abCd) continue;
       for (const k in o.abCd) o.abCd[k] = Math.max(0, o.abCd[k] - dt);

@@ -213,16 +213,18 @@
   // called at the end of applySkin: the body and the form's extras; only your own drops and previews get the full form
   function evoApply(vis, s, mine) {
     if (vis.evo) { vis.mesh.remove(vis.evo); vis.evo = null; vis.evoTick = null; }
+    vis.headOff = false;
     vis.mesh.material.visible = true;
     if (!isEvo(s)) return;
     const F = vis.evoF || (mine ? Math.max(1, evoForm(s.id)) : 1), full = mine && QUALITY !== 'low';
     const g = new THREE.Group(); g.userData.F = F;
+    vis.evoBody = !!EVO_BODY[s.id]; vis.evoHid = false;
     if (EVO_BODY[s.id]) { g.add(new THREE.Mesh(sphereGeo, evoMat(s.id, EVO_BODY[s.id]))); vis.mesh.material.visible = false; }
     if (EVO_RIM[s.id]) { const R2 = EVO_RIM2[s.id], rim = new THREE.Mesh(sphereGeo, evoMat('rim' + s.id + F, () => R2 ? evoRim(F >= 2 ? R2[0] : EVO_RIM[s.id], F >= 2 ? R2[2] : R2[1]) : evoRim(EVO_RIM[s.id], F >= 2 ? 1.6 : 1.1))); rim.scale.setScalar(1.12); g.add(rim); }   // only the rim is bigger (g.add() returns the group — scaling it buried the eyes)
     if (mine && EVO_EXTRA[s.id]) vis.evoTick = EVO_EXTRA[s.id](g, F, full);
     vis.evo = g; vis.mesh.add(g);
     if (vis.shine) vis.shine.visible = false;   // the old legend gleam (a lightning bolt) is not part of the evolved look
-    if (vis.head && (s.id === 'lg_eternal' || s.id === 'lg_worlds')) vis.head.visible = false;   // the wreath of «Вечный чемпион» is drawn by its form (not the old gold one)
+    vis.headOff = !!(vis.head && (s.id === 'lg_eternal' || s.id === 'lg_worlds')); if (vis.headOff) vis.head.visible = false;   // the wreath of «Вечный чемпион» is drawn by its form (not the old gold one)
   }
   function evoTick(vis, now) { EVO_T.value = now / 1000; if (vis.evoTick) vis.evoTick(now / 1000, Math.min(.05, (now - (vis.evoLast || now)) / 1000)); vis.evoLast = now; }
 

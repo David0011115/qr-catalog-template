@@ -278,6 +278,8 @@
     zoneLine.visible = zoneOut.visible = running && mode === 'royale';
     if (zoneLine.visible) { const Z = ModeX.zoneC; zoneLine.position.set(Z.x, .06, Z.z); zoneOut.position.set(Z.x, .06, Z.z); zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
+    // 2.7 FPS: on «Среднее» and «Низкое» only the biggest part of your drop wears the hat, aura and shine (each part drew them all)
+    const pLead = QUALITY !== 'high' && player.cells.length > 1 ? mainOf(player) : null;
     for (const c of cells) {
       const r = visualCellR(c), v = c.vis, animateVisible = nearView(c.x, c.z);
       v.jig *= 0.93;
@@ -285,10 +287,10 @@
       if (lk) {
         const crownMode = mode === 'crown' && running;
         v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
-        if (!c.owner.isPlayer) { const show = QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show; if (v.shine) v.shine.visible = show && !v.evo && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
+        if (!c.owner.isPlayer || c.owner === player) { const show = c.owner === player ? (!pLead || c === pLead) : QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show && !v.headOff; if (v.evo && c.owner === player && v.evoHid !== !show) { v.evoHid = !show; v.evo.children.forEach((k, i) => { if (!(i === 0 && v.evoBody)) k.visible = show; }); } if (v.shine) v.shine.visible = show && !v.evo && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
         if (cosmeticRefresh && v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
         if (cosmeticRefresh && v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
-        if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');
+        if (v.aura && crownMode && v.aura.userData.type === 'crownAura') v.aura.visible = false;   // 2.7: no longer re-shows auras hidden above
         if (animateVisible && cosmeticRefresh) {
           animateAura(v, now); animateHead(v, now);
           if (lk.pulse) { const k = .5 + .5 * Math.sin(now / 280); v.mesh.material.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }

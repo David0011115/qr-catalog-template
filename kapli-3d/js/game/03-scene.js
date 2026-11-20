@@ -425,10 +425,28 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
 
   // ================= blob visuals =================
   const sphereGeo = new THREE.SphereGeometry(1, 32, 24);
+  // 2.7 FPS: several small parts in ONE geometry (one draw call instead of many); parts: [geometry, matrix, colour]
+  function mergeGeo(parts) {
+    let nv = 0, ni = 0; parts.forEach(([g]) => { nv += g.attributes.position.count; ni += g.index ? g.index.count : g.attributes.position.count; });
+    const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), col = new Float32Array(nv * 3), idx = new (nv > 65535 ? Uint32Array : Uint16Array)(ni);
+    let vo = 0, io = 0; const v = new THREE.Vector3(), nm = new THREE.Matrix3(), cc = new THREE.Color();
+    for (const [g, m, c] of parts) {
+      const P = g.attributes.position, N = g.attributes.normal; nm.getNormalMatrix(m); cc.set(c || '#ffffff');
+      for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(m); pos.set([v.x, v.y, v.z], (vo + i) * 3);
+        v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); nor.set([v.x, v.y, v.z], (vo + i) * 3); col.set([cc.r, cc.g, cc.b], (vo + i) * 3); }
+      if (g.index) for (let i = 0; i < g.index.count; i++) idx[io++] = g.index.getX(i) + vo; else for (let i = 0; i < P.count; i++) idx[io++] = i + vo;
+      vo += P.count;
+    }
+    const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); out.setAttribute('color', new THREE.BufferAttribute(col, 3)); out.setIndex(new THREE.BufferAttribute(idx, 1));
+    out.computeBoundingSphere(); return out;
+  }
   const eyeGeo = new THREE.SphereGeometry(0.13, 10, 10);
   const pupilGeo = new THREE.SphereGeometry(0.07, 8, 8);
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const pupilMat = new THREE.MeshBasicMaterial({ color: 0x14102a });
+  // both eyes with their pupils as one mesh (was 4 meshes per drop)
+  const eyesGeo = mergeGeo([-0.35, 0.35].flatMap(x => [[eyeGeo, new THREE.Matrix4().makeTranslation(x, .35, .86), '#ffffff'], [pupilGeo, new THREE.Matrix4().makeTranslation(x, .35, .95), '#14102a']]));
+  const eyesMat = new THREE.MeshBasicMaterial({ vertexColors: true });
   const ringGeo = new THREE.RingGeometry(1.08, 1.22, 48);
   const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd166, metalness: .3, roughness: .35, emissive: 0xc08a10, emissiveIntensity: .8, side: THREE.DoubleSide });
   const radius = m => 0.38 * Math.sqrt(m);
@@ -452,11 +470,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   function makeVis(color) {
     const mesh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .45, roughness: .22, metalness: .1, transparent: true, opacity: .9 }));
     const glow = glowSprite(color, 3.2, .85); mesh.add(glow);
-    [-0.35, 0.35].forEach(x => {
-      const e = new THREE.Mesh(eyeGeo, eyeMat); e.position.set(x, 0.35, 0.86);
-      const p = new THREE.Mesh(pupilGeo, pupilMat); p.position.set(0, 0, 0.09); e.add(p);
-      mesh.add(e);
-    });
+    mesh.add(new THREE.Mesh(eyesGeo, eyesMat));
     const crown = makeCrown(); crown.visible = false; mesh.add(crown);
     const shield = new THREE.Mesh(new THREE.SphereGeometry(1.25, 24, 16),
       new THREE.MeshBasicMaterial({ color: new THREE.Color(BONUS.shield.color), transparent: true, opacity: .2 }));

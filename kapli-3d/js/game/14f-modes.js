@@ -45,7 +45,7 @@
     }
     function rbChoose(k) {
       if (!rbOffer) return;
-      if (k === 'keep') { rbOffer = null; rbPanel(); toast('Билд не изменился'); return; }
+      if (k === 'keep') { if (TEST_MODE) try { TLog.ev('замена', 'оставил свои'); } catch (e) {} rbOffer = null; rbPanel(); toast('Билд не изменился'); return; }
       if (k === 'back') { rbOffer.pick = null; rbPanel(); return; }
       if (k[0] === 'n') { rbOffer.pick = +k.slice(1); rbPanel(); return; }
       const slot = +k.slice(1), id = rbOffer.ids[rbOffer.pick], old = runBuild[slot]; if (!id || old === undefined) return;
@@ -59,7 +59,8 @@
       if (rbOffer || rbMile >= RB_MILES.length || total(player) < RB_MILES[rbMile]) return;
       const pool = rbPool(), ids = []; while (pool.length && ids.length < 2) ids.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
       const [floor, up] = RB_TIER[rbMile]; rbMile++; if (ids.length < 2) return;
-      rbOffer = { ids, rar: ids.map(() => Math.min(3, floor + (Math.random() < up ? 1 : 0))), pick: null }; rbT = 15; rbPanel(); toast(`Масса ${RB_MILES[rbMile - 1].toLocaleString('ru-RU')}: можно заменить способность`); Sound.play('level');
+      rbOffer = { ids, rar: ids.map(() => Math.min(3, floor + (Math.random() < up ? 1 : 0))), pick: null };
+      if (TEST_MODE) try { TLog.ev('веха замены', RB_MILES[rbMile - 1] + ': ' + ids.map((id, i) => id + ' ' + RB_RN[rbOffer.rar[i]]).join(', ')); } catch (e) {} rbT = 15; rbPanel(); toast(`Масса ${RB_MILES[rbMile - 1].toLocaleString('ru-RU')}: можно заменить способность`); Sound.play('level');
     }
     // «Захват короны»: the crown lies in the middle until someone takes it, then passes only to whoever eats its holder
     let crownGround = null, crownLast = { x: 0, z: 0 };
@@ -483,7 +484,7 @@
       hcPackMerge: (a, b) => splitMode() && a.owner.hcPack && b.owner.hcPack && a.owner !== b.owner && a.mass >= b.mass,
       // the choice of a hardcore card stops the world; the 15 s countdown runs in real time
       hcFrozen: () => (mode === 'hardcore' && !!hcOffer) || (mode === 'rbuild' && !!rbOffer), hcFusing: () => splitMode() && hcFuseT > 0, hcPairBite,
-      hcFreezeTick(dt) { if (rbOffer) { rbT -= dt; const t = document.getElementById('rbPickT'); if (t) t.textContent = Math.max(0, Math.ceil(rbT)); if (rbT <= 0) { rbOffer = null; rbPanel(); toast('Время вышло — билд не изменился'); } return; } hcT -= dt; const el = document.getElementById('hcPickT'); if (el) el.textContent = Math.max(0, Math.ceil(hcT)); if (hcT <= 0) hcPick(0); }, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
+      hcFreezeTick(dt) { if (rbOffer) { rbT -= dt; const t = document.getElementById('rbPickT'); if (t) t.textContent = Math.max(0, Math.ceil(rbT)); if (rbT <= 0) { if (TEST_MODE) try { TLog.ev('замена', 'время вышло'); } catch (e) {} rbOffer = null; rbPanel(); toast('Время вышло — билд не изменился'); } return; } hcT -= dt; const el = document.getElementById('hcPickT'); if (el) el.textContent = Math.max(0, Math.ceil(hcT)); if (hcT <= 0) hcPick(0); }, hcSpikesDisabled, hcKill: () => { if (mode === 'hardcore' && hc.predator) hcPredT = 2; },
       hcBossPressure, hcBossSenseK: () => (hcSplitDone ? 2 : 1 + .5 * hcBossPressure()), hcBossTurnK: () => (hcSplitDone ? 1.8 : 1 + .55 * hcBossPressure()), hcPackSpeedK: o => (splitMode() && o.hcPack ? (mode === 'classic' ? 1.1 : 1.15) : 1),
       hcBossSpawnInterval: () => (hcSplitDone ? 6 : total(player) >= 10000 ? 10 : 40 - 16 * hcBossPressure()), hcBossTarget,
       start, tick, end, survWave, survGrow, survCombo, placeBonus, crownRules, crownBite,
@@ -621,7 +622,7 @@
         if (!zn.on) { const f = Math.max(0, zn.t); zn.ring.material.opacity = .5 + .4 * Math.abs(Math.sin(f * 9)); zn.m.material.opacity = .1 + .25 * (1 - Math.min(1, f)); if (zn.t <= 0) { zn.on = true; zoneFire(zn); zn.t = zn.dur; zn.m.material.opacity = zn.dur ? .38 : 0; } }
         else {
           if (zn.kind === 'lava') for (const c of player.cells) if (inZone(zn, c)) c.mass = Math.max(20, c.mass * (1 - .05 * dt));
-          if (zn.kind === 'ice') for (const c of player.cells) if (inZone(zn, c)) player.slowT = Math.max(player.slowT || 0, .25);
+          if (zn.kind === 'ice' && player.cells.some(c => inZone(zn, c))) ccAura(player, dt);
         }
         if (zn.on && zn.t <= 0) { dropZone(zn); zones.splice(k, 1); }
       }

@@ -892,6 +892,7 @@ em.ttl { font-style: normal; font-size: .7rem; font-weight: 600; }
 .chip .bar.wide { width: 110px; height: 6px; }
 #speed.boost { color: var(--gold); }
 .stat .buff { font-size: .66rem; color: var(--gold); min-height: 1.1em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat .buff.debuff { color: #8fe3ff; font-weight: 700; text-shadow: 0 0 8px rgba(80,200,255,.7); }   /* 2.7: slowed or stunned */
 @media (max-width: 520px) {
   .logo { display: none; }
   .stats { gap: 6px; width: 100%; justify-content: space-between; }

@@ -299,12 +299,14 @@
       v.ring.scale.setScalar(r);
       if (c.owner.isPlayer) {
         v.shield.visible = shieldOn;
-        v.ring.material.color.set(c.mergeT > 0 ? BONUS.shield.color : '#ffffff');
+        v.ring.material.color.set(player.freezeT > 0 || player.slowT > 0 ? '#7fdcff' : c.mergeT > 0 ? BONUS.shield.color : '#ffffff');   // 2.7: an icy ring while slowed
         v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
       } else if (player.cells.length) {
         const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
         if (c.owner.team && c.owner.team === player.team) v.ring.material.color.set(ALLY_COLOR);
         else v.ring.material.color.copy(danger ? THREAT : food ? PREY : NEUTRAL);
+        // 2.7: in the modes for two the ring of a drop you can eat (green) or that can eat you (red) pulses and stands out past the edge
+        if (DuoM.mode && (danger || food) && !(c.owner.team && c.owner.team === player.team)) v.ring.scale.setScalar(r * (1.1 + .07 * Math.sin(now / 170)));
       }
     }
     ejectMat.color.set(skin().color); ejectMat.emissive.set(skin().color);

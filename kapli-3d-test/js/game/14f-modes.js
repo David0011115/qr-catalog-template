@@ -21,10 +21,12 @@
     ];
     let rule = null, mile = 0, esc = 0, rushOn = false, breakAt = 0;
     // 2.7 «Случайный билд»: at 5 mass milestones the game pauses and offers 2 new abilities; pick one, then the slot it replaces (or keep the build).
-    // The later the milestone, the more levels the new ability gets for this round.
-    const RB_MILES = [3000, 8000, 15000, 25000, 40000], RB_LV = [1, 1, 2, 2, 3];
+    // Each card has a rarity (like the «Хардкор» cards): common +1 level for the round, rare +2, epic +3, legendary +4;
+    // the later the milestone, the higher the floor and the chance of one step up.
+    const RB_MILES = [3000, 8000, 15000, 25000, 40000], RB_TIER = [[0, .3], [0, .5], [1, .4], [1, .6], [2, .5]], RB_RN = ['Обычная', 'Редкая', 'Эпическая', 'Легендарная'];
+    const RB_LV = RB_TIER.map(([f]) => f + 1);   // the lowest bonus at each milestone (for the ⓘ table)
     let rbMile = 0, rbOffer = null, rbT = 0;
-    const rbPool = () => ABILITIES.filter(a => !a.xa && !a.cr && !runBuild.includes(a.id)).map(a => a.id);
+    const rbPool = () => ABILITIES.filter(a => !a.xa && !a.cr && !a.branches && !runBuild.includes(a.id)).map(a => a.id);   // dash and split have no levels, so they never come as a card
     const rbLvText = (id, add) => { const a = abilById(id); if (a.branches) return 'улучшения как у тебя'; const base = save.abil.lv[id] || 0, lv = Math.min(ABIL_CFG.levels, base + add); return `уровень ${lv}/${ABIL_CFG.levels}${lv > base ? ` · +${lv - base} в раунде` : ''}`; };
     function rbPanel() {
       let el = document.getElementById('rbPick');
@@ -34,10 +36,10 @@
         el.addEventListener('click', e => { const b = e.target.closest('[data-rb]'); if (b) rbChoose(b.dataset.rb); });
       }
       if (!rbOffer || !running) { el.hidden = true; return; }
-      const card = (key, id, sub) => { const a = abilById(id); return `<button type="button" data-rb="${key}" style="--ac:${a.color}"><span class="ic" style="color:${a.color}">${a.icon}</span><b>${a.name}</b><small>${sub}</small></button>`; };
+      const card = (key, id, sub, r) => { const a = abilById(id), rar = r === undefined ? '' : `<span class="hc-rar">${RB_RN[r]}</span>`; return `<button type="button" data-rb="${key}" class="${r === undefined ? '' : 'hc-card r' + r}" style="--ac:${a.color}${r === undefined ? '' : `;--rc:${RARITY[HC_R[r]].color}`}">${rar}<span class="ic" style="color:${a.color}">${a.icon}</span><b>${a.name}</b><small>${sub}</small></button>`; };
       const head = `<p>Случайный билд · веха ${RB_MILES[rbMile - 1].toLocaleString('ru-RU')} · игра на паузе · <b id="rbPickT">${Math.max(0, Math.ceil(rbT))}</b> с</p>`;
       el.innerHTML = rbOffer.pick === null
-        ? head + `<small class="rb-step">1. Выбери новую способность</small><div class="db-opts two">${rbOffer.ids.map((id, i) => card('n' + i, id, rbLvText(id, rbOffer.lv))).join('')}</div><button type="button" class="rb-keep" data-rb="keep">Оставить свои способности</button>`
+        ? head + `<small class="rb-step">1. Выбери новую способность</small><div class="db-opts two">${rbOffer.ids.map((id, i) => card('n' + i, id, rbLvText(id, rbOffer.rar[i] + 1), rbOffer.rar[i])).join('')}</div><button type="button" class="rb-keep" data-rb="keep">Оставить свои способности</button>`
         : head + `<small class="rb-step">2. Какую заменить на «${abilById(rbOffer.ids[rbOffer.pick]).name}»?</small><div class="db-opts">${runBuild.map((id, i) => id ? card('s' + i, id, 'заменить · ' + ABIL_CFG.slotKeyName[i]) : '').join('')}</div><button type="button" class="rb-keep" data-rb="back">← назад</button>`;
       el.hidden = false;
     }
@@ -47,17 +49,17 @@
       if (k === 'back') { rbOffer.pick = null; rbPanel(); return; }
       if (k[0] === 'n') { rbOffer.pick = +k.slice(1); rbPanel(); return; }
       const slot = +k.slice(1), id = rbOffer.ids[rbOffer.pick], old = runBuild[slot]; if (!id || old === undefined) return;
-      runBuild[slot] = id; if (!abilById(id).branches) rbLvUp[id] = (rbLvUp[id] || 0) + rbOffer.lv;
+      const r = rbOffer.rar[rbOffer.pick]; runBuild[slot] = id; rbLvUp[id] = (rbLvUp[id] || 0) + r + 1;
       if (player.abT) delete player.abT[old]; if (player.abCd) player.abCd[id] = 0;
       (stats.rbSwaps = stats.rbSwaps || []).push([Math.round(stats.time), old, id]);
-      if (TEST_MODE) try { TLog.ev('замена', old + '→' + id); } catch (e) {}
-      rbOffer = null; rbPanel(); renderSlots(); toast(`«${abilById(old).name}» → «${abilById(id).name}»`); Sound.play('level');
+      if (TEST_MODE) try { TLog.ev('замена', old + '→' + id + ' ' + RB_RN[r]); } catch (e) {}
+      rbOffer = null; rbPanel(); renderSlots(); toast(`«${abilById(old).name}» → «${abilById(id).name}» · ${RB_RN[r].toLowerCase()}, +${r + 1} ур. в раунде`); Sound.play('level');
     }
     function rbTick() {
       if (rbOffer || rbMile >= RB_MILES.length || total(player) < RB_MILES[rbMile]) return;
       const pool = rbPool(), ids = []; while (pool.length && ids.length < 2) ids.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-      const lv = RB_LV[rbMile]; rbMile++; if (ids.length < 2) return;
-      rbOffer = { ids, lv, pick: null }; rbT = 15; rbPanel(); toast(`Масса ${RB_MILES[rbMile - 1].toLocaleString('ru-RU')}: можно заменить способность`); Sound.play('level');
+      const [floor, up] = RB_TIER[rbMile]; rbMile++; if (ids.length < 2) return;
+      rbOffer = { ids, rar: ids.map(() => Math.min(3, floor + (Math.random() < up ? 1 : 0))), pick: null }; rbT = 15; rbPanel(); toast(`Масса ${RB_MILES[rbMile - 1].toLocaleString('ru-RU')}: можно заменить способность`); Sound.play('level');
     }
     // «Захват короны»: the crown lies in the middle until someone takes it, then passes only to whoever eats its holder
     let crownGround = null, crownLast = { x: 0, z: 0 };
@@ -468,7 +470,7 @@
       dayMode, dayMark: id => (id === dayMode() ? DAY_MARK : ''),
       dayK: () => (mode === dayMode() && !stats.ranked && !stats.chaos && !stats.tutorial ? 1.25 : 1),
       // 2.7: what the ⓘ window of «Режимы» tells about each mode
-      info: () => ({ RB_MILES, RB_LV, CL_GOAL, CL_GOAL_COINS, MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
+      info: () => ({ RB_MILES, RB_LV, RB_TIER, RB_RN, CL_GOAL, CL_GOAL_COINS, MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
       HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) * hcDK("melt") * (curseOn("hunger") ? 1.5 : 1) : hcK("melt")) * hcMeltUp(), hcK,
       hcCurseSoon: () => { hcCurse = null; hcCurseT = 3; },
       hcCurseId: () => mode === 'hardcore' && hcCurse ? hcCurse.id : null,   // 2.7 test journal

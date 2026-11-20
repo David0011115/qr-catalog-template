@@ -529,7 +529,8 @@
         const victim = b.owner, lastMass = b.mass;
         if (mode === 'crown') ModeX.crownBite(a, b, victim, lastMass);
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; (stats.bites = stats.bites || []).push([Math.round(stats.time), a.owner.kind === 'boss' ? 'boss:' + a.owner.bossType : a.owner.hcPack ? 'pack' : a.owner.kind || '?', Math.round(a.mass), Math.round(lastMass)]); if (stats.bites.length > 12) stats.bites.shift(); } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
-        { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) { if (evoOn()) evoEat(b.x, b.z, rb); else eatFx(b.x, b.z, rb, cellColor(b)); } else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
+        { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) { if (skin().id === 'cr_sandup') { const tn = performance.now() / 1000; if (tn - (liveState.sandFlip ?? -99) > 1.4) liveState.sandFlip = tn; }   // 2.7 «Время вспять»: the hourglass turns over
+          if (evoOn()) evoEat(b.x, b.z, rb); else eatFx(b.x, b.z, rb, cellColor(b)); } else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
         removeCell(b);
         if (a.owner.isPlayer) {
           if (victim.kind === 'boss') {

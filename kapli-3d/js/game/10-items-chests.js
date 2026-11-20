@@ -34,6 +34,7 @@
     if (save.archived && save.archived.includes(x.id)) return 'куплен в архиве сезонов';
     if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
     if (x.skill) return 'все мастерские достижения';
+    if (x.craft && CR_RETIRED.has(x.id)) return 'был в Мастерской, серия «Хронос» — больше не создаётся, остаётся у тех, кто успел';
     if (x.craft) return `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(x.id)) || PACKS[0]).name}» · ${RARITY[x.craft].name.toLowerCase()}: создаётся только из осколков`;
     if (x.prestige) return `престиж после 50-го уровня, ${x.prestige}`;
     if (x.tut) return 'награда за обучение';
@@ -497,7 +498,7 @@
   const chatBgOwned = id => (save.chatBg || []).includes(id);
   const CR_BASE = { emo_tick: [['common', 20]], emo_wait: [['common', 20]], emo_late: [['rare', 15]], emo_windup: [['rare', 15]], chronos: [['legendary', 40]], 'chronos-workshop': [['rare', 30]], 'chronos-city': [['epic', 30]], 'chronos-heart': [['legendary', 20]], bg_cr_gears: [['common', 30]], bg_cr_sand: [['rare', 30]], bg_cr_behind: [['epic', 30]], bg_cr_void: [['legendary', 20]],
     fr_cr_dial: [['common', 30]], fr_cr_roman: [['rare', 30]], fr_cr_pend: [['epic', 30]], fr_cr_gyro: [['legendary', 20]],
-    cr_engrave: [['epic', 45]], cr_watch: [['rare', 45]], cr_windup: [['rare', 40]], cr_skeleton: [['epic', 45]], cr_sandup: [['epic', 40]], cr_spiral: [['legendary', 30]], cr_moon: [['legendary', 30]],
+    cr_engrave: [['epic', 45]], cr_watch: [['rare', 45]], cr_windup: [['rare', 40]], cr_skeleton: [['legendary', 30]], cr_sandup: [['epic', 40]], cr_spiral: [['legendary', 30]], cr_moon: [['legendary', 30]],
     cr_cogs: [['rare', 45]], cr_tick: [['rare', 45]], cr_marks: [['epic', 45]], cr_cogwings: [['epic', 45]], cr_freeze: [['legendary', 30]], cr_halo: [['legendary', 30]], cr_foucault: [['legendary', 30]],
     cr_p_cuckoo: [['rare', 60]], cr_p_mouse: [['epic', 60]], cr_p_owl: [['legendary', 40]],
     cr_gearwall: [['epic', 90], ['legendary', 15]], cr_rewind: [['epic', 90], ['legendary', 15]], cr_swap: [['epic', 90], ['legendary', 15]] };
@@ -515,7 +516,8 @@
   const WS_CATS = [['bg', 'Фоны профиля'], ['chatbg', 'Фоны чата'], ['frame', 'Рамки'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['pet', 'Питомцы'], ['abil', 'Способности'], ['arena', 'Арены'], ['emo', 'Эмоции']];
   const CR_EMO = [[':tick:', 'common'], [':wait:', 'common'], [':late:', 'rare'], [':windup:', 'rare']], emoId = k => 'emo_' + k.replace(/:/g, '');
   // the series pays for progress: an emote at 10 and at 20 crafted items, the frame, the title and a profile background for all of them
-  const SERIES_EMO = [[10, ':freeze:'], [20, ':cuckoo:']], SERIES_ALL = { decor: ['fr_cr_tourb', 'tt_cr_master'], pbg: ['bg_cr_astro'] };
+  const SERIES_EMO = [[8, ':freeze:'], [15, ':cuckoo:']],   // 2.7: the series has 23 items now (was 36: 10 and 20)
+   SERIES_ALL = { decor: ['fr_cr_tourb', 'tt_cr_master'], pbg: ['bg_cr_astro'] };
   function wsSeries() {
     const all = WS_CATS.flatMap(([cat]) => wsItems(cat)), n = all.filter(x => x.own).length, got = [];
     save.emo = save.emo || []; save.pbg = save.pbg || [];
@@ -526,7 +528,12 @@
     }
     return { n, total: all.length, got };
   }
-  function wsItems(cat) {
+  // 2.7: what the workshop offers — the retired items are gone from it (their owners keep them)
+  function wsItems(cat) { return wsItemsAll(cat).filter(x => !CR_RETIRED.has(x.id)); }
+  // how many items of the series you own (cached for a second: the evolution of «Скелетон» asks every frame)
+  let wsNCache = [0, 0];
+  function wsSeriesN() { const now = Date.now(); if (now - wsNCache[0] > 1000) wsNCache = [now, WS_CATS.flatMap(([cat]) => wsItems(cat)).filter(x => x.own).length]; return wsNCache[1]; }
+  function wsItemsAll(cat) {
     if (cat === 'emo') return CR_EMO.map(([k, rar]) => ({ id: emoId(k), name: KapliEmo.E[k].n, rar, sub: 'эмоция для чата', pv: `<span class="emo-play" data-emote="${k}" style="display:block;width:62px;height:62px">${KapliEmo.svg(k)}</span>`, own: (save.emo || []).includes(k), give: () => { save.emo = save.emo || []; save.emo.push(k); } }));
     if (cat === 'arena') return ARENAS.filter(a => a.craft).map(a => ({ id: a.id, name: a.name, rar: a.craft, sub: 'Особенность: ' + ARENA_FX[a.id], pv: `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`, own: save.arenas.includes(a.id), give: () => save.arenas.push(a.id), info: 'arena:' + a.id }));
     if (cat === 'chatbg') return CHAT_BG.map(b => ({ id: b.id, name: b.name, rar: b.rar, sub: 'живой фон для общего чата и личных сообщений', info: 'chatbg:' + b.id, pv: `<img src="chat-${b.id}.svg" alt="">`, own: chatBgOwned(b.id), give: () => { save.chatBg = save.chatBg || []; save.chatBg.push(b.id); } }));

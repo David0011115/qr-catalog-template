@@ -7,6 +7,7 @@ import { createTerritoryState, TERRITORY_RULES } from '../modes/territory.js';
 import { createDuobackState, DUOBACK_DIFFICULTIES } from '../modes/duoback.js';
 import { createBotRoster, spawnBotOwner } from '../modes/bots.js';
 
+export const TERRITORY_ARENA = 1.25;   // 2.7: the field of «Захват территории» (×1.5 before the owner's test)
 export const DUO_WORLD_SOURCE = Object.freeze({
   baseArenaRadius: 237.5,
   baseFoodCount: 5250,
@@ -94,7 +95,7 @@ export function createDuoWorld({ mode, players, seed, difficultyIndex = 0 }) {
   const byRole = Object.fromEntries(players.map(player => [player.role, player]));
   if (!byRole.host || !byRole.guest) throw new TypeError('players must have host and guest roles');
 
-  const scale = mode === 'territory' ? 1.5 : 0.8;
+  const scale = mode === 'territory' ? TERRITORY_ARENA : 0.8;   // 2.7: territory 1.5 → 1.25 after the owner's test (too big for two)
   const arenaRadius = DUO_WORLD_SOURCE.baseArenaRadius * scale;
   const foodCount = Math.min(
     DUO_WORLD_SOURCE.maxFoodCount,

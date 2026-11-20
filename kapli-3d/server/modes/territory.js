@@ -14,9 +14,9 @@ export const TERRITORY_RULES = Object.freeze({
   fullSpeedMassGap: 1500,      // 2.7: the border moves at full speed only with this much mass between the two
   foodMultiplier: 2,           // 2.7: crumbs give more here (owner.dbAbs); 1.4 → 2 after the owner's test (388 mass in 2 min: no upgrades online)
   playerMagnet: 4,             // 2.7: crumbs are pulled from a little further (solo players have upgrades for it)
-  botSpeed: 0.83,              // 2.7: bots 10% slower than the usual 0.92 («боты быстрые»)
+  botSpeed: 0.78,              // 2.7: bots ~15% slower than the usual 0.92 («боты быстрые», twice)
   tieThreshold: 0.02,
-  botCount: 30,                // 2.7: was 24
+  botCount: 30,                // 2.7: was 24 (kept on the smaller field: they are the food that moves the border)
 });
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));

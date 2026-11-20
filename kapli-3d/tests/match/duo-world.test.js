@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDuoWorld, DUO_WORLD_SOURCE } from '../../server/match/duo-world.js';
+import { createDuoWorld, DUO_WORLD_SOURCE, TERRITORY_ARENA } from '../../server/match/duo-world.js';
 
 const players = [
   { id: 'user-host', role: 'host', nickname: 'Host' },
@@ -9,8 +9,8 @@ const players = [
 
 test('Territory world uses source arena scale, food density and 30-bot roster (2.7)', () => {
   const { world, players: owners } = createDuoWorld({ mode: 'territory', players, seed: 12345 });
-  assert.equal(world.arenaRadius, DUO_WORLD_SOURCE.baseArenaRadius * 1.5);
-  assert.equal(world.food.length, Math.round(5250 * 1.5 * 1.5));
+  assert.equal(world.arenaRadius, DUO_WORLD_SOURCE.baseArenaRadius * TERRITORY_ARENA);
+  assert.equal(world.food.length, Math.round(5250 * TERRITORY_ARENA * TERRITORY_ARENA));
   assert.equal(world.owners.filter(owner => owner.kind === 'bot').length, 30);
   assert.equal(world.owners.filter(owner => owner.isPlayer).length, 2);
   assert.equal(owners.host.cells[0].x, -world.arenaRadius * 0.6);

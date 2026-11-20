@@ -1,6 +1,14 @@
   // ================= scene =================
   const stage = $('stage');
   const renderer = new THREE.WebGLRenderer({ antialias: true });
+  // 2.7: previews drawn on a transparent canvas (item window, evolution window, menu backdrop). Additive glow added colour but no
+  // opacity there, and many phone GPUs show such pixels as dark smudges. Same colour, but the glow now adds opacity too.
+  function alphaSafe(sc) {
+    sc.traverse(o => { const ms = !o.material ? [] : Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of ms) if (m.blending === THREE.AdditiveBlending && !m.userData.alphaSafe) {
+        m.blending = THREE.CustomBlending; m.blendEquation = THREE.AddEquation; m.blendSrc = THREE.SrcAlphaFactor; m.blendDst = THREE.OneFactor;
+        m.blendEquationAlpha = THREE.AddEquation; m.blendSrcAlpha = THREE.OneFactor; m.blendDstAlpha = THREE.OneFactor; m.userData.alphaSafe = 1; m.needsUpdate = true; } });
+  }
   let QUALITY = 'high';
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = false;   // neon look relies on emissive light, not shadows

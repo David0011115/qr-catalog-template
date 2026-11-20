@@ -100,7 +100,8 @@
       act = !save.fxOwned.includes(id) ? `<button class="btn ghost" disabled>${f.craft ? 'Создаётся в мастерской' : buyable(f) ? 'Купить можно в магазине' : 'Ещё не получен'}</button>` : `<button class="btn ${on ? 'ghost' : ''}" data-act="fx-${id}">${on ? 'Снять' : 'Надеть'}</button>`;
     } else if (kind === 'pet') {
       const pt = petById(id), own = save.pets.includes(id), on = save.pet === id, B = PET_BONUS[pt.bonus];
-      name = pt.name; tag = rarTag(pt.chest || pt.lchest || pt.craft) + (pt.tier ? `<span class="badge-ex">${pt.tier}</span>` : '');
+      const prr = pt.chest || pt.lchest || pt.craft;   // 2.7: the tier is not repeated when it says the same as the rarity («РЕДКИЙ РЕДКИЙ»)
+      name = pt.name; tag = rarTag(prr) + (pt.tier && !(prr && RARITY[prr].name.toLowerCase() === String(pt.tier).toLowerCase()) ? `<span class="badge-ex">${pt.tier}</span>` : '');
       const g = buildPet(pt); scene.remove(g); g.visible = true; g.position.set(0, 0, 0); imObj = g;
       rows.push(['Вид', PET_SPECIES[pt.species]], ['Бонус', `${B.name}: ${B.text(pt.lv)}`], ...(pt.craft ? [] : [['Сила', `уровень ${pt.lv} из 3`]]),
         ['Откуда', pt.craft ? sourceText(pt) : save.archived && save.archived.includes(pt.id) ? 'куплен в архиве сезонов' : pt.legend ? `легендарное достижение «${LEGEND.find(l => l.id === pt.legend).name}»` : pt.lchest ? 'сундук лиги' : pt.chest ? 'сундук' : pt.holiday ? 'праздничная лига' : `лига «${pt.tier}» в конце сезона`], ['В лиге', 'бонус не действует в рейтинговом бою']);
@@ -175,7 +176,7 @@
           if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320);
         } else if (imKind === 'pet') imObj.position.y = Math.sin(now / 400) * .08;
         shineT.value = now / 1000;
-        imR.render(imScene, imCam);
+        alphaSafe(imScene); imR.render(imScene, imCam);
       }
       imAnim = requestAnimationFrame(loop);
     };

@@ -330,7 +330,7 @@
       const pop = swapped ? 1 + .25 * Math.exp(-(t - 1.4) * 4) * Math.sin((t - 1.4) * 14) : ev.fresh ? Math.min(1, t / 1.2) * .6 : 1;
       v.mesh.scale.setScalar(Math.max(.01, pop)); v.mesh.rotation.y = .4 + Math.sin(t * .6) * .5;
       try { animateHead(v, now); evoTick(v, now); } catch (e) {}
-      R.render(sc, cam); };
+      alphaSafe(sc); R.render(sc, cam); };
     raf = requestAnimationFrame(loop);
     evoWin = () => { cancelAnimationFrame(raf); try { R.dispose(); } catch (e) {} evoWin = null; m.hidden = true; m.innerHTML = ''; };
     m.onclick = e => {

@@ -432,6 +432,7 @@
     const dl = rows => rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
     const BONUS_TXT = { speed: '+45% к скорости', shield: 'тебя нельзя съесть', double: 'еда даёт вдвое больше массы', magnet: 'крошки сами летят к тебе', fountain: 'сразу рассыпает вокруг тебя горсть крошек: чем ты больше, тем их больше' };
     $('infoBonus').innerHTML = dl(Object.entries(BONUS).map(([k, b]) => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, b.instant ? `${BONUS_TXT[k] || ''}, сразу` : `${BONUS_TXT[k] || ''}, ${b.dur} с`]));
+    if ($('infoChars')) $('infoChars').innerHTML = dl(CHARS.map(c => [`${c.icon} ${c.name} <small>(с ${c.lvl} ур.)</small>`, `＋ ${c.plus}; − ${c.minus}`]));
     $('infoEvents').innerHTML = dl(EVENTS.map(e => [`<i class="dot" style="background:${e.color}"></i>${e.name}`, e.desc]));
     $('infoBosses').innerHTML = dl([...Object.values(BOSS_TYPES), BOSS_TYPES_EXTRA.colossus].map(b => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, `${b.about}. Награда: ${b.coins} ◆, ${b.xp} опыта`]));
     $('infoModes').innerHTML = dl(MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => [m.name, m.desc + (id === leagueMode() ? ' <b>· сейчас режим лиги</b>' : '')]));
@@ -1473,7 +1474,11 @@
   function myAbilHtml() {
     const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small class="ab-desc" title="${a.desc.replace(/"/g, '&quot;')}.">${a.desc}.</small><small class="now">${extra}</small></div></div>`;
     const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id)), crafted = CR_ABIL.filter(a => own.includes(a.id));
-    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +
+    const lvNow = playerLevel(), chTile = c => { const lock = lvNow < c.lvl, on = save.char === c.id;
+      return `<button type="button" class="ch-tile${on ? ' on' : ''}" data-char="${c.id}" ${lock ? 'disabled' : ''} style="--ac:${c.color}" aria-pressed="${on}"><span class="ch-ic">${c.icon}</span><b>${c.name}</b>${lock ? `<small class="ch-lock">🔒 с ${c.lvl} уровня</small>` : `<small class="ch-p">＋ ${c.plus}</small><small class="ch-m">− ${c.minus}</small>`}</button>`; };
+    const charSec = `<h3>Характер капли · ${save.char ? charById(save.char)?.name : 'не выбран'}</h3><div class="ch-grid">${CHARS.map(chTile).join('')}<button type="button" class="ch-tile none${save.char ? '' : ' on'}" data-char="" aria-pressed="${!save.char}"><span class="ch-ic">○</span><b>Без характера</b><small class="ch-p">без плюсов и минусов</small></button></div>` +
+      `<p class="empty-note">Действует в одиночных режимах. В лиге, Хаос-лиге, обучении и режимах для двоих — нет.</p>`;
+    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` + charSec +
       `<p class="empty-note">Билд меняется только здесь, между боями. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p>` +
       `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + '<div class="ab-tiles">' + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') + '</div>' +
       `<p class="empty-note">Улучшать — в «Магазине» → «Способности». Новые способности тоже там.</p>` +
@@ -1553,6 +1558,7 @@
   let tiReturn = null;
   const closeTabInfo = () => { $('tabInfoModal').hidden = true; if (tiReturn && tiReturn.isConnected) tiReturn.focus(); };
   $('shop').addEventListener('click', e => { const b = e.target.closest('[data-tabinfo]'); if (b) openTabInfo(b.dataset.tabinfo); });
+  $('shop').addEventListener('click', e => { const b = e.target.closest('[data-char]'); if (!b || b.disabled) return; const id = b.dataset.char || null; save.char = id; persist(); renderShop(); const c = charById(id); toast(c ? `Характер «${c.name}»: ${c.plus}; ${c.minus}` : 'Без характера'); });   // 2.7
   $('tiOk').addEventListener('click', closeTabInfo); $('tiClose').addEventListener('click', closeTabInfo);
   $('tabInfoModal').addEventListener('click', e => { if (e.target === $('tabInfoModal')) closeTabInfo(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('tabInfoModal').hidden) { e.stopPropagation(); closeTabInfo(); } }, true);

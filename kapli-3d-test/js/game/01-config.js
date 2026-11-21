@@ -187,6 +187,16 @@
   // ================= abilities: ALL tunable numbers live in this table =================
   // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
   // every level: cooldown −cdPerLv, power (duration / distance / radius / force) +powPerLv.
+  // 2.7 «Характер капли»: a style chosen before a round — one strength, one weakness (no pure gain). Solo modes only, not in the
+  // league, Chaos League, the tutorial and matches for two. Opened by level.
+  const CHARS = [
+    { id: 'predator', name: 'Хищник',     icon: '🩸', color: '#ff2d55', lvl: 1,  plus: 'съеденные боты и боссы дают +15%', minus: 'таешь на 10% быстрее' },
+    { id: 'gatherer', name: 'Собиратель', icon: '🍃', color: '#3dffa2', lvl: 1,  plus: 'крошки +30% и притягиваются издалека', minus: 'боты и боссы дают −15%' },
+    { id: 'tank',     name: 'Танк',       icon: '🛡', color: '#9fe8ff', lvl: 10, plus: 'чтобы съесть тебя, нужно быть крупнее в 1,4 раза (обычно 1,25)', minus: 'на 8% медленнее' },
+    { id: 'ghost',    name: 'Призрак',    icon: '👻', color: '#c9c2ff', lvl: 15, plus: 'боты замечают тебя вдвое позже', minus: 'масса растёт на 10% медленнее' },
+    { id: 'berserk',  name: 'Берсерк',    icon: '⚡', color: '#ffd23f', lvl: 20, plus: 'перезарядка способностей −15%', minus: 'щит и бонусы на поле действуют на 25% короче' },
+  ];
+  const charById = id => CHARS.find(c => c.id === id) || null;
   const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .75, growth: 1.35, cdPerLv: .04, powPerLv: .065,
     rankedBuild: ['dash', 'split', 'eject'], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
     slotBtn: ['dash', 'split', 'eject'], slotKey: ['Space', 'KeyE', 'KeyQ'], slotKeyName: ['Пробел', 'E', 'Q'],

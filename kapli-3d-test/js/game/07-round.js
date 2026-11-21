@@ -176,7 +176,7 @@
     for (const t of cells) {
       if (t.owner === o || abOn('cloak', t.owner)) continue;
       const d = Math.hypot(t.x - c.x, t.z - c.z);
-      if (d > sense) continue;
+      if (d > sense || (t.owner === player && d > sense * .5 && charIs('ghost'))) continue;   // «Призрак»: seen at half the distance
       if (p.flee > 0 && canEat(t, c) && d < sense * Math.min(1, p.flee)) {
         const w = p.flee / Math.max(d, 1); fx -= (t.x - c.x) * w; fz -= (t.z - c.z) * w;
       } else if (p.chase > 0 && c.mass > t.mass * 1.25 * p.preyK && canEat(c, t)) {
@@ -441,8 +441,8 @@
     rebuildCells();
 
     // food + decay
-    const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
-    const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * ModeX.gainK();
+    const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet') + (charIs('gatherer') ? 3 : 0);
+    const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * ModeX.gainK() * (charIs('gatherer') ? 1.3 : charIs('ghost') ? .9 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const fx2 = c.owner.eff;   // the second player of a match for two keeps their bonuses here
@@ -462,7 +462,7 @@
       } }
       // decay grows with size, so mass can't snowball forever
       // 2.7: half as fast and only from 500 mass (a small drop does not melt); «Хардкор» keeps the old, harsh one
-      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss' && !abOn('pulse', c.owner)) c.mass -= c.mass * (mode === 'hardcore' ? ModeX.HC_DECAY : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? (1 - 0.04 * U.guard) * ModeX.meltK() : 1) * dt;
+      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss' && !abOn('pulse', c.owner)) c.mass -= c.mass * (mode === 'hardcore' ? ModeX.HC_DECAY : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? (1 - 0.04 * U.guard) * ModeX.meltK() * (charIs('predator') ? 1.1 : 1) : 1) * dt;
     }
 
     // bonuses (player only)
@@ -519,7 +519,7 @@
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
           stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK());
         } }
-        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .22 : total(player) >= 30000 ? .35 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' ? (b.owner.hcPack ? .2 : total(player) >= 50000 ? .5 : 1) : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() * (b.owner.hcPack && mode === 'classic' ? .25 : 1) : 1) * (a.owner.isPlayer && b.owner.kind === 'boss' ? ModeX.clBossGainK(pairMate) : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.2) : 1) * (abOn('pulse', a.owner) && b.owner.kind === 'bot' ? 1.3 : 1);
+        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .22 : total(player) >= 30000 ? .35 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' ? (b.owner.hcPack ? .2 : total(player) >= 50000 ? .5 : 1) : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() * (b.owner.hcPack && mode === 'classic' ? .25 : 1) : 1) * (a.owner.isPlayer && b.owner.kind === 'boss' ? ModeX.clBossGainK(pairMate) : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.2) : 1) * (abOn('pulse', a.owner) && b.owner.kind === 'bot' ? 1.3 : 1) * (a.owner.isPlayer ? (b.owner.kind === 'bot' || b.owner.kind === 'boss' ? (charIs('predator') ? 1.15 : charIs('gatherer') ? .85 : 1) : 1) * (charIs('ghost') ? .9 : 1) : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
         const bossCap = bossMassCap();
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
@@ -623,10 +623,10 @@
       if (U.speed) parts.push(`+${U.speed}% улучш.`);
       if (effects.speed > 0) parts.push('+45% бонус');
       if (player.dashT > 0) parts.push('рывок');
-      const mult = (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (player.dashT > 0 ? DASH_MULT / Math.pow(Math.max(1, m / player.cells.length) / START_MASS, -0.15) : 1);
+      const mult = speedBuffK();   // 2.7: the real effect of every buff and slow (the dash is shown on its own; it used to read «бафы +680%»)
       // 2.7: what slows you down right now, with the seconds left (stun from «Отражение», the frost boss and slowing abilities, ice)
       const slowTxt = player.freezeT > 0 ? `💫 оглушение ${player.freezeT.toFixed(1)} с` : player.slowT > 0 ? `❄ замедление −${Math.round((1 - ABIL_CFG.slowFactor) * 100)}% · ${Math.ceil(player.slowT)} с` : player.iceT > 0 ? `❄ лёд · ${Math.ceil(player.iceT)} с` : '';
-      setText('buff', slowTxt || (mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : ''));
+      setText('buff', slowTxt || (player.dashT > 0 ? 'рывок' : mult > 1.005 ? `бафы +${Math.round((mult - 1) * 100)}%` : mult < .995 ? `бафы −${Math.round((1 - mult) * 100)}%` : ''));
       $('buff').classList.toggle('debuff', !!slowTxt);
       { const t = parts.join(', ') || 'Без бафов'; if (sp.title !== t) sp.title = t; }
     } else setText('speed', '–');
@@ -671,6 +671,7 @@
     const badges = [];
     const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);
     if (running) {
+      { const ch = charById(charNow()); if (ch) badge(ch.icon, ch.color, null, 0, `Характер «${ch.name}»: ${ch.plus}; ${ch.minus}`); }   // 2.7
       const SV = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
       const BICON = { speed: SV('M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'), shield: SV('M12 2 4 5.2v6.1c0 5 3.4 9 8 10.7 4.6-1.7 8-5.7 8-10.7V5.2z'), double: '×2',
         magnet: SV('M5 3h4v8.5a3 3 0 0 0 6 0V3h4v8.5a7 7 0 0 1-14 0zM5 3v3h4V3zm10 0v3h4V3z') };

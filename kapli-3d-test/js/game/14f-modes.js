@@ -482,6 +482,9 @@
       info: () => ({ RB_MILES, RB_LV, RB_TIER, RB_RN, CL_GOAL, CL_GOAL_COINS, MILES, ESC_S, ESC_MAX, RUSH_S, RULES, HC_MILES, HC_BOOST, HC_TIER, HC_RN, HC_CAP, HC_ABOUT, HC_BOSS_MASS_CAP, HC_BOSS_MILESTONES, HC_SPLIT_AT: 50000, HC_HALF_WIN: 50000, COMBOS, PLACE: [40, 25, 15, 12, 10, 8, 7, 6] }),
       HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) * hcDK("melt") * (curseOn("hunger") ? 1.5 : 1) : hcK("melt")) * hcMeltUp(), hcK,
       hcCurseSoon: () => { hcCurse = null; hcCurseT = 3; },
+      // 2.7: the hardcore cards taken this round, for the pause screen
+      hcBuffs: () => (mode !== 'hardcore' ? [] : Object.keys(HC_BOOST).filter(k => hcN[k]).map(k => [HC_BOOST[k][0], HC_BOOST[k][1], (HC_BOOST[k][3] === '+' ? '+' + hc[k] : '−' + Math.round((1 - hc[k]) * 100)) + '%', `×${hcN[k]}`])),
+      hcDebuffs: () => (mode !== 'hardcore' ? [] : Object.entries(hcD).filter(([, v]) => v > 0).map(([k, v]) => [k, v])),
       hcCurseId: () => mode === 'hardcore' && hcCurse ? hcCurse.id : null,   // 2.7 test journal
       hcMagnetK: () => (mode === 'hardcore' ? hcDM("magnet") : 1), hcDashLenK: () => (mode === 'hardcore' ? hcDM("dashLen") : 1), hcNoDash: () => curseOn("nodash"),
       hcSenseK: () => (mode === 'hardcore' ? hcDK("sense") * (curseOn("hunted") ? 1.5 : 1) : 1),

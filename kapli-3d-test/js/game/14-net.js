@@ -1313,7 +1313,7 @@
         diff: mode === 'duoback' && DuoM.rules.duoback?.diffNow ? DuoM.rules.duoback.diffNow() : null,
         ranked: !!stats.ranked, chaos: !!stats.chaos, arena: stats.arena || null, quality: save.settings.quality,
         build: runBuild.filter(Boolean), startMass: Math.round(total(player)),
-        look: { skin: save.skin, form: (save.evo || {})[save.skin] || null, hat: save.hat || null, aura: save.fx.aura || null, trail: save.fx.trail || null, eat: save.fx.eat || null, pet: save.pet || null } });   // 2.7 FPS: what the player wears
+        char: (typeof charNow === 'function' && charNow()) || null, look: { skin: save.skin, form: (save.evo || {})[save.skin] || null, hat: save.hat || null, aura: save.fx.aura || null, trail: save.fx.trail || null, eat: save.fx.eat || null, pet: save.pet || null } });   // 2.7 FPS: what the player wears
       tlAlive = player.cells.length > 0; tlShareT = 0;
     }
     if (paused) return;

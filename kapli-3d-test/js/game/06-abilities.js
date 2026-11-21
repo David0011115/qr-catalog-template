@@ -3,7 +3,7 @@
   let rbLvUp = {};   // 2.7 «Случайный билд»: levels added for this round by a milestone swap
   const abLv = id => stats && stats.ranked ? 0 : Math.min(ABIL_CFG.levels, (save.abil.lv[id] || 0) + (rbLvUp[id] || 0));
   const arenaCd = () => arenaIs('chronos') ? .9 : 1;   // arena «Часовой механизм»: every cooldown is 10% shorter
-  const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd();
+  const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd() * (charIs('berserk') ? .85 : 1);   // «Берсерк»
   const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);
   const abOn = (id, o = player) => !!(o && o.abT && o.abT[id] > 0);
   const abUsed = id => { if (stats && stats.abUsed) { stats.abUsed[id] = 1; stats.abilUses = (stats.abilUses || 0) + 1; } };
@@ -70,7 +70,7 @@
   function castAbility(id, o = player) {
     if (!o.cells.length || !o.abCd || (o.abCd[id] || 0) > 0) return false;
     const me = o === player, a = abilById(id), pw = me ? abPow(id) : 1, [px, pz] = centerOf(o);
-    if (id === 'shield') { if (me) effects.shield = Math.max(effects.shield, a.dur * pw); else o.abT.shield = a.dur; o.abT.shieldB = a.dur * pw; o.shHit = new Set(); }
+    if (id === 'shield') { if (me) effects.shield = Math.max(effects.shield, a.dur * pw * (charIs('berserk') ? .75 : 1)); else o.abT.shield = a.dur; o.abT.shieldB = a.dur * pw; o.shHit = new Set(); }
     else if (id === 'pulse') { o.abT.pulse = a.dur * pw; }
     else if (id === 'blink' && me) {   // 2.7 «Метка»: the first press marks the spot, the second (within 10 s) jumps there
       const m = mainOf(o);

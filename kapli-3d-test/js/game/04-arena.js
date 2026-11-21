@@ -445,7 +445,7 @@
   let running = false, paused = false, dying = false, lives = 0, dashCdBase = 4;
   let bossTimer = 20, bonusTimer = 0;
   let stats, history, doneQuests, effects, bonuses = [];
-  const effectDur = t => BONUS[t].dur * (1 + 0.05 * (U.bonus || 0)) * (arenaIs('sakura') ? 1.25 : 1) * (1 + starBonus('bonus') / 100);
+  const effectDur = t => (charIs('berserk') ? .75 : 1) * BONUS[t].dur * (1 + 0.05 * (U.bonus || 0)) * (arenaIs('sakura') ? 1.25 : 1) * (1 + starBonus('bonus') / 100);
 
   function speedOf(c) {
     const o = c.owner;
@@ -454,6 +454,7 @@
     if (o.isPlayer || o.kind === 'rival') {   // the second player of a match for two moves exactly like you (no upgrades: they are off in modes for two)
       // during a dash the mass slowdown is ignored: always 3.2x the starting speed
       if (o.dashT > 0) v = BASE_SPEED * DASH_MULT * Math.pow(Math.max(1, speedMass / START_MASS), -0.1);   // 1.7.0: a big blob's dash is weaker
+      if (o.isPlayer && charIs('tank')) v *= .92;   // «Танк»
       if (o.isPlayer) v *= (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
       else v *= abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1;
       v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1) * (DuoM.speedK ? DuoM.speedK(c) : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
@@ -466,7 +467,10 @@
     else v *= (o.star ? 1 : botSkill().speed) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
     return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * 1 * ModeX.botSpeedK(o);
   }
-  const eatRatio = c => c.owner.isPlayer ? (1.25 + 0.01 * U.guard) * ModeX.hcK('skin') : 1.25;
+  // the character that works right now (none in the league, Chaos League, tutorial and matches for two)
+  const charNow = () => { try { return running && stats && !stats.ranked && !stats.chaos && !stats.tutorial && !DuoM.on && charById(save.char) && playerLevel() >= charById(save.char).lvl ? save.char : null; } catch (e) { return null; } };
+  const charIs = id => charNow() === id;
+  const eatRatio = c => c.owner.isPlayer ? (1.25 + 0.01 * U.guard) * ModeX.hcK('skin') * (charIs('tank') ? 1.12 : 1) : 1.25;
   const canEat = (a, b) => !(b.owner.spawnSh > 0) && !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * (a.owner.cloakBonus && abOn('cloak', a.owner) ? 1.1 : eatRatio(b)) && !DuoM.eatBlock(a, b);   // 2.7 «Засада»: the first bite needs only ×1.1
 
   let mode = save.mode;

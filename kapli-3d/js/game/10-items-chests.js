@@ -213,7 +213,7 @@
   // ================= chests =================
   const LEAGUE_CHEST_W = { 1: [55, 38, 6, 1], 2: [35, 45, 17, 3], 3: [20, 42, 30, 8], 4: [5, 35, 45, 15], 5: [0, 20, 50, 30] };
   // round chest: chance grows with round length; mass and a win add a bit; capped; a guarantee after a dry streak
-  const CHEST_RULE = { normal: { rate: .03, cap: .35, pity: 15 }, ranked: { rate: .04, cap: .45, pity: 10 } };   // 1.7.0: rarer, the catalog is smaller
+  const CHEST_RULE = { normal: { rate: .02, cap: .25, pity: 15 }, ranked: { rate: .03, cap: .35, pity: 10 } };   // 1.7.0: rarer, the catalog is smaller; 2.7 (owner): rarer still — about 2 an hour in normal rounds, 3 in rated
   function roundChestChance(minutes, mass, win, ranked) {
     const R = CHEST_RULE[ranked ? 'ranked' : 'normal'];
     return Math.min(R.cap, minutes * R.rate * (1 + Math.min(.25, mass / 80000) + (win ? .1 : 0)));

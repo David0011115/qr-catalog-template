@@ -1238,7 +1238,7 @@
       ['Открыто всего', S.total], ['Не открыто', chestTotal()],
       ['В час · обычные бои', perH(n)], ['В час · рейтинг', perH(r)],
     ].map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('') +
-      `<p class="info-note" style="grid-column:1/-1;margin:0">Сундуки за раунды за последние 7 дней: обычные бои — ${n[2]} за ${hrs(n)} (раундов: ${n[1]}), рейтинг — ${r[2]} за ${hrs(r)} (боёв: ${r[1]}). Ожидается около 3 в час в обычных боях и около 4,3 в рейтинге.</p>`;
+      `<p class="info-note" style="grid-column:1/-1;margin:0">Сундуки за раунды за последние 7 дней: обычные бои — ${n[2]} за ${hrs(n)} (раундов: ${n[1]}), рейтинг — ${r[2]} за ${hrs(r)} (боёв: ${r[1]}). Ожидается около 2 в час в обычных боях и около 3 в рейтинге.</p>`;
     $('chestDrawerCnt').textContent = `· с ${new Date(S.since).toLocaleDateString('ru-RU')}`;
     const rarCell = (o, k) => `<span style="color:${RARITY[k].color}">${o[k] || 0}</span>`;
     const tot = {}; Object.values(S.src).forEach(o => Object.entries(o).forEach(([k, v]) => tot[k] = (tot[k] || 0) + v));

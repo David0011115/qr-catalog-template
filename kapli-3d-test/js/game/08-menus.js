@@ -535,6 +535,25 @@
     save.mode = b.dataset.mode; mode = save.mode; persist(); renderAll();
     showCard('menuCard'); $('startBtn').focus();
   });
+  // 2.7 «Характер капли»: chosen before every round of a solo mode (the last choice for that mode is already marked)
+  const charSolo = () => !isDuoMode(save.mode);
+  function charPick(go) {
+    let m = $('charModal');
+    if (!m) { m = document.createElement('div'); m.id = 'charModal'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'Характер на этот раунд'); document.body.appendChild(m);
+      m.addEventListener('click', e => {
+        if (e.target === m || e.target.closest('[data-chx]')) { m.hidden = true; return; }
+        const t = e.target.closest('[data-char]'); if (t && !t.disabled) { m.dataset.sel = t.dataset.char; m.querySelectorAll('[data-char]').forEach(x => { const on = x === t; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); return; }
+        if (e.target.closest('[data-chgo]')) { const id = m.dataset.sel || null; save.char = id; (save.charMode = save.charMode || {})[save.mode] = id; persist(); m.hidden = true; m._go && m._go(); }
+      }); }
+    const lv = playerLevel(), last = (save.charMode || {})[save.mode], sel = last !== undefined ? last : save.char, ok = c => c && lv >= c.lvl, cur = ok(charById(sel)) ? sel : '';
+    const tile = c => { const lock = lv < c.lvl, on = cur === c.id;
+      return `<button type="button" class="ch-tile${on ? ' on' : ''}" data-char="${c.id}" ${lock ? 'disabled' : ''} style="--ac:${c.color}" aria-pressed="${on}"><span class="ch-ic">${c.icon}</span><b>${c.name}</b>${lock ? `<small class="ch-lock">🔒 с ${c.lvl} уровня</small>` : `<small class="ch-p">＋ ${c.plus}</small><small class="ch-m">− ${c.minus}</small>`}</button>`; };
+    m.dataset.sel = cur; m._go = go;
+    m.innerHTML = `<div class="ch-box"><button type="button" class="ch-x" data-chx aria-label="Закрыть">✕</button><h2>Характер на этот раунд</h2><p>${(MODES[save.mode] || {}).name || ''} · у каждого характера есть плюс и минус. Выбор запоминается для этого режима.</p>` +
+      `<div class="ch-grid">${CHARS.map(tile).join('')}<button type="button" class="ch-tile none${cur ? '' : ' on'}" data-char="" aria-pressed="${!cur}"><span class="ch-ic">○</span><b>Без характера</b><small class="ch-p">без плюсов и минусов</small></button></div>` +
+      `<button type="button" class="btn ch-go" data-chgo>В бой</button></div>`;
+    m.hidden = false; m.querySelector('[data-chgo]').focus();
+  }
   $('modeBtn').addEventListener('click', () => { renderAll(); showCard('modesCard'); const cur = $('mode-' + save.mode); (cur || $('modesBack')).focus(); });
   $('modesBack').addEventListener('click', () => { showCard('menuCard'); $('modeBtn').focus(); });
 

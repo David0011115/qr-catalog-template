@@ -51,7 +51,7 @@
       const slot = +k.slice(1), id = rbOffer.ids[rbOffer.pick], old = runBuild[slot]; if (!id || old === undefined) return;
       const r = rbOffer.rar[rbOffer.pick]; runBuild[slot] = id; rbLvUp[id] = (rbLvUp[id] || 0) + r + 1;
       if (player.abT) delete player.abT[old]; if (player.abCd) player.abCd[id] = 0;
-      (stats.rbSwaps = stats.rbSwaps || []).push([Math.round(stats.time), old, id]);
+      (stats.rbSwaps = stats.rbSwaps || []).push([Math.round(stats.time), old, id, r, RB_MILES[rbMile - 1]]);
       if (TEST_MODE) try { TLog.ev('замена', old + '→' + id + ' ' + RB_RN[r]); } catch (e) {}
       rbOffer = null; rbPanel(); renderSlots(); toast(`«${abilById(old).name}» → «${abilById(id).name}» · ${RB_RN[r].toLowerCase()}, +${r + 1} ур. в раунде`); Sound.play('level');
     }
@@ -393,6 +393,7 @@
       if (!hcOffer) return; const o = hcOffer[i] || hcOffer[0], b = HC_BOOST[o.k], v = o.risk ? hcRiskV(o.k, o.r) : b[2][o.r];
       if (b[3] === '+') hc[o.k] += v; else hc[o.k] *= 1 - v / 100; hcN[o.k]++;
       if (o.risk) { const [t] = HC_DEBUFF[o.k]; hcD[t] = (hcD[t] || 0) + hcRiskD(o.k, o.r); }
+      (stats.hcPicks = stats.hcPicks || []).push({ mile: HC_MILES[hcMile - 1], k: o.k, r: o.r, label: hcLabel(o.k, o.r, o.risk), risk: o.risk ? `${HC_DEBUFF[o.k][1]} ${hcRiskD(o.k, o.r)}%` : '' });   // 2.7: for the pause screen
       if (hcLog) hcLog.picks.push({ mile: HC_MILES[hcMile - 1], t: Math.round(stats.time), boost: o.k, rar: HC_RN[o.r], v, risk: o.risk ? HC_DEBUFF[o.k][0] + '+' + hcRiskD(o.k, o.r) : '', other: hcOffer.filter(x => x !== o).map(x => x.k + ':' + HC_RN[x.r]).join() });
       hcOffer = null; hcPanel(null); toast(`${HC_RN[o.r]}: ${o.risk ? hcLabel(o.k, o.r, true) + ` · 🔻 ${HC_DEBUFF[o.k][1]} ${hcRiskD(o.k, o.r)}%` : hcLabel(o.k, o.r)} до конца раунда`);
     }
@@ -483,6 +484,11 @@
       HC_DECAY, meltK: () => (mode === 'hardcore' ? Math.max(.6, hcK("melt")) * hcDK("melt") * (curseOn("hunger") ? 1.5 : 1) : hcK("melt")) * hcMeltUp(), hcK,
       hcCurseSoon: () => { hcCurse = null; hcCurseT = 3; },
       // 2.7: the hardcore cards taken this round, for the pause screen
+      pickedHtml: () => {   // 2.7: what you chose in this round — hardcore cards and «Случайный билд» swaps, for the pause screen
+        if (mode === 'hardcore' && (stats.hcPicks || []).length) return stats.hcPicks.map(p => `<li style="--rc:${RARITY[HC_R[p.r]].color}"><span class="pk-m">${p.mile.toLocaleString('ru-RU')}</span><span class="pk-ic">${HC_BOOST[p.k][0]}</span><span class="pk-t"><b>${p.label}</b><small>${HC_RN[p.r]}${p.risk ? ` · 🔻 ${p.risk}` : ''}</small></span></li>`).join('');
+        if (mode === 'rbuild' && (stats.rbSwaps || []).length) return stats.rbSwaps.map(([, old, id, r, mile]) => `<li style="--rc:${RARITY[HC_R[r ?? 0]].color}"><span class="pk-m">${(mile || 0).toLocaleString('ru-RU')}</span><span class="pk-ic">${abilById(id).icon}</span><span class="pk-t"><b>${abilById(old).name} → ${abilById(id).name}</b><small>${RB_RN[r ?? 0]} · +${(r ?? 0) + 1} ур. в раунде</small></span></li>`).join('');
+        return '';
+      },
       hcBuffs: () => (mode !== 'hardcore' ? [] : Object.keys(HC_BOOST).filter(k => hcN[k]).map(k => [HC_BOOST[k][0], HC_BOOST[k][1], (HC_BOOST[k][3] === '+' ? '+' + hc[k] : '−' + Math.round((1 - hc[k]) * 100)) + '%', `×${hcN[k]}`])),
       hcDebuffs: () => (mode !== 'hardcore' ? [] : Object.entries(hcD).filter(([, v]) => v > 0).map(([k, v]) => [k, v])),
       hcCurseId: () => mode === 'hardcore' && hcCurse ? hcCurse.id : null,   // 2.7 test journal

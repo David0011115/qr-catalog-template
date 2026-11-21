@@ -503,7 +503,7 @@
     if (mg > 0) add('🧲', 'Притяжение крошек', `+${mg.toFixed(1).replace('.', ',')}`, effects.magnet > 0 ? 'бонус «Магнит» ' + sec(effects.magnet) : '');
     // abilities working now, hardcore cards and debuffs, the character
     for (const id of Object.keys(player.abT || {})) if (player.abT[id] > 0 && !['pulse', 'shrink', 'shieldB'].includes(id)) { const a = abilById(id); if (a) add(a.icon, a.name, 'действует', sec(player.abT[id])); }
-    for (const [ic, name, v, n] of ModeX.hcBuffs()) add(ic, name, v, `карточка ${n}`);
+    for (const [ic, name, v, n] of ModeX.hcBuffs()) add(ic, name, v, `итог карточек ${n}`);
     const DBN = { melt: 'таешь быстрее', slow: 'медленнее', absorb: 'еда менее сытная', magnet: 'притяжение слабее', dashLen: 'рывок короче', sense: 'боты видят дальше' };
     for (const [k, v] of ModeX.hcDebuffs()) add('🔻', DBN[k] || k, `${v}%`, 'минус рисковой карточки', true);
     try { const ch = charById(charNow()); if (ch) add(ch.icon, `Характер «${ch.name}»`, '', `＋ ${ch.plus}; − ${ch.minus}`); } catch (e) {}
@@ -519,9 +519,11 @@
       const v = Math.min(q.goal, Math.round(stats[q.stat] || 0)), ok = doneQuests.has(q.id) || v >= q.goal;
       return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${q.text}<span class="g-bar"><i style="width:${(v / q.goal * 100).toFixed(0)}%;background:${ok ? '#3dffa2' : 'var(--food)'}"></i></span></span>` +
         `<span class="g-rw"><b>${ok ? 'готово' : `${v.toLocaleString('ru-RU')} / ${q.goal.toLocaleString('ru-RU')}`}</b><small>+${qCoins(q)} ◆</small></span></li>`; }).join('');
+    const picked = ModeX.pickedHtml(), pickTitle = mode === 'hardcore' ? 'Улучшения этого раунда' : 'Замены способностей';
+    const pickedSec = picked ? `<h3>${pickTitle}</h3><ul class="ps-picks">${picked}</ul>` : (mode === 'hardcore' ? '<h3>Улучшения этого раунда</h3><p class="ps-note">Пока ни одного: первое — на 2 000 массы.</p>' : '');
     const br = buffRows();
     const buffs = `<h3>Твои бафы</h3>` + (br.length ? `<ul class="ps-buffs">${br.map(r => `<li class="${r.bad ? 'bad' : ''}${r.name.startsWith('·') ? ' sub' : ''}"><span class="pb-n">${r.ic ? `<i>${r.ic}</i>` : ''}${r.name}${r.note ? `<small>${r.note}</small>` : ''}</span><b>${r.val}</b></li>`).join('')}</ul>` : '<p class="ps-note">Бафов нет.</p>');
-    box.innerHTML = `<div class="ps-grid">${tiles}</div>` + buffs + (goals ? `<h3>Цели на сегодня</h3><ul class="goal-list">${goals}</ul>` : '<p class="ps-note">В рейтинговом бою цели дня не считаются.</p>');
+    box.innerHTML = `<div class="ps-grid">${tiles}</div>` + pickedSec + buffs + (goals ? `<h3>Цели на сегодня</h3><ul class="goal-list">${goals}</ul>` : '<p class="ps-note">В рейтинговом бою цели дня не считаются.</p>');
   }
   // 2.2: one daily goal may be swapped once a day
   $('menuQuests').addEventListener('click', e => {

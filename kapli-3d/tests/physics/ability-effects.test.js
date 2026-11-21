@@ -43,11 +43,11 @@ test('blink and phase shift every cell by the main cell heading and clamp to are
   assert.equal(blink.events[0].type, 'blink-shadow');
 });
 
-test('overload resets other ability cooldowns and player dash/split cooldowns', () => {
+test('overload resets other ability cooldowns (not «Щит»/«Фантом») and player dash/split cooldowns', () => {
   const p = owner('p', [cell(100)], { abCd: { x_over: 10, shield: 20, slow: 5 } });
   const playerState = { dashCd: 3, splitCd: 4 }, effects = { speed: 0 };
   castWorldAbility('x_over', p, worldFor(p, [], { playerState, effects }), createWorldAbilityEffects(), { player: true });
-  assert.deepEqual(p.abCd, { x_over: 10, shield: 0, slow: 0 });
+  assert.deepEqual(p.abCd, { x_over: 10, shield: 20, slow: 0 });   // 2.7 audit: no second shield in a row
   assert.equal(playerState.dashCd, 0); assert.equal(playerState.splitCd, 0); assert.equal(effects.speed, 3);
 });
 
@@ -186,11 +186,11 @@ test('gear wall pushes colliding cells and removes five percent mass once per ce
   tickWorldAbilityEffects(s, w, 1 / 30); assert.equal(c.mass, 95);
 });
 
-test('Chronos rewind restores previous position and only increases mass', () => {
+test('Chronos rewind restores previous position and gives back at most +10% mass', () => {
   const p = owner('p', [cell(100)]), w = worldFor(p), s = { clock: 10, history: [{ t: 6, x: -10, z: 0, mass: 150 }] };
   p.cells[0].x = 20;
   const result = castWorldAbility('cr_rewind', p, w, s, { player: true });
-  assert.equal(result.ok, true); assert.equal(p.cells[0].x, -10); assert.equal(p.cells[0].mass, 150);
+  assert.equal(result.ok, true); assert.equal(p.cells[0].x, -10); assert.ok(Math.abs(p.cells[0].mass - 110) < 1e-9);   // 2.7 audit: was the full 150
 });
 
 test('Chronos swap only selects the nearest target in front and outside boss/minion classes', () => {

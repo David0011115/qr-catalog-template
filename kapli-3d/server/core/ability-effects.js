@@ -98,7 +98,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
   }
   if (id === 'slow') {
     const rad = a.radius * power;
-    for (const foe of foes) if (world.nearOf(owner, foe, rad)) ccSlow(foe, a.dur * power);
+    for (const foe of foes) if (world.nearOf(owner, foe, rad)) ccSlow(foe, ccPlayer(foe) ? a.dur : Math.min(6, a.dur));   // 2.7 audit: as in the game
     return { ok: true, events };
   }
   if (id === 'push') {
@@ -131,7 +131,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
     return { ok: true, events };
   }
   if (id === 'x_over') {
-    for (const key of Object.keys(owner.abCd || {})) if (key !== id) owner.abCd[key] = 0;
+    for (const key of Object.keys(owner.abCd || {})) if (![id, 'shield', 'x_ghost'].includes(key)) owner.abCd[key] = 0;   // 2.7 audit
     if (options.player) {
       if (world.playerState) { world.playerState.dashCd = 0; world.playerState.splitCd = 0; }
       if (world.effects) world.effects.speed = Math.max(world.effects.speed || 0, a.dur);
@@ -189,7 +189,7 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
     for (const c of owner.cells) {
       const p = clampPoint(c.x + dx, c.z + dz, world.arenaRadius, cellRadius(c) * 0.6);
       c.x = p.x; c.z = p.z; c.vx = c.vz = 0;
-      if (entry.mass > currentMass) c.mass *= entry.mass / currentMass;
+      if (entry.mass > currentMass) c.mass *= Math.min(1.1, entry.mass / currentMass);   // 2.7 audit
     }
     return { ok: true, events: [{ type: 'rewind', from: { x: px, z: pz }, to: { x: entry.x, z: entry.z } }] };
   }

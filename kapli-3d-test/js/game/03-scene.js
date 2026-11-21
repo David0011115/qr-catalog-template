@@ -86,7 +86,7 @@
       partsSync(off);
     }
     // 2.7 FPS: the eyes (opaque, one shared material) and the ground rings (additive, so their order does not matter) of every drop are two instanced draws, not two per drop
-    let pCap = 0, eyesI = null, ringI = null;
+    let pCap = 0, eyesI = null, ringI = null, virI = null, vCap = 0;
     let ringMat = null;   // made on first use: decal() is defined further down
     function partsGrow(n) {
       pCap = Math.ceil(n * 1.5) + 16;
@@ -109,6 +109,14 @@
           rg.layers.set(GLOW_LAYER);
           if (rg.visible && rg.material.visible && rg.parent === scene) { ringI.setMatrixAt(nr, rg.matrixWorld); ringI.setColorAt(nr, rg.material.color); nr++; }
         }
+      }
+      if (typeof viruses !== 'undefined') {
+        if (!virI || viruses.length > vCap) { vCap = Math.ceil(viruses.length * 1.5) + 8; if (virI) { scene.remove(virI); virI.dispose(); }
+          virI = new THREE.InstancedMesh(virusSpikesGeo, virusSpikeMat, vCap); virI.frustumCulled = false; virI.instanceMatrix.setUsage(THREE.DynamicDrawUsage); virI.name = 'шипы вирусов (все)'; scene.add(virI); }
+        let nv = 0;
+        for (let i = 0; i < viruses.length; i++) { const sp = viruses[i].mesh && viruses[i].mesh.children[1]; if (!sp || sp.material !== virusSpikeMat) continue;
+          if (off) { sp.layers.set(0); continue; } sp.layers.set(GLOW_LAYER); if (sp.visible && viruses[i].mesh.visible && viruses[i].mesh.parent === scene) virI.setMatrixAt(nv++, sp.matrixWorld); }
+        virI.count = off ? 0 : nv; virI.visible = virI.count > 0; virI.instanceMatrix.needsUpdate = true;
       }
       eyesI.count = off ? 0 : ne; ringI.count = off ? 0 : nr;
       eyesI.visible = eyesI.count > 0; ringI.visible = ringI.count > 0;
@@ -524,6 +532,22 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); out.setAttribute('color', new THREE.BufferAttribute(col, 3)); out.setIndex(new THREE.BufferAttribute(idx, 1));
     out.computeBoundingSphere(); return out;
   }
+  // 2.7 FPS: many copies of one shape with one material become one instanced draw. The copies are replaced by invisible stand-ins
+  // (same position, rotation, scale, userData) that the animation keeps moving; instSync copies them into the instances each frame.
+  const INST_ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+  function instancify(list) {
+    if (!list || list.length < 2) return list;
+    const m0 = list[0], parent = m0.parent; if (!parent || list.some(m => m.parent !== parent || m.geometry !== m0.geometry || m.material !== m0.material)) return list;
+    const im = new THREE.InstancedMesh(m0.geometry, m0.material, list.length); im.frustumCulled = false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const px = list.map(m => { const p = new THREE.Object3D(); p.position.copy(m.position); p.quaternion.copy(m.quaternion); p.scale.copy(m.scale); p.userData = m.userData; p.visible = m.visible; parent.remove(m); parent.add(p); return p; });
+    parent.add(im); (parent.userData.inst = parent.userData.inst || []).push({ im, px }); instSyncOne(im, px);
+    return px;
+  }
+  function instSyncOne(im, px) {
+    for (let i = 0; i < px.length; i++) { const p = px[i]; if (!p.visible) { im.setMatrixAt(i, INST_ZERO); continue; } p.updateMatrix(); im.setMatrixAt(i, p.matrix); }
+    im.instanceMatrix.needsUpdate = true;
+  }
+  function instSync(root) { if (root) root.traverse(o => { const L = o.userData.inst; if (L) for (let i = 0; i < L.length; i++) instSyncOne(L[i].im, L[i].px); }); }
   const eyeGeo = new THREE.SphereGeometry(0.13, 10, 10);
   const pupilGeo = new THREE.SphereGeometry(0.07, 8, 8);
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -538,15 +562,13 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   const visualCellR = cellR;   // 2.7: the drop is drawn exactly as big as it collides (it grows slowly after 10 000, eating is still decided by mass)
   const PREY = C('--prey'), THREAT = C('--threat'), NEUTRAL = new THREE.Color(0x8088c0);
 
+  let crownGeo = null;
   function makeCrown() {
     const grp = new THREE.Group();
-    grp.add(new THREE.Mesh(new THREE.CylinderGeometry(.42, .48, .18, 16, 1, true), crownMat));
-    for (let i = 0; i < 5; i++) {
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(.1, .3, 8), crownMat);
-      const a = i / 5 * Math.PI * 2;
-      cone.position.set(Math.cos(a) * .42, .22, Math.sin(a) * .42);
-      grp.add(cone);
-    }
+    // 2.7 FPS: the band and its 5 spikes are one shape (were 6 draws per crowned drop, and 6 new geometries per drop)
+    if (!crownGeo) crownGeo = mergeGeo([[new THREE.CylinderGeometry(.42, .48, .18, 16, 1, true), new THREE.Matrix4()],
+      ...[0, 1, 2, 3, 4].map(i => { const a = i / 5 * Math.PI * 2; return [new THREE.ConeGeometry(.1, .3, 8), new THREE.Matrix4().makeTranslation(Math.cos(a) * .42, .22, Math.sin(a) * .42)]; })]);
+    grp.add(new THREE.Mesh(crownGeo, crownMat));
     grp.position.y = .92;
     return grp;
   }
@@ -815,11 +837,11 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'sandglass': {   // clear glass; golden sand rises and piles up under the top
         m.opacity = .4; m.roughness = .03; m.emissiveIntensity = .35; m.depthWrite = false; ex.add(glowSprite('#bff8ff', 1.8, .5));
         const sm = new THREE.MeshBasicMaterial({ color: '#ffd27a' });
-        for (let i = 0; i < 16; i++) { const b = new THREE.Mesh(bubbleGeo, sm); b.scale.setScalar(.45); b.userData.sand = i / 16; b.userData.bx = Math.sin(i * 2.4) * .45; b.userData.bz = Math.cos(i * 2.4) * .45; ex.add(b); }
+        const sl = [];        for (let i = 0; i < 16; i++) { const b = new THREE.Mesh(bubbleGeo, sm); sl.push(b); b.scale.setScalar(.45); b.userData.sand = i / 16; b.userData.bx = Math.sin(i * 2.4) * .45; b.userData.bz = Math.cos(i * 2.4) * .45; ex.add(b); } instancify(sl);
         const pile = new THREE.Mesh(new THREE.SphereGeometry(.62, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: .9 })); pile.rotation.x = Math.PI; pile.position.y = .88; pile.userData.pile = 1; ex.add(pile);
         break; }
     }
-    if (s.bubbles) for (let i = 0; i < 7; i++) { const b = new THREE.Mesh(bubbleGeo, bubbleMat); b.userData.bub = i / 7; b.userData.bx = Math.sin(i * 2.4) * .55; b.userData.bz = Math.cos(i * 2.4) * .55; ex.add(b); }
+    if (s.bubbles) { const bl = []; for (let i = 0; i < 7; i++) { const b = new THREE.Mesh(bubbleGeo, bubbleMat); bl.push(b); b.userData.bub = i / 7; b.userData.bx = Math.sin(i * 2.4) * .55; b.userData.bz = Math.cos(i * 2.4) * .55; ex.add(b); } instancify(bl); }
     if (s.anim === 'twin') { const tw = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ color: s.accent || '#ffffff', transparent: true, opacity: .3, depthWrite: false })); tw.userData.twin = 1; ex.add(tw); }
     m.needsUpdate = true;
   }
@@ -850,6 +872,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       else if (u.twin) { o.position.set(Math.sin(t * 13) * .14, Math.sin(t * 7) * .05, Math.cos(t * 9) * .14); o.visible = Math.random() > .35; }
       else if (u.pearl) { o.material.uniforms.uCol.value.setHSL((t * .08) % 1, .9, .7); o.material.uniforms.uK.value = .9; }
       else if (u.rim) o.material.uniforms.uK.value = lk.anim === 'flicker' ? (Math.random() < .05 ? .25 : 1) : .85 + .15 * Math.sin(t * 3); });
+    if (v.extra) instSync(v.extra);
   }
   function applySkin(vis, s = skin(), stars = starsOf(s), hat = save.hat) {
     const m = vis.mesh.material;

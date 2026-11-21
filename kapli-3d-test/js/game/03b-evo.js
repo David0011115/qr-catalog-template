@@ -46,27 +46,29 @@
       return (t, dt) => { disk.rotation.z += dt * .6; if (d2) d2.rotation.z -= dt * .45; jets.forEach((j, i) => { j.material.opacity = .25 + .15 * Math.sin(t * 7 + i); }); };
     },
     lg_tycoon(g, F, full) {
-      const coin = s => new THREE.Mesh(new THREE.CylinderGeometry(s, s, s * .2, 20), evoStd(0xffcc33, { metalness: .9, roughness: .25, emissive: 0x6a4a00, emissiveIntensity: .5 }));
-      const rain = []; if (F >= 2 && full) for (let i = 0; i < 12; i++) { const c = coin(.07); c.userData = { a: Math.random() * 6.283, r: 1.3 + Math.random() * .6, y: Math.random() * 3 - 1.5, v: .6 + Math.random() * .6 }; g.add(c); rain.push(c); }
+      const coinGeo = new THREE.CylinderGeometry(.07, .07, .014, 20), coinMat = evoStd(0xffcc33, { metalness: .9, roughness: .25, emissive: 0x6a4a00, emissiveIntensity: .5 });
+      let rain = []; if (F >= 2 && full) for (let i = 0; i < 12; i++) { const c = new THREE.Mesh(coinGeo, coinMat); c.userData = { a: Math.random() * 6.283, r: 1.3 + Math.random() * .6, y: Math.random() * 3 - 1.5, v: .6 + Math.random() * .6 }; g.add(c); rain.push(c); }
       if (F >= 2) { const gem = new THREE.Mesh(new THREE.OctahedronGeometry(.11, 0), evoStd(0xff2d55, { emissive: 0xff2d55, emissiveIntensity: .7 })); gem.position.y = 1.65; g.add(gem); }
-      const bars = []; let dia = null; if (F >= 3) { for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(.26, .1, .13), evoStd(0xffd700, { metalness: 1, roughness: .2, emissive: 0x5a3c00, emissiveIntensity: .6 })); g.add(b); bars.push(b); }
+      let bars = []; let dia = null; if (F >= 3) { const barGeo = new THREE.BoxGeometry(.26, .1, .13), barMat = evoStd(0xffd700, { metalness: 1, roughness: .2, emissive: 0x5a3c00, emissiveIntensity: .6 }); for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(barGeo, barMat); g.add(b); bars.push(b); } bars = instancify(bars);
         dia = new THREE.Mesh(new THREE.OctahedronGeometry(.22, 0), new THREE.MeshStandardMaterial({ color: 0xbff6ff, roughness: 0, emissive: 0x4ad7ff, emissiveIntensity: .8, transparent: true, opacity: .9 })); dia.scale.y = 1.4; dia.position.y = 2.05; g.add(dia); }
-      const orb = orbitOf(bars, 1.75, .6, 0, .15);
+      rain = instancify(rain); const orb = orbitOf(bars, 1.75, .6, 0, .15);
       return (t, dt) => { rain.forEach(c => { const u = c.userData; u.y -= dt * u.v; if (u.y < -1.6) u.y = 1.8; u.a += dt * .3; c.position.set(Math.cos(u.a) * u.r, u.y, Math.sin(u.a) * u.r); c.rotation.x += dt * 4; });
         orb(t); bars.forEach(b => b.lookAt(0, b.position.y, 0)); if (dia) { dia.rotation.y += dt * 1.5; dia.position.y = 2.05 + Math.sin(t * 2) * .06; } };
     },
     lg_supernova(g, F, full) {
       const waves = []; if (F >= 2) for (let i = 0; i < 2; i++) { const w = ring(1.2, .03, 0xffd1f0, .7); w.rotation.x = 1.57; w.userData.p = i * .5; g.add(w); waves.push(w); }
       const orb = []; if (F >= 2) for (let i = 0; i < 2; i++) { const o = new THREE.Mesh(new THREE.OctahedronGeometry(.09, 0), evoGlow(i ? 0x9ff6ff : 0xffd23f, 1)); g.add(o); orb.push(o); }
-      const rays = []; if (F >= 3 && full) for (let i = 0; i < 14; i++) { const r = new THREE.Mesh(new THREE.PlaneGeometry(.08, 1.4), evoGlow(i % 2 ? 0xff9adf : 0xffffff, .4)); r.material.side = THREE.DoubleSide; r.userData.a = i / 14 * 6.283; g.add(r); rays.push(r); }
+      let rays = []; if (F >= 3 && full) { const rg = new THREE.PlaneGeometry(.08, 1.4), rm = [0xffffff, 0xff9adf].map(c => { const m = evoGlow(c, .4); m.side = THREE.DoubleSide; return m; }), rr = [[], []];
+        for (let i = 0; i < 14; i++) { const r = new THREE.Mesh(rg, rm[i % 2]); r.userData.a = i / 14 * 6.283; g.add(r); rr[i % 2].push(r); } rays = [...instancify(rr[0]), ...instancify(rr[1])]; }
       const o2 = orbitOf(orb, 1.5, 1.4, 0, .3);
       return (t) => { waves.forEach(w => { const u = (t * .5 + w.userData.p) % 1; w.scale.setScalar(.9 + u * 1.6); w.material.opacity = .7 * (1 - u); }); o2(t);
         rays.forEach(r => { const a = r.userData.a + t * .2, l = 1 + .35 * Math.sin(t * 4 + r.userData.a * 3); r.position.set(Math.cos(a) * (1.1 + .7 * l), Math.sin(a) * (1.1 + .7 * l), -.2); r.rotation.z = a - 1.57; r.scale.y = l; }); };
     },
     lg_eternal(g, F, full) {
       const wreath = new THREE.Group(); wreath.position.y = 1.08; g.add(wreath);
-      for (let i = 0; i < 20; i++) { if (i === 0 || i === 10) continue; const a = i / 20 * 6.283, l = new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), evoStd(F >= 2 ? 0xd8e4f0 : 0x5fbf6a, { metalness: F >= 2 ? .95 : .05, roughness: F >= 2 ? .18 : .5 }));
-        l.scale.set(.55, .25, 1.15); l.position.set(Math.cos(a) * .55, 0, Math.sin(a) * .55); l.rotation.y = -a + .6; wreath.add(l); }
+      { const lg = new THREE.SphereGeometry(.09, 8, 6), lm = evoStd(F >= 2 ? 0xd8e4f0 : 0x5fbf6a, { metalness: F >= 2 ? .95 : .05, roughness: F >= 2 ? .18 : .5 }), leaves = [];
+        for (let i = 0; i < 20; i++) { if (i === 0 || i === 10) continue; const a = i / 20 * 6.283, l = new THREE.Mesh(lg, lm);
+          l.scale.set(.55, .25, 1.15); l.position.set(Math.cos(a) * .55, 0, Math.sin(a) * .55); l.rotation.y = -a + .6; wreath.add(l); leaves.push(l); } instancify(leaves); }
       let halo = null; if (F >= 2) { halo = ring(.7, .028, 0xbfe6ff, .85); halo.rotation.x = 1.57; halo.position.y = 1.45; g.add(halo); }
       let inf = null; const flame = []; if (F >= 3) { inf = new THREE.Group(); inf.position.y = 2; [-1, 1].forEach(sd => { const tt = ring(.2, .035, 0x9fd8ff, .95); tt.position.x = sd * .2; inf.add(tt); }); g.add(inf);
         if (full) for (let k = 0; k < 3; k++) { const f = new THREE.Mesh(new THREE.ConeGeometry(.12 - k * .03, .45 - k * .1, 12), evoGlow([0x7ad0ff, 0xbfe6ff, 0xffffff][k], .65)); f.position.y = 1.62; g.add(f); flame.push(f); } }
@@ -104,23 +106,25 @@
       const mat = evoStd(0x1a0204, { metalness: .6, roughness: .35, emissive: F >= 2 ? 0xff1a10 : 0x3a0000, emissiveIntensity: F >= 2 ? .9 : .4 }), geo = new THREE.ConeGeometry(.09, len, 8);
       for (let i = 0; i < N; i++) { const y = 1 - (i + .5) / N * 2, r = Math.sqrt(1 - y * y), a = i * 2.39996, d = new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
         if (d.z > .55 && Math.abs(d.y) < .55) continue; const m = new THREE.Mesh(geo, mat); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); m.userData.d = d; g.add(m); spikes.push(m); }
+      const spikesI = instancify(spikes);   // 2.7 FPS: one draw for all spikes
       const waves = []; if (F >= 2 && full) for (let i = 0; i < 2; i++) { const w = new THREE.Mesh(new THREE.SphereGeometry(1.1, 24, 16), evoGlow(0xff2010, 0)); w.material.side = THREE.BackSide; g.add(w); waves.push(w); }
       const chains = []; if (F >= 3) for (let c = 0; c < 2; c++) { const ch = new THREE.Group(); const lm = evoStd(0x3a3a44, { metalness: 1, roughness: .3, emissive: 0xff4a10, emissiveIntensity: .7 }), lg = new THREE.TorusGeometry(.07, .022, 6, 12);
-        for (let k = 0; k < (full ? 20 : 12); k++) { const l = new THREE.Mesh(lg, lm), a = k / (full ? 20 : 12) * 6.283; l.position.set(Math.cos(a) * 1.75, 0, Math.sin(a) * 1.75); l.rotation.y = -a; if (k % 2) l.rotateX(1.57); ch.add(l); }
+        const links = []; for (let k = 0; k < (full ? 20 : 12); k++) { const l = new THREE.Mesh(lg, lm), a = k / (full ? 20 : 12) * 6.283; l.position.set(Math.cos(a) * 1.75, 0, Math.sin(a) * 1.75); l.rotation.y = -a; if (k % 2) l.rotateX(1.57); ch.add(l); links.push(l); } instancify(links);
         ch.rotation.set(c ? .5 : -.4, 0, c ? .3 : -.2); g.add(ch); chains.push(ch); }
       return (t, dt) => { const beat = Math.pow(Math.max(0, Math.sin(t * 2.6)), 8), k = 1 + beat * .35;
-        spikes.forEach(m => { m.scale.set(1, k, 1); m.position.copy(m.userData.d).multiplyScalar(.98 + len * k / 2); });
+        spikesI.forEach(m => { m.scale.set(1, k, 1); m.position.copy(m.userData.d).multiplyScalar(.98 + len * k / 2); });
         waves.forEach((w, i) => { const u = (t * 2.6 / 6.283 + i * .5) % 1; w.scale.setScalar(1 + u * 1.2); w.material.opacity = .35 * (1 - u); }); chains.forEach((c, i) => { c.rotation.y += dt * (i ? -.6 : .8); }); };
     },
     duo_twin(g, F, full) {
       let mate = null, teth = null; if (F >= 2) { mate = new THREE.Mesh(new THREE.SphereGeometry(.3, 24, 16), evoMat('duo_twin', EVO_BODY.duo_twin)); g.add(mate); teth = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, 1, 6), evoGlow(0xbfffe8, .85)); g.add(teth); }
-      const helix = []; if (F >= 3) for (let i = 0; i < (full ? 32 : 16); i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), evoGlow(i % 2 ? 0x22e6ff : 0x3dff9a, 1)); m.userData.k = i; g.add(m); helix.push(m); }
+      let helix = []; if (F >= 3) { const hg = new THREE.SphereGeometry(.05, 6, 4), hm = [evoGlow(0x3dff9a, 1), evoGlow(0x22e6ff, 1)], hh = [[], []];
+        for (let i = 0; i < (full ? 32 : 16); i++) { const m = new THREE.Mesh(hg, hm[i % 2]); m.userData.k = i; g.add(m); hh[i % 2].push(m); } helix = [...instancify(hh[0]), ...instancify(hh[1])]; }
       const n = helix.length;
       return (t) => { if (mate) { const a = t * 1.1; mate.position.set(Math.cos(a) * 1.65, .35, Math.sin(a) * 1.65); const L = mate.position.length() - 1.25; teth.scale.y = L; teth.position.copy(mate.position).normalize().multiplyScalar(1 + L / 2); teth.lookAt(mate.position); teth.rotateX(1.57); }
         helix.forEach(m => { const k = m.userData.k, y = -1.4 + (k >> 1) / (n / 2) * 2.8, a = y * 2.4 + t * 1.5 + (k % 2 ? 0 : Math.PI); m.position.set(Math.cos(a) * 1.45, y, Math.sin(a) * 1.45); }); };
     },
     duo_shield(g, F, full) {
-      const plates = []; if (F >= 2) for (let i = 0; i < 6; i++) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.26, .26, .05, 6), evoStd(0x0f3a36, { metalness: .7, roughness: .3, emissive: 0x2affc8, emissiveIntensity: .5 })); g.add(p); plates.push(p); }
+      let plates = []; if (F >= 2) { const pg = new THREE.CylinderGeometry(.26, .26, .05, 6), pm = evoStd(0x0f3a36, { metalness: .7, roughness: .3, emissive: 0x2affc8, emissiveIntensity: .5 }); for (let i = 0; i < 6; i++) { const p = new THREE.Mesh(pg, pm); g.add(p); plates.push(p); } plates = instancify(plates); }
       let dome = null; if (F >= 3) { dome = new THREE.Mesh(new THREE.IcosahedronGeometry(1.9, full ? 2 : 1), new THREE.MeshBasicMaterial({ color: 0x5affc8, wireframe: true, transparent: true, opacity: .35, blending: THREE.AdditiveBlending })); g.add(dome); }
       const orb = orbitOf(plates, 1.5, .7, 0, .2);
       return (t, dt) => { orb(t); plates.forEach(p => { p.lookAt(0, p.position.y, 0); p.rotateX(1.57); }); if (dome) { dome.rotation.y += dt * .15; dome.material.opacity = .22 + .18 * Math.max(0, Math.sin(t * 2.2)); } };
@@ -226,7 +230,7 @@
     if (vis.shine) vis.shine.visible = false;   // the old legend gleam (a lightning bolt) is not part of the evolved look
     vis.headOff = !!(vis.head && (s.id === 'lg_eternal' || s.id === 'lg_worlds')); if (vis.headOff) vis.head.visible = false;   // the wreath of «Вечный чемпион» is drawn by its form (not the old gold one)
   }
-  function evoTick(vis, now) { EVO_T.value = now / 1000; if (vis.evoTick) vis.evoTick(now / 1000, Math.min(.05, (now - (vis.evoLast || now)) / 1000)); vis.evoLast = now; }
+  function evoTick(vis, now) { EVO_T.value = now / 1000; if (vis.evoTick) vis.evoTick(now / 1000, Math.min(.05, (now - (vis.evoLast || now)) / 1000)); vis.evoLast = now; if (vis.evo) instSync(vis.evo); }
 
   // ---- the skin's own trail and eat effect, both grow with the form ----
   function evoTrail(now) {

@@ -597,6 +597,11 @@
 .tl-chips button.on { background: rgba(61, 255, 162, .18); border-color: #3dffa2; color: #fff; }
 .tl-btns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .tl-btns button { min-height: 38px; padding: 4px 6px; border-radius: 12px; border: 1px solid rgba(34, 230, 255, .45); background: rgba(34, 230, 255, .08); color: #fff; font: 700 .74rem/1.2 var(--body); cursor: pointer; }
+.tl-btns.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tl-btns button small { display: block; margin-top: 2px; font: 500 .66rem/1.25 var(--body); color: #a59ccc; }
+.tl-stress-run { display: grid; gap: 8px; padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 210, 63, .4); background: rgba(255, 210, 63, .06); }
+.tl-stress-run p { margin: 0; font-size: .74rem; color: #d8d2f5; }
+.tl-chips .tl-stress { border-color: rgba(255, 210, 63, .55); }
 .tl-btns button.warn { border-color: rgba(255, 61, 110, .5); background: rgba(255, 61, 110, .08); }
 .tl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
 .tl-row button { width: 100%; display: grid; gap: 1px; text-align: left; padding: 7px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--row); color: #fff; font: inherit; cursor: pointer; }

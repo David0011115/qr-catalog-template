@@ -99,7 +99,7 @@
       if (total(player) < 20000) return;
       if ((hcPackT -= dt) > 0 || hcPackBots().length >= 2) return;
       hcPackT = mode === 'classic' ? 30 : 20; const t = hcPackTarget(); if (!t) return;
-      const pick = bots.filter(o => o.kind === 'bot' && o.cells.length && !o.hcPack).sort((a, b) => Math.hypot(mainOf(a).x - t.x, mainOf(a).z - t.z) - Math.hypot(mainOf(b).x - t.x, mainOf(b).z - t.z)).slice(0, 3);
+      const pick = bots.filter(o => o.kind === 'bot' && o.cells.length && !o.hcPack).sort((a, b) => hyp(mainOf(a).x - t.x, mainOf(a).z - t.z) - hyp(mainOf(b).x - t.x, mainOf(b).z - t.z)).slice(0, 3);
       if (pick.length < 3) return;
       const ref = hcRef();
       const k = mode === 'classic' ? .4 : .5; pick.forEach((o, i) => { o.hcPack = 1; o.hcPackI = i; const m = mainOf(o); if (m.mass < ref * k) m.mass = ref * k; m.vis.jig = 1; });
@@ -110,7 +110,7 @@
       let L = player.cells; if (hcSplitDone) { const hm = hcHalfMass(), h = hm[0] > 0 && (hm[0] <= hm[1] || hm[1] <= 0) ? 0 : 1; const P = player.cells.filter(c => c.hcHalf === h); if (P.length) L = P; }
       const t = L.reduce((a, b) => a.mass >= b.mass ? a : b); if (!o) return t;
       const a = (o.hcPackI || 0) * 2.1 + stats.time * .15, d = cellR(t) * 1.8;   // members come from three sides
-      const m = mainOf(o); return Math.hypot(m.x - t.x, m.z - t.z) < d * 1.4 ? { t, x: t.x, z: t.z } : { t, x: t.x + Math.cos(a) * d, z: t.z + Math.sin(a) * d };
+      const m = mainOf(o); return hyp(m.x - t.x, m.z - t.z) < d * 1.4 ? { t, x: t.x, z: t.z } : { t, x: t.x + Math.cos(a) * d, z: t.z + Math.sin(a) * d };
     }
     // crumbs and bots feed less from 10 000: ×0.6 at 25 000, ×0.45 at 50 000, ×0.35 from 80 000
     const clGainK = () => { const m = total(player); return 1 - .4 * cl01(m, 10000, 25000) - .15 * cl01(m, 25000, 50000) - .1 * cl01(m, 50000, 80000); };
@@ -119,7 +119,7 @@
     const hcHalfMass = () => [0, 1].map(h => player.cells.reduce((s, c) => s + (c.hcHalf === h ? c.mass : 0), 0));
     function hcAutoSplit(again, why) {
       const mass = total(player), old = [...player.cells]; if (!old.length || (!again && mass < 50000) || player.free.length + old.length < 2) return false;
-      const [cx, cz] = centerOf(player), lead = mainOf(player), hl = Math.hypot(lead.hx || 0, lead.hz || 0) || 1, hx = (lead.hx || 1) / hl, hz = (lead.hz || 0) / hl;
+      const [cx, cz] = centerOf(player), lead = mainOf(player), hl = hyp(lead.hx || 0, lead.hz || 0) || 1, hx = (lead.hx || 1) / hl, hz = (lead.hz || 0) / hl;
       old.forEach(removeCell);
       const half = mass / 2, a = addCell(player, cx, cz, half, player.free.pop()), b = addCell(player, cx, cz, half, player.free.pop());
       a.hcHalf = 0; b.hcHalf = 1;
@@ -155,7 +155,7 @@
     // would a half (half of the fused drop) be eaten by a boss nearby?
     function hcFuseDanger() {
       if (!player.cells.length) return false; const c = mainOf(player), half = total(player) / 2, rH = .38 * Math.sqrt(half);
-      return bossOwners.some(o => o.cells.some(b => b.mass > half * 1.25 && Math.hypot(b.x - c.x, b.z - c.z) < cellR(b) + rH + 40));
+      return bossOwners.some(o => o.cells.some(b => b.mass > half * 1.25 && hyp(b.x - c.x, b.z - c.z) < cellR(b) + rH + 40));
     }
     function hcFuseStart() {
       if (hcFuseT > 0) { hcFuseEnd(); toast('✂ Половины разделены'); return; }
@@ -174,7 +174,7 @@
     // А: «Двойной укус» — both halves touching a boss together, and together 1.25× bigger than it, eat it; the mass is shared between them
     function hcPairBite(a, b) {
       if (!splitMode() || !hcSplitDone || hcFuseT > 0 || !a.owner.isPlayer || b.owner.kind !== 'boss' || a.hcHalf === undefined) return null;
-      const near = c => Math.hypot(c.x - b.x, c.z - b.z) < cellR(c) + cellR(b) * .55;
+      const near = c => hyp(c.x - b.x, c.z - b.z) < cellR(c) + cellR(b) * .55;
       if (!near(a)) return null;
       const p = player.cells.filter(c => c.hcHalf !== undefined && c.hcHalf !== a.hcHalf && near(c)).sort((x, y) => y.mass - x.mass)[0];
       if (!p || a.mass < p.mass || a.mass + p.mass < b.mass * eatRatio(b) || b.owner.spawnSh > 0) return null;
@@ -187,7 +187,7 @@
       let preferred = null;
       if (hcSplitDone) { const hm = hcHalfMass(), half = active.length > 1 ? ix % 2 : hm[0] <= hm[1] ? 0 : 1; preferred = player.cells.filter(c => c.hcHalf === half); }
       const candidates = preferred && preferred.length ? preferred : player.cells, origin = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b);
-      return candidates.reduce((best, c) => !best || Math.hypot(c.x - origin.x, c.z - origin.z) < Math.hypot(best.x - origin.x, best.z - origin.z) ? c : best, null);
+      return candidates.reduce((best, c) => !best || hyp(c.x - origin.x, c.z - origin.z) < hyp(best.x - origin.x, best.z - origin.z) ? c : best, null);
     }
     // 2.7: in every mode (it was «Хардкор» only) the spikes leave the field for good once you — or the other player of a match for two — reach 10 000
     const hcSpikesDisabled = () => {
@@ -239,7 +239,7 @@
     nextRing.rotation.x = -Math.PI / 2; nextRing.position.y = .07; nextRing.visible = false; scene.add(nextRing);
     function zPlan() {
       const r2 = Math.max(18, (Z_STEPS[zst + 1] ?? Z_STEPS[Z_STEPS.length - 1]) * R), a = Math.random() * 6.283, d = Math.max(0, zoneR - r2) * Math.sqrt(Math.random()) * .9;
-      let x = zc.x + Math.cos(a) * d, z = zc.z + Math.sin(a) * d; const L = Math.hypot(x, z); if (L + r2 > R) { x *= (R - r2) / L; z *= (R - r2) / L; }
+      let x = zc.x + Math.cos(a) * d, z = zc.z + Math.sin(a) * d; const L = hyp(x, z); if (L + r2 > R) { x *= (R - r2) / L; z *= (R - r2) / L; }
       zto = { x, z, r: r2 };
       for (let k = 0; k < 2 && bonuses.length < MAX_BONUS; k++) { const b = Math.random() * 6.283, q = Math.sqrt(Math.random()) * r2 * .8; owlNext = [x + Math.cos(b) * q, z + Math.sin(b) * q]; spawnBonus(); }
     }
@@ -254,7 +254,7 @@
       nextRing.visible = running && mode === 'royale' && !!zto && zto.r < zoneR - .5;
       if (nextRing.visible) { nextRing.position.set(zto.x, .07, zto.z); nextRing.scale.setScalar(zto.r); nextRing.material.opacity = .3 + .25 * Math.abs(Math.sin(stats.time * 3)); }
     }
-    const twinsLinked = () => { if (!colossus.cells.length || !colossus2.cells.length) return false; const a = mainOf(colossus), b = mainOf(colossus2); return Math.hypot(a.x - b.x, a.z - b.z) < LINK_D + cellR(a) + cellR(b); };
+    const twinsLinked = () => { if (!colossus.cells.length || !colossus2.cells.length) return false; const a = mainOf(colossus), b = mainOf(colossus2); return hyp(a.x - b.x, a.z - b.z) < LINK_D + cellR(a) + cellR(b); };
     const solo = () => !stats.ranked && !stats.tutorial && !stats.chaos && !DuoM.on;
 
     function start() {
@@ -297,7 +297,7 @@
           if (player.cells.length && (hm[0] <= 0 || hm[1] <= 0) && total(player) >= 50000) { hcRevive = null; hcAutoSplit(true, 'regrow'); hm = hcHalfMass(); }
           if (player.cells.length && (hm[0] <= 0 || hm[1] <= 0) && !hcRevive) { const h = hm[0] <= 0 ? 0 : 1; stats.hcHalfLost = (stats.hcHalfLost || 0) + 1; hcRevive = { h, t: 20 }; toast('Половина съедена! Через 20 с она возродится с 5 000 массы — береги вторую'); Sound.play('boss'); }
           if (hcRevive && (hcRevive.t -= dt) <= 0) { const h = hcRevive.h; hcRevive = null;
-            if (player.cells.length && player.free.length) { let x = 0, z = 0; for (let k = 0; k < 30; k++) { [x, z] = randInArena(30); if (cells.every(c => c.owner === player || Math.hypot(c.x - x, c.z - z) > cellR(c) + 40)) break; }
+            if (player.cells.length && player.free.length) { let x = 0, z = 0; for (let k = 0; k < 30; k++) { [x, z] = randInArena(30); if (cells.every(c => c.owner === player || hyp(c.x - x, c.z - z) > cellR(c) + 40)) break; }
               const c = addCell(player, x, z, 5000, player.free.pop()); c.hcHalf = h; c.mergeT = 2; player.spawnSh = 3; rebuildCells(); toast('Половина возродилась — 5 000 массы, 3 с защиты'); Sound.play('level'); } }
           if (hm[0] >= 50000 && hm[1] >= 50000) hcWinT += dt; else hcWinT = 0;
           hcWinUi(hm);
@@ -319,7 +319,7 @@
           if (player.cells.length && (hm[0] <= 0 || hm[1] <= 0) && total(player) >= 50000) { hcRevive = null; hcAutoSplit(true, 'regrow'); hm = hcHalfMass(); }
           if (player.cells.length && (hm[0] <= 0 || hm[1] <= 0) && !hcRevive) { const h = hm[0] <= 0 ? 0 : 1; stats.hcHalfLost = (stats.hcHalfLost || 0) + 1; hcRevive = { h, t: 20 }; toast('Половина съедена! Через 20 с она возродится с 5 000 массы'); Sound.play('boss'); }
           if (hcRevive && (hcRevive.t -= dt) <= 0) { const h = hcRevive.h; hcRevive = null;
-            if (player.cells.length && player.free.length) { let x = 0, z = 0; for (let k = 0; k < 30; k++) { [x, z] = randInArena(30); if (cells.every(c => c.owner === player || Math.hypot(c.x - x, c.z - z) > cellR(c) + 40)) break; }
+            if (player.cells.length && player.free.length) { let x = 0, z = 0; for (let k = 0; k < 30; k++) { [x, z] = randInArena(30); if (cells.every(c => c.owner === player || hyp(c.x - x, c.z - z) > cellR(c) + 40)) break; }
               const c = addCell(player, x, z, 5000, player.free.pop()); c.hcHalf = h; c.mergeT = 2; player.spawnSh = 3; rebuildCells(); toast('Половина возродилась — 5 000 массы, 3 с защиты'); Sound.play('level'); } }
           if (!clGoalDone && hm[0] >= CL_GOAL && hm[1] >= CL_GOAL) {
             clGoalDone = true; stats.clGoal = true; stats.modeXCoins += CL_GOAL_COINS; stats.maxMass = Math.max(stats.maxMass || 0, m);
@@ -365,7 +365,7 @@
       }
       if (mode === 'raid') {
         const on = twinsLinked(); tether.visible = on && running;
-        if (on) { const a = mainOf(colossus), b = mainOf(colossus2), dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
+        if (on) { const a = mainOf(colossus), b = mainOf(colossus2), dx = b.x - a.x, dz = b.z - a.z, d = hyp(dx, dz);
           tether.position.set((a.x + b.x) / 2, 2, (a.z + b.z) / 2); tether.scale.set(d, 1 + Math.sin(stats.time * 8) * .3, 1); tether.rotation.set(0, -Math.atan2(dz, dx), 0); tether.material.opacity = .45 + .3 * Math.abs(Math.sin(stats.time * 5)); }
       }
       if (mode === 'survival') {
@@ -429,7 +429,7 @@
     function crownRules(dt, contenders) {
       if (crownHolder && !crownHolder.cells.length) { crownGround = { ...crownLast }; crownHolder = null; toast('Корона упала на поле!'); }
       if (crownHolder) { const m = mainOf(crownHolder); crownLast = { x: m.x, z: m.z }; }
-      if (crownGround) for (const o of contenders) if (o.cells.some(c => Math.hypot(c.x - crownGround.x, c.z - crownGround.z) < cellR(c) + 1.5)) { crownHolder = o; crownGround = null; toast(o.isPlayer ? 'Корона твоя! Теперь на тебя охотятся' : `Корону подобрал ${o.name}`); Sound.play(o.isPlayer ? 'level' : 'bonus'); break; }
+      if (crownGround) for (const o of contenders) if (o.cells.some(c => hyp(c.x - crownGround.x, c.z - crownGround.z) < cellR(c) + 1.5)) { crownHolder = o; crownGround = null; toast(o.isPlayer ? 'Корона твоя! Теперь на тебя охотятся' : `Корону подобрал ${o.name}`); Sound.play(o.isPlayer ? 'level' : 'bonus'); break; }
     }
     function crownBite(a, b, victim, lastMass) {   // the holder lost a big part (or the last one): the crown goes to the eater
       if (victim !== crownHolder || !(lastMass >= .4 * total(victim) || victim.cells.length <= 1)) return;
@@ -521,7 +521,7 @@
       cdK: o => (o === player ? hcK('cd') : 1),
       gainK: () => (growOn() ? clGainK() : 1) * (mode === 'timed' ? (rushOn ? 2 : 1) * (rule && rule.id === 'feast' ? 1.5 : 1) : mode === 'hardcore' ? hcK('absorb') * (total(player) >= 50000 ? .5 : .75) * hcDM('absorb') : 1),
       bonusK: () => (rule && rule.id === 'bonus2' ? .5 : 1),
-      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && Math.hypot(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? hcK('speed') * (hcPredT > 0 ? hcK('predator') : 1) * hcDM('slow') * (curseOn('slow') ? .8 : 1) : 1) *
+      botSpeedK: o => (mode === 'crown' && o === crownHolder ? .85 : 1) * (o.mate && o.mate.cells.length && o.cells.length && hyp(o.cells[0].x - o.mate.cells[0].x, o.cells[0].z - o.mate.cells[0].z) < 40 ? 1.1 : 1) * (o.isPlayer && mode === 'hardcore' ? hcK('speed') * (hcPredT > 0 ? hcK('predator') : 1) * hcDM('slow') * (curseOn('slow') ? .8 : 1) : 1) *
         (o.kind === 'bot' ? (mode === 'classic' ? 1 + .04 * esc : rule && rule.id === 'fastbots' ? 1.15 : 1) : 1),
       bossK: () => (mode === 'classic' ? Math.max(.5, 1 - .125 * esc) : 1),
       quitLabel: () => (mode === 'classic' && (stats.time >= 300 || clGoalDone) ? 'Забрать награду и выйти' : 'Завершить раунд'),
@@ -576,10 +576,10 @@
       zones.push({ x, z, r, kind, t: delay, dur, m, ring, on: false });
     }
     function dropZone(zn) { scene.remove(zn.m); scene.remove(zn.ring); zn.m.material.dispose(); zn.ring.material.dispose(); }
-    const inZone = (zn, c) => Math.hypot(c.x - zn.x, c.z - zn.z) < zn.r + cellR(c) * .3;
+    const inZone = (zn, c) => hyp(c.x - zn.x, c.z - zn.z) < zn.r + cellR(c) * .3;
     function aroundPlayer(n, r, kind, delay, dur) {
       const m = pMain(); if (!m) return;
-      for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, d = k === 0 ? 0 : 30 + Math.random() * 50; let x = m.x + Math.cos(a) * d, z = m.z + Math.sin(a) * d; const L = Math.hypot(x, z); if (L > R - r) { x *= (R - r) / L; z *= (R - r) / L; } addZone(x, z, r, kind, delay, dur); }
+      for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, d = k === 0 ? 0 : 30 + Math.random() * 50; let x = m.x + Math.cos(a) * d, z = m.z + Math.sin(a) * d; const L = hyp(x, z); if (L > R - r) { x *= (R - r) / L; z *= (R - r) / L; } addZone(x, z, r, kind, delay, dur); }
     }
     function attack() {
       const b = bigPart(), m = pMain(); if (!b || !m) return;
@@ -601,7 +601,7 @@
     }
     function zoneFire(zn) {
       const P = player.cells;
-      if (zn.kind === 'ring') { const b = bigPart(); if (b) for (const c of P) { const d = Math.hypot(c.x - zn.x, c.z - zn.z); if (d < zn.r && d > cellR(b) * .6) { ccSlow(player, 1.5); const k = 30 / (d || 1); c.vx = (c.vx || 0) + (c.x - zn.x) * k; c.vz = (c.vz || 0) + (c.z - zn.z) * k; } } }
+      if (zn.kind === 'ring') { const b = bigPart(); if (b) for (const c of P) { const d = hyp(c.x - zn.x, c.z - zn.z); if (d < zn.r && d > cellR(b) * .6) { ccSlow(player, 1.5); const k = 30 / (d || 1); c.vx = (c.vx || 0) + (c.x - zn.x) * k; c.vz = (c.vz || 0) + (c.z - zn.z) * k; } } }
       else if (zn.kind === 'burst') { let hit = false; for (const c of P) if (inZone(zn, c)) { c.mass = Math.max(20, c.mass * .9); hit = true; } emit(zn.x, 1, zn.z, ZC.burst, 14, 12, .6); if (hit) { buzz(40); toast('💥 Взрыв: −10% массы'); } }
       else if (zn.kind === 'crystal') { let hit = false; for (const c of P) if (inZone(zn, c)) hit = true; if (hit) ccFreeze(player, 1.4); emit(zn.x, 1, zn.z, ZC.crystal, 12, 10, .6); }
       else if (zn.kind === 'blink' && zn.part && !zn.part.gone) { zn.part.x = zn.x; zn.part.z = zn.z; zn.part.vx = zn.part.vz = 0; emit(zn.x, 1, zn.z, '#ffffff', 18, 12, .7); }
@@ -609,7 +609,7 @@
     function coreSpawn() {
       const b = bigPart(); if (!b || cores.length >= 2) return;
       const a = Math.random() * 6.283, d = cellR(b) + 25 + Math.random() * 40;
-      let x = b.x + Math.cos(a) * d, z = b.z + Math.sin(a) * d; const L = Math.hypot(x, z); if (L > R - 10) { x *= (R - 10) / L; z *= (R - 10) / L; }
+      let x = b.x + Math.cos(a) * d, z = b.z + Math.sin(a) * d; const L = hyp(x, z); if (L > R - 10) { x *= (R - 10) / L; z *= (R - 10) / L; }
       const m = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: '#ffd23f' })); m.scale.setScalar(5); m.position.set(x, 4, z); scene.add(m);
       cores.push({ x, z, t: 10, m }); toast('✦ Слабое ядро! Съешь его — урон ×3');
     }
@@ -646,9 +646,9 @@
       for (let k = cores.length - 1; k >= 0; k--) {
         const cr = cores[k]; cr.t -= dt; cr.m.rotation.y += dt * 2; cr.m.position.y = 4 + Math.sin(stats.time * 4) * .8;
         if (cr.t <= 0) { scene.remove(cr.m); cr.m.material.dispose(); cores.splice(k, 1); continue; }
-        if (player.cells.some(c => Math.hypot(c.x - cr.x, c.z - cr.z) < cellR(c) + 4)) coreHit(k);
+        if (player.cells.some(c => hyp(c.x - cr.x, c.z - cr.z) < cellR(c) + 4)) coreHit(k);
       }
-      if (pullT > 0) { pullT -= dt; const b = bigPart(); if (b) for (const c of player.cells) { const dx = b.x - c.x, dz = b.z - c.z, d = Math.hypot(dx, dz) || 1; c.x += dx / d * 22 * dt; c.z += dz / d * 22 * dt; } }
+      if (pullT > 0) { pullT -= dt; const b = bigPart(); if (b) for (const c of player.cells) { const dx = b.x - c.x, dz = b.z - c.z, d = hyp(dx, dz) || 1; c.x += dx / d * 22 * dt; c.z += dz / d * 22 * dt; } }
       if (inkT > 0) { inkT -= dt; document.body.classList.toggle('raid-ink', inkT > 0); const mm = document.getElementById('miniWrap'); if (mm) mm.classList.toggle('fog', inkT > 0); }
       if (ghostT > 0) ghostT -= dt;
       if (dealt >= tier().hp) { finishRound(`Ступень ${RAID_ROMAN[tierI]} пройдена!`, 0, true); }

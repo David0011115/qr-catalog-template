@@ -1410,7 +1410,7 @@
     if (R0.cur && !R0.cur.census && el - R0.step * 10000 > 7000) { try { R0.cur.census = drawCensus(); } catch (e) {} }   // what is drawn, late in the step
     effects.shield = Math.max(effects.shield || 0, 1);   // nobody eats the autopilot: the run always lasts 60 s
     // autopilot: circles the arena, so the camera passes everything
-    if (player.cells.length) { const m = mainOf(player), a = el / 1000 * .22, tx = Math.cos(a) * R * .38, tz = Math.sin(a) * R * .38, d = Math.hypot(tx - m.x, tz - m.z) || 1;
+    if (player.cells.length) { const m = mainOf(player), a = el / 1000 * .22, tx = Math.cos(a) * R * .38, tz = Math.sin(a) * R * .38, d = hyp(tx - m.x, tz - m.z) || 1;
       joy.id = 'stress'; joy.mag = .85; joy.x = (tx - m.x) / d; joy.y = (tz - m.z) / d; }
     const fx = R0.cur ? R0.cur.fx : 0;
     if (fx) {   // effects on top: bursts of particles, eat effects and abilities (level 2: twice as often and bigger)

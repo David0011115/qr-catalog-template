@@ -231,7 +231,7 @@
   // ---- the skin's own trail and eat effect, both grow with the form ----
   function evoTrail(now) {
     const s = skin(), F = Math.max(1, evoForm(s.id)), E = EVO[s.id]; if (!E || !player.cells.length) return;
-    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(c), sp = Math.hypot(c.vx || 0, c.vz || 0);
+    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(c), sp = hyp(c.vx || 0, c.vz || 0);
     if (Math.random() > .55) return;
     const back = (k = 1) => [c.x - (c.hx || 0) * r * k, c.z - (c.hz || 0) * r * k];
     const [x, z] = back(.9);

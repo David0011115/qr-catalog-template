@@ -52,7 +52,7 @@
       if (!apv || !apv.pts.has(e.pointerId)) return;
       const [px, py] = apv.pts.get(e.pointerId); apv.pts.set(e.pointerId, [e.clientX, e.clientY]);
       if (apv.pts.size === 1) { apv.ang -= (e.clientX - px) * .006; apv.pitch = clampN(apv.pitch + (e.clientY - py) * .004, .12, 1.35); }
-      else if (apv.pts.size === 2) { const [a, b] = [...apv.pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (apv.pinch) apv.dist = clampN(apv.dist * apv.pinch / d, R * .45, R * 2.2); apv.pinch = d; }
+      else if (apv.pts.size === 2) { const [a, b] = [...apv.pts.values()], d = hyp(a[0] - b[0], a[1] - b[1]); if (apv.pinch) apv.dist = clampN(apv.dist * apv.pinch / d, R * .45, R * 2.2); apv.pinch = d; }
     });
     const up = e => { if (!apv) return; apv.pts.delete(e.pointerId); apv.pinch = 0; if (!apv.pts.size) release(); };
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
@@ -205,10 +205,10 @@
     if (txtSp) { txtT -= dt; txtSp.position.set(petObj.x, petObj.y + 1.6 + (1.4 - txtT) * .8, petObj.z); txtSp.material.opacity = Math.min(1, txtT * 2); if (txtT <= 0) { txtSp.visible = false; txtSp = null; } }
     if (kind === 'cuckoo' && petLv('cuckoo')) {
       petCk -= dt;
-      if (petCk <= 0) { let best = null, bd = Infinity; for (const b of bonuses) { const d = Math.hypot(b.x - c.x, b.z - c.z); if (d < bd) { bd = d; best = b; } }
+      if (petCk <= 0) { let best = null, bd = Infinity; for (const b of bonuses) { const d = hyp(b.x - c.x, b.z - c.z); if (d < bd) { bd = d; best = b; } }
         if (best) { petCk = 60; crArrowB = best; crArrowT = 3.5; showTxt(cuckooTxt); Sound.play('bonus'); } else petCk = 5; }
     }
-    if (crArrowT > 0 && crArrowB && bonuses.includes(crArrowB)) { crArrowT -= dt; const dx = crArrowB.x - c.x, dz = crArrowB.z - c.z, d = Math.hypot(dx, dz) || 1, rr = cellR(c) + 3.5;
+    if (crArrowT > 0 && crArrowB && bonuses.includes(crArrowB)) { crArrowT -= dt; const dx = crArrowB.x - c.x, dz = crArrowB.z - c.z, d = hyp(dx, dz) || 1, rr = cellR(c) + 3.5;
       crArrow.position.set(c.x + dx / d * rr, .1, c.z + dz / d * rr); crArrow.rotation.set(-Math.PI / 2, Math.atan2(-dx, -dz), 0);
       crArrow.scale.setScalar(1.4 + Math.sin(now / 120) * .15); crArrow.material.opacity = Math.min(.9, crArrowT); crArrow.visible = true; }
     else { crArrow.visible = false; crArrowT = 0; }
@@ -302,7 +302,7 @@
       if (c.owner.bossType === 'chameleon' && (relationRefresh || c.seen === undefined)) {
         // Invisible until you are close: 10 Hz is enough for this proximity fade.
         let dmin = Infinity;
-        for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
+        for (const pc of player.cells) dmin = Math.min(dmin, hyp(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
         const al = !player.cells.length ? .9 : Math.max(.05, Math.min(.9, (30 - dmin) / 20));
         c.vis.mesh.material.opacity = al; c.vis.glow.material.opacity = al * .9; c.vis.crown.visible = al > .5; c.vis.ring.visible = al > .3; c.seen = al > .3;
       }
@@ -356,7 +356,7 @@
     } else if (!running) focus.m = 40;
     let spread = 0;
     if (player.cells.length > 1) {
-      for (const c of player.cells) spread = Math.max(spread, Math.hypot(c.x - focus.x, c.z - focus.z));
+      for (const c of player.cells) spread = Math.max(spread, hyp(c.x - focus.x, c.z - focus.z));
     }
     const fr = radius(focus.m);
     let h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 2.2 * (camera.aspect < 1 ? 1 + Math.min(.6, (1 - camera.aspect) * 1.1) : 1);   // giants get extra zoom-out; 120% farther for everyone (1.7.0); narrow portrait screens (phones) up to 60% more
@@ -401,28 +401,33 @@
   const r1q = v => Math.round(v * 100) / 100;
   // 2.7 FPS: bots get a random skin, star level and aura each time they come back; a look never seen before compiled its shader in the middle of a round (a 60–80 ms hitch on a phone).
   // While the menu is open, every look a bot can get is put on a hidden drop and compiled — a little at a time, never during a round.
-  function prewarmLooks() {
-    let v = null, i = 0, jobs = null;
-    const step = () => {
-      if (running) { setTimeout(step, 4000); return; }
-      try {
-        if (!jobs) { v = makeVis(new THREE.Color('#8088c0'));
-          const skins = SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft && !EVO[k.id]);
-          jobs = [...skins.flatMap(sk => [[sk, 0], [sk, 3]]), ...FX.filter(f => f.slot === 'aura' && !f.legend && !f.craft).map(f => ['aura', f.id])]; }
-        const t0 = performance.now();
-        while (i < jobs.length && performance.now() - t0 < 14) { const [a, b] = jobs[i++]; if (a === 'aura') setAura(v, b, '#8088c0'); else applySkin(v, a, b, null); renderer.compile(scene, camera); }
-      } catch (e) { i = jobs ? jobs.length : 0; }
-      if (jobs && i < jobs.length) setTimeout(step, 40); else if (v) { try { setAura(v, null); } catch (e) {} }
-    };
-    setTimeout(step, 3000);
+  // 8 hidden drops wear 8 looks at a time, then one compile; a round that starts before the end finishes the rest at its start (prewarmFinish)
+  let prewarmJobs = null, prewarmI = 0, prewarmVis = null;
+  function prewarmChunk(budgetMs) {
+    try {
+      if (!prewarmJobs) { prewarmVis = Array.from({ length: 8 }, () => makeVis(new THREE.Color('#8088c0')));
+        const skins = SKINS.filter(k => !k.craft && !EVO[k.id]);   // star bots wear legendary skins too
+        prewarmJobs = [...skins.flatMap(sk => [0, 1, 3].map(st => [sk, st])), ...FX.filter(f => f.slot === 'aura' && !f.craft).map(f => ['aura', f.id])]; }
+      const t0 = performance.now();
+      while (prewarmI < prewarmJobs.length && performance.now() - t0 < budgetMs) {
+        for (let k = 0; k < prewarmVis.length && prewarmI < prewarmJobs.length; k++) { const [a, b] = prewarmJobs[prewarmI++], v = prewarmVis[k]; if (a === 'aura') setAura(v, b, '#8088c0'); else applySkin(v, a, b, null); }
+        renderer.compile(scene, camera);
+      }
+    } catch (e) { if (prewarmJobs) prewarmI = prewarmJobs.length; }
+    const done = !prewarmJobs || prewarmI >= prewarmJobs.length;
+    if (done && prewarmVis) { try { prewarmVis.forEach(v => setAura(v, null)); } catch (e) {} prewarmVis = null; }
+    return done;
   }
+  function prewarmLooks() { const step = () => { if (running) { setTimeout(step, 4000); return; } if (!prewarmChunk(14)) setTimeout(step, 40); }; setTimeout(step, 2500); }
+  function prewarmFinish() { if (!prewarmJobs || prewarmI < prewarmJobs.length) prewarmChunk(1e9); }
   prewarmLooks();
   // 2.7 test: what an object on screen is — a named part (капля, кольцо, глаза…), whose drop it belongs to, or its shape
+  let labelCells = null;
   function objLabel(o) {
     let p = o, named = null, depth = 0;
     while (p && p !== scene) { if (p.name && !named) named = p.name + (depth ? ' · детали' : ''); if (p.name === 'капля') break; p = p.parent; depth++; }
     let who = '';
-    if (p && p.name === 'капля') { const c = cells.find(k => k.vis && k.vis.mesh === p); if (c) who = c.owner.isPlayer ? 'игрок' : c.owner.kind === 'boss' ? 'босс ' + c.owner.bossType : c.owner.kind; }
+    if (p && p.name === 'капля') { const c = labelCells ? labelCells.get(p) : cells.find(k => k.vis && k.vis.mesh === p); if (c) who = c.owner.isPlayer ? 'игрок' : c.owner.kind === 'boss' ? 'босс ' + c.owner.bossType : c.owner.kind; }
     return (named || ((o.geometry && o.geometry.type || o.type) + '/' + (o.material && o.material.type || ''))) + (who ? ' [' + who + ']' : '');
   }
   const seenProgs = new Set();
@@ -440,13 +445,14 @@
   const cenFr = new THREE.Frustum(), cenM = new THREE.Matrix4();
   function drawCensus() {
     cenM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); cenFr.setFromProjectionMatrix(cenM);
-    const out = {};
+    const out = {}; labelCells = new Map(); for (const c of cells) if (c.vis) labelCells.set(c.vis.mesh, c);
     scene.traverseVisible(o => {
       if (!(o.isMesh || o.isPoints || o.isSprite || o.isLine) || !o.layers.test(camera.layers)) return;
       if (o.frustumCulled) { if (o.isSprite ? !cenFr.intersectsSprite(o) : (o.geometry && !cenFr.intersectsObject(o))) return; }
-      const k = objLabel(o).replace(/ \[.*\]$/, ''); out[k] = (out[k] || 0) + 1;
+      const k = objLabel(o).replace(/ \[босс .*\]$/, ' [босс]'); out[k] = (out[k] || 0) + 1;   // parts are counted by whose drop they are on
     });
-    return Object.entries(out).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, n]) => k + ' ' + n).join(', ');
+    labelCells = null;
+    return Object.entries(out).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => k + ' ' + n).join(', ');
   }
   function trackFps(now) {
     perf.frames++;

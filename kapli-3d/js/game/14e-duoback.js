@@ -173,7 +173,7 @@
       const c = big(o); if (!c) return;
       const ps = pl(); o.think = 1;
       if (!ps.length) return;
-      const near = ps.map(p => big(p)).sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z));
+      const near = ps.map(p => big(p)).sort((a, b) => hyp(a.x - c.x, a.z - c.z) - hyp(b.x - c.x, b.z - c.z));
       const light = ps.slice().sort((a, b) => total(a) - total(b))[0], heavy = ps.slice().sort((a, b) => total(b) - total(a))[0];
       let t = near[0];
       if (o.dbType === 'twins') t = big(ps[o.k % ps.length]);
@@ -181,11 +181,11 @@
       if (o.dbType === 'devourer') t = big(heavy);
       if (o.dbType === 'wedge' && ps.length === 2) {
         const a = big(ps[0]), b = big(ps[1]); o.target = null; o.tx = (a.x + b.x) / 2; o.tz = (a.z + b.z) / 2;
-        if (o.dashCd <= 0 && Math.hypot(o.tx - c.x, o.tz - c.z) < 70) { o.dashT = .7; o.dashCd = 5; }
+        if (o.dashCd <= 0 && hyp(o.tx - c.x, o.tz - c.z) < 70) { o.dashT = .7; o.dashCd = 5; }
         return;
       }
       o.target = t; o.tx = t.x; o.tz = t.z;
-      if ((o.dbType === 'devourer' || o.dbType === 'wedge') && o.dashCd <= 0 && Math.hypot(t.x - c.x, t.z - c.z) < 60) { o.dashT = .6; o.dashCd = o.dbType === 'devourer' ? (spec && spec.enh ? 4 : 6) : 5; }
+      if ((o.dbType === 'devourer' || o.dbType === 'wedge') && o.dashCd <= 0 && hyp(t.x - c.x, t.z - c.z) < 60) { o.dashT = .6; o.dashCd = o.dbType === 'devourer' ? (spec && spec.enh ? 4 : 6) : 5; }
     }
     function tickReg(o, dt) {
       o.dashT -= dt; o.dashCd = Math.max(0, o.dashCd - dt); o.life -= dt;
@@ -194,7 +194,7 @@
       if (o.dbType === 'weaver') { o.spikeT -= dt; if (o.spikeT <= 0) { const c = big(o), r = cellR(c); spawnVirus(c.x - c.hx * (r + 5), c.z - c.hz * (r + 5)); o.spikeT = 3.5; } }
       if (o.dbType === 'leech') {
         for (const c of o.cells) for (const p of pl()) for (const pc of p.cells) {
-          if (Math.hypot(pc.x - c.x, pc.z - c.z) > cellR(c) + cellR(pc) * .6 || canEat(c, pc) || shieldOf(p)) continue;
+          if (hyp(pc.x - c.x, pc.z - c.z) > cellR(c) + cellR(pc) * .6 || canEat(c, pc) || shieldOf(p)) continue;
           const take = pc.mass * .07 * dt; if (pc.mass - take < 10) continue;
           pc.mass -= take; c.mass += take * .5; if (Math.random() < .2) emit(pc.x, cellR(pc), pc.z, '#7dff6a', 3, 6, .4);
         }
@@ -217,7 +217,7 @@
       // it sheds a piece toward a player who came close
       s.shed -= dt;
       const ps = pl(), rM = cellR(main);
-      const close = ps.map(p => big(p)).find(pc => Math.hypot(pc.x - main.x, pc.z - main.z) < rM + cellR(pc) + 45);
+      const close = ps.map(p => big(p)).find(pc => hyp(pc.x - main.x, pc.z - main.z) < rM + cellR(pc) + 45);
       if (close && s.shed <= 0 && o.free.length > 2 && s.cells.size < 7) {
         const a = Math.atan2(close.z - main.z, close.x - main.x) + (Math.random() - .5), cm = Math.max(12, s.base * .28 * Math.min(1.6, D.hp));
         const c = addCell(o, main.x + Math.cos(a) * (rM + 3), main.z + Math.sin(a) * (rM + 3), cm, o.free.pop());
@@ -229,7 +229,7 @@
         if (s.atk <= 0 && s.pull <= 0) { s.pull = s.enh ? 4 : 3; s.atk = s.enh ? 6 : 8; toast('Вихрь затягивает!'); }
         if (s.pull > 0) {
           s.pull -= dt; if (Math.random() < dt * 3) wave(main.x, main.z, '#22e6ff', rM + 70, rM, .5);
-          for (const p of ps) for (const pc of p.cells) { const dx = main.x - pc.x, dz = main.z - pc.z, d = Math.hypot(dx, dz); if (d < rM + 80 && d > 1) { const f = s.enh ? 24 : 16; pc.x += dx / d * f * dt; pc.z += dz / d * f * dt; } }
+          for (const p of ps) for (const pc of p.cells) { const dx = main.x - pc.x, dz = main.z - pc.z, d = hyp(dx, dz); if (d < rM + 80 && d > 1) { const f = s.enh ? 24 : 16; pc.x += dx / d * f * dt; pc.z += dz / d * f * dt; } }
         }
       }
       if (s.d.id === 'meteor' && s.atk <= 0 && ps.length) {
@@ -269,7 +269,7 @@
           for (const p of pl()) {
             if (shieldOf(p) || stats.time < (p.mtSafe || 0)) continue;
             let hit = false;
-            for (const pc of p.cells) if (Math.hypot(pc.x - m.x, pc.z - m.z) < m.r) { pc.mass = Math.max(10, pc.mass * .7); hit = true; }
+            for (const pc of p.cells) if (hyp(pc.x - m.x, pc.z - m.z) < m.r) { pc.mass = Math.max(10, pc.mass * .7); hit = true; }
             if (hit) { p.mtSafe = stats.time + 2.5; if (TEST_MODE) TLog.ev('метеор', { кто: p === player ? 'я' : 'напарник', масса: Math.round(total(p)) }); }
           }
         }
@@ -340,7 +340,7 @@
         } else if (o.kind === 'boss' && o.dbType && !o.dbSpec) {
           team.bosses++; if (eater !== player) { toast(`${o.name} повержен — его съел ${eater.name}!`); Sound.play('bossDown'); }
           const om = other.cells.length ? mainOf(other) : null, bc = o.cells[0] || o.lastAt || null;
-          if (om && ((o.target && o.target.owner === other) || (bc && Math.hypot(bc.x - om.x, bc.z - om.z) < 25))) { help(3); if (eater === player) toast('Ты прикрыл напарника: +3 очка помощи'); }
+          if (om && ((o.target && o.target.owner === other) || (bc && hyp(bc.x - om.x, bc.z - om.z) < 25))) { help(3); if (eater === player) toast('Ты прикрыл напарника: +3 очка помощи'); }
           if (o.dbType === 'twins') regOwners.forEach(x => { if (x !== o && x.dbType === 'twins' && x.cells.length) x.enr = 1; });
         }
       },

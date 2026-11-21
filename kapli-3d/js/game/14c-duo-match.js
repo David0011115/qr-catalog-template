@@ -86,19 +86,19 @@
       botT = .25; let fx = 0, fz = 0, prey = null, pd = 1e9;
       for (const c of cells) {
         if (c.owner === o) continue;
-        const d = Math.hypot(c.x - m.x, c.z - m.z);
+        const d = hyp(c.x - m.x, c.z - m.z);
         if (canEat(c, m) && d < cellR(c) + cellR(m) + 45) { fx -= (c.x - m.x) / (d || 1); fz -= (c.z - m.z) / (d || 1); }
         else if (c.owner !== player || modeId === 'territory') { if (canEat(m, c) && d < 160 && d < pd) { pd = d; prey = c; } }
       }
       if (fx || fz) { botGoal = { x: m.x + fx * 40, z: m.z + fz * 40 }; aim(m, botGoal); return; }
       if (prey) { botGoal = prey; if (pd < 30 && o.dashCd <= 0 && Math.random() < .3) act('dash'); aim(m, botGoal); return; }
-      if (modeId === 'duoback' && player.cells.length) { const [px, pz] = centerOf(player); if (Math.hypot(px - m.x, pz - m.z) > 110) { botGoal = { x: px, z: pz }; aim(m, botGoal); return; } }
+      if (modeId === 'duoback' && player.cells.length) { const [px, pz] = centerOf(player); if (hyp(px - m.x, pz - m.z) > 110) { botGoal = { x: px, z: pz }; aim(m, botGoal); return; } }
       if (modeId === 'territory' && rl && rl.homeSide && !rl.homeSide(o, m.x)) { botGoal = { x: homeX(o), z: m.z * .5 }; aim(m, botGoal); return; }
       let best = null, bd = 1e9;
-      for (let k = 0; k < 60; k++) { const i = (Math.random() * FOOD) | 0, f = foods[i]; if (!f) continue; const d = Math.hypot(f.x - m.x, f.z - m.z); if (d < bd && (modeId !== 'territory' || !rl.homeSide || rl.homeSide(o, f.x))) { bd = d; best = f; } }
+      for (let k = 0; k < 60; k++) { const i = (Math.random() * FOOD) | 0, f = foods[i]; if (!f) continue; const d = hyp(f.x - m.x, f.z - m.z); if (d < bd && (modeId !== 'territory' || !rl.homeSide || rl.homeSide(o, f.x))) { bd = d; best = f; } }
       botGoal = best ? { x: best.x, z: best.z } : { x: 0, z: 0 }; aim(m, botGoal);
     }
-    function aim(m, g) { const dx = g.x - m.x, dz = g.z - m.z, l = Math.hypot(dx, dz) || 1; inp = { x: dx / l, z: dz / l }; }
+    function aim(m, g) { const dx = g.x - m.x, dz = g.z - m.z, l = hyp(dx, dz) || 1; inp = { x: dx / l, z: dz / l }; }
     // 2.7: each player gets their own three abilities (build: the host's, build2: the other phone's), never the same ones
     let rivalBuild = [];
     function duoBuilds() {
@@ -181,7 +181,7 @@
       for (const k in o.eff) o.eff[k] = Math.max(0, o.eff[k] - dt);
       if (!o.cells.length && o.respawnAt !== undefined && stats.time >= o.respawnAt) { delete o.respawnAt; place(o, homeX(o)); o.eff.shield = 3; toast(`${o.name} вернулся`); }
       if (botMate && o.cells.length) botInput(o, dt);
-      const l = Math.hypot(inp.x, inp.z);
+      const l = hyp(inp.x, inp.z);
       for (const c of o.cells) { if (l > .1) steer(c, c.x + inp.x / l * 10 * Math.min(1, l), c.z + inp.z / l * 10 * Math.min(1, l), dt); else steer(c, c.x + c.hx * 10, c.z + c.hz * 10, 0); }
       if (!player.cells.length && player.respawnAt !== undefined && stats.time >= player.respawnAt) { delete player.respawnAt; place(player, homeX(player)); effects.shield = Math.max(effects.shield, 3); toast('Ты снова в игре'); }
       tagTick();
@@ -206,7 +206,7 @@
     // bonuses: the second player picks them up too, with the same effects (kept on the host for their drop, shown on their phone)
     const BONUS_IDS = Object.keys(BONUS);
     function rivalPick(b) {
-      if (!on || role !== 'host' || !rival.cells.some(c => Math.hypot(c.x - b.x, c.z - b.z) < cellR(c) + 1)) return false;
+      if (!on || role !== 'host' || !rival.cells.some(c => hyp(c.x - b.x, c.z - b.z) < cellR(c) + 1)) return false;
       if (BONUS[b.type].instant) fountainBurst(rival);
       else rival.eff[b.type] = Math.min(b.type === 'shield' ? 10 : 30, rival.eff[b.type] + effectDur(b.type));
       emit(b.x, 1.2, b.z, BONUS[b.type].color, 24, 12, .6);
@@ -248,9 +248,9 @@
     // ---- the other phone: controls out, the world in ----
     function localDir() {
       const kx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0), kz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
-      if (kx || kz) { const l = Math.hypot(kx, kz); return [kx / l, kz / l]; }
-      if (joy.id !== null && joy.mag > 0.15) { const l = Math.hypot(joy.x, joy.y) || 1, m = Math.min(1, joy.mag); return [joy.x / l * m, joy.y / l * m]; }
-      if (pointerActive && player.cells.length) { ray.setFromCamera(pointer, camera); if (ray.ray.intersectPlane(plane, hit)) { const [cx, cz] = pCenterXZ(), ex = hit.x - cx, ez = hit.z - cz, l = Math.hypot(ex, ez); if (l > 1) return [ex / l, ez / l]; } }
+      if (kx || kz) { const l = hyp(kx, kz); return [kx / l, kz / l]; }
+      if (joy.id !== null && joy.mag > 0.15) { const l = hyp(joy.x, joy.y) || 1, m = Math.min(1, joy.mag); return [joy.x / l * m, joy.y / l * m]; }
+      if (pointerActive && player.cells.length) { ray.setFromCamera(pointer, camera); if (ray.ray.intersectPlane(plane, hit)) { const [cx, cz] = pCenterXZ(), ex = hit.x - cx, ez = hit.z - cz, l = hyp(ex, ez); if (l > 1) return [ex / l, ez / l]; } }
       return [0, 0];
     }
     function apply(s) {
@@ -371,7 +371,7 @@
           }
           const info = meta[k] || {};
           if (cell.stx !== undefined && dtS > .02 && dtS < .6) {
-            const vx = (x - cell.stx) / dtS, vz = (z - cell.stz) / dtS, sp = Math.hypot(vx, vz);
+            const vx = (x - cell.stx) / dtS, vz = (z - cell.stz) / dtS, sp = hyp(vx, vz);
             if (sp < 300) { cell.evx = vx; cell.evz = vz; } else cell.evx = cell.evz = 0;   // a jump (split, respawn): no guessing
           } else if (cell.stx === undefined) cell.evx = cell.evz = 0;
           cell.stx = x; cell.stz = z; cell.sAt = nowMs;
@@ -433,7 +433,7 @@
       }
       // Predict our own movement locally with the same steering helper used by
       // the offline game. The server remains authoritative and corrects drift.
-      const moving = Math.hypot(dx, dz) > 0.05;
+      const moving = hyp(dx, dz) > 0.05;
       for (const cell of player.cells) {
         const sx = moving ? dx : (Number.isFinite(cell.hx) ? cell.hx : 0);
         const sz = moving ? dz : (Number.isFinite(cell.hz) ? cell.hz : 0);
@@ -451,12 +451,12 @@
         }
         const correctionRate = cell.owner === player ? 5 : 12;
         const k = Math.min(1, dt * correctionRate);
-        const ex = cell.tx - cell.x, ez = cell.tz - cell.z, distance = Math.hypot(ex, ez);
+        const ex = cell.tx - cell.x, ez = cell.tz - cell.z, distance = hyp(ex, ez);
         if (distance > 40) { cell.x = cell.tx; cell.z = cell.tz; }
         else if (distance > 0.02) { cell.x += ex * k; cell.z += ez * k; }
         if (Number.isFinite(cell.thx) && Number.isFinite(cell.thz)) {
           cell.hx += (cell.thx - cell.hx) * k; cell.hz += (cell.thz - cell.hz) * k;
-          const length = Math.hypot(cell.hx, cell.hz) || 1; cell.hx /= length; cell.hz /= length;
+          const length = hyp(cell.hx, cell.hz) || 1; cell.hx /= length; cell.hz /= length;
         }
       }
       for (const virus of viruses) if (virus.mesh) virus.mesh.position.set(virus.x, radius(virus.mass), virus.z);
@@ -482,14 +482,14 @@
       if (now - inAt > INPUT_MS) { inAt = now; Duo.send({ t: 'i', x: r1(dx * 10) / 10, z: r1(dz * 10) / 10 }, true); }
       for (const c of player.cells) {   // your own drop moves at once and leans toward where the host has it
         if (dx || dz) steer(c, c.x + dx * 10, c.z + dz * 10, dt);
-        if (c.tx !== undefined) { const ex = c.tx - c.x, ez = c.tz - c.z, d = Math.hypot(ex, ez); if (d > 25) { c.x = c.tx; c.z = c.tz; } else { const k = Math.min(1, dt * 5); c.x += ex * k; c.z += ez * k; } }
+        if (c.tx !== undefined) { const ex = c.tx - c.x, ez = c.tz - c.z, d = hyp(ex, ez); if (d > 25) { c.x = c.tx; c.z = c.tz; } else { const k = Math.min(1, dt * 5); c.x += ex * k; c.z += ez * k; } }
       }
       const k = Math.min(1, dt * 12);
       for (const c of cells) {
         if (c.owner === player || c.tx === undefined) continue;
-        const ex = c.tx - c.x, ez = c.tz - c.z, d = Math.hypot(ex, ez);
+        const ex = c.tx - c.x, ez = c.tz - c.z, d = hyp(ex, ez);
         if (d > 40) { c.x = c.tx; c.z = c.tz; continue; }
-        if (d > .02) { c.hx += (ex / d - c.hx) * k; c.hz += (ez / d - c.hz) * k; const hl = Math.hypot(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl; }
+        if (d > .02) { c.hx += (ex / d - c.hx) * k; c.hz += (ez / d - c.hz) * k; const hl = hyp(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl; }
         c.x += ex * k; c.z += ez * k;
       }
       for (const v of viruses) if (v.mesh) v.mesh.position.set(v.x, radius(v.mass) * .9, v.z);

@@ -329,7 +329,7 @@
         x.fillStyle = '#020008'; x.fillRect(0, 0, w, h);
         const cx = w * .74, cy = h * .5, R = U * .22;
         x.globalCompositeOperation = 'lighter'; glow(cx, cy, U * .9, 'rgba(178,107,255,.28)'); x.globalCompositeOperation = 'source-over';
-        for (const p of pbgPts('ss', 90, 73)) { const dx = p.x * w - cx, dy = p.y * h - cy, d = Math.hypot(dx, dy) || 1, k = 1 + (R * R * 2.2) / (d * d); x.globalAlpha = .3 + .6 * Math.abs(Math.sin(t + p.p)); x.fillStyle = '#d8d0ff'; x.fillRect(cx + dx * k, cy + dy * k, 1.2, 1.2); } x.globalAlpha = 1;
+        for (const p of pbgPts('ss', 90, 73)) { const dx = p.x * w - cx, dy = p.y * h - cy, d = hyp(dx, dy) || 1, k = 1 + (R * R * 2.2) / (d * d); x.globalAlpha = .3 + .6 * Math.abs(Math.sin(t + p.p)); x.fillStyle = '#d8d0ff'; x.fillRect(cx + dx * k, cy + dy * k, 1.2, 1.2); } x.globalAlpha = 1;
         x.save(); x.translate(cx, cy); x.scale(1, .32); x.globalCompositeOperation = 'lighter';
         for (let i = 0; i < 90; i++) { const a = i / 90 * 6.283 + t * .9, r1 = R * 1.3, r2 = R * 3.1, hue = (290 + 50 * Math.sin(a * 2 + t)) % 360;
           x.strokeStyle = `hsla(${hue},100%,${58 + 15 * Math.sin(a * 3 - t * 2)}%,${.55 + .3 * Math.sin(a + t)})`; x.lineWidth = 4; x.beginPath(); x.arc(0, 0, r1 + (r2 - r1) * ((i * 7) % 13) / 13, a, a + .12); x.stroke(); }

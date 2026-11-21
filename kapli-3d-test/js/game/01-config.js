@@ -534,7 +534,7 @@
   }
   function ensureSeasonDecor() {}   // 1.7.0: per-season frames/titles were replaced by two half-year ones
   const seasonHalf = idx => idx > SEASON_YEAR / 2 ? 2 : 1;
-  const seasonDecor = (sd, li) => !sd.idx ? [] : [...(li >= 3 ? ['fr_sh' + seasonHalf(sd.idx)] : []), ...(li >= 5 ? ['tt_sh1'] : [])];   // 2.5: one title «Звезда сезонов» for both halves
+  const seasonDecor = (sd, li) => !sd.idx ? [] : [...(li >= 3 ? ['fr_sh1'] : []), ...(li >= 5 ? ['tt_sh1'] : [])];   // 2.5: one title «Звезда сезонов» for both halves
   function leagueRewardText(sd, i) {
     const p = [];
     if (sd.holiday) {
@@ -813,7 +813,7 @@
       test: S => !!S.smallBoss },
   ];
   // 1.7.0: instead of 13 titles — 4 for 3 / 6 / 9 / 13 mastery achievements
-  const SKILL_TT = [[6, 'tt_sk6'], [13, 'tt_sk13']];   // 2.5: two titles instead of four
+  const SKILL_TT = [[9, 'tt_sk9'], [13, 'tt_sk13']];   // 2.7: «Виртуоз» and «Гроссмейстер»
   DECOR.push(tt('tt_sk3', 'Умелец', 'rare', '#7cf3ff', '#ffffff', '✪', { skillN: 3 }), tt('tt_sk6', 'Знаток', 'epic', '#3dffa2', '#22e6ff', '✪', { skillN: 6 }),
     tt('tt_sk9', 'Виртуоз', 'epic', '#ff9a3d', '#ffd23f', '✪', { skillN: 9 }), tt('tt_sk13', 'Гроссмейстер', 'legendary', '#ffd23f', '#ff4fd8', '✪', { skillN: 13 }));
   // promo-code exclusives: frame + title for each code (1.7.0)
@@ -848,7 +848,7 @@
   const LEGEND = [
     { id: 'kills',  name: 'Пожиратель миров',   desc: 'Съешь 100 000 капель',                 goal: 100000,  reward: ['skin', 'lg_worlds'] },
     { id: 'coins',  name: 'Золотой магнат I',   desc: 'Заработай 100 000 монет',              goal: 100000,  reward: ['skin', 'lg_tycoon'] },
-    { id: 'coins2', key: 'coins', name: 'Золотой магнат II', desc: 'Заработай 1 000 000 монет — больше, чем стоят все арены вместе', goal: 1000000, reward: [['fx', 'lg_moneyAura'], ['deco', 'fr_platinum'], ['deco', 'tt_millionaire'], ['badge', 'millionaire']], extra: true },
+    { id: 'coins2', key: 'coins', name: 'Золотой магнат II', desc: 'Заработай 1 000 000 монет — больше, чем стоят все арены вместе', goal: 1000000, reward: [['fx', 'lg_moneyAura'], ['deco', 'tt_millionaire'], ['badge', 'millionaire']], extra: true },
     { id: 'bosses', name: 'Истребитель титанов', desc: 'Победи 10 000 боссов',                goal: 10000,   reward: ['fx', 'lg_titanTrail'] },
     { id: 'stars1', key: 'stars', name: 'Гроза звёзд I',   desc: 'Съешь 1 000 ботов-звёзд',              goal: 1000,  reward: [['deco', 'fr_star']] },
     { id: 'stars2', key: 'stars', name: 'Гроза звёзд II',  desc: 'Съешь 5 000 ботов-звёзд',              goal: 5000,  reward: [['skin', 'lg_supernova'], ['pet', 'lg_starpet']], extra: true },
@@ -956,7 +956,7 @@
     // 1.7.0: season frames (Platinum) and titles (Neon); league seasons collected in two halves of the year
     [['Первое', '#3dffa2', '#ffd23f'], ['Второе', '#ff4fd8', '#22e6ff']].forEach(([n, c, c2], q) => {
       DECOR.push(fr('fr_q' + (q + 1), `${n} полугодие`, 'epic', c, c2, { col: true }));
-      COLLECTIONS.push({ id: 'col_q' + (q + 1), group: 'seasons', name: `${n} полугодие · сезоны ${q * 13 + 1}–${q * 13 + 13}`, frame: 'fr_q' + (q + 1), arena: q ? 'retro' : 'sakura', coins: 5000,
+      COLLECTIONS.push({ id: 'col_q' + (q + 1), group: 'seasons', name: `${n} полугодие · сезоны ${q * 13 + 1}–${q * 13 + 13}`, arena: q ? 'retro' : 'sakura', coins: 5000,
         items: () => { const out = []; for (let id = q * 13 + 1; id <= q * 13 + 13; id++) { const sd = seasonData(id);
           if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else { if (sd.skin) out.push(['skin', sd.skin.id]); if (sd.fx) out.push(['fx', sd.fx.id]); }
           sd.pets.forEach(pt => out.push(['pet', pt.id])); } return out; } });
@@ -967,10 +967,10 @@
     DECOR.push(tt('tt_looks', 'Мастер обликов', 'epic', '#c46bff', '#22e6ff', '✦', { col: true }),
       tt('tt_cvetall', 'Вечный странник хаоса', 'legendary', '#ffd23f', '#ff4fd8', '✦', { col: true, old: true }));
     COLLECTIONS.push({ id: 'col_looks', group: 'chaos', looks: true, name: 'Облики способностей', title: 'tt_looks', coins: 0, items: () => allLooks().map(l => ['look', l.id]) });
-    COLLECTIONS.push({ id: 'col_cvet', group: 'chaos', name: 'Ветераны Хаоса', title: 'tt_cvet', coins: 0, items: () => CHAOS_VET.map(v => [v.kind, v.id]) });
+    COLLECTIONS.push({ id: 'col_cvet', group: 'chaos', name: 'Ветераны Хаоса', coins: 0, items: () => CHAOS_VET.map(v => [v.kind, v.id]) });
     DECOR.push(tt('tt_arsenal', 'Оружейник', 'epic', '#ff9a3d', '#ffd23f', '✦', { col: true }),
       fr('fr_arsenal', 'Оружейная', 'epic', '#ff9a3d', '#ffd23f', { col: true }));
-    COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', title: 'tt_arsenal', frame: 'fr_arsenal', coins: ABIL_CFG.arsenalCoins, items: () => BASE_ABIL.map(a => ['abil', a.id]) });
+    COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', coins: ABIL_CFG.arsenalCoins, items: () => BASE_ABIL.map(a => ['abil', a.id]) });
     const HOL_TITLE = { newyear: ['Дух Нового года', '#9fe8ff'], valentine: ['Романтик', '#ff4f9a'], halloween: ['Ночной кошмар', '#ff7a00'] };
     Object.keys(HOLIDAYS).forEach(k => {
       DECOR.push(tt(`tt_hol_${k}`, HOL_TITLE[k][0], 'epic', HOL_TITLE[k][1], '#ffffff', '✦', { col: true }));
@@ -1069,7 +1069,7 @@
   // season rewards by tier: Diamond = season skin + frame; Neon = + title + the next exclusive ability (table order)
   // the 3rd «Сингулярность» reward: the next exclusive ability not owned yet (table order, new quarterly ones included), then the next look
   const chaosNextThird = () => { const a = XA_ABIL.find(x => !save.abil.xa.includes(x.id)); if (a) return { kind: 'abil', a }; const l = allLooks().find(x => !save.abil.looks.includes(x.id)); return l ? { kind: 'look', l } : null; };
-  const CHAOS_VET = [{ n: 5, kind: 'deco', id: 'tt_cvet', what: 'титул «Ветеран Хаоса»' }, { n: 10, kind: 'deco', id: 'fr_cvet', what: 'рамка «Пульс бездны»' },
+  const CHAOS_VET = [   // 2.7: the title and frame of 5 and 10 seasons retired
     { n: 25, kind: 'skin', id: 'cv_skin', what: 'эксклюзивный скин «Хаосит»' }, { n: 50, kind: 'badge', id: 'chaosheart', what: 'особый значок «Сердце хаоса»' }];
   function chaosSeasonRewards(id, ti) {
     const out = [];
@@ -1077,7 +1077,7 @@
       save.chaosRift = (save.chaosRift || 0) + 1;
       if (save.chaosRift >= 10 && !save.arenas.includes('inferno')) { save.arenas.push('inferno'); out.push('арена «Пекло»'); }
       const k = ensureChaosSkin(id); if (!save.skins.includes(k.id)) { save.skins.push(k.id); out.push(`скин «${k.name}»`); }
-      const f = decorById('fr_cq' + chaosQ(id)); if (!save.decor.includes(f.id)) { save.decor.push(f.id); out.push(`рамка «${f.name}»`); }
+      const f = decorById('fr_cq1');   // 2.7: one frame for every era of Chaos if (!save.decor.includes(f.id)) { save.decor.push(f.id); out.push(`рамка «${f.name}»`); }
     }
     if (ti >= 5) {
       const t = decorById('tt_cq1'); if (!save.decor.includes(t.id)) { save.decor.push(t.id); out.push(`титул «${t.name}»`); }   // 2.5: one «Хаос-чемпион» for every quarter (2.7 fix: this line was inside the comment)
@@ -1165,6 +1165,48 @@
     boss:       { tag: 'босс',     sense: 2,   chase: 1,   flee: 0,   preyK: 1 },
   };
   // 2.5: fewer titles. These are no longer given out; whoever already has one keeps it and can wear it (an «archived» title)
-  const OLD_TITLES = ['tt_crumb', 'tt_tactic', 'tt_storm', 'tt_lord', 'tt_lg3', 'tt_sh2', 'tt_cq2', 'tt_cq3', 'tt_cq4', 'tt_cvetall', 'tt_xarsenal', 'tt_lv10', 'tt_ps5', 'tt_ps_sn', 'tt_starcatcher', 'tt_ln_star', 'tt_ln_league', 'tt_sk3', 'tt_sk9'];
+  // 2.7 (showcase with the owner): «Гроза ботов», «Повелитель арены», «Неоновая легенда», «Виртуоз», «Пылающая звезда» are given again; «Алмазный ас», «Ветеран Хаоса», «Гроза гигантов», «Исполин», «Знаток» retire
+  const OLD_TITLES = ['tt_crumb', 'tt_tactic', 'tt_lg3', 'tt_lg4', 'tt_sh2', 'tt_cq2', 'tt_cq3', 'tt_cq4', 'tt_cvet', 'tt_cvetall', 'tt_xarsenal', 'tt_lv10', 'tt_ps5', 'tt_starcatcher', 'tt_ln_star', 'tt_ln_giant', 'tt_giants', 'tt_sk3', 'tt_sk6'];
   OLD_TITLES.forEach(id => { const d = DECOR.find(x => x.id === id); if (d) d.old = true; });
   { const d = DECOR.find(x => x.id === 'tt_unbreak'); if (d) d.name = 'Повелитель волн'; }   // was «Несокрушимый», too close to «Несокрушимые»
+  // 2.7: frames cut down with the owner (the online-mode ones stay); an owner gets the nearest kept frame instead (save: deco27)
+  const OLD_FRAMES_27 = ['fr_cyan', 'fr_fire', 'fr_lg3', 'fr_lg4', 'fr_sh2', 'fr_q1', 'fr_q2', 'fr_cq2', 'fr_cq3', 'fr_cq4', 'fr_cvet', 'fr_lv20', 'fr_platinum', 'fr_arsenal'];
+  // applied now and again after addExtraCollections() (02-save.js), which adds the collection frames and titles later
+  function apply27Decor() {
+    OLD_FRAMES_27.forEach(id => { const d = DECOR.find(x => x.id === id); if (d) d.old = true; });
+    [['tt_arsenal', 'Мастер оружия'], ['tt_ps_sn', 'Пылающая звезда'], ['tt_summit', 'Покоритель Классики'], ['tt_twinpeak', 'Двуглавый титан']].forEach(([id, n]) => { const d = DECOR.find(x => x.id === id); if (d) d.name = n; });
+    { const d = DECOR.find(x => x.id === 'tt_arsenal'); if (d) { d.src = 'Прокачай все 12 обычных способностей до 5-го уровня.'; delete d.col; } }
+  }
+  apply27Decor();
+  // 2.7: skins reworked with the owner (the showcase). Same ids, so whoever owns one keeps the slot with the new look; renamed ones are listed once (save: deco27)
+  const LOOK_KEYS_27 = ['color', 'accent', 'pattern', 'mat', 'anim', 'head', 'shine', 'emi', 'emiColor', 'flow', 'glow', 'holo', 'holoBase', 'holoSpan', 'bubbles', 'crown', 'live', 'pulse', 'rainbow'];
+  const SKIN_27 = {
+    neon:        [null, 'неоновые дорожки микросхемы по тёмному телу, антенны', { color: '#0d0624', accent: '#22e6ff', pattern: 'circuit', emi: true, emiColor: '#22e6ff', mat: 'rim', anim: 'flicker', glow: true, head: 'antenna' }],
+    marmalade:   ['Аквариум', 'стеклянный шар с волнами и пузырьками', { color: '#1f8bff', accent: '#bff4ff', mat: 'glass', pattern: 'waves', flow: [.04, 0], bubbles: true, glow: true }],
+    coral:       ['Мятная капля', 'свежая мятная капля, мягко дышит', { color: '#36f2c3', accent: '#e8fffb', pattern: 'gradient', anim: 'breath', glow: true }],
+    c_crystal:   [null, 'голубые грани, призма и блик', { color: '#1a8cff', accent: '#9fe8ff', pattern: 'facets', head: 'prism', shine: 'bolt', anim: 'breath', glow: true }],
+    c_lavalamp:  [null, 'капли воска всплывают в стекле', { color: '#3a0a6e', accent: '#ff7a3d', pattern: 'bubbles', flow: [0, .07], mat: 'glass', glow: true }],
+    c_nebula:    [null, 'облака газа переливаются, вокруг рой звёздочек', { color: '#1a0630', accent: '#ff9ef2', pattern: 'aurora', flow: [.02, 0], glow: true, head: 'swarm' }],
+    c_soda:      ['Ягодный пончик', 'розовая глазурь с посыпкой', { color: '#ff7ac8', accent: '#ffd23f', pattern: 'dots', mat: 'matte', glow: true }],
+    c_caramel:   ['Мыльный пузырь', 'прозрачный пузырь с радужными разводами', { color: '#e8f4ff', accent: '#ff9ef2', mat: 'glass', pattern: 'aurora', flow: [.03, .02], glow: true }],
+    lc_diamond:  [null, 'фиолетовые грани, звёздный взрыв над головой', { color: '#b26bff', accent: '#e8fbff', pattern: 'facets', mat: 'crystal', head: 'nova', shine: 'bolt', glow: true }],
+    lc_cup:      ['Турнирный факел', 'золотой факел турнира, бегущие волны огня', { color: '#ffb000', accent: '#ff3d00', pattern: 'waves', flow: [.05, 0], head: 'flame', anim: 'breath', glow: true }],
+    lc_shield:   ['Серебряная медаль', 'серебро с гравировкой, звезда и блик', { color: '#d8dee9', accent: '#8a94a8', pattern: 'rings', head: 'star', shine: 'stripe', glow: true }],
+    magma:       ['Вулкан', 'по чёрной породе текут реки лавы, на макушке бурлит кратер', { color: '#2a0e04', accent: '#ff7a1a', pattern: 'live', live: 'volcano', head: 'flame', glow: true }],
+    champion:    ['Гладиатор', 'стальная броня с золотыми швами, лавровый венок', { color: '#3a3f4c', accent: '#ffd23f', pattern: 'plates', mat: 'matte', head: 'laurel', shine: 'stripe', glow: true }],
+    s_25:        [null, 'синтвейв-сетка под неоновым контуром, корона', { color: '#14082e', accent: '#ff4fd8', pattern: 'synth', flow: [0, .1], mat: 'rim', anim: 'heartbeat', crown: true, glow: true }],
+    s_21:        [null, 'тёмная порода, кристаллы на орбите', { color: '#1a0a33', accent: '#9fe8ff', pattern: 'facets', mat: 'matte', head: 'shards', glow: true }],
+    s_19:        [null, 'голограмма с развёрткой и порталом', { color: '#22e6ff', accent: '#ff4fd8', pattern: 'scan', flow: [0, .2], holo: true, holoBase: .5, holoSpan: .12, glow: true, head: 'portal' }],
+    s_7:         ['Пульсар', 'по капле бегут лучи, на макушке пульсирует ядро', { color: '#0a1030', accent: '#9fe8ff', pattern: 'live', live: 'pulsar', head: 'ring', glow: true }],
+    h_valentine: [null, 'бархат с золотой сеткой, плывут сердца, на макушке бьётся сердце', { color: '#b3001e', accent: '#ffd23f', pattern: 'live', live: 'queen', head: 'wings', crown: true, anim: 'heartbeat', glow: true }],
+    h_halloween: [null, 'светится вырезанная ухмылка, мерцает свеча, летят искры', { color: '#ff7a00', accent: '#ffd23f', pattern: 'live', live: 'jack', head: 'stem', crown: true, glow: true }],
+    h_newyear:   [null, 'ледяной кристалл, снег внутри, корона', { color: '#cfefff', accent: '#4d7cff', pattern: 'snow', flow: [0, -.08], mat: 'crystal', head: 'icecrown', shine: 'bolt', glow: true }],
+    cs_q3:       [null, 'фрактал в стекле, призма', { color: '#120830', accent: '#3dffa2', pattern: 'fractal', flow: [.05, .05], mat: 'glass', head: 'prism', glow: true }],
+    cs_q1:       [null, 'сбоящий контур и антенны', { color: '#0a0a1a', accent: '#ff2d55', pattern: 'glitch', anim: 'glitch', mat: 'rim', head: 'antenna', glow: true }],
+  };
+  const SKIN_RENAMED_27 = {};
+  for (const [id, [nm, sig, look]] of Object.entries(SKIN_27)) { const s = SKINS.find(k => k.id === id); if (!s) continue;
+    if (nm && nm !== s.name) { SKIN_RENAMED_27[id] = s.name; s.name = nm; } s.sig = sig; LOOK_KEYS_27.forEach(k => delete s[k]); Object.assign(s, look); }
+  // two new skins from the showcase: the boss hunter (challenge «Гроза гигантов») and obsidian (epic chest)
+  SKINS.push({ id: 'ch_hunter', name: 'Охотник на боссов', color: '#5a0a14', accent: '#ffd23f', pattern: 'scales', mat: 'matte', crown: true, anim: 'heartbeat', glow: true, ch: 'epic', sig: 'багровая чешуя с золотом, корона охотника' },
+    { id: 'c_obsidian', name: 'Обсидиан', color: '#08060c', accent: '#ff6a00', pattern: 'cracks', emi: true, emiColor: '#ff8a2a', mat: 'glass', anim: 'magma', glow: true, chest: 'epic', sig: 'чёрное вулканическое стекло, сквозь трещины пульсирует расплав' });

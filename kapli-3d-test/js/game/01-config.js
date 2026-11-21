@@ -63,7 +63,7 @@
     function tick(dt, speedPct, mass, causes) {
       if (!cur) return;
       sampleT -= dt;
-      if (sampleT <= 0 && cur.samples.length < LIM.samples) { sampleT = 5; cur.samples.push([now(), Math.round(mass), Math.round(speedPct), Math.round(lastFps)]); }   // [time, mass, speed %, FPS]
+      if (sampleT <= 0 && cur.samples.length < LIM.samples) { sampleT = 5; cur.samples.push([now(), Math.round(mass), Math.round(speedPct), Math.round(lastFps)]); try { localStorage.setItem(KEY + '-cur', JSON.stringify(Object.assign({}, cur, { draftAt: Date.now() }))); } catch (e) {} }   // [time, mass, speed %, FPS]; the draft survives a freeze
       if (causes.length && mass > 0) {
         if (!slowEp) slowEp = { t: now(), min: speedPct, causes: new Set(causes), mass: Math.round(mass) };
         slowEp.min = Math.min(slowEp.min, speedPct); causes.forEach(c => slowEp.causes.add(c));
@@ -83,7 +83,15 @@
       Object.assign(cur, summary);
       if (!Object.keys(cur.x).length) delete cur.x;
       const L = load(); L.push(cur); store(L); cur = null;
+      try { localStorage.removeItem(KEY + '-cur'); } catch (e) {}
     }
+    // a draft left by a round that never ended: into the journal, marked, with the FPS part summed up as at a normal end
+    try { const d = JSON.parse(localStorage.getItem(KEY + '-cur') || 'null');
+      if (d && d.at) { const F = d.fps || {}; d.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low, hitch50: F.h50, hitch100: F.h100, hitchInCode: F.hJs || 0, hitchOutside: F.hOut || 0, worstMs: F.worst, hitches: F.ms };
+        const lt = Math.max(((d.samples || []).slice(-1)[0] || [0])[0] || 0, ((d.ev || []).slice(-1)[0] || [0])[0] || 0);
+        d.end = `Раунд прервался — зависание или закрытие игры; последняя запись на ${lt} с` + (d.draftAt ? ` (${new Date(d.draftAt).toLocaleTimeString('ru-RU')})` : '');
+        d.dur = lt; const L = load(); L.push(d); store(L); }
+      localStorage.removeItem(KEY + '-cur'); } catch (e) {}
     return { begin, ev, extra, fps, frame, net, tick, end, get on() { return !!cur; }, list: load, clear: () => store([]), r1 };
   })();
   // the field's radius and the number of crumbs change with the mode (setArenaSize): «Захват территории» ×1,25, «Спина к спине» ×0,8

@@ -391,6 +391,7 @@
     const sh = sun.shadow.camera, span = Math.max(50, camDist * 1.4);
     if (Math.abs(sh.right - span) > 2) { sh.left = sh.bottom = -span; sh.right = sh.top = span; sh.far = span * 3 + 60; sh.updateProjectionMatrix(); }
     sun.position.set(camLook.x + 15, span * 0.8 + 20, camLook.z + 10); sun.target.position.copy(camLook);
+    glowBatch.sync();
     renderer.render(scene, camera);
   }
 
@@ -406,6 +407,7 @@
       const ri = renderer.info.render, mem = performance.memory;
       return { q: QUALITY, mass: Math.round(total(player)), cells: cells.length, mine: player.cells.length, bots: bots.filter(o => o.cells.length).length, boss: bossOwners.filter(o => o.cells.length).length + raidTwins.filter(o => o.cells.length).length,
         fx: pActive.length + eActive.length, calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) + 'MB' : undefined, px: r1q(renderer.getPixelRatio()) }; });
+    if (TEST_MODE && running && renderer.info.programs) { const np = renderer.info.programs.length; if (perf.progs && np > perf.progs) TLog.ev('новый шейдер', np - perf.progs); perf.progs = np; }   // 2.7: what still compiles mid-round
     if (save.settings.showFps) { const el = $('fps'); el.textContent = `${Math.round(perf.fps)} FPS`; el.classList.toggle('slow', perf.fps < 40); }
     if (running && !paused && !document.hidden && save.settings.autoQ) {   // 2.7: soft step first — resolution, before the quality preset
       perf.dcool = Math.max(0, (perf.dcool || 0) - 1);

@@ -174,7 +174,7 @@
       }
       if (f.t < .4) f.mesh.scale.setScalar(Math.max(.01, f.t / .4));
     }
-    crfx = crfx.filter(f => { if (f.t > 0) return true; scene.remove(f.mesh); return false; });
+    if (crfx.length) crfx = crfx.filter(f => { if (f.t > 0) return true; scene.remove(f.mesh); return false; });
   }
   let xfx = [];   // timed world effects: hole, meteor, anchor, twin (each remembers its caster)
   // the mark on the floor for «Метка»
@@ -279,7 +279,7 @@
         if (Math.random() < .5 && nearView(px, pz)) { const ang = Math.random() * Math.PI * 2; emit(px + Math.cos(ang) * rad, 1, pz + Math.sin(ang) * rad, a.color, 2, 3, .4); }
       }
     }
-    for (const f of [...xfx]) {
+    if (xfx.length) for (const f of [...xfx]) {   // 2.7 FPS: no copy when nothing is active
       f.t -= dt;
       const foes = foesOf(f.o), main = f.o.cells.length ? mainOf(f.o) : null;
       if (f.id === 'slowwave') {

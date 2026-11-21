@@ -609,8 +609,9 @@
   function showCombo(n, bonus) {
     const el = $('combo');
     el.innerHTML = `Комбо ×${n}!<small>+${bonus} ◆</small>`;
-    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(comboTimer); comboTimer = setTimeout(() => el.classList.remove('show'), 1200);
+    // 2.7 FPS: restarted by switching between two animation names — «void offsetWidth» forced a layout of the whole page in the middle of a frame at every combo
+    const nx = el.classList.contains('show') ? 'show2' : 'show'; el.classList.remove('show', 'show2'); el.classList.add(nx);
+    clearTimeout(comboTimer); comboTimer = setTimeout(() => el.classList.remove('show', 'show2'), 1200);
   }
   let toastTimer;
   function toast(text) {

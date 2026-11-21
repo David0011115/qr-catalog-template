@@ -1334,6 +1334,14 @@
   // each step: [label, action, effects level 0–2]; 2.7: heavier after the first phone run (Mali-G610 kept ~56 FPS)
   // 2.7: one test — the load ladder, then the effects storm at the top mass (12 steps × 10 s), run on every quality preset
   const STRESS = {
+    // 2.7: the test that looks like a real round — Hardcore, the autopilot hunts and eats (bots, packs, bosses), a minute per stage, 6 minutes
+    real: { name: 'Хардкор с охотой', mode: 'hardcore', stepMs: 60000, hunt: true, steps: [
+      ['старт: охота с 1 000', () => {}, 0],
+      ['20 000 + звездопад', () => { stressMass(20000); stressEvent('starfall'); }, 0],
+      ['40 000 + землетрясение', () => { stressMass(40000); stressEvent('quake'); }, 0],
+      ['60 000: две половины', () => { stressMass(60000); }, 0],
+      ['80 000 + проклятие, награда за голову', () => { stressMass(80000); try { ModeX.hcCurseSoon(); } catch (e) {} stressEvent('bounty'); }, 0],
+      ['100 000 + монетный дождь', () => { stressMass(100000); stressEvent('coinrain'); }, 0]] },
     full: { name: 'Стресс-тест', steps: [
       ['5 000 + 2 босса', () => { stressMass(5000); stressBosses(2); }, 0],
       ['25 000 + 3 босса, боты крупнее', () => { stressMass(25000); stressBosses(3); stressBots(3000, 6000); }, 0],
@@ -1356,14 +1364,14 @@
     stressRun = { id, name: sc.name, sc, build, keep: { mode: save.mode, char: save.char, autoQ: save.settings.autoQ, quality: save.settings.quality, startMass: testStartMass, rnd: Math.random } };
     if (quality && quality !== save.settings.quality) { save.settings.quality = quality; applySettings(); }
     stressSeed = 20271; Math.random = stressRnd;   // the same scene every run
-    save.mode = 'classic'; save.char = null; save.settings.autoQ = false; testStartMass = 1000; charChosen = true;
+    save.mode = sc.mode || 'classic'; save.char = null; save.settings.autoQ = false; testStartMass = 1000; charChosen = true;
     $('testModal').hidden = true;
     $('startBtn').click();
     if (!running) { stressStop(); stressQueue = null; return 'раунд не начался'; }
-    const R0 = stressRun; R0.t0 = performance.now(); R0.last = R0.t0; R0.step = -1; R0.secT = R0.t0; R0.secN = 0; R0.all = []; R0.steps = []; R0.fxT = 0; R0.abT = 0; R0.abI = 0;
+    const R0 = stressRun; R0.t0 = performance.now(); R0.last = R0.t0; R0.step = -1; R0.secT = R0.t0; R0.secN = 0; R0.all = []; R0.steps = []; R0.fxT = 0; R0.abT = 0; R0.abI = 0; R0.huntT = 0; R0.prey = null; R0.stepMs = sc.stepMs || 10000;
     ev.timer = 999;   // no random arena events: the script decides
     requestAnimationFrame(stressFrame);
-    return 'идёт ' + sc.name + ' · ' + (QNAME[save.settings.quality] || save.settings.quality) + ' (60 с)';
+    return 'идёт ' + sc.name + ' · ' + (QNAME[save.settings.quality] || save.settings.quality) + ` (${Math.round(sc.steps.length * R0.stepMs / 60000 * 10) / 10} мин)`;
   }
   function stressStop(keepQuality) {
     const R0 = stressRun; if (!R0) return; stressRun = null;
@@ -1396,22 +1404,29 @@
   }
   function stressFrame(now) {
     const R0 = stressRun; if (!R0) return;
+    { const hb = document.querySelector('#hcPick:not([hidden]) [data-hi], #rbPick:not([hidden]) [data-hi]'); if (hb) hb.click(); }   // milestone cards: the first one
     if (!running || dying || paused) { toast('Стресс-тест прерван'); stressQueue = null; stressStop(); return; }
     const el = now - R0.t0, dtm = now - R0.last; R0.last = now;
     if (R0.step >= 0 && dtm > 0) { R0.cur.ms.push(dtm); R0.all.push(dtm); }
     R0.secN++; if (now - R0.secT >= 1000) { const f = Math.round(R0.secN * 1000 / (now - R0.secT)); if (R0.cur) R0.cur.secs.push(f); R0.secs = R0.secs || []; R0.secs.push(f); R0.secN = 0; R0.secT = now; }
-    const step = Math.min(R0.sc.steps.length, Math.floor(el / 10000));
+    const step = Math.min(R0.sc.steps.length, Math.floor(el / R0.stepMs));
     if (step !== R0.step) {
       if (R0.cur) stressClose(R0);
       if (step >= R0.sc.steps.length) { stressFinish(R0); return; }
       R0.step = step; const [label, act, fx] = R0.sc.steps[step];
-      R0.cur = { label, fx, ms: [], secs: [] }; try { act(); } catch (e) { R0.cur.err = String(e.message).slice(0, 80); }
+      R0.cur = { label, fx, ms: [], secs: [], eats0: (stats.kills || 0) + (stats.bosses || 0) + (stats.minions || 0) }; try { act(); } catch (e) { R0.cur.err = String(e.message).slice(0, 80); }
       toast(`Стресс · ${QNAME[save.settings.quality] || ''} · ${step + 1}/${R0.sc.steps.length}: ${label}`); TLog.ev('стресс: шаг', label);
     }
-    if (R0.cur && !R0.cur.census && el - R0.step * 10000 > 7000) { try { R0.cur.census = drawCensus(); } catch (e) {} }   // what is drawn, late in the step
+    if (R0.cur && !R0.cur.census && el - R0.step * R0.stepMs > R0.stepMs * .7) { try { R0.cur.census = drawCensus(); } catch (e) {} }   // what is drawn, late in the step
     effects.shield = Math.max(effects.shield || 0, 1);   // nobody eats the autopilot: the run always lasts 60 s
     // autopilot: circles the arena, so the camera passes everything
-    if (player.cells.length) { const m = mainOf(player), a = el / 1000 * .22, tx = Math.cos(a) * R * .38, tz = Math.sin(a) * R * .38, d = hyp(tx - m.x, tz - m.z) || 1;
+    if (player.cells.length && R0.sc.hunt && (R0.huntT -= dtm) <= 0) {   // the hunter: the nearest drop it can eat, within reach
+      R0.huntT = 250; const m = mainOf(player); let best = null, bd = 220 * 220;
+      for (const t of cells) { if (t.owner.isPlayer || t.gone || !canEat(m, t)) continue; const dx = t.x - m.x, dz = t.z - m.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = t; } }
+      R0.prey = best;
+    }
+    if (R0.prey && (R0.prey.gone || !player.cells.length)) R0.prey = null;
+    if (player.cells.length) { const m = mainOf(player), a = el / 1000 * .22, tx = R0.prey ? R0.prey.x : Math.cos(a) * R * .38, tz = R0.prey ? R0.prey.z : Math.sin(a) * R * .38, d = hyp(tx - m.x, tz - m.z) || 1;
       joy.id = 'stress'; joy.mag = .85; joy.x = (tx - m.x) / d; joy.y = (tz - m.z) / d; }
     const fx = R0.cur ? R0.cur.fx : 0;
     if (fx) {   // effects on top: bursts of particles, eat effects and abilities (level 2: twice as often and bigger)
@@ -1426,7 +1441,7 @@
   function stressClose(R0) {
     const c = R0.cur, ri = renderer.info.render, mem = performance.memory;
     R0.steps.push({ step: c.label, ...stressSum(c.ms, c.secs), calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', cells: cells.length, mine: player.cells.length,
-      bosses: bossOwners.filter(o => o.cells.length).length, mass: Math.round(total(player)), fx: pActive.length + eActive.length, heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) : null, drawn: c.census || null, err: c.err });
+      bosses: bossOwners.filter(o => o.cells.length).length, mass: Math.round(total(player)), eaten: (stats.kills || 0) + (stats.bosses || 0) + (stats.minions || 0) - (c.eats0 || 0), fx: pActive.length + eActive.length, heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) : null, drawn: c.census || null, err: c.err });
     R0.cur = null;
   }
   function stressFinish(R0) {
@@ -1435,7 +1450,7 @@
     const worst = R0.steps.reduce((a, b) => (b.avg ?? 99) < (a.avg ?? 99) ? b : a, R0.steps[0] || {});
     const queued = !!stressQueue;
     stressStop(queued);
-    TLog.end({ dur: R0.sc.steps.length * 10, peak: Math.round(stats.maxMass), final: Math.round(total(player)), end: `${res.avg} FPS · мин ${res.min} · 1% ${res.low1}`, st: { avg: res.avg, min: res.min, low1: res.low1, h50: res.h50, h100: res.h100, build: res.build } });
+    TLog.end({ dur: Math.round(R0.sc.steps.length * R0.stepMs / 1000), peak: Math.round(stats.maxMass), final: Math.round(total(player)), end: `${res.avg} FPS · мин ${res.min} · 1% ${res.low1}`, st: { avg: res.avg, min: res.min, low1: res.low1, h50: res.h50, h100: res.h100, build: res.build } });
     try { endRound(); } catch (e) {}
     if (queued) { stressQueue.res.push({ name: res.name, quality: res.quality, build: res.build, avg: res.avg, min: res.min, low1: res.low1, h50: res.h50, h100: res.h100, worstStep: worst.step,
         steps: R0.steps.map(x => [x.step, x.avg, x.low1, x.h50, x.calls]) });   // [step, average FPS, 1% FPS, hitches, draw calls]
@@ -1474,8 +1489,8 @@
       <p class="test-lead">Каждый раунд записывается сам · хранятся последние 40</p>
       <div class="tl-chips" role="group" aria-label="Режим"><button type="button" data-tlf="stress" class="tl-stress${testFilter === 'stress' ? ' on' : ''}">⚡ Стресс-тесты · ${nStress}</button><button type="button" data-tlf="all" class="${testFilter === 'all' ? 'on' : ''}">Все · ${all.length - nStress}</button>${modes.map(m =>
         `<button type="button" data-tlf="${m}" class="${testFilter === m ? 'on' : ''}">${escHtml((MODES[m] || {}).name || m)} · ${all.filter(r => r.mode === m).length}</button>`).join('')}</div>
-      ${testFilter === 'stress' ? `<div class="tl-stress-run"><p>Игра сама играет 2 минуты по одному сценарию на каждом качестве графики и в конце записывает сравнение. Пришли его — в нём всё по шагам.</p>
-        <div class="tl-btns one"><button type="button" data-stress="all">▶ Стресс-тест · ~7 мин<small>лесенка 5к → 100к, боссы, деление, толпа, затем шторм из 7 событий · на Низком, Среднем и Высоком</small></button></div></div>` : ''}
+      ${testFilter === 'stress' ? `<div class="tl-stress-run"><p>Игра сама играет раунд Хардкора 6 минут: охотится, ест, делится. Каждая минута — отдельный шаг отчёта: FPS, фризы, сколько съедено, память. Телефон не трогай.</p>
+        <div class="tl-btns one"><button type="button" data-stress="real">▶ Стресс-тест · Хардкор, 6 мин<small>автопилот охотится и ест: боты, стаи, боссы; масса 1к → 100к, деление, события, проклятие · на твоём качестве графики</small></button></div></small></button></div></div>` : ''}
       <div class="tl-btns"><button type="button" data-tlc="1">📋 Последний</button><button type="button" data-tlc="5">📋 Последние 5</button><button type="button" data-tlc="0">📋 Все${testFilter === 'all' ? '' : ' этого режима'}</button><button type="button" data-tlclear class="warn">Очистить</button></div>
       ${shown.length ? `<ol class="tl-list">${shown.map(r => tlRow(r, list.indexOf(r))).join('')}</ol>` : '<p class="hint">Пока пусто — сыграй любой раунд до конца, отчёт появится здесь.</p>'}
       <p class="hint">🐢 — сколько раз скорость падала ниже 40%, 📉 — секунды с FPS ниже 30, 📶 — средний пинг онлайна, ⏸ — пропуски связи дольше 1 с. Нажми на строку — скопируется один отчёт.</p></div>`;

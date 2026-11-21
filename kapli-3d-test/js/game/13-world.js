@@ -489,21 +489,26 @@
       `<b class="mb-blob" style="left:${x}%;top:${y}%;width:${r}px;height:${r}px;background:radial-gradient(circle at 35% 30%, #fff, ${c} 45%, transparent 72%);box-shadow:0 0 24px ${c}"></b>`).join('');
   // one frame; an error inside never stops the loop (that froze the game before): it is logged, and if a round keeps failing it ends cleanly
   let frameErrs = 0;
+  const framePrev = [0, 0, 0];   // 2.7 test: the last frame's game logic, drawing and HUD, ms
   function frame(now) {
     try {
       if (sceneryAnim) sceneryAnim(now);
       lookTick(now);
       trackFps(now);
-      if (TEST_MODE && running && !paused && !document.hidden) TLog.frame(now - last);   // 2.7: hitches for the FPS analysis
+      if (TEST_MODE && running && !paused && !document.hidden) TLog.frame(now - last, framePrev);   // 2.7: hitches for the FPS analysis, with what the frame before spent where
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
       if (TEST_MODE) testLogTick(dt);   // 2.7 test journal (14-net.js)
+      const T0 = TEST_MODE ? performance.now() : 0;
       if (running && !paused && !dying) { if (ModeX.hcFrozen()) ModeX.hcFreezeTick(dt); else update(dt); }
       else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
       else if (!running) idle(dt);
       const mb = !running && !$('overlay').hidden;
       if (mb !== menuBg) { menuBg = mb; document.body.classList.toggle('menu-bg', mb); }
+      const T1 = TEST_MODE ? performance.now() : 0;
       if (!mb) draw(now);
+      const T2 = TEST_MODE ? performance.now() : 0;
       updateHud(now);
+      if (TEST_MODE) { const T3 = performance.now(); framePrev[0] = T1 - T0; framePrev[1] = T2 - T1; framePrev[2] = T3 - T2; }
       if (frameErrs) frameErrs = Math.max(0, frameErrs - .02);
     } catch (e) { onFrameError(e, now); }
     requestAnimationFrame(frame);

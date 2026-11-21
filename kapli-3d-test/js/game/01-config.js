@@ -42,9 +42,12 @@
       } else if (dropEp) { if (cur.drops.length < LIM.drops) cur.drops.push(dropEp); dropEp = null; }
     }
     // every frame of a round: its time in ms — frames over 50 ms are felt as a hitch, over 100 ms as a freeze
-    function frame(ms) {
+    function frame(ms, parts) {
       if (!cur || !(stats && stats.time >= 1)) return; const F = cur.fps; F.frames++;   // the first second (round set-up) is not a hitch
-      if (ms > 50) { F.h50++; if (ms > 100) F.h100++; if (ms > F.worst) F.worst = Math.round(ms); if (F.ms.length < 60) F.ms.push([now(), Math.round(ms)]); }
+      if (ms > 50) { F.h50++; if (ms > 100) F.h100++; if (ms > F.worst) F.worst = Math.round(ms);
+        // [second, ms, logic, drawing, HUD] — logic+drawing+HUD small = the pause was outside the game code (memory cleanup, the browser, the GPU)
+        if (F.ms.length < 120) F.ms.push(parts ? [now(), Math.round(ms), Math.round(parts[0]), Math.round(parts[1]), Math.round(parts[2])] : [now(), Math.round(ms)]);
+        if (parts) { if (parts[0] + parts[1] + parts[2] > ms * .6) F.hJs = (F.hJs || 0) + 1; else F.hOut = (F.hOut || 0) + 1; } }
     }
     // the network of a server match: snapshot gaps, ping, pauses, reconnects
     function net(kind, value, extra) {
@@ -74,7 +77,7 @@
       if (!cur) return;
       closeSlow();
       if (dropEp && cur.drops.length < LIM.drops) cur.drops.push(dropEp); dropEp = null;
-      const F = cur.fps; cur.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low, hitch50: F.h50, hitch100: F.h100, worstMs: F.worst, hitches: F.ms };
+      const F = cur.fps; cur.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low, hitch50: F.h50, hitch100: F.h100, hitchInCode: F.hJs || 0, hitchOutside: F.hOut || 0, worstMs: F.worst, hitches: F.ms };
       if (!cur.drops.length) delete cur.drops;
       if (cur.net) { const N = cur.net; N.pingAvg = N.pings ? Math.round(N.pingSum / N.pings) : null; delete N.pingSum; }
       Object.assign(cur, summary);

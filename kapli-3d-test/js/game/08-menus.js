@@ -1606,7 +1606,7 @@
       return `<button type="button" class="ch-tile${on ? ' on' : ''}" data-char="${c.id}" ${lock ? 'disabled' : ''} style="--ac:${c.color}" aria-pressed="${on}"><span class="ch-ic">${c.icon}</span><b>${c.name}</b>${lock ? `<small class="ch-lock">🔒 с ${c.lvl} уровня</small>` : `<small class="ch-p">＋ ${c.plus}</small><small class="ch-m">− ${c.minus}</small>`}</button>`; };
     const charSec = `<h3>Характер капли · ${save.char ? charById(save.char)?.name : 'не выбран'}</h3><div class="ch-grid">${CHARS.map(chTile).join('')}<button type="button" class="ch-tile none${save.char ? '' : ' on'}" data-char="" aria-pressed="${!save.char}"><span class="ch-ic">○</span><b>Без характера</b><small class="ch-p">без плюсов и минусов</small></button></div>` +
       `<p class="empty-note">Действует в одиночных режимах. В лиге, Хаос-лиге, обучении и режимах для двоих — нет.</p>`;
-    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` + charSec +
+    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +   /* 2.7 (owner): characters are picked before a round only, not in the collection */
       `<p class="empty-note">Билд меняется только здесь, между боями. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p>` +
       `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + '<div class="ab-tiles">' + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') + '</div>' +
       `<p class="empty-note">Улучшать — в «Магазине» → «Способности». Новые способности тоже там.</p>` +

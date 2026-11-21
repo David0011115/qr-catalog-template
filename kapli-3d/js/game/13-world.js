@@ -407,7 +407,7 @@
   function prewarmChunk(budgetMs) {
     try {
       if (!prewarmJobs) { prewarmVis = Array.from({ length: 8 }, () => makeVis(new THREE.Color('#8088c0')));
-        const skins = SKINS.filter(k => !k.craft && !EVO[k.id]);   // star bots wear legendary skins too
+        const skins = SKINS.filter(k => !k.craft && !k.old && !EVO[k.id]);   // star bots wear legendary skins too
         prewarmJobs = [...skins.flatMap(sk => [0, 1, 3].map(st => [sk, st])), ...FX.filter(f => f.slot === 'aura' && !f.craft).map(f => ['aura', f.id])]; }
       const t0 = performance.now();
       while (prewarmI < prewarmJobs.length && performance.now() - t0 < budgetMs) {

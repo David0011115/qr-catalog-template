@@ -347,6 +347,10 @@
     for (const k of ['frame', 'title']) if (save[k] && DECO_MAP_27[save[k]]) save[k] = DECO_MAP_27[save[k]];
     if ((save.chDone || []).includes('ch_giant5') && !save.skins.includes('ch_hunter')) { save.skins.push('ch_hunter'); lines.push('Испытание «Гроза гигантов» теперь даёт скин «Охотник на боссов» — он уже у тебя'); }
     for (const [id, was] of Object.entries(SKIN_RENAMED_27)) if (save.skins.includes(id)) lines.push(`Скин «${was}» → «${SKINS.find(k => k.id === id).name}»`);
+    if (save.skins.includes('cyber')) { save.skins = save.skins.filter(x => x !== 'cyber');
+      if (!save.skins.includes('neon')) { save.skins.push('neon'); lines.push('Скин «Кибер-сетка» убран (повторял «Неон») → «Неон»'); }
+      else { coins += 7200; lines.push('Скин «Кибер-сетка» убран (повторял «Неон») → +7200 ◆ (у тебя уже есть «Неон»)'); }
+      if (save.skin === 'cyber') save.skin = 'neon'; }
     arsenalTitleCheck();
     if (coins) coinsAdd(coins, 'refund');
     save.deco27 = { lines: lines.length, coins }; if (lines.length) save.notice27 = lines;
@@ -368,7 +372,7 @@
   }
   if (TEST_MODE) {
     // unlock all content for testing; achievements and challenges stay open so they can be tried
-    save.skins = SKINS.map(k => k.id);
+    save.skins = SKINS.filter(k => k.id !== 'cyber').map(k => k.id);
     save.fxOwned = FX.map(f => f.id);
     save.pets = PETS.map(pt => pt.id);
     UPG.forEach(u => save.up[u.id] = u.cost.length);

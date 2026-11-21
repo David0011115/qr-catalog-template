@@ -259,7 +259,7 @@
     rim.material.color.set(col); rimGlow.material.color.set(col); edgeGlow.material.color.set(col);
   }
   function draw(now) {
-    if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode === 'raid' || bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu'); }
+    if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode !== 'raid' && bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu', stats && stats.ranked ? 'ranked' : mode);   /* 2.7: a theme per mode; the raid's own theme is already the boss music */ }
     // Relationship rings and hidden-boss visibility do not need 60 Hz checks.
     // Refreshing them at 10 Hz removes repeated canEat() scans when players split.
     const relationRefresh = now - (draw.relationAt || 0) >= 100;

@@ -68,33 +68,138 @@
       const now = performance.now(); if (GAP[name] && now - (last[name] || 0) < GAP[name]) return; last[name] = now;
       try { SFX[name] && SFX[name](arg); } catch (e) {}
     }
-    // ---- music: synthwave in A minor (Am – F – C – G), one bar per chord ----
-    const CHORDS = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
+    // ---- 2.7 music: its own theme for the main menu and for every mode (owner). All of it is made right here in Web Audio, no files.
+    // Half of them keep the game's neon synthwave, the others are other genres (chiptune, drum'n'bass, house, march, taiko…).
+    // A theme: chords one per bar, a pad, a bass line, drums, an arpeggio and a lead melody (in eighths: a note, «.» rest, «-» hold).
+    // While a boss is on the field every theme adds its tense layer: a little faster, a 16th ostinato, more drums.
+    const NOTE = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 };
+    const nm = s => { const m = /^([A-G][#b]?)(-?\d)$/.exec(s); return m ? 12 * (+m[2] + 1) + NOTE[m[1]] : 0; };
+    const chd = s => s.split(' ').map(nm);
+    const mel = bars => bars.join(' ').trim().split(/\s+/).map(t => t === '.' ? 0 : t === '-' ? -1 : nm(t));
     const hz = m => 440 * Math.pow(2, (m - 69) / 12);
-    const TEMPO = { menu: 84, game: 104, boss: 116 };
+    const D4 = { k: 'x...x...x...x...', s: '....x.......x...', h: '.x.x.x.x.x.x.x.x' };
+    const THEMES = {
+      // main menu: dreamy, slow, no drums — soft pads, a quiet arpeggio and a bell melody
+      menu: { bpm: 80, chords: ['A3 C4 E4 G4', 'F3 A3 C4 E4', 'C3 E3 G3 B3', 'G3 B3 D4 E4', 'A3 C4 E4 G4', 'F3 A3 C4 E4', 'D3 F3 A3 C4', 'E3 A3 B3 D4'],
+        pad: { type: 'sawtooth', vol: .028, lp: 800, att: .9 }, arp: { type: 'triangle', vol: .02, every: 2, oct: 12, pat: 'up' },
+        bass: { type: 'sine', vol: .05, lp: 400, pat: 'x...............', oct: -12, len: 14 },
+        lead: { type: 'sine', vol: .045, notes: mel(['E5 - - - D5 - C5 -', 'C5 - - - A4 - - -', 'G4 - - - B4 - C5 -', 'D5 - - - - - . .', 'E5 - - - G5 - E5 -', 'F5 - - - E5 - C5 -', 'D5 - - - C5 - A4 -', 'B4 - - - - - . .']) } },
+      // «Классика»: the game's synthwave, driving
+      classic: { bpm: 104, chords: ['D3 F3 A3', 'A#2 D3 F3', 'F3 A3 C4', 'C3 E3 G3', 'D3 F3 A3', 'A#2 D3 F3', 'F3 A3 C4', 'C3 E3 G3'], drums: D4,
+        pad: { type: 'sawtooth', vol: .03, lp: 1400, att: .4 }, bass: { type: 'sawtooth', vol: .065, lp: 420, pat: 'x.x.x.x.x.x.x.ox', oct: -12 },
+        lead: { type: 'sawtooth', vol: .03, lp: 2200, det: 7, notes: mel(['A4 . D5 . F5 - E5 D5', 'D5 - - . F5 . G5 .', 'A5 - - . G5 F5 E5 .', 'E5 - - - . . . .', 'A4 . D5 . F5 - A5 .', 'A#5 - A5 - G5 . F5 .', 'F5 - E5 - C5 . E5 .', 'D5 - - - . . . .']) } },
+      // «На время»: drum'n'bass — a race
+      timed: { bpm: 172, chords: ['E3 G3 B3 D4', 'C3 E3 G3 B3', 'G3 B3 D4', 'D3 F#3 A3'], drums: { k: 'x.........x.....', s: '....x.......x...', h: 'x.xxx.xxx.xxx.xx' },
+        pad: { type: 'sawtooth', vol: .022, lp: 1000, att: .3 }, bass: { type: 'sawtooth', vol: .07, lp: 280, pat: 'x.......x.......', oct: -12, len: 7 },
+        arp: { type: 'triangle', vol: .02, every: 1, oct: 24, pat: 'up' },
+        lead: { type: 'square', vol: .022, lp: 2600, notes: mel(['B4 . . . E5 . D5 .', 'E5 . G5 . . . F#5 .', 'D5 - - - B4 - - -', 'A4 . B4 . D5 . F#5 .']) } },
+      // «Выживание»: dark and tense
+      survival: { bpm: 96, chords: ['C3 D#3 G3', 'G#2 C3 D#3', 'F3 G#3 C4', 'G3 B3 D4'], drums: { k: 'x.....x...x.....', t: '............t.t.', h: '..x...x...x...x.' },
+        pad: { type: 'sawtooth', vol: .03, lp: 600, att: .6 }, bass: { type: 'square', vol: .045, lp: 500, pat: 'x.x.x.x.x.x.x.x.', oct: -12 },
+        lead: { type: 'triangle', vol: .05, notes: mel(['G4 - - . D#4 - - .', 'C4 - - - . . . .', 'G#4 - - . G4 - F4 .', 'D4 - - - - - . .']) } },
+      // «Только деление»: chiptune, playful
+      split: { bpm: 132, chords: ['C4 E4 G4', 'G3 B3 D4', 'A3 C4 E4', 'F3 A3 C4'], drums: { k: 'x...x...x...x...', s: '....x.......x...', h: '..x...x...x...x.' }, chip: true,
+        bass: { type: 'square', vol: .04, lp: 900, pat: 'x.o.x.o.x.o.x.o.', oct: -12 }, arp: { type: 'square', vol: .013, every: 1, oct: 24, pat: 'updown', lp: 3500 },
+        lead: { type: 'square', vol: .026, lp: 4000, notes: mel(['C5 . E5 G5 . E5 C5 .', 'D5 . G5 . B5 . G5 .', 'A5 . E5 . C5 . E5 A5', 'F5 . A5 . G5 . E5 .']) } },
+      // «Захват короны»: royal march — fanfare brass, snare rolls, timpani
+      crown: { bpm: 110, chords: ['D3 F#3 A3', 'G3 B3 D4', 'A3 C#4 E4', 'B2 D3 F#3', 'G3 B3 D4', 'A3 C#4 E4', 'D3 F#3 A3', 'D3 F#3 A3'], drums: { k: 'x.......x.......', s: '....x..x....x.xx', t: 'x.......x.......' },
+        pad: { type: 'sawtooth', vol: .026, lp: 1300, att: .3 }, bass: { type: 'sawtooth', vol: .06, lp: 500, pat: 'x...x...x...x...', oct: -12, len: 3 },
+        lead: { type: 'sawtooth', vol: .034, lp: 1800, det: 9, att: .03, notes: mel(['D5 . . F#5 A5 - - .', 'B5 - A5 - G5 . . .', 'E5 . . A5 C#6 - B5 A5', 'F#5 - - - . . . .', 'G5 - B5 - D6 - - B5', 'A5 - - E5 C#5 - E5 .', 'D5 - F#5 - A5 - - -', 'D6 - - - - - . .']) } },
+      // «Случайный билд»: glitchy — the arpeggio picks random chord notes every loop
+      rbuild: { bpm: 120, chords: ['F#3 A3 C#4', 'D3 F#3 A3', 'A3 C#4 E4', 'E3 G#3 B3'], drums: { k: 'x..x..x...x..x..', s: '....x.......x...', h: 'rand' },
+        pad: { type: 'sawtooth', vol: .024, lp: 900, att: .2 }, bass: { type: 'sawtooth', vol: .06, lp: 450, pat: 'x..x..x...x..x..', oct: -12 },
+        arp: { type: 'square', vol: .02, every: 1, oct: 12, pat: 'rand', lp: 3000 } },
+      // «Командный бой»: a stadium anthem — stomp and clap
+      team: { bpm: 116, chords: ['E3 G3 B3', 'C3 E3 G3', 'G3 B3 D4', 'D3 F#3 A3'], drums: { k: 'x...x...x...x...', c: '....c.......c...', h: '..x...x...x...x.' },
+        pad: { type: 'sawtooth', vol: .03, lp: 1600, att: .3 }, bass: { type: 'sawtooth', vol: .06, lp: 450, pat: 'x.x.x.x.x.x.x.x.', oct: -12 },
+        lead: { type: 'sawtooth', vol: .03, lp: 2400, det: 6, notes: mel(['E5 . G5 . A5 . B5 -', 'G5 - - . E5 . . .', 'D5 . E5 . G5 . A5 .', 'F#5 - - - . . . .']) } },
+      // «Охота на Колосса»: epic and heavy — taiko, low brass
+      giant: { bpm: 88, chords: ['D3 F3 A3', 'A#2 D3 F3', 'G2 A#2 D3', 'A2 C#3 E3'], drums: { k: 'x.......x.......', t: 'x.....x.x...x...' },
+        pad: { type: 'sawtooth', vol: .032, lp: 1100, att: .5 }, bass: { type: 'sawtooth', vol: .07, lp: 300, pat: 'x.......x.......', oct: -12, len: 7 },
+        lead: { type: 'sawtooth', vol: .036, lp: 1200, det: 10, att: .05, notes: mel(['D4 - - - F4 - E4 -', 'D4 - - - A#3 - - -', 'G3 - A#3 - D4 - F4 -', 'E4 - - - C#4 - - -']) } },
+      // «Хардкор»: heavy and fast — power chords, a hard kick, a driving 16th bass
+      hardcore: { bpm: 140, chords: ['E2 B2 E3', 'F2 C3 F3', 'E2 B2 E3', 'D2 A2 D3'], drums: { b: 'x...x...x...x...', s: '....x.......x...', h: 'xxxxxxxxxxxxxxxx' },
+        pad: { type: 'sawtooth', vol: .032, lp: 900, att: .1 }, bass: { type: 'sawtooth', vol: .055, lp: 650, pat: 'xxxxxxxxxxxxxxxx', oct: 0, len: .9 },
+        lead: { type: 'sawtooth', vol: .03, lp: 3000, det: 12, notes: mel(['E5 . . E5 F5 . E5 D5', 'C5 - - . B4 . C5 .', 'E5 . . E5 G5 . F5 E5', 'D5 - - - B4 - - -']) } },
+      // «Захват территории»: house — offbeat bass, open hats, chord stabs
+      territory: { bpm: 124, chords: ['A3 C4 E4', 'G3 B3 D4', 'F3 A3 C4', 'G3 B3 D4'], drums: { k: 'x...x...x...x...', o: '..o...o...o...o.', c: '....c.......c...' },
+        bass: { type: 'sawtooth', vol: .06, lp: 600, pat: '..x...x...x...x.', oct: -12 }, arp: { type: 'sawtooth', vol: .018, every: 1, oct: 12, pat: 'stab', stab: '..x...x..x..x...', lp: 2200 },
+        lead: { type: 'triangle', vol: .045, notes: mel(['E5 . A5 . C6 . B5 A5', 'G5 . . . D5 . . .', 'F5 . A5 . C6 . A5 .', 'B5 - - - G5 - - -']) } },
+      // «Спина к спине»: epic co-op — big pad, running arpeggio, heroic lead
+      duoback: { bpm: 128, chords: ['C3 D#3 G3', 'G#2 C3 D#3', 'D#3 G3 A#3', 'A#2 D3 F3'], drums: { k: 'x...x...x...x...', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', t: '..............tt' },
+        pad: { type: 'sawtooth', vol: .03, lp: 1500, att: .4 }, bass: { type: 'sawtooth', vol: .06, lp: 450, pat: 'x.x.x.x.x.x.x.x.', oct: -12 },
+        arp: { type: 'triangle', vol: .018, every: 1, oct: 24, pat: 'up' },
+        lead: { type: 'sawtooth', vol: .03, lp: 2400, det: 8, notes: mel(['G5 - - - D#5 - C5 .', 'C5 - D5 - D#5 - G5 -', 'A#5 - - - G5 - D#5 .', 'F5 - - - - - . .']) } },
+      // «Босс-рейд»: menacing — a 16th ostinato in the bass, toms
+      raid: { bpm: 120, chords: ['B2 D3 F#3', 'G2 B2 D3', 'E3 G3 B3', 'F#3 A#3 C#4'], drums: { k: 'x.....x.x.....x.', t: '....t.......t...', h: '..x...x...x...x.' },
+        pad: { type: 'sawtooth', vol: .03, lp: 800, att: .5 }, bass: { type: 'square', vol: .05, lp: 450, pat: 'x.xxx.x.x.xxx.x.', oct: -12 },
+        lead: { type: 'triangle', vol: .05, notes: mel(['F#4 - - - B4 - A4 -', 'G4 - - - - - . .', 'E4 - G4 - B4 - D5 -', 'C#5 - - - A#4 - - -']) } },
+      // «Королевская битва»: tense trance — rising arpeggio, the snare rolls up at the end of the loop
+      royale: { bpm: 128, chords: ['F3 G#3 C4', 'C#3 F3 G#3', 'G#3 C4 D#4', 'D#3 G3 A#3'], drums: { k: 'x...x...x...x...', o: '..o...o...o...o.', s: '....x.......x...' }, rollLast: true,
+        pad: { type: 'sawtooth', vol: .026, lp: 1200, att: .4 }, bass: { type: 'sawtooth', vol: .055, lp: 500, pat: '..x...x...x...x.', oct: -12 },
+        arp: { type: 'triangle', vol: .02, every: 1, oct: 24, pat: 'up' },
+        lead: { type: 'sawtooth', vol: .028, lp: 2200, det: 7, notes: mel(['C5 - - - G#4 - C5 -', 'C#5 - - - F5 - - -', 'D#5 - C5 - G#4 - C5 -', 'A#4 - - - - - . .']) } },
+    };
+    THEMES.ranked = THEMES.classic;
+    let theme = 'menu', want = 'menu', boss = false, loop = 0;
+    const T = () => THEMES[theme] || THEMES.classic;
+    const bpmNow = () => T().bpm * (boss && theme !== 'menu' ? 1.06 : 1);
+    let seed = 1; const srnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     function schedule() {
       if (!ctx || ctx.state !== 'running' || !save.settings.musVol) { if (ctx) nextT = ctx.currentTime + .1; return; }
-      const sixteenth = 60 / TEMPO[mood] / 4;
       if (nextT < ctx.currentTime) nextT = ctx.currentTime + .05;
-      while (nextT < ctx.currentTime + .25) { playStep(step, nextT); nextT += sixteenth; step = (step + 1) % 64; }
+      while (nextT < ctx.currentTime + .25) {
+        if (step % 16 === 0 && want !== theme) { theme = want; step = 0; loop = 0; }   // a new theme starts on a bar line, from its first bar
+        playStep(step, nextT); nextT += 60 / bpmNow() / 4;
+        step++; if (step >= T().chords.length * 16) { step = 0; loop++; }
+      }
     }
+    const drum = { k: (at, d) => tone(150, .22, { vol: .22, slide: .27, at, dest: d }),
+      b: (at, d) => { tone(160, .2, { vol: .26, slide: .25, at, dest: d }); tone(90, .14, { type: 'sawtooth', vol: .05, slide: .5, lp: 300, at, dest: d }); },
+      s: (at, d, chip) => noise(chip ? .08 : .16, { vol: .07, f: 1800, type: 'bandpass', at, dest: d }),
+      c: (at, d) => { noise(.09, { vol: .07, f: 1200, type: 'bandpass', q: 1.2, at, dest: d }); noise(.12, { vol: .05, f: 1400, type: 'bandpass', q: 1.2, at: at + .012, dest: d }); },
+      h: (at, d) => noise(.04, { vol: .028, f: 8000, type: 'highpass', at, dest: d }),
+      o: (at, d) => noise(.16, { vol: .03, f: 7000, type: 'highpass', at, dest: d }),
+      t: (at, d) => tone(110, .32, { vol: .16, slide: .55, at, dest: d }) };
     function playStep(st, t) {
-      const at = t - ctx.currentTime, bar = Math.floor(st / 16), s16 = st % 16, ch = CHORDS[bar], d = musG, sixteenth = 60 / TEMPO[mood] / 4;
-      if (s16 === 0) ch.forEach((m, i) => { tone(hz(m), sixteenth * 16, { type: 'sawtooth', vol: .035, attack: .5, lp: mood === 'menu' ? 900 : 1500, detune: i * 4 - 4, at, dest: d }); });
-      if (s16 % 2 === 0) { const m = ch[(s16 / 2) % 3] + 12 + (s16 % 8 === 6 ? 12 : 0); tone(hz(m), sixteenth * 1.6, { type: 'triangle', vol: mood === 'menu' ? .03 : .045, at, dest: d }); }
-      if (mood === 'menu') return;
-      if (s16 % 2 === 0) tone(hz(ch[0] - 24), sixteenth * 1.8, { type: 'sawtooth', vol: .07, lp: 420, at, dest: d });
-      if (s16 % 4 === 0) tone(150, .22, { vol: .22, slide: .27, at, dest: d });
-      if (s16 === 4 || s16 === 12) noise(.16, { vol: .07, f: 1800, type: 'bandpass', at, dest: d });
-      if (s16 % 2 === 1) noise(.04, { vol: .03, f: 8000, type: 'highpass', at, dest: d });
-      if (mood === 'boss' && s16 % 1 === 0 && s16 % 2 === 1) tone(hz(ch[s16 % 3] + 24), sixteenth * .9, { type: 'square', vol: .022, lp: 2500, at, dest: d });
+      const th = T(), at = t - ctx.currentTime, L = th.chords.length, bar = Math.floor(st / 16), s16 = st % 16, ch = chd(th.chords[bar % L]), d = musG, six = 60 / bpmNow() / 4;
+      if (st === 0) seed = 1 + loop * 7919;   // «Случайный билд»: a new random arpeggio every loop
+      const P = th.pad; if (P && s16 === 0) ch.forEach((m, i) => tone(hz(m), six * 16, { type: P.type, vol: P.vol, attack: P.att || .4, lp: P.lp, detune: i * 4 - 4, at, dest: d }));
+      const B = th.bass; if (B) { const c = B.pat[s16]; if (c !== '.') { const m = ch[0] + B.oct + (c === 'o' ? 12 : c === 'f' ? 7 : 0); tone(hz(m), six * (B.len || 1.8), { type: B.type, vol: B.vol, lp: B.lp, at, dest: d }); } }
+      const A = th.arp; if (A && s16 % A.every === 0) {
+        const n = ch.length, i = s16 / A.every;
+        if (A.pat === 'stab') { if (A.stab[s16] === 'x') ch.forEach(m => tone(hz(m + A.oct), six * 1.2, { type: A.type, vol: A.vol, lp: A.lp, at, dest: d })); }
+        else { const idx = A.pat === 'rand' ? Math.floor(srnd() * n * 2) : A.pat === 'updown' ? [0, 1, 2, 3, 2, 1][i % 6] % n : i % n;
+          tone(hz(ch[idx % n] + A.oct + (idx >= n ? 12 : 0)), six * (A.every === 1 ? .9 : 1.6), { type: A.type, vol: A.vol, lp: A.lp, at, dest: d }); } }
+      const Ld = th.lead; if (Ld && s16 % 2 === 0) { const N = Ld.notes, e = (bar * 8 + s16 / 2) % N.length, m = N[e];
+        if (m > 0) { let len = 1; while (N[(e + len) % N.length] === -1 && len < 16) len++; tone(hz(m), six * 2 * len * .92, { type: Ld.type, vol: Ld.vol, lp: Ld.lp, detune: Ld.det || 0, attack: Ld.att || .01, at, dest: d }); } }
+      const Dm = th.drums; if (Dm) for (const k in Dm) { const p = Dm[k]; let hit = p === 'rand' ? (s16 % 2 === 1 ? srnd() < .7 : srnd() < .25) : p[s16] !== '.';
+        if (k === 's' && th.rollLast && bar === L - 1 && s16 >= 8) hit = true;
+        if (hit) drum[k](at, d, th.chip); }
+      if (boss && theme !== 'menu') {   // the tense layer: a 16th ostinato on the chord, a kick before the bar line, hats on every 16th
+        tone(hz(ch[s16 % 2 ? 1 % ch.length : 0] + 24 + (s16 % 4 === 3 ? 7 : 0)), six * .9, { type: 'square', vol: .018, lp: 2500, at, dest: d });
+        if (s16 === 14) drum.k(at, d); if (!(Dm && Dm.h === 'xxxxxxxxxxxxxxxx')) drum.h(at, d);
+      }
     }
-    function setMood(m) { if (m !== mood) mood = m; }
+    // test build: a theme rendered off-line into samples (levels checked, previews made) — the live sound is put back afterwards
+    async function renderOffline(name, secs = 16, bossOn = false) {
+      const keep = { ctx, master, sfxG, musG, noiseBuf, theme, want, boss, step, loop };
+      const oc = new OfflineAudioContext(1, Math.ceil(44100 * secs), 44100);
+      try {
+        ctx = oc; master = oc.createGain(); master.gain.value = .9; master.connect(oc.destination); musG = oc.createGain(); musG.gain.value = .55; musG.connect(master); sfxG = oc.createGain();
+        noiseBuf = oc.createBuffer(1, 44100, 44100); const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+        theme = want = name; boss = bossOn; step = 0; loop = 0; let t = .05;
+        while (t < secs - .6) { playStep(step, t); t += 60 / bpmNow() / 4; step++; if (step >= T().chords.length * 16) { step = 0; loop++; } }
+      } finally { ({ ctx, master, sfxG, musG, noiseBuf, theme, want, boss, step, loop } = keep); }
+      return (await oc.startRendering()).getChannelData(0);
+    }
+    // the game asks every half second: menu or a round, which mode, a boss on the field or not
+    function setMood(m, modeId) { boss = m === 'boss'; want = m === 'menu' ? 'menu' : THEMES[modeId] ? modeId : 'classic'; }
     document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend().catch(() => {}); else ctx.resume().catch(() => {}); });
     // browsers allow sound only after the first touch or key press
     const unlock = () => { ensure(); };
     ['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, unlock, { capture: true, passive: true }));
-    return { ensure, apply, play, setMood };
+    return { ensure, apply, play, setMood, renderOffline, themes: () => Object.keys(THEMES) };
   })();
   document.addEventListener('click', e => { if (e.target.closest('.btn, .buy, .tab, .mode, .seg button')) Sound.play('click'); }, true);
   // turning a phone upright mid-round pauses the game (the rotate screen covers it)

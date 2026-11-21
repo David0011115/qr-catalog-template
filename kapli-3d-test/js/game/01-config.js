@@ -242,8 +242,8 @@
     { id: 'x_phase',   xa: true, name: 'Фазовый скачок',       sh: 'Фаза',     icon: '⇉', color: '#ff4fd8', cd: 28, dist: 14, desc: 'Скачок вперёд, и в течение 2 с — второй, в новом направлении' },
     // 2.3 workshop «Хронос» (cr): crafted, no price, no upgrades, ordinary modes only
     { id: 'cr_gearwall', cr: true, name: 'Стена шестерён', sh: 'Стена', icon: '⚙', color: '#e8b05a', cd: 26, dur: 5, dmg: .05, desc: 'Ставит перед тобой стену из вращающихся шестерён на 5 с. Кто врежется — отскакивает и теряет 5% массы' },
-    { id: 'cr_rewind',   cr: true, name: 'Перемотка',      sh: 'Назад', icon: '⟲', color: '#22e6ff', cd: 40, back: 4, desc: 'Возвращает тебя туда, где ты был 4 с назад; если тогда ты был тяжелее — масса вернётся, но не больше чем на +10%' },
-    { id: 'cr_swap',     cr: true, name: 'Рокировка',      sh: 'Рокир.', icon: '⇄', color: '#b26bff', cd: 30, radius: 25, desc: 'Меняет тебя местами с ближайшей каплей впереди (в радиусе 25)' },
+    { id: 'cr_rewind',   cr: true, name: 'Перемотка',      sh: 'Назад', icon: '⟲', color: '#22e6ff', cd: 40, back: 4, desc: 'Возвращает тебя туда, где ты был 4 с назад; если тогда ты был тяжелее — масса вернётся, но не больше чем на +10%. После деления на две половины — только большую половину' },
+    { id: 'cr_swap',     cr: true, name: 'Рокировка',      sh: 'Рокир.', icon: '⇄', color: '#b26bff', cd: 30, radius: 25, desc: 'Меняет тебя местами с ближайшей каплей впереди (в радиусе 25). После деления на две половины — только большую половину' },
   ];
   const abilById = id => ABILITIES.find(a => a.id === id);
   const BASE_ABIL = ABILITIES.filter(a => !a.xa && !a.cr), XA_ABIL = ABILITIES.filter(a => a.xa), CR_ABIL = ABILITIES.filter(a => a.cr);

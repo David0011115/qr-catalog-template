@@ -832,10 +832,10 @@
   const FRAME_STYLE = { fr_cyan: 'line', fr_glow: 'dots', fr_lv20: 'tech', fr_calendar: 'segments', fr_fire: 'flame', fr_lg3: 'shield', fr_sh1: 'petal', fr_sh2: 'petal',
     fr_cq1: 'shards', fr_cq2: 'shards', fr_cq3: 'shards', fr_cq4: 'shards', fr_q1: 'stars', fr_q2: 'stars', fr_arsenal: 'gear', fr_finish: 'checker', fr_dark: 'thorns',
     fr_ps_orbit: 'psorbit', fr_rainbow: 'prism', fr_lg4: 'crystal', fr_lg5: 'crown', fr_cvet: 'void', fr_sing: 'orbit', fr_lv40: 'star', fr_legend: 'laurel', fr_star: 'starburst',
-    fr_platinum: 'ornate', fr_modes: 'medal', fr_master: 'wings', fr_xarsenal: 'horizon', fr_beta: 'holo', fr_creator: 'creator', fr_vet: 'pulse', fr_bday2026: 'bday',
+    fr_platinum: 'ornate', fr_modes: 'medal', fr_master: 'wings', fr_xarsenal: 'horizon', fr_beta: 'holo', fr_creator: 'creatorA', fr_vet: 'pulse', fr_bday2026: 'bday',
     fr_cr_dial: 'crdial', fr_cr_roman: 'crroman', fr_cr_pend: 'crpend', fr_cr_gyro: 'crgyro', fr_cr_tourb: 'crtourb' };
   const FRAME_GLYPH = { flame: '♨', shield: '◆', petal: '✿', shards: '◈', stars: '✦', gear: '⚙', checker: '⚑', thorns: '✶', prism: '✧', crystal: '◆', crown: '♛', void: '◉', orbit: '◌',
-    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', pulse: '✚', bday: '✦', crdial: '◷', crroman: 'Ⅻ', crpend: '⧖', crgyro: '⊛', crtourb: '⚙' };
+    star: '✦', laurel: '❦', starburst: '✺', ornate: '❖', medal: '✪', wings: '❮❯', horizon: '◎', holo: 'β', creator: '♛', creatorA: '♛', pulse: '✚', bday: '✦', crdial: '◷', crroman: 'Ⅻ', crpend: '⧖', crgyro: '⊛', crtourb: '⚙' };
   let foUid = 0;
   function frameOrnSVG(d) {
     if (!d) return '';
@@ -888,6 +888,12 @@
           + at(0, 59, `<g transform="translate(0,-3)"><rect x="-8.5" y="-3" width="17" height="7" rx="1.6" fill="#ff9ad5" stroke="#fff" stroke-width=".8"/><path d="M-8.5,-1 Q-6,1.5 -4,-1 Q-2,1.5 0,-1 Q2,1.5 4,-1 Q6,1.5 8.5,-1 V-2 Q8.5,-3 7,-3 H-7 Q-8.5,-3 -8.5,-2 Z" fill="#fff"/><rect x="-5.5" y="-10" width="2" height="7" rx=".6" fill="#22e6ff"/><rect x="-1" y="-11.5" width="2" height="8.5" rx=".6" fill="#ffd23f"/><rect x="3.5" y="-10" width="2" height="7" rx=".6" fill="#3dffa2"/><g fill="#ffb020">${blink(1, 0, '1;.55;1')}<ellipse cx="-4.5" cy="-12" rx="1.3" ry="2"/><ellipse cx="0" cy="-13.6" rx="1.3" ry="2"/><ellipse cx="4.5" cy="-12" rx="1.3" ry="2"/></g></g>`, false); break;
       case 'creator': o = spin(14, ring(57, 1.6, b, .9, 'stroke-dasharray="7 4"')) + ring(52.5, 3.6) + at(0, 58, `<path d="M-15,4 L-15,-9 L-7.5,-2 L0,-15 L7.5,-2 L15,-9 L15,4 Z" fill="${G}" stroke="#fff6c8" stroke-width="1.1" stroke-linejoin="round"/><circle cy="-16.5" r="2.4" fill="#fff"/>`, false)
         + `<g>${at(110, 60, star4(3, '#fff'), false)}${at(250, 60, star4(2.4, '#fff6c8'), false)}${blink(1.4, 0, '.1;1;.1')}</g>`; break;
+      // 2.7 the creator's frame (chosen in the showcase, variant А)
+      case 'creatorA': {   // «Чертёж»: a measuring scale, a turning dashed gold ring, a compass over the top, gold nodes like the skin's frame
+        const comp = `<g><path d="M0,-12 L-9,6 M0,-12 L9,6" stroke="#e8f2ff" stroke-width="2.2" stroke-linecap="round"/><circle cy="-12" r="3" fill="${G}" stroke="#fff6c8" stroke-width=".8"/><path d="M0,-15 L0,-19" stroke="#fff6c8" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="6" r="1.6" fill="#ffd23f"/></g>`;
+        o = n(72, (i, g) => at(g, 51.5, `<path d="M0,0 L0,${i % 6 ? -2 : -4.4}" stroke="${i % 6 ? '#6ab8ff' : '#ffd23f'}" stroke-width="${i % 6 ? .7 : 1.2}"/>`)) + ring(49.6, 1, '#6ab8ff', .8)
+          + spin(16, ring(56.5, 2, '#ffd23f', .95, 'stroke-dasharray="10 5 2 5"')) + spin(26, ring(60.5, .8, '#6ab8ff', .6, 'stroke-dasharray="2 4"'), true)
+          + n(4, (i, g) => at(g + 45, 56.5, `<g><path d="M0,-3.4 L3.4,0 L0,3.4 L-3.4,0 Z" fill="#fff2b0"/>${blink(1.6, (i * .4).toFixed(1), '.4;1;.4')}</g>`, false)) + at(0, 64, comp, false); break; }
       // 2.3 workshop «Хронос»
       case 'crdial': o = ring(52, 2.6) + n(12, (i, g) => at(g, 56, `<path d="M0,${i % 3 ? -2.5 : -4.5} L0,${i % 3 ? 2.5 : 4.5}" stroke="${G}" stroke-width="${i % 3 ? 1.4 : 2.6}" stroke-linecap="round"/>`))
         + spin(6, at(0, 62, '<path d="M0,-6 L0,5" stroke="#ff4fd8" stroke-width="2.4" stroke-linecap="round"/><circle cy="5" r="1.8" fill="#ff4fd8"/>')); break;

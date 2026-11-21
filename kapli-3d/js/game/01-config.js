@@ -89,7 +89,7 @@
   const BOSS_MASS_CAP = 12000; // ordinary bosses outside Hardcore; survival and raid have separate caps
   let CL_BOSS_MASS_CAP = 12000; // 2.7 «Классика»: from 10 000 follows the player (main part or the smaller half) ×1.2
   let HC_BOSS_MASS_CAP = 23000; // Hardcore only: total mass cap for each ordinary boss; after 20 000 it follows the player's smaller half (ModeX)
-  const PLAYER_SPEED_MASS_CAP = 20000, PLAYER_VISUAL_MASS_CAP = 20000;
+  const PLAYER_SPEED_MASS_CAP = 20000, PLAYER_VISUAL_MASS_CAP = 10000, PLAYER_VISUAL_GROW = .3;   // 2.7: from 10 000 the drop grows much slower in size (owner: «с 10к капли через чур большие»)
   const MODES = {
     classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы до 50 000 с наградой, арена накаляется каждые 3 минуты. На 50 000 — две половины, цель — обе по 50 000' },
     timed:    { name: 'На время',       desc: '5 минут: случайное правило раунда, финальный рывок и награда за любое место' },

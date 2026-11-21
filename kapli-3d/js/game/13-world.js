@@ -287,7 +287,7 @@
       if (lk) {
         const crownMode = mode === 'crown' && running;
         v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
-        if (!c.owner.isPlayer || c.owner === player) { const show = c.owner === player ? (!pLead || c === pLead) : QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show && !v.headOff; if (v.evo && c.owner === player && v.evoHid !== !show) { v.evoHid = !show; v.evo.children.forEach((k, i) => { if (!(i === 0 && v.evoBody)) k.visible = show; }); } if (v.shine) v.shine.visible = show && !v.evo && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
+        if (!c.owner.isPlayer || c.owner === player) { const show = c.owner === player ? (!pLead || c === pLead) : QUALITY !== 'low' && r * pxPerUnit >= 14; /* 2.7 FPS: a bot's hat, aura and gleam are not drawn while the drop is under ~14 px on screen */ if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show && !v.headOff; if (v.evo && c.owner === player && v.evoHid !== !show) { v.evoHid = !show; v.evo.children.forEach((k, i) => { if (!(i === 0 && v.evoBody)) k.visible = show; }); } if (v.shine) v.shine.visible = show && !v.evo && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
         if (cosmeticRefresh && v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
         if (cosmeticRefresh && v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
         if (v.aura && crownMode && v.aura.userData.type === 'crownAura') v.aura.visible = false;   // 2.7: no longer re-shows auras hidden above
@@ -368,6 +368,7 @@
     camera.position.copy(camPos); camera.lookAt(camLook);
     // fog and shadows scale with the camera distance, so a big blob still sees clearly
     const camDist = camPos.distanceTo(camLook);
+    pxPerUnit = innerHeight / 2 / Math.tan(camera.fov * Math.PI / 360) / Math.max(1, camDist);   // screen pixels per world unit at the arena (used next frame)
     stars.position.copy(camPos);   // the starfield always surrounds the camera
     const nearWanted = Math.max(.1, camDist * .02);   // keeps depth precision when the camera is far up
     if (Math.abs(camera.near - nearWanted) > nearWanted * .1) { camera.near = nearWanted; camera.updateProjectionMatrix(); }
@@ -489,7 +490,8 @@
       `<b class="mb-blob" style="left:${x}%;top:${y}%;width:${r}px;height:${r}px;background:radial-gradient(circle at 35% 30%, #fff, ${c} 45%, transparent 72%);box-shadow:0 0 24px ${c}"></b>`).join('');
   // one frame; an error inside never stops the loop (that froze the game before): it is logged, and if a round keeps failing it ends cleanly
   let frameErrs = 0;
-  const framePrev = [0, 0, 0];   // 2.7 test: the last frame's game logic, drawing and HUD, ms
+  const framePrev = [0, 0, 0];
+  let pxPerUnit = 40;   // 2.7 test: the last frame's game logic, drawing and HUD, ms
   function frame(now) {
     try {
       if (sceneryAnim) sceneryAnim(now);

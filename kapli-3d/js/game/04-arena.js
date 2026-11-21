@@ -106,51 +106,139 @@
   }
 
   // ================= arena events =================
+  // 2.7 audit: every event is now a choice — risk for a reward, or a chance to hunt — and works at any mass.
+  // First at 0:45, then one a minute, 20 s each; not in «Захват территории» and «Босс-рейд».
   const EVENTS = [
-    { id: 'meteor',    name: 'Метеоритный дождь',     desc: 'в отмеченную зону падает много еды', color: '#ffd23f' },
-    { id: 'blackhole', name: 'Чёрная дыра',           desc: 'центр арены затягивает всех к себе', color: '#b26bff' },
-    { id: 'storm',     name: 'Гравитационный шторм',  desc: 'все капли на 40% быстрее',          color: '#22e6ff' },
-    { id: 'eclipse',   name: 'Затмение',              desc: 'темнота, видно только ближайших',   color: '#ff3d6e' },
+    { id: 'starfall', name: 'Звездопад',        desc: 'в отмеченную зону падают метеоры (−5% массы при попадании), между ними — золотые капли', color: '#ffd23f' },
+    { id: 'rift',     name: 'Разлом',           desc: 'тянет тех, кто рядом; кто коснётся центра — теряет 10% массы', color: '#b26bff' },
+    { id: 'wind',     name: 'Ветер',            desc: 'всех сносит в одну сторону: по ветру быстрее, против — медленнее', color: '#22e6ff' },
+    { id: 'eclipse',  name: 'Затмение',         desc: 'темно, мини-карта гаснет, боты видят вдвое ближе — время охоты', color: '#ff3d6e' },
+    { id: 'golden',   name: 'Золотая капля',    desc: 'по полю убегает золотая капля — поймай за монеты', color: '#ffd23f' },
+    { id: 'coinrain', name: 'Монетный дождь',   desc: 'за каждого съеденного бота и босса — монеты сразу', color: '#3dffa2' },
+    { id: 'quake',    name: 'Землетрясение',    desc: 'край арены горит: снаружи кольца масса тает 4% в секунду', color: '#ff6a00' },
+    { id: 'bounty',   name: 'Награда за голову', desc: 'самая крупная капля помечена: съешь её — +50% её массы и монеты; если это ты — продержись', color: '#ff2d55' },
   ];
-  const ev = { timer: 45, active: null, warn: null, left: 0, x: 0, z: 0, tick: 0 };
+  const ev = { timer: 45, active: null, warn: null, left: 0, x: 0, z: 0, tick: 0, wx: 0, wz: 0, gold: null, target: null, golds: [], hitT: {} };
   const evInfo = id => EVENTS.find(e => e.id === id);
-  const meteorRing = new THREE.Mesh(new THREE.RingGeometry(.95, 1, 96), decal(new THREE.MeshBasicMaterial({ color: '#ffd23f', transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
-  meteorRing.rotation.x = -Math.PI / 2; meteorRing.position.y = .1; meteorRing.visible = false; scene.add(meteorRing);
+  const evOn = id => ev.active === id;
+  const decalRing = (c, op) => { const m = new THREE.Mesh(new THREE.RingGeometry(.95, 1, 96), decal(new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }))); m.rotation.x = -Math.PI / 2; m.position.y = .1; m.visible = false; scene.add(m); return m; };
+  const meteorRing = decalRing('#ffd23f', .8), quakeRing = decalRing('#ff6a00', .9), bountyRing = decalRing('#ff2d55', .9);
+  const quakeOut = new THREE.Mesh(new THREE.RingGeometry(1, 1.35, 96), decal(new THREE.MeshBasicMaterial({ color: '#ff3d00', transparent: true, opacity: .22, depthWrite: false, side: THREE.DoubleSide })));
+  quakeOut.rotation.x = -Math.PI / 2; quakeOut.position.y = .08; quakeOut.visible = false; scene.add(quakeOut);
   const hole = new THREE.Group();
   hole.add(new THREE.Mesh(new THREE.SphereGeometry(5, 24, 16), new THREE.MeshBasicMaterial({ color: '#000000' })));
   const holeRing = new THREE.Mesh(new THREE.TorusGeometry(7.5, .5, 8, 64), new THREE.MeshBasicMaterial({ color: '#b26bff', transparent: true, blending: THREE.AdditiveBlending }));
   holeRing.rotation.x = Math.PI / 2 - .3; hole.add(holeRing); hole.add(glowSprite('#7b3dff', 34, .7));
   hole.position.y = 5; hole.visible = false; scene.add(hole);
-  function resetEvents() { ev.timer = 45; ev.active = ev.warn = null; meteorRing.visible = hole.visible = false; }
+  const goldGeo = new THREE.OctahedronGeometry(1), goldMat = new THREE.MeshBasicMaterial({ color: '#ffd23f' });
+  const goldRunner = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb000', emissiveIntensity: .9, metalness: .6, roughness: .2 }));
+  goldRunner.add(glowSprite('#ffd23f', 3.4, .9)); goldRunner.visible = false; scene.add(goldRunner);
+  const RIFT_R = 60, QUAKE_K = .78;
+  function evClear() {
+    meteorRing.visible = quakeRing.visible = quakeOut.visible = bountyRing.visible = hole.visible = goldRunner.visible = false;
+    ev.golds.forEach(g => scene.remove(g.mesh)); ev.golds = []; ev.gold = null; ev.target = null; ev.hitT = {};
+    const mm = document.getElementById('miniWrap'); if (mm) mm.classList.remove('fog');
+  }
+  function resetEvents() { ev.timer = 45; ev.active = ev.warn = null; evClear(); }
+  const evMain = () => player.cells.length ? mainOf(player) : null;
+  function evStart() {
+    const id = ev.active, m = evMain();
+    if (id === 'rift') { let x = 0, z = 0; for (let k = 0; k < 20; k++) { [x, z] = randInArena(RIFT_R); if (!m || Math.hypot(x - m.x, z - m.z) > RIFT_R + 40) break; } ev.x = x; ev.z = z; hole.position.set(x, 5, z); hole.visible = true; }
+    if (id === 'wind') { const a = Math.random() * 6.283; ev.wx = Math.cos(a); ev.wz = Math.sin(a); }
+    if (id === 'eclipse') { const mm = document.getElementById('miniWrap'); if (mm) mm.classList.add('fog'); }
+    if (id === 'golden') { let x = 0, z = 0; for (let k = 0; k < 20; k++) { [x, z] = randInArena(30); if (!m || Math.hypot(x - m.x, z - m.z) > 60) break; } ev.gold = { x, z, r: 4 }; goldRunner.position.set(x, 4, z); goldRunner.scale.setScalar(4); goldRunner.visible = true; }
+    if (id === 'quake') { quakeRing.scale.setScalar(R * QUAKE_K); quakeOut.scale.setScalar(R * QUAKE_K); quakeRing.position.set(0, .1, 0); quakeOut.position.set(0, .08, 0); quakeRing.visible = quakeOut.visible = true; }
+    if (id === 'bounty') {
+      const all = [player, ...bots].filter(o => o.cells.length && !o.disabled); ev.target = all.reduce((a, b) => total(b) > total(a) ? b : a, all[0]) || null;
+      if (ev.target === player) toast('🎯 Награда назначена за ТЕБЯ: боты охотятся 20 с — продержись и получи монеты');
+    }
+  }
   function updateEvent(dt) {
     if (!ev.active) {
       ev.timer -= dt;
       if (ev.timer <= 5 && !ev.warn) {
         ev.warn = EVENTS[Math.floor(Math.random() * EVENTS.length)].id;
         toast(`Через 5 с: ${evInfo(ev.warn).name}`);
-        if (ev.warn === 'meteor') { [ev.x, ev.z] = randInArena(40); meteorRing.position.x = ev.x; meteorRing.position.z = ev.z; meteorRing.visible = true; }
+        if (ev.warn === 'starfall') { [ev.x, ev.z] = randInArena(40); meteorRing.position.x = ev.x; meteorRing.position.z = ev.z; meteorRing.scale.setScalar(40); meteorRing.visible = true; }
       }
       if (ev.timer <= 0) {
         ev.active = ev.warn; ev.warn = null; ev.left = 20; ev.tick = 0;
         toast(`${evInfo(ev.active).name}: ${evInfo(ev.active).desc}`);
-        hole.visible = ev.active === 'blackhole';
+        evStart();
+        if (TEST_MODE) try { TLog.ev('событие', ev.active); } catch (e) {}
       }
       return;
     }
     ev.left -= dt; ev.tick -= dt;
-    if (ev.active === 'meteor' && ev.tick <= 0) {
-      ev.tick = .4; burstFood(ev.x, ev.z, 22, 22);
-      for (let i = 0; i < 3; i++) emit(ev.x + (Math.random() - .5) * 40, 28, ev.z + (Math.random() - .5) * 40, '#ffd23f', 2, 3, 1);
-    }
-    if (ev.active === 'blackhole') {
-      for (const c of cells) {
-        const d = Math.hypot(c.x, c.z) || 1, pull = (2 + 10 * Math.max(0, 1 - d / (R * .9))) * dt;
-        c.x -= c.x / d * pull; c.z -= c.z / d * pull;
+    const m = evMain(), pm = total(player);
+    if (evOn('starfall')) {
+      if (ev.tick <= 0) {   // one meteor and one golden drop every 0.6 s
+        ev.tick = .6;
+        const a = Math.random() * 6.283, q = Math.sqrt(Math.random()) * 36, x = ev.x + Math.cos(a) * q, z = ev.z + Math.sin(a) * q;
+        wave(x, z, '#ff6a00', 1, 9, .5); emit(x, 20, z, '#ffb000', 6, 6, .6);
+        for (const c of cells) if (Math.hypot(c.x - x, c.z - z) < 6 + cellR(c) * .5 && c.owner.kind !== 'boss') { c.mass = Math.max(10, c.mass * .95); if (c.owner === player) { buzz(25); emit(c.x, cellR(c), c.z, '#ff3d00', 10, 8, .5); } }
+        const b2 = Math.random() * 6.283, q2 = Math.sqrt(Math.random()) * 36, g = { x: ev.x + Math.cos(b2) * q2, z: ev.z + Math.sin(b2) * q2, v: Math.max(30, pm * .01), mesh: new THREE.Mesh(goldGeo, goldMat) };
+        g.mesh.scale.setScalar(1.6); g.mesh.position.set(g.x, 1.6, g.z); scene.add(g.mesh); ev.golds.push(g);
       }
-      if (Math.random() < .6) { const a = Math.random() * 6.283, r = 10 + Math.random() * 20; emit(Math.cos(a) * r, 2, Math.sin(a) * r, '#b26bff', 1, 2, .8); }
+      for (let i = ev.golds.length - 1; i >= 0; i--) {
+        const g = ev.golds[i]; g.mesh.rotation.y += dt * 3;
+        const c = cells.find(c => Math.hypot(c.x - g.x, c.z - g.z) < cellR(c) + 1.5); if (!c) continue;
+        c.mass += g.v; scene.remove(g.mesh); ev.golds.splice(i, 1);
+        if (c.owner === player) { emit(g.x, 2, g.z, '#ffd23f', 10, 6, .5); Sound.play('crumb'); }
+      }
     }
-    if (ev.left <= 0) { ev.active = null; ev.timer = 60; meteorRing.visible = hole.visible = false; }
+    if (evOn('rift')) {
+      hole.rotation.y += dt * 1.5;
+      for (const c of cells) {
+        const dx = ev.x - c.x, dz = ev.z - c.z, d = Math.hypot(dx, dz) || 1; if (d > RIFT_R + cellR(c)) continue;
+        const pull = (4 + 10 * (1 - d / (RIFT_R + cellR(c)))) * dt; c.x += dx / d * pull; c.z += dz / d * pull;
+        const o = c.owner; if (d < 6 + cellR(c) * .3 && o.kind !== 'boss' && !((ev.hitT[o.name] || 0) > stats.time)) {
+          ev.hitT[o.name] = stats.time + 2; for (const k of o.cells) k.mass = Math.max(10, k.mass * .9);
+          c.vx = -dx / d * 60; c.vz = -dz / d * 60; if (o === player) { toast('Разлом: −10% массы'); buzz(50); }
+        }
+      }
+      if (Math.random() < .6) { const a = Math.random() * 6.283, r = 10 + Math.random() * 30; emit(ev.x + Math.cos(a) * r, 2, ev.z + Math.sin(a) * r, '#b26bff', 1, 2, .8); }
+    }
+    if (evOn('wind')) {
+      for (const c of cells) { c.x += ev.wx * 7 * dt; c.z += ev.wz * 7 * dt; clampArena(c); }
+      if (m && Math.random() < .5) emit(m.x - ev.wx * 30 + (Math.random() - .5) * 60, 3, m.z - ev.wz * 30 + (Math.random() - .5) * 60, '#cfefff', 1, 2, .7);
+    }
+    if (evOn('golden') && ev.gold) {
+      const g = ev.gold, mv = m ? speedOf(m) * .85 : 20;   // a little slower than you, whatever your mass
+      if (m) { const dx = g.x - m.x, dz = g.z - m.z, d = Math.hypot(dx, dz) || 1; if (d < 90) { g.x += dx / d * mv * dt; g.z += dz / d * mv * dt; } else { g.x += Math.sin(stats.time) * 6 * dt; } }
+      { const L = Math.hypot(g.x, g.z), lim = R - 8; if (L > lim) { g.x *= lim / L; g.z *= lim / L; } }
+      goldRunner.position.set(g.x, 4 + Math.sin(stats.time * 6) * .6, g.z);
+      if (m && player.cells.some(c => Math.hypot(c.x - g.x, c.z - g.z) < cellR(c) + g.r)) {
+        const coins = 60; stats.modeXCoins = (stats.modeXCoins || 0) + coins; ev.gold = null; goldRunner.visible = false;
+        emit(g.x, 4, g.z, '#ffd23f', 30, 12, .8); wave(g.x, g.z, '#ffd23f', 2, 30, .6); Sound.play('level'); toast(`Золотая капля поймана! +${coins} ◆`);
+      }
+    }
+    if (evOn('quake')) {
+      const lim = R * QUAKE_K; quakeRing.material.opacity = .6 + .3 * Math.abs(Math.sin(stats.time * 5));
+      for (const c of cells) if (Math.hypot(c.x, c.z) > lim && c.owner.kind !== 'boss') { c.mass = Math.max(10, c.mass * (1 - .04 * dt)); if (c.owner === player && Math.random() < .3) emit(c.x, cellR(c), c.z, '#ff6a00', 2, 4, .4); }
+    }
+    if (evOn('bounty')) {
+      const t = ev.target;
+      if (!t || !t.cells.length) {
+        if (t && t !== player) { /* eaten by someone else or gone */ }
+        bountyRing.visible = false;
+        if (t === player) { ev.target = null; }
+      } else { const tm = mainOf(t); bountyRing.visible = true; bountyRing.position.set(tm.x, .12, tm.z); bountyRing.scale.setScalar(cellR(tm) + 6 + Math.sin(stats.time * 6)); }
+    }
+    if (ev.left <= 0) {
+      if (evOn('bounty') && ev.target === player && player.cells.length) { stats.modeXCoins = (stats.modeXCoins || 0) + 80; toast('🎯 Ты продержался с наградой за голову: +80 ◆'); Sound.play('level'); }
+      if (evOn('golden') && ev.gold) toast('Золотая капля убежала');
+      ev.active = null; ev.timer = 60; evClear();
+    }
   }
+  // the bounty is eaten (07-round calls this when a whole owner is gone)
+  function evOwnerEaten(victim, eater, lastMass) {
+    if (!evOn('bounty') || ev.target !== victim || victim === player) return;
+    if (eater === player) { const bonus = Math.round((lastMass || 0) * .5); if (player.cells.length) mainOf(player).mass += bonus; stats.modeXCoins = (stats.modeXCoins || 0) + 50; toast(`🎯 Награда за голову: +${bonus.toLocaleString('ru-RU')} массы и +50 ◆`); Sound.play('level'); }
+    ev.target = null; bountyRing.visible = false;
+  }
+  // «Монетный дождь»: coins right away for every bot and boss you eat
+  function evKillCoins(victim) { if (!evOn('coinrain')) return; const c = victim.kind === 'boss' ? 25 : victim.kind === 'bot' ? 5 : 0; if (!c) return; stats.modeXCoins = (stats.modeXCoins || 0) + c; if (player.cells.length) { const m = mainOf(player); emitIcons(m.x, cellR(m) + 3, m.z, 'star', '#ffd23f', 2, 1.2); } }
 
   // ================= owners & cells =================
   function makeOwner(name, kind, persona) {
@@ -376,7 +464,7 @@
     else if (o.kind === 'boss') v *= bossInfo(o).speed * (o.dashT > 0 ? 2 : 1) * (o.stunT > 0 ? .4 : 1);
     else if (o.kind === 'minion') v *= 1.05;
     else v *= (o.star ? 1 : botSkill().speed) * (o.dashT > 0 ? 1.9 : 1) * (abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1);
-    return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1) * ModeX.botSpeedK(o);
+    return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * 1 * ModeX.botSpeedK(o);
   }
   const eatRatio = c => c.owner.isPlayer ? (1.25 + 0.01 * U.guard) * ModeX.hcK('skin') : 1.25;
   const canEat = (a, b) => !(b.owner.spawnSh > 0) && !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * (a.owner.cloakBonus && abOn('cloak', a.owner) ? 1.1 : eatRatio(b)) && !DuoM.eatBlock(a, b);   // 2.7 «Засада»: the first bite needs only ×1.1

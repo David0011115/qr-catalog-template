@@ -462,7 +462,7 @@
       } }
       // decay grows with size, so mass can't snowball forever
       // 2.7: half as fast and only from 500 mass (a small drop does not melt); «Хардкор» keeps the old, harsh one
-      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss') c.mass -= c.mass * (mode === 'hardcore' ? ModeX.HC_DECAY : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? (1 - 0.04 * U.guard) * ModeX.meltK() : 1) * dt;
+      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss' && !abOn('pulse', c.owner)) c.mass -= c.mass * (mode === 'hardcore' ? ModeX.HC_DECAY : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? (1 - 0.04 * U.guard) * ModeX.meltK() : 1) * dt;
     }
 
     // bonuses (player only)
@@ -519,7 +519,7 @@
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
           stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK());
         } }
-        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .22 : total(player) >= 30000 ? .35 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' ? (b.owner.hcPack ? .2 : total(player) >= 50000 ? .5 : 1) : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() * (b.owner.hcPack && mode === 'classic' ? .25 : 1) : 1) * (a.owner.isPlayer && b.owner.kind === 'boss' ? ModeX.clBossGainK(pairMate) : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .22 : total(player) >= 30000 ? .35 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' ? (b.owner.hcPack ? .2 : total(player) >= 50000 ? .5 : 1) : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() * (b.owner.hcPack && mode === 'classic' ? .25 : 1) : 1) * (a.owner.isPlayer && b.owner.kind === 'boss' ? ModeX.clBossGainK(pairMate) : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.2) : 1) * (abOn('pulse', a.owner) && b.owner.kind === 'bot' ? 1.3 : 1);
         const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
         const bossCap = bossMassCap();
         a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;

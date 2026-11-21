@@ -23,7 +23,7 @@
     Sound.play(lk.sfx);
   }
   function abReset() {
-    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.auraT = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
+    owners.forEach(o => { if (o.blinkMark) { scene.remove(o.blinkMark.mesh); o.blinkMark = null; } o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.auraT = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
     crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
@@ -72,6 +72,15 @@
     const me = o === player, a = abilById(id), pw = me ? abPow(id) : 1, [px, pz] = centerOf(o);
     if (id === 'shield') { if (me) effects.shield = Math.max(effects.shield, a.dur * pw); else o.abT.shield = a.dur; o.abT.shieldB = a.dur * pw; o.shHit = new Set(); }
     else if (id === 'pulse') { o.abT.pulse = a.dur * pw; }
+    else if (id === 'blink' && me) {   // 2.7 «Метка»: the first press marks the spot, the second (within 10 s) jumps there
+      const m = mainOf(o);
+      if (!o.blinkMark) { o.blinkMark = { x: m.x, z: m.z, t: a.dur, mesh: markMesh(m.x, m.z, cellR(m), a.color) }; o.abCd[id] = .4; abFlash(id, m.x, m.z, a.color, 'bonus'); buzz(15); toast('⌖ Метка поставлена — нажми ещё раз, чтобы вернуться к ней'); return true; }
+      const mk = o.blinkMark; o.blinkMark = null; scene.remove(mk.mesh);
+      const sh = makeDecoy(o, a, 1); sh.still = true; sh.mesh.material.opacity = .35; if (decoy) scene.remove(decoy.mesh); decoy = sh;
+      owners.forEach(x => { if (x.target && x.target.owner === o) x.target = sh; });
+      const dx = mk.x - m.x, dz = mk.z - m.z; for (const c of o.cells) { emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); }
+      wave(mk.x, mk.z, a.color, 2, cellR(m) + 10, .6);
+    }
     else if (id === 'blink') { const sh = makeDecoy(o, a, 1); sh.still = true; sh.mesh.material.opacity = .35;
       if (me) { if (decoy) scene.remove(decoy.mesh); decoy = sh; } else botDecoys.push(sh);
       owners.forEach(x => { if (x.target && x.target.owner === o) x.target = sh; }); blinkBy(o, a.dist * pw, a.color); }
@@ -168,6 +177,16 @@
     crfx = crfx.filter(f => { if (f.t > 0) return true; scene.remove(f.mesh); return false; });
   }
   let xfx = [];   // timed world effects: hole, meteor, anchor, twin (each remembers its caster)
+  // the mark on the floor for «Метка»
+  function markMesh(x, z, r, color) {
+    const m = new THREE.Mesh(new THREE.RingGeometry(.86, 1, 48), decal(new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .85, depthWrite: false, side: THREE.DoubleSide })));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, .12, z); m.scale.setScalar(Math.max(4, r)); scene.add(m); return m;
+  }
+  function markTick(o, dt) {
+    const mk = o.blinkMark; if (!mk) return;
+    mk.t -= dt; mk.mesh.material.opacity = .45 + .4 * Math.abs(Math.sin(mk.t * 4));
+    if (mk.t <= 0 || !o.cells.length) { scene.remove(mk.mesh); o.blinkMark = null; if (o.abCd) o.abCd.blink = Math.max(o.abCd.blink || 0, 8); }
+  }
   function blinkBy(o, d, color) {
     const main = mainOf(o);
     for (const c of o.cells) { emit(c.x, cellR(c), c.z, color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, color, 18, 10, .5); }
@@ -177,7 +196,8 @@
     const me = o === player, main = mainOf(o);
     const ahead = d => { let x = px + main.hx * d, z = pz + main.hz * d; const dc = Math.hypot(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; } return [x, z]; };
     if (['x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].includes(id)) { o.abT[id] = a.dur; if (id === 'x_refl') o.spHit = new Set(); return true; }
-    if (id === 'x_over') { for (const k in o.abCd) if (!OVER_KEEP.has(k)) o.abCd[k] = 0;   // 2.7 audit: no second «Щит» / «Фантом» in a row if (me) { player.dashCd = 0; player.splitCd = 0; effects.speed = Math.max(effects.speed, a.dur); } else o.dashT = Math.max(o.dashT || 0, .6); return true; }
+    // 2.7 audit: «Перегрузка» does not reset «Щит» / «Фантом» (no second one in a row)
+    if (id === 'x_over') { for (const k in o.abCd) if (!OVER_KEEP.has(k)) o.abCd[k] = 0; if (me) { player.dashCd = 0; player.splitCd = 0; effects.speed = Math.max(effects.speed, a.dur); } else o.dashT = Math.max(o.dashT || 0, .6); return true; }
     if (id === 'x_ice') { o.abT.x_ice = a.dur; o.iceDrop = 0; return true; }
     if (id === 'x_meteor') {   // three meteors in a fan ahead
       const ang = Math.atan2(main.hz, main.hx);
@@ -254,7 +274,8 @@
         const a = abilById('x_typhoon'), rad = a.radius + cellR(main);
         for (const e of ejects) { const dx = e.x - px, dz = e.z - pz, d = Math.hypot(dx, dz) || 1; if (d < rad) { e.vx += dx / d * 120 * dt; e.vz += dz / d * 120 * dt; } }
         for (const x of foes) for (const c of x.cells) { const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1;
-          if (d < rad + cellR(c) && c.mass < main.mass * .6) { c.vx += dx / d * 90 * dt; c.vz += dz / d * 90 * dt; c.hx = dx / d; c.hz = dz / d; if (x.kind === 'bot') { x.target = null; x.tx = c.x + dx / d * 30; x.tz = c.z + dz / d * 30; x.think = .6; } } }
+          if (d < rad + cellR(c)) { const k = c.mass < main.mass * .6 ? 90 : 45; c.vx += dx / d * k * dt; c.vz += dz / d * k * dt;   // 2.7 audit: bigger foes too (half force)
+            c.hx = dx / d; c.hz = dz / d; if (x.kind === 'bot') { x.target = null; x.tx = c.x + dx / d * 30; x.tz = c.z + dz / d * 30; x.think = .6; } } }
         if (Math.random() < .5 && nearView(px, pz)) { const ang = Math.random() * Math.PI * 2; emit(px + Math.cos(ang) * rad, 1, pz + Math.sin(ang) * rad, a.color, 2, 3, .4); }
       }
     }
@@ -268,6 +289,7 @@
       } else if (f.id === 'x_hole') {
         pullFood(f.x, f.z, f.a.radius, 26);
         for (const e of ejects) { const dx = f.x - e.x, dz = f.z - e.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius) { e.vx += dx / d * 80 * dt; e.vz += dz / d * 80 * dt; } }
+        if (main) { const lim = total(f.o) * .1; for (const x of foes) if (x.kind !== 'boss') for (const c of x.cells) { if (c.mass >= lim) continue; const dx = f.x - c.x, dz = f.z - c.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius + cellR(c) && d > 1) { c.vx += dx / d * 60 * dt; c.vz += dz / d * 60 * dt; } } }   // 2.7 audit: small drops too
         f.mesh.rotation.y += dt * 4;
       } else if (f.id === 'x_anchor') { for (const x of foes) for (const c of x.cells) { const dx = f.x - c.x, dz = f.z - c.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius + cellR(c) && d > 1) { const k = 38 * dt * (x.kind === 'boss' ? .3 : 1); c.vx += dx / d * k * 6; c.vz += dz / d * k * 6; } } f.mesh.rotation.z += dt * 3; }
       else if (f.id === 'icepatch') { for (const x of foes) if (x.cells.some(c => Math.hypot(c.x - f.x, c.z - f.z) < f.r + cellR(c) * .5)) x.iceT = .35; f.mesh.material.opacity = .45 * Math.min(1, f.t); }
@@ -344,11 +366,12 @@
   const CC = { slowK: .35, slowMax: 4, stunK: .6, immune: 2.5 };
   const ccPl = x => !!x && (x.isPlayer || x.kind === 'rival');
   const IMPULSE_BOT_MAX = 6;
-  function ccSlow(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
-  function ccFreeze(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
+  function ccSlow(x, d) { if (abOn('shrink', x)) return; if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
+  function ccFreeze(x, d) { if (abOn('shrink', x)) return; if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
   // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 5 s of immunity
   //  (it was renewed every frame, so the immunity never came: a 46 s slowdown in the owner's report)
   function ccAura(x, dt) {
+    if (abOn('shrink', x)) return;   // 2.7 audit: «Сжатие» ignores slows and stuns
     if (!ccPl(x)) { x.slowT = Math.max(x.slowT || 0, .35); return; }
     if ((x.ccImm || 0) > 0) return;
     x.auraT = (x.auraT || 0) + dt * 1.5;   // decays at 0.5 per second outside (abTick): 3 s inside fills it
@@ -361,6 +384,7 @@
     for (const o of owners) {
       if (o.slowT) { const was = o.slowT; o.slowT = Math.max(0, o.slowT - dt); if (!o.slowT) ccWore(o, was); }
       if (o.ccImm) o.ccImm = Math.max(0, o.ccImm - dt);
+      if (o.blinkMark) markTick(o, dt);
       if (o.auraT) o.auraT = Math.max(0, o.auraT - dt * .5);
       if (o.iceT) o.iceT = Math.max(0, o.iceT - dt);
       if (!o.abCd) continue;
@@ -404,6 +428,7 @@
       const maxParts = playerMaxParts(), n = player.cells.length, cd = player.splitCd, heavy = player.cells.some(c => c.mass >= 20), can = n > 0 && n < maxParts && heavy && cd <= 0;
       return { ready: cd > 0 ? 1 - cd / playerSplitCd() : can ? 1 : 0, off: !can, sub: cd > 0 ? `${cd.toFixed(1)} с` : n >= maxParts ? `${n}/${maxParts} макс.` : !heavy ? 'нужно 20' : n > 1 ? `${n}/${maxParts}` : null };
     }
+    if (id === 'blink' && player.blinkMark) return { ready: 1, off: false, sub: `к метке · ${Math.ceil(player.blinkMark.t)} с` };
     if (id === 'x_phase' && player.phase2 > 0) return { ready: 1, off: false, sub: `ещё раз ${player.phase2.toFixed(1)} с` };
     const cd = player.abCd[id] || 0, act = player.abT[id] || 0;
     return { ready: cd > 0 ? 1 - cd / abCdOf(id) : 1, off: false, sub: act > 0 ? `${act.toFixed(1)} с ✓` : cd > 0 ? `${cd.toFixed(1)} с` : null };

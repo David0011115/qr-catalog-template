@@ -220,7 +220,14 @@
       return { x, z, type, mesh };
     }
     function act(k, i) {   // host: an action from the other phone
-      if (serverMode) { if (k === 'slot') window.KapliOnlineServer?.useAbility(k, i); else window.KapliOnlineServer?.useAction(k); return; }
+      if (serverMode) {
+        // 2.7 «Метка»: the server keeps the mark; this phone only draws it and the slot text (a cast on cooldown is not sent)
+        if (k === 'slot' && runBuild[i] === 'blink' && !((player.abCd || {}).blink > 0) && player.cells.length) {
+          if (player.blinkMark) { scene.remove(player.blinkMark.mesh); player.blinkMark = null; }
+          else { const m = mainOf(player), a = abilById('blink'); player.blinkMark = { x: m.x, z: m.z, t: a.dur, mesh: markMesh(m.x, m.z, cellR(m), a.color) }; }
+        }
+        if (k === 'slot') window.KapliOnlineServer?.useAbility(k, i); else window.KapliOnlineServer?.useAction(k); return;
+      }
       const o = rival; if (!o.cells.length || role !== 'host') return;
       const id = k === 'slot' ? rivalBuild[i] : k;
       if (id === 'split') { if (o.splitCd <= 0 && splitOwner(o, playerMaxParts(), playerMergeTime())) rebuildCells(); }
@@ -417,6 +424,7 @@
       // 2.7: the bonus timers (the 3 s start shield too) never ran down in a server match — «вечная неуязвимость» on the HUD;
       // they tick here, and what the server says about this player wins
       for (const k in effects) effects[k] = Math.max(0, effects[k] - dt);
+      if (player.blinkMark) { player.blinkMark.t -= dt; player.blinkMark.mesh.material.opacity = .45 + .4 * Math.abs(Math.sin(player.blinkMark.t * 4)); if (player.blinkMark.t <= 0 || !player.cells.length) { scene.remove(player.blinkMark.mesh); player.blinkMark = null; } }
       if (player.eff) for (const k of ['speed', 'shield', 'double', 'magnet']) if (Number.isFinite(player.eff[k])) effects[k] = player.eff[k];
       const [dx, dz] = localDir(), now = performance.now();
       if (now - inAt > INPUT_MS) {

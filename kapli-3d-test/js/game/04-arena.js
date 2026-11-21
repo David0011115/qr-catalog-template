@@ -379,7 +379,7 @@
     return v * (dailyIs('speedy') ? 1.3 : 1) * (arenaIs('cyber') ? 1.1 : 1) * (ev.active === 'storm' ? 1.4 : 1) * ModeX.botSpeedK(o);
   }
   const eatRatio = c => c.owner.isPlayer ? (1.25 + 0.01 * U.guard) * ModeX.hcK('skin') : 1.25;
-  const canEat = (a, b) => !(b.owner.spawnSh > 0) && !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * eatRatio(b) && !DuoM.eatBlock(a, b);
+  const canEat = (a, b) => !(b.owner.spawnSh > 0) && !(abOn('shrink', a.owner) || abOn('x_ghost', a.owner)) && !((b.owner.isPlayer && effects.shield > 0) || abOn('shield', b.owner) || abOn('x_ghost', b.owner)) && !(a.owner.team && a.owner.team === b.owner.team) && a.mass > b.mass * (a.owner.cloakBonus && abOn('cloak', a.owner) ? 1.1 : eatRatio(b)) && !DuoM.eatBlock(a, b);   // 2.7 «Засада»: the first bite needs only ×1.1
 
   let mode = save.mode;
   const splitRules = () => dailyIs('splitonly');

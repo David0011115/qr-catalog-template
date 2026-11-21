@@ -399,6 +399,55 @@
   // frame rate: shown on demand; when it stays under 40 for 5 s in a round, graphics step down once per 10 s
   const perf = { frames: 0, t0: 0, fps: 60, low: 0, cool: 0 };
   const r1q = v => Math.round(v * 100) / 100;
+  // 2.7 FPS: bots get a random skin, star level and aura each time they come back; a look never seen before compiled its shader in the middle of a round (a 60–80 ms hitch on a phone).
+  // While the menu is open, every look a bot can get is put on a hidden drop and compiled — a little at a time, never during a round.
+  function prewarmLooks() {
+    let v = null, i = 0, jobs = null;
+    const step = () => {
+      if (running) { setTimeout(step, 4000); return; }
+      try {
+        if (!jobs) { v = makeVis(new THREE.Color('#8088c0'));
+          const skins = SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft && !EVO[k.id]);
+          jobs = [...skins.flatMap(sk => [[sk, 0], [sk, 3]]), ...FX.filter(f => f.slot === 'aura' && !f.legend && !f.craft).map(f => ['aura', f.id])]; }
+        const t0 = performance.now();
+        while (i < jobs.length && performance.now() - t0 < 14) { const [a, b] = jobs[i++]; if (a === 'aura') setAura(v, b, '#8088c0'); else applySkin(v, a, b, null); renderer.compile(scene, camera); }
+      } catch (e) { i = jobs ? jobs.length : 0; }
+      if (jobs && i < jobs.length) setTimeout(step, 40); else if (v) { try { setAura(v, null); } catch (e) {} }
+    };
+    setTimeout(step, 3000);
+  }
+  prewarmLooks();
+  // 2.7 test: what an object on screen is — a named part (капля, кольцо, глаза…), whose drop it belongs to, or its shape
+  function objLabel(o) {
+    let p = o, named = null, depth = 0;
+    while (p && p !== scene) { if (p.name && !named) named = p.name + (depth ? ' · детали' : ''); if (p.name === 'капля') break; p = p.parent; depth++; }
+    let who = '';
+    if (p && p.name === 'капля') { const c = cells.find(k => k.vis && k.vis.mesh === p); if (c) who = c.owner.isPlayer ? 'игрок' : c.owner.kind === 'boss' ? 'босс ' + c.owner.bossType : c.owner.kind; }
+    return (named || ((o.geometry && o.geometry.type || o.type) + '/' + (o.material && o.material.type || ''))) + (who ? ' [' + who + ']' : '');
+  }
+  const seenProgs = new Set();
+  function shaderWho() {
+    const list = renderer.info.programs || [], fresh = list.filter(p => !seenProgs.has(p)); list.forEach(p => seenProgs.add(p));
+    if (fresh.length > 6) return;   // a whole new arena (round start), not a hitch to explain
+    for (const prog of fresh) {
+      let who = null;
+      scene.traverse(o => { if (who || !o.material) return; const ms = Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of ms) { const pr = renderer.properties.get(m); if (pr && pr.currentProgram === prog) { who = objLabel(o); break; } } });
+      TLog.ev('новый шейдер', (prog.name || '?') + (who ? ': ' + who : ''));
+    }
+  }
+  // 2.7 test: what takes the draw calls right now — objects in view by kind (the glow batch counts as one)
+  const cenFr = new THREE.Frustum(), cenM = new THREE.Matrix4();
+  function drawCensus() {
+    cenM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); cenFr.setFromProjectionMatrix(cenM);
+    const out = {};
+    scene.traverseVisible(o => {
+      if (!(o.isMesh || o.isPoints || o.isSprite || o.isLine) || !o.layers.test(camera.layers)) return;
+      if (o.frustumCulled) { if (o.isSprite ? !cenFr.intersectsSprite(o) : (o.geometry && !cenFr.intersectsObject(o))) return; }
+      const k = objLabel(o).replace(/ \[.*\]$/, ''); out[k] = (out[k] || 0) + 1;
+    });
+    return Object.entries(out).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, n]) => k + ' ' + n).join(', ');
+  }
   function trackFps(now) {
     perf.frames++;
     if (now - perf.t0 < 1000) return;
@@ -407,7 +456,7 @@
       const ri = renderer.info.render, mem = performance.memory;
       return { q: QUALITY, mass: Math.round(total(player)), cells: cells.length, mine: player.cells.length, bots: bots.filter(o => o.cells.length).length, boss: bossOwners.filter(o => o.cells.length).length + raidTwins.filter(o => o.cells.length).length,
         fx: pActive.length + eActive.length, calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) + 'MB' : undefined, px: r1q(renderer.getPixelRatio()) }; });
-    if (TEST_MODE && running && renderer.info.programs) { const np = renderer.info.programs.length; if (perf.progs && np > perf.progs) TLog.ev('новый шейдер', np - perf.progs); perf.progs = np; }   // 2.7: what still compiles mid-round
+    if (TEST_MODE && running && renderer.info.programs) shaderWho();   // 2.7: what still compiles mid-round, and for what
     if (save.settings.showFps) { const el = $('fps'); el.textContent = `${Math.round(perf.fps)} FPS`; el.classList.toggle('slow', perf.fps < 40); }
     if (running && !paused && !document.hidden && save.settings.autoQ) {   // 2.7: soft step first — resolution, before the quality preset
       perf.dcool = Math.max(0, (perf.dcool || 0) - 1);

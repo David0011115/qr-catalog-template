@@ -598,6 +598,7 @@
 .tl-btns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .tl-btns button { min-height: 38px; padding: 4px 6px; border-radius: 12px; border: 1px solid rgba(34, 230, 255, .45); background: rgba(34, 230, 255, .08); color: #fff; font: 700 .74rem/1.2 var(--body); cursor: pointer; }
 .tl-btns.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tl-btns.one { grid-template-columns: 1fr; }
 .tl-btns button small { display: block; margin-top: 2px; font: 500 .66rem/1.25 var(--body); color: #a59ccc; }
 .tl-stress-run { display: grid; gap: 8px; padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 210, 63, .4); background: rgba(255, 210, 63, .06); }
 .tl-stress-run p { margin: 0; font-size: .74rem; color: #d8d2f5; }

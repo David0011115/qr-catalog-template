@@ -80,7 +80,7 @@
       for (const x of foesOf(o)) {
         if (!nearOf(o, x, rad)) continue;
         // The wave suppresses movement and dash acceleration; it does not push targets physically.
-        ccSlow(x, a.dur * pw);
+        ccSlow(x, ccPl(x) ? a.dur : Math.min(IMPULSE_BOT_MAX, a.dur));   // 2.7 audit: levels grow the radius only; bots are held 6 s at most (15–20 s made them a farm)
       }
       // Clearly visible expanding ground rings; particle bursts alone were too subtle.
       [1, .78, .56].forEach((k, i) => {
@@ -138,7 +138,7 @@
       if (!h) { toast('Перемотка: прошло меньше 4 секунд — пока некуда вернуться'); return false; }
       const dx = h.x - px, dz = h.z - pz, m0 = total(o);
       emitIcons(px, 3, pz, 'clock', a.color, 4, 1.6); emit(px, 2, pz, a.color, 30, 8, .6);
-      for (const c of o.cells) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (h.m > m0) c.mass *= h.m / m0; }
+      for (const c of o.cells) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (h.m > m0) c.mass *= Math.min(1.1, h.m / m0); }   // 2.7 audit: the mass comes back +10% at most (it undid any bite)
       wave(h.x, h.z, a.color, 2, 14, .7); emit(h.x, 2, h.z, '#ffffff', 30, 10, .5); Sound.play('dash'); return true;
     }
     if (id === 'cr_swap') {
@@ -172,11 +172,12 @@
     const main = mainOf(o);
     for (const c of o.cells) { emit(c.x, cellR(c), c.z, color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, color, 18, 10, .5); }
   }
+  const OVER_KEEP = new Set(['x_over', 'shield', 'x_ghost']);
   function castXa(id, a, px, pz, o) {
     const me = o === player, main = mainOf(o);
     const ahead = d => { let x = px + main.hx * d, z = pz + main.hz * d; const dc = Math.hypot(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; } return [x, z]; };
     if (['x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].includes(id)) { o.abT[id] = a.dur; if (id === 'x_refl') o.spHit = new Set(); return true; }
-    if (id === 'x_over') { for (const k in o.abCd) if (k !== 'x_over') o.abCd[k] = 0; if (me) { player.dashCd = 0; player.splitCd = 0; effects.speed = Math.max(effects.speed, a.dur); } else o.dashT = Math.max(o.dashT || 0, .6); return true; }
+    if (id === 'x_over') { for (const k in o.abCd) if (!OVER_KEEP.has(k)) o.abCd[k] = 0;   // 2.7 audit: no second «Щит» / «Фантом» in a row if (me) { player.dashCd = 0; player.splitCd = 0; effects.speed = Math.max(effects.speed, a.dur); } else o.dashT = Math.max(o.dashT || 0, .6); return true; }
     if (id === 'x_ice') { o.abT.x_ice = a.dur; o.iceDrop = 0; return true; }
     if (id === 'x_meteor') {   // three meteors in a fan ahead
       const ang = Math.atan2(main.hz, main.hx);
@@ -342,6 +343,7 @@
   // stuns 60%; when one wears off there are 2.5 s in which a new slow or stun does not land — no more chains of slowdowns
   const CC = { slowK: .35, slowMax: 4, stunK: .6, immune: 2.5 };
   const ccPl = x => !!x && (x.isPlayer || x.kind === 'rival');
+  const IMPULSE_BOT_MAX = 6;
   function ccSlow(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
   function ccFreeze(x, d) { if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
   // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 5 s of immunity

@@ -939,6 +939,8 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     if (QUALITY === 'medium') n = Math.ceil(n / 2);
     tmpCol.set(color);
     const P = keep ? ePos : pPos, D = keep ? eData : pData, AL = keep ? eAlive : pAlive, AC = keep ? eActive : pActive, MX = keep ? EMAX : PMAX;
+    // 2.7 FPS: at most this many live particles by quality — the owner's drops came with 200–530 of them on screen
+    { const cap = QUALITY === 'high' ? 900 : QUALITY === 'medium' ? 350 : 150; if (AC.length >= cap) return; n = Math.min(n, cap - AC.length); }
     for (let i = 0; i < n; i++) {
       const slot = keep ? eNext : pNext, d = D[slot], k = slot * 3;
       if (!AL[slot]) { AL[slot] = 1; AC.push(slot); }

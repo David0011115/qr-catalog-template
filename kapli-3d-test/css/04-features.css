@@ -723,19 +723,7 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 .ps-picks .pk-t { display: grid; line-height: 1.2; } .ps-picks .pk-t b { font-size: .78rem; } .ps-picks .pk-t small { font-size: .66rem; color: var(--rc); }
 #charModal .ch-go { display: block; width: 100%; margin-top: 12px; min-height: 48px; }
 
-/* ===== 2.7 «Стекло»: frames get a thick translucent edge tinted by the frame's colours, a light top edge and a highlight (chosen with the owner) ===== */
-.fr.fn { border: 3px solid transparent !important; border-radius: 9px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--a) 22%, rgba(12, 8, 34, .95)), rgba(12, 8, 34, .95) 62%) padding-box,
-    linear-gradient(160deg, color-mix(in srgb, var(--a) 75%, #fff), color-mix(in srgb, var(--a) 50%, transparent) 40%, color-mix(in srgb, var(--b) 60%, transparent)) border-box;
-  background-size: 100% 100%, 100% 100%;
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -2px 0 color-mix(in srgb, var(--b) 60%, transparent), 0 3px 8px rgba(0, 0, 0, .45), 0 0 12px color-mix(in srgb, var(--a) 30%, transparent); }
-.fr.fn::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 48%; border-radius: 6px 6px 40% 40%; background: linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, 0)); pointer-events: none; }
-.fr.fn.fr-l { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .55), inset 0 -2px 0 color-mix(in srgb, var(--b) 70%, transparent), 0 3px 8px rgba(0, 0, 0, .45), 0 0 16px color-mix(in srgb, var(--a) 45%, transparent); }
-.fr.fn.fr-l::after { background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .45) 45%, transparent 60%) 0 0 / 300% 100%, linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, 0));
-  height: 100%; border-radius: 6px; animation: frSheen 3.6s ease-in-out infinite; }
-@keyframes frSheen { 0%, 50% { background-position: 150% 0, 0 0; } 90%, 100% { background-position: -150% 0, 0 0; } }
-.q-low .fr.fn.fr-l::after { animation: none; }
-@media (prefers-reduced-motion: reduce) { .fr.fn.fr-l::after { animation: none; } }
+/* 2.7: the volumetric «Стекло» frames were taken back (owner) — frames are flat again (01-base) */
 
 /* ===== 2.7 «Лента»: titles become award ribbons in their own colours; legendary ones get a running sheen (chosen with the owner) ===== */
 /* 2.7 titles «Жетон» (chosen in the showcase): a metal plaque — a dark face, a bevelled border in the rarity colour, the icon in a round seal */

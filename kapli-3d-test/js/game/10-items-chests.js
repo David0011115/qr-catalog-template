@@ -723,7 +723,7 @@
   function setDynPx(k) { const was = pxRatio(); dynPx = k; const now = pxRatio(); if (Math.abs(now - was) < .01) return false; renderer.setPixelRatio(now); resize(); return true; }
   function applySettings() {
     const st = save.settings;
-    const qWas = QUALITY; QUALITY = st.quality; if (qWas !== QUALITY && typeof applyArena === 'function') applyArena();
+    const qWas = QUALITY; QUALITY = st.quality; if (qWas !== QUALITY && typeof applyArena === 'function') { applyArena(); try { prewarmAgain(); } catch (e) {} }
     renderer.setPixelRatio(pxRatio());
     resize();
     allVis.forEach(v => v.glow.visible = QUALITY !== 'low');

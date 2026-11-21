@@ -844,3 +844,7 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 .nw-mini > i { grid-row: 1 / 3; font-style: normal; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-size: 1rem; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
 .nw-mini > b { font: 700 .82rem/1.2 var(--body); color: #fff; } .nw-mini > span { font-size: .7rem; line-height: 1.25; color: #b8afe0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 @media (min-width: 640px) { .nw-minis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* 2.7 Hardcore special cards: a plus and a minus */
+.hc-card.hc-dual .hc-plus { font-size: .74rem; font-weight: 700; color: #3dff9a; }
+.hc-card.hc-dual { background: linear-gradient(160deg, rgba(255, 154, 61, .16), rgba(12, 7, 32, .92) 60%); }

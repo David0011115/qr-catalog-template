@@ -457,7 +457,7 @@
       if (o.isPlayer && charIs('tank')) v *= .92;   // «Танк»
       if (o.isPlayer) v *= (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (1 + 0.02 * petLv('speed')) * (abOn('shrink') ? ABIL_CFG.shrinkSpeed : 1);
       else v *= abOn('shrink', o) ? ABIL_CFG.shrinkSpeed : 1;
-      v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? ABIL_CFG.slowFactor : 1) * (DuoM.speedK ? DuoM.speedK(c) : 1);   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
+      v *= (o.freezeT > 0 ? .05 : 1) * (o.slowT > 0 ? (o.isPlayer ? 1 - (1 - ABIL_CFG.slowFactor) * (1 - ModeX.hcSlowRes()) : ABIL_CFG.slowFactor) : 1) * (DuoM.speedK ? DuoM.speedK(c) : 1);   // 2.7 «Ледяное сердце» halves the slow   // bots' «Ледяная волна», «Метеорный удар», «Замедляющая волна», «Якорь»
     }
     else if (o.freezeT > 0) v *= .05;
     if (o.hcPack) v *= ModeX.hcPackSpeedK(o);   // 2.7: a pack hunts 15% faster («Классика»: 10%)

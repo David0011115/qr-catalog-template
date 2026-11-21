@@ -790,3 +790,48 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 .nw-bb { font-size: .92rem; color: #ddd8f8; } .nw-bb ul { padding-left: 18px; display: grid; gap: 5px; margin: 6px 0; } .nw-bb p { margin: 0 0 8px; }
 .nw-nav { display: flex; gap: 8px; align-items: center; } .nw-nav button { font: 700 .85rem/1 var(--body); color: #ece8ff; background: #1d1242; border: 1px solid rgba(150, 120, 255, .3); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
 .nw-nav .nw-x { margin-left: auto; } .nw-nav span { color: #a59ccc; font-size: .78rem; }
+
+/* 2.7 updates: group headings, the new card visuals, and a wide big card in landscape (picture left, text right) */
+.nw-g { margin: 14px 2px 6px; font: 700 .74rem/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: #a59ccc; }
+.nw-grow { align-items: flex-end; gap: 8px; } .nw-grow span { width: calc(var(--s) * 1px); height: calc(var(--s) * 1px); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #3dffa2 45%, #0a6a4a); } .nw-grow em { width: 100%; text-align: center; font-style: normal; font-size: .62rem; color: #3dffa2; }
+.nw-classic span { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font: 700 .58rem/1 var(--body); background: radial-gradient(circle at 35% 30%, #ffb59a, #ff6a3d 55%, #7a1a00); } .nw-classic b { color: #ffd23f; } .nw-classic em { width: 100%; text-align: center; font-style: normal; font-size: .62rem; color: #ffd23f; }
+.nw-hc span { font: 700 .66rem/1 var(--body); padding: 7px 9px; border-radius: 8px; background: #2a0a12; box-shadow: inset 0 0 0 1px #ff2d55; color: #ffb0c0; } .nw-hc .win { background: #3a2400; box-shadow: inset 0 0 0 1px #ffd23f; color: #ffd23f; } .nw-hc em { width: 100%; text-align: center; font-style: normal; font-size: .62rem; color: #ff6a80; }
+.nw-evo { gap: 6px; } .nw-evo span { width: calc(var(--s) * 1px); height: calc(var(--s) * 1px); border-radius: 50%; display: grid; place-items: center; font: 700 .6rem/1 var(--body); background: radial-gradient(circle at 35% 30%, #ff9a9a, #c8102e 55%, #3a0008); box-shadow: 0 0 10px rgba(255, 45, 85, .5); } .nw-evo b { color: #ff4fd8; font-size: .8rem; }
+.nw-gear span { font-size: 2.2rem; color: #ffd27a; text-shadow: 0 0 10px rgba(255, 210, 122, .6); animation: nwSpin 6s linear infinite; } .nw-gear .sm { font-size: 1.4rem; animation-direction: reverse; } .nw-gear em { width: 100%; text-align: center; font-style: normal; font-size: .62rem; color: #ffd27a; }
+@keyframes nwSpin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .nw-gear span { animation: none; } }
+.nw-tabs { gap: 4px; } .nw-tabs span { font: 700 .6rem/1 var(--body); padding: 6px 8px; border-radius: 999px; background: #1d1242; color: #a59ccc; } .nw-tabs .on { background: rgba(34, 230, 255, .18); color: #22e6ff; }
+.nw-big { grid-template-columns: 1fr; }
+@media (min-width: 640px) and (orientation: landscape), (min-width: 900px) {
+  .nw-big { width: min(980px, 100%); grid-template-columns: minmax(220px, 40%) 1fr; grid-template-areas: "vis txt" "vis nav"; align-items: start; column-gap: 18px; padding: 16px 18px; }
+  .nw-big > .nw-v { grid-area: vis; min-height: 0; height: 100%; max-height: 360px; align-self: stretch; }
+  .nw-big > .nw-txt { grid-area: txt; } .nw-big > .nw-nav { grid-area: nav; align-self: end; }
+}
+.nw-txt { display: grid; gap: 8px; min-width: 0; }
+/* 2.7 pause: buffs as compact chips, the picked cards as smaller tiles */
+.ps-buffs { display: flex; flex-wrap: wrap; gap: 4px; }
+.ps-buffs li { display: inline-flex; gap: 6px; padding: 3px 8px; border-radius: 999px; font-size: .74rem; }
+.ps-buffs li.sub { padding: 2px 8px; font-size: .68rem; background: rgba(255, 255, 255, .03); }
+.ps-buffs .pb-n { gap: 4px; } .ps-buffs small { display: none; }
+.ps-picks { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px; }
+.ps-picks li { gap: 5px; padding: 3px 6px; border-radius: 8px; } .ps-picks .pk-ic { font-size: .95rem; } .ps-picks .pk-t b { font-size: .72rem; } .ps-picks .pk-t small { font-size: .6rem; }
+
+/* 2.7 the poster (the main card of an update) */
+.nw-poster { border-radius: 20px; padding: 16px; margin-bottom: 6px; display: grid; gap: 12px; background: radial-gradient(90% 120% at 100% 0%, rgba(34, 230, 255, .18), transparent 55%), radial-gradient(120% 120% at 0% 100%, rgba(255, 79, 216, .16), transparent 55%), linear-gradient(180deg, #1c0f42, #120a2c); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.nw-ph { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.nw-logo { font: 400 clamp(1.5rem, 6vw, 2.3rem)/1 var(--display); color: #fff; letter-spacing: .01em; }
+.nw-logo i { font-style: normal; color: #22e6ff; text-shadow: 0 0 14px rgba(34, 230, 255, .7); }
+.nw-pill { font: 700 .82rem/1 var(--body); color: #ffd23f; padding: 7px 12px; border-radius: 999px; box-shadow: inset 0 0 0 2px #ffd23f, 0 0 12px rgba(255, 210, 63, .35); }
+.nw-psub { margin: 0; color: #c8bff0; font-size: .92rem; font-weight: 600; }
+.nw-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: 10px; }
+.nw-tile { text-align: left; font: inherit; color: inherit; cursor: pointer; display: grid; grid-template-rows: auto auto 1fr; gap: 4px; padding: 12px; border-radius: 16px; border: 2px solid var(--c); background: rgba(12, 7, 32, .88); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 40%, transparent), inset 0 0 18px color-mix(in srgb, var(--c) 12%, transparent); }
+.nw-tile:hover, .nw-tile:focus-visible { outline: none; box-shadow: 0 0 22px color-mix(in srgb, var(--c) 65%, transparent), inset 0 0 18px color-mix(in srgb, var(--c) 18%, transparent); }
+.nw-tile > b { font: 400 1rem/1.15 var(--display); color: #fff; } .nw-tile > span { font-size: .76rem; color: #c8bff0; }
+.nw-tile .nw-v { background: none; min-height: 70px; align-self: end; padding: 6px 0 0; }
+.nw-pf { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: .8rem; color: #c8bff0; }
+.nw-pf button { font: 700 .82rem/1 var(--body); color: #22e6ff; background: rgba(34, 230, 255, .12); border: 1px solid rgba(34, 230, 255, .4); border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+.nw-modes { gap: 4px; } .nw-modes span { font: 700 .62rem/1 var(--body); padding: 6px 8px; border-radius: 8px; color: #3dffa2; background: rgba(61, 255, 162, .12); box-shadow: inset 0 0 0 1px rgba(61, 255, 162, .45); }
+.nw-big > .nw-v { align-content: center; }
+
+/* 2.7 the news window uses the screen: a poster of tiles instead of one narrow column */
+#tutModal.nw-wide .modal-card { width: min(960px, calc(100vw - 24px)); max-width: none; box-sizing: border-box; }
+@media (min-width: 640px) { .nw-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }   /* six tiles: 3 + 3, never 5 + 1 */

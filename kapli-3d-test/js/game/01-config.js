@@ -568,7 +568,7 @@
     { id: 'col_sweet',  name: 'Сладкоежка',        skins: ['marmalade', 'melon', 'c_caramel', 'c_soda', 'c_peach'],       hat: 'cherry',    coins: 1000 },
     { id: 'col_space',  name: 'Космос',            skins: ['saturn', 'c_nebula', 'c_starborn', 'c_crystal'],              hat: 'planet',    coins: 1500 },
     { id: 'col_elem',   name: 'Стихии',            skins: ['ocean', 'phoenix', 'magma', 'c_marble'],                      hat: 'snowflake', coins: 1500 },
-    { id: 'col_cyber',  name: 'Кибер',             skins: ['neon', 'cyber', 'c_circuit', 'matrix', 'c_chrome'],           hat: 'propeller', coins: 1500 },
+    { id: 'col_cyber',  name: 'Кибер',             skins: ['neon', 'c_circuit', 'matrix', 'c_chrome'],           hat: 'propeller', coins: 1500 },
     { id: 'col_royal',  name: 'Королевская семья', skins: ['champion', 'titan', 'abyss'],                                 hat: 'tophat',    coins: 2000 },
     { id: 'col_nature', name: 'Природа',           skins: ['coral', 'amanita', 'c_chameleon', 'c_neontiger', 'c_lavalamp'], hat: 'sprout',  coins: 1000 },
     // effect collections: reward is a unique title
@@ -1181,7 +1181,7 @@
   // 2.7: skins reworked with the owner (the showcase). Same ids, so whoever owns one keeps the slot with the new look; renamed ones are listed once (save: deco27)
   const LOOK_KEYS_27 = ['color', 'accent', 'pattern', 'mat', 'anim', 'head', 'shine', 'emi', 'emiColor', 'flow', 'glow', 'holo', 'holoBase', 'holoSpan', 'bubbles', 'crown', 'live', 'pulse', 'rainbow'];
   const SKIN_27 = {
-    neon:        [null, 'неоновые дорожки микросхемы по тёмному телу, антенны', { color: '#0d0624', accent: '#22e6ff', pattern: 'circuit', emi: true, emiColor: '#22e6ff', mat: 'rim', anim: 'flicker', glow: true, head: 'antenna' }],
+    neon:        [null, 'неоновые дорожки микросхемы по тёмному телу', { color: '#0d0624', accent: '#22e6ff', pattern: 'circuit', emi: true, emiColor: '#22e6ff', mat: 'rim', anim: 'flicker', glow: true }],
     marmalade:   ['Аквариум', 'стеклянный шар с волнами и пузырьками', { color: '#1f8bff', accent: '#bff4ff', mat: 'glass', pattern: 'waves', flow: [.04, 0], bubbles: true, glow: true }],
     coral:       ['Мятная капля', 'свежая мятная капля, мягко дышит', { color: '#36f2c3', accent: '#e8fffb', pattern: 'gradient', anim: 'breath', glow: true }],
     c_crystal:   [null, 'голубые грани, призма и блик', { color: '#1a8cff', accent: '#9fe8ff', pattern: 'facets', head: 'prism', shine: 'bolt', anim: 'breath', glow: true }],
@@ -1202,9 +1202,10 @@
     h_halloween: [null, 'светится вырезанная ухмылка, мерцает свеча, летят искры', { color: '#ff7a00', accent: '#ffd23f', pattern: 'live', live: 'jack', head: 'stem', crown: true, glow: true }],
     h_newyear:   [null, 'ледяной кристалл, снег внутри, корона', { color: '#cfefff', accent: '#4d7cff', pattern: 'snow', flow: [0, -.08], mat: 'crystal', head: 'icecrown', shine: 'bolt', glow: true }],
     cs_q3:       [null, 'фрактал в стекле, призма', { color: '#120830', accent: '#3dffa2', pattern: 'fractal', flow: [.05, .05], mat: 'glass', head: 'prism', glow: true }],
-    cs_q1:       [null, 'сбоящий контур и антенны', { color: '#0a0a1a', accent: '#ff2d55', pattern: 'glitch', anim: 'glitch', mat: 'rim', head: 'antenna', glow: true }],
+    cs_q1:       [null, 'сбоящий контур, цифровой сбой', { color: '#0a0a1a', accent: '#ff2d55', pattern: 'glitch', anim: 'glitch', mat: 'rim', glow: true }],
   };
   const SKIN_RENAMED_27 = {};
+  { const cy = SKINS.find(k => k.id === 'cyber'); if (cy) { cy.old = true; delete cy.price; delete cy.lvl; } }   // 2.7: «Кибер-сетка» repeated «Неон» — retired
   for (const [id, [nm, sig, look]] of Object.entries(SKIN_27)) { const s = SKINS.find(k => k.id === id); if (!s) continue;
     if (nm && nm !== s.name) { SKIN_RENAMED_27[id] = s.name; s.name = nm; } s.sig = sig; LOOK_KEYS_27.forEach(k => delete s[k]); Object.assign(s, look); }
   // two new skins from the showcase: the boss hunter (challenge «Гроза гигантов») and obsidian (epic chest)

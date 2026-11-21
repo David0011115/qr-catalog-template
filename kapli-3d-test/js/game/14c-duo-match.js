@@ -74,7 +74,7 @@
     // test build only: a match with a bot as the second player, no second phone and no network
     function practice(id) {
       if (!TEST_MODE) return;
-      const sk = SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft);
+      const sk = SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft && !k.old);
       const g = { t: 'go', m: id, seed: (Math.random() * 2 ** 31) | 0, ...duoBuilds(), name: Net.nick || 'Игрок', skin: save.skin, peerName: id === 'duoback' ? 'Бот-напарник' : 'Бот-соперник', peerSkin: sk[(Math.random() * sk.length) | 0].id };
       if (rules[id] && rules[id].goExtra) Object.assign(g, rules[id].goExtra());
       botMate = true; botGoal = null; begin('host', g);

@@ -409,10 +409,10 @@
     if (save.settings.showFps) { const el = $('fps'); el.textContent = `${Math.round(perf.fps)} FPS`; el.classList.toggle('slow', perf.fps < 40); }
     if (running && !paused && !document.hidden && save.settings.autoQ) {   // 2.7: soft step first — resolution, before the quality preset
       perf.dcool = Math.max(0, (perf.dcool || 0) - 1);
-      perf.dlow = perf.fps < 47 ? (perf.dlow || 0) + 1 : 0;
-      perf.dhi = perf.fps >= 57 ? (perf.dhi || 0) + 1 : 0;
-      if (!perf.dcool && perf.dlow >= 2 && dynPx > .6) { if (setDynPx(Math.max(.6, dynPx - .15)) && TEST_MODE) TLog.ev('разрешение', r1q(renderer.getPixelRatio())); perf.dlow = 0; perf.dcool = 3; }
-      else if (!perf.dcool && perf.dhi >= 8 && dynPx < 1) { if (setDynPx(Math.min(1, dynPx + .1)) && TEST_MODE) TLog.ev('разрешение', r1q(renderer.getPixelRatio())); perf.dhi = 0; perf.dcool = 4; }
+      perf.dlow = perf.fps < 30 ? (perf.dlow || 0) + 1 : 0;   // a fallback only for heavy drops: the picture stays sharp otherwise
+      perf.dhi = perf.fps >= 50 ? (perf.dhi || 0) + 1 : 0;
+      if (!perf.dcool && perf.dlow >= 3 && dynPx > .7) { if (setDynPx(Math.max(.7, dynPx - .15)) && TEST_MODE) TLog.ev('разрешение', r1q(renderer.getPixelRatio())); perf.dlow = 0; perf.dcool = 3; }
+      else if (!perf.dcool && perf.dhi >= 5 && dynPx < 1) { if (setDynPx(Math.min(1, dynPx + .15)) && TEST_MODE) TLog.ev('разрешение', r1q(renderer.getPixelRatio())); perf.dhi = 0; perf.dcool = 4; }
     }
     if (!running || paused || document.hidden || !save.settings.autoQ || save.settings.quality === 'low') { perf.low = 0; return; }
     perf.cool = Math.max(0, perf.cool - 1);

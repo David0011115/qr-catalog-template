@@ -513,6 +513,8 @@
       if (dying || a.gone || b.gone || a.owner === b.owner) continue;
       const pairMate = !canEat(a, b) && !ModeX.hcPackMerge(a, b) ? ModeX.hcPairBite(a, b) : null;
       if (!(canEat(a, b) || ModeX.hcPackMerge(a, b) || pairMate)) continue;
+      // 2.7: after a pack bites the player, the whole pack waits 2.5 s before the next bite (4 bites in a second felt unfair)
+      if (a.owner.hcPack && b.owner.isPlayer && stats.time < (stats.packBiteUntil || 0)) continue;
       // 2.7: above 20 000 the radius grows slowly, so a far heavier eater barely looks bigger — the more it outweighs the player, the less of them it must cover (×2 and more: the centre inside is enough)
       const coverK = b.owner.isPlayer && !a.owner.isPlayer ? Math.max(0, .35 * (2 - a.mass / b.mass) / .75) : .35;
       if (pairMate || Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * coverK) {
@@ -527,6 +529,7 @@
         if (pairMate) { const share = gain * pairMate.mass / (a.mass - gain + pairMate.mass); a.mass -= share; pairMate.mass += share; pairMate.vis.jig = 1; toast('🔗 Двойной укус! Половины съели босса вместе'); }
         const victim = b.owner, lastMass = b.mass;
         if (mode === 'crown') ModeX.crownBite(a, b, victim, lastMass);
+        if (victim.isPlayer && a.owner.hcPack) stats.packBiteUntil = stats.time + 2.5;
         if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; (stats.bites = stats.bites || []).push([Math.round(stats.time), a.owner.kind === 'boss' ? 'boss:' + a.owner.bossType : a.owner.hcPack ? 'pack' : a.owner.kind || '?', Math.round(a.mass), Math.round(lastMass)]); if (stats.bites.length > 12) stats.bites.shift(); } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
         { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) { if (skin().id === 'cr_sandup') { const tn = performance.now() / 1000; if (tn - (liveState.sandFlip ?? -99) > 1.4) liveState.sandFlip = tn; }   // 2.7 «Время вспять»: the hourglass turns over
           if (evoOn()) evoEat(b.x, b.z, rb); else eatFx(b.x, b.z, rb, cellColor(b)); } else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
@@ -606,7 +609,7 @@
     const t = $('toast'); t.textContent = text; t.classList.toggle('show', !!text);
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1500);
   }
-  let hudT = 0;
+  let hudT = 0, leadersLast = '';
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const setText = (id, t) => { const el = $(id); if (el.textContent !== t) el.textContent = t; };
   let boardOpen = false;   // in-battle leaderboard: top 3 + you, «ещё N» shows the top 6
@@ -645,13 +648,14 @@
       stats.bestRank = Math.min(stats.bestRank, rank); if (rank <= 3) stats.top3T = (stats.top3T || 0) + .25;
       if (rank === 1 && !stats.leader) { stats.leader = 1; toast('Ты лидер арены!'); }
     }
-    $('leaders').innerHTML = ranked.slice(0, boardOpen ? 6 : 3).map((o, i) => {
+    const leadersHtml = ranked.slice(0, boardOpen ? 6 : 3).map((o, i) => {
       const me = o === player;   // 2.7: online the other player is «isPlayer» too — it showed your nickname and frame
       const tag = me ? '' : o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
       const fr = me ? save.frame : o.frame, lvl = me ? playerLevel() : o.lvl;
       return `<li class="${me ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${me ? meName() : o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
     }).join('') + (rank > (boardOpen ? 6 : 3) ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>${meName()}</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '') +
       (ranked.length > 3 ? `<li class="bd-more"><button type="button" id="boardMore" aria-expanded="${boardOpen}">${boardOpen ? '▴ свернуть' : `▾ ещё ${Math.min(ranked.length, 6) - 3}`}</button></li>` : '');
+    if (leadersHtml !== leadersLast) { leadersLast = leadersHtml; $('leaders').innerHTML = leadersHtml; }   // 2.7: rebuild the board only when it changed (fewer layouts)
     // ---- in-battle HUD: one short mode line, a separate mode timer with a clock, and round icon badges with a countdown ring ----
     let modeChip = '', timer = '';
     const T = (left, total) => ({ left: Math.max(0, left), total });

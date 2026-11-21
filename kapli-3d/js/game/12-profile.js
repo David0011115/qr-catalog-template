@@ -25,6 +25,7 @@
     { id: 'bg_sing',     name: 'Сингулярность',       rar: 'legendary', top: 'chaos',  src: 'Хаос-лига: дойди до «Сингулярности»', test: () => (save.totals.chaosMax || 0) >= 5 },
     { id: 'bg_rift',     name: 'Разлом времени',      rar: 'legendary', top: 'chaos',  src: 'Хаос-лига: 10 сезонов в «Сингулярности»', test: () => (save.chaosTop || 0) >= 10 },
     { id: 'bg_creator',  name: 'Мастерская создателя', rar: 'legendary', promo: true, src: 'промокод «Создатель»',            test: () => !!(save.badges || {}).creator },
+    { id: 'bg_cr_plan',  name: 'Чертёж мира',         rar: 'legendary', promo: true, src: 'промокод «Создатель»',            test: () => !!(save.badges || {}).creator },
     { id: 'bg_beta',     name: 'Голограмма',          rar: 'legendary', promo: true, src: 'промокод «Бета-тестер»',           test: () => !!(save.badges || {}).beta },
     { id: 'bg_ps_const', name: 'Созвездие',           rar: 'legendary', src: 'престиж ★18',  test: () => psReached(prestigeOf(save.xp), 1, 18) },
     { id: 'bg_ps_nova',  name: 'Вспышка сверхновой',  rar: 'legendary', src: 'престиж ✦20',  test: () => psReached(prestigeOf(save.xp), 2, 20) },
@@ -358,6 +359,46 @@
           for (let i = 0; i < 12; i++) { const yy = head - i * 11; if (yy < 0 || yy > h) continue; x.fillStyle = i ? `rgba(255,210,63,${.45 - i * .035})` : '#fff6c8'; x.fillText('01ΣΔ◆✦λ{}<>'[(c * 7 + i * 3 + Math.floor(t * 4)) % 11], c * 11, yy); } }
         const cx = w * .76, cy = h * .5, R = U * .3; x.globalCompositeOperation = 'lighter'; glow(cx, cy, R * 1.6, 'rgba(255,210,63,.4)');
         x.save(); x.translate(cx, cy); x.rotate(t * .4); x.strokeStyle = '#ffd23f'; x.lineWidth = 2; x.setLineDash([R * .3, R * .12]); x.beginPath(); x.arc(0, 0, R, 0, 6.29); x.stroke(); x.rotate(-t * .9); x.setLineDash([4, 6]); x.beginPath(); x.arc(0, 0, R * .75, 0, 6.29); x.stroke(); x.restore(); x.setLineDash([]); break; }
+      case 'bg_cr_plan': {   // the creator, to go with «Архитектор»: a full drafting sheet — a compass draws the main drop, two more drops already drawn, rulers, notes; the drop lights up and opens its eyes
+        x.fillStyle = lin([[0, '#0a1d4a'], [1, '#050c26']]); x.fillRect(0, 0, w, h);
+        const gs = 12; x.lineWidth = 1;
+        for (let gx = 0, i = 0; gx < w; gx += gs, i++) { x.strokeStyle = i % 5 ? 'rgba(106,184,255,.09)' : 'rgba(106,184,255,.24)'; x.beginPath(); x.moveTo(gx + .5, 0); x.lineTo(gx + .5, h); x.stroke(); }
+        for (let gy = 0, i = 0; gy < h; gy += gs, i++) { x.strokeStyle = i % 5 ? 'rgba(106,184,255,.09)' : 'rgba(106,184,255,.24)'; x.beginPath(); x.moveTo(0, gy + .5); x.lineTo(w, gy + .5); x.stroke(); }
+        const fs = Math.max(8, Math.round(U * .05)); x.font = `${fs}px monospace`;
+        // sheet border, title block, rulers along the bottom and the left
+        x.strokeStyle = 'rgba(159,216,255,.55)'; x.strokeRect(6.5, 6.5, w - 13, h - 13); x.strokeRect(w * .03 + .5, h * .78 + .5, Math.min(w * .3, 190), h * .17);
+        x.fillStyle = 'rgba(255,210,63,.85)'; x.fillText('КАПЛИ 3D', w * .03 + 6, h * .78 + fs + 3); x.fillStyle = 'rgba(159,216,255,.7)'; x.fillText('лист 1 · создатель', w * .03 + 6, h * .78 + fs * 2 + 6);
+        for (let i = 0; i * 8 < w - 20; i++) { x.strokeStyle = 'rgba(159,216,255,.5)'; x.beginPath(); x.moveTo(10 + i * 8, h - 7); x.lineTo(10 + i * 8, h - 7 - (i % 5 ? 3 : 7)); x.stroke(); }
+        for (let i = 0; i * 8 < h - 20; i++) { x.beginPath(); x.moveTo(7, 10 + i * 8); x.lineTo(7 + (i % 5 ? 3 : 7), 10 + i * 8); x.stroke(); }
+        // two drops already drawn: outlines, axis, a dimension line with arrows
+        const drop = (cx, cy, r, lab) => { x.strokeStyle = 'rgba(159,216,255,.75)'; x.lineWidth = 1.2; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.stroke(); x.setLineDash([3, 4]); x.beginPath(); x.moveTo(cx - r * 1.3, cy); x.lineTo(cx + r * 1.3, cy); x.stroke(); x.setLineDash([]);
+          x.beginPath(); x.moveTo(cx - r, cy + r + 8); x.lineTo(cx + r, cy + r + 8); x.moveTo(cx - r, cy + r + 4); x.lineTo(cx - r, cy + r + 12); x.moveTo(cx + r, cy + r + 4); x.lineTo(cx + r, cy + r + 12); x.stroke();
+          x.fillStyle = 'rgba(159,216,255,.8)'; x.fillText(lab, cx - r * .5, cy + r + 8 + fs); [-1, 1].forEach(sd => { x.beginPath(); x.arc(cx + sd * r * .32, cy - r * .15, r * .12, 0, 6.2832); x.stroke(); }); };
+        drop(w * .44, h * .32, U * .1, '⌀ 20'); drop(w * .3, h * .6, U * .065, '⌀ 13');
+        const cx = w * .74, cy = h * .5, R = U * .3, ph = (t * .16) % 1, k = Math.min(1, ph * 1.7), lit = Math.max(0, (ph - .66) / .34);
+        x.strokeStyle = 'rgba(159,216,255,.5)'; x.setLineDash([3, 5]); x.beginPath(); x.moveTo(cx - R * 1.6, cy); x.lineTo(cx + R * 1.6, cy); x.moveTo(cx, cy - R * 1.5); x.lineTo(cx, cy + R * 1.5); x.stroke(); x.setLineDash([]);
+        x.globalCompositeOperation = 'lighter';
+        x.lineWidth = 2.2; x.strokeStyle = '#ffd23f'; x.beginPath(); x.arc(cx, cy, R, -1.5708, -1.5708 + k * 6.2832); x.stroke();
+        x.lineWidth = 1; x.strokeStyle = 'rgba(255,210,63,.5)'; x.beginPath(); x.arc(cx, cy, R * .62, 0, k * 6.2832); x.stroke();
+        if (k >= 1) { const fk = Math.min(1, (ph * 1.7 - 1) * 2.5); x.globalAlpha = fk * .75; x.strokeStyle = '#ffd23f'; x.lineWidth = 1.2; const H = R * 1.28, V = n => [cx + Math.cos(n * 1.0472 - 1.5708) * H, cy + Math.sin(n * 1.0472 - 1.5708) * H];
+          x.beginPath(); for (let i = 0; i <= 6; i++) { const [vx, vy] = V(i % 6); i ? x.lineTo(vx, vy) : x.moveTo(vx, vy); } for (let i = 0; i < 6; i += 2) { const [ax, ay] = V(i), [bx, by] = V(i + 2); x.moveTo(ax, ay); x.lineTo(bx, by); } x.stroke();
+          for (let i = 0; i < 6; i++) { const [vx, vy] = V(i); glow(vx, vy, 6, 'rgba(255,242,176,.9)'); } x.globalAlpha = 1; }
+        if (lit > 0) glow(cx, cy, R * 1.4, `rgba(255,210,63,${.4 * Math.sin(Math.min(1, lit * 1.4) * 1.5708)})`);
+        if (lit < .1) { x.fillStyle = 'rgba(159,216,255,.85)'; x.fillText(`R ${Math.round(k * 30)}`, cx + R * .15, cy - R * .08); }
+        if (lit > .1) { const e = Math.min(1, (lit - .1) * 4), ey = cy - R * .12; x.globalCompositeOperation = 'source-over'; x.fillStyle = '#fff';
+          [-1, 1].forEach(sd => { x.beginPath(); x.ellipse(cx + sd * R * .3, ey, R * .14, R * .17 * e, 0, 0, 6.2832); x.fill(); }); x.fillStyle = '#0a1030';
+          [-1, 1].forEach(sd => { x.beginPath(); x.arc(cx + sd * R * .3 + R * .04, ey + R * .03, R * .07 * e, 0, 6.2832); x.fill(); }); x.globalCompositeOperation = 'lighter'; }
+        // a real compass: the needle leg stands in the centre, the pencil leg on the line it draws, the hinge and the handle above them
+        { const a = -1.5708 + k * 6.2832, px = cx + Math.cos(a) * R, py = cy + Math.sin(a) * R, mx = (cx + px) / 2, my = (cy + py) / 2, L = R * 1.05, half = R / 2, hgt = Math.sqrt(Math.max(0, L * L - half * half));
+          const nx = -(py - cy) / R, ny = (px - cx) / R, up = ny <= 0 ? 1 : -1, hx = mx + nx * hgt * up * .9, hy = my + ny * hgt * up * .9 - R * .15;
+          x.globalCompositeOperation = 'source-over'; x.lineCap = 'round'; x.globalAlpha = Math.max(0, 1 - lit * 3);   // the compass is lifted away once the drop comes alive
+          x.strokeStyle = '#c9d6ea'; x.lineWidth = 3.2; x.beginPath(); x.moveTo(hx, hy); x.lineTo(cx, cy); x.stroke();
+          x.strokeStyle = '#e8eef8'; x.beginPath(); x.moveTo(hx, hy); x.lineTo(px, py); x.stroke();
+          x.strokeStyle = '#ffd23f'; x.lineWidth = 2; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (px - hx) * .08, py + (py - hy) * .08); x.stroke();
+          x.fillStyle = '#ffd23f'; x.beginPath(); x.arc(hx, hy, 5, 0, 6.2832); x.fill(); x.fillStyle = '#7a5a10'; x.beginPath(); x.arc(hx, hy, 2, 0, 6.2832); x.fill();
+          x.strokeStyle = '#ffd23f'; x.lineWidth = 3; x.beginPath(); x.moveTo(hx, hy - 5); x.lineTo(hx, hy - 15); x.stroke(); x.lineCap = 'butt';
+          x.globalCompositeOperation = 'lighter'; glow(px, py, 10, 'rgba(255,240,180,.9)'); x.globalAlpha = 1; }
+        stars(22, 41, .6, '#9fd8ff'); x.globalCompositeOperation = 'source-over'; break; }
       case 'bg_beta': {
         x.fillStyle = lin([[0, '#001a24'], [1, '#04061e']]); x.fillRect(0, 0, w, h);
         x.strokeStyle = 'rgba(34,230,255,.14)'; const s = 18; for (let yy = 0, r = 0; yy < h + s; yy += s * .86, r++) for (let xx = (r % 2) * s * .75; xx < w + s; xx += s * 1.5) { x.beginPath(); for (let k = 0; k < 6; k++) x.lineTo(xx + Math.cos(k * 1.047) * s * .5, yy + Math.sin(k * 1.047) * s * .5); x.closePath(); x.stroke(); }

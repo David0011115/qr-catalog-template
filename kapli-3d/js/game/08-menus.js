@@ -724,7 +724,7 @@
   // exclusive badges from promo codes: shown in the profile only once received
   const PROMO_BADGES = [
     { id: 'beta', src: 'промокод', name: 'Бета-тестер', label: 'БЕТА', c: '#22e6ff', c2: '#0a2a6e', glyph: 'β', sc: '#7cf3ff', frame: 'fr_beta', title: 'tt_beta' },
-    { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a', frame: 'fr_creator', title: 'tt_creator' },
+    { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a', frame: 'fr_creator', title: 'tt_creator', skin: 'cr_architect', bgs: ['bg_cr_plan'] },
     { id: 'vet', src: 'промокод', name: 'Ветврач', label: 'ВЕТВРАЧ', c: '#3dffa2', c2: '#0b5e36', glyph: '✚', sc: '#a6ffd4', frame: 'fr_vet', title: 'tt_vet' },
     // holiday gift boxes (one edition a year): badge + frame
     { id: 'bday2026', src: 'праздничная коробка «День рождения 2026»', name: 'Именинник 2026', label: '2026', c: '#ff4fd8', c2: '#5a0a48', glyph: '🎂', sc: '#ffc2ec', frame: 'fr_bday2026', gift: true },
@@ -750,7 +750,7 @@
       return { coins: { ...(PROMO_COINS[r.id] || { name: code.toUpperCase(), c: '#ffd23f', sc: '#fff6a0' }), coins: r.coins } };
     }
     const b = PROMO_BADGES.find(x => x.id === r.badge); if (!b) return { err: PROMO_ERR.net };
-    save.badges[b.id] = today; [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) save.decor.push(d); }); pbgCheck(true); persist();
+    save.badges[b.id] = today; [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) save.decor.push(d); }); if (b.skin && !save.skins.includes(b.skin)) save.skins.push(b.skin); pbgCheck(true); persist();
     return { badge: b };
   }
   const promoCoinSVG = n => `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pcg" cx=".35" cy=".3"><stop offset="0" stop-color="#fff6a0"/><stop offset=".6" stop-color="#ffd23f"/><stop offset="1" stop-color="#b07a00"/></radialGradient></defs>` +
@@ -762,7 +762,7 @@
     if (b.coins) { $('promoCoin').innerHTML = promoCoinSVG(b.coins); $('promoName').textContent = `+${b.coins.toLocaleString('ru-RU')} ◆`; $('promoWhat').textContent = `Подарок по промокоду «${b.name}» — монеты уже у тебя`; }
     else {
     $('promoCoin').innerHTML = specialBadgeSVG(b, true); $('promoName').textContent = `«${b.name}»`;
-    $('promoWhat').innerHTML = `Особый значок, рамка <span ${frameAttr(b.frame)}>${b.name}</span>, титул ${titleTag(b.title)} и фон профиля «${pbgById('bg_' + b.id).name}» — в профиле и гардеробе`; }
+    $('promoWhat').innerHTML = `Особый значок, рамка <span ${frameAttr(b.frame)}>${b.name}</span>, титул ${titleTag(b.title)}, ${b.bgs ? 'фоны профиля' : 'фон профиля'} «${[pbgById('bg_' + b.id), ...(b.bgs || []).map(pbgById)].filter(Boolean).map(x => x.name).join('» и «')}»${b.skin ? ` и скин «${(SKINS.find(k => k.id === b.skin) || {}).name}» с эволюцией` : ''} — в профиле и гардеробе`; }
     $('promoSparks').innerHTML = Array.from({ length: 36 }, (_, i) => { const a = i / 36 * Math.PI * 2 + Math.random() * .3, r = 110 + Math.random() * 170;
       return `<i style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r).toFixed(0)}px;animation-delay:${(Math.random() * .35).toFixed(2)}s;${i % 3 ? '' : 'background:#fff'}"></i>`; }).join('');
     fx.hidden = false; fx.querySelectorAll('.promo-coin, .promo-burst, .promo-ring, .promo-sparks i, .promo-text').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
@@ -771,7 +771,7 @@
   }
   // players who redeemed the beta code before the frame existed get it too
   // players who redeemed a code earlier get its newer frame and title too
-  PROMO_BADGES.forEach(b => { if ((save.promo || []).includes(b.id)) [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) { save.decor.push(d); persist(); } }); });
+  PROMO_BADGES.forEach(b => { if ((save.promo || []).includes(b.id) || (save.badges || {})[b.id]) { [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) { save.decor.push(d); persist(); } }); if (b.skin && !save.skins.includes(b.skin)) { save.skins.push(b.skin); persist(); } } });
   $('promoFx').addEventListener('click', () => { $('promoFx').hidden = true; });
   $('promoBtn').addEventListener('click', async () => {
     const m = $('promoMsg'), btn = $('promoBtn'); if (btn.disabled) return;

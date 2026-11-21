@@ -24,11 +24,23 @@
     hc_berserk: () => evoShader(`float beat=pow(max(0.,sin(t*2.6)),8.); float v=fbm(vP*3.2); float vein=1.-smoothstep(0.,.035,abs(v-.5)); vec3 c=mix(vec3(.09,.01,.02),vec3(.22,.02,.04),fbm(vP*6.)); c+=vein*(.35+beat)*vec3(1.,.1,.08)*1.4; ${LIT} gl_FragColor=vec4(c*l+f*vec3(.9,.1,.1)*(.5+beat),1.);`),
     duo_twin: () => evoShader(`vec3 q=normalize(vP); float a=atan(q.z,q.x)+t*.6; float s=sin(a+q.y*2.4); vec3 c=mix(vec3(.13,.9,1.),vec3(.24,1.,.64),smoothstep(-.08,.08,s)); float e=1.-smoothstep(0.,.1,abs(s)); ${LIT} gl_FragColor=vec4(c*l+e*.8+f*vec3(.6,1.,.9)*.6,1.);`),
     duo_shield: () => evoShader(`vec3 q=normalize(vP); vec2 uv=vec2(atan(q.z,q.x)*2.2,asin(q.y)*3.); vec2 r=vec2(1.,1.732),hh=r*.5; vec2 a=mod(uv,r)-hh,b=mod(uv-hh,r)-hh; vec2 g=dot(a,a)<dot(b,b)?a:b; g=abs(g); float hx=max(dot(g,vec2(.866,.5)),g.y); float e=smoothstep(.42,.5,hx); float p=.5+.5*sin(t*2.-length(uv)*.8); ${LIT} gl_FragColor=vec4(mix(vec3(.04,.18,.2),vec3(.08,.32,.3),p*.4)*l+e*vec3(.35,1.,.8)*(.6+.6*p)+f*vec3(.4,1.,.85)*.5,1.);`),
+    cr_architect: () => evoShader(`vec3 q=normalize(vP); vec2 uv=vec2(atan(q.z,q.x)*3.8197,asin(q.y)*3.8197);
+      vec2 g1=abs(fract(uv*2.)-.5), g2=abs(fract(uv*.5)-.5); float fine=1.-smoothstep(0.,.045,min(g1.x,g1.y)), bold=1.-smoothstep(0.,.022,min(g2.x,g2.y));
+      vec2 c1=uv-vec2(1.2,.4), c2=uv-vec2(-2.4,-.9); float d1=length(c1), d2=length(c2);
+      float arc1=(1.-smoothstep(0.,.025,abs(d1-2.1)))*step(0.,c1.y+.3), arc2=1.-smoothstep(0.,.025,abs(d2-1.4));
+      float tick=(1.-smoothstep(0.,.02,abs(d1-2.1)-.0))*step(.85,fract(atan(c1.y,c1.x)*6.)); float ticks=(1.-smoothstep(.0,.06,abs(d1-2.1)))*step(.8,fract(atan(c1.y,c1.x)*9.55));
+      float dia=1.-smoothstep(0.,.022,abs(fract((uv.x+uv.y)*.25)-.5)), dia2=1.-smoothstep(0.,.022,abs(fract((uv.x-uv.y)*.25+.25)-.5));
+      float hatch=step(.5,fract((uv.x-uv.y)*6.))*step(length(uv-vec2(-.6,1.1)),.55)*.35;
+      vec2 nd=abs(fract(uv*.25+.5)-.5); float node=1.-smoothstep(.02,.07,length(nd));
+      float run=pow(.5+.5*sin((uv.x-uv.y)*1.3-t*2.2),14.), run2=pow(.5+.5*sin(d1*3.-t*1.6),10.);
+      vec3 c=mix(vec3(.02,.05,.2),vec3(.05,.16,.45),fbm(vP*2.)*.8+.2*q.y); c+=fine*vec3(.2,.45,.9)*.28+bold*vec3(.4,.75,1.)*.6+hatch*vec3(.35,.6,1.);
+      vec3 gold=vec3(1.,.78,.25); c+=(dia*.8+dia2*.55)*gold*(.6+run*1.6)+(arc1+arc2*.8+ticks)*gold*(.9+run2*1.5)+node*vec3(1.,.95,.7)*(1.2+.6*sin(t*3.+uv.x));
+      ${LIT} gl_FragColor=vec4(c*l+f*vec3(1.,.8,.35)*.9,1.);`),
     duo_const: () => evoStd(0x0a1030, { roughness: .3, metalness: .4, emissive: 0x0a1440, emissiveIntensity: .7 }),
   };
   // forms II–III of the black hole glow a warm gold, brighter (as in the reference): [colour from form II, strength I, strength II–III]
   const EVO_RIM2 = { lg_worlds: ['#ffb070', 1.5, 2.2] };
-  const EVO_RIM = { cr_skeleton: '#ffd27a', lg_worlds: '#ff6a3d', lg_eternal: '#9fd8ff', cs_q4: '#ff4fd8', hc_berserk: '#ff1a1a', duo_twin: '#7affd0', duo_shield: '#5affc8', duo_const: '#8aa8ff' };
+  const EVO_RIM = { cr_skeleton: '#ffd27a', lg_worlds: '#ff6a3d', lg_eternal: '#9fd8ff', cs_q4: '#ff4fd8', hc_berserk: '#ff1a1a', duo_twin: '#7affd0', duo_shield: '#5affc8', duo_const: '#8aa8ff', cr_architect: '#ffd23f' };
 
   // ---- the extras of each form: (g, F, full) adds meshes to g and returns a tick (t, dt) ----
   const ring = (r, w, c, op) => new THREE.Mesh(new THREE.TorusGeometry(r, w, 8, 96), evoGlow(c, op));
@@ -140,6 +152,46 @@
       const orb = orbitOf(crown, .6, .6, 1.3, .05);
       return (t, dt) => { body.rotation.y += dt * .1; if (outer) outer.rotation.y -= dt * .12; orb(t); if (aur) aur.material.color.setHSL((.42 + .1 * Math.sin(t * .5)) % 1, .9, .6); };
     },
+    // the creator's skin «Архитектор»: I — a blueprint; II — the gold frame of faces is built around it (the edges draw themselves in);
+    // III — a golden core lights the drop from inside and mini drops — the worlds it made — circle on three tilted orbits
+    cr_architect(g, F, full) {
+      const gold = 0xffd23f;
+      let cage = null, cage2 = null, core = null, crown = null; const orbs = [], rings = [];
+      if (F >= 2) {
+        const eg = new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.62, 0)), pos = eg.attributes.position, seen = new Set();
+        cage = new THREE.Group(); g.add(cage); const bars = [], nodes = [];
+        const bg = new THREE.CylinderGeometry(.013, .013, 1, 5, 1), bm = evoGlow(0xffd86a, .75);
+        const ng = new THREE.OctahedronGeometry(.055, 0), nm = evoGlow(0xfff2b0, 1), A = new THREE.Vector3(), Bv = new THREE.Vector3();
+        for (let i = 0; i < pos.count; i += 2) { A.fromBufferAttribute(pos, i); Bv.fromBufferAttribute(pos, i + 1);
+          const m = new THREE.Mesh(bg, bm); m.position.copy(A).add(Bv).multiplyScalar(.5); m.scale.y = A.distanceTo(Bv); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), Bv.clone().sub(A).normalize()); cage.add(m); bars.push(m);
+          for (const P of [A, Bv]) { const k = P.toArray().map(v => v.toFixed(2)).join(); if (seen.has(k)) continue; seen.add(k); const n = new THREE.Mesh(ng, nm); n.position.copy(P); cage.add(n); nodes.push(n); } }
+        instancify(bars); instancify(nodes);
+        if (full) { cage2 = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.DodecahedronGeometry(1.95, 0)), new THREE.LineBasicMaterial({ color: 0x6ab8ff, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false })); g.add(cage2); }
+      }
+      if (F >= 3) {
+        core = new THREE.Mesh(sphereGeo, evoMat('archCore', () => new THREE.ShaderMaterial({ uniforms: { t: EVO_T }, vertexShader: EVO_VS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+          fragmentShader: EVO_NOISE + 'uniform float t; varying vec3 vP; varying vec3 vN; varying vec3 vV; void main(){ vec3 q=normalize(vP); float a=atan(q.z,q.x), b=asin(q.y); float ray=pow(.5+.5*sin(a*7.+b*3.+fbm(q*3.)*3.+t*.5),16.)+pow(.5+.5*sin(a*-5.+b*6.-t*.4),20.); float c=pow(max(dot(vN,vV),0.),2.5); float pu=.8+.2*sin(t*2.4); gl_FragColor=vec4(vec3(1.,.84,.4)*(c*.35+ray*.75)*pu*(1.-.6*smoothstep(.2,.7,q.y)*smoothstep(.0,.5,dot(vN,vV))),1.); }' })));
+        core.scale.setScalar(1.015); g.add(core);
+        if (full) g.add(glowSprite('#ffd23f', 3.4, .35));
+        const og = new THREE.SphereGeometry(.2, 16, 12), cols = [0x22e6ff, 0xff4fd8, 0x3dff9a, 0xffd23f, 0xb26bff, 0xff9a3d];
+        [[.35, 0], [-.5, 1.1], [1.15, 2.2]].forEach(([tx, ty], k) => { const pl = new THREE.Group(); pl.rotation.set(tx, ty, 0); g.add(pl); const R = 2.25 + k * .22;
+          const path = ring(R, .01, 0xffe9a0, .4); path.rotation.x = 1.5708; pl.add(path);
+          for (let j = 0; j < (full ? 2 : 1); j++) { const col = cols[(k * 2 + j) % 6], w = new THREE.Group();
+            w.add(new THREE.Mesh(og, evoStd(col, { emissive: col, emissiveIntensity: .9, roughness: .25 })));
+            if (j === 0) { const rr = ring(.32, .02, col, .8); rr.rotation.x = 1.2; w.add(rr); rings.push(rr); }
+            w.userData = { r: R, a: j * 3.14 + k, sp: .5 + k * .18 }; pl.add(w); orbs.push(w); } });
+        if (full) { crown = new THREE.Group(); crown.position.y = 1.32; g.add(crown); const sh = [];
+          const sg = new THREE.ConeGeometry(.07, .3, 4), sm = evoStd(gold, { metalness: .7, roughness: .25, emissive: 0xc88a10, emissiveIntensity: 1 });
+          for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283, m = new THREE.Mesh(sg, sm); m.position.set(Math.cos(a) * .55, i % 3 ? 0 : .08, Math.sin(a) * .55); m.scale.y = i % 3 ? .8 : 1.35; crown.add(m); sh.push(m); }
+          instancify(sh); const gem = new THREE.Mesh(new THREE.OctahedronGeometry(.11, 0), evoGlow(0xfff6c8, 1)); gem.position.y = .35; crown.add(gem); crown.userData.gem = gem; }
+      }
+      return (t, dt) => {
+        if (cage) { cage.rotation.y += dt * .22; cage.rotation.x = Math.sin(t * .3) * .2; }
+        if (cage2) cage2.rotation.y -= dt * .1;
+        orbs.forEach(w => { const u = w.userData, a = u.a + t * u.sp; w.position.set(Math.cos(a) * u.r, 0, Math.sin(a) * u.r); w.rotation.y += dt; });
+        if (crown) { crown.rotation.y += dt * .5; crown.position.y = 1.32 + Math.sin(t * 1.6) * .05; crown.userData.gem.rotation.y -= dt * 2; }
+      };
+    },
     // 2.7 «Хронос 2.0»: the skeleton watch grows its movement — II: more gears, a balance wheel and rubies; III: a tourbillon cage and a golden glow
     cr_skeleton(g, F, full) {
       const gm = new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#b06a1a', emissiveIntensity: .9, metalness: .6, roughness: .3 });
@@ -189,10 +241,12 @@
     duo_shield:  { forms: () => evoSteps(evoDuoBest('hard'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Сложный»', c: '#5affc8', c2: '#2ab8a0', grant: 'Щит союза' },
     // 2.7: the workshop's flagship — forms by how much of the «Хронос» series you own (23 items)
     cr_skeleton: { forms: () => !save.skins.includes('cr_skeleton') ? 0 : 1 + evoSteps(wsSeriesN(), [15, 23]), need: ['создать «Скелетон»', '15 предметов серии', 'вся серия · 23'], unit: '', c: '#ffd27a', c2: '#ff3d6e' },
+    cr_architect:{ forms: () => !(save.badges || {}).creator ? 0 : 3, need: ['значок «Создатель»', 'значок «Создатель»', 'значок «Создатель»'], unit: '', c: '#ffd23f', c2: '#6ab8ff', rar: 'Создатель' },
     duo_const:   { forms: () => evoSteps(evoDuoBest('mad'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Безумие»', c: '#ffe08a', c2: '#b26bff', grant: 'Созвездие' },
   };
   // their swatches in the wardrobe and the lists (a CSS picture of the body)
   const EVO_SW = {
+    cr_architect: 'background:radial-gradient(circle at 50% 50%, #fff2b0 0 6%, transparent 18%), repeating-linear-gradient(0deg, transparent 0 6px, rgba(106,184,255,.45) 6px 7px), repeating-linear-gradient(90deg, transparent 0 6px, rgba(106,184,255,.45) 6px 7px), linear-gradient(135deg, transparent 46%, #ffd23f 47% 49%, transparent 50%), #0a1a44;box-shadow:0 0 14px #ffd23f;',
     cr_skeleton: 'background:radial-gradient(circle at 34% 30%, rgba(255,255,255,.45) 0 8%, transparent 22%), radial-gradient(circle at 42% 46%, #ffd27a 0 9%, #7a4a12 10% 12%, transparent 13%), radial-gradient(circle at 64% 62%, #e8b05a 0 7%, #7a4a12 8% 10%, transparent 11%), radial-gradient(circle at 60% 38%, #ff3d6e 0 3%, transparent 4%), radial-gradient(circle at 50% 50%, #4a3a20, #1b1208 70%);box-shadow:0 0 0 2px #ffd27a inset,0 0 10px rgba(255,210,122,.6)',
     lg_worlds: 'background:radial-gradient(circle at 50% 50%, #000 0 34%, #ffb070 38%, #ff3d6e 46%, rgba(255,60,110,0) 62%), radial-gradient(ellipse 100% 24% at 50% 52%, #ffd27a 0 30%, #ff3d6e 55%, transparent 70%), #05020c;box-shadow:0 0 14px #ff6a3d;',
     lg_eternal: 'background:radial-gradient(circle at 35% 30%, #fff 0 12%, transparent 40%), repeating-linear-gradient(125deg, transparent 0 9px, rgba(90,160,255,.75) 9px 10.5px, transparent 10.5px 21px), #e6eeff;box-shadow:0 0 12px #9fd8ff;',
@@ -208,6 +262,7 @@
   const evoOn = (s = skin()) => isEvo(s) && save.skins.includes(s.id);
   // the skins themselves (the legendary and challenge ones already exist; these four are new)
   SKINS.push(
+    { id: 'cr_architect', name: 'Архитектор', color: '#0a1a44', accent: '#ffd23f', glow: true, evoSkin: true, promo: true, sig: 'живой чертёж: золотые линии, каркас из граней, свои миры на орбитах', evoSrc: 'значок «Создатель»' },
     { id: 'hc_berserk', name: 'Берсерк', color: '#3a0408', accent: '#ff1a1a', glow: true, evoSkin: true, sig: 'шипы бьются в такт сердцу', evoSrc: '«Хардкор»: 40 000 массы за один раунд' },
     { id: 'duo_twin', name: 'Близнецы', color: '#22e6ff', accent: '#3dff9a', glow: true, evoSkin: true, sig: 'два цвета, как инь-ян', evoSrc: '«Спина к спине», «Обычный»: дойти до 30-й волны' },
     { id: 'duo_shield', name: 'Щит союза', color: '#0f3a36', accent: '#5affc8', glow: true, evoSkin: true, sig: 'шестиугольная броня', evoSrc: '«Спина к спине», «Сложный»: дойти до 30-й волны' },

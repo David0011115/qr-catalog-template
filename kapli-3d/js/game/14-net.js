@@ -1010,11 +1010,13 @@
       save.badges = save.badges || {}; save.pbg = save.pbg || []; let changed = false;
       for (const id of EXCL) {
         const has = mine.includes(id), items = ['fr_' + id, 'tt_' + id];
-        if (has && !save.badges[id]) { save.badges[id] = today; items.forEach(d => { if (!save.decor.includes(d)) save.decor.push(d); }); changed = true; }
-        if (!has && (save.badges[id] || items.some(d => save.decor.includes(d)) || save.pbg.includes('bg_' + id))) {
-          delete save.badges[id]; save.decor = save.decor.filter(d => !items.includes(d)); save.pbg = save.pbg.filter(b => b !== 'bg_' + id);
+        const pb = PROMO_BADGES.find(x => x.id === id) || {}, bgs = ['bg_' + id, ...(pb.bgs || [])];
+        if (has && (!save.badges[id] || (pb.skin && !save.skins.includes(pb.skin)))) { save.badges[id] = save.badges[id] || today; items.forEach(d => { if (!save.decor.includes(d)) save.decor.push(d); }); if (pb.skin && !save.skins.includes(pb.skin)) save.skins.push(pb.skin); changed = true; }
+        if (!has && (save.badges[id] || items.some(d => save.decor.includes(d)) || bgs.some(b => save.pbg.includes(b)) || (pb.skin && save.skins.includes(pb.skin)))) {
+          delete save.badges[id]; save.decor = save.decor.filter(d => !items.includes(d)); save.pbg = save.pbg.filter(b => !bgs.includes(b));
+          if (pb.skin) { save.skins = save.skins.filter(k => k !== pb.skin); if (save.skin === pb.skin) save.skin = 'coral'; }
           if (save.frame === 'fr_' + id) save.frame = null; if (save.title === 'tt_' + id) save.title = null;
-          save.pc = save.pc || {}; if (save.pc.badge === id) save.pc.badge = ''; if (save.pc.bg === 'bg_' + id) save.pc.bg = 'bg_base';
+          save.pc = save.pc || {}; if (save.pc.badge === id) save.pc.badge = ''; if (bgs.includes(save.pc.bg)) save.pc.bg = 'bg_base';
           changed = true;
         }
       }

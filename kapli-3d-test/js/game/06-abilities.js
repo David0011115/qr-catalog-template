@@ -23,7 +23,7 @@
     Sound.play(lk.sfx);
   }
   function abReset() {
-    owners.forEach(o => { if (o.blinkMark) { scene.remove(o.blinkMark.mesh); o.blinkMark = null; } o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.auraT = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
+    owners.forEach(o => { if (o.blinkMark) { scene.remove(o.blinkMark.mesh); o.blinkMark = null; } o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.auraT = 0; o.auraImm = 0; o.auraOn = false; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
     crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
@@ -379,14 +379,15 @@
   const IMPULSE_BOT_MAX = 6;
   function ccSlow(x, d) { if (abOn('shrink', x)) return; if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
   function ccFreeze(x, d) { if (abOn('shrink', x)) return; if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
-  // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 5 s of immunity
+  // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 5 s of immunity; then 10 s without clouds
   //  (it was renewed every frame, so the immunity never came: a 46 s slowdown in the owner's report)
   function ccAura(x, dt) {
     if (abOn('shrink', x)) return;   // 2.7 audit: «Сжатие» ignores slows and stuns
     if (!ccPl(x)) { x.slowT = Math.max(x.slowT || 0, .35); return; }
-    if ((x.ccImm || 0) > 0) return;
+    if ((x.ccImm || 0) > 0 || (x.auraImm || 0) > 0) return;
+    x.auraOn = true; x.auraTouch = performance.now();
     x.auraT = (x.auraT || 0) + dt * 1.5;   // decays at 0.5 per second outside (abTick): 3 s inside fills it
-    if (x.auraT >= 3) { x.auraT = 0; x.slowT = 0; x.ccImm = 5; return; }   // 2.7: 5 s of immunity after a cloud (2.5 left the player slowed over half the time)
+    if (x.auraT >= 3) { x.auraT = 0; x.slowT = 0; x.ccImm = 5; x.auraImm = 10; x.auraOn = false; return; }   // 2.7: 5 s of immunity after a cloud (2.5 left the player slowed over half the time)
     x.slowT = Math.max(x.slowT || 0, .35);
   }
   function ccWore(o, was) { if (was > 0 && ccPl(o) && !(o.slowT > 0) && !(o.freezeT > 0)) o.ccImm = CC.immune; }
@@ -394,6 +395,9 @@
     xaTick(dt); crTick(dt); if (TEST_MODE && testEatShow) testEatTick(dt);
     for (const o of owners) {
       if (o.slowT) { const was = o.slowT; o.slowT = Math.max(0, o.slowT - dt); if (!o.slowT) ccWore(o, was); }
+      // 2.7 (owner: the frost cloud every 7–8 s at a big mass broke a win): after a cloud — sat out or left — 10 s without clouds
+      if (o.auraImm) o.auraImm = Math.max(0, o.auraImm - dt);
+      if (o.auraOn && performance.now() - (o.auraTouch || 0) > 300) { o.auraOn = false; if (ccPl(o)) o.auraImm = 10; }
       if (o.ccImm) o.ccImm = Math.max(0, o.ccImm - dt);
       if (o.blinkMark) markTick(o, dt);
       if (o.auraT) o.auraT = Math.max(0, o.auraT - dt * .5);

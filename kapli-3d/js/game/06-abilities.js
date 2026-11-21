@@ -141,14 +141,19 @@
       [-1.9, 0, 1.9].forEach((k, i) => { const x = cx + nx * gr * k, z = cz + nz * gr * k; segs.push({ x, z }); const ge = new THREE.Mesh(gearGeo(gr, 12, .6), gm); ge.position.set(x, gr * .8, z); ge.rotation.order = 'YXZ'; ge.rotation.y = Math.atan2(main.hx, main.hz); ge.rotation.x = -1.05; ge.userData.dir = i % 2 ? -1 : 1; ge.add(glowSprite(a.color, gr * 2.4, .35)); grp.add(ge); emit(x, gr, z, a.color, 16, 6, .5); });
       scene.add(grp); crfx.push({ id, t: a.dur, segs, gr, o, mesh: grp, hit: new Set() }); return true;
     }
+    // the cells an ability moves: after the split into two halves only the half of `c` (the bigger one), else every part
+    const halfCells = (o, c) => (c && (c.hcHalf === 0 || c.hcHalf === 1) && o.cells.some(k => k.hcHalf === 1 - c.hcHalf)) ? o.cells.filter(k => k.hcHalf === c.hcHalf) : o.cells;
     if (id === 'cr_rewind') {
       if (!me) return false;
       const want = crClock - a.back; let h = null; for (const e of crHist) if (e.t <= want) h = e;
       if (!h) { toast('Перемотка: прошло меньше 4 секунд — пока некуда вернуться'); return false; }
-      const dx = h.x - px, dz = h.z - pz, m0 = total(o);
-      emitIcons(px, 3, pz, 'clock', a.color, 4, 1.6); emit(px, 2, pz, a.color, 30, 8, .6);
-      for (const c of o.cells) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (h.m > m0) c.mass *= Math.min(1.1, h.m / m0); }   // 2.7 audit: the mass comes back +10% at most (it undid any bite)
-      wave(h.x, h.z, a.color, 2, 14, .7); emit(h.x, 2, h.z, '#ffffff', 30, 10, .5); Sound.play('dash'); return true;
+      const L = halfCells(o, main), half = L !== o.cells ? main.hcHalf : -1, hh = half >= 0 && h.h ? h.h[half] : null;
+      if (half >= 0 && !hh) { toast('Перемотка: после деления путь половины ещё не записан — попробуй через 4 секунды'); return false; }
+      const sx = half >= 0 ? L.reduce((s, c) => s + c.x * c.mass, 0) / L.reduce((s, c) => s + c.mass, 0) : px, sz = half >= 0 ? L.reduce((s, c) => s + c.z * c.mass, 0) / L.reduce((s, c) => s + c.mass, 0) : pz;
+      const tx = hh ? hh[0] : h.x, tz = hh ? hh[1] : h.z, hm = hh ? hh[2] : h.m, dx = tx - sx, dz = tz - sz, m0 = L.reduce((s, c) => s + c.mass, 0);
+      emitIcons(sx, 3, sz, 'clock', a.color, 4, 1.6); emit(sx, 2, sz, a.color, 30, 8, .6);
+      for (const c of L) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (hm > m0) c.mass *= Math.min(1.1, hm / m0); }   // 2.7 audit: the mass comes back +10% at most (it undid any bite); after the split — the bigger half only
+      wave(tx, tz, a.color, 2, 14, .7); emit(tx, 2, tz, '#ffffff', 30, 10, .5); Sound.play('dash'); return true;
     }
     if (id === 'cr_swap') {
       let best = null, bd = a.radius + cellR(main);
@@ -156,14 +161,14 @@
       if (!best) { if (me) toast('Рокировка: впереди в радиусе 25 нет капли'); return false; }
       const mx = main.x, mz = main.z, dx = best.x - mx, dz = best.z - mz;
       emit(mx, 2, mz, a.color, 24, 7, .5); emit(best.x, 2, best.z, a.color, 24, 7, .5);
-      for (const c of o.cells) { c.x += dx; c.z += dz; clampArena(c); } best.x = mx; best.z = mz; best.vx = best.vz = 0;
+      for (const c of halfCells(o, main)) { c.x += dx; c.z += dz; clampArena(c); } best.x = mx; best.z = mz; best.vx = best.vz = 0;   // after the split: only the bigger half swaps
       wave(mx, mz, a.color, 1, 8, .5); wave(mx + dx, mz + dz, a.color, 1, 8, .5); if (me) Sound.play('dash'); return true;
     }
     return false;
   }
   function crTick(dt) {
     crClock += dt; crHistT -= dt;
-    if (crHistT <= 0 && player.cells.length) { crHistT = .1; const [x, z] = centerOf(player); crHist.push({ t: crClock, x, z, m: total(player) }); while (crHist.length && crHist[0].t < crClock - 6) crHist.shift(); }
+    if (crHistT <= 0 && player.cells.length) { crHistT = .1; const [x, z] = centerOf(player); const hs = [0, 1].map(k => { const L = player.cells.filter(c => c.hcHalf === k), m = L.reduce((s, c) => s + c.mass, 0); return m > 0 && player.cells.some(c => c.hcHalf === 1 - k) ? [L.reduce((s, c) => s + c.x * c.mass, 0) / m, L.reduce((s, c) => s + c.z * c.mass, 0) / m, m] : null; }); crHist.push({ t: crClock, x, z, m: total(player), h: hs[0] || hs[1] ? hs : null }); while (crHist.length && crHist[0].t < crClock - 6) crHist.shift(); }
     for (const f of crfx) {
       f.t -= dt; f.mesh.children.forEach(g => { g.rotation.z += dt * 3 * g.userData.dir; });
       for (const x of foesOf(f.o)) for (const c of x.cells) for (const sg of f.segs) {

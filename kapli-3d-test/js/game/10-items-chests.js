@@ -716,10 +716,15 @@
 
   // ================= settings =================
   function buzz(ms) { if (save.settings.vibrate && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} }
+  // 2.7: dynamic resolution — on FPS drops the render scale goes down a step (not below 0.7 of a pixel), and back up once the game is smooth
+  let dynPx = 1;
+  const basePx = () => QUALITY === 'high' ? Math.min(devicePixelRatio, 2) : QUALITY === 'medium' ? Math.min(devicePixelRatio, 1.25) : 1;
+  const pxRatio = () => Math.max(Math.min(.7, basePx()), basePx() * dynPx);
+  function setDynPx(k) { const was = pxRatio(); dynPx = k; const now = pxRatio(); if (Math.abs(now - was) < .01) return false; renderer.setPixelRatio(now); resize(); return true; }
   function applySettings() {
     const st = save.settings;
     const qWas = QUALITY; QUALITY = st.quality; if (qWas !== QUALITY && typeof applyArena === 'function') applyArena();
-    renderer.setPixelRatio(QUALITY === 'high' ? Math.min(devicePixelRatio, 2) : QUALITY === 'medium' ? Math.min(devicePixelRatio, 1.25) : 1);
+    renderer.setPixelRatio(pxRatio());
     resize();
     allVis.forEach(v => v.glow.visible = QUALITY !== 'low');
     stars.visible = QUALITY !== 'low'; nebulae.forEach(n => n.visible = QUALITY !== 'low');

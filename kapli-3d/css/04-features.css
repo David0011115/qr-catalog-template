@@ -679,3 +679,23 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 #hcPick .hc-card { padding-top: 20px; }
 #hcPick .hc-card.risk { padding-top: 26px; }
 #hcPick .hc-card .hc-debuff { white-space: normal; }
+
+/* 2.7 «Характер капли» */
+.ch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 6px 0 4px; }
+.ch-tile { display: grid; align-content: start; gap: 2px; text-align: left; padding: 9px 10px; min-height: 44px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--ac, #8a85b8) 45%, transparent); background: rgba(255, 255, 255, .04); color: var(--text, #fff); font: inherit; cursor: pointer; }
+.ch-tile .ch-ic { font-size: 1.3rem; line-height: 1; }
+.ch-tile b { font-size: .9rem; }
+.ch-tile small { font-size: .72rem; line-height: 1.3; }
+.ch-tile .ch-p { color: #7dffc0; } .ch-tile .ch-m { color: #ff9ab0; } .ch-tile .ch-lock { color: var(--muted, #aaa); }
+.ch-tile.on { border-color: var(--ac, #3dffa2); background: color-mix(in srgb, var(--ac, #3dffa2) 14%, transparent); box-shadow: 0 0 14px -4px var(--ac, #3dffa2); }
+.ch-tile.none { --ac: #8a85b8; }
+.ch-tile:disabled { opacity: .5; cursor: default; }
+
+/* 2.7: «Твои бафы» on the pause screen */
+.ps-buffs { list-style: none; margin: 4px 0 10px; padding: 0; display: grid; gap: 3px; }
+.ps-buffs li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 9px; border-radius: 10px; background: rgba(255, 255, 255, .05); font-size: .82rem; }
+.ps-buffs li.sub { background: transparent; padding: 1px 9px 1px 22px; font-size: .76rem; color: var(--muted, #bbb); }
+.ps-buffs li b { color: #7dffc0; font-weight: 800; white-space: nowrap; }
+.ps-buffs li.bad b { color: #ff9ab0; }
+.ps-buffs .pb-n { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; } .ps-buffs .pb-n i { font-style: normal; }
+.ps-buffs small { color: var(--muted, #aaa); font-size: .7rem; }

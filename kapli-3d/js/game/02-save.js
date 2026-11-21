@@ -173,6 +173,7 @@
     return r;
   }
   save.history = save.history || [];
+  if (save.char === undefined) save.char = null;   // 2.7 «Характер капли»: none until the player picks one
   save.totals.modeRounds = save.totals.modeRounds || {};
   save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', sfxVol: .7, musVol: .45, autoQ: true, showFps: false, ...(save.settings || {}) };
   delete save.settings.botLevel; // единая сложность ботов для всех игроков

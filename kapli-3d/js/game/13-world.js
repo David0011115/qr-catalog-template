@@ -465,6 +465,50 @@
   }
 
   // 2.2: the pause screen shows how the round is going and the goals of the day
+  // 2.7: your buffs, with real numbers. The speed is measured: speedOf() against the bare speed of that mass (without the dash)
+  function speedBuffK() {
+    if (!player.cells.length) return 1;
+    const c = mainOf(player), dash = player.dashT; player.dashT = 0;
+    const real = speedOf(c); player.dashT = dash;
+    const bare = BASE_SPEED * Math.pow(Math.min(c.mass, PLAYER_SPEED_MASS_CAP) / START_MASS, -0.15);
+    return bare > 0 ? real / bare : 1;
+  }
+  const buffPct = k => `${k >= 1 ? '+' : '−'}${Math.round(Math.abs(k - 1) * 100)}%`;
+  function buffRows() {
+    const rows = [], add = (ic, name, val, note = '', bad = false) => rows.push({ ic, name, val, note, bad });
+    const sec = t => `${Math.ceil(t)} с`;
+    // speed
+    const sk = speedBuffK();
+    add('⚡', 'Скорость от бафов', buffPct(sk), 'итог всех бафов и замедлений, без рывка', sk < .995);
+    if (U.speed) add('', '· Обтекаемость', `+${U.speed}%`, 'улучшение');
+    if (effects.speed > 0) add('', '· Бонус «Ускорение»', '+45%', sec(effects.speed));
+    if (petLv('speed')) add('', '· Питомец', `+${2 * petLv('speed')}%`);
+    if (ModeX.hcK('speed') > 1) add('', '· Карточки «Хардкора»', buffPct(ModeX.hcK('speed')));
+    if (abOn('shrink')) add('', '· Сжатие', '+25%', sec(player.abT.shrink));
+    try { if (charIs('tank')) add('', '· Характер «Танк»', '−8%', '', true); } catch (e) {}
+    if (player.freezeT > 0) add('', '· Оглушение', '−95%', sec(player.freezeT), true);
+    else if (player.slowT > 0) add('', '· Замедление', `−${Math.round((1 - ABIL_CFG.slowFactor) * 100)}%`, sec(player.slowT), true);
+    // food and growth
+    const gk = ModeX.gainK();
+    if (U.digest) add('🍽', 'Пищеварение', `+${(1.5 * U.digest).toFixed(1).replace('.', ',')}%`, 'крошки');
+    if (effects.double > 0) add('🍽', 'Бонус «Двойная еда»', '×2', sec(effects.double));
+    if (abOn('pulse')) add('🍽', 'Насыщение', 'крошки ×2, боты +30%, не таешь', sec(player.abT.pulse));
+    if (gk < .995 || gk > 1.005) add('🍽', mode === 'hardcore' ? 'Еда в «Хардкоре»' : 'Рост большой массы', `×${gk.toFixed(2).replace('.', ',')}`, 'крошки и боты', gk < 1);
+    // melting, protection, magnet
+    const mk = ModeX.meltK() * (1 - .04 * U.guard) * (charIs('predator') ? 1.1 : 1);
+    if (mk < .995 || mk > 1.005) add('🧊', 'Таяние', `×${mk.toFixed(2).replace('.', ',')}`, mk > 1 ? 'тает быстрее обычного' : 'тает медленнее', mk > 1);
+    if (effects.shield > 0) add('🛡', 'Неуязвимость', sec(effects.shield));
+    if (player.cells.length) { const er = eatRatio(mainOf(player)); if (er > 1.255) add('🛡', 'Защита', `съесть можно в ${er.toFixed(2).replace('.', ',')} раза крупнее`, 'обычно 1,25'); }
+    const mg = 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet') + starBonus('magnet');
+    if (mg > 0) add('🧲', 'Притяжение крошек', `+${mg.toFixed(1).replace('.', ',')}`, effects.magnet > 0 ? 'бонус «Магнит» ' + sec(effects.magnet) : '');
+    // abilities working now, hardcore cards and debuffs, the character
+    for (const id of Object.keys(player.abT || {})) if (player.abT[id] > 0 && !['pulse', 'shrink', 'shieldB'].includes(id)) { const a = abilById(id); if (a) add(a.icon, a.name, 'действует', sec(player.abT[id])); }
+    for (const [ic, name, v, n] of ModeX.hcBuffs()) add(ic, name, v, `карточка ${n}`);
+    const DBN = { melt: 'таешь быстрее', slow: 'медленнее', absorb: 'еда менее сытная', magnet: 'притяжение слабее', dashLen: 'рывок короче', sense: 'боты видят дальше' };
+    for (const [k, v] of ModeX.hcDebuffs()) add('🔻', DBN[k] || k, `${v}%`, 'минус рисковой карточки', true);
+    try { const ch = charById(charNow()); if (ch) add(ch.icon, `Характер «${ch.name}»`, '', `＋ ${ch.plus}; − ${ch.minus}`); } catch (e) {}
+    return rows;
+  }
   function renderPauseInfo() {
     const box = $('pauseInfo'); if (!box || !stats) return;
     $('quitBtn').textContent = ModeX.quitLabel();
@@ -475,7 +519,9 @@
       const v = Math.min(q.goal, Math.round(stats[q.stat] || 0)), ok = doneQuests.has(q.id) || v >= q.goal;
       return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${q.text}<span class="g-bar"><i style="width:${(v / q.goal * 100).toFixed(0)}%;background:${ok ? '#3dffa2' : 'var(--food)'}"></i></span></span>` +
         `<span class="g-rw"><b>${ok ? 'готово' : `${v.toLocaleString('ru-RU')} / ${q.goal.toLocaleString('ru-RU')}`}</b><small>+${qCoins(q)} ◆</small></span></li>`; }).join('');
-    box.innerHTML = `<div class="ps-grid">${tiles}</div>` + (goals ? `<h3>Цели на сегодня</h3><ul class="goal-list">${goals}</ul>` : '<p class="ps-note">В рейтинговом бою цели дня не считаются.</p>');
+    const br = buffRows();
+    const buffs = `<h3>Твои бафы</h3>` + (br.length ? `<ul class="ps-buffs">${br.map(r => `<li class="${r.bad ? 'bad' : ''}${r.name.startsWith('·') ? ' sub' : ''}"><span class="pb-n">${r.ic ? `<i>${r.ic}</i>` : ''}${r.name}${r.note ? `<small>${r.note}</small>` : ''}</span><b>${r.val}</b></li>`).join('')}</ul>` : '<p class="ps-note">Бафов нет.</p>');
+    box.innerHTML = `<div class="ps-grid">${tiles}</div>` + buffs + (goals ? `<h3>Цели на сегодня</h3><ul class="goal-list">${goals}</ul>` : '<p class="ps-note">В рейтинговом бою цели дня не считаются.</p>');
   }
   // 2.2: one daily goal may be swapped once a day
   $('menuQuests').addEventListener('click', e => {

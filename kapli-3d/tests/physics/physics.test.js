@@ -49,11 +49,11 @@ test('bite gain keeps 80%, hunt bonus and one-use cloak bonus', () => {
   const attacker = cell(100, 0, 0, owner({ huntT: 1, cloakBonus: true, abT: { cloak: 2 } }));
   const target = cell(50, 0, 0);
   assert.deepEqual(eatingGain(attacker, target), {
-    gain: 50 * 0.8 * 1.1 * 1.15,
+    gain: 50 * 0.8 * 1.1 * 1.2,   // 2.7 «Засада»: +20%
     consumeCloakBonus: true,
   });
   const boss = cell(50, 0, 0, owner({ kind: 'boss' }));
-  assert.equal(eatingGain(attacker, boss).gain, 40 * 1.15);
+  assert.equal(eatingGain(attacker, boss).gain, 40 * 1.2);
 });
 
 test('mass decay preserves threshold, boss immunity and the original rate', () => {

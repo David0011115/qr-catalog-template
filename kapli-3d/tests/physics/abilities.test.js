@@ -12,7 +12,7 @@ const cell = (mass, x = 0, z = 0, own = {}) => ({
 });
 
 test('ability metadata, power and cooldown modifiers match source tuning', () => {
-  assert.equal(ABILITY_DATA.shrink.dur, 4);
+  assert.equal(ABILITY_DATA.shrink.dur, 5);   // 2.7 audit
   assert.equal(abilityPower(0), 1);
   assert.equal(abilityPower(5), 1.325);
   assert.equal(abilityCooldown('shield', 0), 25);
@@ -114,7 +114,7 @@ test('phase-two timer does not advance for owners without cells', () => {
 
 test('all server ability cooldowns and shared tuning constants stay aligned with the browser catalog', () => {
   const sourceCooldowns = {
-    shield: 25, pulse: 24, blink: 18, slow: 22, cloak: 28,
+    shield: 25, pulse: 24, blink: 22, slow: 22, cloak: 28,
     push: 22, shrink: 24, decoy: 28, trap: 32,
     x_hole: 35, x_ice: 30, x_over: 45, x_refl: 30,
     x_meteor: 38, x_twin: 28, x_ghost: 40, x_anchor: 35,
@@ -153,11 +153,11 @@ test('all numeric ability parameters mirror the browser ability catalog', () => 
   const sourceAbilityData = {
     shield: { cd: 25, dur: 6 },
     pulse: { cd: 24, dur: 5 },
-    blink: { cd: 18, dist: 24 },
+    blink: { cd: 22, dur: 10, dist: 24 },
     slow: { cd: 22, dur: 15, radius: 36 },
     cloak: { cd: 28, dur: 4 },
     push: { cd: 22, radius: 29, force: 100, stun: 0.6 },
-    shrink: { cd: 24, dur: 4, size: 0.3 },
+    shrink: { cd: 24, dur: 5, size: 0.3 },
     decoy: { cd: 28, dur: 5 },
     trap: { cd: 32, dur: 10 },
     x_hole: { cd: 35, dur: 4, dist: 20, radius: 20 },

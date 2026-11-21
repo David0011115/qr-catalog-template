@@ -181,7 +181,7 @@
       return p;
     }
     function hcBossTarget(o) {
-      if (mode !== 'hardcore' || !player.cells.length) return null;
+      if (mode !== 'hardcore' || !player.cells.length || abOn('cloak', player)) return null;   // «Засада»: bosses do not see you
       const active = bossOwners.filter(b => b.cells.length), ix = Math.max(0, active.indexOf(o));
       o.hcRole = active.length > 1 && ix % 2 === 1 ? 'intercept' : 'pursue';
       let preferred = null;

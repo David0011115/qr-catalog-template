@@ -43,7 +43,8 @@ export function canEat(attacker, target, rules = {}) {
       rules.abilityOn?.('x_ghost', to) ||
       rules.shieldActive?.(to)) return false;
   if (ao.team && ao.team === to.team) return false;
-  if (!(attacker.mass > target.mass * eatRatio(target, rules))) return false;
+  const ambush = ao.cloakBonus && positive(ao.abT?.cloak) > 0;   // 2.7 «Засада»: the first bite needs only ×1.1
+  if (!(attacker.mass > target.mass * (ambush ? 1.1 : eatRatio(target, rules)))) return false;
   if (rules.eatBlock?.(attacker, target)) return false;
   return true;
 }
@@ -62,13 +63,13 @@ export function eatingGain(attacker, target) {
   const cloak = owner.cloakBonus && positive(owner.abT?.cloak) > 0 &&
     target.owner?.kind !== 'minion';
   return {
-    gain: target.mass * 0.8 * hunt * (cloak ? 1.15 : 1),
+    gain: target.mass * 0.8 * hunt * (cloak ? 1.2 : 1) * (positive(owner.abT?.pulse) > 0 && target.owner?.kind === 'bot' ? 1.3 : 1),   // 2.7 audit: «Насыщение» +30% from bots
     consumeCloakBonus: !!cloak,
   };
 }
 
 export function massDecay(cell, dt, rules = {}) {
-  if (cell.mass <= 100 || cell.owner?.kind === 'boss' || dt <= 0) return 0;
+  if (cell.mass <= 100 || cell.owner?.kind === 'boss' || dt <= 0 || positive(cell.owner?.abT?.pulse) > 0) return 0;   // «Насыщение»: no melting
   const playerGuard = cell.owner?.isPlayer
     ? 1 - 0.04 * positive(rules.guardLevelFor?.(cell.owner))
     : 1;

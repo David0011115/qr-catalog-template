@@ -18,11 +18,11 @@ export const ABILITY_TUNING = Object.freeze({
 export const ABILITY_DATA = Object.freeze({
   shield:     { cd: 25, dur: 6 },
   pulse:      { cd: 24, dur: 5 },
-  blink:      { cd: 18, dist: 24 },
+  blink:      { cd: 22, dur: 10, dist: 24 },   // 2.7 audit: «Метка» for players (bots keep the jump)
   slow:       { cd: 22, dur: 15, radius: 36 },
   cloak:      { cd: 28, dur: 4 },
   push:       { cd: 22, radius: 29, force: 100, stun: 0.6 },
-  shrink:     { cd: 24, dur: 4, size: 0.3 },
+  shrink:     { cd: 24, dur: 5, size: 0.3 },
   decoy:      { cd: 28, dur: 5 },
   trap:       { cd: 32, dur: 10 },
   x_hole:     { cd: 35, dur: 4, dist: 20, radius: 20 },

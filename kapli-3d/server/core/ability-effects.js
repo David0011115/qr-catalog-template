@@ -1,8 +1,9 @@
 // 2.7 (same as js/game/06-abilities.js): slows on a player last 35% (at most 4 s), stuns 60%; 2.5 s without new control after one wears off
 export const CC_RULES = Object.freeze({ slowK: 0.35, slowMax: 4, stunK: 0.6, immune: 2.5 });
 const ccPlayer = x => !!x && (x.isPlayer || x.kind === 'player');
-export function ccSlow(x, d) { if (ccPlayer(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC_RULES.slowMax, d * CC_RULES.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
-export function ccFreeze(x, d) { if (ccPlayer(x)) { if ((x.ccImm || 0) > 0) return; d *= CC_RULES.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
+const shrunk = x => !!x && (x.abT?.shrink || 0) > 0;   // 2.7 audit: «Сжатие» ignores slows and stuns
+export function ccSlow(x, d) { if (shrunk(x)) return; if (ccPlayer(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC_RULES.slowMax, d * CC_RULES.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
+export function ccFreeze(x, d) { if (shrunk(x)) return; if (ccPlayer(x)) { if ((x.ccImm || 0) > 0) return; d *= CC_RULES.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
 export function ccWore(o, was) { if (was > 0 && ccPlayer(o) && !(o.slowT > 0) && !(o.freezeT > 0)) o.ccImm = CC_RULES.immune; }
 // Deterministic, rendering-free ability world effects extracted from js/game/06-abilities.js.
 // Entity creation/removal, food-grid updates, mode hooks and presentation are callbacks.
@@ -45,6 +46,17 @@ export function castWorldAbility(id, owner, world, state, options = {}) {
       owner.cloakBonus = true;
       for (const foe of world.owners) if (foe.target?.owner === owner) foe.target = null;
     }
+    return { ok: true, events };
+  }
+  if (id === 'blink' && options.player) {   // 2.7 «Метка»: the first press marks the spot, the second (within 10 s) jumps there
+    if (!owner.blinkMark) { owner.blinkMark = { x: main.x, z: main.z, t: a.dur }; return { ok: true, markSet: true, events: [{ type: 'blink-mark', ownerId: owner.id, x: main.x, z: main.z }] }; }
+    const mk = owner.blinkMark; owner.blinkMark = null;
+    const d = createDecoy(owner.id, main.x, main.z, main.hx, main.hz, cellRadius(main), 1, { still: true, team: owner.team });
+    state.decoys ||= []; state.decoys = state.decoys.filter(x => x.ownerId !== owner.id); state.decoys.push(d);
+    for (const foe of world.owners) if (foe.target?.owner === owner) foe.target = d;
+    const dx = mk.x - main.x, dz = mk.z - main.z;
+    for (const c of owner.cells) { const p = clampPoint(c.x + dx, c.z + dz, world.arenaRadius); c.x = p.x; c.z = p.z; c.vx = c.vz = 0; }
+    events.push({ type: 'blink-shadow', x: px, z: pz, radius: cellRadius(main), ttl: 1, ownerId: owner.id });
     return { ok: true, events };
   }
   if (id === 'decoy' || id === 'blink') {
@@ -220,6 +232,7 @@ export function tickWorldAbilityEffects(state, world, dt) {
     }
   }
   for (const owner of owners) {
+    if (owner.blinkMark && (owner.blinkMark.t -= dt) <= 0) { owner.blinkMark = null; if (owner.abCd) owner.abCd.blink = Math.max(owner.abCd.blink || 0, 8); }
     if (owner.freezeT) { const was = owner.freezeT; owner.freezeT = Math.max(0, owner.freezeT - dt); if (!owner.freezeT) ccWore(owner, was); }
     if (owner.huntT > 0) owner.huntT -= dt;
     const ghostOn = abilityOn(owner, 'x_ghost');
@@ -274,8 +287,8 @@ export function tickWorldAbilityEffects(state, world, dt) {
       for (const e of world.ejects) { const u = unit(e.x - center.x, e.z - center.z); if (u.d < rad) { e.vx += u.x * 120 * dt; e.vz += u.z * 120 * dt; } }
       for (const foe of foes) for (const c of foe.cells) {
         const u = unit(c.x - center.x, c.z - center.z);
-        if (u.d < rad + cellRadius(c) && c.mass < main.mass * 0.6) {
-          c.vx += u.x * 90 * dt; c.vz += u.z * 90 * dt; c.hx = u.x; c.hz = u.z;
+        if (u.d < rad + cellRadius(c)) {   // 2.7 audit: bigger foes too, at half force
+          const k = c.mass < main.mass * 0.6 ? 90 : 45; c.vx += u.x * k * dt; c.vz += u.z * k * dt; c.hx = u.x; c.hz = u.z;
           if (foe.kind === 'bot') { foe.target = null; foe.tx = c.x + u.x * 30; foe.tz = c.z + u.z * 30; foe.think = 0.6; }
         }
       }
@@ -311,6 +324,7 @@ export function tickWorldAbilityEffects(state, world, dt) {
       }
     } else if (effect.id === 'x_hole') {
       pullFood(world.food, effect.x, effect.z, effect.radius, 26, dt, world.onFoodMove);
+      if (owner) { const lim = world.totalMass(owner) * 0.1; for (const foe of foes) if (foe.kind !== 'boss') for (const c of foe.cells) { if (c.mass >= lim) continue; const u = unit(effect.x - c.x, effect.z - c.z); if (u.d < effect.radius + cellRadius(c) && u.d > 1) { c.vx += u.x * 60 * dt; c.vz += u.z * 60 * dt; } } }   // 2.7 audit
       for (const e of world.ejects) { const u = unit(effect.x - e.x, effect.z - e.z); if (u.d < effect.radius) { e.vx += u.x * 80 * dt; e.vz += u.z * 80 * dt; } }
     } else if (effect.id === 'x_anchor') {
       for (const foe of foes) for (const c of foe.cells) {
@@ -354,6 +368,7 @@ export function castServerAbility(id, owner, world, state, options = {}) {
   if (!canCastAbility(owner, id)) return { ok: false, reason: 'cooldown-or-unavailable' };
   const result = castWorldAbility(id, owner, world, state, options);
   if (!result.ok) return result;
+  if (result.markSet) { owner.abCd.blink = 0.4; return result; }   // the mark itself is not the cast
   if (id !== 'x_phase') {
     startAbilityCooldown(owner, id, { player: !!options.player, level: options.level || 0, chronosArena: !!options.chronosArena });
   }

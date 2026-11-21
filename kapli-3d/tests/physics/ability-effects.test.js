@@ -38,9 +38,18 @@ test('push applies distance-scaled impulse and freezes non-boss targets', () => 
 test('blink and phase shift every cell by the main cell heading and clamp to arena', () => {
   const p = owner('p', [cell(100, 90, 0, { hx: 1, hz: 0 }), cell(50, 85, 0)]);
   const w = worldFor(p);
-  const blink = castWorldAbility('blink', p, w, createWorldAbilityEffects(), { player: true });
+  const blink = castWorldAbility('blink', p, w, createWorldAbilityEffects(), { player: false });   // bots keep the forward jump
   assert.equal(blink.ok, true); assert.ok(p.cells.every(c => Math.hypot(c.x, c.z) <= 99 + 1e-9));
   assert.equal(blink.events[0].type, 'blink-shadow');
+});
+
+test('player «Метка»: the first cast marks the spot, the second jumps back to it and leaves a shadow', () => {
+  const p = owner('p', [cell(100, 0, 0, { hx: 1, hz: 0 })]), w = worldFor(p), s = createWorldAbilityEffects();
+  const mark = castWorldAbility('blink', p, w, s, { player: true });
+  assert.equal(mark.events[0].type, 'blink-mark'); assert.equal(mark.markSet, true);
+  p.cells[0].x = 30;
+  const jump = castWorldAbility('blink', p, w, s, { player: true });
+  assert.equal(jump.events[0].type, 'blink-shadow'); assert.equal(p.cells[0].x, 0); assert.equal(p.blinkMark, null);
 });
 
 test('overload resets other ability cooldowns (not «Щит»/«Фантом») and player dash/split cooldowns', () => {
@@ -84,11 +93,11 @@ test('vampirism transfers 7 percent per second from smaller non-boss cells only'
   assert.equal(small.cells[0].mass, 46.5); assert.equal(p.cells[0].mass, 103.5); assert.equal(boss.cells[0].mass, 50);
 });
 
-test('typhoon repels ejected mass and only cells below 60 percent main mass', () => {
+test('typhoon repels ejected mass and every foe cell, the bigger ones at half force', () => {
   const p = owner('p', [cell(100)]), small = owner('small', [cell(50, 5, 0)]), big = owner('big', [cell(70, 5, 0)]);
   const w = worldFor(p, [small, big]); w.ejects.push({ x: 5, z: 0, vx: 0, vz: 0 });
   const s = createWorldAbilityEffects(); p.abT.x_typhoon = 3; tickWorldAbilityEffects(s, w, 0.1);
-  assert.ok(small.cells[0].vx > 0); assert.equal(big.cells[0].vx, 0); assert.ok(w.ejects[0].vx > 0);
+  assert.ok(small.cells[0].vx > 0); assert.ok(big.cells[0].vx > 0 && big.cells[0].vx < small.cells[0].vx); assert.ok(w.ejects[0].vx > 0);
 });
 
 test('ghost expiration produces one radial shockwave impulse', () => {
@@ -134,7 +143,7 @@ test('cloak removes existing bot targets and shrink/cloak timers are stored', ()
   const w = worldFor(p, [bot]);
   castWorldAbility('cloak', p, w, createWorldAbilityEffects());
   assert.equal(p.abT.cloak, 4); assert.equal(p.cloakBonus, true); assert.equal(bot.target, null);
-  castWorldAbility('shrink', p, w, createWorldAbilityEffects()); assert.equal(p.abT.shrink, 4);
+  castWorldAbility('shrink', p, w, createWorldAbilityEffects()); assert.equal(p.abT.shrink, 5);
 });
 
 test('trap cast replaces oldest owned trap when the two-trap limit is reached', () => {
@@ -152,6 +161,7 @@ test('decoy cast replaces previous clone and blink shadow is stationary', () => 
   const p = owner('p', [cell(100)]), s = createWorldAbilityEffects(), w = worldFor(p);
   castWorldAbility('decoy', p, w, s); const first = s.decoys[0];
   castWorldAbility('decoy', p, w, s); assert.equal(s.decoys.length, 1); assert.notEqual(s.decoys[0], first);
+  castWorldAbility('blink', p, w, s, { player: true });   // 2.7 «Метка»: the first press only marks the spot
   const blink = castWorldAbility('blink', p, w, s, { player: true });
   assert.equal(blink.events[0].type, 'blink-shadow'); assert.equal(s.decoys.length, 1); assert.equal(s.decoys[0].still, true);
 });
@@ -204,7 +214,7 @@ test('Chronos swap only selects the nearest target in front and outside boss/min
 test('blink shadow retargets pursuers and clears their target when it disappears', () => {
   const p = owner('p1', [cell(100)]), foe = owner('foe', [cell(400, 0, 0)]);
   foe.target = { owner: p }; const w = worldFor(p, [foe]), s = createWorldAbilityEffects();
-  castWorldAbility('blink', p, w, s, { player: true });
+  castWorldAbility('blink', p, w, s, { player: true }); castWorldAbility('blink', p, w, s, { player: true });   // mark, then jump
   const shadow = s.decoys[0]; assert.equal(foe.target, shadow); assert.equal(shadow.owner.decoy, true);
   tickWorldAbilityEffects(s, w, 1.1);
   assert.equal(s.decoys.length, 0); assert.equal(foe.target, null);

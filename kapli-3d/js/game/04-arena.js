@@ -10,7 +10,7 @@
   }));
   let viruses = [];
   function makeVirusMesh() {
-    const g = new THREE.Group();
+    const g = new THREE.Group(); g.name = 'вирус';
     g.add(new THREE.Mesh(virusCore, virusMat));
     g.add(new THREE.Mesh(virusSpikesGeo, virusSpikeMat));   // 2.7 FPS: the 16 spikes are one mesh (were 16 draw calls per spike ball)
     g.add(glowSprite(VIRUS_COLOR, 3, .5));

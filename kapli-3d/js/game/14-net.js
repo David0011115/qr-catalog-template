@@ -1329,40 +1329,63 @@
     if (DuoM.mode === 'territory' && (tlShareT -= dt) <= 0) { tlShareT = 10; const sh = DuoM.rules.territory?.shareNow?.(); if (Number.isFinite(sh)) TLog.ev('моя доля поля %', Math.round(sh * 100)); }
   }
   // ---- 2.7: stress tests — the same scripted 60 s on any phone and version, the game drives itself; the result goes to the journal («Стресс-тесты») ----
-  let stressRun = null;
+  let stressRun = null, stressQueue = null;
+  const QNAME = { low: 'Низкое', medium: 'Среднее', high: 'Высокое' };
+  // each step: [label, action, effects level 0–2]; 2.7: heavier after the first phone run (Mali-G610 kept ~56 FPS)
   const STRESS = {
     ladder: { name: 'Лесенка нагрузки', steps: [
-      ['масса 1 000', () => stressMass(1000)],
-      ['масса 10 000', () => stressMass(10000)],
-      ['30 000 + боссы', () => { stressMass(30000); stressBosses(2); }],
-      ['деление на части', () => { for (let i = 0; i < 4; i++) { player.splitCd = 0; split(); } }],
-      ['толпа: боты крупнее', () => { bots.forEach(o => o.cells.forEach(c => { c.mass = Math.max(c.mass, 2500 + stressRnd() * 4500); })); stressBosses(3); }],
-      ['максимум: 45 000', () => { const sum = total(player) || 1; player.cells.forEach(c => { c.mass *= 45000 / sum; }); stressBosses(3); }]] },
-    storm: { name: 'Шторм эффектов', steps: EVENTS.slice(0, 6).map(e => ['событие «' + e.name + '»', () => { stressMass(Math.max(total(player), 5000)); evClear(); ev.warn = null; ev.active = e.id; ev.left = 10; evStart(); }]), fx: true }
+      ['5 000 + 2 босса', () => { stressMass(5000); stressBosses(2); }, 0],
+      ['25 000 + 3 босса, боты крупнее', () => { stressMass(25000); stressBosses(3); stressBots(3000, 6000); }, 0],
+      ['деление на максимум частей', () => { for (let i = 0; i < 8; i++) { player.splitCd = 0; split(); } }, 1],
+      ['60 000 + 4 босса', () => { stressMass(60000); stressBosses(4); }, 1],
+      ['толпа: все боты 5–9 тыс. + эффекты', () => { stressBots(5000, 9000); stressBosses(4); }, 2],
+      ['максимум: 100 000, звездопад, эффекты', () => { stressMass(100000); stressBosses(4); stressEvent('starfall'); }, 2]] },
+    storm: { name: 'Шторм эффектов', steps: EVENTS.slice(0, 6).map((e, i) => ['событие «' + e.name + '»', () => { stressMass(Math.max(total(player), 15000)); if (!i) { stressBosses(2); stressBots(2000, 5000); } stressEvent(e.id); }, 2]) }
   };
   let stressSeed = 1;
   const stressRnd = () => { stressSeed = (stressSeed * 16807) % 2147483647; return stressSeed / 2147483647; };
   function stressMass(m) { const sum = total(player); if (!sum) return; if (sum < m) { const c = mainOf(player); c.mass += m - sum; } }
-  function stressBosses(n) { for (let i = 0; i < n; i++) try { spawnBoss(); } catch (e) {} }
-  async function stressStart(id) {
+  function stressBots(lo, hi) { bots.forEach(o => o.cells.forEach(c => { c.mass = Math.max(c.mass, lo + stressRnd() * (hi - lo)); })); }
+  function stressBosses(n) { const types = Object.keys(BOSS_TYPES); for (let i = 0; i < 12 && bossOwners.filter(o => o.cells.length).length < n; i++) try { spawnBoss(types[i % types.length]); } catch (e) {} }
+  function stressEvent(id) { evClear(); ev.warn = null; ev.active = id; ev.left = 10; evStart(); }
+  async function stressStart(id, quality) {
     if (running) return 'сначала выйди из раунда';
     const sc = STRESS[id]; let build = '';
     try { build = ((await (await fetch('sw.js', { cache: 'no-store' })).text()).match(/kapli3d[a-z]*-(v\d+)/) || [])[1] || ''; } catch (e) {}
-    stressRun = { id, name: sc.name, sc, build, keep: { mode: save.mode, char: save.char, autoQ: save.settings.autoQ, startMass: testStartMass, rnd: Math.random } };
+    stressRun = { id, name: sc.name, sc, build, keep: { mode: save.mode, char: save.char, autoQ: save.settings.autoQ, quality: save.settings.quality, startMass: testStartMass, rnd: Math.random } };
+    if (quality && quality !== save.settings.quality) { save.settings.quality = quality; applySettings(); }
     stressSeed = 20271; Math.random = stressRnd;   // the same scene every run
     save.mode = 'classic'; save.char = null; save.settings.autoQ = false; testStartMass = 1000; charChosen = true;
     $('testModal').hidden = true;
     $('startBtn').click();
-    if (!running) { stressStop(); return 'раунд не начался'; }
+    if (!running) { stressStop(); stressQueue = null; return 'раунд не начался'; }
     const R0 = stressRun; R0.t0 = performance.now(); R0.last = R0.t0; R0.step = -1; R0.secT = R0.t0; R0.secN = 0; R0.all = []; R0.steps = []; R0.fxT = 0; R0.abT = 0; R0.abI = 0;
     ev.timer = 999;   // no random arena events: the script decides
     requestAnimationFrame(stressFrame);
-    return 'идёт ' + sc.name + ' (60 с)';
+    return 'идёт ' + sc.name + ' · ' + (QNAME[save.settings.quality] || save.settings.quality) + ' (60 с)';
   }
-  function stressStop() {
+  function stressStop(keepQuality) {
     const R0 = stressRun; if (!R0) return; stressRun = null;
     Math.random = R0.keep.rnd; save.mode = R0.keep.mode; save.char = R0.keep.char; save.settings.autoQ = R0.keep.autoQ; testStartMass = R0.keep.startMass; mode = save.mode;
+    if (!keepQuality && save.settings.quality !== R0.keep.quality) { save.settings.quality = R0.keep.quality; applySettings(); }
     joy.id = null; joy.mag = 0; persist();
+  }
+  // the full run: both scenarios on every quality preset, one after another (~6 min), then one comparison record
+  function stressAll() {
+    if (running) return 'сначала выйди из раунда';
+    stressQueue = { list: ['low', 'medium', 'high'].flatMap(q => [['ladder', q], ['storm', q]]), res: [], quality: save.settings.quality };
+    stressNext(); return 'полный прогон: 6 тестов по 60 с — телефон не трогай';
+  }
+  function stressNext() {
+    const Q = stressQueue; if (!Q) return;
+    const nx = Q.list.shift();
+    if (!nx) {
+      if (save.settings.quality !== Q.quality) { save.settings.quality = Q.quality; applySettings(); persist(); }
+      TLog.begin({ mode: 'stress', name: 'Стресс · сравнение настроек', quality: Q.quality });
+      TLog.end({ dur: Q.res.length * 60, end: Q.res.map(r => `${r.name} · ${QNAME[r.quality]}: ${r.avg}/${r.low1}`).join(' · '), cmp: Q.res });
+      stressQueue = null; toast('Полный прогон готов — сравнение в журнале «Стресс-тесты»'); return;
+    }
+    stressStart(nx[0], nx[1]).then(m => { if (!running) { stressQueue = null; toast('Полный прогон остановлен: ' + m); } });
   }
   const stressPct = (a, q) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; };
   function stressSum(ms, secs) {
@@ -1372,7 +1395,7 @@
   }
   function stressFrame(now) {
     const R0 = stressRun; if (!R0) return;
-    if (!running || dying || paused) { toast('Стресс-тест прерван'); stressStop(); return; }
+    if (!running || dying || paused) { toast('Стресс-тест прерван'); stressQueue = null; stressStop(); return; }
     const el = now - R0.t0, dtm = now - R0.last; R0.last = now;
     if (R0.step >= 0 && dtm > 0) { R0.cur.ms.push(dtm); R0.all.push(dtm); }
     R0.secN++; if (now - R0.secT >= 1000) { const f = Math.round(R0.secN * 1000 / (now - R0.secT)); if (R0.cur) R0.cur.secs.push(f); R0.secs = R0.secs || []; R0.secs.push(f); R0.secN = 0; R0.secT = now; }
@@ -1380,18 +1403,21 @@
     if (step !== R0.step) {
       if (R0.cur) stressClose(R0);
       if (step >= R0.sc.steps.length) { stressFinish(R0); return; }
-      R0.step = step; const [label, act] = R0.sc.steps[step];
-      R0.cur = { label, ms: [], secs: [] }; try { act(); } catch (e) { R0.cur.err = String(e.message).slice(0, 80); }
-      toast(`Стресс-тест · ${step + 1}/${R0.sc.steps.length}: ${label}`); TLog.ev('стресс: шаг', label);
+      R0.step = step; const [label, act, fx] = R0.sc.steps[step];
+      R0.cur = { label, fx, ms: [], secs: [] }; try { act(); } catch (e) { R0.cur.err = String(e.message).slice(0, 80); }
+      toast(`Стресс · ${QNAME[save.settings.quality] || ''} · ${step + 1}/${R0.sc.steps.length}: ${label}`); TLog.ev('стресс: шаг', label);
     }
+    if (R0.cur && !R0.cur.census && el - R0.step * 10000 > 7000) { try { R0.cur.census = drawCensus(); } catch (e) {} }   // what is drawn, late in the step
     effects.shield = Math.max(effects.shield || 0, 1);   // nobody eats the autopilot: the run always lasts 60 s
     // autopilot: circles the arena, so the camera passes everything
     if (player.cells.length) { const m = mainOf(player), a = el / 1000 * .22, tx = Math.cos(a) * R * .38, tz = Math.sin(a) * R * .38, d = Math.hypot(tx - m.x, tz - m.z) || 1;
       joy.id = 'stress'; joy.mag = .85; joy.x = (tx - m.x) / d; joy.y = (tz - m.z) / d; }
-    if (R0.sc.fx) {   // the effects storm: bursts of particles, eat effects and abilities on top of the event
+    const fx = R0.cur ? R0.cur.fx : 0;
+    if (fx) {   // effects on top: bursts of particles, eat effects and abilities (level 2: twice as often and bigger)
       R0.fxT -= dtm; R0.abT -= dtm;
-      if (R0.fxT <= 0 && player.cells.length) { R0.fxT = 250; const m = mainOf(player); for (let k = 0; k < 3; k++) { const x = m.x + (stressRnd() - .5) * 60, z = m.z + (stressRnd() - .5) * 40; emit(x, 1, z, ['#ff4fd8', '#22e6ff', '#ffd23f'][k], 40, 14, .8); eatFx(x, z, 2 + stressRnd() * 4, new THREE.Color('#3dffa2')); } }
-      if (R0.abT <= 0 && player.cells.length) { R0.abT = 1500; const ids = ABILITIES.filter(a => !a.cr && !['split', 'blink', 'x_twin', 'rewind'].includes(a.id)).map(a => a.id), id = ids[R0.abI++ % ids.length];
+      if (R0.fxT <= 0 && player.cells.length) { R0.fxT = fx > 1 ? 120 : 250; const m = mainOf(player), n = fx > 1 ? 5 : 3;
+        for (let k = 0; k < n; k++) { const x = m.x + (stressRnd() - .5) * 70, z = m.z + (stressRnd() - .5) * 50; emit(x, 1, z, ['#ff4fd8', '#22e6ff', '#ffd23f', '#3dffa2', '#9b5cff'][k], fx > 1 ? 60 : 40, 14, .8); eatFx(x, z, 2 + stressRnd() * 5, new THREE.Color('#3dffa2')); } }
+      if (R0.abT <= 0 && player.cells.length) { R0.abT = fx > 1 ? 800 : 1500; const ids = ABILITIES.filter(a => !a.cr && !['split', 'blink', 'x_twin', 'rewind'].includes(a.id)).map(a => a.id), id = ids[R0.abI++ % ids.length];
         player.abCd[id] = 0; try { castAbility(id); } catch (e) {} }
     }
     requestAnimationFrame(stressFrame);
@@ -1399,17 +1425,20 @@
   function stressClose(R0) {
     const c = R0.cur, ri = renderer.info.render, mem = performance.memory;
     R0.steps.push({ step: c.label, ...stressSum(c.ms, c.secs), calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', cells: cells.length, mine: player.cells.length,
-      mass: Math.round(total(player)), fx: pActive.length + eActive.length, heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) : null, err: c.err });
+      bosses: bossOwners.filter(o => o.cells.length).length, mass: Math.round(total(player)), fx: pActive.length + eActive.length, heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) : null, drawn: c.census || null, err: c.err });
     R0.cur = null;
   }
   function stressFinish(R0) {
     const res = { scenario: R0.id, name: R0.name, build: R0.build, quality: save.settings.quality, px: Math.round(renderer.getPixelRatio() * 100) / 100, ...stressSum(R0.all, R0.secs || []), steps: R0.steps };
     TLog.extra('stress', res);
     const worst = R0.steps.reduce((a, b) => (b.avg ?? 99) < (a.avg ?? 99) ? b : a, R0.steps[0] || {});
-    stressStop();
+    const queued = !!stressQueue;
+    stressStop(queued);
     TLog.end({ dur: 60, peak: Math.round(stats.maxMass), final: Math.round(total(player)), end: `${res.avg} FPS · мин ${res.min} · 1% ${res.low1}`, st: { avg: res.avg, min: res.min, low1: res.low1, h50: res.h50, h100: res.h100, build: res.build } });
-    toast(`Стресс-тест готов: ${res.avg} FPS, минимум ${res.min}, худший шаг «${worst.step}» — отчёт в журнале «Стресс-тесты»`);
     try { endRound(); } catch (e) {}
+    if (queued) { stressQueue.res.push({ name: res.name, quality: res.quality, build: res.build, avg: res.avg, min: res.min, low1: res.low1, h50: res.h50, h100: res.h100, worstStep: worst.step });
+      setTimeout(() => { try { $('menuBtn').click(); } catch (e) {} setTimeout(stressNext, 800); }, 1500); return; }
+    toast(`Стресс-тест готов: ${res.avg} FPS, минимум ${res.min}, худший шаг «${worst.step}» — отчёт в журнале «Стресс-тесты»`);
   }
   const tlTime = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
   const tlDate = t => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -1428,6 +1457,8 @@
   }
   const tlFiltered = () => TLog.list().filter(r => testFilter === 'all' ? r.mode !== 'stress' : r.mode === testFilter);   // stress tests have their own section
   function tlRow(r, i) {
+    if (r.mode === 'stress' && r.cmp) return `<li class="tl-row"><button type="button" data-tlone="${i}" title="Скопировать этот отчёт"><b>Сравнение настроек${r.cmp[0]?.build ? ' · ' + escHtml(r.cmp[0].build) : ''}</b>
+      <small>${tlDate(r.at)} · ${escHtml(r.dev?.gpu || r.dev?.os || '')} · средний / 1% худших</small><i>${r.cmp.map(c => `${escHtml(c.name.split(' ')[0])} ${QNAME[c.quality] || c.quality}: ${c.avg}/${c.low1}`).join(' · ')}</i></button></li>`;
     if (r.mode === 'stress' && r.st) return `<li class="tl-row"><button type="button" data-tlone="${i}" title="Скопировать этот отчёт"><b>${escHtml(r.name)}${r.st.build ? ' · ' + escHtml(r.st.build) : ''}</b>
       <small>${tlDate(r.at)} · ${escHtml(r.dev?.gpu || r.dev?.os || '')} · графика ${escHtml(r.quality || '')}</small><i>⌀ ${r.st.avg} FPS · мин ${r.st.min} · 1% ${r.st.low1} · фризы ${r.st.h50}${r.st.h100 ? ' (сильных ' + r.st.h100 + ')' : ''}</i></button></li>`;
     const flags = [r.slow?.length ? `🐢 ${r.slow.length}` : '', r.fps?.lowSec ? `📉 ${r.fps.lowSec} с` : '', r.net ? `📶 ${r.net.pingAvg ?? '—'} мс` : '', r.net?.gap1000 ? `⏸ ${r.net.gap1000}` : ''].filter(Boolean).join(' ');
@@ -1442,7 +1473,8 @@
       <div class="tl-chips" role="group" aria-label="Режим"><button type="button" data-tlf="stress" class="tl-stress${testFilter === 'stress' ? ' on' : ''}">⚡ Стресс-тесты · ${nStress}</button><button type="button" data-tlf="all" class="${testFilter === 'all' ? 'on' : ''}">Все · ${all.length - nStress}</button>${modes.map(m =>
         `<button type="button" data-tlf="${m}" class="${testFilter === m ? 'on' : ''}">${escHtml((MODES[m] || {}).name || m)} · ${all.filter(r => r.mode === m).length}</button>`).join('')}</div>
       ${testFilter === 'stress' ? `<div class="tl-stress-run"><p>Игра сама играет 60 с по одному сценарию, графика не меняется во время теста. Сравнивай отчёты разных версий и телефонов.</p>
-        <div class="tl-btns two"><button type="button" data-stress="ladder">▶ Лесенка нагрузки<small>масса 1к → 45к, боссы, деление, толпа</small></button><button type="button" data-stress="storm">▶ Шторм эффектов<small>6 событий арены, взрывы, способности</small></button></div></div>` : ''}
+        <div class="tl-btns two"><button type="button" data-stress="ladder">▶ Лесенка нагрузки<small>масса 5к → 100к, до 4 боссов, деление, толпа</small></button><button type="button" data-stress="storm">▶ Шторм эффектов<small>6 событий, боссы, взрывы, способности</small></button></div>
+        <div class="tl-btns one"><button type="button" data-stress="all">▶ Полный прогон: оба теста × Низкое, Среднее, Высокое<small>6 тестов, ~6 мин; в конце — таблица сравнения</small></button></div></div>` : ''}
       <div class="tl-btns"><button type="button" data-tlc="1">📋 Последний</button><button type="button" data-tlc="5">📋 Последние 5</button><button type="button" data-tlc="0">📋 Все${testFilter === 'all' ? '' : ' этого режима'}</button><button type="button" data-tlclear class="warn">Очистить</button></div>
       ${shown.length ? `<ol class="tl-list">${shown.map(r => tlRow(r, list.indexOf(r))).join('')}</ol>` : '<p class="hint">Пока пусто — сыграй любой раунд до конца, отчёт появится здесь.</p>'}
       <p class="hint">🐢 — сколько раз скорость падала ниже 40%, 📉 — секунды с FPS ниже 30, 📶 — средний пинг онлайна, ⏸ — пропуски связи дольше 1 с. Нажми на строку — скопируется один отчёт.</p></div>`;
@@ -1523,7 +1555,7 @@
       // 2.7: sections and the round journal
       const tab = e.target.closest('[data-ttab]'); if (tab) { testTab = tab.dataset.ttab; testRender(); $('testState').textContent = ''; return; }
       const tf = e.target.closest('[data-tlf]'); if (tf) { testFilter = tf.dataset.tlf; testRender(); return; }
-      const sr = e.target.closest('[data-stress]'); if (sr) { stressStart(sr.dataset.stress).then(m => { if (m) toast(m); }); return; }
+      const sr = e.target.closest('[data-stress]'); if (sr) { if (sr.dataset.stress === 'all') toast(stressAll()); else stressStart(sr.dataset.stress).then(m => { if (m) toast(m); }); return; }
       const tc = e.target.closest('[data-tlc]'); if (tc) { const n = +tc.dataset.tlc, L = tlFiltered(); $('testState').textContent = tlCopy(n ? L.slice(-n) : L); return; }
       const t1 = e.target.closest('[data-tlone]'); if (t1) { const r = tlFiltered()[+t1.dataset.tlone]; $('testState').textContent = tlCopy(r ? [r] : []); return; }
       if (e.target.closest('[data-tlclear]')) {

@@ -51,7 +51,7 @@
     const quad = new THREE.PlaneGeometry(1, 1);
     let cap = 0, geo = null, aPos, aSc, aCol;
     const mesh = new THREE.Mesh(new THREE.BufferGeometry(), mat);
-    mesh.frustumCulled = false; mesh.renderOrder = 10; mesh.visible = false;   // after the drops, as each sprite came right after its own drop
+    mesh.frustumCulled = false; mesh.renderOrder = 10; mesh.visible = false; mesh.name = 'ореолы';   // after the drops, as each sprite came right after its own drop
     function grow(n) {
       cap = Math.ceil(n * 1.5) + 16;
       if (geo) geo.dispose();
@@ -61,11 +61,12 @@
       geo.setAttribute('iPos', aPos); geo.setAttribute('iSc', aSc); geo.setAttribute('iCol', aCol);
       mesh.geometry = geo;
     }
-    function sync() {   // once per frame, right before the render
+    function sync(off) {   // once per frame, right before the render; off = everything drawn the old way (test comparison)
       scene.updateMatrixWorld();
       let n = 0, w = 0;
       for (let i = 0; i < glowList.length; i++) {
         const sp = glowList[i], m = sp.material;
+        if (off) { sp.layers.set(0); glowList[w++] = sp; continue; }
         let o = sp, shown = true; while (o.parent) { if (!o.visible) shown = false; o = o.parent; }
         if (o !== scene) { sp.layers.set(0); continue; }   // left the arena (removed effect) or lives in a preview scene: drawn as a normal sprite, dropped from the list
         glowList[w++] = sp;
@@ -82,6 +83,37 @@
       glowList.length = w;
       mesh.visible = n > 0;
       if (geo) { geo.instanceCount = n; aPos.needsUpdate = aSc.needsUpdate = aCol.needsUpdate = true; }
+      partsSync(off);
+    }
+    // 2.7 FPS: the eyes (opaque, one shared material) and the ground rings (additive, so their order does not matter) of every drop are two instanced draws, not two per drop
+    let pCap = 0, eyesI = null, ringI = null;
+    let ringMat = null;   // made on first use: decal() is defined further down
+    function partsGrow(n) {
+      pCap = Math.ceil(n * 1.5) + 16;
+      if (!ringMat) ringMat = decal(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false }));
+      if (eyesI) { scene.remove(eyesI, ringI); eyesI.dispose(); ringI.dispose(); }
+      eyesI = new THREE.InstancedMesh(eyesGeo, eyesMat, pCap); ringI = new THREE.InstancedMesh(ringGeo, ringMat, pCap);
+      ringI.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(pCap * 3), 3);
+      for (const m of [eyesI, ringI]) { m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.count = 0; }
+      ringI.instanceColor.setUsage(THREE.DynamicDrawUsage); eyesI.name = 'глаза (все)'; ringI.name = 'кольца (все)';
+      scene.add(eyesI, ringI);
+    }
+    function partsSync(off) {
+      if (allVis.length > pCap) partsGrow(allVis.length);
+      let ne = 0, nr = 0;
+      for (let i = 0; i < allVis.length; i++) {
+        const v = allVis[i], e = v.eyes, rg = v.ring;
+        if (e) { if (off) e.layers.set(0); else { e.layers.set(GLOW_LAYER); if (e.visible && v.mesh.visible && v.mesh.parent === scene) eyesI.setMatrixAt(ne++, e.matrixWorld); } }
+        if (rg) {
+          if (off || rg.material.opacity !== .9) { rg.layers.set(0); continue; }
+          rg.layers.set(GLOW_LAYER);
+          if (rg.visible && rg.material.visible && rg.parent === scene) { ringI.setMatrixAt(nr, rg.matrixWorld); ringI.setColorAt(nr, rg.material.color); nr++; }
+        }
+      }
+      eyesI.count = off ? 0 : ne; ringI.count = off ? 0 : nr;
+      eyesI.visible = eyesI.count > 0; ringI.visible = ringI.count > 0;
+      eyesI.instanceMatrix.needsUpdate = ringI.instanceMatrix.needsUpdate = ringI.instanceColor.needsUpdate = true;
+      if (off) mesh.visible = false;
     }
     return { mesh, sync };
   })();
@@ -447,6 +479,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   // food
   const foodPalette = ['#22e6ff', '#ffd23f', '#b26bff', '#3dffa2', '#ff4fd8'].map(c => new THREE.Color(c));
   const foodMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.3, 0), new THREE.MeshBasicMaterial(), FOOD_MAX);
+  foodMesh.name = 'еда';
   foodMesh.count = FOOD;   // only the crumbs of the current field are drawn
   scene.add(foodMesh);
   const foods = [];
@@ -521,17 +554,18 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
   const shieldGeo = new THREE.SphereGeometry(1.25, 24, 16);   // 2.7: one shared shape instead of a new one per drop
   function makeVis(color) {
     const mesh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .45, roughness: .22, metalness: .1, transparent: true, opacity: .9 }));
+    mesh.name = 'капля';
     const glow = glowSprite(color, 3.2, .85); mesh.add(glow);
-    mesh.add(new THREE.Mesh(eyesGeo, eyesMat));
+    const eyes = new THREE.Mesh(eyesGeo, eyesMat); eyes.name = 'глаза'; mesh.add(eyes);
     const crown = makeCrown(); crown.visible = false; mesh.add(crown);
     const shield = new THREE.Mesh(shieldGeo,
       new THREE.MeshBasicMaterial({ color: new THREE.Color(BONUS.shield.color), transparent: true, opacity: .2, depthWrite: false }));   // a faint bubble must not hide the glow drawn after it
-    shield.visible = false; mesh.add(shield);
+    shield.visible = false; shield.name = 'щит'; crown.name = 'корона'; mesh.add(shield);
     const ring = new THREE.Mesh(ringGeo, decal(new THREE.MeshBasicMaterial({ color: NEUTRAL, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false })));
-    ring.rotation.x = -Math.PI / 2;
+    ring.rotation.x = -Math.PI / 2; ring.name = 'кольцо';
     mesh.visible = ring.visible = false;
     scene.add(mesh, ring);
-    const vis = { mesh, ring, crown, shield, glow, jig: 0 };
+    const vis = { mesh, ring, crown, shield, glow, eyes, jig: 0 };
     allVis.push(vis);
     return vis;
   }

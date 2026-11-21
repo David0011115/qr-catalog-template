@@ -694,7 +694,62 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
         const k = .55 + .45 * Math.sin(t * 3); c.strokeStyle = `rgba(34,230,255,${.5 + .5 * k})`; c.lineWidth = 2.6; c.shadowColor = A; c.shadowBlur = 6 + 6 * k;
         c.beginPath(); for (let a = 0; a < 5.5 * Math.PI * 2; a += .12) { const r = 3 + a * 1.75; c.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } c.stroke(); c.shadowBlur = 0;
         const p = (Math.floor(t) * .055) % 1, a = p * 5.5 * Math.PI * 2, r = 3 + a * 1.75;   // 2.7: the hand steps once a second, like a real clock c.fillStyle = '#ffffff'; c.shadowColor = '#ffffff'; c.shadowBlur = 10; c.beginPath(); c.arc(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 3.4, 0, 6.29); c.fill(); c.shadowBlur = 0;
-        c.fillStyle = '#ffd27a'; c.beginPath(); c.arc(64, 64, 4, 0, 6.29); c.fill(); break;
+        c.fillStyle = '#ffd27a'; c.beginPath(); c.arc(64, 64, 4, 0, 6.29); c.fill();
+        // 2.7: the same spring on the front and the back of the body — the wardrobe sees the drop from the front, the arena from above
+        [64, 192].forEach(cx => { x.strokeStyle = `rgba(34,230,255,${.5 + .5 * k})`; x.lineWidth = 2; x.shadowColor = A; x.shadowBlur = 5 + 5 * k; x.beginPath();
+          for (let aa = 0; aa < 4.2 * Math.PI * 2; aa += .14) { const rr = 2 + aa * 1.25; x.lineTo(cx + Math.cos(aa) * rr * 1.25, 74 + Math.sin(aa) * rr * .8); } x.stroke(); x.shadowBlur = 0;
+          const q = (Math.floor(t) * .055) % 1, qa = q * 4.2 * Math.PI * 2, qr = 2 + qa * 1.25; x.fillStyle = '#ffffff'; x.beginPath(); x.arc(cx + Math.cos(qa) * qr * 1.25, 74 + Math.sin(qa) * qr * .8, 2.6, 0, 6.29); x.fill(); });
+        break;
+      }
+      case 'jack': {   // 2.7 «Тыквенный король»: ribbed pumpkin, a carved grin glowing with a candle that flickers, embers rising; the cap — candle light under the crown
+        const fl = .72 + .18 * Math.sin(t * 13) * Math.sin(t * 7.3) + .1 * Math.sin(t * 29);
+        g.addColorStop(0, '#ffb347'); g.addColorStop(.55, C); g.addColorStop(1, '#5a1e00'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        for (let i = 0; i < W; i += 21) { const rg = x.createLinearGradient(i, 0, i + 21, 0); rg.addColorStop(0, 'rgba(90,30,0,.55)'); rg.addColorStop(.5, 'rgba(255,200,120,.12)'); rg.addColorStop(1, 'rgba(90,30,0,.55)'); x.fillStyle = rg; x.fillRect(i, 0, 21, H); }
+        x.shadowColor = '#ffd23f'; x.shadowBlur = 10 * fl;
+        [64, 192].forEach(cx => { x.fillStyle = `rgba(255,${190 + 50 * fl | 0},60,${.75 + .25 * fl})`;
+          x.beginPath(); x.moveTo(cx - 34, 84); for (let i = 0; i <= 8; i++) x.lineTo(cx - 34 + i * 8.5, i % 2 ? 98 : 90); for (let i = 8; i >= 0; i--) x.lineTo(cx - 34 + i * 8.5, i % 2 ? 104 : 110); x.closePath(); x.fill();
+          [[-18, 1], [18, -1]].forEach(([dx, sg]) => { x.beginPath(); x.moveTo(cx + dx - 9, 74); x.lineTo(cx + dx + 9, 74); x.lineTo(cx + dx + sg * 3, 60); x.closePath(); x.fill(); }); });
+        x.shadowBlur = 0;
+        for (let i = 0; i < 26; i++) { const p = ((t * .35 + i * .137) % 1), ex = (i * 47) % W + Math.sin(t * 2 + i) * 4; x.globalAlpha = (1 - p) * .9; x.fillStyle = i % 3 ? '#ffb347' : '#fff3b0'; x.fillRect(ex, H - p * 120, 2, 2); } x.globalAlpha = 1;
+        const cg = c.createRadialGradient(64, 64, 2, 64, 64, 62); cg.addColorStop(0, `rgba(255,240,170,${.9 * fl})`); cg.addColorStop(.35, `rgba(255,160,40,${.55 * fl})`); cg.addColorStop(1, 'rgba(255,120,0,0)'); c.fillStyle = cg; c.fillRect(0, 0, 128, 128);
+        c.strokeStyle = 'rgba(90,30,0,.6)'; c.lineWidth = 3; for (let i = 0; i < 12; i++) { const aa = i / 12 * 6.283; c.beginPath(); c.moveTo(64 + Math.cos(aa) * 18, 64 + Math.sin(aa) * 18); c.lineTo(64 + Math.cos(aa) * 63, 64 + Math.sin(aa) * 63); c.stroke(); }
+        break;
+      }
+      case 'queen': {   // 2.7 «Королева сердец»: crimson velvet with a gold lattice, hearts rising with sparkles; the cap — a big gold-rimmed heart that beats
+        const p0 = (t * 1.15) % 1, beat = Math.exp(-p0 * 16) + (p0 > .2 ? .6 * Math.exp(-(p0 - .2) * 16) : 0);
+        g.addColorStop(0, '#ff3d6e'); g.addColorStop(.5, C); g.addColorStop(1, '#3a0010'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        x.strokeStyle = 'rgba(255,210,63,.45)'; x.lineWidth = 1; for (let i = -H; i < W; i += 16) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + H, H); x.stroke(); x.beginPath(); x.moveTo(i + H, 0); x.lineTo(i, H); x.stroke(); }
+        const heart = (ctx, hx, hy, sz) => { ctx.beginPath(); ctx.moveTo(hx, hy + sz * .35); ctx.bezierCurveTo(hx - sz, hy - sz * .4, hx - sz * .45, hy - sz * 1.05, hx, hy - sz * .45); ctx.bezierCurveTo(hx + sz * .45, hy - sz * 1.05, hx + sz, hy - sz * .4, hx, hy + sz * .35); ctx.closePath(); };
+        for (let i = 0; i < 14; i++) { const p = (t * .12 + i / 14) % 1, hx = (i * 37) % W + Math.sin(t + i) * 5, hy = H + 8 - p * (H + 20); x.globalAlpha = Math.sin(p * Math.PI); x.fillStyle = i % 3 ? '#ffd1e8' : A; heart(x, hx, hy, 6 + (i % 3) * 2); x.fill(); } x.globalAlpha = 1;
+        for (let i = 0; i < 18; i++) { x.globalAlpha = Math.max(0, Math.sin(t * 3 + i * 1.7)); x.fillStyle = '#fff6c8'; x.fillRect((i * 61) % W, 40 + (i * 29) % 80, 1.6, 1.6); } x.globalAlpha = 1;
+        c.fillStyle = 'rgba(40,0,10,.35)'; c.fillRect(0, 0, 128, 128);
+        const hs = 44 * (1 + .12 * beat); c.shadowColor = '#ff2d55'; c.shadowBlur = 14 + 20 * beat; c.fillStyle = '#ff2d55'; heart(c, 64, 70, hs); c.fill(); c.shadowBlur = 0;
+        c.lineWidth = 4; c.strokeStyle = A; heart(c, 64, 70, hs); c.stroke(); c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(50, 50, 8, 5, -.6, 0, 6.29); c.fill();
+        break;
+      }
+      case 'pulsar': {   // 2.7 «Пульсар» (was «Глубокий космос»): a starfield, two light beams sweep around the body; the cap — a pulsing core with rings running out
+        const pul = Math.pow(.5 + .5 * Math.sin(t * 6), 4);
+        g.addColorStop(0, '#1a2a6e'); g.addColorStop(1, '#03040f'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        for (let i = 0; i < 60; i++) { x.globalAlpha = .3 + .7 * Math.abs(Math.sin(t * 1.7 + i * 2.3)); x.fillStyle = i % 5 ? '#ffffff' : A; x.fillRect((i * 83) % W, 30 + (i * 47) % 98, 1.4, 1.4); } x.globalAlpha = 1;
+        [0, 128].forEach(off => { const bx = ((t * 70 + off) % W), bg = x.createLinearGradient(bx - 26, 0, bx + 26, 0); bg.addColorStop(0, 'rgba(159,232,255,0)'); bg.addColorStop(.5, `rgba(220,248,255,${.55 + .35 * pul})`); bg.addColorStop(1, 'rgba(159,232,255,0)');
+          x.fillStyle = bg; x.fillRect(bx - 26, 0, 52, H); if (bx > W - 26) { x.save(); x.translate(-W, 0); x.fillRect(bx - 26, 0, 52, H); x.restore(); } });
+        const core = c.createRadialGradient(64, 64, 1, 64, 64, 60); core.addColorStop(0, '#ffffff'); core.addColorStop(.12 + .08 * pul, A); core.addColorStop(.45, 'rgba(60,90,255,.35)'); core.addColorStop(1, 'rgba(10,16,48,0)'); c.fillStyle = core; c.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 3; i++) { const u = (t * .7 + i / 3) % 1; c.strokeStyle = `rgba(159,232,255,${(1 - u) * .8})`; c.lineWidth = 2; c.beginPath(); c.arc(64, 64, 8 + u * 54, 0, 6.29); c.stroke(); }
+        c.save(); c.translate(64, 64); c.rotate(t * 1.4); c.fillStyle = `rgba(255,255,255,${.4 + .5 * pul})`; c.fillRect(-62, -2, 124, 4); c.restore();
+        break;
+      }
+      case 'volcano': {   // 2.7 «Вулкан» (Магма): black rock, lava rivers run down from the top and glow; the cap — a crater with bubbling lava
+        g.addColorStop(0, '#2a0e04'); g.addColorStop(1, '#070200'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+        x.fillStyle = 'rgba(80,40,20,.35)'; for (let i = 0; i < 40; i++) x.fillRect((i * 71) % W, (i * 37) % H, 6 + (i % 5) * 3, 2);
+        x.lineCap = 'round';
+        for (let i = 0; i < 9; i++) { const bx = i * 28.4 + 10, ph = t * .25 + i * .37, len = 40 + 60 * ((Math.sin(ph) + 1) / 2);
+          for (const [w, col, bl] of [[7, 'rgba(255,90,0,.35)', 10], [3.5, '#ff7a1a', 6], [1.4, '#ffe08a', 0]]) { x.strokeStyle = col; x.lineWidth = w; x.shadowColor = '#ff5a00'; x.shadowBlur = bl;
+            x.beginPath(); x.moveTo(bx, 18); for (let y = 18; y < 18 + len; y += 6) x.lineTo(bx + Math.sin(y * .09 + i) * 5, y); x.stroke(); } }
+        x.shadowBlur = 0;
+        const cr = c.createRadialGradient(64, 64, 4, 64, 64, 60); cr.addColorStop(0, '#fff0a0'); cr.addColorStop(.25, '#ff9a1a'); cr.addColorStop(.5, '#c03000'); cr.addColorStop(.72, '#2a0a02'); cr.addColorStop(1, 'rgba(20,6,0,0)'); c.fillStyle = cr; c.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 9; i++) { const u = (t * .6 + i * .31) % 1, aa = i * 2.4 + t * .2, rr = 6 + i * 2.2; c.globalAlpha = Math.sin(u * Math.PI); c.fillStyle = i % 2 ? '#ffe08a' : '#ff6a00'; c.beginPath(); c.arc(64 + Math.cos(aa) * rr, 64 + Math.sin(aa) * rr, 2 + u * 5, 0, 6.29); c.fill(); }
+        c.globalAlpha = 1; c.strokeStyle = 'rgba(60,20,8,.9)'; c.lineWidth = 6; c.beginPath(); c.arc(64, 64, 44, 0, 6.29); c.stroke();
+        break;
       }
       case 'moon': {   // blue enamel, gold stars, a moon-phase window on top; full moon flashes
         g.addColorStop(0, '#24308a'); g.addColorStop(1, '#0a0e36'); x.fillStyle = g; x.fillRect(0, 0, W, H);

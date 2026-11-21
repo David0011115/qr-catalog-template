@@ -155,6 +155,35 @@
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    // 2.7: the first entry with cards — a hero card and a grid; each card opens big (newsBig). Older entries stay text in «Архив обновлений».
+    { id: 200, ver: '2.7.0', date: '24 ноября', title: 'Характеры и живая арена', kind: 'season',
+      lead: 'Выбирай характер, переживи события арены и опробуй обновлённые скины.',
+      hero: { imgs: ['neon', 'h_valentine', 's_7', 'h_halloween', 's_25'], body: '<p>Самое большое обновление осени: характеры перед раундом, восемь событий арены, новый Случайный билд и Босс-рейд, переработанные способности, игра вдвоём по ссылке, обновлённые скины, рамки и титулы — и заметно плавнее на телефонах.</p><p>Листай карточки или открой любую, чтобы прочитать подробнее.</p>' },
+      cards: [
+        { t: 'Характеры', l: 'Перед раундом выбери, каким будешь: у каждого свой плюс и минус.', v: 'chars',
+          b: '<p>Перед каждым одиночным раундом открывается окно выбора характера.</p><ul><li><b>Хищник</b> — съеденные боты и боссы дают +15%, но таешь на 10% быстрее.</li><li><b>Собиратель</b> — крошки +30% и притягиваются издалека, боты дают −15%.</li><li><b>Танк</b> (с 10 уровня) — съесть тебя можно только будучи крупнее в 1,4 раза, но ты на 8% медленнее.</li><li><b>Призрак</b> (с 15) — боты замечают тебя вдвое позже, масса растёт на 10% медленнее.</li><li><b>Берсерк</b> (с 20) — перезарядка −15%, но щит и бонусы короче на 25%.</li></ul><p>В рейтинговых играх характеров нет.</p>' },
+        { t: 'События арены', l: 'Восемь событий меняют раунд прямо на ходу.', v: 'events',
+          b: '<p>О событии предупреждают заранее, а на мини-карте видно, где оно.</p><ul><li><b>Звездопад</b> — метеоры в отмеченной зоне, между ними золотые капли.</li><li><b>Разлом</b> — тянет к центру, касание центра отнимает 10% массы.</li><li><b>Ветер</b> — сносит всех в одну сторону.</li><li><b>Затмение</b> — темно, мини-карта гаснет, боты видят вдвое ближе.</li><li><b>Золотая капля</b> — убегает по полю, поймай за монеты.</li><li><b>Монетный дождь</b> — монеты сразу за каждого съеденного.</li><li><b>Землетрясение</b> — край арены горит, снаружи кольца масса тает.</li><li><b>Награда за голову</b> — самая крупная капля помечена.</li></ul>' },
+        { t: 'Случайный билд', l: 'На вехах — пауза и две карточки замены с редкостью.', v: 'rb',
+          b: '<p>На вехах массы игра встаёт на паузу и предлагает две карточки: можно заменить одну из способностей. Карточки бывают обычные, редкие, эпические и легендарные — чем реже, тем сильнее.</p>' },
+        { t: 'Босс-рейд', l: 'Пять ступеней сложности и пара колоссов-близнецов.', v: 'raid',
+          b: '<p>Перед стартом выбери ступень от I до V. Колоссы атакуют волнами, рывками и взрывами, у колосса недели — особая атака. За ступень V — титул «Гроза колоссов».</p>' },
+        { t: 'Способности', l: 'Две новые и честный баланс остальных.', v: 'abil',
+          b: '<ul><li><b>Метка</b> вместо Скачка: первое нажатие ставит метку, второе в течение 10 с переносит к ней.</li><li><b>Засада</b> вместо Маскировки: ешь капли при меньшем перевесе и получаешь больше массы.</li><li>Насыщение и Сжатие переработаны, сильные способности урезаны, слабые усилены.</li></ul>' },
+        { t: 'Вдвоём онлайн', l: 'Комната по ссылке и плавное движение соперника.', v: 'online',
+          b: '<ul><li>Код комнаты можно отправить ссылкой — по ней друг сразу попадает в комнату.</li><li>Движение второго игрока сглажено, связь сама восстанавливается.</li><li>Исправлены ник в таблице, таймер щита и вечная неуязвимость в «Захвате территории».</li></ul>' },
+        { t: 'Пауза с бафами', l: 'На паузе видно, какие улучшения ты выбрал.', v: 'pause',
+          b: '<p>В меню паузы появился блок «Твои бафы»: выбранные в раунде карточки и когда ты их взял, минусы отмечены отдельно. Бафы скорости теперь действительно ускоряют.</p>' },
+        { t: 'Обновлённые скины', l: 'Скины переделаны, годовые — с живой анимацией.', v: 'skins',
+          b: '<p>Многие скины получили новый облик. «Королева сердец», «Тыквенный король», «Пульсар» и «Вулкан» анимированы целиком: плывут сердца, мерцает свеча, бегут лучи, течёт лава. Новые скины: «Мятная капля» для новичков, «Ягодный пончик», «Аквариум», «Обсидиан» и «Охотник на боссов». Если у тебя был переделанный скин — он остался у тебя в новом виде.</p>' },
+        { t: 'Рамки и титулы', l: 'Меньше, но ценнее: объёмные рамки и титулы-ленты.', v: 'deco',
+          b: '<p>Рамки стали объёмными, как стекло, а титулы — наградными лентами под ником. Похожие награды объединены: если у тебя была убранная рамка или титул, ты получил ближайшую оставшуюся (а если она уже была — монеты).</p>' },
+        { t: 'Плавнее на телефонах', l: 'Меньше рывков даже при огромной массе.', v: 'fps',
+          b: '<p>Мы переработали отрисовку арены: одинаковые детали рисуются за один раз, шейдеры готовятся до начала раунда, игра реже останавливается на уборку памяти. Картинка та же, рывков заметно меньше.</p>' },
+      ],
+      items: ['Характеры перед одиночным раундом: Хищник, Собиратель, Танк, Призрак, Берсерк.', 'Восемь событий арены.', 'Случайный билд: карточки замены с редкостью на вехах.', 'Босс-рейд: пять ступеней и пара колоссов.',
+        'Способности: Метка вместо Скачка, Засада вместо Маскировки, баланс остальных.', 'Вдвоём онлайн: комната по ссылке, плавное движение.', 'Пауза показывает выбранные бафы.', 'Обновлённые и новые скины, годовые — с живой анимацией.',
+        'Рамки «Стекло», титулы-ленты; похожие награды объединены.', 'Плавнее на телефонах.'] },
     { id: 189, ver: '2.5.0', date: '14 ноября', title: 'Вдвоём: «Захват территории» и «Спина к спине», обновлённые режимы', kind: 'season',
       lead: 'Два режима для двоих на двух телефонах и большая переработка старых режимов: у каждого теперь своя цель внутри раунда.', items: [
       '«Захват территории» вместо «Испытания дня»: поле поделено границей, ешь ботов на своей половине — граница ползёт к тому, кто легче. 4 минуты, досрочная победа при 80% поля.',
@@ -373,7 +402,51 @@
   const newsKind = n => { const k = NEWS_KIND[n.kind || 'update']; return `<i class="news-kind ${k[0]}">${k[1]}</i>`; };
   // 2.7: compact — one line per entry (type mark · version · title · date), the first 6 changes shown, the rest under «ещё N»
   const NEWS_SHOW = 6;
+  // ---- 2.7: the current update as cards (a hero and a grid), each opens big; the older ones folded in «Архив обновлений» as text ----
+  const NW_VIS = {
+    chars: () => `<div class="nw-v nw-chars">${CHARS.map(c => `<span style="--c:${c.color}"><i>${c.icon}</i>${c.name}</span>`).join('')}</div>`,
+    events: () => `<div class="nw-v nw-ev">${EVENTS.map(e => `<span style="--c:${e.color}">${e.name}</span>`).join('')}</div>`,
+    rb: () => `<div class="nw-v nw-rb"><span class="r1"><b>Рывок</b><small>обычное</small></span><span class="r3"><b>Пульс</b><small>эпическое</small></span><span class="r4"><b>Дыра</b><small>легендарное</small></span></div>`,
+    raid: () => `<div class="nw-v nw-raid">${[['I', 30], ['II', 45], ['III', 62], ['IV', 80], ['V', 100]].map(([r, h]) => `<span style="--h:${h}"><b>${r}</b></span>`).join('')}</div>`,
+    abil: () => `<div class="nw-v nw-swap"><span class="old">Скачок</span><b>→</b><span class="new">Метка</span><span class="old">Маскировка</span><b>→</b><span class="new">Засада</span></div>`,
+    online: () => `<div class="nw-v nw-link"><span class="code">K7M-4QX</span><span class="lnk">🔗 Поделиться ссылкой</span></div>`,
+    pause: () => `<div class="nw-v nw-pause"><span class="hd">⏸ Твои бафы</span><span>Скорость +6%</span><span>Магнит +10%</span><span class="ep">Хищник +18%</span><span class="bad">Вязкость −5%</span></div>`,
+    skins: () => `<div class="nw-v nw-skins">${['h_valentine', 's_7', 'h_halloween'].map(f => `<img src="news/27_${f}.webp" alt="" loading="lazy">`).join('')}</div>`,
+    deco: () => `<div class="nw-v nw-deco"><span class="fr fn fr-l" style="--a:#22e6ff;--b:#b26bff">Капля</span>${titleTag('tt_sk13')}</div>`,
+    fps: () => `<div class="nw-v nw-fps"><span style="--h:92"><small>было</small></span><span style="--h:38" class="now"><small>стало</small></span><em>рывков меньше</em></div>`,
+  };
+  let nwCur = null, nwI = 0, nwBack = null;
+  function newsCards(n) {
+    nwCur = n;
+    const hero = `<button type="button" class="nw-hero" data-nw="-1" aria-haspopup="dialog"><div class="nw-v nw-skins nw-wide">${n.hero.imgs.map(f => `<img src="news/27_${f}.webp" alt="" loading="lazy">`).join('')}</div>` +
+      `<div class="nw-ht"><span class="nw-tag">${n.ver} · ${NEWS_KIND[n.kind || 'update'][1].replace(/^\S+\s/, '')} · ${n.date}</span><b>${n.title}</b><span>${n.lead}</span></div></button>`;
+    return hero + `<div class="nw-grid">${n.cards.map((c, i) => `<button type="button" class="nw-card" data-nw="${i}" aria-haspopup="dialog">${NW_VIS[c.v]()}<span class="nw-ct">${c.t}</span><span class="nw-cl">${c.l}</span></button>`).join('')}</div>` +
+      (newsGift(n) ? `<p class="news-gift">🎁 Подарок: ${newsGift(n)} ◆</p>` : '');
+  }
+  function newsBig(i) {
+    const n = nwCur; if (!n) return;
+    let ov = $('nwOv'); if (!ov) { ov = document.createElement('div'); ov.id = 'nwOv'; ov.className = 'nw-ov'; ov.hidden = true; ov.innerHTML = '<div class="nw-big" id="nwBig" role="dialog" aria-modal="true" aria-labelledby="nwBt"></div>'; document.body.appendChild(ov); }
+    nwI = i; const hero = i < 0, c = hero ? { t: `${n.ver} — ${n.title}`, l: n.lead, b: n.hero.body } : n.cards[i], N = n.cards.length;
+    const vis = hero ? `<div class="nw-v nw-skins nw-wide">${n.hero.imgs.map(f => `<img src="news/27_${f}.webp" alt="">`).join('')}</div>` : NW_VIS[c.v]();
+    $('nwBig').innerHTML = vis + `<h2 id="nwBt">${c.t}</h2><p class="nw-bl">${c.l}</p><div class="nw-bb">${c.b}</div>` +
+      `<div class="nw-nav"><button type="button" data-nwgo="-1" aria-label="Предыдущая карточка">‹</button><span>${hero ? 'обзор' : (i + 1) + ' из ' + N}</span><button type="button" data-nwgo="1" aria-label="Следующая карточка">›</button><button type="button" class="nw-x" data-nwx>Закрыть</button></div>`;
+    ov.hidden = false; $('nwBig').scrollTop = 0; $('nwBig').querySelector('[data-nwx]').focus();
+  }
+  const newsBigClose = () => { const ov = $('nwOv'); if (ov) ov.hidden = true; if (nwBack) nwBack.focus(); };
+  const newsStep = d => { const N = nwCur.cards.length; newsBig(nwI < 0 ? (d > 0 ? 0 : N - 1) : (nwI + d + N) % N); };
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-nw]'); if (c) { nwBack = c; newsBig(+c.dataset.nw); return; }
+    const g = e.target.closest('[data-nwgo]'); if (g) { newsStep(+g.dataset.nwgo); return; }
+    if (e.target.closest('[data-nwx]') || (e.target.id === 'nwOv')) newsBigClose();
+  });
+  document.addEventListener('keydown', e => { const ov = $('nwOv'); if (!ov || ov.hidden) return; if (e.key === 'Escape') { e.stopPropagation(); newsBigClose(); } if (e.key === 'ArrowRight') newsStep(1); if (e.key === 'ArrowLeft') newsStep(-1); }, true);
+  { let sx = null; document.addEventListener('touchstart', e => { sx = e.target.closest && e.target.closest('#nwBig') ? e.touches[0].clientX : null; }, { passive: true });
+    document.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 60) newsStep(dx < 0 ? 1 : -1); }); }
   function newsHtml(list) {
+    const cur = list[0] && list[0].cards ? list[0] : null, rest = cur ? list.slice(1) : list;
+    return (cur ? newsCards(cur) : '') + (rest.length ? (cur ? `<details class="nw-arch"><summary>Архив обновлений · ${rest.length}</summary>${newsTextHtml(rest)}</details>` : newsTextHtml(rest)) : '');
+  }
+  function newsTextHtml(list) {
     const legend = '<p class="news-legend"><span><i class="nk k-patch"></i>патч</span><span><i class="nk k-update"></i>обновление</span><span><i class="nk k-season"></i>большое обновление</span></p>';
     const ul = (items, kinds) => `<ul${kinds ? ' class="news-kinds"' : ''}>${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
     return legend + list.map((n, k) => {
@@ -1706,7 +1779,7 @@
     } else if (b.dataset.aup) {
       const a = abilById(b.dataset.aup), l = save.abil.lv[a.id] || 0, cost = abUpCost(a, l);
       if (!save.abil.owned.includes(a.id) || l >= ABIL_CFG.levels || save.coins < cost) return;
-      coinsSpend(cost, 'abilup'); save.abil.lv[a.id] = l + 1; toast(`«${a.name}»: уровень ${l + 1}`); checkAbilAch();
+      coinsSpend(cost, 'abilup'); save.abil.lv[a.id] = l + 1; toast(`«${a.name}»: уровень ${l + 1}`); checkAbilAch(); if (arsenalTitleCheck()) setTimeout(() => toast('Новый титул «Мастер оружия»: все обычные способности на 5-м уровне!'), 1600);
     } else if (b.dataset.slotclear) {
       save.build[+b.dataset.slotclear] = null;
     } else if (b.dataset.up) {

@@ -722,3 +722,71 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 .ps-picks .pk-m { font: 800 .62rem var(--body); color: var(--muted, #aaa); } .ps-picks .pk-ic { font-size: 1.1rem; }
 .ps-picks .pk-t { display: grid; line-height: 1.2; } .ps-picks .pk-t b { font-size: .78rem; } .ps-picks .pk-t small { font-size: .66rem; color: var(--rc); }
 #charModal .ch-go { display: block; width: 100%; margin-top: 12px; min-height: 48px; }
+
+/* ===== 2.7 «Стекло»: frames get a thick translucent edge tinted by the frame's colours, a light top edge and a highlight (chosen with the owner) ===== */
+.fr.fn { border: 3px solid transparent !important; border-radius: 9px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--a) 22%, rgba(12, 8, 34, .95)), rgba(12, 8, 34, .95) 62%) padding-box,
+    linear-gradient(160deg, color-mix(in srgb, var(--a) 75%, #fff), color-mix(in srgb, var(--a) 50%, transparent) 40%, color-mix(in srgb, var(--b) 60%, transparent)) border-box;
+  background-size: 100% 100%, 100% 100%;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -2px 0 color-mix(in srgb, var(--b) 60%, transparent), 0 3px 8px rgba(0, 0, 0, .45), 0 0 12px color-mix(in srgb, var(--a) 30%, transparent); }
+.fr.fn::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 48%; border-radius: 6px 6px 40% 40%; background: linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, 0)); pointer-events: none; }
+.fr.fn.fr-l { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .55), inset 0 -2px 0 color-mix(in srgb, var(--b) 70%, transparent), 0 3px 8px rgba(0, 0, 0, .45), 0 0 16px color-mix(in srgb, var(--a) 45%, transparent); }
+.fr.fn.fr-l::after { background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .45) 45%, transparent 60%) 0 0 / 300% 100%, linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, 0));
+  height: 100%; border-radius: 6px; animation: frSheen 3.6s ease-in-out infinite; }
+@keyframes frSheen { 0%, 50% { background-position: 150% 0, 0 0; } 90%, 100% { background-position: -150% 0, 0 0; } }
+.q-low .fr.fn.fr-l::after { animation: none; }
+@media (prefers-reduced-motion: reduce) { .fr.fn.fr-l::after { animation: none; } }
+
+/* ===== 2.7 «Лента»: titles become award ribbons in their own colours; legendary ones get a running sheen (chosen with the owner) ===== */
+.ttl { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; padding: 2px 11px; font-weight: 700; font-style: normal; font-size: .8em; letter-spacing: .02em; line-height: 1.35;
+  color: #fff !important; -webkit-text-fill-color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .55) !important; filter: none !important; animation: none !important;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--a, #9a93c8) 55%, #120a2c), color-mix(in srgb, var(--a, #9a93c8) 85%, #120a2c), color-mix(in srgb, var(--a, #9a93c8) 55%, #120a2c)) !important;
+  -webkit-background-clip: border-box !important; background-clip: border-box !important;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%, 6px 50%); }
+.ttl .tt-i { margin-right: 2px; -webkit-text-fill-color: currentColor; }
+.ttl.tt-r-epic { background: linear-gradient(90deg, color-mix(in srgb, var(--a) 50%, #120a2c), color-mix(in srgb, var(--b, var(--a)) 70%, #120a2c), color-mix(in srgb, var(--a) 50%, #120a2c)) !important; }
+.ttl.tt-r-legendary { background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, .4) 48%, transparent 60%) 0 0 / 300% 100%, linear-gradient(90deg, color-mix(in srgb, var(--a) 60%, #2a1600), color-mix(in srgb, var(--b, var(--a)) 85%, #2a1600), color-mix(in srgb, var(--a) 60%, #2a1600)) !important;
+  animation: ttRibbon 3.4s ease-in-out infinite !important; }
+@keyframes ttRibbon { 0%, 50% { background-position: 150% 0, 0 0; } 90%, 100% { background-position: -150% 0, 0 0; } }
+.q-low .ttl.tt-r-legendary { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .ttl.tt-r-legendary { animation: none !important; } }
+
+/* ===== 2.7 «Обновления»: the current update as cards, each opens big; older ones folded as text ===== */
+.nw-hero { width: 100%; text-align: left; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; border-radius: 18px; overflow: hidden; display: grid; margin-bottom: 10px; background: radial-gradient(120% 140% at 0% 0%, #3a1580, #160d33 60%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.nw-hero > * { width: 100%; box-sizing: border-box; }
+.nw-ht { padding: 10px 14px 14px; display: grid; gap: 4px; }
+.nw-tag { justify-self: start; font: 700 .64rem/1 var(--body); letter-spacing: .06em; text-transform: uppercase; color: #2a1600; background: #ffd23f; padding: 5px 8px; border-radius: 999px; }
+.nw-ht b { font: 700 1.05rem/1.25 var(--display); text-wrap: balance; } .nw-ht span:last-child { color: #d8d2f5; font-size: .85rem; }
+.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 8px; }
+.nw-card { text-align: left; font: inherit; color: inherit; cursor: pointer; background: rgba(22, 13, 51, .9); border: 1px solid rgba(150, 120, 255, .25); border-radius: 14px; padding: 8px; display: grid; gap: 5px; align-content: start; }
+.nw-card:hover, .nw-card:focus-visible { border-color: #22e6ff; outline: none; }
+.nw-ct { font: 700 .86rem/1.2 var(--display); } .nw-cl { font-size: .74rem; color: var(--muted, #a59ccc); }
+.nw-v { width: 100%; box-sizing: border-box; border-radius: 10px; background: #0c0720; min-height: 84px; padding: 8px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; justify-content: center; overflow: hidden; }
+.nw-chars span { display: grid; justify-items: center; gap: 2px; font: 700 .56rem/1 var(--body); color: var(--c); }
+.nw-chars i { font-style: normal; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 22%, #0c0720); box-shadow: 0 0 0 2px var(--c), 0 0 10px color-mix(in srgb, var(--c) 50%, transparent); font-size: .8rem; }
+.nw-ev span { font: 700 .58rem/1 var(--body); padding: 4px 6px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
+.nw-rb { flex-wrap: nowrap; } .nw-rb span { width: 28%; aspect-ratio: 3/4; border-radius: 8px; display: grid; align-content: end; padding: 5px; }
+.nw-rb b { font-size: .66rem; } .nw-rb small { opacity: .8; font-size: .52rem; }
+.nw-rb .r1 { background: linear-gradient(180deg, #2a2a4a, #15152a); box-shadow: inset 0 0 0 1px #8a8ab0; }
+.nw-rb .r3 { background: linear-gradient(180deg, #5a1fa8, #22104a); box-shadow: inset 0 0 0 1px #c9a2ff; }
+.nw-rb .r4 { background: linear-gradient(180deg, #a86a00, #3a2400); box-shadow: inset 0 0 0 1px #ffe08a, 0 0 10px rgba(255, 210, 63, .4); }
+.nw-raid { align-items: flex-end; gap: 6px; } .nw-raid span { width: 14%; height: calc(var(--h) * .6px + 8px); border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, #ff2d75, #6a0a30); display: grid; justify-items: center; padding-top: 3px; } .nw-raid b { font: 700 .58rem/1 var(--body); }
+.nw-swap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 5px 6px; } .nw-swap span { font: 700 .66rem/1 var(--body); padding: 5px 6px; border-radius: 7px; text-align: center; }
+.nw-swap .old { color: #a59ccc; text-decoration: line-through; background: #1d1242; } .nw-swap .new { color: #22e6ff; background: rgba(34, 230, 255, .15); } .nw-swap b { color: #ff4fd8; }
+.nw-link { flex-direction: column; } .nw-link .code { font: 700 1rem/1 var(--display); letter-spacing: .12em; color: #ffd23f; } .nw-link .lnk { font: 700 .64rem/1 var(--body); padding: 5px 9px; border-radius: 999px; background: rgba(34, 230, 255, .18); color: #22e6ff; }
+.nw-pause { flex-direction: column; align-items: stretch; gap: 3px; } .nw-pause span { font-size: .62rem; padding: 3px 6px; border-radius: 6px; background: #1d1242; } .nw-pause .hd { background: none; color: #a59ccc; font-weight: 700; } .nw-pause .ep { color: #d8b8ff; } .nw-pause .bad { color: #ff4f6e; }
+.nw-skins { flex-wrap: nowrap; } .nw-skins img { width: 30%; max-width: 100%; aspect-ratio: 1; } .nw-wide { background: none; padding: 14px 10px 0; } .nw-wide img { width: 19%; }
+.nw-deco { flex-direction: column; gap: 8px; }
+.nw-fps { align-items: flex-end; gap: 10px; } .nw-fps span { width: 22%; height: calc(var(--h) * .6px); background: #3a2a6a; border-radius: 6px; display: grid; align-content: end; justify-items: center; } .nw-fps .now { background: #3dffa2; }
+.nw-fps small { font-size: .54rem; color: #fff; padding-bottom: 3px; } .nw-fps .now small { color: #062a18; } .nw-fps em { font-style: normal; font-size: .6rem; color: #3dffa2; width: 100%; text-align: center; }
+.nw-arch { margin-top: 12px; } .nw-arch > summary { cursor: pointer; font: 700 .86rem/1.2 var(--display); color: #a59ccc; padding: 9px 12px; border-radius: 12px; background: rgba(22, 13, 51, .9); list-style: none; }
+.nw-arch > summary::after { content: " ▾"; } .nw-arch[open] > summary::after { content: " ▴"; } .nw-arch[open] > summary { margin-bottom: 8px; }
+.nw-ov { position: fixed; inset: 0; z-index: 90; background: rgba(6, 3, 18, .8); backdrop-filter: blur(4px); display: grid; place-items: center;
+  padding: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); }
+.nw-ov[hidden] { display: none; }
+.nw-big { width: min(560px, 100%); max-height: 100%; overflow: auto; background: linear-gradient(180deg, #1d1242, #120a2c); border: 1px solid rgba(150, 120, 255, .3); border-radius: 20px; padding: 14px; display: grid; gap: 10px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+.nw-big .nw-v { min-height: 170px; } .nw-big .nw-chars i { width: 40px; height: 40px; font-size: 1.2rem; } .nw-big .nw-chars span { font-size: .74rem; } .nw-big .nw-ev span { font-size: .76rem; padding: 6px 9px; }
+.nw-big h2 { font: 700 1.15rem/1.25 var(--display); margin: 0; text-wrap: balance; } .nw-bl { color: #22e6ff; margin: 0; font-weight: 600; }
+.nw-bb { font-size: .92rem; color: #ddd8f8; } .nw-bb ul { padding-left: 18px; display: grid; gap: 5px; margin: 6px 0; } .nw-bb p { margin: 0 0 8px; }
+.nw-nav { display: flex; gap: 8px; align-items: center; } .nw-nav button { font: 700 .85rem/1 var(--body); color: #ece8ff; background: #1d1242; border: 1px solid rgba(150, 120, 255, .3); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
+.nw-nav .nw-x { margin-left: auto; } .nw-nav span { color: #a59ccc; font-size: .78rem; }

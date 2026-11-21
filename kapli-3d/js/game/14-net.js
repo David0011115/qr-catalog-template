@@ -1560,7 +1560,7 @@
     if (save.chaosLog.length < 12) save.chaosLog = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, tier: (CHAOS_TIERS.length - 1) - (i % CHAOS_TIERS.length), pts: 100 }));
     // workshop «Хронос» items stay out: they are made in the workshop (crafted ones are kept)
     const keep = (all, mine) => [...new Set([...all.filter(x => !x.craft).map(x => x.id), ...(mine || [])])];
-    save.skins = keep(SKINS, save.skins); save.fxOwned = keep(FX, save.fxOwned); save.pets = keep(PETS, save.pets); save.decor = keep(DECOR, save.decor); save.arenas = ARENAS.map(a => a.id); save.hats = Object.keys(HATS);
+    save.skins = keep(SKINS, save.skins); save.fxOwned = keep(FX, save.fxOwned); save.pets = keep(PETS, save.pets); save.decor = keep(DECOR.filter(d => !d.old), save.decor).filter(id => !(decorById(id) || {}).old);   /* 2.7: retired frames/titles are not handed out in the test build either */ save.arenas = ARENAS.map(a => a.id); save.hats = Object.keys(HATS);
   }
   if (TEST_MODE) { testUnlockAll(); persist(); }
   if (TEST_MODE) {

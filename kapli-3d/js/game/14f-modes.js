@@ -399,6 +399,7 @@
       hcDbg.t += dt; if (hcDbg.t >= 1) { hcDbg.gain = hcDbg.gain * .7 + .3 * ((m - hcDbg.m) / hcDbg.t + melt); hcDbg.m = m; hcDbg.t = 0; }
       if (hcLog && stats.time >= hcLog.next && hcLog.samples.length < 400) { hcLog.next = stats.time + 5; const hm = hcHalfMass(); hcLog.samples.push([Math.round(stats.time), Math.round(m), Math.round(melt), Math.max(0, Math.round(hcDbg.gain)), player.cells.length, Math.round(hm[0]), Math.round(hm[1]), hcBossStage]); }
       const list = Object.keys(HC_BOOST).filter(k => hcN[k]).map(k => `${HC_BOOST[k][0]}${HC_BOOST[k][3] === '+' ? '+' + hc[k] : '−' + Math.round((1 - hc[k]) * 100)}%`).join(' ');
+      if ((hcDbg.ui = (hcDbg.ui || 0) - dt) > 0) return; hcDbg.ui = .25;   // 2.7 FPS: the test line 4 times a second, not every frame
       el.textContent = `ТЕСТ · ${Math.round(m)} · тает ${Math.round(melt)}/с · ешь ≈${Math.max(0, Math.round(hcDbg.gain))}/с · ${list || 'улучшений нет'} · ● запись`;
     }
     // the end of a round: the hardcore series reward

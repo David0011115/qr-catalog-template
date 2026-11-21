@@ -403,6 +403,10 @@
   // 2.7 FPS: bots get a random skin, star level and aura each time they come back; a look never seen before compiled its shader in the middle of a round (a 60–80 ms hitch on a phone).
   // While the menu is open, every look a bot can get is put on a hidden drop and compiled — a little at a time, never during a round.
   // 8 hidden drops wear 8 looks at a time, then one compile; a round that starts before the end finishes the rest at its start (prewarmFinish)
+  // 2.7: three r128 builds a reflection map (PMREM) the first time a material with an env map is compiled — inside compile(), and that
+  // render leaves the compile without its render state: it threw on the first chrome/diamond look and the warm-up stopped there,
+  // so every look after it compiled mid-round (the owner's reports). A second pass finds the map ready and goes on.
+  function compileSafe() { for (let i = 0; i < 6; i++) { try { renderer.compile(scene, camera); return true; } catch (e) { if (i === 5 && TEST_MODE) console.warn('compile', e); } } return false; }
   let prewarmJobs = null, prewarmI = 0, prewarmVis = null;
   function prewarmChunk(budgetMs) {
     try {
@@ -412,7 +416,7 @@
       const t0 = performance.now();
       while (prewarmI < prewarmJobs.length && performance.now() - t0 < budgetMs) {
         for (let k = 0; k < prewarmVis.length && prewarmI < prewarmJobs.length; k++) { const [a, b] = prewarmJobs[prewarmI++], v = prewarmVis[k]; if (a === 'aura') setAura(v, b, '#8088c0'); else applySkin(v, a, b, null); }
-        renderer.compile(scene, camera);
+        compileSafe();
       }
     } catch (e) { if (prewarmJobs) prewarmI = prewarmJobs.length; }
     const done = !prewarmJobs || prewarmI >= prewarmJobs.length;

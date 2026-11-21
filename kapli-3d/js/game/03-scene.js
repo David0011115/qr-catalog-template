@@ -9,7 +9,7 @@
         m.blending = THREE.CustomBlending; m.blendEquation = THREE.AddEquation; m.blendSrc = THREE.SrcAlphaFactor; m.blendDst = THREE.OneFactor;
         m.blendEquationAlpha = THREE.AddEquation; m.blendSrcAlpha = THREE.OneFactor; m.blendDstAlpha = THREE.OneFactor; m.userData.alphaSafe = 1; m.needsUpdate = true; } });
   }
-  let QUALITY = 'high';
+  let QUALITY = 'high', HB_READY = false;   // HB_READY: the head batches exist (the glow sync runs before they are declared during start-up)
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = false;   // neon look relies on emissive light, not shadows
   stage.appendChild(renderer.domElement);
@@ -121,6 +121,7 @@
       eyesI.count = off ? 0 : ne; ringI.count = off ? 0 : nr;
       eyesI.visible = eyesI.count > 0; ringI.visible = ringI.count > 0;
       eyesI.instanceMatrix.needsUpdate = ringI.instanceMatrix.needsUpdate = ringI.instanceColor.needsUpdate = true;
+      try { hbSync(off); } catch (e) { if (TEST_MODE && HB_READY) console.warn(e); }
       if (off) mesh.visible = false;
     }
     return { mesh, sync };
@@ -958,7 +959,44 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     evoApply(vis, s, !!vis.mine);
   }
   // items above the head for epic and legendary skins (the crown stays for the others)
+  // 2.7 FPS: bots' heads drawn in batches. Heads of one type look the same on every drop (their colours belong to the type), so a part
+  // with a built-in material (basic or standard) is drawn for all bots at once — one instanced draw per part instead of one per bot.
+  const headProto = {}, HB = new Map(); HB_READY = true;
+  function hbGrow(p, n) { p.cap = n; if (p.im) { scene.remove(p.im); p.im.dispose(); } p.im = new THREE.InstancedMesh(p.geo, p.mat, n); p.im.frustumCulled = false; p.im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); p.im.count = 0; p.im.visible = false; p.im.name = 'детали голов (все)'; scene.add(p.im); }
+  const hbGeoK = {}, hbMatK = {};
+  function hbMark(pr, own) {   // own: the animation changes each part's material on its own — keep them apart
+    pr.traverse(o => { if (!o.isMesh || o.isInstancedMesh || Array.isArray(o.material) || !(o.material.isMeshBasicMaterial || o.material.isMeshStandardMaterial)) return;
+      const g = o.geometry, m = o.material;
+      if (g.parameters) { const gk = g.type + JSON.stringify(g.parameters); o.geometry = hbGeoK[gk] || (hbGeoK[gk] = g); }
+      if (!own && !m.map && !m.emissiveMap && !m.envMap && !m.alphaMap) { const mk = [m.type, m.color.getHex(), m.emissive ? m.emissive.getHex() : '', m.emissiveIntensity, m.roughness, m.metalness, m.opacity, m.transparent, m.side, m.blending, m.depthWrite, m.flatShading, m.wireframe, m.vertexColors].join();
+        o.material = hbMatK[mk] || (hbMatK[mk] = m); }
+      o.userData.hb = 1; hbPool(o.geometry, o.material); });
+  }
+  function hbPool(geo, mat) { const k = geo.uuid + mat.uuid; let p = HB.get(k); if (!p) { p = { geo, mat, cap: 0, im: null, list: [] }; HB.set(k, p); hbGrow(p, 8); } return p; }   // made with the head type (in the menu warm-up), so its shader is compiled before a round
+  function hbSync(off) {
+    for (const p of HB.values()) p.list.length = 0;
+    for (let i = 0; i < allVis.length; i++) {
+      const v = allVis[i];
+      for (const h of [v.head, v.aura]) { if (!h) continue;
+        h.traverse(o => { if (o.userData.hb) o.layers.set(0); });
+        if (off || v.mine || !v.mesh.visible || v.mesh.parent !== scene) continue;
+        let shown = true; for (let q = h; q && q !== v.mesh; q = q.parent) if (!q.visible) shown = false; if (!shown) continue;
+        h.traverseVisible(o => { if (!o.userData.hb) return; const p = HB.get(o.geometry.uuid + o.material.uuid); if (p) p.list.push(o); }); }
+    }
+    for (const p of HB.values()) {
+      const L = p.list, n = L.length >= 2 ? L.length : 0;
+      if (n > p.cap) hbGrow(p, Math.ceil(n * 1.5) + 4);
+      for (let k = 0; k < n; k++) { L[k].layers.set(GLOW_LAYER); p.im.setMatrixAt(k, L[k].matrixWorld); }
+      p.im.count = n; p.im.visible = n > 0; if (n) p.im.instanceMatrix.needsUpdate = true;
+    }
+  }
   function buildHead(type) {
+    let pr = headProto[type];
+    if (!pr) { pr = headProto[type] = buildHeadNew(type); hbMark(pr, type === 'icecrown'); }
+    const g = pr.clone(); g.traverse(o => { if (o.isSprite && o.material.map === glowTex) glowList.push(o); });
+    return g;
+  }
+  function buildHeadNew(type) {
     const g = new THREE.Group(); g.userData.type = type;
     // the camera looks from above, so shift items back (they read as "above the head" on screen) and enlarge them
     if (!['wings', 'helm', 'ring', 'shards', 'swarm', 'portal', 'cuphandles', 'fragments', 'warhelm', 'windkey'].includes(type)) { g.position.set(0, -.1, -.75); g.scale.setScalar(1.3); }
@@ -1366,7 +1404,15 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     }
   }
   // auras live on every player part
+  const auraProto = {};
   function buildAura(type, color = skin().color) {
+    if (!type) return null;
+    const key = type + '|' + new THREE.Color(color).getHexString(); let pr = auraProto[key];
+    if (!pr) { pr = auraProto[key] = buildAuraNew(type, color); if (!pr) return null; hbMark(pr, type === 'pulseAura'); }
+    const g = pr.clone(); g.traverse(o => { if (o.isSprite && o.material.map === glowTex) glowList.push(o); });
+    return g;
+  }
+  function buildAuraNew(type, color) {
     if (!type) return null;
     const grp = new THREE.Group(); grp.userData.type = type;
     const add = (o, d) => { o.userData = d || {}; grp.add(o); return o; };

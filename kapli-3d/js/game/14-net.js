@@ -1351,8 +1351,26 @@
       ['60 000 + 4 босса', () => { stressMass(60000); stressBosses(4); }, 1],
       ['толпа: все боты 5–9 тыс. + эффекты', () => { stressBots(5000, 9000); stressBosses(4); }, 2],
       ['100 000 + звездопад', () => { stressMass(100000); stressBosses(4); stressEvent('starfall'); }, 2],
-      ...['rift', 'wind', 'eclipse', 'golden', 'coinrain', 'quake'].map(id => ['шторм: «' + evInfo(id).name + '»', () => { stressBosses(4); stressEvent(id); }, 2])] }
+      ...['rift', 'wind', 'eclipse', 'golden', 'coinrain', 'quake'].map(id => ['шторм: «' + evInfo(id).name + '»', () => { stressBosses(4); stressEvent(id); }, 2])] },
+    // 2.7 (owner's idea): how much room is left — 20, 30, 40 drops of bots on the field (bots split into parts and stay split), in their own looks;
+    // the step's 4th item runs every second and tops the crowd up
+    crowd: { name: 'Толпа', mode: 'classic', stepMs: 60000, steps: [
+      ['20 мобов', () => { stressMass(5000); }, 0, () => stressCrowd(20)],
+      ['30 мобов', () => {}, 0, () => stressCrowd(30)],
+      ['40 мобов', () => {}, 0, () => stressCrowd(40)],
+      ['40 мобов + 4 босса + 60 000', () => { stressMass(60000); stressBosses(4); }, 0, () => { stressCrowd(40); stressBosses(4); }]] }
   };
+  // bots' drops up to n: the bots with the fewest parts split (a part keeps 2 000–5 000 mass), parts stay apart for 30 s
+  function stressCrowd(n) {
+    const bc = () => bots.reduce((s, o) => s + o.cells.length, 0);
+    for (const o of bots) for (const c of o.cells) { if (c.mass < 2000) c.mass = 2000 + stressRnd() * 3000; c.mergeT = Math.max(c.mergeT || 0, 30); }
+    for (let guard = 0; guard < 80 && bc() < n; guard++) {
+      const o = bots.filter(b => b.cells.length && b.cells.length < BOT_PARTS && b.free.length).sort((a, b) => a.cells.length - b.cells.length)[0]; if (!o) break;
+      for (const c of o.cells) c.mass = Math.max(c.mass, 4000);
+      if (!splitOwner(o, o.cells.length + 1, 30)) break; rebuildCells();
+    }
+    return bc();
+  }
   let stressSeed = 1;
   const stressRnd = () => { stressSeed = (stressSeed * 16807) % 2147483647; return stressSeed / 2147483647; };
   function stressMass(m) { const sum = total(player); if (!sum) return; if (sum < m) { const c = mainOf(player); c.mass += m - sum; } }
@@ -1409,16 +1427,17 @@
     { const hb = document.querySelector('#hcPick:not([hidden]) [data-hi], #rbPick:not([hidden]) [data-hi]'); if (hb) hb.click(); }   // milestone cards: the first one
     if (!running || dying || paused) { toast('Стресс-тест прерван'); stressQueue = null; stressStop(); return; }
     const el = now - R0.t0, dtm = now - R0.last; R0.last = now;
-    if (R0.step >= 0 && dtm > 0) { R0.cur.ms.push(dtm); R0.all.push(dtm); }
+    if (R0.step >= 0 && dtm > 0) { R0.cur.ms.push(dtm); R0.all.push(dtm); const P = R0.cur.parts = R0.cur.parts || [0, 0, 0, 0]; P[0] += framePrev[0]; P[1] += framePrev[1]; P[2] += framePrev[2]; P[3]++; }
     R0.secN++; if (now - R0.secT >= 1000) { const f = Math.round(R0.secN * 1000 / (now - R0.secT)); if (R0.cur) R0.cur.secs.push(f); R0.secs = R0.secs || []; R0.secs.push(f); R0.secN = 0; R0.secT = now; }
     const step = Math.min(R0.sc.steps.length, Math.floor(el / R0.stepMs));
     if (step !== R0.step) {
       if (R0.cur) stressClose(R0);
       if (step >= R0.sc.steps.length) { stressFinish(R0); return; }
       R0.step = step; const [label, act, fx] = R0.sc.steps[step];
-      R0.cur = { label, fx, ms: [], secs: [], eats0: (stats.kills || 0) + (stats.bosses || 0) + (stats.minions || 0) }; try { act(); } catch (e) { R0.cur.err = String(e.message).slice(0, 80); }
+      R0.cur = { label, fx, keep: R0.sc.steps[step][3] || null, ms: [], secs: [], eats0: (stats.kills || 0) + (stats.bosses || 0) + (stats.minions || 0) }; R0.keepT = 0; try { act(); } catch (e) { R0.cur.err = String(e.message).slice(0, 80); }
       toast(`Стресс · ${QNAME[save.settings.quality] || ''} · ${step + 1}/${R0.sc.steps.length}: ${label}`); TLog.ev('стресс: шаг', label);
     }
+    if (R0.cur && R0.cur.keep && (R0.keepT -= dtm) <= 0) { R0.keepT = 1000; try { R0.cur.keep(); } catch (e) { R0.cur.err = String(e.message).slice(0, 80); } }
     if (R0.cur && !R0.cur.census && el - R0.step * R0.stepMs > R0.stepMs * .7) { try { R0.cur.census = drawCensus(); } catch (e) {} }   // what is drawn, late in the step
     effects.shield = Math.max(effects.shield || 0, 1);   // nobody eats the autopilot: the run always lasts 60 s
     // autopilot: circles the arena, so the camera passes everything
@@ -1442,7 +1461,7 @@
   }
   function stressClose(R0) {
     const c = R0.cur, ri = renderer.info.render, mem = performance.memory;
-    R0.steps.push({ step: c.label, ...stressSum(c.ms, c.secs), calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', cells: cells.length, mine: player.cells.length,
+    R0.steps.push({ step: c.label, ...stressSum(c.ms, c.secs), calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', cells: cells.length, mobs: bots.reduce((s, o) => s + o.cells.length, 0), logicMs: c.parts ? +(c.parts[0] / c.parts[3]).toFixed(1) : null, drawMs: c.parts ? +(c.parts[1] / c.parts[3]).toFixed(1) : null, hudMs: c.parts ? +(c.parts[2] / c.parts[3]).toFixed(1) : null, mine: player.cells.length,
       bosses: bossOwners.filter(o => o.cells.length).length, mass: Math.round(total(player)), eaten: (stats.kills || 0) + (stats.bosses || 0) + (stats.minions || 0) - (c.eats0 || 0), fx: pActive.length + eActive.length, heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) : null, drawn: c.census || null, err: c.err });
     R0.cur = null;
   }
@@ -1492,7 +1511,7 @@
       <div class="tl-chips" role="group" aria-label="Режим"><button type="button" data-tlf="stress" class="tl-stress${testFilter === 'stress' ? ' on' : ''}">⚡ Стресс-тесты · ${nStress}</button><button type="button" data-tlf="all" class="${testFilter === 'all' ? 'on' : ''}">Все · ${all.length - nStress}</button>${modes.map(m =>
         `<button type="button" data-tlf="${m}" class="${testFilter === m ? 'on' : ''}">${escHtml((MODES[m] || {}).name || m)} · ${all.filter(r => r.mode === m).length}</button>`).join('')}</div>
       ${testFilter === 'stress' ? `<div class="tl-stress-run"><p>Игра сама играет раунд Хардкора 6 минут: охотится, ест, делится. Каждая минута — отдельный шаг отчёта: FPS, фризы, сколько съедено, память. Телефон не трогай.</p>
-        <div class="tl-btns one"><button type="button" data-stress="real">▶ Стресс-тест · Хардкор, 6 мин<small>автопилот охотится и ест: боты, стаи, боссы; масса 1к → 100к, деление, события, проклятие · на твоём качестве графики</small></button></div></small></button></div></div>` : ''}
+        <div class="tl-btns one"><button type="button" data-stress="real">▶ Стресс-тест · Хардкор, 6 мин<small>автопилот охотится и ест: боты, стаи, боссы; масса 1к → 100к, деление, события, проклятие · на твоём качестве графики</small></button></div><div class="tl-btns one"><button type="button" data-stress="crowd">▶ Стресс-тест · Толпа, 4 мин<small>запас прочности: 20 → 30 → 40 мобов в своих обликах, потом 40 + 4 босса и 60 000 · FPS, рывки, вызовы отрисовки, логика и отрисовка в мс</small></button></div></small></button></div></div>` : ''}
       <div class="tl-btns"><button type="button" data-tlc="1">📋 Последний</button><button type="button" data-tlc="5">📋 Последние 5</button><button type="button" data-tlc="0">📋 Все${testFilter === 'all' ? '' : ' этого режима'}</button><button type="button" data-tlclear class="warn">Очистить</button></div>
       ${shown.length ? `<ol class="tl-list">${shown.map(r => tlRow(r, list.indexOf(r))).join('')}</ol>` : '<p class="hint">Пока пусто — сыграй любой раунд до конца, отчёт появится здесь.</p>'}
       <p class="hint">🐢 — сколько раз скорость падала ниже 40%, 📉 — секунды с FPS ниже 30, 📶 — средний пинг онлайна, ⏸ — пропуски связи дольше 1 с. Нажми на строку — скопируется один отчёт.</p></div>`;

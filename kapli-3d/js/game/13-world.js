@@ -432,13 +432,20 @@
     return (named || ((o.geometry && o.geometry.type || o.type) + '/' + (o.material && o.material.type || ''))) + (who ? ' [' + who + ']' : '');
   }
   const seenProgs = new Set();
+  function shaderWhy(o, m) {
+    let p = o; while (p && p.name !== 'капля') p = p.parent;
+    const c = p ? cells.find(k => k.vis && k.vis.mesh === p) : null, w = c && c.owner;
+    const look = w && !w.isPlayer ? ` · облик ${w.lookSkin || '?'}★${w.lookSt || 0}${w.fx && w.fx.aura ? ' аура ' + w.fx.aura : ''}${w.star ? ' звезда' : ''}` : '';
+    const f = [m.map && 'map', m.emissiveMap && 'emiMap', m.envMap && 'env', m.alphaMap && 'alpha', m.vertexColors && 'vcol', m.flatShading && 'flat', m.transparent && 'transp', m.side === 2 && 'double', o.isInstancedMesh && 'inst', m.fog === false && 'nofog'].filter(Boolean).join('+');
+    return look + (f ? ' · ' + f : '') + ` · ${QUALITY}`;
+  }
   function shaderWho() {
     const list = renderer.info.programs || [], fresh = list.filter(p => !seenProgs.has(p)); list.forEach(p => seenProgs.add(p));
     if (fresh.length > 6) return;   // a whole new arena (round start), not a hitch to explain
     for (const prog of fresh) {
       let who = null;
       scene.traverse(o => { if (who || !o.material) return; const ms = Array.isArray(o.material) ? o.material : [o.material];
-        for (const m of ms) { const pr = renderer.properties.get(m); if (pr && pr.currentProgram === prog) { who = objLabel(o); break; } } });
+        for (const m of ms) { const pr = renderer.properties.get(m); if (pr && pr.currentProgram === prog) { who = objLabel(o) + shaderWhy(o, m); break; } } });
       TLog.ev('новый шейдер', (prog.name || '?') + (who ? ': ' + who : ''));
     }
   }

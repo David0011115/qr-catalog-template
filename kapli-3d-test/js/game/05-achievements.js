@@ -159,6 +159,8 @@
     }
     if (!isTut) { spawnBonus(); spawnBonus(); }
     ModeX.start();
+    // 2.7 FPS: compile every shader of the arena now — bosses, bot looks and effects already in the scene (hidden ones too); the first boss or effect used to stall a frame on a phone
+    try { renderer.compile(scene, camera); } catch (e) {}
     $('overlay').hidden = true;
     setGameUi(true);
     if (isTut) tutBegin();

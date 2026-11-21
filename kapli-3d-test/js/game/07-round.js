@@ -336,7 +336,7 @@
   }
   let historyT = 0;
   // Spatial broad phase for eating: only inspect cells in the eater's reachable area.
-  const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatCandidates = [];
+  const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatCandidates = [], byIndex = (x, y) => x - y;
   const eatGridKey = (x, z) => ((x & 65535) << 16) | (z & 65535);
   function update(dt) {
     if (DuoM.server) { DuoM.serverTick(dt); return; }
@@ -436,7 +436,7 @@
       if (o.target && !o.target.gone) {   // 1.7.0: aim where the prey will be, not where it is
         const t = o.target, lead = o.target.owner && o.target.owner.decoy ? 0 : botLead(o), v = t.owner && t.owner.cells ? speedOf(t) : 0;
         o.tx = t.x + (t.hx || 0) * v * lead; o.tz = t.z + (t.hz || 0) * v * lead; }
-      o.cells.forEach(k => steer(k, o.tx, o.tz, dt));
+      for (let k = 0; k < o.cells.length; k++) steer(o.cells[k], o.tx, o.tz, dt);
     }
     rebuildCells();
 
@@ -469,7 +469,8 @@
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const b = bonuses[i];
       if (DuoM.rivalPick(b)) { scene.remove(b.mesh); bonuses.splice(i, 1); continue; }
-      if (player.cells.some(c => Math.hypot(c.x - b.x, c.z - b.z) < cellR(c) + 1)) {
+      let touch = false; for (const c of player.cells) { const dx = c.x - b.x, dz = c.z - b.z, rr = cellR(c) + 1; if (dx * dx + dz * dz < rr * rr) { touch = true; break; } }
+      if (touch) {
         // same bonus stacks its time, capped at 30 s
         const stacked = !BONUS[b.type].instant && effects[b.type] > 0;
         if (BONUS[b.type].instant) fountainBurst();
@@ -487,19 +488,21 @@
     // lostCell() may rebuild the global cells array (for example on an extra life),
     // but candidate indices must continue to refer to the array used to build eatGrid.
     const eatCells = cells;
-    eatGrid.clear();
-    let eatMassTotal = 0;
+    for (const bucket of eatGrid.values()) bucket.length = 0;   // 2.7 FPS: buckets are reused, not rebuilt every frame
+    let eatMaxR = 0;
     for (let i = 0; i < eatCells.length; i++) {
       const c = eatCells[i]; if (c.gone) continue;
-      eatMassTotal += c.mass;
+      const cr = cellR(c); if (cr > eatMaxR) eatMaxR = cr;
       const gx = Math.floor(c.x / EAT_GRID_SIZE), gz = Math.floor(c.z / EAT_GRID_SIZE), key = eatGridKey(gx, gz);
       let bucket = eatGrid.get(key); if (!bucket) eatGrid.set(key, bucket = []);
       bucket.push(i);
     }
     for (const a of eatCells) {
       if (dying || a.gone) continue;
-      // Upper bound includes all current mass and the maximum temporary hunt/cloak eating bonus.
-      const searchR = 0.38 * Math.sqrt(Math.max(0, eatMassTotal * 1.27)) * (a.owner.rs || 1);
+      // 2.7 FPS: a can only eat what has its centre inside a (cover ≥ 0) — before, the search radius was that of ALL the mass on the arena, so every drop checked almost every drop.
+      // Only a player half that can make a «double bite» reaches further: up to its radius + .55 of the biggest drop.
+      const ra = cellR(a), pairCan = a.owner.isPlayer && a.hcHalf !== undefined;
+      const searchR = pairCan ? ra + eatMaxR * .55 : ra, searchR2 = searchR * searchR;
       const gx0 = Math.floor((a.x - searchR) / EAT_GRID_SIZE), gx1 = Math.floor((a.x + searchR) / EAT_GRID_SIZE);
       const gz0 = Math.floor((a.z - searchR) / EAT_GRID_SIZE), gz1 = Math.floor((a.z + searchR) / EAT_GRID_SIZE);
       eatCandidates.length = 0;
@@ -507,17 +510,20 @@
         const bucket = eatGrid.get(eatGridKey(gx, gz));
         if (bucket) for (let j = 0; j < bucket.length; j++) eatCandidates.push(bucket[j]);
       }
-      eatCandidates.sort((x, y) => x - y);
+      eatCandidates.sort(byIndex);
       for (let ci = 0; ci < eatCandidates.length; ci++) {
       const b = eatCells[eatCandidates[ci]];
       if (dying || a.gone || b.gone || a.owner === b.owner) continue;
-      const pairMate = !canEat(a, b) && !ModeX.hcPackMerge(a, b) ? ModeX.hcPairBite(a, b) : null;
-      if (!(canEat(a, b) || ModeX.hcPackMerge(a, b) || pairMate)) continue;
+      { const dx = a.x - b.x, dz = a.z - b.z; if (dx * dx + dz * dz >= searchR2) continue; }   // cheap distance test before the eat rules
+      const ceat = canEat(a, b), pmerge = !ceat && ModeX.hcPackMerge(a, b);
+      const pairMate = !ceat && !pmerge && pairCan ? ModeX.hcPairBite(a, b) : null;
+      if (!(ceat || pmerge || pairMate)) continue;
       // 2.7: after a pack bites the player, the whole pack waits 2.5 s before the next bite (4 bites in a second felt unfair)
       if (a.owner.hcPack && b.owner.isPlayer && stats.time < (stats.packBiteUntil || 0)) continue;
       // 2.7: above 20 000 the radius grows slowly, so a far heavier eater barely looks bigger — the more it outweighs the player, the less of them it must cover (×2 and more: the centre inside is enough)
       const coverK = b.owner.isPlayer && !a.owner.isPlayer ? Math.max(0, .35 * (2 - a.mass / b.mass) / .75) : .35;
-      if (pairMate || Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * coverK) {
+      const reach = cellR(a) - cellR(b) * coverK, ddx = a.x - b.x, ddz = a.z - b.z;
+      if (pairMate || (reach > 0 && ddx * ddx + ddz * ddz < reach * reach)) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
           stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK());
         } }
@@ -715,37 +721,44 @@
       `<span class="bar wide"><span style="width:${pct.toFixed(0)}%"></span></span></div>`;
   }
   const mini = $('minimap'), mctx = mini.getContext('2d');
+  // 2.7 FPS: the minimap is drawn 4 times a second — its size and CSS colours are read once (reading them after a HUD change forced a style recalculation)
+  let miniSize = 0, miniTok = null;
+  addEventListener('resize', () => { miniSize = 0; });
   function drawMinimap() {
-    const size = mini.clientWidth || 140, dpr = Math.min(devicePixelRatio, 2);
+    if (!miniSize) miniSize = mini.clientWidth || 0;
+    if (!miniTok) miniTok = { line: tok('--line'), threat: tok('--threat'), prey: tok('--prey') };
+    const size = miniSize || 140, dpr = Math.min(devicePixelRatio, 2);
     if (mini.width !== size * dpr) { mini.width = mini.height = size * dpr; }
     const s = size / (2 * R + 4);
     mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     mctx.clearRect(0, 0, size, size);
     mctx.fillStyle = 'rgba(12, 8, 34, .92)';
     mctx.beginPath(); mctx.arc(size / 2, size / 2, R * s, 0, Math.PI * 2); mctx.fill();
-    mctx.strokeStyle = tok('--line'); mctx.lineWidth = 1; mctx.stroke();
+    mctx.strokeStyle = miniTok.line; mctx.lineWidth = 1; mctx.stroke();
     const P = (x, z) => [size / 2 + x * s, size / 2 + z * s];
     if (mode === 'territory' && DuoM.on) DuoM.rules.territory.mini(mctx, size, s);
     if (mode === 'crown' && running) ModeX.crownMini(mctx, P);
     if (mode === 'royale' && running) ModeX.zoneMini(mctx, P, s);
-    mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const [x, y] = P(v.x, v.z); mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
+    mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const x = size / 2 + v.x * s, y = size / 2 + v.z * s; mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
     if (ev.active === 'starfall' || ev.warn === 'starfall') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 40 * s, 0, Math.PI * 2); mctx.stroke(); }
     if (ev.active === 'rift') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#b26bff'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, RIFT_R * s, 0, Math.PI * 2); mctx.stroke(); mctx.fillStyle = '#000'; mctx.beginPath(); mctx.arc(x, y, 3, 0, Math.PI * 2); mctx.fill(); }
     if (ev.active === 'quake') { mctx.strokeStyle = '#ff6a00'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(size / 2, size / 2, R * QUAKE_K * s, 0, Math.PI * 2); mctx.stroke(); }
     if (ev.active === 'golden' && ev.gold) { const [x, y] = P(ev.gold.x, ev.gold.z); mctx.fillStyle = '#ffd23f'; mctx.beginPath(); mctx.arc(x, y, 4, 0, Math.PI * 2); mctx.fill(); }
     if (ev.active === 'bounty' && ev.target && ev.target.cells.length && ev.target !== player) { const t = mainOf(ev.target), [x, y] = P(t.x, t.z); mctx.strokeStyle = '#ff2d55'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(x, y, Math.max(5, cellR(t) * s + 3), 0, Math.PI * 2); mctx.stroke(); }
-    for (const b of bonuses) { const [x, y] = P(b.x, b.z); mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }
+    for (const b of bonuses) { const x = size / 2 + b.x * s, y = size / 2 + b.z * s; mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }
     for (const c of cells) {
       if (c.owner.isPlayer || (c.owner.bossType === 'chameleon' && !c.seen)) continue;
-      const [x, y] = P(c.x, c.z);
-      const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
-      mctx.fillStyle = c.owner.kind === 'boss' ? bossInfo(c.owner).color : c.owner.kind === 'minion' ? MINION_COLOR : c.owner.team && c.owner.team === player.team ? ALLY_COLOR : danger ? tok('--threat') : food ? tok('--prey') : '#8088c0';
+      const x = size / 2 + c.x * s, y = size / 2 + c.z * s;
+      let col;
+      if (c.owner.kind === 'boss') col = bossInfo(c.owner).color; else if (c.owner.kind === 'minion') col = MINION_COLOR; else if (c.owner.team && c.owner.team === player.team) col = ALLY_COLOR;
+      else { let danger = false, food = false; for (const p of player.cells) { if (!danger && canEat(c, p)) danger = true; if (!food && canEat(p, c)) food = true; } col = danger ? miniTok.threat : food ? miniTok.prey : '#8088c0'; }
+      mctx.fillStyle = col;
       mctx.beginPath(); mctx.arc(x, y, Math.max(2, cellR(c) * s), 0, Math.PI * 2); mctx.fill();
       if (c.owner.kind === 'boss') { const rr = Math.max(5, cellR(c) * s); mctx.strokeStyle = '#ffffff'; mctx.lineWidth = 1.2; mctx.stroke();
         mctx.fillStyle = '#ffffff'; mctx.font = `${Math.round(rr * 1.3)}px sans-serif`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText('☠', x, y + .5); }
     }
     for (const c of player.cells) {
-      const [x, y] = P(c.x, c.z);
+      const x = size / 2 + c.x * s, y = size / 2 + c.z * s;
       mctx.fillStyle = skin().color; mctx.strokeStyle = '#ffffff'; mctx.lineWidth = 1.5;
       mctx.beginPath(); mctx.arc(x, y, Math.max(2.5, visualCellR(c) * s), 0, Math.PI * 2); mctx.fill(); mctx.stroke();
     }

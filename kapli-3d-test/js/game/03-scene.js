@@ -34,8 +34,59 @@
   const glowSprite = (color, size, opacity) => {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false }));
     sp.scale.setScalar(size);
+    glowList.push(sp);
     return sp;
   };
+  // 2.7 FPS: all glows of the arena are drawn in ONE draw call (there were 70+ separate ones when zoomed out). The look is the same:
+  // the same texture, colour, opacity, additive blending and fog as a THREE.Sprite; the sprites stay as the data, hidden from the camera on layer 31.
+  // A sprite that is in another scene (previews), turned, re-textured or given its own render order is drawn the usual way.
+  const glowList = [], GLOW_LAYER = 31;
+  const glowBatch = (() => {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null } }]),
+      vertexShader: 'attribute vec3 iPos; attribute vec2 iSc; attribute vec4 iCol; varying vec2 vUv; varying vec4 vCol;\n#include <fog_pars_vertex>\nvoid main() { vUv = uv; vCol = iCol; vec4 mvPosition = modelViewMatrix * vec4(iPos, 1.0); mvPosition.xy += position.xy * iSc; gl_Position = projectionMatrix * mvPosition;\n#include <fog_vertex>\n}',
+      fragmentShader: 'uniform sampler2D map; varying vec2 vUv; varying vec4 vCol;\n#include <fog_pars_fragment>\nvoid main() { gl_FragColor = vCol * texture2D(map, vUv);\n#include <fog_fragment>\n}',
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: true });
+    mat.uniforms.map.value = glowTex;
+    const quad = new THREE.PlaneGeometry(1, 1);
+    let cap = 0, geo = null, aPos, aSc, aCol;
+    const mesh = new THREE.Mesh(new THREE.BufferGeometry(), mat);
+    mesh.frustumCulled = false; mesh.renderOrder = 10; mesh.visible = false;   // after the drops, as each sprite came right after its own drop
+    function grow(n) {
+      cap = Math.ceil(n * 1.5) + 16;
+      if (geo) geo.dispose();
+      geo = new THREE.InstancedBufferGeometry(); geo.index = quad.index; geo.setAttribute('position', quad.attributes.position); geo.setAttribute('uv', quad.attributes.uv);
+      aPos = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3); aSc = new THREE.InstancedBufferAttribute(new Float32Array(cap * 2), 2); aCol = new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4);
+      for (const a of [aPos, aSc, aCol]) a.setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('iPos', aPos); geo.setAttribute('iSc', aSc); geo.setAttribute('iCol', aCol);
+      mesh.geometry = geo;
+    }
+    function sync() {   // once per frame, right before the render
+      scene.updateMatrixWorld();
+      let n = 0, w = 0;
+      for (let i = 0; i < glowList.length; i++) {
+        const sp = glowList[i], m = sp.material;
+        let o = sp, shown = true; while (o.parent) { if (!o.visible) shown = false; o = o.parent; }
+        if (o !== scene) { sp.layers.set(0); continue; }   // left the arena (removed effect) or lives in a preview scene: drawn as a normal sprite, dropped from the list
+        glowList[w++] = sp;
+        if (m.map !== glowTex || m.rotation !== 0 || sp.renderOrder !== 0 || sp.center.x !== .5 || sp.center.y !== .5) { sp.layers.set(0); continue; }
+        sp.layers.set(GLOW_LAYER);
+        if (!shown || !m.visible || m.opacity <= 0) continue;
+        if (n >= cap) grow(glowList.length);
+        const e = sp.matrixWorld.elements;
+        aPos.array[n * 3] = e[12]; aPos.array[n * 3 + 1] = e[13]; aPos.array[n * 3 + 2] = e[14];
+        aSc.array[n * 2] = Math.hypot(e[0], e[1], e[2]); aSc.array[n * 2 + 1] = Math.hypot(e[4], e[5], e[6]);
+        aCol.array[n * 4] = m.color.r; aCol.array[n * 4 + 1] = m.color.g; aCol.array[n * 4 + 2] = m.color.b; aCol.array[n * 4 + 3] = m.opacity;
+        n++;
+      }
+      glowList.length = w;
+      mesh.visible = n > 0;
+      if (geo) { geo.instanceCount = n; aPos.needsUpdate = aSc.needsUpdate = aCol.needsUpdate = true; }
+    }
+    return { mesh, sync };
+  })();
+  scene.add(glowBatch.mesh);
+  scene.autoUpdate = false;   // matrices are updated once in glowBatch.sync() right before each render
 
   const nebulae = [];
   // starfield all around: the arena floats in space
@@ -467,13 +518,14 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     return grp;
   }
   const allVis = [];
+  const shieldGeo = new THREE.SphereGeometry(1.25, 24, 16);   // 2.7: one shared shape instead of a new one per drop
   function makeVis(color) {
     const mesh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .45, roughness: .22, metalness: .1, transparent: true, opacity: .9 }));
     const glow = glowSprite(color, 3.2, .85); mesh.add(glow);
     mesh.add(new THREE.Mesh(eyesGeo, eyesMat));
     const crown = makeCrown(); crown.visible = false; mesh.add(crown);
-    const shield = new THREE.Mesh(new THREE.SphereGeometry(1.25, 24, 16),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(BONUS.shield.color), transparent: true, opacity: .2 }));
+    const shield = new THREE.Mesh(shieldGeo,
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(BONUS.shield.color), transparent: true, opacity: .2, depthWrite: false }));   // a faint bubble must not hide the glow drawn after it
     shield.visible = false; mesh.add(shield);
     const ring = new THREE.Mesh(ringGeo, decal(new THREE.MeshBasicMaterial({ color: NEUTRAL, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false })));
     ring.rotation.x = -Math.PI / 2;

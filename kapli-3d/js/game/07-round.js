@@ -671,7 +671,7 @@
     const badges = [];
     const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);
     if (running) {
-      { const ch = charById(charNow()); if (ch) badge(ch.icon, ch.color, null, 0, `Характер «${ch.name}»: ${ch.plus}; ${ch.minus}`); }   // 2.7
+      { const ch = charById(charNow()); if (ch) stats.charUsed = ch.id; if (ch) badge(ch.icon, ch.color, null, 0, `Характер «${ch.name}»: ${ch.plus}; ${ch.minus}`); }   // 2.7
       const SV = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
       const BICON = { speed: SV('M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'), shield: SV('M12 2 4 5.2v6.1c0 5 3.4 9 8 10.7 4.6-1.7 8-5.7 8-10.7V5.2z'), double: '×2',
         magnet: SV('M5 3h4v8.5a3 3 0 0 0 6 0V3h4v8.5a7 7 0 0 1-14 0zM5 3v3h4V3zm10 0v3h4V3z') };

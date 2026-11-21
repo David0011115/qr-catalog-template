@@ -517,7 +517,7 @@
     if (LOWER_BETTER[mode]) score = stats.win ? Math.max(1, Math.floor(stats.time)) : 0;
     if (mode === 'team') score = prev + (stats.win ? 1 : 0);
     const record = isDuoMode(mode) ? false : mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
-    if (record) { save.bests[mode] = score; Net.submitRecord(mode, score); }
+    if (record) { save.bests[mode] = score; (save.bestChar = save.bestChar || {})[mode] = stats.charUsed || null; Net.submitRecord(mode, score); }   // 2.7: which character set the record (for the rating, after the server migration)
     stats.crownT = player.crownT;
     // weekly tasks
     let weekLine = '';

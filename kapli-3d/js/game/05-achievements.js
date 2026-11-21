@@ -96,13 +96,17 @@
     rebuildCells(); stats.raidSpawned = true;
     return true;
   }
+  let charChosen = false;
   function startRound() {
+    // 2.7: a solo round (not the league, Chaos League, tutorial or a match for two) starts with the character window
+    if (!pendingRanked && !pendingTut && !isDuoMode(save.mode) && !charChosen) { charPick(() => { charChosen = true; startRound(); }); return; }
     fixModeForLeague();
-    if (!pendingRanked && !pendingTut && MODES[save.mode].lvl && playerLevel() < MODES[save.mode].lvl) { toast(`«${MODES[save.mode].name}» откроется на ${MODES[save.mode].lvl} уровне`); return; }
+    if (!pendingRanked && !pendingTut && MODES[save.mode].lvl && playerLevel() < MODES[save.mode].lvl) { charChosen = false; toast(`«${MODES[save.mode].name}» откроется на ${MODES[save.mode].lvl} уровне`); return; }
     if (!pendingRanked && !pendingTut && save.mode === 'raid' && pendingRaidTier === null) {   // 2.7: pick a step of the ladder first
       RaidX.picker(t => { pendingRaidTier = t; startRound(); }); return;
     }
     const raidTierNow = pendingRaidTier || 0; pendingRaidTier = null;
+    charChosen = false;   // asked again before the next round (after the raid step window too)
     const isTut = pendingTut; pendingTut = false; tut = null;
     const isChaos = pendingChaos && pendingRanked; pendingChaos = false;
     const isRb = !isTut && !isChaos && !pendingRanked && save.mode === 'rbuild';

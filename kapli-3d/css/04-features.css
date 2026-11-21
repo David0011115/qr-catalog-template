@@ -699,3 +699,20 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 .ps-buffs li.bad b { color: #ff9ab0; }
 .ps-buffs .pb-n { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; } .ps-buffs .pb-n i { font-style: normal; }
 .ps-buffs small { color: var(--muted, #aaa); font-size: .7rem; }
+
+/* 2.7: the character button and window, and «what you chose» on the pause screen */
+.char-btn { display: flex; align-items: center; gap: 10px; text-align: left; min-height: 48px; padding: 6px 12px; border-color: color-mix(in srgb, var(--ac, #8a85b8) 60%, transparent) !important; flex-wrap: wrap; }
+.char-btn .cb-ic { font-size: 1.35rem; line-height: 1; }
+.char-btn .cb-t { display: grid; line-height: 1.15; } .char-btn .cb-t small { font-size: .66rem; opacity: .75; text-transform: uppercase; letter-spacing: .06em; }
+.char-btn em { font-style: normal; font-size: .68rem; color: #ff9ab0; width: 100%; }
+#charModal { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(4, 2, 16, .62); }
+#charModal[hidden] { display: none; }
+#charModal .ch-box { position: relative; width: min(720px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 16px; border-radius: 18px; background: rgba(14, 8, 34, .97); border: 2px solid #7b3dff; color: #fff; }
+#charModal h2 { margin: 0 40px 4px 0; font: 400 18px 'Russo One', sans-serif; }
+#charModal p { margin: 0 0 8px; font-size: .8rem; color: #cfc8f5; }
+#charModal .ch-x { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .2); background: rgba(255, 255, 255, .06); color: #fff; cursor: pointer; }
+.ps-picks { list-style: none; margin: 4px 0 10px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 5px; }
+.ps-picks li { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 7px; padding: 5px 8px; border-radius: 10px; border: 1.5px solid var(--rc); background: color-mix(in srgb, var(--rc) 10%, transparent); }
+.ps-picks .pk-m { font: 800 .62rem var(--body); color: var(--muted, #aaa); } .ps-picks .pk-ic { font-size: 1.1rem; }
+.ps-picks .pk-t { display: grid; line-height: 1.2; } .ps-picks .pk-t b { font-size: .78rem; } .ps-picks .pk-t small { font-size: .66rem; color: var(--rc); }
+#charModal .ch-go { display: block; width: 100%; margin-top: 12px; min-height: 48px; }

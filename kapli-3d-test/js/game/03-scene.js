@@ -76,7 +76,7 @@
         if (n >= cap) grow(glowList.length);
         const e = sp.matrixWorld.elements;
         aPos.array[n * 3] = e[12]; aPos.array[n * 3 + 1] = e[13]; aPos.array[n * 3 + 2] = e[14];
-        aSc.array[n * 2] = Math.hypot(e[0], e[1], e[2]); aSc.array[n * 2 + 1] = Math.hypot(e[4], e[5], e[6]);
+        aSc.array[n * 2] = Math.sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]); aSc.array[n * 2 + 1] = Math.sqrt(e[4] * e[4] + e[5] * e[5] + e[6] * e[6]);
         aCol.array[n * 4] = m.color.r; aCol.array[n * 4 + 1] = m.color.g; aCol.array[n * 4 + 2] = m.color.b; aCol.array[n * 4 + 3] = m.opacity;
         n++;
       }
@@ -220,7 +220,7 @@
       blob(x, y, r, c, a) { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, c); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = a; g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.globalAlpha = 1; },
       line(pts, w, c, a, glow) { g.globalAlpha = a; g.strokeStyle = c; g.lineWidth = w; g.shadowColor = c; g.shadowBlur = glow || 0; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); g.shadowBlur = 0; g.globalAlpha = 1; },
       ring(r, w, c, a, glow, dash, x = S / 2, y = S / 2) { g.globalAlpha = a; g.strokeStyle = c; g.lineWidth = w; g.shadowColor = c; g.shadowBlur = glow || 0; g.setLineDash(dash || []); g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke(); g.setLineDash([]); g.shadowBlur = 0; g.globalAlpha = 1; },
-      wander(x0, y0, x1, y1, n, amp) { const pts = [], nx = -(y1 - y0), ny = x1 - x0, l = Math.hypot(nx, ny) || 1; let o = 0; for (let i = 0; i <= n; i++) { const t = i / n; o = (o + (rnd() - .5) * amp) * .8; const k = Math.sin(Math.PI * t); pts.push([x0 + (x1 - x0) * t + nx / l * o * k, y0 + (y1 - y0) * t + ny / l * o * k]); } return pts; },
+      wander(x0, y0, x1, y1, n, amp) { const pts = [], nx = -(y1 - y0), ny = x1 - x0, l = hyp(nx, ny) || 1; let o = 0; for (let i = 0; i <= n; i++) { const t = i / n; o = (o + (rnd() - .5) * amp) * .8; const k = Math.sin(Math.PI * t); pts.push([x0 + (x1 - x0) * t + nx / l * o * k, y0 + (y1 - y0) * t + ny / l * o * k]); } return pts; },
       // seamless network of cracked plates: the edges of a jittered grid
       cells(n, w, c, a, glow, jit = .8, core) { const st = S / n, P = [], segs = [];
         for (let i = 0; i < n; i++) { P.push([]); for (let j = 0; j < n; j++) P[i].push([(i + .5 + (rnd() - .5) * jit) * st, (j + .5 + (rnd() - .5) * jit) * st]); }
@@ -837,7 +837,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'dissolve': m.opacity = .68 + .22 * Math.sin(t * 2.6); m.emissiveIntensity = .6 + .3 * Math.sin(t * 5.2); break;
       case 'chameleon': {
         let sp = .5 + .5 * Math.sin(t * .8);
-        if (c) { const d = Math.hypot(c.x - (v._px ?? c.x), c.z - (v._pz ?? c.z)); v._px = c.x; v._pz = c.z; v._sp = (v._sp ?? 0) * .92 + Math.min(1, Math.max(0, d * 1.6 - .5)) * .08; sp = v._sp; }
+        if (c) { const d = hyp(c.x - (v._px ?? c.x), c.z - (v._pz ?? c.z)); v._px = c.x; v._pz = c.z; v._sp = (v._sp ?? 0) * .92 + Math.min(1, Math.max(0, d * 1.6 - .5)) * .08; sp = v._sp; }
         const h = .36 - .36 * sp; m.color.setHSL(h, 1, .55); m.emissive.setHSL(h, 1, .42); v.glow.material.color.setHSL(h, 1, .55); break; }
     }
     if (v.extra) v.extra.children.forEach(o => { const u = o.userData;
@@ -974,7 +974,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'planet': g.children[0].rotation.y = t * 1.2; g.children[0].position.y = 1.45 + Math.sin(t * 2) * .06; break;
       case 'snowflake': g.children[0].rotation.y = t; g.children[0].rotation.z = t * .5; break;
       case 'propeller': g.children.forEach(o => { if (o.userData.spin) o.rotation.y = t * 14; }); break;
-      case 'windkey': { const k = g.children[0], p = v.mesh.position, u = g.userData, d = u.px === undefined ? 0 : Math.hypot(p.x - u.px, p.z - u.pz); u.px = p.x; u.pz = p.z; u.sp = (u.sp || 0) * .9 + Math.min(1, d * 3) * .1; u.a = (u.a || 0) + .03 + u.sp * .5; k.rotation.z = u.a; break; }
+      case 'windkey': { const k = g.children[0], p = v.mesh.position, u = g.userData, d = u.px === undefined ? 0 : hyp(p.x - u.px, p.z - u.pz); u.px = p.x; u.pz = p.z; u.sp = (u.sp || 0) * .9 + Math.min(1, d * 3) * .1; u.a = (u.a || 0) + .03 + u.sp * .5; k.rotation.z = u.a; break; }
       case 'moons': g.children.forEach(o => { if (o.userData.orb !== undefined) { const a = o.userData.orb + t * 1.8; o.position.set(Math.cos(a) * .45, 1.45 + Math.sin(a * 2) * .06, Math.sin(a) * .45); } }); break;
       case 'coins': g.children.forEach(o => { o.rotation.y = t * (1 + o.userData.coin * .3); }); g.position.y = -.1 + Math.sin(t * 2) * .03; break;
       case 'nova': g.children[0].rotation.z = t * 1.5; g.children[0].scale.setScalar(1 + Math.sin(t * 4) * .08); break;
@@ -1241,7 +1241,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       switch (id) {
         case 'sparksTrail': emit(x, r * .5, z, cellColor(c), 2, 2.5, .5); break;
         case 'cr_cogs': {   // 2.7: gears come in meshing pairs turning against each other (pairs at half the rate — no more sprites than before)
-          const k = Math.min(1, Math.hypot(c.vx || 0, c.vz || 0) / (BASE_SPEED * 1.4)); if (Math.random() > (.07 + .16 * k)) break;
+          const k = Math.min(1, hyp(c.vx || 0, c.vz || 0) / (BASE_SPEED * 1.4)); if (Math.random() > (.07 + .16 * k)) break;
           const sz = 1 + r * .1, a = trailIcon(x, r * .5, z, 'gear', '#ffd27a', sz, .25); if (!a || !a.sp) break;
           const b = trailIcon(x, r * .5, z, 'gear', '#e8b05a', sz * .7, .25); if (!b || !b.sp) break;
           const off = (a.size + b.size) * .36; b.sp.position.set(a.sp.position.x - c.hz * off, a.sp.position.y, a.sp.position.z + c.hx * off);

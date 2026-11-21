@@ -31,7 +31,7 @@
       if (!want) return safeSpot0(d);
       for (let t = 0; t < 80; t++) {
         const [x, z] = randInArena(6);
-        if (sideAt(x) === want && cells.every(c => Math.hypot(c.x - x, c.z - z) > d + cellR(c))) return [x, z];
+        if (sideAt(x) === want && cells.every(c => hyp(c.x - x, c.z - z) > d + cellR(c))) return [x, z];
       }
       return [bx + (want * R - bx) * .5, (Math.random() - .5) * R * .6];
     };

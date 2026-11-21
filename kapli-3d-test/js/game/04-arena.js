@@ -21,7 +21,7 @@
     if (viruses.length >= VIRUS_MAX) return null;
     if (x === undefined) {
       let ok = false;
-      for (let t = 0; t < 30 && !ok; t++) { [x, z] = randInArena(12); ok = cells.every(c => Math.hypot(c.x - x, c.z - z) > cellR(c) + 8); }
+      for (let t = 0; t < 30 && !ok; t++) { [x, z] = randInArena(12); ok = cells.every(c => hyp(c.x - x, c.z - z) > cellR(c) + 8); }
       if (!ok) { virusRespawn.push(4); return null; }   // 2.7: no free spot (a huge drop covers it) — never put a spike inside a drop, try again in 4 s
     }
     const v = { x, z, vx: vx || 0, vz: vz || 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh() };
@@ -74,15 +74,15 @@
       if (v.vx || v.vz) {
         v.x += v.vx * dt; v.z += v.vz * dt; v.vx *= k; v.vz *= k;
         if (Math.abs(v.vx) + Math.abs(v.vz) < .2) v.vx = v.vz = 0;
-        const dc = Math.hypot(v.x, v.z); if (dc > R - 5) { v.x *= (R - 5) / dc; v.z *= (R - 5) / dc; v.vx = v.vz = 0; }
+        const dc = hyp(v.x, v.z); if (dc > R - 5) { v.x *= (R - 5) / dc; v.z *= (R - 5) / dc; v.vx = v.vz = 0; }
       }
       const rv = radius(v.mass);
       for (const c of cells) {
         if (c.gone || c.mass < v.mass * 1.3) continue;   // small blobs hide behind spikes; bosses get popped too
-        if (v.dodge && v.dodge.has(c) && Math.hypot(c.x - v.x, c.z - v.z) >= cellR(c) + rv) v.dodge.delete(c);
+        if (v.dodge && v.dodge.has(c) && hyp(c.x - v.x, c.z - v.z) >= cellR(c) + rv) v.dodge.delete(c);
         if (v.trap && (c.owner === v.trap.owner || (v.trap.owner.team && c.owner.team === v.trap.owner.team))) continue;   // a trap spares its owner and allies
         if (abOn('x_ghost', c.owner) || abOn('shrink', c.owner) || c.owner.spawnSh > 0) continue;   // «Фантом» and «Сжатие» pass spikes
-        if (Math.hypot(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
+        if (hyp(c.x - v.x, c.z - v.z) < cellR(c) - rv * .3) {
           popCell(c, v); removeVirus(v); if (!v.trap) virusRespawn.push(10); rebuildCells(); break;
         }
       }
@@ -92,11 +92,11 @@
   // ejected blobs feed a spike; every 5th shot fires a new spike in that direction
   function feedVirus(e) {
     for (const v of viruses) {
-      if (Math.hypot(e.x - v.x, e.z - v.z) > radius(v.mass) + .5) continue;
+      if (hyp(e.x - v.x, e.z - v.z) > radius(v.mass) + .5) continue;
       v.feed++; v.mass += 6;
       if (v.feed >= 5) {
         v.feed = 0; v.mass = VIRUS_MASS;
-        const d = Math.hypot(e.vx, e.vz) || 1, dx = e.vx / d || 1, dz = e.vz / d;
+        const d = hyp(e.vx, e.vz) || 1, dx = e.vx / d || 1, dz = e.vz / d;
         spawnVirus(v.x + dx * radius(VIRUS_MASS) * 2.2, v.z + dz * radius(VIRUS_MASS) * 2.2, dx * 60, dz * 60);
         emit(v.x, 3, v.z, VIRUS_COLOR, 16, 12, .5);
       }
@@ -143,10 +143,10 @@
   const evMain = () => player.cells.length ? mainOf(player) : null;
   function evStart() {
     const id = ev.active, m = evMain();
-    if (id === 'rift') { let x = 0, z = 0; for (let k = 0; k < 20; k++) { [x, z] = randInArena(RIFT_R); if (!m || Math.hypot(x - m.x, z - m.z) > RIFT_R + 40) break; } ev.x = x; ev.z = z; hole.position.set(x, 5, z); hole.visible = true; }
+    if (id === 'rift') { let x = 0, z = 0; for (let k = 0; k < 20; k++) { [x, z] = randInArena(RIFT_R); if (!m || hyp(x - m.x, z - m.z) > RIFT_R + 40) break; } ev.x = x; ev.z = z; hole.position.set(x, 5, z); hole.visible = true; }
     if (id === 'wind') { const a = Math.random() * 6.283; ev.wx = Math.cos(a); ev.wz = Math.sin(a); }
     if (id === 'eclipse') { const mm = document.getElementById('miniWrap'); if (mm) mm.classList.add('fog'); }
-    if (id === 'golden') { let x = 0, z = 0; for (let k = 0; k < 20; k++) { [x, z] = randInArena(30); if (!m || Math.hypot(x - m.x, z - m.z) > 60) break; } ev.gold = { x, z, r: 4 }; goldRunner.position.set(x, 4, z); goldRunner.scale.setScalar(4); goldRunner.visible = true; }
+    if (id === 'golden') { let x = 0, z = 0; for (let k = 0; k < 20; k++) { [x, z] = randInArena(30); if (!m || hyp(x - m.x, z - m.z) > 60) break; } ev.gold = { x, z, r: 4 }; goldRunner.position.set(x, 4, z); goldRunner.scale.setScalar(4); goldRunner.visible = true; }
     if (id === 'quake') { quakeRing.scale.setScalar(R * QUAKE_K); quakeOut.scale.setScalar(R * QUAKE_K); quakeRing.position.set(0, .1, 0); quakeOut.position.set(0, .08, 0); quakeRing.visible = quakeOut.visible = true; }
     if (id === 'bounty') {
       const all = [player, ...bots].filter(o => o.cells.length && !o.disabled); ev.target = all.reduce((a, b) => total(b) > total(a) ? b : a, all[0]) || null;
@@ -176,13 +176,13 @@
         ev.tick = .6;
         const a = Math.random() * 6.283, q = Math.sqrt(Math.random()) * 36, x = ev.x + Math.cos(a) * q, z = ev.z + Math.sin(a) * q;
         wave(x, z, '#ff6a00', 1, 9, .5); emit(x, 20, z, '#ffb000', 6, 6, .6);
-        for (const c of cells) if (Math.hypot(c.x - x, c.z - z) < 6 + cellR(c) * .5 && c.owner.kind !== 'boss') { c.mass = Math.max(10, c.mass * .95); if (c.owner === player) { buzz(25); emit(c.x, cellR(c), c.z, '#ff3d00', 10, 8, .5); } }
+        for (const c of cells) if (hyp(c.x - x, c.z - z) < 6 + cellR(c) * .5 && c.owner.kind !== 'boss') { c.mass = Math.max(10, c.mass * .95); if (c.owner === player) { buzz(25); emit(c.x, cellR(c), c.z, '#ff3d00', 10, 8, .5); } }
         const b2 = Math.random() * 6.283, q2 = Math.sqrt(Math.random()) * 36, g = { x: ev.x + Math.cos(b2) * q2, z: ev.z + Math.sin(b2) * q2, v: Math.max(30, pm * .01), mesh: new THREE.Mesh(goldGeo, goldMat) };
         g.mesh.scale.setScalar(1.6); g.mesh.position.set(g.x, 1.6, g.z); scene.add(g.mesh); ev.golds.push(g);
       }
       for (let i = ev.golds.length - 1; i >= 0; i--) {
         const g = ev.golds[i]; g.mesh.rotation.y += dt * 3;
-        const c = cells.find(c => Math.hypot(c.x - g.x, c.z - g.z) < cellR(c) + 1.5); if (!c) continue;
+        const c = cells.find(c => hyp(c.x - g.x, c.z - g.z) < cellR(c) + 1.5); if (!c) continue;
         c.mass += g.v; scene.remove(g.mesh); ev.golds.splice(i, 1);
         if (c.owner === player) { emit(g.x, 2, g.z, '#ffd23f', 10, 6, .5); Sound.play('crumb'); }
       }
@@ -190,7 +190,7 @@
     if (evOn('rift')) {
       hole.rotation.y += dt * 1.5;
       for (const c of cells) {
-        const dx = ev.x - c.x, dz = ev.z - c.z, d = Math.hypot(dx, dz) || 1; if (d > RIFT_R + cellR(c)) continue;
+        const dx = ev.x - c.x, dz = ev.z - c.z, d = hyp(dx, dz) || 1; if (d > RIFT_R + cellR(c)) continue;
         const pull = (4 + 10 * (1 - d / (RIFT_R + cellR(c)))) * dt; c.x += dx / d * pull; c.z += dz / d * pull;
         const o = c.owner; if (d < 6 + cellR(c) * .3 && o.kind !== 'boss' && !((ev.hitT[o.name] || 0) > stats.time)) {
           ev.hitT[o.name] = stats.time + 2; for (const k of o.cells) k.mass = Math.max(10, k.mass * .9);
@@ -205,17 +205,17 @@
     }
     if (evOn('golden') && ev.gold) {
       const g = ev.gold, mv = m ? speedOf(m) * .85 : 20;   // a little slower than you, whatever your mass
-      if (m) { const dx = g.x - m.x, dz = g.z - m.z, d = Math.hypot(dx, dz) || 1; if (d < 90) { g.x += dx / d * mv * dt; g.z += dz / d * mv * dt; } else { g.x += Math.sin(stats.time) * 6 * dt; } }
-      { const L = Math.hypot(g.x, g.z), lim = R - 8; if (L > lim) { g.x *= lim / L; g.z *= lim / L; } }
+      if (m) { const dx = g.x - m.x, dz = g.z - m.z, d = hyp(dx, dz) || 1; if (d < 90) { g.x += dx / d * mv * dt; g.z += dz / d * mv * dt; } else { g.x += Math.sin(stats.time) * 6 * dt; } }
+      { const L = hyp(g.x, g.z), lim = R - 8; if (L > lim) { g.x *= lim / L; g.z *= lim / L; } }
       goldRunner.position.set(g.x, 4 + Math.sin(stats.time * 6) * .6, g.z);
-      if (m && player.cells.some(c => Math.hypot(c.x - g.x, c.z - g.z) < cellR(c) + g.r)) {
+      if (m && player.cells.some(c => hyp(c.x - g.x, c.z - g.z) < cellR(c) + g.r)) {
         const coins = 60; stats.modeXCoins = (stats.modeXCoins || 0) + coins; ev.gold = null; goldRunner.visible = false;
         emit(g.x, 4, g.z, '#ffd23f', 30, 12, .8); wave(g.x, g.z, '#ffd23f', 2, 30, .6); Sound.play('level'); toast(`Золотая капля поймана! +${coins} ◆`);
       }
     }
     if (evOn('quake')) {
       const lim = R * QUAKE_K; quakeRing.material.opacity = .6 + .3 * Math.abs(Math.sin(stats.time * 5));
-      for (const c of cells) if (Math.hypot(c.x, c.z) > lim && c.owner.kind !== 'boss') { c.mass = Math.max(10, c.mass * (1 - .04 * dt)); if (c.owner === player && Math.random() < .3) emit(c.x, cellR(c), c.z, '#ff6a00', 2, 4, .4); }
+      for (const c of cells) if (hyp(c.x, c.z) > lim && c.owner.kind !== 'boss') { c.mass = Math.max(10, c.mass * (1 - .04 * dt)); if (c.owner === player && Math.random() < .3) emit(c.x, cellR(c), c.z, '#ff6a00', 2, 4, .4); }
     }
     if (evOn('bounty')) {
       const t = ev.target;
@@ -345,7 +345,7 @@
   function safeSpot(minDist) {
     for (let t = 0; t < 50; t++) {
       const [x, z] = randInArena(6);
-      if (cells.every(c => Math.hypot(c.x - x, c.z - z) > minDist + cellR(c))) return [x, z];
+      if (cells.every(c => hyp(c.x - x, c.z - z) > minDist + cellR(c))) return [x, z];
     }
     return randInArena(6);
   }
@@ -434,7 +434,7 @@
     for (let k = 0; k < n; k++) {
       const i = Math.floor(Math.random() * FOOD), a = Math.random() * Math.PI * 2, d = inner + Math.sqrt(Math.random()) * (rad - inner);
       const fx = x + Math.cos(a) * d, fz = z + Math.sin(a) * d;
-      if (Math.hypot(fx, fz) > R - 1.5) continue;
+      if (hyp(fx, fz) > R - 1.5) continue;
       foods[i] = { x: fx, z: fz }; fgSet(i); foodHook(i);
       dummy.position.set(fx, 0.35, fz); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix);
     }
@@ -515,11 +515,11 @@
       const e = ejects[i];
       if (feedVirus(e)) { scene.remove(e.mesh); ejects.splice(i, 1); continue; }
       e.x += e.vx * dt; e.z += e.vz * dt; e.vx *= k; e.vz *= k; e.age += dt;
-      const dc = Math.hypot(e.x, e.z); if (dc > R - 1.5) { e.x *= (R - 1.5) / dc; e.z *= (R - 1.5) / dc; }
+      const dc = hyp(e.x, e.z); if (dc > R - 1.5) { e.x *= (R - 1.5) / dc; e.z *= (R - 1.5) / dc; }
       for (const c of cells) {
         if (c.gone || (c.owner.isPlayer && e.age < 0.6)) continue;
         const r = cellR(c);
-        if (r > 1.3 && Math.hypot(c.x - e.x, c.z - e.z) < r) {
+        if (r > 1.3 && hyp(c.x - e.x, c.z - e.z) < r) {
           c.mass += e.mass * (c.owner.isPlayer ? 1 + 0.015 * (U.digest || 0) : 1);
           scene.remove(e.mesh); ejects.splice(i, 1);
           break;

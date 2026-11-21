@@ -45,7 +45,7 @@
   const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0 };
   function joyMove(e) {
     let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
-    const d = Math.hypot(dx, dy), k = d > JOY_R ? JOY_R / d : 1;
+    const d = hyp(dx, dy), k = d > JOY_R ? JOY_R / d : 1;
     dx *= k; dy *= k;
     joy.mag = Math.min(1, d / JOY_R);
     if (d > 0) { joy.x = dx / Math.max(d * k, 0.001); joy.y = dy / Math.max(d * k, 0.001); }
@@ -119,17 +119,17 @@
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
       // 2.7: bosses go for the holder wherever it is; a bot bigger than the holder hunts it across the whole arena;
       // a smaller bot goes for any piece of the holder it can swallow (after a split) within a wide range
-      const t = mainOf(crownHolder), d = Math.hypot(t.x - c.x, t.z - c.z);
+      const t = mainOf(crownHolder), d = hyp(t.x - c.x, t.z - c.z);
       if (o.kind === 'boss' || canEat(c, t)) { o.target = t; o.tx = t.x; o.tz = t.z; return; }
       let bit = null, bd = sense * 3;
-      for (const h of crownHolder.cells) { const dh = Math.hypot(h.x - c.x, h.z - c.z); if (dh < bd && canEat(c, h)) { bd = dh; bit = h; } }
+      for (const h of crownHolder.cells) { const dh = hyp(h.x - c.x, h.z - c.z); if (dh < bd && canEat(c, h)) { bd = dh; bit = h; } }
       if (bit) { o.target = bit; o.tx = bit.x; o.tz = bit.z; return; }
     }
-    if (mode === 'royale' && running) { const Z = ModeX.zoneC; if (Math.hypot(c.x - Z.x, c.z - Z.z) > zoneR * .8) { o.tx = Z.x + (c.x - Z.x) * .3; o.tz = Z.z + (c.z - Z.z) * .3; o.target = null; return; } }   // run from the storm
+    if (mode === 'royale' && running) { const Z = ModeX.zoneC; if (hyp(c.x - Z.x, c.z - Z.z) > zoneR * .8) { o.tx = Z.x + (c.x - Z.x) * .3; o.tz = Z.z + (c.z - Z.z) * .3; o.target = null; return; } }   // run from the storm
     if (o.kind === 'boss' && mode === 'hardcore' && ModeX.hcBossPressure() >= .2 && player.cells.length) {
       const t = ModeX.hcBossTarget(o);
       if (t) {
-        const pressure = ModeX.hcBossPressure(), dx = t.x - c.x, dz = t.z - c.z, d = Math.hypot(dx, dz) || 1;
+        const pressure = ModeX.hcBossPressure(), dx = t.x - c.x, dz = t.z - c.z, d = hyp(dx, dz) || 1;
         // Predict movement only a little: the boss aims ahead, but never tracks a perfect future position.
         const lead = .25 + pressure * .85;
         let tx = t.x + Math.max(-14, Math.min(14, t.vx || 0)) * lead;
@@ -141,7 +141,7 @@
         }
         // Громила tries to push the player away from the safer outer edge.
         if (o.bossType === 'giant' && pressure >= .3) {
-          const edge = Math.hypot(t.x, t.z) || 1, block = 4 + pressure * 9;
+          const edge = hyp(t.x, t.z) || 1, block = 4 + pressure * 9;
           tx -= t.x / edge * block; tz -= t.z / edge * block;
         }
         o.target = t; o.tx = tx; o.tz = tz;
@@ -165,7 +165,7 @@
     }
     if (o.bossType === 'hunter' && player.cells.length) {
       let best = null, bd = Infinity;
-      if (!abOn('cloak')) for (const t of player.cells) { const d = Math.hypot(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
+      if (!abOn('cloak')) for (const t of player.cells) { const d = hyp(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
       if (best) {
         o.target = best; o.tx = best.x; o.tz = best.z;
         if (o.dashCd <= 0 && bd < 35) { o.dashT = 0.5; o.dashCd = 5; }
@@ -175,7 +175,7 @@
     let fx = 0, fz = 0, prey = null, preyScore = Infinity;
     for (const t of cells) {
       if (t.owner === o || abOn('cloak', t.owner)) continue;
-      const d = Math.hypot(t.x - c.x, t.z - c.z);
+      const d = hyp(t.x - c.x, t.z - c.z);
       if (d > sense || (t.owner === player && d > sense * .5 && charIs('ghost'))) continue;   // «Призрак»: seen at half the distance
       if (p.flee > 0 && canEat(t, c) && d < sense * Math.min(1, p.flee)) {
         const w = p.flee / Math.max(d, 1); fx -= (t.x - c.x) * w; fz -= (t.z - c.z) * w;
@@ -188,36 +188,38 @@
     const careful = o.kind === 'boss' ? .35 : o.star ? .85 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
     if ((o.spikeMemT = (o.spikeMemT || 0) - .35) <= 0) { o.spikeMemT = 3 + Math.random() * 2; o.spikeBlind = Math.random() >= careful * botSkill().careful; }   // a decision kept for 3–5 s
     if (c.mass > VIRUS_MASS * 1.3 && !o.spikeBlind) for (const v of viruses) {
-      const d = Math.hypot(v.x - c.x, v.z - c.z);
+      const d = hyp(v.x - c.x, v.z - c.z);
       if (d < cellR(c) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
     }
     if (fx || fz) {   // fleeing: never into the wall
-      const dc = Math.hypot(c.x, c.z); if (dc > R - 25 - r) { const l = Math.hypot(fx, fz) || 1, k = (dc - (R - 25 - r)) / 25 + .5; fx = fx / l - c.x / dc * k; fz = fz / l - c.z / dc * k; }
+      const dc = hyp(c.x, c.z); if (dc > R - 25 - r) { const l = hyp(fx, fz) || 1, k = (dc - (R - 25 - r)) / 25 + .5; fx = fx / l - c.x / dc * k; fz = fz / l - c.z / dc * k; }
       o.tx = c.x + fx * 20; o.tz = c.z + fz * 20; o.target = null; return; }
     // hunters share a target with their partner
     if (o.persona === 'hunter' && o.partner && o.partner.target && !o.partner.target.gone) {
       const t = o.partner.target;
-      if (canEat(c, t) && Math.hypot(t.x - c.x, t.z - c.z) < sense * 1.6) prey = t;
+      if (canEat(c, t) && hyp(t.x - c.x, t.z - c.z) < sense * 1.6) prey = t;
     }
     if (prey && Math.random() < p.chase) {
       o.target = prey; o.tx = prey.x; o.tz = prey.z;
       // bold bots split to snatch prey that is close and small enough for a half
       const isSplitter = o.bossType === 'splitter', maxParts = isSplitter ? 6 : BOT_PARTS;
       if (running && ((o.kind === 'bot' && (!o.build || o.build.includes('split'))) || isSplitter) && p.chase >= .85 && o.splitCd <= 0 && o.cells.length < maxParts) {
-        const d = Math.hypot(prey.x - c.x, prey.z - c.z), rc = cellR(c);
+        const d = hyp(prey.x - c.x, prey.z - c.z), rc = cellR(c);
         if (c.mass / 2 > prey.mass * eatRatio(prey) && d > rc * 0.8 && d < 6 + rc * 4) {
-          o.cells.forEach(k => { k.hx = (prey.x - k.x) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); k.hz = (prey.z - k.z) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); });
+          o.cells.forEach(k => { k.hx = (prey.x - k.x) / (hyp(prey.x - k.x, prey.z - k.z) || 1); k.hz = (prey.z - k.z) / (hyp(prey.x - k.x, prey.z - k.z) || 1); });
           if (splitOwner(o, maxParts, isSplitter ? 10 : 14)) { if (isSplitter) o.splitCd = 6; rebuildCells(); }
         }
       }
       return;
     }
     o.target = null;
-    if (Math.hypot(c.x, c.z) > R - 12 - r && Math.random() < .5) { o.tx = c.x * .6; o.tz = c.z * .6; return; }
+    if (hyp(c.x, c.z) > R - 12 - r && Math.random() < .5) { o.tx = c.x * .6; o.tz = c.z * .6; return; }
     let best = null, bd = Infinity;
-    for (let i = (Math.random() * 3) | 0; i < FOOD; i += 3) {
-      const f = foods[i], d = (f.x - c.x) ** 2 + (f.z - c.z) ** 2;
-      if (d < bd) { bd = d; best = f; }
+    { // 2.7 FPS: the nearest crumb from the grid around the bot (it went through a third of all 5 000+ crumbs at every thought); far from any crumbs — the old sampled scan
+      const gx = fgCell(c.x), gz = fgCell(c.z);
+      for (let x = Math.max(0, gx - 3); x <= Math.min(FGN - 1, gx + 3); x++) for (let z = Math.max(0, gz - 3); z <= Math.min(FGN - 1, gz + 3); z++) { const b = fgrid[x * FGN + z];
+        for (let j = 0; j < b.length; j++) { const i = b[j]; if (i >= FOOD) continue; const f = foods[i], dx = f.x - c.x, dz = f.z - c.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = f; } } }
+      if (!best) for (let i = (Math.random() * 7) | 0; i < FOOD; i += 7) { const f = foods[i], dx = f.x - c.x, dz = f.z - c.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = f; } }
     }
     for (const e of ejects) {                     // ejected blobs are tasty bait
       const d = ((e.x - c.x) ** 2 + (e.z - c.z) ** 2) * 0.3;
@@ -229,18 +231,18 @@
   // ================= simulation =================
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
   function clampArena(c) {
-    const rr = R - cellR(c) * 0.6, dc = Math.hypot(c.x, c.z);
+    const rr = R - cellR(c) * 0.6, dc = hyp(c.x, c.z);
     if (dc > rr) { c.x *= rr / dc; c.z *= rr / dc; }
   }
   function steer(c, tx, tz, dt) {
     let dx = tx - c.x, dz = tz - c.z;
-    const d = Math.hypot(dx, dz);
+    const d = hyp(dx, dz);
     if (d > 0.05) {
       dx /= d; dz /= d;
       const turnK = c.owner.kind === 'boss' && mode === 'hardcore' ? ModeX.hcBossTurnK() : 1;
       const k = Math.min(1, dt * (c.owner.iceT > 0 ? 1.2 : arenaIs('ice') ? 3 : 8) * turnK);
       c.hx += (dx - c.hx) * k; c.hz += (dz - c.hz) * k;
-      const hl = Math.hypot(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl;
+      const hl = hyp(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl;
       const v = speedOf(c) * Math.min(1, d / 1.5 + (c.owner.isPlayer || c.owner.kind === 'rival' ? 0.35 : 1));
       c.x += c.hx * v * dt; c.z += c.hz * v * dt;
     }
@@ -281,7 +283,7 @@
       ModeX.zoneTick(dt);   // 2.5: the zone moves in steps (see 14f-modes.js)
       const Z = ModeX.zoneC, zk = ModeX.zoneDmgK();
       for (const c of [...cells]) {
-        if (c.gone || c.owner.kind === 'boss' || c.owner.kind === 'minion' || Math.hypot(c.x - Z.x, c.z - Z.z) <= zoneR) continue;
+        if (c.gone || c.owner.kind === 'boss' || c.owner.kind === 'minion' || hyp(c.x - Z.x, c.z - Z.z) <= zoneR) continue;
         c.mass -= (c.mass * .06 + 2) * zk * dt;          // the storm outside the zone eats mass
         if (c.mass < 6) { const o = c.owner; removeCell(c); rebuildCells(); lostCell(o, 6, { name: 'Зона', cells: [] }); }
       }
@@ -319,9 +321,9 @@
         for (const c of colossus.cells) {
           if (c.mass < 120) continue;
           const rc = cellR(c);
-          const att = player.cells.find(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rc + cellR(pc) + 6);
+          const att = player.cells.find(pc => hyp(pc.x - c.x, pc.z - c.z) < rc + cellR(pc) + 6);
           if (!att) continue;
-          const dx = c.x - att.x, dz = c.z - att.z, d = Math.hypot(dx, dz) || 1, side = Math.random() < .5 ? 1 : -1;
+          const dx = c.x - att.x, dz = c.z - att.z, d = hyp(dx, dz) || 1, side = Math.random() < .5 ? 1 : -1;
           c.mass /= 2;
           const n = addCell(colossus, c.x + dx / d * rc * 0.5, c.z + dz / d * rc * 0.5, c.mass, colossus.free.pop());
           n.vx = (dx / d * 0.5 - dz / d * side) * 40; n.vz = (dz / d * 0.5 + dx / d * side) * 40;
@@ -336,7 +338,7 @@
   }
   let historyT = 0;
   // Spatial broad phase for eating: only inspect cells in the eater's reachable area.
-  const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatCandidates = [], byIndex = (x, y) => x - y;
+  const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatBuckets = [], eatCandidates = [], byIndex = (x, y) => x - y;
   const eatGridKey = (x, z) => ((x & 65535) << 16) | (z & 65535);
   function update(dt) {
     if (DuoM.server) { DuoM.serverTick(dt); return; }
@@ -375,7 +377,7 @@
       if (o.bossType === 'queen') { o.spawnT -= dt; if (o.spawnT <= 0) { spawnMinion(o); o.spawnT = mode === 'hardcore' ? Math.max(3.2, 5 - 1.5 * ModeX.hcBossPressure()) : 5; } }
       if (o.bossType === 'frost') {   // a cold cloud around it: everyone close is slowed (players and the second player of a match for two)
         const c = o.cells[0], rc = cellR(c), reach = rc + 26 + (mode === 'hardcore' ? 10 * ModeX.hcBossPressure() : 0);
-        for (const p of [player, DuoM.rival]) for (const pc of p.cells) if (Math.hypot(pc.x - c.x, pc.z - c.z) < reach + cellR(pc)) { ccAura(p, dt); break; }
+        for (const p of [player, DuoM.rival]) for (const pc of p.cells) if (hyp(pc.x - c.x, pc.z - c.z) < reach + cellR(pc)) { ccAura(p, dt); break; }
         o.frT = (o.frT ?? 0) - dt; if (o.frT <= 0) { o.frT = mode === 'hardcore' ? Math.max(1.0, 1.4 - .3 * ModeX.hcBossPressure()) : 1.4; if (nearView(c.x, c.z)) wave(c.x, c.z, '#9ff0ff', rc, reach, .9); }
       }
       o.life -= dt;
@@ -391,7 +393,7 @@
     for (const c of player.cells) {
       if (twin && c === twin.cb) {   // «Зеркальный двойник»: moves as the mirror image (left ↔ right) of the main part
         const m = twin.ca, [ax, az] = kx || kz ? [kx, kz] : joy.id !== null && joy.mag > 0.15 ? [joy.x, joy.y] : aim ? [aim.x - m.x, aim.z - m.z] : [m.hx, m.hz];
-        const l = Math.hypot(ax, az) || 1; steer(c, c.x - ax / l * 10, c.z + az / l * 10, dt); continue; }
+        const l = hyp(ax, az) || 1; steer(c, c.x - ax / l * 10, c.z + az / l * 10, dt); continue; }
       if (kx || kz) steer(c, c.x + kx * 10, c.z + kz * 10, dt);
       else if (joy.id !== null && joy.mag > 0.15) steer(c, c.x + joy.x * 1.5 * joy.mag, c.z + joy.y * 1.5 * joy.mag, dt);
       else if (aim) steer(c, aim.x, aim.z, dt);
@@ -404,7 +406,7 @@
       const a = pc[i], b = pc[j];
       if (a.gone || b.gone) continue;
       const ra = cellR(a), rb = cellR(b);
-      let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 0.001;
+      let dx = b.x - a.x, dz = b.z - a.z; const d = hyp(dx, dz) || 0.001;
       const mergeCap = o.isPlayer ? Infinity : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? bossMassCap() : MAX_MASS;
       const hcDifferentHalves = ModeX.splitMode() && o.isPlayer && a.hcHalf !== undefined && b.hcHalf !== undefined && a.hcHalf !== b.hcHalf && !ModeX.hcFusing();
       if (hcDifferentHalves || a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > mergeCap) {   // parts that would exceed this owner's cap stay apart
@@ -488,13 +490,13 @@
     // lostCell() may rebuild the global cells array (for example on an extra life),
     // but candidate indices must continue to refer to the array used to build eatGrid.
     const eatCells = cells;
-    for (const bucket of eatGrid.values()) bucket.length = 0;   // 2.7 FPS: buckets are reused, not rebuilt every frame
+    for (let q = 0; q < eatBuckets.length; q++) eatBuckets[q].length = 0;   // 2.7 FPS: buckets are reused, not rebuilt every frame (a plain array: a Map iterator allocated each step)
     let eatMaxR = 0;
     for (let i = 0; i < eatCells.length; i++) {
       const c = eatCells[i]; if (c.gone) continue;
       const cr = cellR(c); if (cr > eatMaxR) eatMaxR = cr;
       const gx = Math.floor(c.x / EAT_GRID_SIZE), gz = Math.floor(c.z / EAT_GRID_SIZE), key = eatGridKey(gx, gz);
-      let bucket = eatGrid.get(key); if (!bucket) eatGrid.set(key, bucket = []);
+      let bucket = eatGrid.get(key); if (!bucket) { eatGrid.set(key, bucket = []); eatBuckets.push(bucket); }
       bucket.push(i);
     }
     for (const a of eatCells) {

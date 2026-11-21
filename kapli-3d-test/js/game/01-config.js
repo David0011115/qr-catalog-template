@@ -1,5 +1,7 @@
   // TEST MODE: everything unlocked, saved under a separate key so real progress is untouched.
   const TEST_MODE = true;   // ВНИМАНИЕ: перед заливкой в репозиторий вернуть false (сборка PWA проверяет это)
+  // 2.7 FPS: Math.hypot takes any number of arguments and allocates on every call (a profile on the stress test: megabytes a second); two numbers need only this
+  const hyp = (a, b) => Math.sqrt(a * a + b * b);
   const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';
   // 2.7 «Хронос 2.0»: items taken out of the workshop. Whoever crafted them keeps them; nobody can craft them any more,
   // and the lists of things to get no longer show them to players who don't own them.

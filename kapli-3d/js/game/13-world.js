@@ -433,6 +433,8 @@
     return (named || ((o.geometry && o.geometry.type || o.type) + '/' + (o.material && o.material.type || ''))) + (who ? ' [' + who + ']' : '');
   }
   const seenProgs = new Set();
+  // three r128: the parameters a built-in shader's cache key is made of (WebGLPrograms), to name what differs
+  const PK_NAMES = ['precision', 'isWebGL2', 'supportsVertexTextures', 'outputEncoding', 'instancing', 'instancingColor', 'map', 'mapEncoding', 'matcap', 'matcapEncoding', 'envMap', 'envMapMode', 'envMapEncoding', 'envMapCubeUV', 'lightMap', 'lightMapEncoding', 'aoMap', 'emissiveMap', 'emissiveMapEncoding', 'bumpMap', 'normalMap', 'objectSpaceNormalMap', 'tangentSpaceNormalMap', 'clearcoatMap', 'clearcoatRoughnessMap', 'clearcoatNormalMap', 'displacementMap', 'specularMap', 'roughnessMap', 'metalnessMap', 'gradientMap', 'alphaMap', 'combine', 'vertexColors', 'vertexAlphas', 'vertexTangents', 'vertexUvs', 'uvsVertexOnly', 'fog', 'useFog', 'fogExp2', 'flatShading', 'sizeAttenuation', 'logarithmicDepthBuffer', 'skinning', 'maxBones', 'useVertexTexture', 'morphTargets', 'morphNormals', 'premultipliedAlpha', 'numDirLights', 'numPointLights', 'numSpotLights', 'numHemiLights', 'numRectAreaLights', 'numDirLightShadows', 'numPointLightShadows', 'numSpotLightShadows', 'shadowMapEnabled', 'shadowMapType', 'toneMapping', 'physicallyCorrectLights', 'alphaTest', 'doubleSided', 'flipSided', 'numClippingPlanes', 'numClipIntersection', 'depthPacking', 'dithering', 'sheen', 'transmissionMap'];
   function shaderWhy(o, m) {
     let p = o; while (p && p.name !== 'капля') p = p.parent;
     const c = p ? cells.find(k => k.vis && k.vis.mesh === p) : null, w = c && c.owner;
@@ -447,7 +449,12 @@
       let who = null;
       scene.traverse(o => { if (who || !o.material) return; const ms = Array.isArray(o.material) ? o.material : [o.material];
         for (const m of ms) { const pr = renderer.properties.get(m); if (pr && pr.currentProgram === prog) { who = objLabel(o) + shaderWhy(o, m); break; } } });
-      TLog.ev('новый шейдер', (prog.name || '?') + (who ? ': ' + who : ''));
+      // 2.7: what makes it new — the parameters that differ from the closest shader already made of the same kind
+      let diff = '';
+      try { const mine = String(prog.cacheKey || '').split(','); let best = null, bd = 1e9;
+        for (const q of list) { if (q === prog || q.name !== prog.name) continue; const o = String(q.cacheKey || '').split(','); if (o.length !== mine.length) continue; let d = 0; for (let i = 0; i < o.length; i++) if (o[i] !== mine[i]) d++; if (d < bd) { bd = d; best = o; } }
+        if (best) { const ds = []; for (let i = 0; i < mine.length && ds.length < 6; i++) if (best[i] !== mine[i]) { const j = i - (mine.length - 3 - PK_NAMES.length), nmk = j >= 0 && j < PK_NAMES.length ? PK_NAMES[j] : i >= mine.length - 3 ? ['outputEncoding', 'gammaFactor', 'customKey'][i - (mine.length - 3)] : 'шейдер/defines'; ds.push(`${nmk}: ${String(best[i]).slice(0, 24)}→${String(mine[i]).slice(0, 24)}`); } diff = ds.length ? ' · отличие ' + ds.join(' ') : ''; } else diff = ' · первый такого вида'; } catch (e) {}
+      TLog.ev('новый шейдер', (prog.name || '?') + (who ? ': ' + who : '') + diff);
     }
   }
   // 2.7 test: what takes the draw calls right now — objects in view by kind (the glow batch counts as one)

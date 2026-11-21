@@ -131,7 +131,7 @@
       if (again === 'regrow' || why === 'regrow') toast(`Снова 50 000 — капля разделилась на две половины по ${Math.round(half).toLocaleString('ru-RU')}`); else if (again) toast(`Слияние закончилось — снова две половины по ${Math.round(half).toLocaleString('ru-RU')}`); else toast(mode === 'classic' ? '50 000 массы! Ты разделился на две половины по 25 000 — вырасти обе до 50 000' : '50 000 массы! Игрок разделился на две равные половины по 25 000');
       if (TEST_MODE) try { TLog.ev('деление', Math.round(mass)); } catch (e) {} Sound.play('level'); return true;
     }
-    // 2.7 owner: the halves even out without fusing — mass flows from the heavier half to the lighter (3% of the gap a second, past a 10% gap)
+    // 2.7 owner: the halves even out without fusing — mass flows from the heavier half to the lighter (10% of the gap a second, past a 10% gap)
     const flowLine = new THREE.Mesh(new THREE.BoxGeometry(1, .5, .5), new THREE.MeshBasicMaterial({ color: '#7affd0', transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false }));
     flowLine.visible = false; scene.add(flowLine);
     let hcPrevHm = null;
@@ -142,7 +142,8 @@
       if (hcDual.twins && hcPrevHm) for (const h of [0, 1]) { const d = hm[h] - hcPrevHm[h]; if (d > 300) { const give = d * .3; hcScale(h, (hm[h] - give) / hm[h]); hcScale(1 - h, (hm[1 - h] + give) / hm[1 - h]); hm = hcHalfMass(); } }
       const big = hm[0] >= hm[1] ? 0 : 1, sm = 1 - big, gap = hm[big] - hm[sm];
       if (gap > hm[sm] * .1) {
-        const mv = Math.min(gap / 2, gap * .03 * dt); hcScale(big, (hm[big] - mv) / hm[big]); hcScale(sm, (hm[sm] + mv) / hm[sm]);
+        // 2.7 owner's round: at 3% a second a half that eats kept the gap at ~11 000 — 10% evens it out in a few seconds
+        const mv = Math.min(gap / 2, gap * .1 * dt); hcScale(big, (hm[big] - mv) / hm[big]); hcScale(sm, (hm[sm] + mv) / hm[sm]);
         const A = player.cells.filter(c => c.hcHalf === big), Bc = player.cells.filter(c => c.hcHalf === sm);
         if (A.length && Bc.length) { const a = A.reduce((p, q) => p.mass >= q.mass ? p : q), b = Bc.reduce((p, q) => p.mass >= q.mass ? p : q), dx = b.x - a.x, dz = b.z - a.z, d = hyp(dx, dz);
           flowLine.visible = running; flowLine.position.set((a.x + b.x) / 2, Math.min(cellR(a), cellR(b)) * .6, (a.z + b.z) / 2); flowLine.scale.set(d, 1 + Math.sin(stats.time * 9) * .35, 1); flowLine.rotation.set(0, -Math.atan2(dz, dx), 0); flowLine.material.opacity = .3 + .25 * Math.abs(Math.sin(stats.time * 4)); }

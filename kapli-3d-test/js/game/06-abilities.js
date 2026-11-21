@@ -665,6 +665,7 @@
 
   function lostCell(o, lastMass, eater) {
     if (o.cells.length) return;
+    try { evOwnerEaten(o, eater, lastMass); if (eater === player) evKillCoins(o); } catch (e) {}   // 2.7 events: «Награда за голову», «Монетный дождь»
     if (DuoM.on && DuoM.lost(o, lastMass, eater)) return;   // a match for two: both players come back instead of ending the round
     if (o.isPlayer) {
       if (lives > 0) {

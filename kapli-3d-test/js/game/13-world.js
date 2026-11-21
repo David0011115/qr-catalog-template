@@ -340,7 +340,7 @@
     }
     ejectMat.color.set(skin().color); ejectMat.emissive.set(skin().color);
     for (const v of viruses) { const rv = radius(v.mass); v.mesh.position.set(v.x, rv * .9, v.z); v.mesh.scale.setScalar(rv); v.mesh.rotation.y = now / 2000 + v.x; }
-    if (meteorRing.visible) { meteorRing.scale.setScalar(22 + Math.sin(now / 200) * .8); meteorRing.material.opacity = ev.active ? .9 : .4 + .4 * Math.abs(Math.sin(now / 150)); }
+    if (meteorRing.visible) { meteorRing.scale.setScalar(40 + Math.sin(now / 200) * .8); meteorRing.material.opacity = ev.active ? .9 : .4 + .4 * Math.abs(Math.sin(now / 150)); }
     if (hole.visible) { holeRing.rotation.z = now / 400; }
     for (const e of ejects) e.mesh.position.set(e.x, radius(EJECT_MASS) * 0.9, e.z);
     if (cosmeticRefresh) for (const b of bonuses) {

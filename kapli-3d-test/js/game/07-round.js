@@ -114,7 +114,7 @@
   const botLead = o => botSkill().lead * (o.persona === 'hunter' || o.star ? 1.5 : 1);
   function think(o) {
     const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.5 + .2), flee: p0.flee * .6 } : ModeX.clAngry() && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.3 + .1), flee: p0.flee * .75 } : p0;   // «Классика» after 20 000: bolder bots
-    const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1) * (o.kind === 'bot' || o.kind === 'boss' ? ModeX.hcSenseK() : 1);
+    const r = cellR(c), sense = (ev.active === 'eclipse' ? .5 : ev.active === 'bounty' && ev.target === player ? 1.6 : 1) * (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1) * (o.kind === 'bot' || o.kind === 'boss' ? ModeX.hcSenseK() : 1);
     if (o.hcPack && ModeX.splitMode()) { const p = ModeX.hcPackTarget(o); if (p) { o.target = p.t; o.tx = p.x; o.tz = p.z; return; } }
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
       // 2.7: bosses go for the holder wherever it is; a bot bigger than the holder hunts it across the whole arena;
@@ -584,7 +584,7 @@
     }
     updateEjects(dt);
     updateViruses(dt);
-    if (mode !== 'territory') updateEvent(dt);   // «Захват территории»: no random arena events
+    if (mode !== 'territory' && mode !== 'raid') updateEvent(dt);   // no random arena events in «Захват территории» and «Босс-рейд» (2.7)
     for (const c of player.cells) stats.maxPart = Math.max(stats.maxPart, c.mass);
     stats.maxParts = Math.max(stats.maxParts, player.cells.length);
     const tm = total(player);
@@ -724,7 +724,11 @@
     if (mode === 'crown' && running) ModeX.crownMini(mctx, P);
     if (mode === 'royale' && running) ModeX.zoneMini(mctx, P, s);
     mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const [x, y] = P(v.x, v.z); mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
-    if (ev.active === 'meteor' || ev.warn === 'meteor') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 22 * s, 0, Math.PI * 2); mctx.stroke(); }
+    if (ev.active === 'starfall' || ev.warn === 'starfall') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 40 * s, 0, Math.PI * 2); mctx.stroke(); }
+    if (ev.active === 'rift') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#b26bff'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, RIFT_R * s, 0, Math.PI * 2); mctx.stroke(); mctx.fillStyle = '#000'; mctx.beginPath(); mctx.arc(x, y, 3, 0, Math.PI * 2); mctx.fill(); }
+    if (ev.active === 'quake') { mctx.strokeStyle = '#ff6a00'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(size / 2, size / 2, R * QUAKE_K * s, 0, Math.PI * 2); mctx.stroke(); }
+    if (ev.active === 'golden' && ev.gold) { const [x, y] = P(ev.gold.x, ev.gold.z); mctx.fillStyle = '#ffd23f'; mctx.beginPath(); mctx.arc(x, y, 4, 0, Math.PI * 2); mctx.fill(); }
+    if (ev.active === 'bounty' && ev.target && ev.target.cells.length && ev.target !== player) { const t = mainOf(ev.target), [x, y] = P(t.x, t.z); mctx.strokeStyle = '#ff2d55'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(x, y, Math.max(5, cellR(t) * s + 3), 0, Math.PI * 2); mctx.stroke(); }
     for (const b of bonuses) { const [x, y] = P(b.x, b.z); mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }
     for (const c of cells) {
       if (c.owner.isPlayer || (c.owner.bossType === 'chameleon' && !c.seen)) continue;

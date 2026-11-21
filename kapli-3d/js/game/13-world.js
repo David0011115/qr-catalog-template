@@ -408,7 +408,7 @@
     try {
       if (!prewarmJobs) { prewarmVis = Array.from({ length: 8 }, () => makeVis(new THREE.Color('#8088c0')));
         const skins = SKINS.filter(k => !k.craft && !k.old && !EVO[k.id]);   // star bots wear legendary skins too
-        prewarmJobs = [...skins.flatMap(sk => [0, 1, 3].map(st => [sk, st])), ...FX.filter(f => f.slot === 'aura' && !f.craft).map(f => ['aura', f.id])]; }
+        prewarmJobs = [...skins.flatMap(sk => [0, 1, 2, 3].map(st => [sk, st])),   /* 2.7: ★2 too — a bot with 2 stars compiled mid-round (owner's report) */ ...FX.filter(f => f.slot === 'aura' && !f.craft).map(f => ['aura', f.id])]; }
       const t0 = performance.now();
       while (prewarmI < prewarmJobs.length && performance.now() - t0 < budgetMs) {
         for (let k = 0; k < prewarmVis.length && prewarmI < prewarmJobs.length; k++) { const [a, b] = prewarmJobs[prewarmI++], v = prewarmVis[k]; if (a === 'aura') setAura(v, b, '#8088c0'); else applySkin(v, a, b, null); }
@@ -420,6 +420,7 @@
     return done;
   }
   function prewarmLooks() { const step = () => { if (running) { setTimeout(step, 4000); return; } if (!prewarmChunk(14)) setTimeout(step, 40); }; setTimeout(step, 2500); }
+  function prewarmAgain() { prewarmJobs = null; prewarmI = 0; prewarmLooks(); }   // 2.7: after a change of graphics quality, warm the looks up again in the menu
   function prewarmFinish() { if (!prewarmJobs || prewarmI < prewarmJobs.length) prewarmChunk(1e9); }
   prewarmLooks();
   // 2.7 test: what an object on screen is — a named part (капля, кольцо, глаза…), whose drop it belongs to, or its shape

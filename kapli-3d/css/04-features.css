@@ -841,3 +841,8 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 /* 2.7 Hardcore special cards: a plus and a minus */
 .hc-card.hc-dual .hc-plus { font-size: .74rem; font-weight: 700; color: #3dff9a; }
 .hc-card.hc-dual { background: linear-gradient(160deg, rgba(255, 154, 61, .16), rgba(12, 7, 32, .92) 60%); }
+
+/* 2.7 FPS: what stays on screen during a round does not blur the moving arena behind it — the browser re-blurred it on every frame,
+   a heavy job for a phone's GPU. A denser tint in its place (it looks almost the same). */
+.hud .stats, .board, .pause-btn { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.hud .stats { background: rgba(10, 8, 30, .66); } .board { background: rgba(10, 8, 30, .6); } .pause-btn { background: rgba(10, 11, 26, .72); }

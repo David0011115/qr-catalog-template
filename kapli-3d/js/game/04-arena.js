@@ -290,6 +290,19 @@
     chameleon:{ name: 'Мимик',     color: '#3dffa2', speed: .95, life: 80, parts: 1, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : bossCapSolo(), Math.max(150, p * 1.4)), about: 'невидим, пока не подплывёшь близко' },
     splitter: { name: 'Делитель',  color: '#2ec4b6', speed: .85, life: 90, parts: 6, coins: 25, xp: 35, mass: p => Math.min(mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : bossCapSolo(), Math.max(240, p * 1.5)), about: 'делится на части, чтобы ловить добычу' },
   };
+  // 2.7.10 (owner): every boss wears its own exclusive look — a body pattern and a thing over the head nobody else has
+  const BOSS_SKINS = {
+    giant:     { id: 'boss_giant',     name: 'Громила',        color: '#8a1a34', accent: '#ff5a7a', pattern: 'b_giant',     head: 'b_giant',     glow: true },
+    hunter:    { id: 'boss_hunter',    name: 'Шустрик',        color: '#ff6b3d', accent: '#ffe14d', pattern: 'b_hunter',    head: 'b_hunter',    glow: true, flow: [.35, 0] },
+    queen:     { id: 'boss_queen',     name: 'Матка роя',      color: '#4a1f7a', accent: '#ffd23f', pattern: 'b_queen',     head: 'b_queen',     glow: true },
+    frost:     { id: 'boss_frost',     name: 'Морозец',        color: '#2a86b8', accent: '#ffffff', pattern: 'b_frost',     head: 'b_frost' },
+    chameleon: { id: 'boss_chameleon', name: 'Мимик',          color: '#0f5a40', accent: '#3dffa2', pattern: 'b_mimic',     head: 'b_mimic',     glow: true, flow: [.05, 0] },
+    splitter:  { id: 'boss_splitter',  name: 'Делитель',       color: '#2ec4b6', accent: '#b8fff4', pattern: 'b_split',     head: 'b_split',     glow: true },
+    colossus:  { id: 'boss_colossus',  name: 'Колосс',         color: '#e76f51', accent: '#ff8a1f', pattern: 'b_colossus',  head: 'b_colossus',  glow: true, flow: [0, .04] },
+    brood:     { id: 'boss_brood',     name: 'Потомок роя',    color: '#3a1466', accent: '#ffd23f', pattern: 'b_brood',     head: 'b_brood',     glow: true },
+    colossus2: { id: 'boss_colossus2', name: 'Колосс-близнец', color: '#7b3dff', accent: '#c48bff', pattern: 'b_colossus2', head: 'b_colossus2', glow: true },
+  };
+  const dressBoss = (v, type) => { const s = BOSS_SKINS[type]; if (!s) return; try { applySkin(v, s, 0, null); } catch (e) { KapliErr.log(e, 'boss-look'); } };
   // two of each kind, so survival can field duplicates in later waves
   let BOSS_TYPES_EXTRA = {};
   const bossOwners = [0, 1].flatMap(() => Object.entries(BOSS_TYPES)).map(([type, b]) => {
@@ -299,6 +312,7 @@
       const v = makeVis(new THREE.Color(b.color));
       v.crown.visible = true;
       v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8;
+      dressBoss(v, type);
       return v;
     });
     return o;
@@ -310,13 +324,14 @@
     const v = makeVis(new THREE.Color('#e76f51'));
     v.crown.visible = true;
     v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8;
+    dressBoss(v, 'colossus');
     return v;
   });
   // 2.5: the raid boss comes as a pair — the second twin of the week
   const colossus2 = makeOwner('Колосс-близнец', 'boss', 'boss');
   colossus2.bossType = 'colossus2'; colossus2.life = 1e9;
   BOSS_TYPES_EXTRA.colossus2 = { name: 'Колосс-близнец', color: '#7b3dff', speed: .66, life: 1e9, parts: 12, coins: 60, xp: 80, about: 'второй из пары: пока близнецы рядом, их связь гасит половину урона' };
-  colossus2.free = Array.from({ length: 12 }, () => { const v = makeVis(new THREE.Color('#7b3dff')); v.crown.visible = true; v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8; return v; });
+  colossus2.free = Array.from({ length: 12 }, () => { const v = makeVis(new THREE.Color('#7b3dff')); v.crown.visible = true; v.mesh.material.emissiveIntensity = .65; v.glow.material.opacity = .8; dressBoss(v, 'colossus2'); return v; });
   const raidTwins = [colossus, colossus2];
   const MINION_COLOR = '#c9a7ff';
   const minions = Array.from({ length: 6 }, () => {
@@ -419,7 +434,9 @@
     const m = minions.find(o => !o.cells.length);
     if (!m) return;
     const q = queen.cells[0], a = Math.random() * Math.PI * 2, r = cellR(q) + 1.5;
-    const c = addCell(m, q.x + Math.cos(a) * r, q.z + Math.sin(a) * r, 8 + Math.random() * 6, m.free.pop());
+    // 2.7.11 (owner): the spawn of «Матка роя» looks like her brood; the colossi's helpers keep the plain look
+    const v = m.free.pop(), brood = queen.bossType === 'queen'; if (v && v.broodOn !== brood) { v.broodOn = brood; try { applySkin(v, brood ? BOSS_SKINS.brood : { id: 'minion', color: MINION_COLOR }, 0, null); } catch (e) {} }
+    const c = addCell(m, q.x + Math.cos(a) * r, q.z + Math.sin(a) * r, 8 + Math.random() * 6, v);
     c.vx = Math.cos(a) * 25; c.vz = Math.sin(a) * 25;
     m.think = 0; m.target = null;
     rebuildCells();

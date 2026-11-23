@@ -605,6 +605,11 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     x.fillStyle = emi ? '#000000' : C; x.fillRect(0, 0, W, H); x.fillStyle = A;
     switch (s.pattern) {
       // ---- 2.7.10: the bosses' own looks (nobody else wears them) ----
+      case 'b_brood': {   // the spawn of «Матка роя»: wasp bands of royal gold over violet, with a fine honeycomb
+        if (!emi) { x.fillStyle = C; x.fillRect(0, 0, W, H); }
+        for (let j = 6; j < H; j += 26) { x.fillStyle = A; x.globalAlpha = emi ? .9 : 1; x.fillRect(0, j, W, 11); }
+        x.globalAlpha = 1; if (!emi) for (let i = 0; i < 70; i++) dot(r() * W, r() * H, 1.2, '#c49bff', .6);
+        break; }
       case 'b_giant': {   // «Громила»: riveted iron plates over a crimson hide, glowing scars
         if (!emi) { grad(C, '#2a0410'); for (let row = 0; row < 4; row++) for (let col = 0; col < 8; col++) { const px = col * 32 + (row % 2) * 16, py = row * 32 + 2;
           x.fillStyle = '#3a2a30'; x.globalAlpha = .85; x.fillRect(px + 2, py + 2, 28, 28); x.globalAlpha = 1; x.strokeStyle = '#120408'; x.lineWidth = 2; x.strokeRect(px + 2, py + 2, 28, 28);
@@ -1053,6 +1058,10 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     switch (type) {
       case 'flame': ['#ff3d00', '#ff9a3d', '#ffd23f'].forEach((c, i) => { const sz = 1.15 - i * .25; const sp = glowSprite(c, sz, 1); sp.position.set(0, 1.15 + i * .2, 0); sp.userData.base = sz; g.add(sp); }); break;
       // ---- 2.7.10: the bosses' own things over the head ----
+      case 'b_brood': { const wingM = new THREE.MeshBasicMaterial({ color: '#e8dcff', transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false });
+        [-1, 1].forEach(sx => { const w = M(new THREE.SphereGeometry(.45, 12, 8), wingM, sx * .55, 1.0, -.2); w.scale.set(1, .12, .5); w.rotation.z = sx * .35; w.userData.wing = sx; });
+        [-1, 1].forEach(sx => { const st = M(new THREE.CylinderGeometry(.02, .02, .4, 5), basic('#2a0f4a'), sx * .16, 1.2, .3); st.rotation.set(.6, 0, -sx * .35);
+          const tip = M(new THREE.SphereGeometry(.06, 8, 6), basic('#ffd23f'), sx * .24, 1.38, .45); tip.add(glowSprite('#ffd23f', .45, .9)); }); break; }
       case 'b_giant': { const iron = new THREE.MeshStandardMaterial({ color: '#4a3a40', emissive: '#2a0410', emissiveIntensity: .5, metalness: .8, roughness: .35 });
         const band = M(new THREE.TorusGeometry(.5, .09, 8, 28), iron, 0, .98, 0); band.rotation.x = Math.PI / 2;
         for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, sp = M(new THREE.ConeGeometry(.08, .34, 8), iron, Math.cos(a) * .5, 1.14, Math.sin(a) * .5); sp.rotation.set(Math.sin(a) * .35, 0, -Math.cos(a) * .35); }
@@ -1165,6 +1174,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'flame': g.children.forEach((o, i) => { o.scale.setScalar(o.userData.base * (.85 + Math.random() * .3)); o.position.y = 1.15 + i * .2 + Math.sin(t * 9 + i) * .03; }); break;
       case 'antenna': g.children.forEach(o => { if (o.userData.tip) o.position.y = 1.45 + Math.sin(t * 5 + o.userData.tip) * .04; }); break;
       case 'halo': g.children[0].position.y = 1.42 + Math.sin(t * 2) * .06; break;
+      case 'b_brood': g.children.forEach(o => { if (o.userData.wing) o.rotation.z = o.userData.wing * (.35 + Math.sin(t * 38) * .45); }); break;
       case 'b_giant': g.children.forEach(o => { if (o.userData.pulse) o.children[0].scale.setScalar(1.8 * (.8 + .25 * Math.max(0, Math.sin(t * 3)))); }); break;
       case 'b_hunter': g.children.forEach(o => { if (o.userData.fin) o.rotation.z = o.userData.fin * (.45 + Math.sin(t * 14) * .08); if (o.userData.streak != null) o.position.z = -.9 - ((t * 3 + o.userData.streak * .33) % 1) * 1.1; }); break;
       case 'b_queen': g.children.forEach(o => { if (o.userData.orb != null) { const a = o.userData.orb + t * 2.2; o.position.set(Math.cos(a) * .8, 1.15 + Math.sin(t * 4 + o.userData.orb) * .12, Math.sin(a) * .8); } }); break;

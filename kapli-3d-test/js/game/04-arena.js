@@ -299,6 +299,7 @@
     chameleon: { id: 'boss_chameleon', name: 'Мимик',          color: '#0f5a40', accent: '#3dffa2', pattern: 'b_mimic',     head: 'b_mimic',     glow: true, flow: [.05, 0] },
     splitter:  { id: 'boss_splitter',  name: 'Делитель',       color: '#2ec4b6', accent: '#b8fff4', pattern: 'b_split',     head: 'b_split',     glow: true },
     colossus:  { id: 'boss_colossus',  name: 'Колосс',         color: '#e76f51', accent: '#ff8a1f', pattern: 'b_colossus',  head: 'b_colossus',  glow: true, flow: [0, .04] },
+    brood:     { id: 'boss_brood',     name: 'Потомок роя',    color: '#3a1466', accent: '#ffd23f', pattern: 'b_brood',     head: 'b_brood',     glow: true },
     colossus2: { id: 'boss_colossus2', name: 'Колосс-близнец', color: '#7b3dff', accent: '#c48bff', pattern: 'b_colossus2', head: 'b_colossus2', glow: true },
   };
   const dressBoss = (v, type) => { const s = BOSS_SKINS[type]; if (!s) return; try { applySkin(v, s, 0, null); } catch (e) { KapliErr.log(e, 'boss-look'); } };
@@ -433,7 +434,9 @@
     const m = minions.find(o => !o.cells.length);
     if (!m) return;
     const q = queen.cells[0], a = Math.random() * Math.PI * 2, r = cellR(q) + 1.5;
-    const c = addCell(m, q.x + Math.cos(a) * r, q.z + Math.sin(a) * r, 8 + Math.random() * 6, m.free.pop());
+    // 2.7.11 (owner): the spawn of «Матка роя» looks like her brood; the colossi's helpers keep the plain look
+    const v = m.free.pop(), brood = queen.bossType === 'queen'; if (v && v.broodOn !== brood) { v.broodOn = brood; try { applySkin(v, brood ? BOSS_SKINS.brood : { id: 'minion', color: MINION_COLOR }, 0, null); } catch (e) {} }
+    const c = addCell(m, q.x + Math.cos(a) * r, q.z + Math.sin(a) * r, 8 + Math.random() * 6, v);
     c.vx = Math.cos(a) * 25; c.vz = Math.sin(a) * 25;
     m.think = 0; m.target = null;
     rebuildCells();

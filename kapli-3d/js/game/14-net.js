@@ -963,7 +963,7 @@
       return `<svg class="rr-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Масса по ходу раунда"><polyline points="${P},${H - P} ${W - P},${H - P}" class="rr-ax"/><polyline points="${pts}" class="rr-line"/>${marks}<text x="${P + 2}" y="${P + 10}" class="rr-tx">${fmtNum(max)}</text><text x="${W - P - 2}" y="${H - P - 4}" class="rr-tx" text-anchor="end">${fmtTime(T)}</text></svg>
         <p class="rr-legend"><i class="rr-k b"></i> босс съеден <i class="rr-k d"></i> потеряна капля</p>`;
     }
-    async function recRepOpen(nick, m) {
+    async function recRepOpen(nick, m, rej) {
       let M = $('recRepM');
       if (!M) {
         M = document.createElement('div'); M.id = 'recRepM'; M.className = 'modal rec-rep-m'; M.hidden = true;
@@ -974,11 +974,11 @@
       const body = $('recRepBody'), mName = (MODES[m] || {}).name || m;
       $('recRepH').textContent = `${nick} · ${mName}`; body.innerHTML = skelHTML(4); M.hidden = false; M.querySelector('[data-rrx]').focus();
       let rec;
-      try { const r = await withTimeout(sb.rpc('kapli_record_details', { p_nick: nick, p_mode: m }), 9000); if (r.error) throw r.error; rec = r.data && r.data[0]; }
-      catch (e) { body.innerHTML = `<p class="empty-note">${netErr(e) ? 'Нет связи с сервером.' : /kapli_record_details|PGRST202|function/i.test(`${e.code} ${e.message}`) ? 'Отчёты ещё не включены на сервере (RECORDS-DETAILS-MIGRATION.sql).' : 'Не получилось загрузить отчёт.'}</p>`; return; }
-      if (!rec) { body.innerHTML = '<p class="empty-note">Рекорда уже нет.</p>'; return; }
+      try { const r = await withTimeout(sb.rpc(rej ? 'kapli_rejected_details' : 'kapli_record_details', { p_nick: nick, p_mode: m }), 9000); if (r.error) throw r.error; rec = r.data && r.data[0]; }
+      catch (e) { body.innerHTML = `<p class="empty-note">${netErr(e) ? 'Нет связи с сервером.' : /kapli_record_details|kapli_rejected_details|PGRST202|function/i.test(`${e.code} ${e.message}`) ? `Отчёты ещё не включены на сервере (${rej ? 'RECORDS-REJECT-MIGRATION.sql' : 'RECORDS-DETAILS-MIGRATION.sql'}).` : 'Не получилось загрузить отчёт.'}</p>`; return; }
+      if (!rec) { body.innerHTML = `<p class="empty-note">${rej ? 'Запись уже удалена: отклонённые рекорды хранятся 7 дней.' : 'Рекорда уже нет.'}</p>`; return; }
       const d = rec.details && typeof rec.details === 'object' ? rec.details : null, flags = recFlags(rec, d, m);
-      const head = `<p class="rr-score"><b>${fmtBest(m, rec.score)}</b>${rec.prev_score ? ` · было ${fmtBest(m, rec.prev_score)} (×${(rec.score / rec.prev_score).toFixed(1)})` : ' · первый рекорд'}${rec.held ? ' · <span class="rr-held">⏳ на проверке</span>' : ''}<small>${new Date(rec.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></p>`;
+      const head = `<p class="rr-score"><b>${fmtBest(m, rec.score)}</b>${rec.prev_score ? ` · было ${fmtBest(m, rec.prev_score)} (×${(rec.score / rec.prev_score).toFixed(1)})` : ' · первый рекорд'}${rej ? ' · <span class="rr-held">🚫 отклонён</span>' : rec.held ? ' · <span class="rr-held">⏳ на проверке</span>' : ''}<small>${new Date(rec.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></p>`;
       const sus = `<h3>🕵 Подозрительное</h3>${flags.length ? `<ul class="rr-flags">${flags.map(f => `<li>⚠ ${f}</li>`).join('')}</ul>` : '<p class="rr-ok">✓ Ничего подозрительного не нашлось.</p>'}`;
       if (!d) { body.innerHTML = head + sus; return; }
       const st = d.st || {}, row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
@@ -995,6 +995,26 @@
     const rejPanel = () => `<div class="rv-rej"><p>Причина — игрок получит её личным сообщением от тебя и сможет ответить:</p><div class="rv-chips">${REJ_WHY.map(w => `<button type="button" class="rv-chip" data-rjc="${escHtml(w)}">${escHtml(w)}</button>`).join('')}</div>` +
       `<textarea data-rjt maxlength="150" rows="2" placeholder="Выбери причину выше или напиши свою"></textarea><div class="rv-rj-btns"><button type="button" class="btn ghost" data-rjx>Отмена</button><button type="button" class="btn rv-no" data-rjgo disabled>Удалить и написать</button></div></div>`;
     const rejSync = li => { const t = li && li.querySelector('[data-rjt]'), g = li && li.querySelector('[data-rjgo]'); if (t && g) g.disabled = !t.value.trim(); };
+    const rejWhy = msg => { const x = String(msg || '').match(/Причина:\s*(.+?)\.\s*Если не согласен/); return x ? x[1] : String(msg || ''); };
+    const rsPanel = l => { const mName = (MODES[l.dataset.mode] || {}).name || l.dataset.mode;
+      return `<div class="rv-rej"><p>Сообщение игроку (можно изменить):</p><textarea data-rjt maxlength="300" rows="2">${escHtml(`Твой рекорд ${fmtBest(l.dataset.mode, +l.dataset.score)} в режиме «${mName}» восстановлен и снова виден в рейтинге. Спасибо, что разобрался!`)}</textarea>` +
+        `<div class="rv-rj-btns"><button type="button" class="btn ghost" data-rjx>Отмена</button><button type="button" class="btn rv-ok" data-rsgo>Восстановить и написать</button></div></div>`; };
+    async function rejLoad() {
+      const ul = $('rejList'); ul.innerHTML = skelHTML(2);
+      try { const r = await withTimeout(sb.rpc('kapli_rejected_list'), 9000); if (r.error) throw r.error; const mName = k => (MODES[k] || {}).name || k;
+        ul.innerHTML = r.data.length ? r.data.map(x => { const left = Math.max(0, 7 - Math.floor((Date.now() - new Date(x.at)) / 864e5));
+          return `<li data-nick="${escHtml(x.nickname)}" data-mode="${escHtml(x.mode)}" data-score="${+x.score || 0}"><div class="rv-who"><b>${escHtml(x.nickname)}</b> · ${escHtml(mName(x.mode))}<small><b>${fmtBest(x.mode, x.score)}</b> · отклонён ${new Date(x.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short' })} · ${left > 0 ? `можно вернуть ещё ${left} дн.` : 'последний день'}</small>${x.msg ? `<small class="rj-why">Причина: ${escHtml(rejWhy(x.msg))}</small>` : ''}</div>` +
+            `<button type="button" class="btn ghost rv-rep" data-rvrep aria-label="Отчёт о рекорде">📊</button><button type="button" class="btn rv-ok" data-rsok>Восстановить</button></li>`; }).join('')
+          : '<li class="review-empty">Отклонённых рекордов нет</li>';
+      } catch (e) { ul.innerHTML = `<li class="review-empty">${netErr(e) ? 'Нет связи с сервером.' : /kapli_rejected_list|PGRST202|function/i.test(`${e.code} ${e.message}`) ? 'Список отклонённых ещё не включён: запусти RECORDS-REJECT-MIGRATION.sql.' : 'Не получилось загрузить.'}</li>`; }
+    }
+    async function rsGo(li) {
+      li.querySelectorAll('button, textarea').forEach(x => x.disabled = true);
+      try { const r = await withTimeout(sb.rpc('kapli_rejected_restore', { p_nick: li.dataset.nick, p_mode: li.dataset.mode, p_body: li.querySelector('[data-rjt]').value }), 9000); if (r.error) throw r.error;
+        toast(r.data === 'kept' ? `У ${li.dataset.nick} уже есть рекорд лучше — он остался, сообщение отправлено` : r.data === 'not rejected' ? 'Запись уже удалена: прошло больше 7 дней' : `Рекорд ${li.dataset.nick} восстановлен, игроку отправлено сообщение`);
+        li.remove(); if (!$('rejList').children.length) $('rejList').innerHTML = '<li class="review-empty">Отклонённых рекордов нет</li>'; if (li.dataset.mode === rankMode) loadRank(rankMode);
+      } catch (e) { li.querySelectorAll('button, textarea').forEach(x => x.disabled = false); toast(netErr(e) ? 'Нет связи с сервером.' : 'Не получилось — попробуй ещё раз.'); }
+    }
     async function reviewOpen() {
       const data = await reviewCheck(); if (!data) return;
       let m = $('reviewM');
@@ -1002,10 +1022,14 @@
         m = document.createElement('div'); m.id = 'reviewM'; m.className = 'modal'; m.hidden = true;
         m.innerHTML = `<div class="modal-card review-card" role="dialog" aria-modal="true" aria-labelledby="reviewH"><button class="modal-x" type="button" data-rvx aria-label="Закрыть">×</button><h2 id="reviewH">Рекорды на проверке</h2><p class="review-note">Рекорд держится, если он в 3 раза выше прошлого или первый рекорд слишком большой. До решения его видит только сам игрок.</p><ul class="review-list" id="reviewList"></ul></div>`;
         document.body.appendChild(m);
+        m.querySelector('.modal-card').insertAdjacentHTML('beforeend', '<button type="button" class="btn ghost rv-rj-tog" data-rjl aria-expanded="false">🚫 Отклонённые</button><p class="review-note" id="rejNote" hidden>Отклонённый рекорд никто не видит. 7 дней его можно вернуть кнопкой «Восстановить», потом он удаляется.</p><ul class="review-list rej-list" id="rejList" hidden></ul>');
         m.addEventListener('input', e => { if (e.target.matches('[data-rjt]')) rejSync(e.target.closest('li')); });
         m.addEventListener('click', async e => {
           if (e.target === m || e.target.closest('[data-rvx]')) { m.hidden = true; $('rankReview').focus(); return; }
-          const rb = e.target.closest('[data-rvrep]'); if (rb) { const l = rb.closest('li'); recRepOpen(l.dataset.nick, l.dataset.mode); return; }
+          const rb = e.target.closest('[data-rvrep]'); if (rb) { const l = rb.closest('li'); recRepOpen(l.dataset.nick, l.dataset.mode, !!l.closest('#rejList')); return; }
+          { const t = e.target.closest('[data-rjl]'); if (t) { const open = $('rejList').hidden; $('rejList').hidden = $('rejNote').hidden = !open; t.setAttribute('aria-expanded', open); if (open) rejLoad(); return; } }
+          { const rs = e.target.closest('[data-rsok]'); if (rs) { const l = rs.closest('li'); if (!l.querySelector('.rv-rej')) { l.insertAdjacentHTML('beforeend', rsPanel(l)); l.querySelector('[data-rjt]').focus(); } return; } }
+          { const g = e.target.closest('[data-rsgo]'); if (g) { rsGo(g.closest('li')); return; } }
           { const c = e.target.closest('[data-rjc]'); if (c) { const ta = c.closest('li').querySelector('[data-rjt]'); ta.value = c.dataset.rjc; ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); return; } }
           if (e.target.closest('[data-rjx]')) { const p = e.target.closest('.rv-rej'); p.remove(); return; }
           const go = e.target.closest('[data-rjgo]');
@@ -1023,15 +1047,16 @@
               else sent = !r.error;
               if (r.error) throw r.error;
             } else { const { error } = await withTimeout(sb.rpc('kapli_review_record', { p_nick: li.dataset.nick, p_mode: li.dataset.mode, p_ok: true }), 9000); if (error) throw error; }
-            toast(ok ? `Рекорд ${li.dataset.nick} показан всем` : sent ? `Рекорд ${li.dataset.nick} удалён, причина отправлена в личные сообщения` : `Рекорд ${li.dataset.nick} удалён, но сообщение не ушло: запусти RECORDS-REJECT-MIGRATION.sql`); li.remove();
+            toast(ok ? `Рекорд ${li.dataset.nick} показан всем` : sent ? `Рекорд ${li.dataset.nick} отклонён (7 дней его можно вернуть), причина отправлена в личные сообщения` : `Рекорд ${li.dataset.nick} удалён, но сообщение не ушло: запусти RECORDS-REJECT-MIGRATION.sql`); li.remove();
             if (!$('reviewList').children.length) $('reviewList').innerHTML = '<li class="review-empty">Проверять нечего ✓</li>';
-            reviewCheck(); if (li.dataset.mode === rankMode) loadRank(rankMode);
+            reviewCheck(); if (li.dataset.mode === rankMode) loadRank(rankMode); if (!ok && !$('rejList').hidden) rejLoad();
           } catch (er) { li.querySelectorAll('button, textarea').forEach(x => x.disabled = false); rejSync(li); toast(netErr(er) ? 'Нет связи с сервером.' : 'Не получилось — попробуй ещё раз.'); }
         });
       }
       const mName = k => (MODES[k] || {}).name || k;
       $('reviewList').innerHTML = data.length ? data.map(r => `<li data-nick="${escHtml(r.nickname)}" data-mode="${escHtml(r.mode)}" data-score="${+r.score || 0}"><div class="rv-who"><b>${escHtml(r.nickname)}</b> · ${escHtml(mName(r.mode))}<small>${r.prev_score != null ? `было ${fmtBest(r.mode, r.prev_score)} → ` : 'первый рекорд: '}<b>${fmtBest(r.mode, r.score)}</b>${r.prev_score ? ` (×${(r.score / r.prev_score).toFixed(1)})` : ''} · ${new Date(r.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="btn ghost rv-rep" data-rvrep aria-label="Отчёт о рекорде">📊</button><button type="button" class="btn rv-ok" data-rvok="1">Показать</button><button type="button" class="btn ghost rv-no" data-rvok="0">Удалить</button></li>`).join('')
         : '<li class="review-empty">Проверять нечего ✓</li>';
+      if (!$('rejList').hidden) rejLoad();
       m.hidden = false; m.querySelector('[data-rvx]').focus();
     }
     $('rankBtn').addEventListener('click', () => { reviewCheck(); showCard('rankCard'); loadRank(RANK_MODES.includes(save.mode) || isDuoMode(save.mode) ? save.mode : 'classic'); $('rankBack').focus(); });

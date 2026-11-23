@@ -4,6 +4,12 @@
     document.addEventListener('click', function f(e) { if (e.target.id === 'n27Ok') { $('tutModal').hidden = true; document.removeEventListener('click', f); } });
     delete save.notice27; persist();
   }, 1400);
+  try { hcRewardCheck(false); } catch (e) {}   // 2.7.5: rewards earned before this version had their own windows (none after the reset)
+  if (save.noticeHc && save.noticeHc.length) setTimeout(() => {   // 2.7.5: what the new «Хардкор» took back
+    tutModal('«Хардкор» стал сложнее', `<p>Планка режима выросла до 250 000: капля делится на 100 000, победа — обе половины по 125 000. Рост медленнее, вех больше, боты сильнее.</p><p>Награды «Хардкора» из 2.7 сброшены без возмещения — их можно получить заново: ${save.noticeHc.map(escHtml).join(', ')}. Каждая награда теперь приходит отдельным окном.</p>`, [['nHcOk', 'Понятно', 'btn']]);
+    document.addEventListener('click', function f(e) { if (e.target.id === 'nHcOk') { $('tutModal').hidden = true; document.removeEventListener('click', f); } });
+    delete save.noticeHc; persist();
+  }, 2600);
   if (seasonNotice) { persist(); setTimeout(() => toast('Сезон завершён! Награда начислена'), 800); }
   if (save.recapShow) recapWatch();
   setGameUi(false);

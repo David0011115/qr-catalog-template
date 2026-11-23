@@ -16,9 +16,9 @@
   // (save.wal.q) with its own id; 14-net.js sends the queue and takes the server's balance. A guest has only the number here.
   const coinDev = (() => { try { let d = localStorage.getItem('kapli3d-dev'); if (!d) { d = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('kapli3d-dev', d); } return d.replace(/[^A-Za-z0-9]/g, '').slice(1, 11) || 'x'; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 10); } })();
   let coinSeq = 0;
-  // 2.7.4: the server takes at most 20 000 in one earning and 100 000 a day (UTC day). It refuses a whole piece that goes over the day,
+  // 2.7.4: the server takes at most 20 000 in one earning and 250 000 a day (UTC day; 100 000 before 2.7.5). It refuses a whole piece that goes over the day,
   // so the game cuts the piece at what is left of the day: everything that fits is counted, only the rest is refused
-  const WAL_DAY = 100000, utcDay = () => new Date().toISOString().slice(0, 10);
+  const WAL_DAY = 250000, utcDay = () => new Date().toISOString().slice(0, 10);
   function walDayUsed() {   // earned today on this account as far as this phone knows: confirmed by the server + still in the queue
     const d = utcDay(), W = save.wal, done = save.walDay && save.walDay.d === d ? save.walDay.e : 0;
     return done + (W && Array.isArray(W.q) ? W.q.filter(o => o.k === 'e' && (!o.d || o.d === d)).reduce((t, o) => t + o.n, 0) : 0);
@@ -364,6 +364,24 @@
     arsenalTitleCheck();
     if (coins) coinsAdd(coins, 'refund');
     save.deco27 = { lines: lines.length, coins }; if (lines.length) save.notice27 = lines;
+    persist();
+  }
+  // 2.7.5 (owner): «Хардкор» got its bar moved to 250 000 and was made harder — everything it gave in 2.7 is taken back once,
+  // without compensation; it can all be earned again (titles «Несгибаемый» and frame «Закалка» from 2.5 stay)
+  if (!save.hcReset275) {
+    const had = [];
+    if (save.skins.includes('hc_berserk')) { had.push('скин «Берсерк»'); save.skins = save.skins.filter(x => x !== 'hc_berserk'); if (save.skin === 'hc_berserk') save.skin = save.skins.includes('mint') ? 'mint' : save.skins[0] || 'coral'; }
+    for (const k of ['evoSeen', 'evoNew', 'evo']) if (save[k] && save[k].hc_berserk != null) delete save[k].hc_berserk;
+    if (Array.isArray(save.evoQ)) save.evoQ = save.evoQ.filter(e => e.id !== 'hc_berserk');
+    const bgs = ['bg_hc_arena', 'bg_hc_singularity'];
+    if ((save.pbg || []).some(b => bgs.includes(b))) { had.push('фоны «Арена Берсерка» / «Трон затмения»'); save.pbg = save.pbg.filter(b => !bgs.includes(b)); }
+    if (save.pbgF) bgs.forEach(b => delete save.pbgF[b]);
+    if ((save.hcPeak || 0) >= 75000 || save.hc100k) had.push('значки «Хардкора»');
+    if (save.badges) delete save.badges.hc100k;
+    if (save.pc) { if (bgs.includes(save.pc.bg)) save.pc.bg = 'bg_base'; if (['hc75', 'hc88', 'hc100k'].includes(save.pc.badge)) save.pc.badge = ''; }
+    save.hc100k = false; delete save.hc100kAt; save.hcPeak = 0; save.hcGot = {}; save.rwQ = [];
+    if (save.bests && save.bests.hardcore) { had.push('рекорд режима'); save.bests.hardcore = 0; }
+    save.hcReset275 = Date.now(); if (had.length) save.noticeHc = had;
     persist();
   }
   if (!save.upg170) {   // levels above the new maximum come back as coins at their price

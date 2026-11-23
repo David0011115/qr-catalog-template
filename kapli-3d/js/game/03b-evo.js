@@ -236,7 +236,7 @@
       need: ['все 13 мастерских', '«Легенда» в 4 режимах', '«Легенда» в 8 режимах'], unit: '', c: '#22e6ff', c2: '#ff4fd8' },
     cs_q4:       { forms: () => !save.skins.includes('cs_q4') ? 0 : evoSteps(Math.max(1, evoChaosTop()), [1, 3, 6]), need: ['1 сезон', '3 сезона', '6 сезонов'], unit: 'в «Разломе» или выше', c: '#ff4fd8', c2: '#22e6ff' },
     cv_skin:     { forms: () => !save.skins.includes('cv_skin') ? 0 : 1 + evoSteps((save.chaosLog || []).length, [35, 45]), need: ['25 сезонов в «Сингулярности»', '35 сезонов в Хаос-лиге', '45 сезонов в Хаос-лиге'], unit: '', c: '#ff2dd8', c2: '#22e6ff' },
-    hc_berserk:  { forms: () => evoSteps(save.hcPeak || 0, [40000, 50000, 70000]), need: ['40 000', '50 000', '70 000'], unit: 'массы за раунд «Хардкора»', c: '#ff2d2d', c2: '#ff9a3d', rar: 'Хардкор', grant: 'Берсерк' },
+    hc_berserk:  { forms: () => evoSteps(save.hcPeak || 0, [60000, 100000, 150000]), need: ['60 000', '100 000', '150 000'], unit: 'массы за раунд «Хардкора»', c: '#ff2d2d', c2: '#ff9a3d', rar: 'Хардкор', grant: 'Берсерк' },
     duo_twin:    { forms: () => evoSteps(evoDuoBest('normal'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Обычный»', c: '#7affd0', c2: '#22e6ff', grant: 'Близнецы' },
     duo_shield:  { forms: () => evoSteps(evoDuoBest('hard'), [30, 40, 50]), need: ['30-я волна', '40-я волна', '50-я волна'], unit: '«Спины к спине» на сложности «Сложный»', c: '#5affc8', c2: '#2ab8a0', grant: 'Щит союза' },
     // 2.7: the workshop's flagship — forms by how much of the «Хронос» series you own (23 items)
@@ -263,7 +263,7 @@
   // the skins themselves (the legendary and challenge ones already exist; these four are new)
   SKINS.push(
     { id: 'cr_architect', name: 'Архитектор', color: '#0a1a44', accent: '#ffd23f', glow: true, evoSkin: true, promo: true, sig: 'живой чертёж: золотые линии, каркас из граней, свои миры на орбитах', evoSrc: 'значок «Создатель»' },
-    { id: 'hc_berserk', name: 'Берсерк', color: '#3a0408', accent: '#ff1a1a', glow: true, evoSkin: true, sig: 'шипы бьются в такт сердцу', evoSrc: '«Хардкор»: 40 000 массы за один раунд' },
+    { id: 'hc_berserk', name: 'Берсерк', color: '#3a0408', accent: '#ff1a1a', glow: true, evoSkin: true, sig: 'шипы бьются в такт сердцу', evoSrc: '«Хардкор»: 60 000 массы за один раунд' },
     { id: 'duo_twin', name: 'Близнецы', color: '#22e6ff', accent: '#3dff9a', glow: true, evoSkin: true, sig: 'два цвета, как инь-ян', evoSrc: '«Спина к спине», «Обычный»: дойти до 30-й волны' },
     { id: 'duo_shield', name: 'Щит союза', color: '#0f3a36', accent: '#5affc8', glow: true, evoSkin: true, sig: 'шестиугольная броня', evoSrc: '«Спина к спине», «Сложный»: дойти до 30-й волны' },
     { id: 'duo_const', name: 'Созвездие', color: '#0a1030', accent: '#ffe08a', glow: true, evoSkin: true, sig: 'звёзды, соединённые линиями', evoSrc: '«Спина к спине», «Безумие»: дойти до 30-й волны' });
@@ -355,17 +355,65 @@
   function evoLiveTick(dt) {
     if (evoTestT > 0 && (evoTestT -= dt) <= 0) { evoTestT = 0; try { evoTestMoment(); } catch (e) { KapliErr.log(e, "evo-test"); } }
     if ((evoLiveT += dt) < 1) return; evoLiveT = 0;
-    if (mode === 'hardcore' && !stats.ranked && player.cells.length) { const m = Math.round(total(player)); if (m > (save.hcPeak || 0)) { save.hcPeak = m; evoCheck(false, true); } }
+    if (mode === 'hardcore' && !stats.ranked && player.cells.length) { const m = Math.round(total(player)); if (m > (save.hcPeak || 0)) { save.hcPeak = m; evoCheck(false, true); hcRewardCheck(true); } }
   }
   function evoTestMoment() {   // test build: the worn evolution skin (or Berserk) jumps one form up right now
     const id = EVO[save.skin] ? save.skin : 'hc_berserk'; if (!save.skins.includes(id)) save.skins.push(id);
     const cur = Math.max(1, evoForm(id)), f = cur >= 3 ? 1 : cur + 1; if (save.skin !== id) { save.skin = id; save.evo = { ...(save.evo || {}), [id]: f === 1 ? 1 : f - 1 }; refreshSkin(); }
     const ev = { id, f, from: f - 1 }; save.evoNew = { ...(save.evoNew || {}), [id]: f }; (save.evoQ = save.evoQ || []).push(ev); evoMoment(ev);
   }
+  // 2.7.5 (owner): the other «Хардкор» rewards come one by one too — the profile background and its forms, the two badges, the win.
+  // Each gets a moment in the round and its own window after it, like the evolution of a skin
+  const HC_RW = { bg: { bg_hc_arena: 'Арена Берсерка', bg_hc_singularity: 'Трон затмения' }, badge: { hc75: 'Берсерк · 175 000', hc88: 'Берсерк · 220 000', hc100k: 'Корона Берсерка' } };
+  function hcRewardCheck(live) {
+    if (TEST_MODE && save.evoAll) return;
+    const g = save.hcGot = save.hcGot || {}, peak = save.hcPeak || 0, out = [];
+    const bgF = peak >= 220000 ? 3 : peak >= 170000 ? 2 : peak >= 120000 ? 1 : 0;
+    if (bgF > (g.bg || 0)) { out.push({ kind: 'bg', id: 'bg_hc_arena', f: bgF, fresh: !g.bg }); g.bg = bgF; }
+    for (const [id, need] of [['hc75', 175000], ['hc88', 220000]]) if (peak >= need && !g[id]) { g[id] = 1; out.push({ kind: 'badge', id }); }
+    if (save.hc100k && !g.win) { g.win = 1; out.push({ kind: 'badge', id: 'hc100k' }, { kind: 'bg', id: 'bg_hc_singularity', f: 0, fresh: true }); }
+    if (!out.length) return;
+    try { pbgCheck(true); } catch (e) {}
+    (save.rwQ = save.rwQ || []).push(...out); persist();
+    if (live) out.forEach(rwMoment);
+  }
+  const rwTitle = r => r.kind === 'badge' ? 'Новый значок' : r.fresh ? (r.f ? 'Новый живой фон профиля' : 'Новый фон профиля') : 'Фон профиля · новая форма';
+  const rwName = r => `«${HC_RW[r.kind][r.id]}»${r.kind === 'bg' && r.f ? ' · форма ' + RN3[r.f] : ''}`;
+  function rwMoment(r) {
+    let b = document.getElementById('evoBanner'); if (!b) { b = document.createElement('div'); b.id = 'evoBanner'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
+    b.style.setProperty('--ec', '#ff2d2d'); b.style.setProperty('--ec2', '#ffd27a');
+    b.innerHTML = `<i aria-hidden="true"><svg viewBox="0 0 24 24">${r.kind === 'badge' ? DI.medal : DI.image}</svg></i><span><small>${rwTitle(r)}</small><b>${rwName(r)}</b></span>`;
+    b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); clearTimeout(evoMoment.t); evoMoment.t = setTimeout(() => b.classList.remove('show'), 3200);
+    try { Sound.play('level'); } catch (e) {}
+  }
+  let rwOpen = false;
+  function rwShowQueue() {
+    if (rwOpen || evoWin || running || !(save.rwQ || []).length || (save.evoQ || []).length) return;
+    if ([...document.querySelectorAll('.modal')].some(m => !m.hidden && m.id !== 'rwModal')) { clearTimeout(rwShowQueue.t); rwShowQueue.t = setTimeout(rwShowQueue, 900); return; }
+    const r = save.rwQ.shift(); persist(); if (!HC_RW[r.kind] || !HC_RW[r.kind][r.id]) return rwShowQueue();
+    let m = document.getElementById('rwModal'); if (!m) { m = document.createElement('div'); m.id = 'rwModal'; m.className = 'modal'; m.hidden = true; document.body.appendChild(m); }
+    m.style.setProperty('--ec', '#ff2d2d'); m.style.setProperty('--ec2', '#ffd27a');
+    const art = r.kind === 'badge' ? `<div class="rw-badge">${r.id === 'hc100k' ? hcBadgeSVG('c') : evoBadgeSVG(r.id)}</div>` : `<canvas class="pc-bg" data-pbg="${r.id}${r.f ? '_f' + r.f : ''}"></canvas>`;
+    const how = r.kind === 'badge' ? 'Значок теперь в профиле → «Оформление» → «Значки». Его видят все в твоей карточке.'
+      : r.f ? (r.fresh ? 'Живой фон растёт вместе с тобой: I — 120 000 · II — 170 000 · III — 220 000 массы за раунд «Хардкора». Открытую форму выбираешь в окне фона.' : 'Открыта новая форма фона. Её можно выбрать в профиле → «Оформление» → «Фоны».')
+      : 'Фон за победу в «Хардкоре». Он в профиле → «Оформление» → «Фоны».';
+    m.innerHTML = `<div class="modal-card evo-card rw-card" role="dialog" aria-modal="true" aria-labelledby="rwT"><div class="evo-stage rw-stage">${art}<div class="evo-flash go"></div></div>
+      <div class="evo-tx"><small>🩸 ${rwTitle(r)}</small><h2 id="rwT">${rwName(r)}</h2><p>${how}</p>
+      <div class="evo-acts"><button class="btn" type="button" data-rwput>${r.kind === 'badge' ? 'Поставить в профиль' : 'Поставить фоном'}</button><button class="btn ghost" type="button" data-rwok>Позже</button></div></div></div>`;
+    m.hidden = false; rwOpen = true; try { pbgMount(m); Sound.play('level'); } catch (e) {}
+    m.onclick = e => {
+      if (e.target.closest('[data-rwput]')) {
+        save.pc = { ...(save.pc || {}) }; if (r.kind === 'badge') save.pc.badge = r.id; else { save.pc.bg = r.id; if (r.f) save.pbgF = { ...(save.pbgF || {}), [r.id]: r.f }; }
+        persist(); try { Net.pushShowcase(); } catch (er) {} toast(`${rwName(r)} — в профиле`);
+      } else if (!e.target.closest('[data-rwok]') && e.target !== m) return;
+      rwOpen = false; m.hidden = true; m.innerHTML = ''; try { renderAll(); } catch (er) {} setTimeout(rwShowQueue, 300);
+    };
+    const first = m.querySelector('[data-rwput]'); if (first) first.focus();
+  }
   // after the round (or on start-up): a window per event — the drop flows from its old form into the new one
   let evoWin = null;
   function evoShowQueue() {
-    if (evoWin || running || !(save.evoQ || []).length) return;
+    if (evoWin || running || !(save.evoQ || []).length) { if (!evoWin && !running) setTimeout(rwShowQueue, 300); return; }
     if ([...document.querySelectorAll('.modal')].some(m => !m.hidden && m.id !== 'evoModal')) { clearTimeout(evoShowQueue.t); evoShowQueue.t = setTimeout(evoShowQueue, 900); return; }   // another window is open: wait for it
     const ev = save.evoQ.shift(); persist(); const k = SKINS.find(x => x.id === ev.id), E = EVO[ev.id]; if (!k || !E) return evoShowQueue();
     let m = document.getElementById('evoModal');
@@ -405,8 +453,8 @@
   // ---- the badges of these goals: «Хардкор» 75 000 (a forged medallion with a drop of blood) and «Спина к спине» —
   //      all 50 waves on each difficulty (a laurel medallion: yin-yang / shield / crown of stars) ----
   const EVO_BADGES = [
-    { id: 'hc75', name: 'Берсерк · 75 000', src: '«Хардкор»: 75 000 массы за один раунд', got: () => (save.hcPeak || 0) >= 75000 },
-    { id: 'hc88', name: 'Берсерк · 88 000', src: '«Хардкор»: 88 000 общей массы за раунд (обе половины вместе)', got: () => (save.hcPeak || 0) >= 88000 },
+    { id: 'hc75', name: 'Берсерк · 175 000', src: '«Хардкор»: 175 000 массы за один раунд', got: () => (save.hcPeak || 0) >= 175000 },   // 2.7.5: the ids stay, the bar moved
+    { id: 'hc88', name: 'Берсерк · 220 000', src: '«Хардкор»: 220 000 общей массы за раунд (обе половины вместе)', got: () => (save.hcPeak || 0) >= 220000 },
     { id: 'duo50n', name: 'Спина к спине · Обычный', src: 'все 50 волн «Спины к спине» на «Обычном»', got: () => evoDuoBest('normal') >= 50 },
     { id: 'duo50h', name: 'Спина к спине · Сложный', src: 'все 50 волн «Спины к спине» на «Сложном»', got: () => evoDuoBest('hard') >= 50 },
     { id: 'duo50m', name: 'Спина к спине · Безумие', src: 'все 50 волн «Спины к спине» на «Безумии»', got: () => evoDuoBest('mad') >= 50 },
@@ -415,19 +463,19 @@
   let hcbUid = 0;
   function hcBadgeSVG(kind, cls = '') {
     const id = 'hcb' + (++hcbUid), C = cls ? ` class="${cls}"` : '';
-    if (kind === 'a') return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Берсерк · 75 000"><defs><radialGradient id="${id}a" cx="50%" cy="45%"><stop offset="0" stop-color="#3a0408"/><stop offset="1" stop-color="#0a0002"/></radialGradient><linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff6a3d"/><stop offset=".5" stop-color="#ff1a1a"/><stop offset="1" stop-color="#7a0010"/></linearGradient><radialGradient id="${id}c"><stop offset=".55" stop-color="#ff3a1a" stop-opacity="0"/><stop offset=".7" stop-color="#ffb040"/><stop offset="1" stop-color="#ff1a1a" stop-opacity="0"/></radialGradient></defs>
+    if (kind === 'a') return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Берсерк · 175 000"><defs><radialGradient id="${id}a" cx="50%" cy="45%"><stop offset="0" stop-color="#3a0408"/><stop offset="1" stop-color="#0a0002"/></radialGradient><linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff6a3d"/><stop offset=".5" stop-color="#ff1a1a"/><stop offset="1" stop-color="#7a0010"/></linearGradient><radialGradient id="${id}c"><stop offset=".55" stop-color="#ff3a1a" stop-opacity="0"/><stop offset=".7" stop-color="#ffb040"/><stop offset="1" stop-color="#ff1a1a" stop-opacity="0"/></radialGradient></defs>
       <path d="M50 3 L91 26 V74 L50 97 L9 74 V26 Z" fill="url(#${id}a)" stroke="url(#${id}r)" stroke-width="4"/><path d="M50 11 L84 30 V70 L50 89 L16 70 V30 Z" fill="none" stroke="#ff3a2a" stroke-opacity=".35" stroke-width="1.2"/>
       <circle cx="50" cy="44" r="22" fill="url(#${id}c)"><animate attributeName="r" values="21;24;21" dur="1.4s" repeatCount="indefinite"/></circle>
       ${Array.from({ length: 12 }, (_, i) => { const q = i * Math.PI / 6, r2 = i % 2 ? 23 : 27; return `<line x1="${(50 + Math.cos(q) * 17).toFixed(1)}" y1="${(44 + Math.sin(q) * 17).toFixed(1)}" x2="${(50 + Math.cos(q) * r2).toFixed(1)}" y2="${(44 + Math.sin(q) * r2).toFixed(1)}" stroke="#ffb040" stroke-width="1.6" stroke-linecap="round"/>`; }).join('')}
       <circle cx="50" cy="44" r="15" fill="#050001" stroke="#ff6a3d" stroke-width="1.6"/>
       <circle cx="43" cy="44" r="5.5" fill="#ff2d2d"><animate attributeName="cx" values="38;45;38" dur="2.8s" repeatCount="indefinite"/></circle><circle cx="57" cy="44" r="5.5" fill="#ff9a3d"><animate attributeName="cx" values="62;55;62" dur="2.8s" repeatCount="indefinite"/></circle>
-      <text x="50" y="80" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="17" fill="#fff1e0" stroke="#7a0010" stroke-width=".8">75K</text></svg>`;
-    if (kind === 'b') return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Берсерк · 88 000"><defs><linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#2a0306"/><stop offset="1" stop-color="#0a0002"/></linearGradient><linearGradient id="${id}e" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ff2d2d"/><stop offset=".5" stop-color="#ffd27a"/><stop offset="1" stop-color="#ff6a3d"/></linearGradient></defs>
+      <text x="50" y="80" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="15" fill="#fff1e0" stroke="#7a0010" stroke-width=".8">175K</text></svg>`;
+    if (kind === 'b') return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Берсерк · 220 000"><defs><linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#2a0306"/><stop offset="1" stop-color="#0a0002"/></linearGradient><linearGradient id="${id}e" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ff2d2d"/><stop offset=".5" stop-color="#ffd27a"/><stop offset="1" stop-color="#ff6a3d"/></linearGradient></defs>
       <path d="M50 4 C70 22 88 38 88 60 A38 36 0 0 1 12 60 C12 38 30 22 50 4 Z" fill="url(#${id}s)" stroke="#ff2d2d" stroke-width="3.5"/><path d="M50 13 C66 28 80 41 80 59 A30 28 0 0 1 20 59 C20 41 34 28 50 13 Z" fill="none" stroke="#ff9a3d" stroke-opacity=".35"/>
       <path id="${id}p" d="M50 56 C40 44 26 44 26 56 C26 68 40 68 50 56 C60 44 74 44 74 56 C74 68 60 68 50 56 Z" fill="none" stroke="url(#${id}e)" stroke-width="3.2"/>
       <circle r="4.6" fill="#ff2d2d" stroke="#fff" stroke-width=".8"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#${id}p"/></animateMotion></circle><circle r="4.6" fill="#ffb040" stroke="#fff" stroke-width=".8"><animateMotion dur="3s" begin="-1.5s" repeatCount="indefinite"><mpath href="#${id}p"/></animateMotion></circle>
       <path d="M38 30 L42 36 L50 31 L58 36 L62 30 L60 40 L40 40 Z" fill="#ffd27a" stroke="#7a3a00" stroke-width=".8"/>
-      <text x="50" y="86" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="11" letter-spacing="1" fill="#ffe6c0">88 000</text></svg>`;
+      <text x="50" y="86" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="11" letter-spacing="1" fill="#ffe6c0">220 000</text></svg>`;
     return `<svg viewBox="0 0 100 100"${C} role="img" aria-label="Корона Берсерка · победа"><defs><radialGradient id="${id}m" cx="50%" cy="40%"><stop stop-color="#4a050c"/><stop offset="1" stop-color="#0d0103"/></radialGradient></defs>
       <path d="M28 30 Q10 22 12 4 Q22 18 36 22 Z" fill="#1a0306" stroke="#ff2d2d" stroke-width="1.5"/><path d="M72 30 Q90 22 88 4 Q78 18 64 22 Z" fill="#1a0306" stroke="#ff2d2d" stroke-width="1.5"/>
       <circle cx="50" cy="50" r="36" fill="url(#${id}m)" stroke="#ff2d2d" stroke-width="3.5"/>

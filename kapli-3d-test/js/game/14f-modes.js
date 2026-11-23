@@ -10,8 +10,8 @@
   const dayMode = () => { let h = 7; for (const ch of today) h = (h * 31 + ch.charCodeAt(0)) % 100003; return DAY_POOL[h % DAY_POOL.length]; };
   const DAY_MARK = '<span class="day-mark">🔥 режим дня · ◆ ×1,25</span>';
   const ModeX = (() => {
-    const MILES = [[1000, 30], [3000, 60], [6000, 100], [10000, 160], [15000, 220], [20000, 300], [25000, 400], [30000, 600], [40000, 800], [50000, 1000]];   // 2.7: 30 000 gives «Вершина»; at 50 000 the drop splits in two (like «Хардкор»)
-    const CL_GOAL = 50000, CL_GOAL_COINS = 2000;   // the last step of «Классика»: both halves at 50 000 — a big reward, then claim and leave or play on
+    const MILES = [[1000, 20], [3000, 35], [6000, 60], [10000, 95], [15000, 130], [20000, 180], [25000, 240], [30000, 360], [40000, 480], [50000, 600]];   // 2.7.5 coin audit: −40% (2 200 ◆ instead of 3 670)   // 2.7: 30 000 gives «Вершина»; at 50 000 the drop splits in two (like «Хардкор»)
+    const CL_GOAL = 50000, CL_GOAL_COINS = 1200;   // 2.7.5 coin audit: 2 000 → 1 200   // the last step of «Классика»: both halves at 50 000 — a big reward, then claim and leave or play on
     const ESC_S = 180, ESC_MAX = 4, RUSH_S = 45;
     const RULES = [
       { id: 'bonus2', name: 'Двойные бонусы', about: 'бонусы появляются вдвое чаще' },

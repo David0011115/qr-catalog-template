@@ -344,7 +344,7 @@
     if (DuoM.server) { DuoM.serverTick(dt); return; }
     if (DuoM.paused) return;   // a match for two waits while the link to the other phone is silent
     if (DuoM.guest) { DuoM.guestTick(dt); return; }   // the second phone of a match for two only draws what the host sends
-    stats.time += dt;
+    stats.time += dt; stats.fr = (stats.fr || 0) + 1; if (dt > .05) stats.slow = (stats.slow || 0) + 1;
     player.ejectCd = Math.max(0, (player.ejectCd || 0) - dt);
     if (modeRules(dt)) return;
     ModeX.tick(dt);
@@ -549,6 +549,7 @@
               const wb = mode === 'survival' ? 1 + 0.1 * ((victim.wave || 1) - 1) : 1;
               stats.bosses++; stats.bossCoins += Math.round(bt.coins * wb); stats.bossXp += Math.round(bt.xp * wb);
               if (!stats.bossTypes.includes(victim.bossType)) stats.bossTypes.push(victim.bossType);
+              recEv('b', total(player), bt.name);
               toast(`${bt.name} повержен! +${bt.coins} ◆`); Sound.play('bossDown');
               if (total(player) - lastMass * .8 < 400) stats.smallBoss = true;   // your mass before this bite
             }

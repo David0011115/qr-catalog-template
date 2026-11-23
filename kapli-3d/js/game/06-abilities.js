@@ -523,7 +523,8 @@
       if (won && first) {
         save.raidMax = Math.max(save.raidMax || 0, ti + 1);
         if (rs.cleared.length >= 5 && !rs.full) { rs.full = true; save.raidFull = (save.raidFull || 0) + 1; got.push(`вся лестница недели — ${save.raidFull}-я неделя`); }
-        try { raidRewardCheck({ kind: 'step', id: ti + 1, lines: got }); } catch (e) {}
+        const bb = rs.week % RAID_NAMES.length, boss = { badge: ti === 3 ? bb : undefined, item: rs.full && ti === 4 ? bb : undefined };   // 2.7.13: this week's boss — its badge at step IV, its exclusive thing for the whole ladder
+        try { raidRewardCheck({ kind: 'step', id: ti + 1, lines: got }, boss); } catch (e) {}
       }
       stats.raidLeft = Math.max(0, T.hp - dmg); stats.raidHp = T.hp;
     }

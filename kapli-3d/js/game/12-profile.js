@@ -36,6 +36,7 @@
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
     { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
     { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 120 000 массы за раунд (живой фон: формы за 120 000 / 170 000 / 220 000)', test: () => (save.hcPeak || 0) >= 120000 },
+    { id: 'bg_rb_levi', name: 'Призрачный левиафан', rar: 'legendary', src: '«Босс-рейд»: вся лестница недели босса «Призрачный левиафан»', test: () => !!(save.raidBI || {})[7] },
     { id: 'bg_raid_throne', name: 'Трон колоссов', rar: 'legendary', src: '«Босс-рейд»: все 5 ступеней за неделю (живой фон: формы за 1 / 3 / 6 таких недель)', test: () => (save.raidFull || 0) >= 1 },
     { id: 'bg_hc_singularity', name: 'Трон затмения', rar: 'legendary', src: 'победа в «Хардкоре»: обе половины по 125 000 массы', test: () => !!save.hc100k },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
@@ -299,6 +300,20 @@
         for (let b = 0; b < 4; b++) { for (let xx = 0; xx <= w; xx += 3) { const yy = h * (.25 + b * .08) + Math.sin(xx / (60 + b * 20) + t * (.4 + b * .1) + b) * h * .08 + Math.sin(xx / 23 + t * .9) * 4, len = h * (.25 + .1 * Math.sin(xx / 50 + t + b));
           const g = x.createLinearGradient(0, yy, 0, yy + len); g.addColorStop(0, b % 2 ? 'rgba(178,107,255,.0)' : 'rgba(61,255,162,0)'); g.addColorStop(.2, b % 2 ? 'rgba(178,107,255,.13)' : 'rgba(61,255,162,.16)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(xx, yy, 3, len); } }
         x.globalCompositeOperation = 'source-over'; x.fillStyle = '#020a10'; x.beginPath(); x.moveTo(0, h); for (let xx = 0; xx <= w; xx += 20) x.lineTo(xx, h - 12 - Math.abs(Math.sin(xx * .05)) * 22); x.lineTo(w, h); x.fill(); break; }
+      case 'bg_rb_levi': {   // 2.7.13: the exclusive of «Призрачный левиафан» — a ghost whale swims through the deep under rays of light, its trail of souls rising
+        x.fillStyle = lin([[0, '#0a2a3a'], [.5, '#06141f'], [1, '#020509']]); x.fillRect(0, 0, w, h);
+        x.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 4; i++) { const bx = w * (.15 + i * .25) + Math.sin(t * .3 + i) * w * .03, g = x.createLinearGradient(bx, 0, bx + w * .08, h); g.addColorStop(0, 'rgba(160,230,255,.18)'); g.addColorStop(1, 'rgba(160,230,255,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(bx - w * .02, 0); x.lineTo(bx + w * .04, 0); x.lineTo(bx + w * .14, h); x.lineTo(bx + w * .02, h); x.closePath(); x.fill(); }
+        const px = w * .5 + Math.sin(t * .18) * w * .18, py = h * .5 + Math.sin(t * .6) * h * .06, L = Math.min(w * .46, U * 1.1), tail = Math.sin(t * 1.6) * .35;
+        x.save(); x.translate(px, py); x.globalAlpha = .55 + .15 * Math.sin(t * 2);
+        const bg = x.createLinearGradient(-L * .5, 0, L * .5, 0); bg.addColorStop(0, 'rgba(122,255,208,.05)'); bg.addColorStop(.6, 'rgba(184,200,255,.55)'); bg.addColorStop(1, 'rgba(230,240,255,.8)'); x.fillStyle = bg;
+        x.beginPath(); x.moveTo(L * .5, 0); x.quadraticCurveTo(L * .4, -L * .17, 0, -L * .15); x.quadraticCurveTo(-L * .35, -L * .12, -L * .5, -L * .02); x.quadraticCurveTo(-L * .35, L * .1, 0, L * .12); x.quadraticCurveTo(L * .4, L * .14, L * .5, 0); x.fill();
+        x.save(); x.translate(-L * .5, -L * .02); x.rotate(tail); x.beginPath(); x.moveTo(0, 0); x.quadraticCurveTo(-L * .1, -L * .02, -L * .18, -L * .12); x.quadraticCurveTo(-L * .12, 0, -L * .18, L * .1); x.quadraticCurveTo(-L * .1, L * .02, 0, 0); x.fill(); x.restore();
+        x.save(); x.translate(L * .12, L * .08); x.rotate(.5 + Math.sin(t * 1.6) * .25); x.beginPath(); x.ellipse(0, L * .05, L * .025, L * .08, 0, 0, 6.29); x.fill(); x.restore();
+        x.strokeStyle = 'rgba(230,240,255,.35)'; x.lineWidth = 1; for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(L * .38, L * (.03 + k * .025)); x.lineTo(L * .05, L * (.06 + k * .02)); x.stroke(); }
+        x.globalAlpha = .9; glow(L * .33, -L * .05, L * .06, 'rgba(122,255,208,.9)'); x.fillStyle = '#e8fff8'; x.beginPath(); x.arc(L * .33, -L * .05, Math.max(1.5, L * .012), 0, 6.29); x.fill(); x.restore();
+        x.fillStyle = '#7affd0'; for (const p of pbgPts('lv', 34, 91)) { const yy = h - ((t * (10 + p.q * 18) + p.p * h) % h), xx = p.x * w + Math.sin(t + p.p) * 8; x.globalAlpha = .55 * (yy / h) * (.5 + .5 * Math.sin(t * 3 + p.p)); x.beginPath(); x.arc(xx, yy, 1 + p.s * 2, 0, 6.29); x.fill(); }
+        x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; break; }
       case 'bg_raid_throne': {   // 2.7.12 «Трон колоссов»: a ladder of 5 steps up to an empty throne between the twin colossi; forms I–III: 1 / 3 / 6 weeks with all five steps
         const gold = f >= 3, cx = w * .5, base = h * .97, pul = .5 + .5 * Math.sin(t * 1.8), AC = gold ? '255,210,63' : '255,45,117';
         x.fillStyle = lin(f === 1 ? [[0, '#16000c'], [1, '#040003']] : f === 2 ? [[0, '#3a0016'], [.6, '#12000a'], [1, '#050003']] : [[0, '#2e1400'], [.55, '#1a0010'], [1, '#050003']]); x.fillRect(0, 0, w, h);

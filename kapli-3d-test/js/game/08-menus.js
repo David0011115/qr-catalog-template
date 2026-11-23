@@ -181,7 +181,7 @@
         { g: 'Режимы', t: 'Классика', l: 'На 50 000 капля делится — вырасти обе половины.', v: 'classic',
           b: '<ul><li>Вехи массы с наградой, боты смелее, боссы растут вслед за тобой.</li><li>На 50 000 капля делится на две половины — вырасти обе.</li><li>Потерял половину — капля снова поделится на 50 000.</li></ul>' },
         { g: 'Режимы', t: 'Хардкор', l: 'Две половины по 50 000, 11 вех улучшений, проклятия, стаи и скин «Берсерк».', v: 'hc',
-          b: '<ul><li><b>Цель:</b> обе половины держат по 50 000 15 секунд — «Корона Берсерка».</li><li>11 вех с карточками улучшений, проклятия, стаи ботов с 20 000.</li><li><b>Награды:</b> скин «Берсерк» с эволюцией, значки 75K и 88K.</li></ul>' },
+          b: '<ul><li><b>Цель:</b> обе половины держат по 50 000 15 секунд — «Корона Берсерка».</li><li>11 вех с карточками улучшений, проклятия, стаи ботов с 20 000.</li><li><b>Награды:</b> скин «Берсерк» и живой фон «Арена Берсерка» с эволюцией, за победу — фон «Трон затмения».</li></ul>' },
         { g: 'Режимы', t: 'Случайный билд — обновлён', l: 'На вехах — пауза и две карточки замены с редкостью.', v: 'rb',
           b: '<ul><li>На пяти вехах массы — пауза и две карточки замены.</li><li>Можно заменить одну из своих способностей.</li><li>Чем реже карточка, тем больше уровней на раунд.</li></ul>' },
         { g: 'Режимы', t: 'Босс-рейд — обновлён', l: 'Недельная лестница из пяти ступеней и пара колоссов.', v: 'raid',
@@ -447,15 +447,18 @@
   let nwCur = null, nwI = 0, nwBack = null;
   function newsCards(n) {
     nwCur = n;
-    // 2.7: the main card is a poster (owner's reference): the logo, the version, a line of highlights, six neon tiles that open their cards, a footer
-    const P = n.poster, hero = `<section class="nw-poster" aria-label="Обновление ${n.ver}"><div class="nw-ph"><b class="nw-logo">Капли <i>3D</i></b><span class="nw-pill">Обновление ${n.ver}</span></div>` +
-      `<p class="nw-psub">${P.sub}</p><div class="nw-tiles">${P.tiles.map(([i, col, vis, t, l]) => `<button type="button" class="nw-tile" style="--c:${col}" data-nw="${i}" aria-haspopup="dialog"><b>${t}</b><span>${l}</span>${NW_VIS[vis]()}</button>`).join('')}</div>` +
-      `<div class="nw-pf"><span>${P.foot}</span><button type="button" data-nw="-1">Обзор обновления ›</button></div></section>`;
-    // 2.7 (owner): no list of cards under the poster — every other change is a small tile in it, a tap opens its card
-    const big = new Set(P.tiles.map(x => x[0])), IC = { abil: '✦', grow: '⤢', classic: '◎', rb: '🎲', raid: '☠', skins: '◐', deco: '❖', gear: '⚙', tabs: '▦', pause: 'Ⅱ', modes: '◈', evo: '⟳', online: '⇄', chars: '☺', events: '✺', fps: '⚡', hc: '☠' },
-      COL = { 'Игра': '#22e6ff', 'Режимы': '#3dff9a', 'Вдвоём': '#ffd23f', 'Коллекция': '#b26bff', 'Меню': '#ff9a3d', 'Техника': '#9fd8ff' };
-    const minis = n.cards.map((c, i) => big.has(i) ? '' : `<button type="button" class="nw-mini" style="--c:${COL[c.g] || '#22e6ff'}" data-nw="${i}" aria-haspopup="dialog"><i aria-hidden="true">${IC[c.v] || '•'}</i><b>${c.t}</b><span>${c.l}</span></button>`).join('');
-    return hero.replace('<div class="nw-pf">', `<div class="nw-minis">${minis}</div><div class="nw-pf">`) +
+    // 2.7 release (owner): the whole update fits on one screen — every change is a tile of the same size (icon, name, one short line);
+    // the pictures and the three points are in the card a tap opens
+    const IC = { abil: '✦', grow: '⤢', classic: '◎', rb: '🎲', raid: '☠', skins: '◐', deco: '❖', gear: '⚙', tabs: '▦', pause: 'Ⅱ', modes: '◈', evo: '⟳', online: '⇄', chars: '☺', events: '✺', fps: '⚡', hc: '☠' },
+      COL = { 'Игра': '#22e6ff', 'Режимы': '#3dff9a', 'Вдвоём': '#ffd23f', 'Коллекция': '#b26bff', 'Меню': '#ff9a3d', 'Техника': '#9fd8ff' },
+      TT = { rb: 'Случайный билд', raid: 'Босс-рейд', skins: 'Новые скины', fps: 'Плавнее', events: 'Живая арена', online: 'Вдвоём — скоро' },
+      SH = { chars: 'Плюс и минус в раунде', events: '8 событий меняют раунд', abil: 'Метка, Засада, баланс', grow: 'Все капли быстрее',
+        classic: 'Две половины на 50 000', hc: 'Половины и проклятия', rb: 'Карточки замены на вехах', raid: 'Лестница из 5 ступеней',
+        online: 'Переезд в полный онлайн', evo: 'Скины растут: формы I–III', skins: 'Новый облик и анимации', deco: 'Титулы стали жетонами',
+        gear: '23 предмета и «Скелетон»', tabs: 'Новые экраны и иконки', pause: 'Видно выбранные бафы', fps: 'Меньше рывков' };
+    const tiles = n.cards.map((c, i) => `<button type="button" class="nw-mini" style="--c:${COL[c.g] || '#22e6ff'}" data-nw="${i}" aria-haspopup="dialog" aria-label="${c.t}: ${c.l}"><i aria-hidden="true">${IC[c.v] || '•'}</i><b>${TT[c.v] || c.t}</b><span>${SH[c.v] || c.l}</span></button>`).join('');
+    return `<section class="nw-poster nw-compact" aria-label="Обновление ${n.ver}"><div class="nw-ph"><b class="nw-logo">Капли <i>3D</i></b><span class="nw-pill">Обновление ${n.ver}</span>` +
+      `<span class="nw-hint">Нажми на плитку</span><button type="button" class="nw-ov-btn" data-nw="-1">Обзор ›</button></div><div class="nw-minis">${tiles}</div></section>` +
       (newsGift(n) ? `<p class="news-gift">🎁 Подарок: ${newsGift(n)} ◆</p>` : '');
   }
   function newsBig(i) {
@@ -606,6 +609,7 @@
       sec(`Улучшения — ${Object.keys(X.HC_BOOST).length} видов`, `<ul class="mi-boosts">${Object.entries(X.HC_BOOST).map(([k, [ic, nm, v, kd]]) => `<li><span class="mib-ic">${ic}</span><span class="mib-tx"><b>${nm}</b><small>${HC_DESC[k] || X.HC_ABOUT[k]}</small><span class="mib-v">${v.map((x, r) => `<i class="r${r}">${(kd === '+' ? '+' : '−') + x + '%'}</i>`).join('')}</span></span></li>`).join('')}</ul>` +
         `<small>Цвета: обычное · <span style="color:#4d7cff">редкое</span> · <span style="color:#b26bff">эпическое</span> · <span style="color:#ffd23f">легендарное</span>. Каждая веха — 2 карточки на выбор, редкость не ниже указанной в «Вехах». Одно улучшение — не больше ${X.HC_CAP} раз за раунд, одинаковые складываются. Не успел выбрать за 12 с — возьмётся первое.</small>`) +
       sec('Особые карточки — плюс и минус', `<ul>${li('💥 <b>Стеклянная пушка</b>: еда сытнее на 15%, но съесть тебя легче на 5%')}${li('🪨 <b>Тяжеловес</b>: съесть тебя труднее на 10%, но ты медленнее на 8%')}${li('❄ <b>Ледяное сердце</b>: мороз и замедления вдвое слабее, но рывок перезаряжается на 20% дольше')}${li('♊ <b>Близнецы</b>: 30% съеденного одной половиной получает другая, но ты медленнее на 5%')}</ul><small>С вехи 10 000 одна из двух карточек может оказаться особой (шанс 35%). Каждая — один раз за раунд, «Близнецы» — после деления или с 40 000.</small>`) +
+      sec('Награды', `<ul>${li('🩸 скин «Берсерк» с эволюцией: формы за 40 000 / 50 000 / 70 000 массы за раунд')}${li('🖼 живой фон профиля «Арена Берсерка» — растёт вместе со скином: те же 40 000 / 50 000 / 70 000')}${li('👑 победа (обе половины по 50 000 15 секунд) — значок «Корона Берсерка» и фон профиля «Трон затмения»')}${li('🏅 значки «Берсерк · 75 000» и «Берсерк · 88 000» — за массу за один раунд')}</ul>`) +
       sec('Серия', `<ul>${li('3 раунда подряд с массой 3 000+ — титул «Несгибаемый»')}${li('5 раундов подряд — рамка «Закалка»')}</ul>`);
     if (id === 'raid') return sec('Ступени недели', `<ul>${li('5 ступеней: каждая — один бой на 4 минуты, попыток сколько угодно')}${li('следующая открывается, когда пройдена предыдущая; награда за ступень — раз в неделю')}${li('монеты за урон — пока ступень не пройдена')}</ul>` + tbl(RAID_TIERS.map((t, i) => [`${RAID_ROMAN[i]} · ${n(t.hp)} урона`, `+${n(t.coins)} ◆${i === 2 ? ' · трофей недели, эпический сундук, +1 500 ◆' : i === 4 ? ' · легендарный сундук, титул «Гроза колоссов»' : ''}`]))) +
       sec('Бой с близнецами', `<ul>${li('пока близнецы рядом, их связь гасит половину урона — разводи их')}${li('3 фазы: с ⅓ и ⅔ урона атаки чаще, появляются прислужники')}${li('атаки видно заранее: кольцо-волна, рывок, взрывы на полу')}${li('✦ слабые ядра у колоссов: съешь — урон ×3')}${li('у каждого босса недели своя особая атака: ' + RAID_SPECIAL.map((s, i) => `${RAID_NAMES[i]} — «${s[1]}»`).join(', '))}</ul>`) +

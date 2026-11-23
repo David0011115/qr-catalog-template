@@ -260,6 +260,7 @@
 
   // ================= content =================
   const PRICE_MULT = 2;   // all shop prices (upgrades, skins, effects)
+  const XP_RATE = .5;   // 2.7.8 (owner): experience from a round is halved — levels come twice as slowly
   const COIN_MULT_CAP = 2;   // 2.0.9: the product of all coin multipliers of a round never goes above this
   const costs = (base, n, g = 1.38) => Array.from({ length: n }, (_, i) => Math.round(base * PRICE_MULT * Math.pow(g, i) / 5) * 5);
   const UPG = [

@@ -526,6 +526,7 @@
       if (done) { coins += qCoins(q); xp += qXp(q); cExtra.push([`Задание: ${q.text}`, qCoins(q)]); }
       return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
+    xp = Math.round(xp * XP_RATE);   // 2.7.8 (owner): half the experience of a round (quests included)
     coinsAdd(coins, 'round'); save.xp += xp;
     if (TEST_MODE) TLog.end({ dur: Math.round(stats.time), peak: Math.round(stats.maxMass), final: Math.round(total(player)),
       place: stats.finalRank || (stats.bestRank < 99 ? stats.bestRank : null), kills: stats.kills, bosses: stats.bosses || 0, minions: stats.minions,

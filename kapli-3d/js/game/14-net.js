@@ -830,7 +830,8 @@
         (f ? `<small class="fr-st ${f.online ? 'on' : ''}">${f.online ? '● в игре' : agoTxt(f.last_seen)}</small>` : '');
       decorateWho($('dmHead'));
       $('dmList').innerHTML = skelHTML(4); $('dmNote').textContent = 'Личные сообщения видите только вы двое. ⚑ — пожаловаться.';
-      const canWrite = !!(f && f.status === 'friend');
+      const th = FR.threads.find(x => x.nickname.toLowerCase() === nick.toLowerCase());
+      const canWrite = !!(f && f.status === 'friend') || !!(th && th.can_write) || !!(save.badges || {}).creator;
       $('dmIn').value = ''; $('dmIn').disabled = $('dmSend').disabled = !canWrite; $('dmIn').placeholder = canWrite ? 'Сообщение…' : 'Вы больше не друзья — писать нельзя';
       if (canWrite) $('dmIn').focus(); else $('dmBack').focus();
       try { await dmFetch(false); $('dmList').querySelectorAll('.skel, .sr-only').forEach(x => x.remove()); if (!$('dmList').querySelector('li')) $('dmList').innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep'); }
@@ -982,6 +983,10 @@
         `<h3>🧩 Билд</h3><div class="rr-build"><p><span>Способности в раунде:</span> ${ab}</p><p><span>Улучшения:</span> ${escHtml(up)}</p><p><span>Скин:</span> ${escHtml(skin)} · <span>характер:</span> ${escHtml((charById(d.ch) || {}).name || '—')} · <span>питомец:</span> ${escHtml(pet)}${d.arena ? ` · <span>арена:</span> ${escHtml(d.arena)}` : ''}</p></div>` +
         `<h3>📱 Устройство</h3><div class="rr-build"><p>Версия ${escHtml(d.v || '?')} · ${d.fps || '?'} кадров/с в среднем · медленных кадров ${fmtNum(d.slow || 0)} · графика ${escHtml((d.dev || {}).q || '?')}</p><p class="rr-ua">${escHtml((d.dev || {}).ua || '')} · ${(d.dev || {}).w}×${(d.dev || {}).h} ×${(d.dev || {}).dpr}</p></div>`;
     }
+    const REJ_WHY = ['Подозрительно быстрый рост массы', 'Игра шла быстрее обычного (ускорение)', 'Рекорд поставлен из-за ошибки игры', 'Нарушение правил игры'];
+    const rejPanel = () => `<div class="rv-rej"><p>Причина — игрок получит её личным сообщением от тебя и сможет ответить:</p><div class="rv-chips">${REJ_WHY.map(w => `<button type="button" class="rv-chip" data-rjc="${escHtml(w)}">${escHtml(w)}</button>`).join('')}</div>` +
+      `<textarea data-rjt maxlength="150" rows="2" placeholder="Выбери причину выше или напиши свою"></textarea><div class="rv-rj-btns"><button type="button" class="btn ghost" data-rjx>Отмена</button><button type="button" class="btn rv-no" data-rjgo disabled>Удалить и написать</button></div></div>`;
+    const rejSync = li => { const t = li && li.querySelector('[data-rjt]'), g = li && li.querySelector('[data-rjgo]'); if (t && g) g.disabled = !t.value.trim(); };
     async function reviewOpen() {
       const data = await reviewCheck(); if (!data) return;
       let m = $('reviewM');
@@ -989,22 +994,35 @@
         m = document.createElement('div'); m.id = 'reviewM'; m.className = 'modal'; m.hidden = true;
         m.innerHTML = `<div class="modal-card review-card" role="dialog" aria-modal="true" aria-labelledby="reviewH"><button class="modal-x" type="button" data-rvx aria-label="Закрыть">×</button><h2 id="reviewH">Рекорды на проверке</h2><p class="review-note">Рекорд держится, если он в 3 раза выше прошлого или первый рекорд слишком большой. До решения его видит только сам игрок.</p><ul class="review-list" id="reviewList"></ul></div>`;
         document.body.appendChild(m);
+        m.addEventListener('input', e => { if (e.target.matches('[data-rjt]')) rejSync(e.target.closest('li')); });
         m.addEventListener('click', async e => {
           if (e.target === m || e.target.closest('[data-rvx]')) { m.hidden = true; $('rankReview').focus(); return; }
           const rb = e.target.closest('[data-rvrep]'); if (rb) { const l = rb.closest('li'); recRepOpen(l.dataset.nick, l.dataset.mode); return; }
-          const b = e.target.closest('[data-rvok]'); if (!b) return;
-          const li = b.closest('li'), ok = b.dataset.rvok === '1';
-          if (!ok && !confirm(`Удалить рекорд игрока ${li.dataset.nick}?`)) return;
-          li.querySelectorAll('button').forEach(x => x.disabled = true);
-          try { const { error } = await withTimeout(sb.rpc('kapli_review_record', { p_nick: li.dataset.nick, p_mode: li.dataset.mode, p_ok: ok }), 9000); if (error) throw error;
-            toast(ok ? `Рекорд ${li.dataset.nick} показан всем` : `Рекорд ${li.dataset.nick} удалён`); li.remove();
+          { const c = e.target.closest('[data-rjc]'); if (c) { const ta = c.closest('li').querySelector('[data-rjt]'); ta.value = c.dataset.rjc; ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); return; } }
+          if (e.target.closest('[data-rjx]')) { const p = e.target.closest('.rv-rej'); p.remove(); return; }
+          const go = e.target.closest('[data-rjgo]');
+          const b = go || e.target.closest('[data-rvok]'); if (!b) return;
+          const li = b.closest('li'), ok = !go && b.dataset.rvok === '1';
+          if (!ok && !go) { if (!li.querySelector('.rv-rej')) { li.insertAdjacentHTML('beforeend', rejPanel()); li.querySelector('[data-rjt]').focus(); } return; }
+          let sent = false;
+          li.querySelectorAll('button, textarea').forEach(x => x.disabled = true);
+          try {
+            if (go) {
+              const why = li.querySelector('[data-rjt]').value.trim(), mName = (MODES[li.dataset.mode] || {}).name || li.dataset.mode;
+              const body = `Твой рекорд ${fmtBest(li.dataset.mode, +li.dataset.score)} в режиме «${mName}» отклонён. Причина: ${why.replace(/[.!\s]+$/, '')}. Если не согласен — ответь на это сообщение.`;
+              let r = await withTimeout(sb.rpc('kapli_review_reject', { p_nick: li.dataset.nick, p_mode: li.dataset.mode, p_body: body }), 9000);
+              if (r.error && /PGRST202|could not find the function|kapli_review_reject/i.test(`${r.error.code} ${r.error.message}`)) r = await withTimeout(sb.rpc('kapli_review_record', { p_nick: li.dataset.nick, p_mode: li.dataset.mode, p_ok: false }), 9000);
+              else sent = !r.error;
+              if (r.error) throw r.error;
+            } else { const { error } = await withTimeout(sb.rpc('kapli_review_record', { p_nick: li.dataset.nick, p_mode: li.dataset.mode, p_ok: true }), 9000); if (error) throw error; }
+            toast(ok ? `Рекорд ${li.dataset.nick} показан всем` : sent ? `Рекорд ${li.dataset.nick} удалён, причина отправлена в личные сообщения` : `Рекорд ${li.dataset.nick} удалён, но сообщение не ушло: запусти RECORDS-REJECT-MIGRATION.sql`); li.remove();
             if (!$('reviewList').children.length) $('reviewList').innerHTML = '<li class="review-empty">Проверять нечего ✓</li>';
             reviewCheck(); if (li.dataset.mode === rankMode) loadRank(rankMode);
-          } catch (er) { li.querySelectorAll('button').forEach(x => x.disabled = false); toast(netErr(er) ? 'Нет связи с сервером.' : 'Не получилось — попробуй ещё раз.'); }
+          } catch (er) { li.querySelectorAll('button, textarea').forEach(x => x.disabled = false); rejSync(li); toast(netErr(er) ? 'Нет связи с сервером.' : 'Не получилось — попробуй ещё раз.'); }
         });
       }
       const mName = k => (MODES[k] || {}).name || k;
-      $('reviewList').innerHTML = data.length ? data.map(r => `<li data-nick="${escHtml(r.nickname)}" data-mode="${escHtml(r.mode)}"><div class="rv-who"><b>${escHtml(r.nickname)}</b> · ${escHtml(mName(r.mode))}<small>${r.prev_score != null ? `было ${fmtBest(r.mode, r.prev_score)} → ` : 'первый рекорд: '}<b>${fmtBest(r.mode, r.score)}</b>${r.prev_score ? ` (×${(r.score / r.prev_score).toFixed(1)})` : ''} · ${new Date(r.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="btn ghost rv-rep" data-rvrep aria-label="Отчёт о рекорде">📊</button><button type="button" class="btn rv-ok" data-rvok="1">Показать</button><button type="button" class="btn ghost rv-no" data-rvok="0">Удалить</button></li>`).join('')
+      $('reviewList').innerHTML = data.length ? data.map(r => `<li data-nick="${escHtml(r.nickname)}" data-mode="${escHtml(r.mode)}" data-score="${+r.score || 0}"><div class="rv-who"><b>${escHtml(r.nickname)}</b> · ${escHtml(mName(r.mode))}<small>${r.prev_score != null ? `было ${fmtBest(r.mode, r.prev_score)} → ` : 'первый рекорд: '}<b>${fmtBest(r.mode, r.score)}</b>${r.prev_score ? ` (×${(r.score / r.prev_score).toFixed(1)})` : ''} · ${new Date(r.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="btn ghost rv-rep" data-rvrep aria-label="Отчёт о рекорде">📊</button><button type="button" class="btn rv-ok" data-rvok="1">Показать</button><button type="button" class="btn ghost rv-no" data-rvok="0">Удалить</button></li>`).join('')
         : '<li class="review-empty">Проверять нечего ✓</li>';
       m.hidden = false; m.querySelector('[data-rvx]').focus();
     }

@@ -240,10 +240,28 @@
 .rank-review { margin-top: -4px; } .rank-review.has { border-color: #ffd23f; color: #ffd23f; }
 .review-card { max-width: 440px; } .review-note { margin: 0 0 10px; font-size: .8rem; color: var(--muted); }
 .review-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 60vh; overflow: auto; }
-.review-list li { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; background: var(--row); border-radius: var(--r-sm); padding: 8px 10px; font-size: .86rem; }
+.review-list li { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; background: var(--row); border-radius: var(--r-sm); padding: 8px 10px; font-size: .86rem; }
 .review-list li .rv-who small { display: block; color: var(--muted); font-size: .76rem; margin-top: 2px; }
 .review-list li .btn { min-height: 36px; padding: 6px 10px; font-size: .78rem; }
 .review-list li.review-empty { display: block; text-align: center; color: var(--muted); background: none; }
+/* 2.5.2: the report of a record (the «Создатель» only) */
+.rank-list li .rk-rep { margin-left: 6px; min-width: 34px; min-height: 34px; border-radius: 10px; border: 1px solid var(--line, rgba(255,255,255,.15)); background: rgba(255,255,255,.06); color: inherit; font-size: .95rem; cursor: pointer; }
+.rec-rep-m { z-index: 30; }
+.rr-card { max-width: 480px; max-height: 88vh; overflow: auto; text-align: left; }
+.rr-card h3 { margin: 14px 0 6px; font-size: .92rem; }
+.rr-score { margin: 0; font-size: .9rem; } .rr-score small { display: block; color: var(--muted); font-size: .76rem; } .rr-held { color: #ffd23f; }
+.rr-chart { width: 100%; height: auto; display: block; background: var(--row); border-radius: var(--r-sm); }
+.rr-chart .rr-ax { fill: none; stroke: currentColor; opacity: .25; stroke-width: 1; }
+.rr-chart .rr-line { fill: none; stroke: #4fd1ff; stroke-width: 2; stroke-linejoin: round; }
+.rr-chart .rr-b, .rr-k.b { fill: #ffd23f; background: #ffd23f; } .rr-chart .rr-d, .rr-k.d { fill: #ff5a6e; background: #ff5a6e; }
+.rr-chart .rr-tx { fill: currentColor; opacity: .7; font-size: 10px; }
+.rr-legend { margin: 4px 0 0; font-size: .74rem; color: var(--muted); } .rr-k { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 3px 0 8px; }
+.rr-ev summary { cursor: pointer; font-size: .82rem; margin-top: 6px; } .rr-ev ul { list-style: none; margin: 6px 0 0; padding: 0; max-height: 180px; overflow: auto; font-size: .8rem; }
+.rr-ev li { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.06); } .rr-ev time { display: inline-block; min-width: 44px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rr-flags { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; } .rr-flags li { background: rgba(255, 90, 110, .1); border: 1px solid rgba(255, 90, 110, .3); border-radius: var(--r-sm); padding: 6px 9px; font-size: .8rem; line-height: 1.35; }
+.rr-ok { margin: 0; color: #7ee2a8; font-size: .84rem; } .rr-none { margin: 4px 0; color: var(--muted); font-size: .8rem; }
+.rr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .rr-grid div { background: var(--row); border-radius: var(--r-sm); padding: 6px 8px; } .rr-grid span { display: block; font-size: .7rem; color: var(--muted); } .rr-grid b { font-size: .9rem; }
+.rr-build p { margin: 3px 0; font-size: .8rem; line-height: 1.4; } .rr-build span { color: var(--muted); } .rr-ua { color: var(--muted); font-size: .72rem !important; word-break: break-word; }
 /* 2.6: guests are told where their progress lives */
 .guest-warn { color: #ffd98a; font-size: .8rem; line-height: 1.4; }
 #acctGuest .guest-warn { background: rgba(255, 210, 63, .08); border: 1px solid rgba(255, 210, 63, .3); border-radius: var(--r-sm); padding: 8px 10px; text-align: left; }

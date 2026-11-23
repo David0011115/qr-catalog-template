@@ -128,7 +128,7 @@
     const ranked = pendingRanked;
     player.ejectCd = 0;
     stats = { mode, ranked, time: 0, maxMass: total(player), kills: 0, bosses: 0, minions: 0, bossCoins: 0, bossXp: 0, bonuses: 0, splits: 0, crumbs: 0, leader: 0, bestRank: 99, wave: 0,
-              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut, abUsed: {}, chaos: isChaos, lvStart: playerLevel() };
+              ejects: 0, maxPart: 0, maxParts: 1, bossTypes: [], finalRank: 0, timedWin: false, achGot: [], tutorial: isTut, abUsed: {}, chaos: isChaos, lvStart: playerLevel(), ev: [], fr: 0, slow: 0, wall0: performance.now() };
     clearEjects();
     stats.arena = ranked || isTut ? null : save.arena;
     resetViruses(); virusRespawn = []; resetEvents();

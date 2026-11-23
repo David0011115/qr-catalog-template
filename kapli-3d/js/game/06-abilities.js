@@ -5,7 +5,9 @@
   const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd();
   const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);
   const abOn = (id, o = player) => !!(o && o.abT && o.abT[id] > 0);
-  const abUsed = id => { if (stats && stats.abUsed) { stats.abUsed[id] = 1; stats.abilUses = (stats.abilUses || 0) + 1; } };
+  const abUsed = id => { if (stats && stats.abUsed) { stats.abUsed[id] = 1; stats.abilUses = (stats.abilUses || 0) + 1; } if (id !== 'dash' && id !== 'split') recEv('a', 0, id); };
+  // 2.5.2: the round's report that goes with a record (only the «Создатель» can read it, to check records)
+  function recEv(k, v, x) { if (stats && stats.ev && stats.ev.length < 120) stats.ev.push(x != null ? [Math.round(stats.time), k, Math.round(v || 0), String(x).slice(0, 40)] : [Math.round(stats.time), k, Math.round(v || 0)]); }
   // a slot is unusable in modes that forbid that action
   const slotBlocked = id => (id === 'dash' && splitRules()) || (id === 'split' && dailyIs('dashonly'));
   // the player's look for an ability: only where abilities work (normal modes and the Chaos League), never in the main league
@@ -387,6 +389,21 @@
     return { ready: cd > 0 ? 1 - cd / abCdOf(id) : 1, off: false, sub: act > 0 ? `${act.toFixed(1)} с ✓` : cd > 0 ? `${cd.toFixed(1)} с` : null };
   }
 
+  function recReport(score, coins) {
+    try {
+      const h = history || [], gs = Math.max(1, Math.ceil(h.length / 240)), g = [];
+      for (let i = 0; i < h.length; i += gs) g.push(h[i]);
+      if (h.length > 1 && (h.length - 1) % gs) g.push(h[h.length - 1]);
+      const st = {}; for (const k in stats) if (typeof stats[k] === 'number' && isFinite(stats[k])) st[k] = Math.round(stats[k] * 10) / 10;
+      const ab = {}; for (const id of Object.keys(stats.abUsed || {})) ab[id] = ((save.abil || {}).lv || {})[id] || 0;
+      const up = {}; for (const k in save.up) if (save.up[k]) up[k] = save.up[k];
+      return { v: typeof APP_LABEL !== 'undefined' ? APP_LABEL : '?', s: Math.round(score), m: mode, r: !!stats.ranked, t: Math.round(stats.time),
+        wall: stats.wall0 ? Math.round((performance.now() - stats.wall0) / 1000) : 0, peak: Math.round(stats.maxMass), coins: Math.round(coins || 0), lives,
+        g, gs, ev: (stats.ev || []).slice(0, 120), st, ab, up, skin: save.skin || '', pet: save.pet || '', arena: stats.arena || '',
+        fps: stats.time > 0 ? Math.round((stats.fr || 0) / stats.time) : 0, slow: stats.slow || 0,
+        dev: { ua: navigator.userAgent.replace(/\s*\([^)]*KHTML[^)]*\)/, '').slice(0, 140), w: innerWidth, h: innerHeight, dpr: Math.round((devicePixelRatio || 1) * 100) / 100, q: QUALITY } };
+    } catch (e) { return null; }
+  }
   function endRound() {
     if (stats.tutorial) { tutExit(false); return; }
     ModeX.end();
@@ -461,7 +478,7 @@
     if (LOWER_BETTER[mode]) score = stats.win ? Math.max(1, Math.floor(stats.time)) : 0;
     if (mode === 'team') score = prev + (stats.win ? 1 : 0);
     const record = isDuoMode(mode) ? false : mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
-    if (record) { save.bests[mode] = score; Net.submitRecord(mode, score); }
+    if (record) { save.bests[mode] = score; Net.submitRecord(mode, score, recReport(score, coins)); }
     stats.crownT = player.crownT;
     // weekly tasks
     let weekLine = '';
@@ -609,6 +626,7 @@
     if (DuoM.on && DuoM.lost(o, lastMass, eater)) return;   // a match for two: both players come back instead of ending the round
     if (o.isPlayer) {
       if (lives > 0) {
+        recEv('d', lastMass);
         lives--;
         rebuildCells();
         const [x, z] = safeSpot(14);

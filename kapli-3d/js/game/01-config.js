@@ -99,6 +99,7 @@
   const R_BASE = R, FOOD_BASE = FOOD, R_MAX = R * 2, FOOD_MAX = 12000, START_MASS = 10, MAX_BONUS = 6;
   const MAX_MASS = 15000;   // fallback cap for non-player cell types; player cells have no mass cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
+  const ROUND_COIN_CAP = 15000;   // 2.7: coins for a round's play at most (quests, the week and raid steps come on top)
   const BOSS_MASS_CAP = 12000; // ordinary bosses outside Hardcore; survival and raid have separate caps
   let CL_BOSS_MASS_CAP = 12000; // 2.7 «Классика»: from 10 000 follows the player (main part or the smaller half) ×1.2
   let HC_BOSS_MASS_CAP = 23000; // Hardcore only: total mass cap for each ordinary boss; after 20 000 it follows the player's smaller half (ModeX)

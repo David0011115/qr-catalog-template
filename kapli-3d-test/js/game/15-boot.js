@@ -10,4 +10,6 @@
   requestAnimationFrame(frame);
   try { evoCheck(true); } catch (e) { KapliErr.log(e, "evo"); }
   Net.boot();
-  window.kapliBusy = () => running && !dying;   // 2.6: app.js waits with a version reload until the round is over
+  // 2.7: a new version is applied only in the main menu with no window open — never in a round, a pause, a death or the result screen
+  window.kapliBusy = () => { try { return running || dying || paused || $('menuCard').hidden || !!document.querySelector('.modal:not([hidden])'); } catch (e) { return false; } };
+  window.kapliSave = () => { try { persist(); } catch (e) {} };

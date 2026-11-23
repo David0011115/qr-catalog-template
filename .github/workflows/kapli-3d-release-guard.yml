@@ -1,0 +1,26 @@
+name: Kapli 3D release guard
+
+# the main game must never go out in test mode, and the joined game script must parse
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'kapli-3d/js/**'
+      - 'kapli-3d/sw.js'
+      - 'kapli-3d/tests/**'
+      - '.github/workflows/kapli-3d-release-guard.yml'
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kapli-3d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test mode is off, the test panel is not loaded, the game parses
+        run: node --test tests/release-guard.test.js tests/game-syntax.test.js

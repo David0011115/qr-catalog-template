@@ -543,7 +543,7 @@
       crownBossMass(b, mass) {   // a new wave of the crown: each a bit stronger, sized against the holder
         stats.wave = crownWave() + 1;
         const h = crownHolder && crownHolder.cells.length ? total(crownHolder) : total(player);
-        return Math.min(BOSS_MASS_CAP, Math.max(mass, h * 1.25) * Math.pow(1.08, stats.wave - 1));
+        return Math.min(bossCapSolo(), Math.max(mass, h * 1.25) * Math.pow(1.08, stats.wave - 1));   // 2.7: the cap follows a big player too
       },
       crownMaxBosses: () => (crownWave() >= 6 ? 3 : 2),
       crownChip: () => `${crownGround ? '♛ корона лежит на поле' : `♛ ${crownHolder ? (crownHolder.isPlayer ? 'у тебя' : crownHolder.name) : '–'}`} · твоё время ${fmtTime(player.crownT)}${crownWave() ? ` · волна ${crownWave()}` : ''}`,

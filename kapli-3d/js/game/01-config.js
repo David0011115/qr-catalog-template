@@ -128,6 +128,7 @@
   const MODE_IDS = Object.keys(MODES).filter(m => !REMOVED_MODES.includes(m));
   // modes for two: no mastery, no solo records; achievements «во всех режимах» count the solo ones
   const isDuoMode = m => !!(MODES[m] && MODES[m].duo), SOLO_MODE_IDS = MODE_IDS.filter(m => !isDuoMode(m));
+  const DUO_SOON = !TEST_MODE;   // 2.7 release: the modes for two are moving to the full online — closed with «скоро» (the test copy keeps them for testing)
   const DAILY = [
     { id: 'fog',      name: 'Туман',        desc: 'Видно только ближнее окружение' },
     { id: 'dashonly', name: 'Только рывок', desc: 'Деления нет, рывок раз в секунду' },

@@ -658,6 +658,7 @@
     try { const p = new URLSearchParams(location.search); code = (p.get('room') || '').trim().toUpperCase(); mode = p.get('m') || ''; } catch { return; }
     if (!code) return;
     try { const u = new URL(location.href); u.searchParams.delete('room'); u.searchParams.delete('m'); window.history.replaceState(null, '', u.toString()); } catch {}   // window.: the game has its own «history» (the mass graph)
+    if (DUO_SOON) { setTimeout(() => duoSoon(), 2500); return; }   // 2.7 release: the modes for two are closed for now
     if (!MODES[mode] || !/^[A-HJ-NP-Z2-9]{5}$/.test(code)) { setTimeout(() => toast('Ссылка на комнату устарела или неверная'), 2500); return; }
     // 2.7 after the owner's test: it waited behind start-up windows for up to a minute and gave up at once without a session.
     // Now it waits at most 4 s for windows, then opens the lobby anyway; without a session it keeps trying every 2 s

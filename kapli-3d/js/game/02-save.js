@@ -106,7 +106,7 @@
     if (persistHook) persistHook();
   };
   if (saveRestored) setTimeout(() => { try { toast(saveRestored === 'missing' ? 'Сохранение не нашлось — прогресс восстановлен из резервной копии' : 'Сохранение было повреждено — прогресс восстановлен из резервной копии'); } catch (e) {} }, 2500);
-  save.mode = MODES[save.mode] && !REMOVED_MODES.includes(save.mode) ? save.mode : 'classic';
+  save.mode = MODES[save.mode] && !REMOVED_MODES.includes(save.mode) && !(DUO_SOON && isDuoMode(save.mode)) ? save.mode : 'classic';
   // ranked (league) battles: only these modes, league points only here, purchased upgrades switched off
   // each league season is played in one mode; they rotate season by season
   // 2.5: «Гонка массы» left the game (replaced by the mode for two «Спина к спине»), «Выживание» takes its place in the league circle

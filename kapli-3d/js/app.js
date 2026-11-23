@@ -11,7 +11,12 @@ if ('serviceWorker' in navigator) {
   const hadController = !!navigator.serviceWorker.controller;
   let reloaded = false;
   // 2.6: a new version never reloads the page in the middle of a round: it waits until the player is back in the menu
-  const reloadWhenFree = () => { if (reloaded) return; if (window.kapliBusy && window.kapliBusy()) { setTimeout(reloadWhenFree, 3000); return; } reloaded = true; location.reload(); };
+  // 2.7: it waits for the main menu (no round, pause, result screen or open window), says so on a small bar, and saves once more before the reload
+  const updBar = () => { if (document.getElementById('updBar')) return; const b = document.createElement('div'); b.id = 'updBar'; b.setAttribute('role', 'status');
+    b.textContent = '🔄 Новая версия скачана — обновится, когда вернёшься в главное меню'; document.body.appendChild(b); };
+  const reloadWhenFree = () => { if (reloaded) return; let busy = false; try { busy = !!(window.kapliBusy && window.kapliBusy()); } catch (e) {}
+    if (busy) { updBar(); setTimeout(reloadWhenFree, 2000); return; }
+    reloaded = true; try { if (window.kapliSave) window.kapliSave(); } catch (e) {} location.reload(); };
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) reloadWhenFree(); });
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
     reg.update().catch(() => {});

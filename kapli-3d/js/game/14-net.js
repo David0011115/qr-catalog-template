@@ -1164,7 +1164,7 @@
       } catch (e) {}
     }
     setTimeout(errFlush, 15000); setInterval(errFlush, 5 * 60000);
-    Object.assign(Net, { boot, submitRecord: (m, v) => { submitRecord(m, v); }, redeemPromo, walletSoon, walletSync, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
+    Object.assign(Net, { boot, submitRecord: (m, v, det) => { submitRecord(m, v, det); },   /* 2.7.9: the report went missing here — only (mode, score) were passed on */ redeemPromo, walletSoon, walletSync, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
     renderChip();
   }
 

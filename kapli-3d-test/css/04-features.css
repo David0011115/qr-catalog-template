@@ -929,3 +929,9 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 #walBar { position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 95; width: min(620px, calc(100vw - 32px)); box-sizing: border-box;
   display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 14px; background: rgba(30, 20, 0, .94); border: 1px solid rgba(255, 210, 63, .6); color: #ffe9a0; font-size: .82rem; line-height: 1.35; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
 #walBar[hidden] { display: none; } #walBar button { margin-left: auto; flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(255, 210, 63, .5); background: none; color: #ffd23f; font-size: 1.1rem; cursor: pointer; }
+
+/* 2.7.5: «Хардкор» reward windows (background, badge) */
+.rw-stage { display: grid; place-items: center; } .rw-stage canvas.pc-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rw-badge { width: 72%; aspect-ratio: 1; display: grid; place-items: center; filter: drop-shadow(0 0 18px rgba(255, 45, 45, .55)); } .rw-badge svg { width: 100%; height: 100%; }
+
+.nw-ov-btn.nw-patch { color: #3dff9a; border-color: rgba(61, 255, 154, .5); background: rgba(61, 255, 154, .1); }

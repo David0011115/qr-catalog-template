@@ -132,7 +132,7 @@
         const a = modeArt(id), ms = modeMastery(id), on = save.mode === id;
         const lock = id === 'royale' && !TEST_MODE ? `<span>🔒</span>Только в лиге<small>сезон ${nextSeasonOf('royale')}</small>` : m.lvl && plv < m.lvl ? `<span>🔒</span>С ${m.lvl} уровня<small>сейчас ${plv}</small>` : '';
         const chips = (id === leagueMode() ? '<span class="mchip lg">🏆 режим лиги</span>' : '') + (id === ModeX.dayMode() ? '<span class="mchip day">🔥 режим дня · ◆×1,25</span>' : '') + (a.isNew && !lock ? '<span class="mchip fresh">новый</span>' : '');
-        const raid = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="m-raid">${b.name} · ступени ${rs.cleared.length}/5${rs.cleared.length >= 5 ? ' — всё пройдено, новый босс в понедельник' : ''}</span>`; })() : '';
+        const raid = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="m-raid">${b.name} · ступени ${rs.cleared.length}/5${rs.cleared.length >= 5 ? ' — всё пройдено, новый босс в понедельник' : ` · попыток ${Math.max(0, RAID_DAY_TRIES - (rs.tries || 0))}/${RAID_DAY_TRIES}`}</span>`; })() : '';
         const soon = m.duo && DUO_SOON;
         return `<button class="mode mcard m27${m.duo ? ' duo' : ''}${soon ? ' soon' : ''}" id="mode-${id}" data-mode="${id}"${soon ? ' data-soon="1"' : ''} role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
           `<span class="art">${modeIcon(id)}<span class="minf" data-minfo="${id}" role="button" tabindex="0" aria-label="Подробнее о режиме «${m.name}»">i</span>${on ? '<span class="sel" aria-hidden="true">✓</span>' : ''}</span>` +

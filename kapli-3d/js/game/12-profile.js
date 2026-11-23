@@ -36,6 +36,7 @@
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
     { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
     { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 120 000 массы за раунд (живой фон: формы за 120 000 / 170 000 / 220 000)', test: () => (save.hcPeak || 0) >= 120000 },
+    { id: 'bg_raid_throne', name: 'Трон колоссов', rar: 'legendary', src: '«Босс-рейд»: все 5 ступеней за неделю (живой фон: формы за 1 / 3 / 6 таких недель)', test: () => (save.raidFull || 0) >= 1 },
     { id: 'bg_hc_singularity', name: 'Трон затмения', rar: 'legendary', src: 'победа в «Хардкоре»: обе половины по 125 000 массы', test: () => !!save.hc100k },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
@@ -49,6 +50,7 @@
   const pbgById = id => PBG.find(b => b.id === id) || PBG.find(b => b.id === String(id || '').replace(/_f[123]$/, '')) || PBG[0];
   // 2.7: backgrounds that evolve with an evolving skin — forms I–III; the form travels in the id on the card («bg_hc_arena_f3»)
   const PBG_EVO = {
+    bg_raid_throne: { open: () => evoSteps(save.raidFull || 0, [1, 3, 6]), need: ['1 неделя', '3 недели', '6 недель'], unit: 'со всеми 5 ступенями «Босс-рейда»', names: ['Подножие', 'Рогатые стражи', 'Золотой трон'] },
     bg_hc_arena: { open: () => evoSteps(save.hcPeak || 0, [120000, 170000, 220000]), need: ['120 000', '170 000', '220 000'], unit: 'массы за раунд «Хардкора»', names: ['Пробуждение', 'Кровавая луна', 'Затмение ярости'] },
     bg_duo_back: { open: () => Math.max(1, evoOpen('duo_twin')), need: ['30 забегов', '40-я волна', '50-я волна'], unit: '«Спины к спине» на «Обычном» — как у скина «Близнецы»', names: ['Первый виток', 'Двойная спираль', 'Сияние пары'] },
     bg_duo_50: { open: () => TEST_MODE && save.evoAll ? 3 : evoDuoBest('mad') >= 50 ? 3 : evoDuoBest('hard') >= 50 ? 2 : 1, need: ['50 волн', '50 волн на «Сложном»', '50 волн на «Безумии»'], unit: '— формы II и III вместе со «Щитом союза» III и «Созвездием» III', names: ['Арка', 'Золотая арка', 'Корона Безумия'] },
@@ -297,6 +299,36 @@
         for (let b = 0; b < 4; b++) { for (let xx = 0; xx <= w; xx += 3) { const yy = h * (.25 + b * .08) + Math.sin(xx / (60 + b * 20) + t * (.4 + b * .1) + b) * h * .08 + Math.sin(xx / 23 + t * .9) * 4, len = h * (.25 + .1 * Math.sin(xx / 50 + t + b));
           const g = x.createLinearGradient(0, yy, 0, yy + len); g.addColorStop(0, b % 2 ? 'rgba(178,107,255,.0)' : 'rgba(61,255,162,0)'); g.addColorStop(.2, b % 2 ? 'rgba(178,107,255,.13)' : 'rgba(61,255,162,.16)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(xx, yy, 3, len); } }
         x.globalCompositeOperation = 'source-over'; x.fillStyle = '#020a10'; x.beginPath(); x.moveTo(0, h); for (let xx = 0; xx <= w; xx += 20) x.lineTo(xx, h - 12 - Math.abs(Math.sin(xx * .05)) * 22); x.lineTo(w, h); x.fill(); break; }
+      case 'bg_raid_throne': {   // 2.7.12 «Трон колоссов»: a ladder of 5 steps up to an empty throne between the twin colossi; forms I–III: 1 / 3 / 6 weeks with all five steps
+        const gold = f >= 3, cx = w * .5, base = h * .97, pul = .5 + .5 * Math.sin(t * 1.8), AC = gold ? '255,210,63' : '255,45,117';
+        x.fillStyle = lin(f === 1 ? [[0, '#16000c'], [1, '#040003']] : f === 2 ? [[0, '#3a0016'], [.6, '#12000a'], [1, '#050003']] : [[0, '#2e1400'], [.55, '#1a0010'], [1, '#050003']]); x.fillRect(0, 0, w, h);
+        stars(f * 14, 31, .6, gold ? '#ffe6a0' : '#ffb0c8');
+        x.globalCompositeOperation = 'lighter';
+        if (gold) { x.save(); x.translate(cx, h * .3); x.rotate(t * .12); for (let i = 0; i < 12; i++) { x.rotate(Math.PI / 6); const g = x.createLinearGradient(0, 0, 0, -U * 1.2); g.addColorStop(0, 'rgba(255,210,63,.3)'); g.addColorStop(1, 'rgba(255,210,63,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(0, 0); x.lineTo(-U * .08, -U * 1.2); x.lineTo(U * .08, -U * 1.2); x.closePath(); x.fill(); } x.restore(); }
+        glow(cx, h * .32, U * (.5 + .06 * pul), `rgba(${AC},.42)`);
+        x.globalCompositeOperation = 'source-over';
+        for (const s of [-1, 1]) {   // the twins: hulking shadows with glowing eyes (horns from form II)
+          const bx = cx + s * w * .36, r = U * .36, by = h * .66 + Math.sin(t * 1.1 + s) * U * .015;
+          x.fillStyle = lin([[0, f >= 2 ? '#3a0414' : '#26020d'], [1, '#080002']], 0, by - r, 0, by + r); x.beginPath(); x.ellipse(bx, by, r * .8, r, 0, 0, 6.29); x.fill();
+          x.strokeStyle = `rgba(${AC},.45)`; x.lineWidth = 2; x.stroke();
+          if (f >= 2) { x.fillStyle = '#14000a'; for (const e of [-1, 1]) { x.beginPath(); x.moveTo(bx + e * r * .3, by - r * .9); x.quadraticCurveTo(bx + e * r * .75, by - r * 1.2, bx + e * r * .62, by - r * 1.42); x.quadraticCurveTo(bx + e * r * .5, by - r * 1.12, bx + e * r * .1, by - r * .97); x.closePath(); x.fill(); } }
+          const ey = by - r * .38, bl = (t * .7 + (s > 0 ? 1.7 : 0)) % 4 < .14 ? .15 : 1, ec = s < 0 ? ['255,79,138', '#ff8ab0'] : ['255,210,63', '#ffe9a0'];
+          x.globalCompositeOperation = 'lighter'; for (const e of [-1, 1]) glow(bx + e * r * .22, ey, r * .22, `rgba(${ec[0]},.85)`, bl); x.globalCompositeOperation = 'source-over';
+          x.fillStyle = ec[1]; for (const e of [-1, 1]) { x.beginPath(); x.ellipse(bx + e * r * .22, ey, r * .075, Math.max(.5, r * .05 * bl), 0, 0, 6.29); x.fill(); }
+        }
+        const lit = f === 1 ? 3 : f === 2 ? 4 : 5, sw = Math.min(w * .5, U * 1.1), sh = h * .075;   // the ladder: lit steps glow
+        x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `900 ${Math.max(8, Math.round(sh * .55))}px system-ui,sans-serif`;
+        for (let i = 0; i < 5; i++) { const ww = sw * (1 - i * .15), yy = base - (i + 1) * sh, on = i < lit;
+          x.fillStyle = on ? lin([[0, gold ? '#ffd23f' : '#ff2d75'], [1, gold ? '#7a4a00' : '#4a0018']], 0, yy, 0, yy + sh) : '#1c0a12'; x.fillRect(cx - ww / 2, yy, ww, sh * .86);
+          if (on) { x.globalCompositeOperation = 'lighter'; x.globalAlpha = .35 + .3 * Math.abs(Math.sin(t * 2 - i * .6)); x.fillStyle = gold ? '#ffe08a' : '#ff8ab0'; x.fillRect(cx - ww / 2, yy, ww, 2); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; }
+          x.fillStyle = on ? 'rgba(20,0,8,.75)' : 'rgba(255,255,255,.16)'; x.fillText(['I', 'II', 'III', 'IV', 'V'][i], cx, yy + sh * .45); }
+        const ty = base - 5 * sh, tw = U * .2;   // the empty throne on top
+        x.fillStyle = '#0a0004'; x.beginPath(); x.moveTo(cx - tw * .6, ty); x.lineTo(cx - tw * .6, ty - tw * 1.3); x.quadraticCurveTo(cx, ty - tw * 1.8, cx + tw * .6, ty - tw * 1.3); x.lineTo(cx + tw * .6, ty); x.closePath(); x.fill();
+        x.strokeStyle = gold ? '#ffd23f' : '#ff2d75'; x.lineWidth = 2; x.stroke();
+        if (f >= 2) { const cy2 = ty - tw * 2 + Math.sin(t * 1.6) * 4, cw = tw * .75; x.fillStyle = gold ? '#ffd23f' : '#ff5a8a'; x.beginPath(); x.moveTo(cx - cw / 2, cy2 + cw * .3); x.lineTo(cx - cw / 2, cy2 - cw * .1); x.lineTo(cx - cw / 4, cy2 + cw * .08); x.lineTo(cx, cy2 - cw * .32); x.lineTo(cx + cw / 4, cy2 + cw * .08); x.lineTo(cx + cw / 2, cy2 - cw * .1); x.lineTo(cx + cw / 2, cy2 + cw * .3); x.closePath(); x.fill(); }
+        if (f === 2) { const ph = (t * .5) % 3; if (ph < .12) { x.globalAlpha = .45 * (1 - ph / .12); x.fillStyle = '#ffd0e0'; x.fillRect(0, 0, w, h); x.globalAlpha = 1; } }   // lightning
+        if (f >= 2) { x.globalCompositeOperation = 'lighter'; x.fillStyle = gold ? '#ffd23f' : '#ff4f8a'; for (const p of pbgPts('rt' + f, 26, 77)) { const yy = h - ((t * (14 + p.q * 22) + p.p * h) % h); x.globalAlpha = .65 * (yy / h); x.fillRect(p.x * w, yy, 2, 2); } x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; }   // embers
+        x.textAlign = 'start'; x.textBaseline = 'alphabetic'; break; }
       case 'bg_colossus': {
         x.fillStyle = lin([[0, '#1a0006'], [1, '#050002']]); x.fillRect(0, 0, w, h);
         x.strokeStyle = 'rgba(255,45,85,.16)'; x.lineWidth = 1; const s = 16; for (let yy = 0, r = 0; yy < h + s; yy += s * .86, r++) for (let xx = (r % 2) * s * .75; xx < w + s; xx += s * 1.5) { x.beginPath(); for (let k = 0; k < 6; k++) x.lineTo(xx + Math.cos(k * 1.047) * s * .5, yy + Math.sin(k * 1.047) * s * .5); x.closePath(); x.stroke(); }

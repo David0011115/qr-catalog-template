@@ -364,7 +364,9 @@
   }
   // 2.7.5 (owner): the other «Хардкор» rewards come one by one too — the profile background and its forms, the two badges, the win.
   // Each gets a moment in the round and its own window after it, like the evolution of a skin
-  const HC_RW = { bg: { bg_hc_arena: 'Арена Берсерка', bg_hc_singularity: 'Трон затмения' }, badge: { hc75: 'Берсерк · 175 000', hc88: 'Берсерк · 220 000', hc100k: 'Корона Берсерка' } };
+  const HC_RW = { bg: { bg_hc_arena: 'Арена Берсерка', bg_hc_singularity: 'Трон затмения', bg_raid_throne: 'Трон колоссов' }, badge: { hc75: 'Берсерк · 175 000', hc88: 'Берсерк · 220 000', hc100k: 'Корона Берсерка', raid4: 'Колоссоборец', raid5: 'Гроза колоссов' },
+    step: { 1: 'Ступень I', 2: 'Ступень II', 3: 'Ступень III', 4: 'Ступень IV', 5: 'Ступень V' } };
+  const rwRaid = r => r.kind === 'step' || /raid/.test(r.id);
   function hcRewardCheck(live) {
     if (TEST_MODE && save.evoAll) return;
     const g = save.hcGot = save.hcGot || {}, peak = save.hcPeak || 0, out = [];
@@ -377,11 +379,22 @@
     (save.rwQ = save.rwQ || []).push(...out); persist();
     if (live) out.forEach(rwMoment);
   }
-  const rwTitle = r => r.kind === 'badge' ? 'Новый значок' : r.fresh ? (r.f ? 'Новый живой фон профиля' : 'Новый фон профиля') : 'Фон профиля · новая форма';
+  // 2.7.12 (owner): the «Босс-рейд» rewards get the same windows — the step (what it gave), the badges for the first step IV / V ever,
+  // and the live background «Трон колоссов»: forms I–III for 1 / 3 / 6 weeks with all five steps
+  function raidRewardCheck(step) {
+    const g = save.raidGot = save.raidGot || {}, out = step ? [step] : [];
+    for (const [id, need] of [['raid4', 4], ['raid5', 5]]) if ((save.raidMax || 0) >= need && !g[id]) { g[id] = 1; out.push({ kind: 'badge', id }); }
+    const bgF = evoSteps(save.raidFull || 0, [1, 3, 6]);
+    if (bgF > (g.bg || 0)) { out.push({ kind: 'bg', id: 'bg_raid_throne', f: bgF, fresh: !g.bg }); g.bg = bgF; }
+    if (!out.length) return;
+    try { pbgCheck(true); } catch (e) {}
+    (save.rwQ = save.rwQ || []).push(...out); persist();
+  }
+  const rwTitle = r => r.kind === 'step' ? 'Босс-рейд · ступень пройдена' : r.kind === 'badge' ? 'Новый значок' : r.fresh ? (r.f ? 'Новый живой фон профиля' : 'Новый фон профиля') : 'Фон профиля · новая форма';
   const rwName = r => `«${HC_RW[r.kind][r.id]}»${r.kind === 'bg' && r.f ? ' · форма ' + RN3[r.f] : ''}`;
   function rwMoment(r) {
     let b = document.getElementById('evoBanner'); if (!b) { b = document.createElement('div'); b.id = 'evoBanner'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
-    b.style.setProperty('--ec', '#ff2d2d'); b.style.setProperty('--ec2', '#ffd27a');
+    b.style.setProperty('--ec', rwRaid(r) ? '#ff2d75' : '#ff2d2d'); b.style.setProperty('--ec2', rwRaid(r) ? '#ffd23f' : '#ffd27a');
     b.innerHTML = `<i aria-hidden="true"><svg viewBox="0 0 24 24">${r.kind === 'badge' ? DI.medal : DI.image}</svg></i><span><small>${rwTitle(r)}</small><b>${rwName(r)}</b></span>`;
     b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); clearTimeout(evoMoment.t); evoMoment.t = setTimeout(() => b.classList.remove('show'), 3200);
     try { Sound.play('level'); } catch (e) {}
@@ -392,14 +405,16 @@
     if ([...document.querySelectorAll('.modal')].some(m => !m.hidden && m.id !== 'rwModal')) { clearTimeout(rwShowQueue.t); rwShowQueue.t = setTimeout(rwShowQueue, 900); return; }
     const r = save.rwQ.shift(); persist(); if (!HC_RW[r.kind] || !HC_RW[r.kind][r.id]) return rwShowQueue();
     let m = document.getElementById('rwModal'); if (!m) { m = document.createElement('div'); m.id = 'rwModal'; m.className = 'modal'; m.hidden = true; document.body.appendChild(m); }
-    m.style.setProperty('--ec', '#ff2d2d'); m.style.setProperty('--ec2', '#ffd27a');
-    const art = r.kind === 'badge' ? `<div class="rw-badge">${r.id === 'hc100k' ? hcBadgeSVG('c') : evoBadgeSVG(r.id)}</div>` : `<canvas class="pc-bg" data-pbg="${r.id}${r.f ? '_f' + r.f : ''}"></canvas>`;
-    const how = r.kind === 'badge' ? 'Значок теперь в профиле → «Оформление» → «Значки». Его видят все в твоей карточке.'
+    const rd = rwRaid(r); m.style.setProperty('--ec', rd ? '#ff2d75' : '#ff2d2d'); m.style.setProperty('--ec2', rd ? '#ffd23f' : '#ffd27a');
+    const art = r.kind === 'step' ? `<div class="rw-badge">${raidStepSVG(r.id)}</div>` : r.kind === 'badge' ? `<div class="rw-badge">${r.id === 'hc100k' ? hcBadgeSVG('c') : evoBadgeSVG(r.id)}</div>` : `<canvas class="pc-bg" data-pbg="${r.id}${r.f ? '_f' + r.f : ''}"></canvas>`;
+    const how = r.kind === 'step' ? (r.lines || []).map(escHtml).join(' · ') + '.'
+      : r.kind === 'badge' ? 'Значок теперь в профиле → «Оформление» → «Значки». Его видят все в твоей карточке.'
+      : r.id === 'bg_raid_throne' ? (r.fresh ? 'Живой фон за всю лестницу рейда: I — 1 неделя со всеми 5 ступенями · II — 3 недели · III — 6 недель. Он в профиле → «Оформление» → «Фоны».' : 'Открыта новая форма фона. Её можно выбрать в профиле → «Оформление» → «Фоны».')
       : r.f ? (r.fresh ? 'Живой фон растёт вместе с тобой: I — 120 000 · II — 170 000 · III — 220 000 массы за раунд «Хардкора». Открытую форму выбираешь в окне фона.' : 'Открыта новая форма фона. Её можно выбрать в профиле → «Оформление» → «Фоны».')
       : 'Фон за победу в «Хардкоре». Он в профиле → «Оформление» → «Фоны».';
     m.innerHTML = `<div class="modal-card evo-card rw-card" role="dialog" aria-modal="true" aria-labelledby="rwT"><div class="evo-stage rw-stage">${art}<div class="evo-flash go"></div></div>
-      <div class="evo-tx"><small>🩸 ${rwTitle(r)}</small><h2 id="rwT">${rwName(r)}</h2><p>${how}</p>
-      <div class="evo-acts"><button class="btn" type="button" data-rwput>${r.kind === 'badge' ? 'Поставить в профиль' : 'Поставить фоном'}</button><button class="btn ghost" type="button" data-rwok>Позже</button></div></div></div>`;
+      <div class="evo-tx"><small>${rd ? '⚔' : '🩸'} ${rwTitle(r)}</small><h2 id="rwT">${rwName(r)}</h2><p>${how}</p>
+      <div class="evo-acts">${r.kind === 'step' ? '<button class="btn" type="button" data-rwok>Отлично</button>' : `<button class="btn" type="button" data-rwput>${r.kind === 'badge' ? 'Поставить в профиль' : 'Поставить фоном'}</button><button class="btn ghost" type="button" data-rwok>Позже</button>`}</div></div></div>`;
     m.hidden = false; rwOpen = true; try { pbgMount(m); Sound.play('level'); } catch (e) {}
     m.onclick = e => {
       if (e.target.closest('[data-rwput]')) {
@@ -408,7 +423,7 @@
       } else if (!e.target.closest('[data-rwok]') && e.target !== m) return;
       rwOpen = false; m.hidden = true; m.innerHTML = ''; try { renderAll(); } catch (er) {} setTimeout(rwShowQueue, 300);
     };
-    const first = m.querySelector('[data-rwput]'); if (first) first.focus();
+    const first = m.querySelector('[data-rwput], [data-rwok]'); if (first) first.focus();
   }
   // after the round (or on start-up): a window per event — the drop flows from its old form into the new one
   let evoWin = null;
@@ -455,6 +470,8 @@
   const EVO_BADGES = [
     { id: 'hc75', name: 'Берсерк · 175 000', src: '«Хардкор»: 175 000 массы за один раунд', got: () => (save.hcPeak || 0) >= 175000 },   // 2.7.5: the ids stay, the bar moved
     { id: 'hc88', name: 'Берсерк · 220 000', src: '«Хардкор»: 220 000 общей массы за раунд (обе половины вместе)', got: () => (save.hcPeak || 0) >= 220000 },
+    { id: 'raid4', name: 'Колоссоборец', src: '«Босс-рейд»: впервые пройти ступень IV', got: () => (save.raidMax || 0) >= 4 },
+    { id: 'raid5', name: 'Гроза колоссов', src: '«Босс-рейд»: впервые пройти ступень V', got: () => (save.raidMax || 0) >= 5 },
     { id: 'duo50n', name: 'Спина к спине · Обычный', src: 'все 50 волн «Спины к спине» на «Обычном»', got: () => evoDuoBest('normal') >= 50 },
     { id: 'duo50h', name: 'Спина к спине · Сложный', src: 'все 50 волн «Спины к спине» на «Сложном»', got: () => evoDuoBest('hard') >= 50 },
     { id: 'duo50m', name: 'Спина к спине · Безумие', src: 'все 50 волн «Спины к спине» на «Безумии»', got: () => evoDuoBest('mad') >= 50 },
@@ -484,7 +501,27 @@
       <circle cx="41" cy="47" r="3.6" fill="#ff3a1a"><animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/></circle><circle cx="59" cy="47" r="3.6" fill="#ff9a3d"><animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/></circle>
       <path d="M18 76 L82 76 L76 86 L82 96 L18 96 L24 86 Z" fill="#ff2d2d" stroke="#4a0008"/><text x="50" y="91" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="12" fill="#fff">100K</text></svg>`;
   }
+  // 2.7.12: the raid badges — a crimson shield with the twins' eyes and a sword between them (IV), a gold one with the crown and lightning (V)
+  function raidBadgeSVG(id) {
+    const five = id === 'raid5', g = 'rbd' + (++hcbUid), A = five ? '#ffd23f' : '#ff2d75', Bc = five ? '#ff2d75' : '#ffd23f', nm = five ? 'Гроза колоссов' : 'Колоссоборец';
+    const eyes = [[33, '#ff4f8a'], [67, '#ffd23f']].map(([cx, c], k) => `<circle cx="${cx}" cy="44" r="7" fill="${c}" opacity=".35"><animate attributeName="r" values="6;9;6" dur="1.6s" begin="${k * .8}s" repeatCount="indefinite"/></circle><ellipse cx="${cx}" cy="44" rx="4.5" ry="3.2" fill="${c}"/>`).join('');
+    const mid = five
+      ? `<path d="M30 30 L36 18 L43 27 L50 13 L57 27 L64 18 L70 30 Z" fill="url(#${g}r)" stroke="#4a2a00" stroke-width="1"/><path d="M53 32 L44 50 L51 50 L46 66 L58 45 L51 45 L56 32 Z" fill="#fff6c0"><animate attributeName="opacity" values="1;.35;1" dur="1.1s" repeatCount="indefinite"/></path>`
+      : `<path d="M50 22 L54 28 V58 H46 V28 Z" fill="url(#${g}r)"/><rect x="40" y="58" width="20" height="4" rx="2" fill="${A}"/><rect x="47.5" y="62" width="5" height="8" fill="#5a1a2a"/>`;
+    return `<svg viewBox="0 0 100 100" class="evo-badge" role="img" aria-label="${nm}"><defs><linearGradient id="${g}r" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".35" stop-color="${A}"/><stop offset="1" stop-color="${Bc}"/></linearGradient><radialGradient id="${g}c" cx="50%" cy="42%"><stop stop-color="${five ? '#3a1a00' : '#3a0014'}"/><stop offset="1" stop-color="#070003"/></radialGradient></defs>
+      <path d="M50 4 L90 18 V54 C90 74 72 88 50 96 C28 88 10 74 10 54 V18 Z" fill="url(#${g}c)" stroke="url(#${g}r)" stroke-width="4"/><path d="M50 12 L82 23 V54 C82 69 68 81 50 88 C32 81 18 69 18 54 V23 Z" fill="none" stroke="${A}" stroke-opacity=".3"/>
+      ${eyes}${mid}<path d="M14 72 H86 L80 80 L86 88 H14 L20 80 Z" fill="url(#${g}r)"/><path d="M20 72 H80 V88 H20 Z" fill="#12000a" opacity=".85"/>
+      <text x="50" y="84" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="10" letter-spacing="1" fill="${A}">${five ? 'СТУПЕНЬ V' : 'СТУПЕНЬ IV'}</text></svg>`;
+  }
+  function raidStepSVG(n) {
+    const g = 'rst' + (++hcbUid), R = ['I', 'II', 'III', 'IV', 'V'][n - 1] || '?';
+    const steps = Array.from({ length: 5 }, (_, i) => `<rect x="${22 + i * 5}" y="${78 - i * 9}" width="${56 - i * 10}" height="7" rx="1.5" fill="${i < n ? `url(#${g})` : '#2a0a16'}"/>`).join('');
+    return `<svg viewBox="0 0 100 100" class="evo-badge" role="img" aria-label="Ступень ${R}"><defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".4" stop-color="#ffd23f"/><stop offset="1" stop-color="#ff2d75"/></linearGradient></defs>
+      <circle cx="50" cy="50" r="46" fill="#0d0007" stroke="url(#${g})" stroke-width="3.5"/><circle cx="50" cy="50" r="40" fill="none" stroke="#ff2d75" stroke-opacity=".3"><animate attributeName="r" values="38;43;38" dur="2s" repeatCount="indefinite"/></circle>
+      ${steps}<text x="50" y="40" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="24" fill="url(#${g})" stroke="#4a0018" stroke-width=".8">${R}</text></svg>`;
+  }
   function evoBadgeSVG(id) {
+    if (id === 'raid4' || id === 'raid5') return raidBadgeSVG(id);
     if (id === 'hc75') return hcBadgeSVG('a', 'evo-badge');
     if (id === 'hc88') return hcBadgeSVG('b', 'evo-badge');
     if (id === 'hc75') {

@@ -923,3 +923,9 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 /* 2.7.2: a live scene in the big update card */
 .nw-big .nw-scene { padding: 0; background: #07031a; display: grid; place-items: center; overflow: hidden; border-radius: 14px; }
 .nw-big .nw-scene canvas { width: 100%; height: auto; max-height: 100%; aspect-ratio: 16 / 10; display: block; object-fit: contain; }
+
+/* 2.7.4: the day limit of coins */
+#resQuests li.wal-lim { color: #ffd23f; } #resQuests li.wal-lim.soft { color: #c8bff0; }
+#walBar { position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 95; width: min(620px, calc(100vw - 32px)); box-sizing: border-box;
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 14px; background: rgba(30, 20, 0, .94); border: 1px solid rgba(255, 210, 63, .6); color: #ffe9a0; font-size: .82rem; line-height: 1.35; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+#walBar[hidden] { display: none; } #walBar button { margin-left: auto; flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(255, 210, 63, .5); background: none; color: #ffd23f; font-size: 1.1rem; cursor: pointer; }

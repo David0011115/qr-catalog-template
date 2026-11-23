@@ -16,15 +16,25 @@
   // (save.wal.q) with its own id; 14-net.js sends the queue and takes the server's balance. A guest has only the number here.
   const coinDev = (() => { try { let d = localStorage.getItem('kapli3d-dev'); if (!d) { d = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('kapli3d-dev', d); } return d.replace(/[^A-Za-z0-9]/g, '').slice(1, 11) || 'x'; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 10); } })();
   let coinSeq = 0;
+  // 2.7.4: the server takes at most 20 000 in one earning and 100 000 a day (UTC day). It refuses a whole piece that goes over the day,
+  // so the game cuts the piece at what is left of the day: everything that fits is counted, only the rest is refused
+  const WAL_DAY = 100000, utcDay = () => new Date().toISOString().slice(0, 10);
+  function walDayUsed() {   // earned today on this account as far as this phone knows: confirmed by the server + still in the queue
+    const d = utcDay(), W = save.wal, done = save.walDay && save.walDay.d === d ? save.walDay.e : 0;
+    return done + (W && Array.isArray(W.q) ? W.q.filter(o => o.k === 'e' && (!o.d || o.d === d)).reduce((t, o) => t + o.n, 0) : 0);
+  }
   function coinOp(k, n, src) {
     n = Math.round(+n || 0); if (!(n > 0)) return;
     save.coins = Math.max(0, (save.coins || 0) + (k === 's' ? -n : n));
     const W = save.wal; if (!W || !W.uid || !Array.isArray(W.q)) return;
-    // the server takes at most 20 000 in one earning
-    for (let left = n; left > 0; left -= k === 's' ? left : 20000)
-      W.q.push({ id: `${coinDev}-${Date.now().toString(36)}${(coinSeq++ % 1296).toString(36)}`, k, n: k === 's' ? left : Math.min(left, 20000), s: src });
+    const push = m => W.q.push({ id: `${coinDev}-${Date.now().toString(36)}${(coinSeq++ % 1296).toString(36)}`, k, n: m, s: src, ...(k === 'e' ? { d: utcDay() } : {}) });
+    if (k === 's') push(n);
+    else { let room = Math.max(0, WAL_DAY - walDayUsed());
+      for (let left = n; left > 0;) { const m = Math.min(left, 20000, room > 0 ? room : 20000); push(m); left -= m; room = Math.max(0, room - m); } }
     try { Net.walletSoon(); } catch (e) {}   // Net is made a little below; refunds at start only queue
   }
+  // the time the day limit starts again, in the player's own clock (the server's day is UTC)
+  const walResetAt = () => { const n = new Date(); return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1)).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
   function coinsAdd(n, src) { coinOp('e', n, src); }
   function coinsSpend(n, src) { coinOp('s', n, src); }
   // the «Обзор» upgrade was removed (the camera is farther for everyone): refund what was spent on it

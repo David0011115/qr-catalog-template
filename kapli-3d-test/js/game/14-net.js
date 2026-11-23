@@ -1064,6 +1064,14 @@
     // the coins shown = the wallet + what is still in the queue. Before the first answer for this account the coins on
     // the phone go to the server «as is» (the server caps them) and the queue is not used.
     let walBusy = false, walAgain = false, walOff = false, walTimer = null;
+    // 2.7.4: the day limit message stays until the player closes it (it may come a while after the round, or at the next start)
+    function walNotice(got, all) {
+      let b = $('walBar'); if (!b) { b = document.createElement('div'); b.id = 'walBar'; b.setAttribute('role', 'status'); document.body.appendChild(b);
+        b.addEventListener('click', e => { if (e.target.closest('[data-walx]')) b.hidden = true; }); }
+      const f = v => v.toLocaleString('ru-RU');
+      b.innerHTML = `<span>💰 Начислено <b>${f(got)}</b> из ${f(all)} ◆. Дневной лимит ${f(WAL_DAY)} ◆ исчерпан — остальное не засчитано. Лимит обновится в ${walResetAt()}.</span><button type="button" data-walx aria-label="Закрыть">×</button>`;
+      b.hidden = false;
+    }
     const qSum = q => q.reduce((t, o) => t + (o.k === 's' ? -o.n : o.n), 0);
     function walletSoon(ms) { clearTimeout(walTimer); walTimer = setTimeout(walletSync, ms || 6000); }
     async function walletSync() {
@@ -1086,8 +1094,12 @@
             const { data, error } = await withTimeout(sb.rpc('kapli_wallet_sync', { p_init: 0, p_ops: batch }), 10000); if (error) throw error;
             if (!data || data.err || typeof data.coins !== 'number') return;
             const gone = new Set([...(data.done || []), ...(data.bad || [])]);
-            { const ref = batch.filter(o => o.k === 'e' && (data.bad || []).includes(o.id)).reduce((t, o) => t + o.n, 0);   // 2.7 (beta tester): said nothing, the coins just were not there
-              if (ref > 0) toast(`Сервер не принял ${ref.toLocaleString('ru-RU')} ◆: за сутки можно заработать не больше 100 000 (защита от взлома)`); }
+            { // 2.7.4: what the server counted today, and a clear line when the day limit cut an earning («начислено X из Y»)
+              const day = utcDay(), sum = a => a.reduce((t, o) => t + o.n, 0), done = new Set(data.done || []), bad = new Set(data.bad || []);
+              const acc = batch.filter(o => o.k === 'e' && done.has(o.id)), ref = batch.filter(o => o.k === 'e' && bad.has(o.id));
+              if (!save.walDay || save.walDay.d !== day) save.walDay = { d: day, e: 0 };
+              save.walDay.e = Math.min(WAL_DAY, save.walDay.e + sum(acc.filter(o => !o.d || o.d === day)));
+              if (ref.length) { if (ref.some(o => !o.d || o.d === day)) save.walDay.e = WAL_DAY; walNotice(sum(acc), sum(acc) + sum(ref)); } }
             if ((data.bad || []).length) KapliErr.log(new Error(`wallet refused ${data.bad.length}: ${batch.filter(o => data.bad.includes(o.id)).map(o => o.k + o.n + ':' + o.s).join(',').slice(0, 200)}`), 'wallet');
             W.q = W.q.filter(o => !gone.has(o.id));
             save.coins = Math.max(0, data.coins + qSum(W.q));

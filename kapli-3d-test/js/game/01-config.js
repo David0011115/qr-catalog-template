@@ -1,5 +1,6 @@
   // TEST MODE: everything unlocked, saved under a separate key so real progress is untouched.
-  const TEST_MODE = true;   // ВНИМАНИЕ: перед заливкой в репозиторий вернуть false (сборка PWA проверяет это)
+  const TEST_FLAG = true;   // the test copy (tools/build-site-test.py) switches this on; tests/release-guard.test.js stops a release with it left on
+  const TEST_MODE = TEST_FLAG && !/\/kapli-3d\//.test(location.pathname);   // second lock: the main game (…/kapli-3d/) never runs in test mode, whatever the flag says
   // 2.7 FPS: Math.hypot takes any number of arguments and allocates on every call (a profile on the stress test: megabytes a second); two numbers need only this
   const hyp = (a, b) => Math.sqrt(a * a + b * b);
   const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';

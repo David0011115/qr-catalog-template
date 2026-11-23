@@ -366,7 +366,21 @@
   // Each gets a moment in the round and its own window after it, like the evolution of a skin
   const HC_RW = { bg: { bg_hc_arena: 'Арена Берсерка', bg_hc_singularity: 'Трон затмения', bg_raid_throne: 'Трон колоссов' }, badge: { hc75: 'Берсерк · 175 000', hc88: 'Берсерк · 220 000', hc100k: 'Корона Берсерка', raid4: 'Колоссоборец', raid5: 'Гроза колоссов' },
     step: { 1: 'Ступень I', 2: 'Ступень II', 3: 'Ступень III', 4: 'Ступень IV', 5: 'Ступень V' } };
-  const rwRaid = r => r.kind === 'step' || /raid/.test(r.id);
+  // 2.7.13 (owner): every weekly boss has its own: a badge (step IV of its week) and one exclusive thing (the whole ladder of its week) — each of another kind
+  const RAID_BOSS_RW = [
+    ['eat', 'rbMawEat', 'Пасть Пожирателя', 'эффект поедания'], ['trail', 'rbInkTrail', 'Чернильный шлейф', 'шлейф'], ['hat', 'golemcrown', 'Корона голема', 'предмет над головой'],
+    ['pet', 'raid_kraken', 'Кракенёнок', 'питомец'], ['aura', 'rbWormAura', 'Звёздный червь', 'аура'], ['frame', 'fr_rb_titan', 'Ледяной титан', 'рамка профиля'],
+    ['title', 'tt_rb_magma', 'Магматический страж', 'титул'], ['bg', 'bg_rb_levi', 'Призрачный левиафан', 'живой фон профиля']];
+  const RB_COL = [['#ff2d55', '#ffd23f'], ['#7b3dff', '#ff4fd8'], ['#b26bff', '#9ff0ff'], ['#22e6ff', '#ff4fd8'], ['#ffd23f', '#7b3dff'], ['#9ff0ff', '#ffffff'], ['#ff6a00', '#ffd23f'], ['#b8c8ff', '#7affd0']];
+  RAID_NAMES.forEach((n, b) => { HC_RW.badge['rbb' + b] = 'Победитель: ' + n; HC_RW.ritem = HC_RW.ritem || {}; HC_RW.ritem[b] = RAID_BOSS_RW[b][2]; });
+  HC_RW.bg.bg_rb_levi = 'Призрачный левиафан';
+  function raidBossGive(b) {
+    const [k, id] = RAID_BOSS_RW[b], put = (arr, v) => { if (!arr.includes(v)) arr.push(v); };
+    (save.raidBI = save.raidBI || {})[b] = 1;
+    if (k === 'eat' || k === 'trail' || k === 'aura') put(save.fxOwned, id); else if (k === 'hat') put(save.hats, id); else if (k === 'pet') put(save.pets, id); else if (k === 'frame' || k === 'title') put(save.decor, id);
+    return k === 'bg' ? { kind: 'bg', id, f: 0, fresh: true } : { kind: 'ritem', id: b };
+  }
+  const rwRaid = r => r.kind === 'step' || r.kind === 'ritem' || /raid|rbb|bg_rb_/.test(r.id);
   function hcRewardCheck(live) {
     if (TEST_MODE && save.evoAll) return;
     const g = save.hcGot = save.hcGot || {}, peak = save.hcPeak || 0, out = [];
@@ -381,8 +395,10 @@
   }
   // 2.7.12 (owner): the «Босс-рейд» rewards get the same windows — the step (what it gave), the badges for the first step IV / V ever,
   // and the live background «Трон колоссов»: forms I–III for 1 / 3 / 6 weeks with all five steps
-  function raidRewardCheck(step) {
+  function raidRewardCheck(step, boss) {
     const g = save.raidGot = save.raidGot || {}, out = step ? [step] : [];
+    if (boss) { if (boss.badge !== undefined && !(save.raidBB || {})[boss.badge]) { (save.raidBB = save.raidBB || {})[boss.badge] = 1; out.push({ kind: 'badge', id: 'rbb' + boss.badge }); }
+      if (boss.item !== undefined && !(save.raidBI || {})[boss.item]) out.push(raidBossGive(boss.item)); }
     for (const [id, need] of [['raid4', 4], ['raid5', 5]]) if ((save.raidMax || 0) >= need && !g[id]) { g[id] = 1; out.push({ kind: 'badge', id }); }
     const bgF = evoSteps(save.raidFull || 0, [1, 3, 6]);
     if (bgF > (g.bg || 0)) { out.push({ kind: 'bg', id: 'bg_raid_throne', f: bgF, fresh: !g.bg }); g.bg = bgF; }
@@ -390,7 +406,7 @@
     try { pbgCheck(true); } catch (e) {}
     (save.rwQ = save.rwQ || []).push(...out); persist();
   }
-  const rwTitle = r => r.kind === 'step' ? 'Босс-рейд · ступень пройдена' : r.kind === 'badge' ? 'Новый значок' : r.fresh ? (r.f ? 'Новый живой фон профиля' : 'Новый фон профиля') : 'Фон профиля · новая форма';
+  const rwTitle = r => r.kind === 'ritem' ? `Эксклюзив босса · ${RAID_BOSS_RW[r.id][3]}` : r.kind === 'step' ? 'Босс-рейд · ступень пройдена' : r.kind === 'badge' ? 'Новый значок' : r.fresh ? (r.f ? 'Новый живой фон профиля' : 'Новый фон профиля') : 'Фон профиля · новая форма';
   const rwName = r => `«${HC_RW[r.kind][r.id]}»${r.kind === 'bg' && r.f ? ' · форма ' + RN3[r.f] : ''}`;
   function rwMoment(r) {
     let b = document.getElementById('evoBanner'); if (!b) { b = document.createElement('div'); b.id = 'evoBanner'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
@@ -406,20 +422,23 @@
     const r = save.rwQ.shift(); persist(); if (!HC_RW[r.kind] || !HC_RW[r.kind][r.id]) return rwShowQueue();
     let m = document.getElementById('rwModal'); if (!m) { m = document.createElement('div'); m.id = 'rwModal'; m.className = 'modal'; m.hidden = true; document.body.appendChild(m); }
     const rd = rwRaid(r); m.style.setProperty('--ec', rd ? '#ff2d75' : '#ff2d2d'); m.style.setProperty('--ec2', rd ? '#ffd23f' : '#ffd27a');
-    const art = r.kind === 'step' ? `<div class="rw-badge">${raidStepSVG(r.id)}</div>` : r.kind === 'badge' ? `<div class="rw-badge">${r.id === 'hc100k' ? hcBadgeSVG('c') : evoBadgeSVG(r.id)}</div>` : `<canvas class="pc-bg" data-pbg="${r.id}${r.f ? '_f' + r.f : ''}"></canvas>`;
-    const how = r.kind === 'step' ? (r.lines || []).map(escHtml).join(' · ') + '.'
+    const art = r.kind === 'ritem' ? `<div class="rw-badge">${raidBossSVG(+r.id, RAID_BOSS_RW[r.id][3])}</div>` : r.kind === 'step' ? `<div class="rw-badge">${raidStepSVG(r.id)}</div>` : r.kind === 'badge' ? `<div class="rw-badge">${r.id === 'hc100k' ? hcBadgeSVG('c') : evoBadgeSVG(r.id)}</div>` : `<canvas class="pc-bg" data-pbg="${r.id}${r.f ? '_f' + r.f : ''}"></canvas>`;
+    const how = r.kind === 'ritem' ? `${RAID_BOSS_RW[r.id][3][0].toUpperCase() + RAID_BOSS_RW[r.id][3].slice(1)} «${RAID_BOSS_RW[r.id][2]}» есть только у тех, кто прошёл всю лестницу недели босса «${RAID_NAMES[r.id]}». У каждого из 8 боссов своя награда другого вида.`
+      : r.id === 'bg_rb_levi' ? 'Живой фон за всю лестницу недели босса «Призрачный левиафан». Он в профиле → «Оформление» → «Фоны».'
+      : r.kind === 'step' ? (r.lines || []).map(escHtml).join(' · ') + '.'
       : r.kind === 'badge' ? 'Значок теперь в профиле → «Оформление» → «Значки». Его видят все в твоей карточке.'
       : r.id === 'bg_raid_throne' ? (r.fresh ? 'Живой фон за всю лестницу рейда: I — 1 неделя со всеми 5 ступенями · II — 3 недели · III — 6 недель. Он в профиле → «Оформление» → «Фоны».' : 'Открыта новая форма фона. Её можно выбрать в профиле → «Оформление» → «Фоны».')
       : r.f ? (r.fresh ? 'Живой фон растёт вместе с тобой: I — 120 000 · II — 170 000 · III — 220 000 массы за раунд «Хардкора». Открытую форму выбираешь в окне фона.' : 'Открыта новая форма фона. Её можно выбрать в профиле → «Оформление» → «Фоны».')
       : 'Фон за победу в «Хардкоре». Он в профиле → «Оформление» → «Фоны».';
     m.innerHTML = `<div class="modal-card evo-card rw-card" role="dialog" aria-modal="true" aria-labelledby="rwT"><div class="evo-stage rw-stage">${art}<div class="evo-flash go"></div></div>
       <div class="evo-tx"><small>${rd ? '⚔' : '🩸'} ${rwTitle(r)}</small><h2 id="rwT">${rwName(r)}</h2><p>${how}</p>
-      <div class="evo-acts">${r.kind === 'step' ? '<button class="btn" type="button" data-rwok>Отлично</button>' : `<button class="btn" type="button" data-rwput>${r.kind === 'badge' ? 'Поставить в профиль' : 'Поставить фоном'}</button><button class="btn ghost" type="button" data-rwok>Позже</button>`}</div></div></div>`;
+      <div class="evo-acts">${r.kind === 'ritem' ? '<button class="btn" type="button" data-rwput>Надеть</button><button class="btn ghost" type="button" data-rwok>Позже</button>' : r.kind === 'step' ? '<button class="btn" type="button" data-rwok>Отлично</button>' : `<button class="btn" type="button" data-rwput>${r.kind === 'badge' ? 'Поставить в профиль' : 'Поставить фоном'}</button><button class="btn ghost" type="button" data-rwok>Позже</button>`}</div></div></div>`;
     m.hidden = false; rwOpen = true; try { pbgMount(m); Sound.play('level'); } catch (e) {}
     m.onclick = e => {
       if (e.target.closest('[data-rwput]')) {
+        if (r.kind === 'ritem') { const [k, id] = RAID_BOSS_RW[r.id]; if (k === 'hat') save.hat = id; else if (k === 'pet') save.pet = id; else if (k === 'frame') save.frame = id; else if (k === 'title') save.title = id; else save.fx = { ...(save.fx || {}), [k]: id }; persist(); try { refreshSkin(); } catch (er) {} try { Net.pushShowcase(); } catch (er) {} toast(`«${RAID_BOSS_RW[r.id][2]}» надет`); } else {
         save.pc = { ...(save.pc || {}) }; if (r.kind === 'badge') save.pc.badge = r.id; else { save.pc.bg = r.id; if (r.f) save.pbgF = { ...(save.pbgF || {}), [r.id]: r.f }; }
-        persist(); try { Net.pushShowcase(); } catch (er) {} toast(`${rwName(r)} — в профиле`);
+        persist(); try { Net.pushShowcase(); } catch (er) {} toast(`${rwName(r)} — в профиле`); }
       } else if (!e.target.closest('[data-rwok]') && e.target !== m) return;
       rwOpen = false; m.hidden = true; m.innerHTML = ''; try { renderAll(); } catch (er) {} setTimeout(rwShowQueue, 300);
     };
@@ -472,6 +491,7 @@
     { id: 'hc88', name: 'Берсерк · 220 000', src: '«Хардкор»: 220 000 общей массы за раунд (обе половины вместе)', got: () => (save.hcPeak || 0) >= 220000 },
     { id: 'raid4', name: 'Колоссоборец', src: '«Босс-рейд»: впервые пройти ступень IV', got: () => (save.raidMax || 0) >= 4 },
     { id: 'raid5', name: 'Гроза колоссов', src: '«Босс-рейд»: впервые пройти ступень V', got: () => (save.raidMax || 0) >= 5 },
+    ...RAID_NAMES.map((n, b) => ({ id: 'rbb' + b, name: 'Победитель: ' + n, src: `«Босс-рейд»: ступень IV в неделю босса «${n}»`, got: () => !!(save.raidBB || {})[b] })),
     { id: 'duo50n', name: 'Спина к спине · Обычный', src: 'все 50 волн «Спины к спине» на «Обычном»', got: () => evoDuoBest('normal') >= 50 },
     { id: 'duo50h', name: 'Спина к спине · Сложный', src: 'все 50 волн «Спины к спине» на «Сложном»', got: () => evoDuoBest('hard') >= 50 },
     { id: 'duo50m', name: 'Спина к спине · Безумие', src: 'все 50 волн «Спины к спине» на «Безумии»', got: () => evoDuoBest('mad') >= 50 },
@@ -513,6 +533,24 @@
       ${eyes}${mid}<path d="M14 72 H86 L80 80 L86 88 H14 L20 80 Z" fill="url(#${g}r)"/><path d="M20 72 H80 V88 H20 Z" fill="#12000a" opacity=".85"/>
       <text x="50" y="84" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="10" letter-spacing="1" fill="${A}">${five ? 'СТУПЕНЬ V' : 'СТУПЕНЬ IV'}</text></svg>`;
   }
+  // 2.7.13: the emblem of each weekly boss — its colours and its own sign (jaws, jellyfish, crystals, tentacles, star worm, snowflake, volcano, whale tail)
+  function raidBossSVG(b, label) {
+    const g = 'rbs' + (++hcbUid), [A, Bc] = RB_COL[b] || RB_COL[0];
+    const sym = [
+      `<ellipse cx="50" cy="45" rx="22" ry="14" fill="#000" stroke="${A}" stroke-width="2"/><path d="M30 37 L35 47 L40 37 L45 47 L50 37 L55 47 L60 37 L65 47 L70 37 Z" fill="${Bc}"/><path d="M33 54 L38 46 L43 54 L48 46 L53 54 L58 46 L63 54 L67 50 Z" fill="${Bc}" opacity=".85"/>`,
+      `<path d="M30 48 Q30 24 50 24 Q70 24 70 48 Z" fill="${A}"/>${[34, 43, 52, 61].map((x, i) => `<path d="M${x + 2} 48 q-4 6 0 11 t0 11" stroke="${Bc}" stroke-width="2.5" fill="none"><animate attributeName="d" values="M${x + 2} 48 q-4 6 0 11 t0 11;M${x + 2} 48 q4 6 0 11 t0 11;M${x + 2} 48 q-4 6 0 11 t0 11" dur="${1.6 + i * .2}s" repeatCount="indefinite"/></path>`).join('')}<circle cx="44" cy="38" r="2.4" fill="#fff"/><circle cx="56" cy="38" r="2.4" fill="#fff"/>`,
+      `<path d="M50 20 L58 40 L50 66 L42 40 Z" fill="${A}" stroke="#fff" stroke-width=".8"/><path d="M34 34 L40 46 L36 64 L28 48 Z" fill="${Bc}" opacity=".9"/><path d="M66 34 L72 48 L64 64 L60 46 Z" fill="${Bc}" opacity=".9"/>`,
+      [-1, 0, 1].map(s => `<path d="M${50 + s * 14} 66 C${50 + s * 14} 50 ${50 + s * 26} 44 ${50 + s * 20} 32 C${50 + s * 14} 24 ${50 + s * 4} 30 ${50 + s * 10} 36" stroke="${s ? A : Bc}" stroke-width="4" fill="none" stroke-linecap="round"/>`).join(''),
+      Array.from({ length: 6 }, (_, i) => { const a = 3.6 - i * .42; return `<circle cx="${(50 + Math.cos(a) * 18).toFixed(1)}" cy="${(46 + Math.sin(a) * 16).toFixed(1)}" r="${7 - i * .8}" fill="${i % 2 ? Bc : A}"/>`; }).join('') + `<path d="M50 26 l2 5 5 .5 -4 3 1.5 5 -4.5-2.8 -4.5 2.8 1.5-5 -4-3 5-.5z" fill="#fff"><animate attributeName="opacity" values="1;.4;1" dur="1.4s" repeatCount="indefinite"/></path>`,
+      `<g stroke="${A}" stroke-width="3.2" stroke-linecap="round"><path d="M50 24 V66 M32 34 L68 56 M32 56 L68 34"/></g><g stroke="${Bc}" stroke-width="2" stroke-linecap="round"><path d="M45 28 L50 32 L55 28 M45 62 L50 58 L55 62"/></g>`,
+      `<path d="M26 66 L42 36 L58 36 L74 66 Z" fill="#3a1004" stroke="${A}" stroke-width="2"/><path d="M44 36 Q46 24 50 18 Q54 26 56 36 Z" fill="${Bc}"><animate attributeName="d" values="M44 36 Q46 24 50 18 Q54 26 56 36 Z;M44 36 Q45 22 50 14 Q55 24 56 36 Z;M44 36 Q46 24 50 18 Q54 26 56 36 Z" dur="1s" repeatCount="indefinite"/></path><path d="M44 44 L48 54 L46 66 M56 44 L52 56 L56 66" stroke="${A}" stroke-width="2" fill="none"/>`,
+      `<path d="M50 66 C50 52 48 44 50 36 C40 34 32 28 28 20 C38 24 46 26 50 30 C54 26 62 24 72 20 C68 28 60 34 50 36" fill="${A}" opacity=".9"/><circle cx="50" cy="56" r="14" fill="none" stroke="${Bc}" stroke-opacity=".5"><animate attributeName="r" values="10;18;10" dur="2.4s" repeatCount="indefinite"/></circle>`,
+    ][b] || '';
+    return `<svg viewBox="0 0 100 100" class="evo-badge" role="img" aria-label="${escHtml(RAID_NAMES[b] || '')}"><defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".4" stop-color="${A}"/><stop offset="1" stop-color="${Bc}"/></linearGradient><radialGradient id="${g}c" cx="50%" cy="40%"><stop stop-color="#1e0a26"/><stop offset="1" stop-color="#05020a"/></radialGradient></defs>
+      <path d="M50 3 L91 24 V62 L50 97 L9 62 V24 Z" fill="url(#${g}c)" stroke="url(#${g})" stroke-width="3.5"/>${sym}
+      <path d="M12 72 H88 L82 80 L88 88 H12 L18 80 Z" fill="url(#${g})"/><path d="M18 72 H82 V88 H18 Z" fill="#0a0410" opacity=".86"/>
+      <text x="50" y="83.5" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="7.5" fill="${A}"${(label || RAID_NAMES[b] || '').length > 11 ? ' textLength="62" lengthAdjust="spacingAndGlyphs"' : ''}>${escHtml((label || RAID_NAMES[b] || '').toUpperCase())}</text></svg>`;
+  }
   function raidStepSVG(n) {
     const g = 'rst' + (++hcbUid), R = ['I', 'II', 'III', 'IV', 'V'][n - 1] || '?';
     const steps = Array.from({ length: 5 }, (_, i) => `<rect x="${22 + i * 5}" y="${78 - i * 9}" width="${56 - i * 10}" height="7" rx="1.5" fill="${i < n ? `url(#${g})` : '#2a0a16'}"/>`).join('');
@@ -522,6 +560,7 @@
   }
   function evoBadgeSVG(id) {
     if (id === 'raid4' || id === 'raid5') return raidBadgeSVG(id);
+    if (/^rbb\d$/.test(id)) return raidBossSVG(+id.slice(3));
     if (id === 'hc75') return hcBadgeSVG('a', 'evo-badge');
     if (id === 'hc88') return hcBadgeSVG('b', 'evo-badge');
     if (id === 'hc75') {

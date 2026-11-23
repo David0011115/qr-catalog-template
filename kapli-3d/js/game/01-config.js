@@ -350,6 +350,10 @@
     { id: 'lg_burstEat',   slot: 'eat',   name: 'Взрыв легенды',   desc: 'Золотая волна, звёзды и радужные искры', legend: 'combo' },
     // special
     { id: 'raidAura', slot: 'aura', name: 'Аура рейдера',    desc: 'Красные осколки кружат вокруг капли', special: 'raid' },
+    // 2.7.13: the exclusive things of the weekly raid bosses (only for the whole ladder of that boss's week)
+    { id: 'rbMawEat',   slot: 'eat',   name: 'Пасть Пожирателя', desc: 'Добычу засасывает багровая воронка, вылетают клыки', raid: true, raidB: 0 },
+    { id: 'rbInkTrail', slot: 'trail', name: 'Чернильный шлейф', desc: 'За каплей тянутся чернильные капли медузы',         raid: true, raidB: 1 },
+    { id: 'rbWormAura', slot: 'aura',  name: 'Звёздный червь',   desc: 'Звёздный червь из десяти звеньев вьётся вокруг',      raid: true, raidB: 4 },
     { id: 'neonAura', slot: 'aura', name: 'Неоновые кольца', desc: 'Три неоновых кольца пульсируют вокруг капли', special: 'league' },
     // 2.1.0 prestige rewards (not sold, not in chests)
     { id: 'psDust', slot: 'trail', name: 'Звёздная пыль', desc: 'Шлейф белых, розовых и голубых искр', prestige: '✦5' },
@@ -571,6 +575,7 @@
     propeller: { name: 'Пропеллер',    svg: '<path d="M2 9 Q12 4 22 9 Q12 11 2 9 Z" fill="#22e6ff"/><path d="M6 20 Q6 12 12 12 Q18 12 18 20 Z" fill="#ff4fd8"/><rect x="11" y="8" width="2" height="5" fill="#ffd23f"/>' },
     tophat:    { name: 'Цилиндр',      svg: '<rect x="7" y="3" width="10" height="13" rx="1" fill="#1a1033" stroke="#b26bff"/><rect x="7" y="12" width="10" height="2.5" fill="#ff4fd8"/><rect x="3" y="16" width="18" height="3" rx="1.5" fill="#1a1033" stroke="#b26bff"/>' },
     helm:      { name: 'Шлем рейдера',    src: '3 победы над боссом рейда', svg: '<path d="M4 17 C4 8 8 4 12 4 C16 4 20 8 20 17 Z" fill="#3a2a5a" stroke="#ff2d55" stroke-width="1.4"/><path d="M12 1 L14 6 L10 6 Z" fill="#ff2d55"/><rect x="4" y="15" width="16" height="3" fill="#ff2d55"/>' },
+    golemcrown: { name: 'Корона голема', src: '«Босс-рейд»: вся лестница недели босса «Кристальный голем»', raid: true, raidB: 2, svg: '<path d="M4 18 H20 L19 21 H5 Z" fill="#5a3a8a"/><path d="M6 18 L7 9 L9 18 Z M10 18 L12 4 L14 18 Z M15 18 L17 9 L18 18 Z" fill="#b26bff" stroke="#9ff0ff" stroke-width=".6"/>' },
     banner:    { name: 'Знамя рейда',     src: '5 побед над боссом рейда', svg: '<rect x="5" y="2" width="1.8" height="21" fill="#ffd23f"/><path d="M7 3 H20 L16.5 7.5 L20 12 H7 Z" fill="#ff2d55"/><circle cx="12" cy="7.5" r="2" fill="#ffd23f"/>' },
     crystals:  { name: 'Алмазная россыпь', src: 'лига «Алмаз» в конце сезона', svg: '<path d="M6 10 L9 6 L12 10 L9 15 Z" fill="#9fe8ff"/><path d="M12 7 L15.5 2 L19 7 L15.5 13 Z" fill="#b26bff"/><path d="M14 15 L17 11.5 L20 15 L17 20 Z" fill="#e8fbff"/>' },
     cup:       { name: 'Кубок лиги',   svg: '<path d="M7 3 H17 V8 C17 12 14.5 14 12 14 C9.5 14 7 12 7 8 Z" fill="#ffd23f"/><path d="M7 5 H4 C4 9 6 10 7.5 10 M17 5 H20 C20 9 18 10 16.5 10" stroke="#ffd23f" stroke-width="1.5" fill="none"/><rect x="11" y="14" width="2" height="4" fill="#ffd23f"/><rect x="8" y="18" width="8" height="3" rx="1" fill="#ff9a3d"/>' },
@@ -657,6 +662,8 @@
     tt('tt_invincible', 'Непобедимый', 'legendary', '#ffd23f', '#ffffff', '★', { legend: 'wins2' }),
     tt('tt_millionaire', 'Миллионер', 'legendary', '#ffd23f', '#3dffa2', '★', { legend: 'coins2' }),
     // achievement lines, step III
+    fr('fr_rb_titan', 'Ледяной титан', 'legendary', '#9ff0ff', '#ffffff', { raid: true, raidB: 5, src: '«Босс-рейд»: вся лестница недели босса «Ледяной титан».' }),
+    tt('tt_rb_magma', 'Магматический страж', 'legendary', '#ff6a00', '#ffd23f', '♨', { raid: true, raidB: 6, src: '«Босс-рейд»: вся лестница недели босса «Магматический страж».' }),
     tt('tt_raidlord', 'Гроза колоссов', 'legendary', '#ff2d75', '#ffd23f', '⚔', { src: '«Босс-рейд»: пройди ступень V.' }),
     tt('tt_twinpeak', 'Две вершины', 'legendary', '#3dffa2', '#ffd23f', '▲▲', { src: '«Классика»: после деления вырасти обе половины до 50 000.' }),
     tt('tt_summit', 'Вершина', 'legendary', '#ffd23f', '#22e6ff', '▲', { src: '«Классика»: возьми последнюю веху — 30 000 массы.' }),
@@ -1030,6 +1037,7 @@
     // legends and raid
     ['lg_starpet', 'Звёздный страж',     'robot', '#fff6a0', '#ff4fd8', 'shield', 3, { legend: 'stars2' }],
     ['lg_pet',     'Хранитель вечности', 'ghost', '#ffd23f', '#ff4fd8', 'coins',  3, { legend: 'time' }],
+    ['raid_kraken', 'Кракенёнок',       'jelly', '#22e6ff', '#ff4fd8', 'coins',  2, { raid: true, raidB: 3 }],
     ['raid_p',     'Рейдер',             'brute', '#ff2d55', '#ffd23f', 'eater',  2, { raid: true }],
     // 2.3 workshop «Хронос» (craft only)
     ['cr_p_cuckoo', 'Кукушка',          'cuckoo', '#e8b05a', '#7a4a12', 'cuckoo', 1, { craft: 'rare' }],

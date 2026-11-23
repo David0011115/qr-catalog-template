@@ -1124,6 +1124,10 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'helm': { const mat = new THREE.MeshStandardMaterial({ color: '#3a2a5a', emissive: '#1a0a30', emissiveIntensity: .6, metalness: .5, roughness: .3 });
         M(new THREE.SphereGeometry(.55, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat, 0, .78, 0); M(new THREE.TorusGeometry(.55, .05, 6, 30), basic('#ff2d55'), 0, .8, 0).rotation.x = Math.PI / 2;
         const crest = M(new THREE.BoxGeometry(.08, .32, .6), basic('#ff2d55'), 0, 1.38, 0); crest.add(glowSprite('#ff2d55', 1, .5)); break; }
+      case 'golemcrown': { const cm = c => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .7, roughness: .1, metalness: .2 });
+        M(new THREE.TorusGeometry(.42, .06, 6, 24), basic('#5a3a8a'), 0, 1.2, 0).rotation.x = Math.PI / 2;
+        for (let i = 0; i < 5; i++) { const a = i / 5 * 6.283, cr = M(new THREE.OctahedronGeometry(.13), cm(i % 2 ? '#9ff0ff' : '#b26bff'), Math.cos(a) * .42, 1.36, Math.sin(a) * .42); cr.scale.y = 1.9; cr.userData.gc = i; }
+        const top = M(new THREE.OctahedronGeometry(.18), cm('#e8fbff'), 0, 1.58, 0); top.scale.y = 1.8; top.userData.gtop = 1; top.add(glowSprite('#b26bff', 1.1, .55)); break; }
       case 'banner': { M(new THREE.CylinderGeometry(.03, .03, 1.1, 6), basic('#ffd23f'), -.3, 1.45, 0);
         const fl = M(new THREE.PlaneGeometry(.6, .38, 6, 1), new THREE.MeshBasicMaterial({ color: '#ff2d55', side: THREE.DoubleSide }), 0, 1.78, 0); fl.userData.flag = 1; fl.add(glowSprite('#ff2d55', 1.2, .35)); break; }
       case 'crystals': [['#9fe8ff', 0], ['#b26bff', 2.1], ['#e8fbff', 4.2]].forEach(([c, a]) => { const cr = M(new THREE.OctahedronGeometry(.16), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .8, roughness: .1 }), 0, 1.45, 0); cr.scale.y = 1.6; cr.userData.orb = a; cr.add(glowSprite(c, .7, .5)); }); break;
@@ -1196,6 +1200,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
       case 'nova': g.children[0].rotation.z = t * 1.5; g.children[0].scale.setScalar(1 + Math.sin(t * 4) * .08); break;
       case 'laurel': g.rotation.y = Math.sin(t * 1.2) * .25; break;
       case 'prism': g.children[0].rotation.set(t * .9, t * 1.4, 0); g.children[0].position.y = 1.5 + Math.sin(t * 2.2) * .07; break;
+      case 'golemcrown': g.rotation.y = t * .5; g.children.forEach(o => { if (o.userData.gtop) o.position.y = 1.58 + Math.sin(t * 2) * .06; else if (o.userData.gc !== undefined) o.scale.y = 1.9 + Math.sin(t * 3 + o.userData.gc) * .25; }); break;
       case 'banner': g.children.forEach(o => { if (o.userData.flag) { o.rotation.y = Math.sin(t * 4) * .35; o.scale.x = 1 + Math.sin(t * 6) * .05; } }); break;
       case 'crystals': g.children.forEach(o => { const a = o.userData.orb + t * 1.4; o.position.set(Math.cos(a) * .32, 1.45 + Math.sin(t * 2 + o.userData.orb) * .08, Math.sin(a) * .32); o.rotation.y = t * 2; }); break;
       case 'ring': g.rotation.y = t * .35; break;
@@ -1400,6 +1405,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     const big = !fxTarget && player.cells.length ? Math.max(...player.cells.map(c => cellR(c))) : r;
     const y = fxTarget ? fxTarget.eatY : Math.max(r * 0.9, big * 1.15 + 1.2);   // above the eater, so the burst is not hidden inside the big drop
     switch (id) {
+      case 'rbMawEat': wave(x, z, '#ff2d55', r * 4 + 4, r * .3, .5); wave(x, z, '#ffd23f', r * 3 + 3, r * .2, .4); emitIcons(x, y, z, 'arrow', '#ffd23f', 6, 1.2 + r * .2); emit(x, y, z, '#ff2d55', 26, 6, .6); emit(x, y, z, '#1a0006', 14, 10, .8); break;
       case 'heartEat': emitIcons(x, y, z, 'heart', '#ff4f9a', 9, 1.4 + r * 0.25); break;
       case 'cr_tick': if (fxTarget) { emitIcons(x, y, z, 'clock', '#ffd27a', 2, 1.4 + r * .25); wave(x, z, '#ffd27a', r, r * 2.5 + 2, .5); } else { crDial(x, y, z, r * S); emit(x, y, z, '#ffd27a', 10, 6, .4); } break;
       case 'cr_freeze': if (fxTarget) { emit(x, y, z, '#c8c4e8', 20, 3, .4); emit(x, y, z, '#e8b05a', 30, 4, 1.1); emitIcons(x, y, z, 'square', '#c8c4e8', 3, .8); } else crFreeze(x, z, Math.max(r, S * .9), S); break;
@@ -1433,7 +1439,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     const pick = list => list[(Math.random() * list.length) | 0];
     let sk = Math.random() < .5 ? pick(SKINS.filter(k => k.id !== 'default' && !k.legend && !k.skill && !k.tut && !k.craft && !k.old && !EVO[k.id])) : base;   // 2.7: no skins with evolution on bots
     o.fx = {};
-    for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot && !f.legend && !f.craft)).id;
+    for (const slot of ['trail', 'aura', 'eat']) if (Math.random() < .3) o.fx[slot] = pick(FX.filter(f => f.slot === slot && !f.legend && !f.craft && f.raidB === undefined)).id;
     if (o.star) { sk = SKINS.find(k => k.id === o.star.skin && !EVO[k.id]) || (isEvo(sk) ? base : sk); o.fx = { aura: o.star.aura, trail: o.star.trail, eat: 'supernova' }; }
     o.trailDef = o.fx.trail ? fxById(o.fx.trail) : null;
     const st = o.star ? 3 : sk === base || Math.random() < .5 ? 0 : 1 + ((Math.random() * 3) | 0);
@@ -1473,6 +1479,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
         case 'snowTrail': emit(x, r * .6, z, Math.random() < .5 ? '#ffffff' : '#bfefff', 2, 1, 1.1); break;
         case 'sparkTrail': emit(x, r * .5, z, Math.random() < .5 ? '#ffffff' : '#22e6ff', 3, 6, .25); break;
         case 'heartTrail': if (Math.random() < .3) emitIcons(x, r * .6, z, 'heart', '#ff4f9a', 1, .9); emit(x, r * .5, z, '#ff4f9a', 1, 1.5, .5); break;
+        case 'rbInkTrail': if (Math.random() < .5) trailIcon(x, r * .7, z, 'drop', Math.random() < .6 ? '#5a1aa0' : '#ff4fd8', .6 + Math.random() * .3, .4); emit(x, r * .4, z, '#2a0a4a', 2, 1, 1); break;
         case 'leafTrail': if (Math.random() < .3) trailIcon(x, r * .8, z, 'leaf', ['#3dffa2', '#ffd23f', '#9be15d'][(Math.random() * 3) | 0], .8); else emit(x, r * .5, z, '#9be15d', 1, 1.2, .8); break;
         case 'pixelTrail': trailIcon(x, r * .6, z, 'square', ['#ff4fd8', '#22e6ff', '#ffd23f', '#3dffa2'][(Math.random() * 4) | 0], .45 + Math.random() * .3); break;
         case 'sf_2': emit(x, r * .5, z, ['#ff4fd8', '#ff9a3d', '#7b3dff', '#ffd23f'][(Math.random() * 4) | 0], 4, .3, 1); break;
@@ -1547,6 +1554,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     if (type === 'lg_crownAura') for (let i = 0; i < 16; i++) { const sp = add(new THREE.Sprite(new THREE.SpriteMaterial({ map: ICONS.star, color: i % 2 ? '#ff4fd8' : '#ffd23f', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })), { a: (i >> 1) / 8 * Math.PI * 2, up: i % 2 }); sp.scale.setScalar(.55); }
     if (type === 'lg_crownAura') add(glowSprite('#ffd23f', 5, .35));
     if (type === 'lg_moneyAura') { for (let i = 0; i < 12; i++) { const cn = add(new THREE.Mesh(new THREE.CylinderGeometry(.17, .17, .04, 18), new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#b07a00', emissiveIntensity: .8, metalness: .5, roughness: .25 })), { a: i / 12 * Math.PI * 2, h: Math.random() * 3, sp: .8 + Math.random() * .6 }); cn.rotation.x = Math.PI / 2; } add(glowSprite('#ffd23f', 4.2, .3)); }
+    if (type === 'rbWormAura') for (let i = 0; i < 10; i++) { const s = add(new THREE.Mesh(new THREE.SphereGeometry(.2 - i * .012, 10, 8), new THREE.MeshBasicMaterial({ color: i ? (i % 2 ? '#7b3dff' : '#ffd23f') : '#ffffff' })), { i }); if (!i || i % 3 === 0) s.add(glowSprite(i ? '#7b3dff' : '#ffd23f', i ? .6 : 1.1, .8)); }
     if (type === 'raidAura') for (let i = 0; i < 9; i++) { const sh = add(new THREE.Mesh(new THREE.OctahedronGeometry(.16), new THREE.MeshBasicMaterial({ color: i % 3 ? '#ff2d55' : '#ffd23f' })), { a: i / 9 * Math.PI * 2 }); sh.scale.set(.7, 1.6, .7); sh.add(glowSprite('#ff2d55', .9, .6)); }
     if (type === 'neonAura') ['#ff4fd8', '#22e6ff', '#b26bff'].forEach((c, i) => { const t = add(new THREE.Mesh(new THREE.TorusGeometry(1.45 + i * .18, .035, 6, 64), new THREE.MeshBasicMaterial({ color: c, transparent: true, blending: THREE.AdditiveBlending })), { i }); t.rotation.x = Math.PI / 2 + (i - 1) * .5; });
     if (type === 'sf_4') for (let i = 0; i < 9; i++) { const sp = add(glowSprite(i ? (i % 2 ? '#ff4fd8' : '#b26bff') : '#22e6ff', i ? .75 - i * .05 : 1.1, 1), { i }); if (!i) sp.add(glowSprite('#22e6ff', 2, .5)); }
@@ -1598,6 +1606,7 @@ void main() { vec2 p = vW.xz; vec3 V = cameraPosition - vW; vec2 par = V.xz / ma
     if (type === 'raysAura') g.children.forEach(o => { const a = o.userData.a + t * .8, pulse = 1.35 + Math.sin(t * 3 + o.userData.a * 2) * .12; o.position.set(Math.cos(a) * pulse, .1, Math.sin(a) * pulse); });
     if (type === 'lg_crownAura') g.children.forEach(o => { if (o.userData.a === undefined) return; const d = o.userData, a = d.a + t * (d.up ? 1.3 : -1.3), r = d.up ? 1.5 : 2.1; o.position.set(Math.cos(a) * r, (d.up ? 1 : .2) + Math.sin(t * 3 + d.a) * .1, Math.sin(a) * r); o.material.rotation = t * 2; });
     if (type === 'lg_moneyAura') g.children.forEach(o => { const d = o.userData; if (d.a === undefined) return; const a = d.a + t * .9, h = (d.h + t * d.sp) % 3; o.position.set(Math.cos(a) * 1.55, 2.2 - h * 1.1, Math.sin(a) * 1.55); o.rotation.z = t * 4 + d.a; });
+    if (type === 'rbWormAura') g.children.forEach(o => { const i = o.userData.i, a = t * 1.5 - i * .3; o.position.set(Math.cos(a) * 1.8, .35 + Math.sin(a * 3) * .3, Math.sin(a) * 1.8); });
     if (type === 'raidAura') { g.rotation.x = .3; g.children.forEach(o => { const a = o.userData.a + t * 1.6; o.position.set(Math.cos(a) * 1.7, Math.sin(a * 2 + t) * .2, Math.sin(a) * 1.7); o.rotation.y = t * 3; }); }
     if (type === 'neonAura') g.children.forEach(o => { const i = o.userData.i; o.rotation.z = t * (.6 + i * .3) * (i % 2 ? -1 : 1); const k = 1 + Math.sin(t * 3 + i * 2) * .06; o.scale.setScalar(k); o.material.opacity = .55 + .45 * Math.sin(t * 3 + i * 2); });
     if (type === 'sf_4') g.children.forEach(o => { const a = t * 1.6 - o.userData.i * .32; o.position.set(Math.cos(a) * 1.9, .4 + Math.sin(a * 2 + t) * .35, Math.sin(a) * 1.9); });

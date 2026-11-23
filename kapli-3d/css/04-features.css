@@ -279,7 +279,6 @@
 .review-list li .btn { min-height: 36px; padding: 6px 10px; font-size: .78rem; }
 .review-list li.review-empty { display: block; text-align: center; color: var(--muted); background: none; }
 /* 2.5.2: the report of a record (the «Создатель» only) */
-.rank-list li .rk-rep { margin-left: 6px; min-width: 34px; min-height: 34px; border-radius: 10px; border: 1px solid var(--line, rgba(255,255,255,.15)); background: rgba(255,255,255,.06); color: inherit; font-size: .95rem; cursor: pointer; }
 .rec-rep-m { z-index: 30; }
 .rr-card { max-width: 480px; max-height: 88vh; overflow: auto; text-align: left; }
 .rr-card h3 { margin: 14px 0 6px; font-size: .92rem; }
@@ -296,6 +295,7 @@
 .rr-ok { margin: 0; color: #7ee2a8; font-size: .84rem; } .rr-none { margin: 4px 0; color: var(--muted); font-size: .8rem; }
 .rr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } .rr-grid div { background: var(--row); border-radius: var(--r-sm); padding: 6px 8px; } .rr-grid span { display: block; font-size: .7rem; color: var(--muted); } .rr-grid b { font-size: .9rem; }
 .rr-build p { margin: 3px 0; font-size: .8rem; line-height: 1.4; } .rr-build span { color: var(--muted); } .rr-ua { color: var(--muted); font-size: .72rem !important; word-break: break-word; }
+@media (orientation: landscape) and (max-height: 560px) { .rr-card { max-width: min(760px, 92vw); max-height: 94vh; } .rr-card h2 { margin-bottom: 4px; } .rr-card h3 { margin: 10px 0 4px; } .rr-grid { grid-template-columns: repeat(5, 1fr); } }
 /* 2.6: guests are told where their progress lives */
 .guest-warn { color: #ffd98a; font-size: .8rem; line-height: 1.4; }
 #acctGuest .guest-warn { background: rgba(255, 210, 63, .08); border: 1px solid rgba(255, 210, 63, .3); border-radius: var(--r-sm); padding: 8px 10px; text-align: left; }

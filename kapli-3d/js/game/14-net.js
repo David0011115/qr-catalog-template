@@ -903,7 +903,6 @@
         list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${fmtBest(m, r.score)}</span></li>`).join('')
           : emptyHTML('В этом режиме пока нет рекордов — стань первым!', 'search');
         decorateWho(list);
-        if (sess && (save.badges || {}).creator) list.querySelectorAll('li[data-pc]').forEach(li => li.insertAdjacentHTML('beforeend', '<button type="button" class="rk-rep" data-rep aria-label="Отчёт о рекорде">📊</button>'));
         if (!sess) { $('rankMe').textContent = 'Войди в аккаунт, чтобы твои рекорды попали в рейтинг.'; return; }
         const [me, hd] = await Promise.all([sb.rpc('kapli_my_place', { p_mode: m }), sb.rpc('kapli_my_held').then(r => r, () => ({}))]);
         const row = me.data && me.data[0], held = Array.isArray(hd.data) && hd.data.includes(m);
@@ -915,7 +914,6 @@
     }
     $('rankModes').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b) loadRank(b.dataset.rm); });
     $('rankList').addEventListener('click', e => { const b = e.target.closest('[data-rdf]'); if (b) { e.stopPropagation(); rankDiff = +b.dataset.rdf; loadRank('duoback'); } }, true);
-    $('rankList').addEventListener('click', e => { const b = e.target.closest('[data-rep]'); if (b) { e.stopPropagation(); recRepOpen(b.closest('li').dataset.pc, rankMode); } }, true);
     $('rankList').addEventListener('click', e => { const li = e.target.closest('[data-pc]'); if (li) openPlayerCard(li.dataset.pc); });
     $('rankList').addEventListener('keydown', e => { const li = e.target.closest('[data-pc]'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPlayerCard(li.dataset.pc); } });
     // 2.6: records «на проверке» — the «Создатель» reviews them here (RECORDS-REVIEW-MIGRATION.sql; the server checks the badge itself)
@@ -948,7 +946,7 @@
     }
     function recChart(d) {
       const g = d.g || []; if (g.length < 2) return '<p class="rr-none">Мало данных для графика.</p>';
-      const W = 320, H = 130, P = 6, T = Math.max(1, (g.length - 1) * (d.gs || 1)), max = Math.max(1, ...g);
+      const W = 600, H = 130, P = 6, T = Math.max(1, (g.length - 1) * (d.gs || 1)), max = Math.max(1, ...g);
       const X = t => (P + (W - 2 * P) * t / T).toFixed(1), Y = v => (H - P - (H - 2 * P) * v / max).toFixed(1);
       const at = t => g[Math.min(g.length - 1, Math.round(t / (d.gs || 1)))] || 0;
       const pts = g.map((v, i) => `${X(i * (d.gs || 1))},${Y(v)}`).join(' ');
@@ -979,7 +977,7 @@
       const ab = Object.entries(d.ab || {}).map(([id, l]) => `${escHtml((abilById(id) || {}).name || id)}${l ? ` ${l} ур.` : ''}`).join(', ') || '—';
       const up = UPG.filter(u => (d.up || {})[u.id]).map(u => `${u.name} ${d.up[u.id]}`).join(', ') || '—';
       const skin = (SKINS.find(k => k.id === d.skin) || {}).name || d.skin || '—', pet = (petMap[d.pet] || {}).name || d.pet || '—';
-      body.innerHTML = head + `<h3>📈 Ход матча</h3>${recChart(d)}${ev ? `<details class="rr-ev"><summary>События (${(d.ev || []).length})</summary><ul>${ev}</ul></details>` : '<p class="rr-none">Событий нет.</p>'}` + sus +
+      body.innerHTML = head + sus + `<h3>📈 Ход матча</h3>${recChart(d)}${ev ? `<details class="rr-ev"><summary>События (${(d.ev || []).length})</summary><ul>${ev}</ul></details>` : '<p class="rr-none">Событий нет.</p>'}` +
         `<h3>📋 Итоги</h3><div class="rr-grid">${row('Длительность', fmtTime(d.t))}${row('Пик массы', fmtNum(d.peak))}${row('Съедено капель', fmtNum(st.kills || 0))}${row('Боссов', fmtNum(st.bosses || 0))}${row('Прислужников', fmtNum(st.minions || 0))}${row('Делений', fmtNum(st.splits || 0))}${row('Монет за раунд', fmtNum(d.coins || 0))}${row('Жизней осталось', d.lives != null ? d.lives : '—')}${row('Режим', d.r ? 'лига' : 'обычный')}</div>` +
         `<h3>🧩 Билд</h3><div class="rr-build"><p><span>Способности в раунде:</span> ${ab}</p><p><span>Улучшения:</span> ${escHtml(up)}</p><p><span>Скин:</span> ${escHtml(skin)} · <span>характер:</span> ${escHtml((charById(d.ch) || {}).name || '—')} · <span>питомец:</span> ${escHtml(pet)}${d.arena ? ` · <span>арена:</span> ${escHtml(d.arena)}` : ''}</p></div>` +
         `<h3>📱 Устройство</h3><div class="rr-build"><p>Версия ${escHtml(d.v || '?')} · ${d.fps || '?'} кадров/с в среднем · медленных кадров ${fmtNum(d.slow || 0)} · графика ${escHtml((d.dev || {}).q || '?')}</p><p class="rr-ua">${escHtml((d.dev || {}).ua || '')} · ${(d.dev || {}).w}×${(d.dev || {}).h} ×${(d.dev || {}).dpr}</p></div>`;

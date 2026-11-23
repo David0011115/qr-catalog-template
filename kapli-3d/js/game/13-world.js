@@ -496,7 +496,7 @@
     perf.low = perf.fps < 40 ? perf.low + 1 : 0;
     if (perf.low >= 5 && !perf.cool) {
       save.settings.quality = save.settings.quality === 'high' ? 'medium' : 'low'; persist(); applySettings();
-      toast(`Игра шла медленно — графика снижена до «${save.settings.quality === 'medium' ? 'Среднее' : 'Низкое'}»`);
+      toast(`Игра шла медленно — качество графики: «${save.settings.quality === 'medium' ? 'Среднее' : 'Низкое'}»`);
       if (TEST_MODE) TLog.ev('графика снижена', save.settings.quality);
       perf.low = 0; perf.cool = 10;
     }

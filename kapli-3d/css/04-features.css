@@ -864,3 +864,10 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
    a heavy job for a phone's GPU. A denser tint in its place (it looks almost the same). */
 .hud .stats, .board, .pause-btn { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 .hud .stats { background: rgba(10, 8, 30, .66); } .board { background: rgba(10, 8, 30, .6); } .pause-btn { background: rgba(10, 11, 26, .72); }
+
+/* 2.7 audit: landscape phones — long info windows are wider (less scrolling), the Information screen uses the width */
+@media (orientation: landscape) and (max-height: 560px) {
+  #tutModal:not(.nw-wide) .modal-card { max-width: min(640px, 92vw); }
+  #infoCard { max-width: min(860px, 96vw); }
+  #infoCard .g-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } #infoCard .g-tiles .hub-btn:last-child:nth-child(odd) { grid-column: auto; }
+}

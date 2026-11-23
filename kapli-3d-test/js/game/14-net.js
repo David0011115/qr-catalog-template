@@ -178,9 +178,16 @@
     addEventListener('offline', () => { if (sess) setSync('err'); });
 
     // ---------- records ----------
-    async function submitRecord(m, score) {
+    let recDetOk = true;   // RECORDS-DETAILS-MIGRATION.sql not run yet: records go the old way, without a report
+    async function submitRecord(m, score, det) {
       if (!sb || !sess || privacyPending || !RANK_MODES.includes(m) || !(score > 0)) return false;
-      const { error } = await sb.rpc('kapli_submit_record', { p_mode: m, p_score: Math.round(score) }).then(r => r, e => ({ error: e }));
+      let res = null;
+      if (det && recDetOk) {
+        res = await sb.rpc('kapli_submit_record_d', { p_mode: m, p_score: Math.round(score), p_details: det }).then(r => r, e => ({ error: e }));
+        if (res.error && /PGRST202|could not find the function|kapli_submit_record_d/i.test(`${res.error.code} ${res.error.message}`)) { recDetOk = false; res = null; }
+      }
+      if (!res) res = await sb.rpc('kapli_submit_record', { p_mode: m, p_score: Math.round(score) }).then(r => r, e => ({ error: e }));
+      const { error } = res;
       if (!error) { meta.recSent[m] = score; saveMeta(); return true; }
       return false;
     }
@@ -918,6 +925,63 @@
       btn.hidden = false; btn.textContent = `🕵 На проверке (${data.length})`; btn.classList.toggle('has', data.length > 0);
       return data;
     }
+    // 2.5.2: the report of a record — how the round went, what looks suspicious, totals and build (RECORDS-DETAILS-MIGRATION.sql)
+    const fmtNum = v => Math.round(+v || 0).toLocaleString('ru-RU');
+    const REP_EV = { b: (v, x) => `съел босса «${escHtml(x || '?')}» → масса ${fmtNum(v)}`, d: v => `потерял каплю при массе ${fmtNum(v)} (ушла жизнь)`, a: (v, x) => `способность «${escHtml((abilById(x) || {}).name || x)}»` };
+    function recFlags(rec, d, m) {
+      const out = [], timeMode = m === 'survival' || m === 'crown' || LOWER_BETTER[m];
+      if (!d) return ['Отчёта нет: рекорд поставлен до версии 2.5.2 или с версии игры без отчётов.'];
+      if (d.s !== rec.score) out.push(`Отчёт от другого рекорда (${fmtBest(m, d.s)}), а в рейтинге ${fmtBest(m, rec.score)}.`);
+      if (d.wall > 0 && d.t > d.wall * 1.1 + 5) out.push(`Время раунда в игре ${fmtTime(d.t)}, а на часах прошло ${fmtTime(d.wall)} — игра шла быстрее обычного.`);
+      if (d.v && d.v !== APP_LABEL) out.push(`Версия игры ${escHtml(d.v)}, сейчас ${APP_LABEL}.`);
+      if (!timeMode) {
+        if (d.peak < d.s * .95) out.push(`Рекорд ${fmtNum(d.s)} выше пика массы в отчёте (${fmtNum(d.peak)}).`);
+        if (d.t >= 30 && d.peak / d.t > 500) out.push(`Очень быстрый рост: в среднем ${fmtNum(Math.round(d.peak / d.t))} массы в секунду.`);
+        const g = d.g || [], gs = d.gs || 1, boss = (d.ev || []).filter(e => e[1] === 'b').map(e => e[0]); let n = 0;
+        for (let i = 1; i < g.length && n < 3; i++) { const dm = g[i] - g[i - 1], t = i * gs;
+          if (dm / gs > 4000 && dm > g[i - 1] * .35 && !boss.some(bt => bt >= t - gs - 2 && bt <= t + 2)) { out.push(`Скачок +${fmtNum(dm)} за ${gs} с на ${fmtTime(t)} — рядом не съеден босс.`); n++; } }
+      } else if (m !== 'raid' && d.t + 2 < d.s && !LOWER_BETTER[m]) out.push(`Рекорд ${fmtBest(m, d.s)} больше, чем длился раунд (${fmtTime(d.t)}).`);
+      if (d.slow > 0 && d.t > 0 && d.slow / Math.max(1, d.fps * d.t) > .3) out.push(`Много медленных кадров (${fmtNum(d.slow)}): игра сильно тормозила или сворачивалась.`);
+      return out;
+    }
+    function recChart(d) {
+      const g = d.g || []; if (g.length < 2) return '<p class="rr-none">Мало данных для графика.</p>';
+      const W = 600, H = 130, P = 6, T = Math.max(1, (g.length - 1) * (d.gs || 1)), max = Math.max(1, ...g);
+      const X = t => (P + (W - 2 * P) * t / T).toFixed(1), Y = v => (H - P - (H - 2 * P) * v / max).toFixed(1);
+      const at = t => g[Math.min(g.length - 1, Math.round(t / (d.gs || 1)))] || 0;
+      const pts = g.map((v, i) => `${X(i * (d.gs || 1))},${Y(v)}`).join(' ');
+      const marks = (d.ev || []).filter(e => e[1] === 'b' || e[1] === 'd').map(e => `<circle cx="${X(e[0])}" cy="${Y(e[1] === 'b' ? e[2] : at(e[0]))}" r="3.2" class="rr-${e[1]}"><title>${fmtTime(e[0])}</title></circle>`).join('');
+      return `<svg class="rr-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Масса по ходу раунда"><polyline points="${P},${H - P} ${W - P},${H - P}" class="rr-ax"/><polyline points="${pts}" class="rr-line"/>${marks}<text x="${P + 2}" y="${P + 10}" class="rr-tx">${fmtNum(max)}</text><text x="${W - P - 2}" y="${H - P - 4}" class="rr-tx" text-anchor="end">${fmtTime(T)}</text></svg>
+        <p class="rr-legend"><i class="rr-k b"></i> босс съеден <i class="rr-k d"></i> потеряна капля</p>`;
+    }
+    async function recRepOpen(nick, m) {
+      let M = $('recRepM');
+      if (!M) {
+        M = document.createElement('div'); M.id = 'recRepM'; M.className = 'modal rec-rep-m'; M.hidden = true;
+        M.innerHTML = '<div class="modal-card rr-card" role="dialog" aria-modal="true" aria-labelledby="recRepH"><button class="modal-x" type="button" data-rrx aria-label="Закрыть">×</button><h2 id="recRepH">Отчёт о рекорде</h2><div id="recRepBody"></div></div>';
+        document.body.appendChild(M);
+        M.addEventListener('click', e => { if (e.target === M || e.target.closest('[data-rrx]')) M.hidden = true; });
+      }
+      const body = $('recRepBody'), mName = (MODES[m] || {}).name || m;
+      $('recRepH').textContent = `${nick} · ${mName}`; body.innerHTML = skelHTML(4); M.hidden = false; M.querySelector('[data-rrx]').focus();
+      let rec;
+      try { const r = await withTimeout(sb.rpc('kapli_record_details', { p_nick: nick, p_mode: m }), 9000); if (r.error) throw r.error; rec = r.data && r.data[0]; }
+      catch (e) { body.innerHTML = `<p class="empty-note">${netErr(e) ? 'Нет связи с сервером.' : /kapli_record_details|PGRST202|function/i.test(`${e.code} ${e.message}`) ? 'Отчёты ещё не включены на сервере (RECORDS-DETAILS-MIGRATION.sql).' : 'Не получилось загрузить отчёт.'}</p>`; return; }
+      if (!rec) { body.innerHTML = '<p class="empty-note">Рекорда уже нет.</p>'; return; }
+      const d = rec.details && typeof rec.details === 'object' ? rec.details : null, flags = recFlags(rec, d, m);
+      const head = `<p class="rr-score"><b>${fmtBest(m, rec.score)}</b>${rec.prev_score ? ` · было ${fmtBest(m, rec.prev_score)} (×${(rec.score / rec.prev_score).toFixed(1)})` : ' · первый рекорд'}${rec.held ? ' · <span class="rr-held">⏳ на проверке</span>' : ''}<small>${new Date(rec.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></p>`;
+      const sus = `<h3>🕵 Подозрительное</h3>${flags.length ? `<ul class="rr-flags">${flags.map(f => `<li>⚠ ${f}</li>`).join('')}</ul>` : '<p class="rr-ok">✓ Ничего подозрительного не нашлось.</p>'}`;
+      if (!d) { body.innerHTML = head + sus; return; }
+      const st = d.st || {}, row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
+      const ev = (d.ev || []).map(e => `<li><time>${fmtTime(e[0])}</time>${(REP_EV[e[1]] || (() => escHtml(e[1])))(e[2], e[3])}</li>`).join('');
+      const ab = Object.entries(d.ab || {}).map(([id, l]) => `${escHtml((abilById(id) || {}).name || id)}${l ? ` ${l} ур.` : ''}`).join(', ') || '—';
+      const up = UPG.filter(u => (d.up || {})[u.id]).map(u => `${u.name} ${d.up[u.id]}`).join(', ') || '—';
+      const skin = (SKINS.find(k => k.id === d.skin) || {}).name || d.skin || '—', pet = (petMap[d.pet] || {}).name || d.pet || '—';
+      body.innerHTML = head + sus + `<h3>📈 Ход матча</h3>${recChart(d)}${ev ? `<details class="rr-ev"><summary>События (${(d.ev || []).length})</summary><ul>${ev}</ul></details>` : '<p class="rr-none">Событий нет.</p>'}` +
+        `<h3>📋 Итоги</h3><div class="rr-grid">${row('Длительность', fmtTime(d.t))}${row('Пик массы', fmtNum(d.peak))}${row('Съедено капель', fmtNum(st.kills || 0))}${row('Боссов', fmtNum(st.bosses || 0))}${row('Прислужников', fmtNum(st.minions || 0))}${row('Делений', fmtNum(st.splits || 0))}${row('Монет за раунд', fmtNum(d.coins || 0))}${row('Жизней осталось', d.lives != null ? d.lives : '—')}${row('Режим', d.r ? 'лига' : 'обычный')}</div>` +
+        `<h3>🧩 Билд</h3><div class="rr-build"><p><span>Способности в раунде:</span> ${ab}</p><p><span>Улучшения:</span> ${escHtml(up)}</p><p><span>Скин:</span> ${escHtml(skin)} · <span>характер:</span> ${escHtml((charById(d.ch) || {}).name || '—')} · <span>питомец:</span> ${escHtml(pet)}${d.arena ? ` · <span>арена:</span> ${escHtml(d.arena)}` : ''}</p></div>` +
+        `<h3>📱 Устройство</h3><div class="rr-build"><p>Версия ${escHtml(d.v || '?')} · ${d.fps || '?'} кадров/с в среднем · медленных кадров ${fmtNum(d.slow || 0)} · графика ${escHtml((d.dev || {}).q || '?')}</p><p class="rr-ua">${escHtml((d.dev || {}).ua || '')} · ${(d.dev || {}).w}×${(d.dev || {}).h} ×${(d.dev || {}).dpr}</p></div>`;
+    }
     async function reviewOpen() {
       const data = await reviewCheck(); if (!data) return;
       let m = $('reviewM');
@@ -927,6 +991,7 @@
         document.body.appendChild(m);
         m.addEventListener('click', async e => {
           if (e.target === m || e.target.closest('[data-rvx]')) { m.hidden = true; $('rankReview').focus(); return; }
+          const rb = e.target.closest('[data-rvrep]'); if (rb) { const l = rb.closest('li'); recRepOpen(l.dataset.nick, l.dataset.mode); return; }
           const b = e.target.closest('[data-rvok]'); if (!b) return;
           const li = b.closest('li'), ok = b.dataset.rvok === '1';
           if (!ok && !confirm(`Удалить рекорд игрока ${li.dataset.nick}?`)) return;
@@ -939,7 +1004,7 @@
         });
       }
       const mName = k => (MODES[k] || {}).name || k;
-      $('reviewList').innerHTML = data.length ? data.map(r => `<li data-nick="${escHtml(r.nickname)}" data-mode="${escHtml(r.mode)}"><div class="rv-who"><b>${escHtml(r.nickname)}</b> · ${escHtml(mName(r.mode))}<small>${r.prev_score != null ? `было ${fmtBest(r.mode, r.prev_score)} → ` : 'первый рекорд: '}<b>${fmtBest(r.mode, r.score)}</b>${r.prev_score ? ` (×${(r.score / r.prev_score).toFixed(1)})` : ''} · ${new Date(r.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="btn rv-ok" data-rvok="1">Показать</button><button type="button" class="btn ghost rv-no" data-rvok="0">Удалить</button></li>`).join('')
+      $('reviewList').innerHTML = data.length ? data.map(r => `<li data-nick="${escHtml(r.nickname)}" data-mode="${escHtml(r.mode)}"><div class="rv-who"><b>${escHtml(r.nickname)}</b> · ${escHtml(mName(r.mode))}<small>${r.prev_score != null ? `было ${fmtBest(r.mode, r.prev_score)} → ` : 'первый рекорд: '}<b>${fmtBest(r.mode, r.score)}</b>${r.prev_score ? ` (×${(r.score / r.prev_score).toFixed(1)})` : ''} · ${new Date(r.at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="btn ghost rv-rep" data-rvrep aria-label="Отчёт о рекорде">📊</button><button type="button" class="btn rv-ok" data-rvok="1">Показать</button><button type="button" class="btn ghost rv-no" data-rvok="0">Удалить</button></li>`).join('')
         : '<li class="review-empty">Проверять нечего ✓</li>';
       m.hidden = false; m.querySelector('[data-rvx]').focus();
     }

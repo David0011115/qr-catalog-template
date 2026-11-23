@@ -90,7 +90,7 @@
   function tutModal(title, body, btns) {
     $('tutMName').textContent = title; $('tutMBody').innerHTML = body; $('tutModal').classList.remove('nw-wide');
     $('tutMActs').innerHTML = btns.map(([id, t, cls]) => `<button class="${cls}" id="${id}">${t}</button>`).join('');
-    $('tutModal').hidden = false; $(btns[0][0]).focus();
+    $('tutModal').hidden = false; $(btns[0][0]).focus({ preventScroll: true }); $('tutModal').querySelector('.modal-card').scrollTop = 0;   // the title stays in view (a long text on a landscape phone)
   }
   // ---- menu tour: shown once after the first finished tutorial, repeatable from «Информация» ----
   const TOUR = [
@@ -1345,7 +1345,7 @@
       const cnt = f => { const L = COLLECTIONS.filter(f); return [L.filter(c => save.colDone.includes(c.id)).length, L.length]; };
       const list = COLLECTIONS.filter(cur[2]), [cd, cn] = cnt(cur[2]), coins = list.filter(c => save.colDone.includes(c.id)).reduce((t, c) => t + (c.coins || 0), 0), ready = list.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
       $('shop').innerHTML = `<div class="goal-tabs4 col-tabs" role="tablist">${CT.map(([k, name, f]) => { const [d, n] = cnt(f); return `<button type="button" class="tab gtab" role="tab" data-coltab="${k}" aria-selected="${k === cur[0]}" style="--hc:${HUB_ICON['c_' + k][0]}">${hubLogoSVG('c_' + k, 30).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${name}</b><small>${d}/${n}</small></span></button>`; }).join('')}</div>` +
-        `<div class="g-sum" style="--hc:${HUB_ICON['c_' + cur[0]][0]}">${hubLogoSVG('c_' + cur[0], 44)}<div><b>${cur[3]} · ${cd} из ${cn}</b><small>${cur[4]}. ${ready ? `<b style="color:#3dffa2">Можно забрать: ${ready}</b> · ` : ''}${coins ? `получено ${coins.toLocaleString('ru-RU')} ◆` : ''}</small><div class="track"><div class="fill" style="width:${cn ? (cd / cn * 100).toFixed(0) : 0}%"></div></div></div></div>` +
+        `<div class="g-sum" style="--hc:${HUB_ICON['c_' + cur[0]][0]}">${hubLogoSVG('c_' + cur[0], 44)}<div><b>${cur[3]} · ${cd} из ${cn}</b><small>${cur[4]}. ${[ready ? `<b style="color:#3dffa2">Можно забрать: ${ready}</b>` : '', coins ? `получено ${coins.toLocaleString('ru-RU')} ◆` : ''].filter(Boolean).join(' · ')}</small><div class="track"><div class="fill" style="width:${cn ? (cd / cn * 100).toFixed(0) : 0}%"></div></div></div></div>` +
         (list.length ? goalGroups(list.map(c => { const n = colItems(c).length, h = colOwned(c), got = save.colDone.includes(c.id); return { done: got, pct: n ? h / n : 0, html: colCard(c) }; }), 'Почти собрано', 'В процессе', 'Собрано')
           : '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
     } else if (shopTab === 'ch') {
@@ -1459,6 +1459,7 @@
   // ---- «Способности»: build editor + list (buy / upgrade); dash and split upgrade through their old upgrade branches ----
   // ---- 2.3: icons for every drawer, matched by its title (the first match wins, so longer names go first) ----
   const DI = {
+    chat: ICON_SVG.chat,
     sprout: '<path d="M12 21v-9M12 12c0-4 3-6.5 7-6.5 0 4-3 6.5-7 6.5zM12 14.5c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>',
     bolt: '<path d="M13 2 4.5 14h6.5l-1 8 8.5-12H12z"/>',
     shield: '<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/>',
@@ -1522,7 +1523,7 @@
     ['как играть', 'pad', '#22e6ff'], ['управление', 'pad', '#22e6ff'], ['цвета колец', 'rings', '#3dffa2'], ['арена', 'hub:arena'], ['режим', 'flag', '#ff6ad5'],
     ['лига', 'flag', '#ffd23f'], ['архив', 'hub:arch'], ['монеты', 'coin', '#ffd23f'], ['задания', 'check', '#3dffa2'], ['внешний вид', 'palette', '#ff4fd8'],
     ['статистика', 'bars', '#22e6ff'], ['последние раунды', 'line', '#22e6ff'], ['рекорды', 'flag', '#ffd23f'], ['сезон', 'calendar', '#ffd23f'],
-    ['удалить аккаунт', 'trash', '#ff3d6e'], ['подробности', 'list', '#c9c2ff'], ['активность', 'flame', '#ff9a3d'], ['графика', 'monitor', '#22e6ff'], ['звук', 'sound', '#b26bff'], ['промокод', 'ticket', '#ffd23f'],
+    ['удалить аккаунт', 'trash', '#ff3d6e'], ['подробности', 'list', '#c9c2ff'], ['активность', 'flame', '#ff9a3d'], ['графика', 'monitor', '#22e6ff'], ['поддержка', 'chat', '#7fe8ff'], ['звук', 'sound', '#b26bff'], ['промокод', 'ticket', '#ffd23f'],
   ];
   function decorateDrawers(root = document) {
     root.querySelectorAll('details > summary:not([data-ic])').forEach(sm => {

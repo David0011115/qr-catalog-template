@@ -720,7 +720,7 @@ button.rw-tile { cursor: pointer; } .rw-tile.coin-btn { border: 1px solid rgba(2
 @keyframes emBob { 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .hub-live.pulse, .empty-box svg { animation: none; } }
 /* narrow landscape phones: tiles keep their titles (counters move to the corner), the blob column is a little narrower */
-@media (orientation: landscape) and (min-width: 700px) and (max-width: 900px) {
+@media (orientation: landscape) and (min-width: 700px) and (max-width: 1024px) {
   #panePlay .mc-hubs .hub-live { gap: 0 7px; padding-inline: 10px; font-size: .95rem; }
   .hub-live .ic { font-size: 1.15rem; }
   .hub-live .hb-x { position: absolute; top: 4px; right: 5px; } .hub-live .hb-x .rk { width: 22px; height: 22px; }
@@ -1307,7 +1307,7 @@ body.menu-bg .menu-backdrop { display: block; }
   #menuCard .menu-icons .icon-btn small { font-size: .6rem; }
 }
 /* 2.3: five tiles in a row on narrow landscape phones */
-@media (orientation: landscape) and (min-width: 700px) and (max-width: 900px) {
+@media (orientation: landscape) and (min-width: 700px) and (max-width: 1024px) {
   #panePlay .mc-hubs { gap: 6px; }
   #panePlay .mc-hubs .hub-live { font-size: .8rem; padding-inline: 6px; gap: 0 4px; } #panePlay .mc-hubs .hub-live .ic { width: 20px; height: 20px; }
   #panePlay .mc-hubs .hub-live small { font-size: .6rem; }

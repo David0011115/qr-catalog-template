@@ -35,8 +35,8 @@
     // 2.5 modes for two: 30 games in a mode
     { id: 'bg_duo_terr', name: 'Карта захвата',   rar: 'epic',      src: '30 матчей в «Захвате территории»', test: () => (((save.duo || {}).territory || {}).games || 0) >= 30 },
     { id: 'bg_duo_50',   name: 'Пятидесятая волна', rar: 'legendary', src: 'пройти все 50 волн в «Спине к спине» на любой сложности', test: () => duoBestWave() >= 50 },
-    { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 40 000 массы за раунд (формы растут вместе со скином «Берсерк»)', test: () => (save.hcPeak || 0) >= 40000 },
-    { id: 'bg_hc_singularity', name: 'Трон затмения', rar: 'legendary', src: 'победа в «Хардкоре»: обе половины по 50 000 массы', test: () => !!save.hc100k },
+    { id: 'bg_hc_arena', name: 'Арена Берсерка', rar: 'legendary', src: '«Хардкор»: 120 000 массы за раунд (живой фон: формы за 120 000 / 170 000 / 220 000)', test: () => (save.hcPeak || 0) >= 120000 },
+    { id: 'bg_hc_singularity', name: 'Трон затмения', rar: 'legendary', src: 'победа в «Хардкоре»: обе половины по 125 000 массы', test: () => !!save.hc100k },
     { id: 'bg_duo_back', name: 'Двойная спираль', rar: 'epic',      src: '30 забегов в «Спине к спине»', test: () => (((save.duo || {}).duoback || {}).games || 0) >= 30 },
     { id: 'bg_horse26',  name: 'Год Огненной Лошади', rar: 'legendary', promo: true, src: 'особый праздничный подарок', test: () => false },   // drawn and kept for a later gift
     // 2.3 workshop «Хронос» (craft only: never unlocked by a test)
@@ -49,7 +49,7 @@
   const pbgById = id => PBG.find(b => b.id === id) || PBG.find(b => b.id === String(id || '').replace(/_f[123]$/, '')) || PBG[0];
   // 2.7: backgrounds that evolve with an evolving skin — forms I–III; the form travels in the id on the card («bg_hc_arena_f3»)
   const PBG_EVO = {
-    bg_hc_arena: { open: () => evoOpen('hc_berserk'), need: ['40 000', '50 000', '70 000'], unit: 'массы за раунд «Хардкора» — как у скина «Берсерк»', names: ['Пробуждение', 'Кровавая луна', 'Затмение ярости'] },
+    bg_hc_arena: { open: () => evoSteps(save.hcPeak || 0, [120000, 170000, 220000]), need: ['120 000', '170 000', '220 000'], unit: 'массы за раунд «Хардкора»', names: ['Пробуждение', 'Кровавая луна', 'Затмение ярости'] },
     bg_duo_back: { open: () => Math.max(1, evoOpen('duo_twin')), need: ['30 забегов', '40-я волна', '50-я волна'], unit: '«Спины к спине» на «Обычном» — как у скина «Близнецы»', names: ['Первый виток', 'Двойная спираль', 'Сияние пары'] },
     bg_duo_50: { open: () => TEST_MODE && save.evoAll ? 3 : evoDuoBest('mad') >= 50 ? 3 : evoDuoBest('hard') >= 50 ? 2 : 1, need: ['50 волн', '50 волн на «Сложном»', '50 волн на «Безумии»'], unit: '— формы II и III вместе со «Щитом союза» III и «Созвездием» III', names: ['Арка', 'Золотая арка', 'Корона Безумия'] },
   };

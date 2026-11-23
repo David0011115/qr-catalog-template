@@ -356,7 +356,7 @@
     if (o.disabled) return;
     if (!o.cells.length) dressBot(o);
     // bot size no longer follows the player (that fed an endless growth loop)
-    const top = Math.min(BOT_MASS_CAP, Math.max(30, total(player) * 0.6));
+    const top = Math.min(BOT_MASS_CAP, Math.max(30, total(player) * 0.6) * (mode === 'hardcore' ? 1.3 : 1));   // 2.7.5: bigger bots in «Хардкор»
     const [x, z] = safeSpot(running ? 22 : 14);
     // 1.7.0: a respawned bot is not just food — it starts at 30–50% of the median bot and is protected for 3 s
     const alive = bots.filter(b => b !== o && b.cells.length).map(b => total(b)).sort((a, b) => a - b), med = alive.length ? alive[alive.length >> 1] : 0;

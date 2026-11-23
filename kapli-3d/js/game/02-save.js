@@ -366,6 +366,24 @@
     save.deco27 = { lines: lines.length, coins }; if (lines.length) save.notice27 = lines;
     persist();
   }
+  // 2.7.5 (owner): «Хардкор» got its bar moved to 250 000 and was made harder — everything it gave in 2.7 is taken back once,
+  // without compensation; it can all be earned again (titles «Несгибаемый» and frame «Закалка» from 2.5 stay)
+  if (!save.hcReset275) {
+    const had = [];
+    if (save.skins.includes('hc_berserk')) { had.push('скин «Берсерк»'); save.skins = save.skins.filter(x => x !== 'hc_berserk'); if (save.skin === 'hc_berserk') save.skin = save.skins.includes('mint') ? 'mint' : save.skins[0] || 'coral'; }
+    for (const k of ['evoSeen', 'evoNew', 'evo']) if (save[k] && save[k].hc_berserk != null) delete save[k].hc_berserk;
+    if (Array.isArray(save.evoQ)) save.evoQ = save.evoQ.filter(e => e.id !== 'hc_berserk');
+    const bgs = ['bg_hc_arena', 'bg_hc_singularity'];
+    if ((save.pbg || []).some(b => bgs.includes(b))) { had.push('фоны «Арена Берсерка» / «Трон затмения»'); save.pbg = save.pbg.filter(b => !bgs.includes(b)); }
+    if (save.pbgF) bgs.forEach(b => delete save.pbgF[b]);
+    if ((save.hcPeak || 0) >= 75000 || save.hc100k) had.push('значки «Хардкора»');
+    if (save.badges) delete save.badges.hc100k;
+    if (save.pc) { if (bgs.includes(save.pc.bg)) save.pc.bg = 'bg_base'; if (['hc75', 'hc88', 'hc100k'].includes(save.pc.badge)) save.pc.badge = ''; }
+    save.hc100k = false; delete save.hc100kAt; save.hcPeak = 0; save.hcGot = {}; save.rwQ = [];
+    if (save.bests && save.bests.hardcore) { had.push('рекорд режима'); save.bests.hardcore = 0; }
+    save.hcReset275 = Date.now(); if (had.length) save.noticeHc = had;
+    persist();
+  }
   if (!save.upg170) {   // levels above the new maximum come back as coins at their price
     let back = 0;
     UPG.forEach(u => { const l = save.up[u.id] || 0; if (u.cutCost && l > u.cost.length) { back += u.cutCost.slice(0, l - u.cost.length).reduce((a, b) => a + b, 0); save.up[u.id] = u.cost.length; } });

@@ -1,13 +1,21 @@
   // ================= menus, part: updates feed: the news list, the update cards and their live scenes (was in 08-menus.js; the files are joined in order by js/loader.js) =================
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
+    { id: 201, ver: '2.7.5', date: '23 ноября', title: '«Хардкор» 250 000, награды по отдельности, дневной лимит монет', kind: 'patch',
+      card: { t: 'Патч 2.7.5 — «Хардкор» 250 000', l: '«Хардкор» выше и сложнее, награды приходят по отдельности.', v: 'hc',
+        b: '<ul><li>Капля делится на 100 000, победа — обе половины по 125 000. Рост медленнее, 14 вех, боты и стаи сильнее.</li><li>Награды «Хардкора» 2.7 сброшены: скин, фон «Арена Берсерка», значки 175K и 220K и победа приходят отдельными окнами.</li><li>Монеты: «Начислено X из Y» при дневном лимите 100 000. В друзьях — точная дата «был в сети».</li></ul>' },
+      items: [
+      '«Хардкор»: планка 250 000 — капля делится на 100 000, победа — обе половины по 125 000 15 секунд. Рост медленнее, чем в «Классике», 14 вех (карточки слабее), боты крупнее, стаи по четыре с 15 000.',
+      'Награды «Хардкора» из 2.7 сброшены без возмещения, их можно получить заново: скин «Берсерк» (60 000 / 100 000 / 150 000), фон «Арена Берсерка» (120 000 / 170 000 / 220 000), значки «175K» и «220K», за победу — «Корона Берсерка» и «Трон затмения». Каждая награда приходит отдельным окном. Рейтинг «Хардкора» начат заново.',
+      'Монеты: при дневном лимите 100 000 ◆ сервер засчитывает всё до лимита, игра пишет «Начислено X из Y», а в итогах раунда видно, сколько засчитается.',
+      'Друзья и сообщения: вместо «3 дн. назад» — точная дата и время, когда игрок был в сети.'] },
     // 2.7: the first entry with cards — a hero card and a grid; each card opens big (newsBig). Older entries stay text in «Архив обновлений».
     { id: 200, ver: '2.7.0', date: '23 ноября', title: 'Характеры и живая арена', kind: 'season',
       lead: 'Характеры, события арены, эволюции скинов, новый Хардкор и новый вид меню. Режимы для двоих переезжают в полный онлайн.',
       poster: { sub: 'Характеры · живая арена · эволюции скинов · новый Хардкор', foot: 'Нажми на плитку — откроется карточка',
         tiles: [[0, '#22e6ff', 'chars', 'Характеры', 'Выбери характер перед раундом: у каждого плюс и минус'], [1, '#ff4fd8', 'events', 'Живая арена', 'Восемь событий меняют раунд прямо на ходу'],
           [8, '#ffd23f', 'online', 'Вдвоём — скоро', '«Захват территории» и «Спина к спине» переезжают в полный онлайн'], [9, '#b26bff', 'evo', 'Эволюции скинов', 'Скины растут в формах I–III прямо в раунде'],
-          [5, '#ff2d55', 'hc', 'Хардкор', 'Две половины по 50 000, проклятия, стаи и «Берсерк»'], [15, '#ff9a3d', 'fps', 'Плавнее', 'Меньше рывков на телефонах — картинка та же']] },
+          [5, '#ff2d55', 'hc', 'Хардкор', 'Две половины по 125 000, проклятия, стаи и «Берсерк»'], [15, '#ff9a3d', 'fps', 'Плавнее', 'Меньше рывков на телефонах — картинка та же']] },
       hero: { imgs: ['neon', 'h_valentine', 's_7', 'h_halloween', 's_25'], body: '<p>Самое большое обновление осени: характеры, события арены, эволюции скинов, новый Хардкор и обновлённые режимы. Игра заметно плавнее на телефонах.</p><p>Нажимай на плитки или листай стрелками — каждая карточка коротко о главном.</p>' },
       cards: [
         { g: 'Игра', t: 'Характеры', l: 'Перед раундом выбери, каким будешь: у каждого свой плюс и минус.', v: 'chars',
@@ -20,8 +28,8 @@
           b: '<ul><li>Все капли на 35% быстрее.</li><li>С 10 000 массы капля растёт медленнее — большая игра дольше.</li><li>Намного более тяжёлой капле достаточно накрыть центр меньшей.</li></ul>' },
         { g: 'Режимы', t: 'Классика', l: 'На 50 000 капля делится — вырасти обе половины.', v: 'classic',
           b: '<ul><li>Вехи массы с наградой, боты смелее, боссы растут вслед за тобой.</li><li>На 50 000 капля делится на две половины — вырасти обе.</li><li>Потерял половину — капля снова поделится на 50 000.</li></ul>' },
-        { g: 'Режимы', t: 'Хардкор', l: 'Две половины по 50 000, 11 вех улучшений, проклятия, стаи и скин «Берсерк».', v: 'hc',
-          b: '<ul><li><b>Цель:</b> обе половины держат по 50 000 15 секунд — «Корона Берсерка».</li><li>11 вех с карточками улучшений, проклятия, стаи ботов с 20 000.</li><li><b>Награды:</b> скин «Берсерк» и живой фон «Арена Берсерка» с эволюцией, за победу — фон «Трон затмения».</li></ul>' },
+        { g: 'Режимы', t: 'Хардкор', l: 'Планка 250 000: две половины по 125 000, 14 вех, проклятия, стаи и скин «Берсерк».', v: 'hc',
+          b: '<ul><li><b>Цель:</b> капля делится на 100 000, обе половины держат по 125 000 15 секунд — «Корона Берсерка».</li><li>14 вех с карточками улучшений, проклятия, стаи из четырёх ботов с 15 000.</li><li><b>Награды:</b> скин «Берсерк» и живой фон «Арена Берсерка» с эволюцией, за победу — фон «Трон затмения».</li></ul>' },
         { g: 'Режимы', t: 'Случайный билд — обновлён', l: 'На вехах — пауза и две карточки замены с редкостью.', v: 'rb',
           b: '<ul><li>На пяти вехах массы — пауза и две карточки замены.</li><li>Можно заменить одну из своих способностей.</li><li>Чем реже карточка, тем больше уровней на раунд.</li></ul>' },
         { g: 'Режимы', t: 'Босс-рейд — обновлён', l: 'Недельная лестница из пяти ступеней и пара колоссов.', v: 'raid',
@@ -277,7 +285,7 @@
     deco: () => `<div class="nw-v nw-deco"><span class="fr fn fr-l" style="--a:#22e6ff;--b:#b26bff">Капля</span>${titleTag('tt_sk13')}</div>`,
     grow: () => `<div class="nw-v nw-grow"><span style="--s:14"></span><span style="--s:22"></span><span style="--s:30"></span><em>×1,35 скорость</em></div>`,
     classic: () => `<div class="nw-v nw-classic"><span>25 000</span><b>+</b><span>25 000</span><em>цель: обе по 50 000</em></div>`,
-    hc: () => `<div class="nw-v nw-hc"><span>75K</span><span>88K</span><span class="win">100K</span><em>☠ двойной укус</em></div>`,
+    hc: () => `<div class="nw-v nw-hc"><span>175K</span><span>220K</span><span class="win">250K</span><em>☠ двойной укус</em></div>`,
     evo: () => `<div class="nw-v nw-evo"><span style="--s:18">I</span><b>→</b><span style="--s:26">II</span><b>→</b><span style="--s:34">III</span></div>`,
     gear: () => `<div class="nw-v nw-gear"><span>⚙</span><span class="sm">⚙</span><em>23 предмета</em></div>`,
     modes: () => `<div class="nw-v nw-modes"><span>Классика</span><span>Хардкор</span><span>Случ. билд</span><span>Босс-рейд</span></div>`,
@@ -405,7 +413,7 @@
       hc(x, t) { bg(x, '#ff2d55'); const p = (t % 7) / 7, f = clamp(p / .45), cd = seg(p, .45, .8), win = p > .8;
         [[95, '#c8102e'], [225, '#c8102e']].forEach(([px, c], i) => { const r = 22 + f * 12; drop(x, px, 108, r, c, { glow: win ? '#ffd23f' : '#ff2d55', look: [i ? -1 : 1, 0] });
           rr(x, px - 40, 152, 80, 9, 5); x.fillStyle = '#2a0a12'; x.fill(); rr(x, px - 40, 152, 80 * clamp(f * (i ? .94 + .06 * seg(p, .4, .45) : 1)), 9, 5); x.fillStyle = f >= 1 ? '#ffd23f' : '#ff2d55'; x.fill();
-          txt(x, fmt(50000 * f * (i ? .94 + .06 * seg(p, .4, .45) : 1)), px, 172, 11, '#ffb0c0'); if (win) crown(x, px, 108 - 36 - Math.sin(t * 4) * 2, 11); });
+          txt(x, fmt(125000 * f * (i ? .94 + .06 * seg(p, .4, .45) : 1)), px, 172, 11, '#ffb0c0'); if (win) crown(x, px, 108 - 36 - Math.sin(t * 4) * 2, 11); });
         x.strokeStyle = 'rgba(255,45,85,.6)'; x.setLineDash([4, 4]); x.beginPath(); x.moveTo(130, 108); x.lineTo(190, 108); x.stroke(); x.setLineDash([]);
         if (p > .45 && !win) { x.save(); x.strokeStyle = '#ffd23f'; x.lineWidth = 4; x.beginPath(); x.arc(160, 50, 18, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - cd)); x.stroke(); x.restore(); txt(x, String(Math.ceil(15 * (1 - cd))), 160, 50, 15, '#ffd23f', 'center', 'd'); }
         if (win) txt(x, 'Корона Берсерка', 160, 40, 16, '#ffd23f', 'center', 'd');
@@ -494,7 +502,7 @@
     function stop() { if (cur) cur.alive = false; cur = null; }
     return { start, stop, has: id => !!D[id] };
   })();
-  let nwCur = null, nwI = 0, nwBack = null;
+  let nwCur = null, nwI = 0, nwBack = null, nwPatch = null;
   function newsCards(n) {
     nwCur = n;
     // 2.7 release (owner): the whole update fits on one screen — every change is a tile of the same size (icon, name, one short line);
@@ -508,16 +516,17 @@
         gear: '23 предмета и «Скелетон»', tabs: 'Новые экраны и иконки', pause: 'Видно выбранные бафы', fps: 'Меньше рывков' };
     const tiles = n.cards.map((c, i) => `<button type="button" class="nw-mini" style="--c:${COL[c.g] || '#22e6ff'}" data-nw="${i}" aria-haspopup="dialog" aria-label="${c.t}: ${c.l}"><i aria-hidden="true">${IC[c.v] || '•'}</i><b>${TT[c.v] || c.t}</b><span>${SH[c.v] || c.l}</span></button>`).join('');
     return `<section class="nw-poster nw-compact" aria-label="Обновление ${n.ver}"><div class="nw-ph"><b class="nw-logo">Капли <i>3D</i></b><span class="nw-pill">Обновление ${n.ver}</span>` +
-      `<span class="nw-hint">Нажми на плитку</span><button type="button" class="nw-ov-btn" data-nw="-1">Обзор ›</button></div><div class="nw-minis">${tiles}</div></section>` +
+      `<span class="nw-hint">Нажми на плитку</span>${nwPatch ? `<button type="button" class="nw-ov-btn nw-patch" data-nw="-2">Патч ${nwPatch.ver} ›</button>` : ''}<button type="button" class="nw-ov-btn" data-nw="-1">Обзор ›</button></div><div class="nw-minis">${tiles}</div></section>` +
       (newsGift(n) ? `<p class="news-gift">🎁 Подарок: ${newsGift(n)} ◆</p>` : '');
   }
   function newsBig(i) {
     const n = nwCur; if (!n) return;
     let ov = $('nwOv'); if (!ov) { ov = document.createElement('div'); ov.id = 'nwOv'; ov.className = 'nw-ov'; ov.hidden = true; ov.innerHTML = '<div class="nw-big" id="nwBig" role="dialog" aria-modal="true" aria-labelledby="nwBt"></div>'; document.body.appendChild(ov); }
-    nwI = i; const hero = i < 0, c = hero ? { t: `${n.ver} — ${n.title}`, l: n.lead, b: n.hero.body } : n.cards[i], N = n.cards.length;
+    const patch = i === -2 && nwPatch; if (i === -2 && !patch) i = -1;
+    nwI = i; const hero = i === -1, c = patch ? nwPatch.card : hero ? { t: `${n.ver} — ${n.title}`, l: n.lead, b: n.hero.body } : n.cards[i], N = n.cards.length;
     const vis = hero ? `<div class="nw-v nw-skins nw-wide">${n.hero.imgs.map(f => `<img src="news/27_${f}.webp" alt="">`).join('')}</div>` : NewsScene.has(c.v) ? `<div class="nw-v nw-scene"><canvas width="320" height="200" role="img" aria-label="${c.t}"></canvas></div>` : NW_VIS[c.v]();
     $('nwBig').innerHTML = vis + `<div class="nw-txt"><h2 id="nwBt">${c.t}</h2><p class="nw-bl">${c.l}</p><div class="nw-bb">${c.b}</div></div>` +
-      `<div class="nw-nav"><button type="button" data-nwgo="-1" aria-label="Предыдущая карточка">‹</button><span>${hero ? 'обзор' : (i + 1) + ' из ' + N}</span><button type="button" data-nwgo="1" aria-label="Следующая карточка">›</button><button type="button" class="nw-x" data-nwx>Закрыть</button></div>`;
+      `<div class="nw-nav"><button type="button" data-nwgo="-1" aria-label="Предыдущая карточка">‹</button><span>${patch ? 'патч ' + nwPatch.ver : hero ? 'обзор' : (i + 1) + ' из ' + N}</span><button type="button" data-nwgo="1" aria-label="Следующая карточка">›</button><button type="button" class="nw-x" data-nwx>Закрыть</button></div>`;
     ov.hidden = false; $('nwBig').scrollTop = 0; $('nwBig').querySelector('[data-nwx]').focus();
     { const cvs = $('nwBig').querySelector('.nw-scene canvas'); if (cvs) NewsScene.start(cvs, c.v); else NewsScene.stop(); }
   }
@@ -532,7 +541,9 @@
   { let sx = null; document.addEventListener('touchstart', e => { sx = e.target.closest && e.target.closest('#nwBig') ? e.touches[0].clientX : null; }, { passive: true });
     document.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 60) newsStep(dx < 0 ? 1 : -1); }); }
   function newsHtml(list) {
-    const cur = list[0] && list[0].cards ? list[0] : null, rest = cur ? list.slice(1) : list;
+    // 2.7.5: patches after the big update do not push its cards away — the newest one is a «Патч X ›» button in the poster header
+    const ci = list.findIndex(n => n.cards), cur = ci >= 0 && list.slice(0, ci).every(n => n.card) ? list[ci] : null, rest = cur ? list.filter(n => n !== cur) : list;
+    nwPatch = cur && ci > 0 ? list[0] : null;
     return (cur ? newsCards(cur) : '') + (rest.length ? (cur ? `<details class="nw-arch"><summary>Архив обновлений · ${rest.length}</summary>${newsTextHtml(rest)}</details>` : newsTextHtml(rest)) : '');
   }
   function newsTextHtml(list) {

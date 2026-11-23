@@ -4,12 +4,13 @@
   // Coordinates are the host's: the host's half is x < bx. Both phones keep the same bx (the host sends it).
   (() => {
     const BORDER_V = .012, DEAD = .03, JUMP = .06, LIMIT = .9, FOREIGN_K = .85;
-    const MATCH_S = 240, OVERTIME_S = 30, WIN_SHARE = .8, TIE = .02;   // 4 minutes; 80% of the field wins at once; within ±2% at the end: +30 s, once
+    const MATCH_S = 240, OVERTIME_S = 30, WIN_SHARE = .9, TIE = .02, EARLY_S = 120, DIFF_FULL = 1500, FOOD_K = 1.4;   // 4 minutes; 2.7: 90% of the field wins at once, but not before 2:00; within ±2% at the end: +30 s, once
+    // 2.7: the border also needs a real mass gap — at full speed only from DIFF_FULL of difference (500 against 100 barely moves it); crumbs give ×FOOD_K here
     let lastSide = 0, signT = 0, bx = 0, bxView = 0, pHome = -1, mesh = null, mat = null, flash = 0, limit = MATCH_S, ot = false;
 
-    // eight more small bots, used only here: 24 in all, half of them come back on each half of the field
+    // 2.7: fourteen more small bots, used only here: 30 in all, half of them come back on each half of the field
     DuoM.later(() => {
-    [['Капелька', 'coward'], ['Росинка', 'farmer'], ['Брызг', 'coward'], ['Ириска', 'farmer'], ['Пузырь', 'normal'], ['Мятка', 'coward'], ['Искорка', 'farmer'], ['Шарик', 'normal']].forEach(([n, p], k) => {
+    [['Капелька', 'coward'], ['Росинка', 'farmer'], ['Брызг', 'coward'], ['Ириска', 'farmer'], ['Пузырь', 'normal'], ['Мятка', 'coward'], ['Искорка', 'farmer'], ['Шарик', 'normal'], ['Карамелька', 'farmer'], ['Брусничка', 'coward'], ['Пломбир', 'normal'], ['Вишенка', 'farmer'], ['Лимонад', 'coward'], ['Зефирка', 'normal']].forEach(([n, p], k) => {
       const o = makeOwner(n, 'bot', p); o.baseColor = BOT_COLORS[(k * 2 + 1) % BOT_COLORS.length]; o.tExtra = true; o.disabled = true;
       o.free = Array.from({ length: BOT_PARTS }, () => makeVis(new THREE.Color(o.baseColor)));
       bots.push(o); owners.push(o);
@@ -24,13 +25,13 @@
     const leftShare = () => { const b = Math.max(-1, Math.min(1, bx / R)); return (Math.PI - Math.acos(b) + b * Math.sqrt(1 - b * b)) / Math.PI; };
     const myShare = () => pHome < 0 ? leftShare() : 1 - leftShare();
 
-    // bots come back on their own half (by count: 12 and 12), wherever the border is now
+    // bots come back on their own half (by count: 15 and 15), wherever the border is now
     const spawnBot0 = spawnBot, safeSpot0 = safeSpot; let want = 0;
     safeSpot = d => {
       if (!want) return safeSpot0(d);
       for (let t = 0; t < 80; t++) {
         const [x, z] = randInArena(6);
-        if (sideAt(x) === want && cells.every(c => Math.hypot(c.x - x, c.z - z) > d + cellR(c))) return [x, z];
+        if (sideAt(x) === want && cells.every(c => hyp(c.x - x, c.z - z) > d + cellR(c))) return [x, z];
       }
       return [bx + (want * R - bx) * .5, (Math.random() - .5) * R * .6];
     };
@@ -62,33 +63,39 @@
     }
 
     DuoM.rules.territory = {
-      arena: 1.5,   // 2.5: was ×2 — too much empty field for two
-      pre(role) { lastSide = 0; bx = bxView = 0; flash = 0; limit = MATCH_S; ot = false; pHome = role === 'host' ? -1 : 1; },
+      arena: 1.25,   // 2.5: was ×2; 2.7: 1.5 → 1.25 after the owner's test (server: TERRITORY_ARENA)
+      pre(role) { player.dbAbs = DuoM.rival.dbAbs = FOOD_K; lastSide = 0; bx = bxView = 0; flash = 0; limit = MATCH_S; ot = false; pHome = role === 'host' ? -1 : 1; },
       begin() {
         if (!mesh) makeMesh();
         mesh.scale.setScalar(R); mat.uniforms.uR.value = R; mat.uniforms.uMe.value = pHome; mat.uniforms.uBx.value = 0;
         scene.add(mesh);
         setTimeout(() => { if (active()) toast('Ешь ботов на своей (голубой) стороне. Чем ты тяжелее, тем дальше граница'); }, 2400);
       },
-      end() { if (mesh) scene.remove(mesh); const el = document.getElementById('terrSign'); if (el) el.classList.remove('show'); },
+      end() { player.dbAbs = DuoM.rival.dbAbs = 1; if (mesh) scene.remove(mesh); const el = document.getElementById('terrSign'); if (el) el.classList.remove('show'); },
       // a respawn spot well inside your own half, toward your edge
       spawnX: o => bx + (homeOf(o) * R - bx) * .6,
       tick(dt) {   // host only
         const a = total(player), b = total(DuoM.rival), s = a + b;
         if (s > 0) {
           const rel = (a - b) / s;   // the host's lead: plus pushes the border right (into the other half)
-          if (Math.abs(rel) > DEAD) bx += Math.sign(rel) * Math.min(1, (Math.abs(rel) - DEAD) * 2.5) * BORDER_V * R * dt;
+          if (Math.abs(rel) > DEAD) bx += Math.sign(rel) * Math.min(1, (Math.abs(rel) - DEAD) * 2.5) * Math.min(1, Math.abs(a - b) / DIFF_FULL) * BORDER_V * R * dt;
         }
         bx = Math.max(-LIMIT * R, Math.min(LIMIT * R, bx));
         // the end of the match (the host decides for both)
         if (dying) return;
         const hs = leftShare();
-        if (hs >= WIN_SHARE) { DuoM.result('host', hs, 'early'); return; }
-        if (hs <= 1 - WIN_SHARE) { DuoM.result('guest', hs, 'early'); return; }
+        if (stats.time >= EARLY_S && hs >= WIN_SHARE) { DuoM.result('host', hs, 'early'); return; }
+        if (stats.time >= EARLY_S && hs <= 1 - WIN_SHARE) { DuoM.result('guest', hs, 'early'); return; }
         if (stats.time < limit) return;
         if (Math.abs(hs - .5) > TIE) DuoM.result(hs > .5 ? 'host' : 'guest', hs, 'time');
         else if (!ot) { ot = true; limit += OVERTIME_S; toast('Почти поровну! Ещё 30 секунд'); Sound.play('level'); }
         else DuoM.result('draw', hs, 'time');
+      },
+      applyServer(state) {
+        bx = Number(state.border) || 0; bxView = bx;
+        limit = Number(state.limit) || MATCH_S; ot = !!state.overtime;
+        pHome = DuoM.serverRole === 'host' ? -1 : 1;
+        if (mesh && mat?.uniforms) { mat.uniforms.uBx.value = bx; mat.uniforms.uMe.value = pHome; }
       },
       timer: () => `⏱ ${fmtTime(Math.max(0, limit - stats.time))}${ot ? ' · +30 с' : ''}`,
       finish(me, sh, why) {   // personal stats of this mode, then the title of the result screen
@@ -99,7 +106,6 @@
         t.top.push({ p, r: me, n: String(DuoM.rival.name || '').slice(0, 24), d: Date.now(), e: why === 'early' ? 1 : 0 });
         t.top.sort((a, b) => b.p - a.p || b.d - a.d); t.top.length = Math.min(5, t.top.length);
         persist(); stats.duoHero = { v: p, l: 'твоя доля поля, %' };
-        if (!DuoM.practice) Net.duoTerritory(me, p);   // the rating of the mode (each player sends their own match)
         return { bonus: me === 'win' ? 60 : me === 'draw' ? 25 : 10,
           title: me === 'win' ? (why === 'early' ? `Досрочная победа: ${p}% поля!` : `Победа! Твоя территория ${p}%`) : me === 'loss' ? `Поражение: у тебя ${p}% поля` : `Ничья: ${p}% на ${100 - p}%` };
       },
@@ -127,7 +133,8 @@
         const h = homeOf(a.owner);
         return !!h && b.owner.kind === 'bot' && sideAt(b.x) !== h;
       },
-      speedK(c) { const h = homeOf(c.owner); return h && sideAt(c.x) !== h ? FOREIGN_K : 1; },
+      shareNow: () => myShare(),   // 2.7 test journal
+      speedK(c) { const h = homeOf(c.owner); return (c.owner && (c.owner.isPlayer || c.owner.kind === 'rival') ? 1.12 : 1) * (h && sideAt(c.x) !== h ? FOREIGN_K : 1); },   // 2.7: players 12% faster (server: TERRITORY_RULES.playerSpeed)
       cross(dt) {   // a short sign in the middle of the screen when your drop crosses the border
         if (!player.cells.length) { lastSide = 0; return; }
         const sd = sideAt(centerOf(player)[0]);

@@ -52,7 +52,7 @@
       if (!apv || !apv.pts.has(e.pointerId)) return;
       const [px, py] = apv.pts.get(e.pointerId); apv.pts.set(e.pointerId, [e.clientX, e.clientY]);
       if (apv.pts.size === 1) { apv.ang -= (e.clientX - px) * .006; apv.pitch = clampN(apv.pitch + (e.clientY - py) * .004, .12, 1.35); }
-      else if (apv.pts.size === 2) { const [a, b] = [...apv.pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (apv.pinch) apv.dist = clampN(apv.dist * apv.pinch / d, R * .45, R * 2.2); apv.pinch = d; }
+      else if (apv.pts.size === 2) { const [a, b] = [...apv.pts.values()], d = hyp(a[0] - b[0], a[1] - b[1]); if (apv.pinch) apv.dist = clampN(apv.dist * apv.pinch / d, R * .45, R * 2.2); apv.pinch = d; }
     });
     const up = e => { if (!apv) return; apv.pts.delete(e.pointerId); apv.pinch = 0; if (!apv.pts.size) release(); };
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
@@ -171,7 +171,7 @@
     if (!petObj) return;
     const g = petObj.g;
     if (!player.cells.length) { g.visible = false; return; }
-    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(c), a = now / 1300;
+    const c = player.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = visualCellR(c), a = now / 1300;
     const tx = c.x + Math.cos(a) * (r + 2.2), tz = c.z + Math.sin(a) * (r + 2.2), ty = r * .9 + 1.3 + Math.sin(now / 280) * .3;
     const k = Math.min(1, dt * 6), px = petObj.x, pz = petObj.z;
     petObj.x += (tx - petObj.x) * k; petObj.z += (tz - petObj.z) * k; petObj.y += (ty - petObj.y) * k;
@@ -205,10 +205,10 @@
     if (txtSp) { txtT -= dt; txtSp.position.set(petObj.x, petObj.y + 1.6 + (1.4 - txtT) * .8, petObj.z); txtSp.material.opacity = Math.min(1, txtT * 2); if (txtT <= 0) { txtSp.visible = false; txtSp = null; } }
     if (kind === 'cuckoo' && petLv('cuckoo')) {
       petCk -= dt;
-      if (petCk <= 0) { let best = null, bd = Infinity; for (const b of bonuses) { const d = Math.hypot(b.x - c.x, b.z - c.z); if (d < bd) { bd = d; best = b; } }
+      if (petCk <= 0) { let best = null, bd = Infinity; for (const b of bonuses) { const d = hyp(b.x - c.x, b.z - c.z); if (d < bd) { bd = d; best = b; } }
         if (best) { petCk = 60; crArrowB = best; crArrowT = 3.5; showTxt(cuckooTxt); Sound.play('bonus'); } else petCk = 5; }
     }
-    if (crArrowT > 0 && crArrowB && bonuses.includes(crArrowB)) { crArrowT -= dt; const dx = crArrowB.x - c.x, dz = crArrowB.z - c.z, d = Math.hypot(dx, dz) || 1, rr = cellR(c) + 3.5;
+    if (crArrowT > 0 && crArrowB && bonuses.includes(crArrowB)) { crArrowT -= dt; const dx = crArrowB.x - c.x, dz = crArrowB.z - c.z, d = hyp(dx, dz) || 1, rr = cellR(c) + 3.5;
       crArrow.position.set(c.x + dx / d * rr, .1, c.z + dz / d * rr); crArrow.rotation.set(-Math.PI / 2, Math.atan2(-dx, -dz), 0);
       crArrow.scale.setScalar(1.4 + Math.sin(now / 120) * .15); crArrow.material.opacity = Math.min(.9, crArrowT); crArrow.visible = true; }
     else { crArrow.visible = false; crArrowT = 0; }
@@ -259,25 +259,39 @@
     rim.material.color.set(col); rimGlow.material.color.set(col); edgeGlow.material.color.set(col);
   }
   function draw(now) {
-    if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode === 'raid' || bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu'); }
-    decorateHoliday();
+    if (!(draw.moodT > now)) { draw.moodT = now + 500; Sound.setMood(running && !paused ? (mode !== 'raid' && bossOwners.some(o => o.cells.length) ? 'boss' : 'game') : 'menu', stats && stats.ranked ? 'ranked' : mode);   /* 2.7: a theme per mode; the raid's own theme is already the boss music */ }
+    // Relationship rings and hidden-boss visibility do not need 60 Hz checks.
+    // Refreshing them at 10 Hz removes repeated canEat() scans when players split.
+    const relationRefresh = now - (draw.relationAt || 0) >= 100;
+    if (relationRefresh) draw.relationAt = now;
+    // Cosmetics and ambient particles do not need 60 Hz updates. Keeping
+    // transforms/camera at display rate while animating detail at 30 Hz
+    // avoids bursts of material writes when many cells move together.
+    const cosmeticRefresh = now - (draw.cosmeticAt || 0) >= 33;
+    if (cosmeticRefresh) {
+      draw.cosmeticAt = now;
+      decorateHoliday();
+      animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000));
+      draw.lastP = now;
+    }
     shineT.value = now / 1000;
-    animatePet(now, Math.min(.05, (now - (draw.lastP || now)) / 1000)); draw.lastP = now;
     zoneLine.visible = zoneOut.visible = running && mode === 'royale';
     if (zoneLine.visible) { const Z = ModeX.zoneC; zoneLine.position.set(Z.x, .06, Z.z); zoneOut.position.set(Z.x, .06, Z.z); zoneLine.scale.setScalar(zoneR); zoneOut.scale.setScalar(zoneR); zoneLine.material.opacity = .6 + .4 * Math.sin(now / 200); }
     const shieldOn = effects && effects.shield > 0;
+    // 2.7 FPS: on «Среднее» and «Низкое» only the biggest part of your drop wears the hat, aura and shine (each part drew them all)
+    const pLead = QUALITY !== 'high' && player.cells.length > 1 ? mainOf(player) : null;
     for (const c of cells) {
-      const r = cellR(c), v = c.vis, animateVisible = nearView(c.x, c.z);
+      const r = visualCellR(c), v = c.vis, animateVisible = nearView(c.x, c.z);
       v.jig *= 0.93;
       const lk = v.look;
       if (lk) {
         const crownMode = mode === 'crown' && running;
         v.crown.visible = !!lk.crown && !v.hatOn && !crownMode;
-        if (!c.owner.isPlayer) { const show = QUALITY !== 'low'; if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show; if (v.shine) v.shine.visible = show && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
-        if (v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
-        if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
-        if (v.aura) v.aura.visible = !(crownMode && v.aura.userData.type === 'crownAura');
-        if (animateVisible) {
+        if (!c.owner.isPlayer || c.owner === player) { const show = c.owner === player ? (!pLead || c === pLead) : QUALITY !== 'low' && r * pxPerUnit >= 14; /* 2.7 FPS: a bot's hat, aura and gleam are not drawn while the drop is under ~14 px on screen */ if (v.aura) v.aura.visible = show; if (v.head) v.head.visible = show && !v.headOff; if (v.evo && c.owner === player && v.evoHid !== !show) { v.evoHid = !show; v.evo.children.forEach((k, i) => { if (!(i === 0 && v.evoBody)) k.visible = show; }); } if (v.shine) v.shine.visible = show && !v.evo && (isShiny(lk) || v.stars >= 2); if (v.starGlow) v.starGlow.visible = show && v.stars >= 3; }
+        if (cosmeticRefresh && v.stars && Math.random() < .07 * v.stars && nearView(c.x, c.z)) emit(c.x + (Math.random() - .5) * r * 1.7, r * (.5 + Math.random() * 1.3), c.z + (Math.random() - .5) * r * 1.7, Math.random() < .5 ? '#ffffff' : lk.accent || lk.color, 1, 1.4, .6);
+        if (cosmeticRefresh && v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320 + c.x);
+        if (v.aura && crownMode && v.aura.userData.type === 'crownAura') v.aura.visible = false;   // 2.7: no longer re-shows auras hidden above
+        if (animateVisible && cosmeticRefresh) {
           animateAura(v, now); animateHead(v, now);
           if (lk.pulse) { const k = .5 + .5 * Math.sin(now / 280); v.mesh.material.emissiveIntensity = .25 + .8 * k; v.glow.material.opacity = .5 + .5 * k; }
           if (lk.holo) { const h = ((lk.holoBase ?? .5) + (lk.holoSpan ?? .17) * (1 + Math.sin(now / 900 + c.x * .05))) % 1; v.mesh.material.color.setHSL(h, 1, .62); v.mesh.material.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
@@ -285,9 +299,10 @@
           animateLook(v, now, c);
         }
       }
-      if (c.owner.bossType === 'chameleon') {
-        // invisible until you are close: fades in over the last 20 units
-        let dmin = Infinity; for (const pc of player.cells) dmin = Math.min(dmin, Math.hypot(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
+      if (c.owner.bossType === 'chameleon' && (relationRefresh || c.seen === undefined)) {
+        // Invisible until you are close: 10 Hz is enough for this proximity fade.
+        let dmin = Infinity;
+        for (const pc of player.cells) dmin = Math.min(dmin, hyp(pc.x - c.x, pc.z - c.z) - cellR(pc) - r);
         const al = !player.cells.length ? .9 : Math.max(.05, Math.min(.9, (30 - dmin) / 20));
         c.vis.mesh.material.opacity = al; c.vis.glow.material.opacity = al * .9; c.vis.crown.visible = al > .5; c.vis.ring.visible = al > .3; c.seen = al > .3;
       }
@@ -299,20 +314,36 @@
       v.ring.scale.setScalar(r);
       if (c.owner.isPlayer) {
         v.shield.visible = shieldOn;
-        v.ring.material.color.set(c.mergeT > 0 ? BONUS.shield.color : '#ffffff');
-        v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
-      } else if (player.cells.length) {
-        const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
-        if (c.owner.team && c.owner.team === player.team) v.ring.material.color.set(ALLY_COLOR);
-        else v.ring.material.color.copy(danger ? THREAT : food ? PREY : NEUTRAL);
+        const mergeTone = player.freezeT > 0 || player.slowT > 0 ? 2 : c.mergeT > 0 ? 1 : 0;   // 2.7: an icy ring while slowed
+        if (v._mergeTone !== mergeTone) {
+          v.ring.material.color.set(mergeTone === 2 ? '#7fdcff' : mergeTone ? BONUS.shield.color : '#ffffff');
+          v._mergeTone = mergeTone;
+        }
+        if (cosmeticRefresh) v.shield.material.opacity = 0.15 + 0.08 * Math.sin(now / 150);
+      } else if (player.cells.length && (relationRefresh || v._ringTone === undefined)) {
+        // Cache the expensive per-player canEat scans between render frames.
+        let tone = 0; // neutral
+        if (c.owner.team && c.owner.team === player.team) tone = 1; // ally
+        else {
+          const danger = player.cells.some(p => canEat(c, p));
+          const food = !danger && player.cells.some(p => canEat(p, c));
+          tone = danger ? 2 : food ? 3 : 0;
+        }
+        if (v._ringTone !== tone) {
+          if (tone === 1) v.ring.material.color.set(ALLY_COLOR);
+          else v.ring.material.color.copy(tone === 2 ? THREAT : tone === 3 ? PREY : NEUTRAL);
+          v._ringTone = tone;
+        }
       }
+      // 2.7: in the modes for two the ring of a drop you can eat (green) or that can eat you (red) pulses and stands out past the edge
+      if (DuoM.mode && !c.owner.isPlayer && (v._ringTone === 2 || v._ringTone === 3)) v.ring.scale.setScalar(r * (1.1 + .07 * Math.sin(now / 170)));
     }
     ejectMat.color.set(skin().color); ejectMat.emissive.set(skin().color);
     for (const v of viruses) { const rv = radius(v.mass); v.mesh.position.set(v.x, rv * .9, v.z); v.mesh.scale.setScalar(rv); v.mesh.rotation.y = now / 2000 + v.x; }
-    if (meteorRing.visible) { meteorRing.scale.setScalar(22 + Math.sin(now / 200) * .8); meteorRing.material.opacity = ev.active ? .9 : .4 + .4 * Math.abs(Math.sin(now / 150)); }
+    if (meteorRing.visible) { meteorRing.scale.setScalar(40 + Math.sin(now / 200) * .8); meteorRing.material.opacity = ev.active ? .9 : .4 + .4 * Math.abs(Math.sin(now / 150)); }
     if (hole.visible) { holeRing.rotation.z = now / 400; }
     for (const e of ejects) e.mesh.position.set(e.x, radius(EJECT_MASS) * 0.9, e.z);
-    for (const b of bonuses) {
+    if (cosmeticRefresh) for (const b of bonuses) {
       b.mesh.position.y = 1.2 + Math.sin(now / 300 + b.x) * 0.25;
       b.mesh.children[0].rotation.y = now / 500;
       b.mesh.children[1].rotation.x = now / 700; b.mesh.children[1].rotation.y = now / 900;
@@ -323,7 +354,10 @@
       for (const c of player.cells) { m += c.mass; x += c.x * c.mass; z += c.z * c.mass; }
       focus = { x: x / m, z: z / m, m };
     } else if (!running) focus.m = 40;
-    const spread = player.cells.length > 1 ? Math.max(...player.cells.map(c => Math.hypot(c.x - focus.x, c.z - focus.z))) : 0;
+    let spread = 0;
+    if (player.cells.length > 1) {
+      for (const c of player.cells) spread = Math.max(spread, hyp(c.x - focus.x, c.z - focus.z));
+    }
     const fr = radius(focus.m);
     let h = (16 + fr * 4 + Math.max(0, fr - 10) * 2 + spread * 0.8) * 2.2 * (camera.aspect < 1 ? 1 + Math.min(.6, (1 - camera.aspect) * 1.1) : 1);   // giants get extra zoom-out; 120% farther for everyone (1.7.0); narrow portrait screens (phones) up to 60% more
     h = Math.min(h, 330);   // never leave the starry sky or lose the far edge of the arena
@@ -334,6 +368,7 @@
     camera.position.copy(camPos); camera.lookAt(camLook);
     // fog and shadows scale with the camera distance, so a big blob still sees clearly
     const camDist = camPos.distanceTo(camLook);
+    pxPerUnit = innerHeight / 2 / Math.tan(camera.fov * Math.PI / 360) / Math.max(1, camDist);   // screen pixels per world unit at the arena (used next frame)
     stars.position.copy(camPos);   // the starfield always surrounds the camera
     const nearWanted = Math.max(.1, camDist * .02);   // keeps depth precision when the camera is far up
     if (Math.abs(camera.near - nearWanted) > nearWanted * .1) { camera.near = nearWanted; camera.updateProjectionMatrix(); }
@@ -341,36 +376,128 @@
     scene.fog.far = camDist * 3.2 + 90;
     if (ev.active === 'eclipse') { scene.fog.near = camDist * 0.75; scene.fog.far = camDist * 1.45; }
     if (dailyIs('fog')) { scene.fog.near = camDist * 0.9; scene.fog.far = camDist * 1.7; }
-    { const fdt = Math.min(0.05, (now - (draw.last || now)) / 1000); updateParticles(fdt); updateFx(fdt); } draw.last = now;
+    if (cosmeticRefresh) {
+      const fdt = Math.min(0.05, (now - (draw.fxAt || now)) / 1000);
+      updateParticles(fdt); updateFx(fdt); draw.fxAt = now;
+    }
     pMat.size = 0.7 + camDist * 0.015;
     // the crown in «Захват короны» floats over the holder's biggest part
     crownMesh.visible = running && mode === 'crown' && (!!ModeX.crownGround || (!!crownHolder && crownHolder.cells.length > 0));
     if (crownMesh.visible && ModeX.crownGround) { const g = ModeX.crownGround; crownMesh.position.set(g.x, 2.2 + Math.sin(now / 300) * .5, g.z); crownMesh.scale.setScalar(4); crownMesh.rotation.y = now / 500; }
     else if (crownMesh.visible) {
-      const top = crownHolder.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = cellR(top);
+      const top = crownHolder.cells.reduce((a, b) => a.mass >= b.mass ? a : b), r = visualCellR(top);
       crownMesh.position.set(top.x, r * 2 + 0.6 + Math.sin(now / 300) * 0.3, top.z);
       crownMesh.scale.setScalar(Math.max(2, r * 1.1)); crownMesh.rotation.y = now / 800;
     }
     const sh = sun.shadow.camera, span = Math.max(50, camDist * 1.4);
     if (Math.abs(sh.right - span) > 2) { sh.left = sh.bottom = -span; sh.right = sh.top = span; sh.far = span * 3 + 60; sh.updateProjectionMatrix(); }
     sun.position.set(camLook.x + 15, span * 0.8 + 20, camLook.z + 10); sun.target.position.copy(camLook);
+    glowBatch.sync();
     renderer.render(scene, camera);
   }
 
   let last = performance.now();
   // frame rate: shown on demand; when it stays under 40 for 5 s in a round, graphics step down once per 10 s
   const perf = { frames: 0, t0: 0, fps: 60, low: 0, cool: 0 };
+  const r1q = v => Math.round(v * 100) / 100;
+  // 2.7 FPS: bots get a random skin, star level and aura each time they come back; a look never seen before compiled its shader in the middle of a round (a 60–80 ms hitch on a phone).
+  // While the menu is open, every look a bot can get is put on a hidden drop and compiled — a little at a time, never during a round.
+  // 8 hidden drops wear 8 looks at a time, then one compile; a round that starts before the end finishes the rest at its start (prewarmFinish)
+  // 2.7: three r128 builds a reflection map (PMREM) the first time a material with an env map is compiled — inside compile(), and that
+  // render leaves the compile without its render state: it threw on the first chrome/diamond look and the warm-up stopped there,
+  // so every look after it compiled mid-round (the owner's reports). A second pass finds the map ready and goes on.
+  function compileSafe() { for (let i = 0; i < 6; i++) { try { renderer.compile(scene, camera); return true; } catch (e) { if (i === 5 && TEST_MODE) console.warn('compile', e); } } return false; }
+  let prewarmJobs = null, prewarmI = 0, prewarmVis = null;
+  function prewarmChunk(budgetMs) {
+    try {
+      if (!prewarmJobs) { prewarmVis = Array.from({ length: 8 }, () => makeVis(new THREE.Color('#8088c0')));
+        const skins = SKINS.filter(k => !k.craft && !k.old && !EVO[k.id]);   // star bots wear legendary skins too
+        prewarmJobs = [...skins.flatMap(sk => [0, 1, 2, 3].map(st => [sk, st])),   /* 2.7: ★2 too — a bot with 2 stars compiled mid-round (owner's report) */ ...FX.filter(f => f.slot === 'aura' && !f.craft).map(f => ['aura', f.id])]; }
+      const t0 = performance.now();
+      while (prewarmI < prewarmJobs.length && performance.now() - t0 < budgetMs) {
+        for (let k = 0; k < prewarmVis.length && prewarmI < prewarmJobs.length; k++) { const [a, b] = prewarmJobs[prewarmI++], v = prewarmVis[k]; if (a === 'aura') setAura(v, b, '#8088c0'); else applySkin(v, a, b, null); }
+        compileSafe();
+      }
+    } catch (e) { if (prewarmJobs) prewarmI = prewarmJobs.length; }
+    const done = !prewarmJobs || prewarmI >= prewarmJobs.length;
+    if (done && prewarmVis) { try { prewarmVis.forEach(v => setAura(v, null)); } catch (e) {} prewarmVis = null; }
+    return done;
+  }
+  function prewarmLooks() { const step = () => { if (running) { setTimeout(step, 4000); return; } if (!prewarmChunk(14)) setTimeout(step, 40); }; setTimeout(step, 2500); }
+  function prewarmAgain() { prewarmJobs = null; prewarmI = 0; prewarmLooks(); }   // 2.7: after a change of graphics quality, warm the looks up again in the menu
+  function prewarmFinish() { if (!prewarmJobs || prewarmI < prewarmJobs.length) prewarmChunk(1e9); }
+  prewarmLooks();
+  // 2.7 test: what an object on screen is — a named part (капля, кольцо, глаза…), whose drop it belongs to, or its shape
+  let labelCells = null;
+  function objLabel(o) {
+    let p = o, named = null, depth = 0;
+    while (p && p !== scene) { if (p.name && !named) named = p.name + (depth ? ' · детали' : ''); if (p.name === 'капля') break; p = p.parent; depth++; }
+    let who = '';
+    if (p && p.name === 'капля') { const c = labelCells ? labelCells.get(p) : cells.find(k => k.vis && k.vis.mesh === p); if (c) who = c.owner.isPlayer ? 'игрок' : c.owner.kind === 'boss' ? 'босс ' + c.owner.bossType : c.owner.kind; }
+    return (named || ((o.geometry && o.geometry.type || o.type) + '/' + (o.material && o.material.type || ''))) + (who ? ' [' + who + ']' : '');
+  }
+  const seenProgs = new Set();
+  // three r128: the parameters a built-in shader's cache key is made of (WebGLPrograms), to name what differs
+  const PK_NAMES = ['precision', 'isWebGL2', 'supportsVertexTextures', 'outputEncoding', 'instancing', 'instancingColor', 'map', 'mapEncoding', 'matcap', 'matcapEncoding', 'envMap', 'envMapMode', 'envMapEncoding', 'envMapCubeUV', 'lightMap', 'lightMapEncoding', 'aoMap', 'emissiveMap', 'emissiveMapEncoding', 'bumpMap', 'normalMap', 'objectSpaceNormalMap', 'tangentSpaceNormalMap', 'clearcoatMap', 'clearcoatRoughnessMap', 'clearcoatNormalMap', 'displacementMap', 'specularMap', 'roughnessMap', 'metalnessMap', 'gradientMap', 'alphaMap', 'combine', 'vertexColors', 'vertexAlphas', 'vertexTangents', 'vertexUvs', 'uvsVertexOnly', 'fog', 'useFog', 'fogExp2', 'flatShading', 'sizeAttenuation', 'logarithmicDepthBuffer', 'skinning', 'maxBones', 'useVertexTexture', 'morphTargets', 'morphNormals', 'premultipliedAlpha', 'numDirLights', 'numPointLights', 'numSpotLights', 'numHemiLights', 'numRectAreaLights', 'numDirLightShadows', 'numPointLightShadows', 'numSpotLightShadows', 'shadowMapEnabled', 'shadowMapType', 'toneMapping', 'physicallyCorrectLights', 'alphaTest', 'doubleSided', 'flipSided', 'numClippingPlanes', 'numClipIntersection', 'depthPacking', 'dithering', 'sheen', 'transmissionMap'];
+  function shaderWhy(o, m) {
+    let p = o; while (p && p.name !== 'капля') p = p.parent;
+    const c = p ? cells.find(k => k.vis && k.vis.mesh === p) : null, w = c && c.owner;
+    const look = w && !w.isPlayer ? ` · облик ${w.lookSkin || '?'}★${w.lookSt || 0}${w.fx && w.fx.aura ? ' аура ' + w.fx.aura : ''}${w.star ? ' звезда' : ''}` : '';
+    const f = [m.map && 'map', m.emissiveMap && 'emiMap', m.envMap && 'env', m.alphaMap && 'alpha', m.vertexColors && 'vcol', m.flatShading && 'flat', m.transparent && 'transp', m.side === 2 && 'double', o.isInstancedMesh && 'inst', m.fog === false && 'nofog'].filter(Boolean).join('+');
+    return look + (f ? ' · ' + f : '') + ` · ${QUALITY}`;
+  }
+  function shaderWho() {
+    const list = renderer.info.programs || [], fresh = list.filter(p => !seenProgs.has(p)); list.forEach(p => seenProgs.add(p));
+    if (fresh.length > 6) return;   // a whole new arena (round start), not a hitch to explain
+    for (const prog of fresh) {
+      let who = null;
+      scene.traverse(o => { if (who || !o.material) return; const ms = Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of ms) { const pr = renderer.properties.get(m); if (pr && pr.currentProgram === prog) { who = objLabel(o) + shaderWhy(o, m); break; } } });
+      // 2.7: what makes it new — the parameters that differ from the closest shader already made of the same kind
+      let diff = '';
+      try { const mine = String(prog.cacheKey || '').split(','); let best = null, bd = 1e9;
+        for (const q of list) { if (q === prog || q.name !== prog.name) continue; const o = String(q.cacheKey || '').split(','); if (o.length !== mine.length) continue; let d = 0; for (let i = 0; i < o.length; i++) if (o[i] !== mine[i]) d++; if (d < bd) { bd = d; best = o; } }
+        if (best) { const ds = []; for (let i = 0; i < mine.length && ds.length < 6; i++) if (best[i] !== mine[i]) { const j = i - (mine.length - 3 - PK_NAMES.length), nmk = j >= 0 && j < PK_NAMES.length ? PK_NAMES[j] : i >= mine.length - 3 ? ['outputEncoding', 'gammaFactor', 'customKey'][i - (mine.length - 3)] : 'шейдер/defines'; ds.push(`${nmk}: ${String(best[i]).slice(0, 24)}→${String(mine[i]).slice(0, 24)}`); } diff = ds.length ? ' · отличие ' + ds.join(' ') : ''; } else diff = ' · первый такого вида'; } catch (e) {}
+      TLog.ev('новый шейдер', (prog.name || '?') + (who ? ': ' + who : '') + diff);
+    }
+  }
+  // 2.7 test: what takes the draw calls right now — objects in view by kind (the glow batch counts as one)
+  const cenFr = new THREE.Frustum(), cenM = new THREE.Matrix4();
+  function drawCensus() {
+    cenM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); cenFr.setFromProjectionMatrix(cenM);
+    const out = {}; labelCells = new Map(); for (const c of cells) if (c.vis) labelCells.set(c.vis.mesh, c);
+    scene.traverseVisible(o => {
+      if (!(o.isMesh || o.isPoints || o.isSprite || o.isLine) || !o.layers.test(camera.layers)) return;
+      if (o.frustumCulled) { if (o.isSprite ? !cenFr.intersectsSprite(o) : (o.geometry && !cenFr.intersectsObject(o))) return; }
+      const k = objLabel(o).replace(/ \[босс .*\]$/, ' [босс]'); out[k] = (out[k] || 0) + 1;   // parts are counted by whose drop they are on
+    });
+    labelCells = null;
+    return Object.entries(out).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => k + ' ' + n).join(', ');
+  }
   function trackFps(now) {
     perf.frames++;
     if (now - perf.t0 < 1000) return;
     perf.fps = perf.frames * 1000 / (now - perf.t0); perf.frames = 0; perf.t0 = now;
+    if (TEST_MODE && running && !paused) TLog.fps(perf.fps, () => {   // 2.7 test journal: what was on screen during a drop
+      const ri = renderer.info.render, mem = performance.memory;
+      return { q: QUALITY, mass: Math.round(total(player)), cells: cells.length, mine: player.cells.length, bots: bots.filter(o => o.cells.length).length, boss: bossOwners.filter(o => o.cells.length).length + raidTwins.filter(o => o.cells.length).length,
+        fx: pActive.length + eActive.length, calls: ri.calls, tris: Math.round(ri.triangles / 1000) + 'k', heap: mem ? Math.round(mem.usedJSHeapSize / 1048576) + 'MB' : undefined, px: r1q(renderer.getPixelRatio()) }; });
+    if (TEST_MODE && running && renderer.info.programs) shaderWho();   // 2.7: what still compiles mid-round, and for what
     if (save.settings.showFps) { const el = $('fps'); el.textContent = `${Math.round(perf.fps)} FPS`; el.classList.toggle('slow', perf.fps < 40); }
+    if (running && !paused && !document.hidden && save.settings.autoQ) {   // 2.7: soft step first — resolution, before the quality preset
+      perf.dcool = Math.max(0, (perf.dcool || 0) - 1);
+      perf.dlow = perf.fps < 30 ? (perf.dlow || 0) + 1 : 0;   // a fallback only for heavy drops: the picture stays sharp otherwise
+      perf.dhi = perf.fps >= 50 ? (perf.dhi || 0) + 1 : 0;
+      if (!perf.dcool && perf.dlow >= 3 && dynPx > .7) { if (setDynPx(Math.max(.7, dynPx - .15)) && TEST_MODE) TLog.ev('разрешение', r1q(renderer.getPixelRatio())); perf.dlow = 0; perf.dcool = 3; }
+      else if (!perf.dcool && perf.dhi >= 5 && dynPx < 1) { if (setDynPx(Math.min(1, dynPx + .15)) && TEST_MODE) TLog.ev('разрешение', r1q(renderer.getPixelRatio())); perf.dhi = 0; perf.dcool = 4; }
+    }
     if (!running || paused || document.hidden || !save.settings.autoQ || save.settings.quality === 'low') { perf.low = 0; return; }
     perf.cool = Math.max(0, perf.cool - 1);
     perf.low = perf.fps < 40 ? perf.low + 1 : 0;
     if (perf.low >= 5 && !perf.cool) {
       save.settings.quality = save.settings.quality === 'high' ? 'medium' : 'low'; persist(); applySettings();
-      toast(`Игра шла медленно — графика снижена до «${save.settings.quality === 'medium' ? 'Среднее' : 'Низкое'}»`);
+      toast(`Игра шла медленно — качество графики: «${save.settings.quality === 'medium' ? 'Среднее' : 'Низкое'}»`);
+      if (TEST_MODE) TLog.ev('графика снижена', save.settings.quality);
       perf.low = 0; perf.cool = 10;
     }
   }
@@ -382,19 +509,27 @@
       `<b class="mb-blob" style="left:${x}%;top:${y}%;width:${r}px;height:${r}px;background:radial-gradient(circle at 35% 30%, #fff, ${c} 45%, transparent 72%);box-shadow:0 0 24px ${c}"></b>`).join('');
   // one frame; an error inside never stops the loop (that froze the game before): it is logged, and if a round keeps failing it ends cleanly
   let frameErrs = 0;
+  const framePrev = [0, 0, 0];
+  let pxPerUnit = 40;   // 2.7 test: the last frame's game logic, drawing and HUD, ms
   function frame(now) {
     try {
       if (sceneryAnim) sceneryAnim(now);
       lookTick(now);
       trackFps(now);
+      if (TEST_MODE && running && !paused && !document.hidden) TLog.frame(now - last, framePrev);   // 2.7: hitches for the FPS analysis, with what the frame before spent where
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
-      if (running && !paused && !dying) update(dt);
+      if (TEST_MODE) testLogTick(dt);   // 2.7 test journal (14-net.js)
+      const T0 = TEST_MODE ? performance.now() : 0;
+      if (running && !paused && !dying) { if (ModeX.hcFrozen()) ModeX.hcFreezeTick(dt); else update(dt); }
       else if (running && dying) { for (const o of bots) if (o.cells.length) o.cells.forEach(k => steer(k, o.tx, o.tz, dt)); }
       else if (!running) idle(dt);
       const mb = !running && !$('overlay').hidden;
       if (mb !== menuBg) { menuBg = mb; document.body.classList.toggle('menu-bg', mb); }
+      const T1 = TEST_MODE ? performance.now() : 0;
       if (!mb) draw(now);
+      const T2 = TEST_MODE ? performance.now() : 0;
       updateHud(now);
+      if (TEST_MODE) { const T3 = performance.now(); framePrev[0] = T1 - T0; framePrev[1] = T2 - T1; framePrev[2] = T3 - T2; }
       if (frameErrs) frameErrs = Math.max(0, frameErrs - .02);
     } catch (e) { onFrameError(e, now); }
     requestAnimationFrame(frame);
@@ -420,6 +555,50 @@
   }
 
   // 2.2: the pause screen shows how the round is going and the goals of the day
+  // 2.7: your buffs, with real numbers. The speed is measured: speedOf() against the bare speed of that mass (without the dash)
+  function speedBuffK() {
+    if (!player.cells.length) return 1;
+    const c = mainOf(player), dash = player.dashT; player.dashT = 0;
+    const real = speedOf(c); player.dashT = dash;
+    const bare = BASE_SPEED * Math.pow(Math.min(c.mass, PLAYER_SPEED_MASS_CAP) / START_MASS, -0.15);
+    return bare > 0 ? real / bare : 1;
+  }
+  const buffPct = k => `${k >= 1 ? '+' : '−'}${Math.round(Math.abs(k - 1) * 100)}%`;
+  function buffRows() {
+    const rows = [], add = (ic, name, val, note = '', bad = false) => rows.push({ ic, name, val, note, bad });
+    const sec = t => `${Math.ceil(t)} с`;
+    // speed
+    const sk = speedBuffK();
+    add('⚡', 'Скорость от бафов', buffPct(sk), 'итог всех бафов и замедлений, без рывка', sk < .995);
+    if (U.speed) add('', '· Обтекаемость', `+${U.speed}%`, 'улучшение');
+    if (effects.speed > 0) add('', '· Бонус «Ускорение»', '+45%', sec(effects.speed));
+    if (petLv('speed')) add('', '· Питомец', `+${2 * petLv('speed')}%`);
+    if (ModeX.hcK('speed') > 1) add('', '· Карточки «Хардкора»', buffPct(ModeX.hcK('speed')));
+    if (abOn('shrink')) add('', '· Сжатие', '+25%', sec(player.abT.shrink));
+    try { if (charIs('tank')) add('', '· Характер «Танк»', '−8%', '', true); } catch (e) {}
+    if (player.freezeT > 0) add('', '· Оглушение', '−95%', sec(player.freezeT), true);
+    else if (player.slowT > 0) add('', '· Замедление', `−${Math.round((1 - ABIL_CFG.slowFactor) * 100)}%`, sec(player.slowT), true);
+    // food and growth
+    const gk = ModeX.gainK();
+    if (U.digest) add('🍽', 'Пищеварение', `+${(1.5 * U.digest).toFixed(1).replace('.', ',')}%`, 'крошки');
+    if (effects.double > 0) add('🍽', 'Бонус «Двойная еда»', '×2', sec(effects.double));
+    if (abOn('pulse')) add('🍽', 'Насыщение', 'крошки ×2, боты +30%, не таешь', sec(player.abT.pulse));
+    if (gk < .995 || gk > 1.005) add('🍽', mode === 'hardcore' ? 'Еда в «Хардкоре»' : 'Рост большой массы', `×${gk.toFixed(2).replace('.', ',')}`, 'крошки и боты', gk < 1);
+    // melting, protection, magnet
+    const mk = ModeX.meltK() * (1 - .04 * U.guard) * (charIs('predator') ? 1.1 : 1);
+    if (mk < .995 || mk > 1.005) add('🧊', 'Таяние', `×${mk.toFixed(2).replace('.', ',')}`, mk > 1 ? 'тает быстрее обычного' : 'тает медленнее', mk > 1);
+    if (effects.shield > 0) add('🛡', 'Неуязвимость', sec(effects.shield));
+    if (player.cells.length) { const er = eatRatio(mainOf(player)); if (er > 1.255) add('🛡', 'Защита', `съесть можно в ${er.toFixed(2).replace('.', ',')} раза крупнее`, 'обычно 1,25'); }
+    const mg = 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet') + starBonus('magnet');
+    if (mg > 0) add('🧲', 'Притяжение крошек', `+${mg.toFixed(1).replace('.', ',')}`, effects.magnet > 0 ? 'бонус «Магнит» ' + sec(effects.magnet) : '');
+    // abilities working now, hardcore cards and debuffs, the character
+    for (const id of Object.keys(player.abT || {})) if (player.abT[id] > 0 && !['pulse', 'shrink', 'shieldB'].includes(id)) { const a = abilById(id); if (a) add(a.icon, a.name, 'действует', sec(player.abT[id])); }
+    for (const [ic, name, v, n] of ModeX.hcBuffs()) add(ic, name, v, `итог карточек ${n}`);
+    const DBN = { melt: 'таешь быстрее', slow: 'медленнее', absorb: 'еда менее сытная', magnet: 'притяжение слабее', dashLen: 'рывок короче', sense: 'боты видят дальше' };
+    for (const [k, v] of ModeX.hcDebuffs()) add('🔻', DBN[k] || k, `${v}%`, 'минус рисковой карточки', true);
+    try { const ch = charById(charNow()); if (ch) add(ch.icon, `Характер «${ch.name}»`, '', `＋ ${ch.plus}; − ${ch.minus}`); } catch (e) {}
+    return rows;
+  }
   function renderPauseInfo() {
     const box = $('pauseInfo'); if (!box || !stats) return;
     $('quitBtn').textContent = ModeX.quitLabel();
@@ -430,7 +609,11 @@
       const v = Math.min(q.goal, Math.round(stats[q.stat] || 0)), ok = doneQuests.has(q.id) || v >= q.goal;
       return `<li class="${ok ? 'done' : ''}"><span class="g-txt">${ok ? '✓ ' : ''}${q.text}<span class="g-bar"><i style="width:${(v / q.goal * 100).toFixed(0)}%;background:${ok ? '#3dffa2' : 'var(--food)'}"></i></span></span>` +
         `<span class="g-rw"><b>${ok ? 'готово' : `${v.toLocaleString('ru-RU')} / ${q.goal.toLocaleString('ru-RU')}`}</b><small>+${qCoins(q)} ◆</small></span></li>`; }).join('');
-    box.innerHTML = `<div class="ps-grid">${tiles}</div>` + (goals ? `<h3>Цели на сегодня</h3><ul class="goal-list">${goals}</ul>` : '<p class="ps-note">В рейтинговом бою цели дня не считаются.</p>');
+    const picked = ModeX.pickedHtml(), pickTitle = mode === 'hardcore' ? 'Улучшения этого раунда' : 'Замены способностей';
+    const pickedSec = picked ? `<h3>${pickTitle}</h3><ul class="ps-picks">${picked}</ul>` : (mode === 'hardcore' ? '<h3>Улучшения этого раунда</h3><p class="ps-note">Пока ни одного: первое — на 2 000 массы.</p>' : '');
+    const br = buffRows();
+    const buffs = `<h3>Твои бафы</h3>` + (br.length ? `<ul class="ps-buffs">${br.map(r => `<li class="${r.bad ? 'bad' : ''}${r.name.startsWith('·') ? ' sub' : ''}"><span class="pb-n">${r.ic ? `<i>${r.ic}</i>` : ''}${r.name}${r.note ? `<small>${r.note}</small>` : ''}</span><b>${r.val}</b></li>`).join('')}</ul>` : '<p class="ps-note">Бафов нет.</p>');
+    box.innerHTML = `<div class="ps-grid">${tiles}</div>` + pickedSec + buffs + (goals ? `<h3>Цели на сегодня</h3><ul class="goal-list">${goals}</ul>` : '<p class="ps-note">В рейтинговом бою цели дня не считаются.</p>');
   }
   // 2.2: one daily goal may be swapped once a day
   $('menuQuests').addEventListener('click', e => {
@@ -445,6 +628,19 @@
     return d ? `${d} дн${h ? ` ${h} ч` : ''}` : h ? `${h} ч ${m % 60} мин` : `${Math.max(1, m)} мин`; }
   // ================= 2.2: logos for the Collection / Rewards buttons and the shop tabs =================
   const HUB_ICON = {
+    p_bg: ['#7b3dff', '#22e6ff', '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.6"/>'],
+    p_frame: ['#ff4fd8', '#ffd23f', '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5.2" stroke-dasharray="2 2"/>'],
+    p_title: ['#ffd23f', '#ff9a3d', '<path d="M4 8h16v8H4z"/><path d="M4 8l-2 4 2 4M20 8l2 4-2 4M8 12h8"/>'],
+    p_badge: ['#3dffa2', '#22e6ff', '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>'],
+    p_shelf: ['#ff9a3d', '#ff3d6e', '<path d="M3 17h18M5 17v3M19 17v3"/><circle cx="7" cy="13" r="2.5"/><path d="M12 8.5l1.3 2.6 2.8.4-2 2 .5 2.8-2.6-1.4-2.6 1.4.5-2.8-2-2 2.8-.4z"/><rect x="16.5" y="10.5" width="4" height="5" rx="1"/>'],
+    c_skin: ['#ff4fd8', '#ffd23f', '<path d="M12 3c3.2 4.2 6.5 7.6 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 10.6 8.8 7.2 12 3z"/><circle cx="10" cy="13" r="1.1" fill="currentColor"/><circle cx="14" cy="15.5" r="1.1" fill="currentColor"/><circle cx="11" cy="17.5" r="1.1" fill="currentColor"/>'],   // 2.7: one icon per thing everywhere — the same as «Скины» in the shop and wardrobe
+    c_fx: ['#ffd23f', '#ff4fd8', '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>'],   // the same as «Эффекты»
+    c_league: ['#ffd23f', '#ff9a3d', '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.5 4M17 6h2.5a2.5 2.5 0 0 1-2.5 4M12 13v4M8.5 20h7M10 17h4"/>'],
+    c_special: ['#ff9a3d', '#ff3d6e', '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M4 13h16M12 9v11"/><path d="M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6 .5 6-1.5S14 5 12 9"/>'],
+    g_ach: ['#22e6ff', '#7b3dff', '<circle cx="12" cy="14.5" r="6"/><path d="M8 3l3 5.5M16 3l-3 5.5"/><path d="M9.6 14.6l1.7 1.7 3.2-3.4"/>'],
+    g_ch: ['#ff9a3d', '#ff3d6e', '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><path d="M18 3.5l-4.2 4.2M18 3.5v2.8h2.8"/>'],
+    g_skill: ['#3dffa2', '#22e6ff', '<path d="M12 2.8l8.5 9.2-8.5 9.2L3.5 12z"/><path d="M13.2 6.8L10 12h4.2l-3.2 5.2"/>'],
+    g_legend: ['#ffd23f', '#ff4fd8', '<path d="M3.8 17.2h16.4L18.6 7.6l-4.2 3.6L12 4.6l-2.4 6.6-4.2-3.6z"/><path d="M3.8 20.2h16.4"/>'],
     ward: ['#ff4fd8', '#7b3dff', '<path d="M12 7.2a2.1 2.1 0 1 1 2.1-2.1c0 1.3-2.1 1.6-2.1 3.1v.9"/><path d="M12 9.1L3.6 15.4c-.8.6-.4 1.6.6 1.6h15.6c1 0 1.4-1 .6-1.6z"/><circle cx="12" cy="19.6" r="1.4" fill="currentColor"/>'],
     pet: ['#3dffa2', '#0a8f6a', '<ellipse cx="12" cy="15.2" rx="4.6" ry="3.8"/><circle cx="6.2" cy="10.4" r="1.9"/><circle cx="9.8" cy="6.8" r="1.9"/><circle cx="14.2" cy="6.8" r="1.9"/><circle cx="17.8" cy="10.4" r="1.9"/>'],
     col: ['#b26bff', '#ff4fd8', '<rect x="7" y="4" width="11" height="14" rx="2"/><path d="M4.5 7.5v11a2 2 0 0 0 2 2H15"/><path d="M10 9h5M10 12h5M10 15h3"/>'],
@@ -455,7 +651,8 @@
     sabil: ['#22e6ff', '#b26bff', '<path d="M12 2.5l6 6.5-6 12.5L6 9z"/><path d="M6 9h12M9.5 9L12 21.5 14.5 9"/>'],
     skin: ['#ff4fd8', '#ffd23f', '<path d="M12 3c3.2 4.2 6.5 7.6 6.5 11.2a6.5 6.5 0 0 1-13 0C5.5 10.6 8.8 7.2 12 3z"/><circle cx="10" cy="13" r="1.1" fill="currentColor"/><circle cx="14" cy="15.5" r="1.1" fill="currentColor"/><circle cx="11" cy="17.5" r="1.1" fill="currentColor"/>'],
     fx: ['#ffd23f', '#ff4fd8', '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5.5 15.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>'],
-    arena: ['#4d7cff', '#22e6ff', '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.6" transform="rotate(-18 12 12)"/>'],
+    deco: ['#ff6ad5', '#ffd23f', '<path d="M3 18.5h18M6 18.5c0-4.5 1.5-9 6-9s6 4.5 6 9M9 9.5l1-5.5h4l1 5.5"/>'],   // «Украшения» (what is worn over the head)
+    arena: ['#4d7cff', '#22e6ff', '<ellipse cx="12" cy="8.5" rx="9.5" ry="3.6"/><ellipse cx="12" cy="8.5" rx="4.6" ry="1.5"/><path d="M2.5 8.5v6.2c0 2 4.3 3.8 9.5 3.8s9.5-1.8 9.5-3.8V8.5"/><path d="M6.5 11.6v5.6M12 12.2v6.3M17.5 11.6v5.6"/><path d="M12 4.9V2.4l2.6.9-2.6.9"/>'],   // 2.7: a stadium (like 🏟), the same everywhere
     arch: ['#c0a0ff', '#ffd23f', '<path d="M6 4h11a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v1.5h4V6a2 2 0 0 0-2-2zM8 21a2 2 0 0 1-2-2V7.5"/><path d="M10.5 9h5M10.5 12h5M10.5 15h3"/>'],
   };
   function hubLogoSVG(k, size = 56) {
@@ -466,10 +663,10 @@
       `<g transform="translate(17 17) scale(1.25)" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" color="#fff">${ic}</g></svg>`;
   }
   document.querySelectorAll('[data-logo]').forEach(el => { el.innerHTML = hubLogoSVG(el.dataset.logo, 56); });
-  const SHOP_TAB_ICON = { up: 'up', abil: 'sabil', skin: 'skin', fx: 'fx', arena: 'arena', archive: 'arch' };
+  const SHOP_TAB_ICON = { up: 'up', abil: 'sabil', wshow: 'chest', skin: 'skin', fx: 'fx', arena: 'arena', archive: 'arch' };
   const tabIcon = id => SHOP_TAB_ICON[id] ? hubLogoSVG(SHOP_TAB_ICON[id], 22).replace('class="hub-logo"', 'class="tab-ico"') : '';
   function hubCardsInfo() {
-    $('wardInfo').textContent = `скинов ${save.skins.length}/${SKINS.length} · надето: «${skin().name}»`;
+    $('wardInfo').textContent = `скинов ${save.skins.length}/${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length} · надето: «${skin().name}»`;
     const pt = save.pet && petById(save.pet); $('petInfo').textContent = pt ? ` · рядом: «${pt.name}»` : '';
     const bd = (save.build || []).filter(Boolean).map(id => (abilById(id) || {}).sh).filter(Boolean); $('abilInfo').textContent = bd.length ? ` · в бою: ${bd.join(' · ')}` : '';
     const lines = ACH.filter(a => a.line), m = [3, 2, 1].map(k => lines.filter(a => achMetal(a, achTier(a)) === k).length);

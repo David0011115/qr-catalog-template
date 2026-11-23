@@ -1,30 +1,126 @@
   // TEST MODE: everything unlocked, saved under a separate key so real progress is untouched.
   const TEST_MODE = false;   // ВНИМАНИЕ: перед заливкой в репозиторий вернуть false (сборка PWA проверяет это)
+  // 2.7 FPS: Math.hypot takes any number of arguments and allocates on every call (a profile on the stress test: megabytes a second); two numbers need only this
+  const hyp = (a, b) => Math.sqrt(a * a + b * b);
   const SAVE_KEY = TEST_MODE ? 'blobs3d-save-test' : 'blobs3d-save-v2';
-  // the field's radius and the number of crumbs change with the mode (setArenaSize): «Захват территории» ×1,5, «Спина к спине» ×0,8
+  // 2.7 «Хронос 2.0»: items taken out of the workshop. Whoever crafted them keeps them; nobody can craft them any more,
+  // and the lists of things to get no longer show them to players who don't own them.
+  const CR_RETIRED = new Set(['cr_engrave', 'cr_watch', 'cr_windup', 'cr_marks', 'cr_cogwings', 'cr_halo', 'cr_tick', 'bg_cr_gears', 'bg_cr_behind', 'fr_cr_dial', 'fr_cr_pend', 'emo_wait', 'emo_late']);
+  // 2.7 test build: a journal of every round, for every mode — the basics, slowdowns and hitches, what is special
+  // in the mode, and the network of online matches. Kept on this device (last 40), copied as text from «ТЕСТ → Отчёты».
+  // In the real game (TEST_MODE false) every call returns at once and nothing is recorded.
+  const TLog = (() => {
+    const KEY = 'kapli3d-tlog', MAX = 40, LIM = { ev: 300, samples: 240, slow: 120, drops: 40 };
+    let cur = null, sampleT = 0, slowEp = null, lastFps = 60, dropEp = null;
+    // 2.7: FPS analysis — the device, frame times (hitches), and every drop under 30 FPS with what was on screen at that moment
+    let devCache = null;
+    function device() {
+      if (devCache) return devCache;
+      let gpu = '';
+      try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'); gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); } catch (e) {}
+      const ua = navigator.userAgent || '', os = (/Android [\d.]+|iPhone OS [\d_]+|iPad|Windows NT [\d.]+|Mac OS X [\d_]+|Linux/.exec(ua) || [''])[0].replace(/_/g, '.');
+      const br = (/(YaBrowser|SamsungBrowser|Edg|OPR|Firefox|CriOS|Chrome|Version)\/[\d]+/.exec(ua) || [''])[0];
+      return devCache = { os, br, scr: `${screen.width}×${screen.height}`, dpr: r1(devicePixelRatio || 1), cores: navigator.hardwareConcurrency || null, mem: navigator.deviceMemory || null, gpu: String(gpu).slice(0, 80) };
+    }
+    const now = () => Math.round((typeof stats !== 'undefined' && stats && stats.time) || 0);
+    const r1 = v => Math.round(v * 10) / 10;
+    const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+    const store = L => { try { localStorage.setItem(KEY, JSON.stringify(L.slice(-MAX))); } catch (e) {} };
+    function begin(info) {
+      if (!TEST_MODE) return;
+      cur = Object.assign({ at: Date.now(), ver: 'v2.7-online', dev: device(), ev: [], samples: [], slow: [], drops: [], fps: { min: 999, sum: 0, n: 0, low: 0, h50: 0, h100: 0, worst: 0, frames: 0, ms: [] }, net: null, x: {} }, info);
+      sampleT = 0; slowEp = null; dropEp = null; lastFps = 60;
+    }
+    function ev(type, data) { if (cur && cur.ev.length < LIM.ev) cur.ev.push(data === undefined ? [now(), type] : [now(), type, data]); }
+    function extra(key, value) { if (cur) cur.x[key] = value; }
+    // once a second: FPS; ctx() says what is on screen (only asked during a drop)
+    function fps(f, ctx) {
+      if (!cur) return; const F = cur.fps; lastFps = f; F.min = Math.min(F.min, Math.round(f)); F.sum += f; F.n++;
+      if (f < 30) { F.low++;
+        if (!dropEp) { let c = {}; try { c = ctx ? ctx() : {}; } catch (e) {} dropEp = { t: now(), sec: 0, min: Math.round(f), ...c }; }
+        dropEp.sec++; dropEp.min = Math.min(dropEp.min, Math.round(f));
+      } else if (dropEp) { if (cur.drops.length < LIM.drops) cur.drops.push(dropEp); dropEp = null; }
+    }
+    // every frame of a round: its time in ms — frames over 50 ms are felt as a hitch, over 100 ms as a freeze
+    function frame(ms, parts) {
+      if (!cur || !(stats && stats.time >= 1)) return; const F = cur.fps; F.frames++;   // the first second (round set-up) is not a hitch
+      if (ms > 50) { F.h50++; if (ms > 100) F.h100++; if (ms > F.worst) F.worst = Math.round(ms);
+        // [second, ms, logic, drawing, HUD] — logic+drawing+HUD small = the pause was outside the game code (memory cleanup, the browser, the GPU)
+        if (F.ms.length < 120) F.ms.push(parts ? [now(), Math.round(ms), Math.round(parts[0]), Math.round(parts[1]), Math.round(parts[2])] : [now(), Math.round(ms)]);
+        if (parts) { if (parts[0] + parts[1] + parts[2] > ms * .6) F.hJs = (F.hJs || 0) + 1; else F.hOut = (F.hOut || 0) + 1; } }
+    }
+    // the network of a server match: snapshot gaps, ping, pauses, reconnects
+    function net(kind, value, extra) {
+      if (!cur) return;
+      const N = cur.net = cur.net || { gaps: 0, gapMax: 0, gap250: 0, gap1000: 0, big: [], lagMax: 0, ping: [], pings: 0, pingSum: 0, pingMax: 0 };
+      // 2.7: every pause over 250 ms with its time (second, ms) and how late the server loop was — the same second on both phones means the server
+      if (kind === 'gap') { N.gaps++; N.gapMax = Math.max(N.gapMax, Math.round(value)); if (value > 250) { N.gap250++; if (N.big.length < 60) N.big.push([r1(stats && stats.time || 0), Math.round(value), extra ?? null]); } if (value > 1000) N.gap1000++; }
+      if (kind === 'gap' && Number.isFinite(extra)) N.lagMax = Math.max(N.lagMax, extra);
+      if (kind === 'ping') { N.pings++; N.pingSum += value; N.pingMax = Math.max(N.pingMax, Math.round(value)); if (N.ping.length < 60) N.ping.push([now(), Math.round(value)]); }
+    }
+    // every frame of a round: samples every 5 s, and slowdown episodes — only while a real cause is on (stun, slow, ice, curse);
+    // the plain speed of a big drop is not a slowdown (2.7: it filled the journal with «масса/другое»)
+    function tick(dt, speedPct, mass, causes) {
+      if (!cur) return;
+      sampleT -= dt;
+      if (sampleT <= 0 && cur.samples.length < LIM.samples) { sampleT = 5; cur.samples.push([now(), Math.round(mass), Math.round(speedPct), Math.round(lastFps)]); try { localStorage.setItem(KEY + '-cur', JSON.stringify(Object.assign({}, cur, { draftAt: Date.now() }))); } catch (e) {} }   // [time, mass, speed %, FPS]; the draft survives a freeze
+      if (causes.length && mass > 0) {
+        if (!slowEp) slowEp = { t: now(), min: speedPct, causes: new Set(causes), mass: Math.round(mass) };
+        slowEp.min = Math.min(slowEp.min, speedPct); causes.forEach(c => slowEp.causes.add(c));
+      } else if (slowEp) closeSlow();
+    }
+    function closeSlow() {
+      if (slowEp && cur && cur.slow.length < LIM.slow) cur.slow.push({ t: slowEp.t, sec: Math.max(0, now() - slowEp.t), min: Math.round(slowEp.min), why: [...slowEp.causes].join('+'), mass: slowEp.mass });
+      slowEp = null;
+    }
+    function end(summary) {
+      if (!cur) return;
+      closeSlow();
+      if (dropEp && cur.drops.length < LIM.drops) cur.drops.push(dropEp); dropEp = null;
+      const F = cur.fps; cur.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low, hitch50: F.h50, hitch100: F.h100, hitchInCode: F.hJs || 0, hitchOutside: F.hOut || 0, worstMs: F.worst, hitches: F.ms };
+      if (!cur.drops.length) delete cur.drops;
+      if (cur.net) { const N = cur.net; N.pingAvg = N.pings ? Math.round(N.pingSum / N.pings) : null; delete N.pingSum; }
+      Object.assign(cur, summary);
+      if (!Object.keys(cur.x).length) delete cur.x;
+      const L = load(); L.push(cur); store(L); cur = null;
+      try { localStorage.removeItem(KEY + '-cur'); } catch (e) {}
+    }
+    // a draft left by a round that never ended: into the journal, marked, with the FPS part summed up as at a normal end
+    try { const d = JSON.parse(localStorage.getItem(KEY + '-cur') || 'null');
+      if (d && d.at) { const F = d.fps || {}; d.fps = { avg: F.n ? Math.round(F.sum / F.n) : null, min: F.n ? F.min : null, lowSec: F.low, hitch50: F.h50, hitch100: F.h100, hitchInCode: F.hJs || 0, hitchOutside: F.hOut || 0, worstMs: F.worst, hitches: F.ms };
+        const lt = Math.max(((d.samples || []).slice(-1)[0] || [0])[0] || 0, ((d.ev || []).slice(-1)[0] || [0])[0] || 0);
+        d.end = `Раунд прервался — зависание или закрытие игры; последняя запись на ${lt} с` + (d.draftAt ? ` (${new Date(d.draftAt).toLocaleTimeString('ru-RU')})` : '');
+        d.dur = lt; const L = load(); L.push(d); store(L); }
+      localStorage.removeItem(KEY + '-cur'); } catch (e) {}
+    return { begin, ev, extra, fps, frame, net, tick, end, get on() { return !!cur; }, list: load, clear: () => store([]), r1 };
+  })();
+  // the field's radius and the number of crumbs change with the mode (setArenaSize): «Захват территории» ×1,25, «Спина к спине» ×0,8
   let R = 237.5, FOOD = 5250;
   const R_BASE = R, FOOD_BASE = FOOD, R_MAX = R * 2, FOOD_MAX = 12000, START_MASS = 10, MAX_BONUS = 6;
   const MAX_MASS = 15000;   // fallback cap for non-player cell types; player cells have no mass cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
-  const ROUND_COIN_CAP = 15000;   // 2.5.1: coins for a round's play at most (quests and the rest come on top)
-  const BOSS_MASS_CAP = 12000; // ordinary bosses; survival and raid have separate caps
+  const ROUND_COIN_CAP = 15000;   // 2.7: coins for a round's play at most (quests, the week and raid steps come on top)
+  const BOSS_MASS_CAP = 12000; // ordinary bosses outside Hardcore; survival and raid have separate caps
+  let CL_BOSS_MASS_CAP = 12000; // 2.7 «Классика»: from 10 000 follows the player (main part or the smaller half) ×1.2
+  let HC_BOSS_MASS_CAP = 23000; // Hardcore only: total mass cap for each ordinary boss; after 20 000 it follows the player's smaller half (ModeX)
+  const PLAYER_SPEED_MASS_CAP = 20000, PLAYER_VISUAL_MASS_CAP = 10000, PLAYER_VISUAL_GROW = .3;   // 2.7: from 10 000 the drop grows much slower in size (owner: «с 10к капли через чур большие»)
   const MODES = {
-    classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы с наградой и арена, которая накаляется каждые 3 минуты' },
-    timed:    { name: 'На время',       desc: '3 минуты: случайное правило раунда, финальный рывок и награда за любое место' },
+    classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы до 50 000 с наградой, арена накаляется каждые 3 минуты. На 50 000 — две половины, цель — обе по 50 000' },
+    timed:    { name: 'На время',       desc: '5 минут: случайное правило раунда, финальный рывок и награда за любое место' },
     survival: { name: 'Выживание',      desc: 'Волна боссов каждые 15 с. Боссы тают: к концу жизни их можно съесть. Каждая 5-я волна особая, после неё передышка' },
     split:    { name: 'Только деление', desc: 'Без рывка, деление раз в 3 с, до 10 частей' },
     crown:    { name: 'Захват короны',  desc: 'Корона лежит на поле; дальше она переходит только к тому, кто съест владельца. Владелец медленнее, на него охотятся боты и боссы, волны крепчают. До поражения' },
-    rbuild:   { name: 'Случайный билд', desc: 'Каждый раунд — 3 случайные способности из 12 обычных, даже не купленные. Опыт ×1,2', lvl: 10 },
+    rbuild:   { name: 'Случайный билд', desc: 'Каждый раунд — 3 случайные способности из 12 обычных, даже не купленные. На 5 вехах массы можно заменить одну из них на новую, посильнее. Опыт ×1,2', lvl: 10 },
     team:     { name: 'Командный бой',  desc: 'Ты и 5 союзников против 6 соперников, 4 минуты' },
     giant:    { name: 'Охота на Колосса', desc: 'Огромный босс делится, когда к нему подплываешь. Съешь все части' },
-    hardcore: { name: 'Хардкор',        desc: 'Без бонусов и второго шанса, боты агрессивнее. Длинная защита на старте, маленькие улучшения на 2 000 / 5 000 / 10 000 массы. Монеты ×1,6' },
+    hardcore: { name: 'Хардкор',        desc: 'Экстремальное выживание: адаптивные боссы (максимум два одновременно), обычные боссы до 23 000 массы. На 50 000 игрок делится на две равные половины; победа — когда каждая достигнет 50 000 (всего 100 000). Улучшения на 11 вехах, монеты ×1,6' },
     // modes for two phones on one network (a room by code): marked «вдвоём · локально» everywhere; 2.5 — replaces «Испытание дня»
-    territory: { name: 'Захват территории', desc: 'Вдвоём, на двух телефонах. Поле разделено границей: ешь ботов на своей половине, расти — и граница ползёт к сопернику. 4 минуты, досрочная победа при 80% поля', duo: true },
-    duoback:  { name: 'Спина к спине', desc: 'Вдвоём, на двух телефонах. Вместе против 50 волн боссов: перерывы с едой, усиления, особый босс каждую 5-ю волну, финал на 50-й. Три сложности', duo: true },   // 2.5 — replaces «Гонка массы»
-    raid:     { name: 'Босс-рейд',      desc: 'Пара колоссов недели: пока близнецы рядом, их связь гасит половину урона — разведи их. Урон копится между попытками, 3 попытки в день, за победу — уникальный скин и постоянные бонусы рейда' },
+    territory: { name: 'Захват территории', desc: 'Вдвоём, через сервер игры. Поле разделено границей: ешь ботов на своей половине, расти — и граница ползёт к сопернику. 4 минуты, досрочная победа при 90% поля (не раньше 2:00)', duo: true },
+    duoback:  { name: 'Спина к спине', desc: 'Вдвоём, через сервер игры. Вместе против 50 волн боссов: перерывы с едой, усиления, особый босс каждую 5-ю волну, финал на 50-й. Три сложности: от неё зависят сила и число боссов, еда и таяние', duo: true },   // 2.5 — replaces «Гонка массы»
+    raid:     { name: 'Босс-рейд',      desc: 'Пара колоссов недели и 5 ступеней сложности. Колоссы атакуют: волны, рывки, взрывы и особая атака босса недели; слабые ядра дают тройной урон. Попыток сколько угодно, награда за ступень раз в неделю, на III — трофей недели' },
     royale:   { name: 'Королевская битва', desc: 'Зона сужается ступенями и смещается — следующий круг виден заранее, в нём падают бонусы. Боты не возрождаются, побеждает последний. Только в лиге, в свой сезон' },
   };
-  const TIMED_LEN = 180, PLACE_BONUS = [40, 25, 15];
+  const TIMED_LEN = 300, PLACE_BONUS = [40, 25, 15];
   const RACE_GOAL = 4000, TEAM_LEN = 240, DAILY_GOAL = 3000, ALLY_COLOR = '#6fa8ff';
   const LOWER_BETTER = { race: true, giant: true };
   // v46: «Только деление» and «Охота на Колосса» were removed: «Только деление» lives on as a daily modifier, the Colossus as the weekly raid boss
@@ -32,6 +128,7 @@
   const MODE_IDS = Object.keys(MODES).filter(m => !REMOVED_MODES.includes(m));
   // modes for two: no mastery, no solo records; achievements «во всех режимах» count the solo ones
   const isDuoMode = m => !!(MODES[m] && MODES[m].duo), SOLO_MODE_IDS = MODE_IDS.filter(m => !isDuoMode(m));
+  const DUO_SOON = !TEST_MODE;   // 2.7 release: the modes for two are moving to the full online — closed with «скоро» (the test copy keeps them for testing)
   const DAILY = [
     { id: 'fog',      name: 'Туман',        desc: 'Видно только ближнее окружение' },
     { id: 'dashonly', name: 'Только рывок', desc: 'Деления нет, рывок раз в секунду' },
@@ -105,7 +202,17 @@
   // ================= abilities: ALL tunable numbers live in this table =================
   // slots: 3 build slots; levels: upgrade levels of a bought ability; level 1 costs firstLevel × price, each next × growth;
   // every level: cooldown −cdPerLv, power (duration / distance / radius / force) +powPerLv.
-  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .75, growth: 1.5, cdPerLv: .04, powPerLv: .065,
+  // 2.7 «Характер капли»: a style chosen before a round — one strength, one weakness (no pure gain). Solo modes only, not in the
+  // league, Chaos League, the tutorial and matches for two. Opened by level.
+  const CHARS = [
+    { id: 'predator', name: 'Хищник',     icon: '🩸', color: '#ff2d55', lvl: 1,  plus: 'съеденные боты и боссы дают +15%', minus: 'таешь на 10% быстрее' },
+    { id: 'gatherer', name: 'Собиратель', icon: '🍃', color: '#3dffa2', lvl: 1,  plus: 'крошки +30% и притягиваются издалека', minus: 'боты и боссы дают −15%' },
+    { id: 'tank',     name: 'Танк',       icon: '🛡', color: '#9fe8ff', lvl: 10, plus: 'чтобы съесть тебя, нужно быть крупнее в 1,4 раза (обычно 1,25)', minus: 'на 8% медленнее' },
+    { id: 'ghost',    name: 'Призрак',    icon: '👻', color: '#c9c2ff', lvl: 15, plus: 'боты замечают тебя вдвое позже', minus: 'масса растёт на 10% медленнее' },
+    { id: 'berserk',  name: 'Берсерк',    icon: '⚡', color: '#ffd23f', lvl: 20, plus: 'перезарядка способностей −15%', minus: 'щит и бонусы на поле действуют на 25% короче' },
+  ];
+  const charById = id => CHARS.find(c => c.id === id) || null;
+  const ABIL_CFG = { slots: 3, levels: 5, firstLevel: .75, growth: 1.35, cdPerLv: .04, powPerLv: .065,
     rankedBuild: ['dash', 'split', 'eject'], newBuild: ['dash', 'split', null], oldBuild: ['dash', 'split', 'eject'],
     slotBtn: ['dash', 'split', 'eject'], slotKey: ['Space', 'KeyE', 'KeyQ'], slotKeyName: ['Пробел', 'E', 'Q'],
     arsenalCoins: 5000, slowFactor: .5, shrinkSpeed: 1.25, maxTraps: 2, decoySpeed: .55 };
@@ -114,18 +221,18 @@
     { id: 'split',  name: 'Деление',           sh: 'Деление', icon: '◐', color: '#22e6ff', price: 0,     branches: ['splitmax', 'merge'], desc: 'Капля делится пополам и бросает часть вперёд. Части потом сливаются' },
     { id: 'eject',  name: 'Выброс массы',      sh: 'Выброс',  icon: '•', color: '#3dffa2', price: 5000,  cd: .12, dist: 1, desc: 'Отдаёт кусочек массы вперёд: стать легче, покормить шип или союзника. Улучшение: выброс летит дальше' },
     { id: 'shield', name: 'Щит',               sh: 'Щит',     icon: '⛨', color: '#9fe8ff', price: 15000, cd: 25, dur: 6,  desc: '6 с тебя нельзя съесть; кто попробует — отлетает и теряет 5% массы. Шипы всё равно рвут крупную каплю' },
-    { id: 'pulse',  name: 'Насыщение',         sh: 'Насыщ.',  icon: '✦', color: '#ffd23f', price: 12000, cd: 24, dur: 5,  desc: 'На 5 с обычная еда даёт вдвое больше массы' },
-    { id: 'blink',  name: 'Скачок',            sh: 'Скачок',  icon: '⇢', color: '#b26bff', price: 20000, cd: 18, dist: 24, desc: 'Мгновенный перенос вперёд на увеличенную дистанцию; на старом месте на 1 с остаётся тень, за которой гонятся боты' },
-    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 15, radius: 36, desc: 'Волна вдвое замедляет соперников в радиусе на 15 с — рывки и ускорения тоже работают вполсилы' },
-    { id: 'cloak',  name: 'Маскировка',        sh: 'Маскир.', icon: '◌', color: '#c9c2ff', price: 30000, cd: 28, dur: 4,  desc: '4 с боты тебя не видят; первая капля, съеденная из маскировки, даёт +15% массы' },
+    { id: 'pulse',  name: 'Насыщение',         sh: 'Насыщ.',  icon: '✦', color: '#ffd23f', price: 12000, cd: 24, dur: 5,  desc: 'На 5 с: крошки дают вдвое больше, съеденные боты — на 30% больше, а капля не тает' },
+    { id: 'blink',  name: 'Метка',             sh: 'Метка',   icon: '⌖', color: '#b26bff', price: 20000, cd: 22, dur: 10, dist: 24, desc: 'Первое нажатие ставит метку на поле, второе (в течение 10 с) мгновенно переносит тебя к ней; на старом месте на 1 с остаётся тень. Не успел — метка гаснет, перезарядка 8 с' },   // 2.7 audit: was «Скачок» (a fixed jump, useless on a big drop); the id stays for saves
+    { id: 'slow',   name: 'Импульс',           sh: 'Импульс', icon: '⦿', color: '#4d7cff', price: 25000, cd: 22, dur: 15, radius: 36, desc: 'Волна вдвое замедляет соперников в радиусе: ботов на 6 с, игроков на 4 с — рывки и ускорения тоже вполсилы. Улучшение — шире волна' },
+    { id: 'cloak',  name: 'Засада',            sh: 'Засада',  icon: '◌', color: '#c9c2ff', price: 30000, cd: 28, dur: 4,  desc: '4 с тебя не видят ни боты, ни боссы. Первая атака из засады съедает каплю, если ты крупнее хотя бы в 1,1 раза (обычно нужно 1,25), и даёт +20% массы' },   // 2.7 audit: was «Маскировка»
     { id: 'push',   name: 'Отражение',         sh: 'Отраж.',  icon: '⤺', color: '#ff9a3d', price: 22000, cd: 22, radius: 29, force: 100, stun: .6, desc: 'Мощно отбрасывает соперников в радиусе действия; крупные капли отбрасываются с повышенной силой' },
-    { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 24, dur: 4, size: .3, desc: '4 с: на 30% меньше, на 25% быстрее, шипы не режут. Масса та же, есть можно только еду' },
+    { id: 'shrink', name: 'Сжатие',            sh: 'Сжатие',  icon: '⊙', color: '#7fe8ff', price: 14000, cd: 24, dur: 5, size: .3, desc: '5 с: на 30% меньше, на 25% быстрее, шипы не режут, замедления и оглушения не действуют. Масса та же, есть можно только еду' },
     { id: 'decoy',  name: 'Клон',              sh: 'Клон',    icon: '◎', color: '#ff6ad5', price: 28000, cd: 28, dur: 5,  desc: 'Клон бежит туда, куда ты смотришь; если его схватят — рассыпается крошками и замедляет схватившего' },
     { id: 'trap',   name: 'Ловушка',           sh: 'Ловушка', icon: '✳', color: '#3dff6e', price: 35000, cd: 32, dur: 10, desc: 'Мина-шип на 10 с: срабатывает от крупной чужой капли и разрывает её на части. Тебя и союзников не трогает, не больше 2 сразу' },
     // Chaos League exclusives (xa): no price, no upgrades; from Chaos League «Сингулярность» seasons, one per season in this order
-    { id: 'x_hole',    xa: true, name: 'Чёрная дыра',          sh: 'Дыра',     icon: '◉', color: '#b26bff', cd: 35, dur: 4, dist: 20, radius: 20, desc: 'Точка впереди 4 с втягивает еду и крошки — капли не трогает' },
+    { id: 'x_hole',    xa: true, name: 'Чёрная дыра',          sh: 'Дыра',     icon: '◉', color: '#b26bff', cd: 35, dur: 4, dist: 20, radius: 20, desc: 'Точка впереди 4 с втягивает еду, крошки и чужие капли меньше 10% твоей массы' },
     { id: 'x_ice',     xa: true, name: 'Ледяной след',         sh: 'Лёд',      icon: '❄', color: '#9fe8ff', cd: 30, dur: 4, radius: 5, desc: '4 с за тобой остаётся лёд: на нём соперники скользят и теряют управление' },
-    { id: 'x_over',    xa: true, name: 'Перегрузка',           sh: 'Перегруз', icon: '⚡', color: '#ffd23f', cd: 45, dur: 3, desc: 'Сбрасывает перезарядку остальных способностей (и рывка с делением) и даёт 3 с ускорения' },
+    { id: 'x_over',    xa: true, name: 'Перегрузка',           sh: 'Перегруз', icon: '⚡', color: '#ffd23f', cd: 45, dur: 3, desc: 'Сбрасывает перезарядку остальных способностей (и рывка с делением), кроме «Щита» и «Фантома», и даёт 3 с ускорения' },
     { id: 'x_refl',    xa: true, name: 'Шипастая броня',       sh: 'Броня',    icon: '✹', color: '#c0c8e0', cd: 30, dur: 3, force: 45, desc: '3 с на капле шипы: кто коснётся и больше тебя — теряет 15% массы и отлетает' },
     { id: 'x_meteor',  xa: true, name: 'Метеорный дождь',      sh: 'Метеоры',  icon: '☄', color: '#ff6a00', cd: 38, dist: 22, radius: 10, force: 50, desc: '3 метеора падают в точки впереди: крупные капли разбивают на части, остальных отбрасывают' },
     { id: 'x_twin',    xa: true, name: 'Зеркальный двойник',   sh: 'Двойник',  icon: '⧉', color: '#3dffa2', cd: 28, dur: 5, desc: 'Вторая часть 5 с зеркально повторяет твои движения, потом сливается с тобой' },
@@ -133,17 +240,17 @@
     { id: 'x_anchor',  xa: true, name: 'Гравитационный колодец', sh: 'Колодец', icon: '⚓', color: '#4d7cff', cd: 35, dur: 4, radius: 22, desc: 'Зона на 4 с стягивает соперников к центру' },
     { id: 'x_hunt',    xa: true, name: 'Охота',                sh: 'Охота',    icon: '➹', color: '#ff2d55', cd: 22, radius: 60, force: 80, desc: 'Рывок с наведением на ближайшую каплю меньше тебя; поймал за 1,5 с — +10% массы' },
     { id: 'x_vamp',    xa: true, name: 'Кровопийца',           sh: 'Кровоп.',  icon: '♆', color: '#c2185b', cd: 40, dur: 5, radius: 12, desc: '5 с соседние капли меньше тебя понемногу теряют массу, а ты её получаешь' },
-    { id: 'x_typhoon', xa: true, name: 'Тайфун',               sh: 'Тайфун',   icon: '🌀', color: '#7fe8ff', cd: 35, dur: 3, radius: 18, desc: 'Вихрь вокруг тебя 3 с раскидывает мелкие капли и отбивает выбросы' },
+    { id: 'x_typhoon', xa: true, name: 'Тайфун',               sh: 'Тайфун',   icon: '🌀', color: '#7fe8ff', cd: 35, dur: 3, radius: 18, desc: 'Вихрь вокруг тебя 3 с отталкивает все чужие капли (крупные — слабее) и отбивает выбросы' },
     { id: 'x_phase',   xa: true, name: 'Фазовый скачок',       sh: 'Фаза',     icon: '⇉', color: '#ff4fd8', cd: 28, dist: 14, desc: 'Скачок вперёд, и в течение 2 с — второй, в новом направлении' },
     // 2.3 workshop «Хронос» (cr): crafted, no price, no upgrades, ordinary modes only
     { id: 'cr_gearwall', cr: true, name: 'Стена шестерён', sh: 'Стена', icon: '⚙', color: '#e8b05a', cd: 26, dur: 5, dmg: .05, desc: 'Ставит перед тобой стену из вращающихся шестерён на 5 с. Кто врежется — отскакивает и теряет 5% массы' },
-    { id: 'cr_rewind',   cr: true, name: 'Перемотка',      sh: 'Назад', icon: '⟲', color: '#22e6ff', cd: 40, back: 4, desc: 'Возвращает тебя туда, где ты был 4 с назад, и с той массой, если она была больше' },
-    { id: 'cr_swap',     cr: true, name: 'Рокировка',      sh: 'Рокир.', icon: '⇄', color: '#b26bff', cd: 30, radius: 25, desc: 'Меняет тебя местами с ближайшей каплей впереди (в радиусе 25)' },
+    { id: 'cr_rewind',   cr: true, name: 'Перемотка',      sh: 'Назад', icon: '⟲', color: '#22e6ff', cd: 40, back: 4, desc: 'Возвращает тебя туда, где ты был 4 с назад; если тогда ты был тяжелее — масса вернётся, но не больше чем на +10%. После деления на две половины — только большую половину' },
+    { id: 'cr_swap',     cr: true, name: 'Рокировка',      sh: 'Рокир.', icon: '⇄', color: '#b26bff', cd: 30, radius: 25, desc: 'Меняет тебя местами с ближайшей каплей впереди (в радиусе 25). После деления на две половины — только большую половину' },
   ];
   const abilById = id => ABILITIES.find(a => a.id === id);
   const BASE_ABIL = ABILITIES.filter(a => !a.xa && !a.cr), XA_ABIL = ABILITIES.filter(a => a.xa), CR_ABIL = ABILITIES.filter(a => a.cr);
   const abUpCost = (a, lv) => Math.round(a.price * ABIL_CFG.firstLevel * Math.pow(ABIL_CFG.growth, lv) / 50) * 50;   // price of level lv+1   // dash = 3.2x the starting speed, whatever the mass
-  const OLD_SPEED = 11, BASE_SPEED = OLD_SPEED * 3;   // everyone moves 3x faster than the first version (shown as 300%)   // split cooldown (s) for everyone, part limit for bots
+  const OLD_SPEED = 11, BASE_SPEED = OLD_SPEED * 3 * 1.35;   // 2.7: +35% for every drop in every mode (owner's call)   // everyone moves 3x faster than the first version (shown as 300%)   // split cooldown (s) for everyone, part limit for bots
   const css = getComputedStyle(document.documentElement);
   const tok = k => css.getPropertyValue(k).trim();
   const C = k => new THREE.Color(tok(k));
@@ -306,7 +413,9 @@
     { id: 'raid_q1', name: 'Трофей: Громила',   color: '#2a2a32', accent: '#ff2d2d', pattern: 'cracks', emi: true, emiColor: '#ff3d2d', mat: 'magma', anim: 'magma', head: 'warhelm', raidQ: 1, sig: 'железо, раскалённые трещины, рогатый шлем' },
     { id: 'raid_q2', name: 'Трофей: Матка роя', color: '#ffb020', accent: '#5a2a00', pattern: 'hex', head: 'swarm', glow: true, raidQ: 2, sig: 'соты и рой' },
     { id: 'raid_q3', name: 'Трофей: Мимик',     color: '#c0c8e0', mat: 'chrome', anim: 'chameleon', raidQ: 3, sig: 'зеркало, меняет цвет' },
-    { id: 'raid_q4', name: 'Трофей: Телепорт',  color: '#120830', accent: '#22e6ff', pattern: 'vortex', head: 'portal', anim: 'twin', glow: true, raidQ: 4, sig: 'портал и мерцание' },
+    { id: 'raid_q4', name: 'Трофей: Телепорт',  color: '#120830', accent: '#22e6ff', pattern: 'vortex', head: 'portal', anim: 'twin', glow: true, raid: true, old: true, sig: 'портал и мерцание' },
+    // 2.7: the «Телепорт» boss was replaced by «Морозец» in 2.5, so the trophy of the IV quarter is «Морозец» now; «Телепорт» is archived (kept by its owners)
+    { id: 'raid_q4f', name: 'Трофей: Морозец', color: '#0a2a3a', accent: '#9ff0ff', pattern: 'facets', mat: 'crystal', head: 'icecrown', glow: true, raidQ: 4, sig: 'ледяная корона и иней' },
     // league chest
     { id: 'lc_shield',   name: 'Лиговый щит',       color: '#c0c8e0', accent: '#4d7cff', pattern: 'heraldry', head: 'crest', shine: 'stripe', lchest: 'common', sig: 'геральдика и герб лиги' },
     { id: 'lc_cup',      name: 'Чемпионский кубок', color: '#ffd23f', accent: '#fff6a0', pattern: 'laurel', mat: 'gold', head: 'cuphandles', shine: 'stripe', lchest: 'rare', sig: 'полированное золото, ручки кубка' },
@@ -320,7 +429,7 @@
     { id: 'abyss',    name: 'Бездна',  color: '#020210', accent: '#22e6ff', pattern: 'vortex', mat: 'rim', head: 'shards', glow: true, ch: 'epic', sig: 'глубина и осколки' },
     { id: 'titan',    name: 'Титан',   color: '#ffd23f', accent: '#ff4fd8', pattern: 'plates', mat: 'chrome', anim: 'heartbeat', crown: true, ch: 'legendary', sig: 'пластины и пульс ядра' },
     // legendary achievements
-    { id: 'lg_worlds',    name: 'Пожиратель миров', color: '#14002a', accent: '#ff2d55', pattern: 'swirl', glow: true, pulse: true, head: 'moons', shine: 'bolt', legend: 'kills', sig: 'луны на орбите' },
+    { id: 'lg_worlds',    name: 'Пожиратель миров', color: '#14002a', accent: '#ff2d55', pattern: 'swirl', glow: true, pulse: true, head: 'moons', shine: 'bolt', legend: 'kills', sig: 'чёрная дыра: аккреционный диск, затягивает съеденное' },
     { id: 'lg_tycoon',    name: 'Золотой магнат',   color: '#b07a00', accent: '#ffd23f', pattern: 'coins', mat: 'gold', head: 'coincrown', shine: 'stripe', legend: 'coins', sig: 'стопки монет и корона из монет' },
     { id: 'lg_supernova', name: 'Звёздный взрыв',   color: '#ffffff', accent: '#ff4fd8', pattern: 'stars', holo: true, holoBase: .78, holoSpan: .08, glow: true, pulse: true, head: 'nova', shine: 'bolt', legend: 'stars2', sig: 'взрывы звёзд' },
     { id: 'lg_eternal',   name: 'Вечный чемпион',   color: '#fff6a0', accent: '#ffd23f', pattern: 'laurel', holo: true, holoBase: .1, holoSpan: .04, glow: true, head: 'laurel', shine: 'stripe', legend: 'wins3', sig: 'лавры и сияние' },
@@ -332,7 +441,7 @@
     { id: 'cr_engrave',  name: 'Гравировка',      color: '#3a1a08', accent: '#ffd27a', pattern: 'live', live: 'engrave', craft: 'epic', sig: 'светящиеся гравированные шестерни вращаются' },
     { id: 'cr_watch',    name: 'Карманные часы',  color: '#e8b05a', accent: '#7a4a12', pattern: 'live', live: 'watch', craft: 'rare', sig: 'циферблат, стрелки идут на макушке' },
     { id: 'cr_windup',   name: 'Заводная капля',  color: '#e8b05a', accent: '#7a4a12', pattern: 'brass', head: 'windkey', craft: 'rare', sig: 'заводной ключ крутится на ходу' },
-    { id: 'cr_skeleton', name: 'Скелетон',        color: '#e8b05a', accent: '#7a4a12', mat: 'skeleton', craft: 'epic', sig: 'прозрачный корпус, внутри крутится механизм' },
+    { id: 'cr_skeleton', name: 'Скелетон',        color: '#e8b05a', accent: '#7a4a12', mat: 'skeleton', craft: 'legendary', sig: 'прозрачный корпус, внутри крутится механизм; 🧬 три формы по прогрессу серии' },   // 2.7: legendary — it has an evolution
     { id: 'cr_sandup',   name: 'Время вспять',    color: '#bff8ff', accent: '#ffd27a', mat: 'sandglass', craft: 'epic', sig: 'песок сыплется вверх и копится у макушки' },
     { id: 'cr_spiral',   name: 'Часовая спираль', color: '#160c30', accent: '#22e6ff', pattern: 'live', live: 'spring', glow: true, craft: 'legendary', sig: 'пульсирует пружина, по ней бежит стрелка' },
     { id: 'cr_moon',     name: 'Лунная фаза',     color: '#141c5a', accent: '#ffd27a', pattern: 'live', live: 'moon', glow: true, craft: 'legendary', sig: 'окошко с фазами луны, в полнолуние вспышка' },
@@ -435,7 +544,7 @@
   }
   function ensureSeasonDecor() {}   // 1.7.0: per-season frames/titles were replaced by two half-year ones
   const seasonHalf = idx => idx > SEASON_YEAR / 2 ? 2 : 1;
-  const seasonDecor = (sd, li) => !sd.idx ? [] : [...(li >= 3 ? ['fr_sh' + seasonHalf(sd.idx)] : []), ...(li >= 5 ? ['tt_sh1'] : [])];   // 2.5: one title «Звезда сезонов» for both halves
+  const seasonDecor = (sd, li) => !sd.idx ? [] : [...(li >= 3 ? ['fr_sh1'] : []), ...(li >= 5 ? ['tt_sh1'] : [])];   // 2.5: one title «Звезда сезонов» for both halves
   function leagueRewardText(sd, i) {
     const p = [];
     if (sd.holiday) {
@@ -469,7 +578,7 @@
     { id: 'col_sweet',  name: 'Сладкоежка',        skins: ['marmalade', 'melon', 'c_caramel', 'c_soda', 'c_peach'],       hat: 'cherry',    coins: 1000 },
     { id: 'col_space',  name: 'Космос',            skins: ['saturn', 'c_nebula', 'c_starborn', 'c_crystal'],              hat: 'planet',    coins: 1500 },
     { id: 'col_elem',   name: 'Стихии',            skins: ['ocean', 'phoenix', 'magma', 'c_marble'],                      hat: 'snowflake', coins: 1500 },
-    { id: 'col_cyber',  name: 'Кибер',             skins: ['neon', 'cyber', 'c_circuit', 'matrix', 'c_chrome'],           hat: 'propeller', coins: 1500 },
+    { id: 'col_cyber',  name: 'Кибер',             skins: ['neon', 'c_circuit', 'matrix', 'c_chrome'],           hat: 'propeller', coins: 1500 },
     { id: 'col_royal',  name: 'Королевская семья', skins: ['champion', 'titan', 'abyss'],                                 hat: 'tophat',    coins: 2000 },
     { id: 'col_nature', name: 'Природа',           skins: ['coral', 'amanita', 'c_chameleon', 'c_neontiger', 'c_lavalamp'], hat: 'sprout',  coins: 1000 },
     // effect collections: reward is a unique title
@@ -546,6 +655,11 @@
     tt('tt_invincible', 'Непобедимый', 'legendary', '#ffd23f', '#ffffff', '★', { legend: 'wins2' }),
     tt('tt_millionaire', 'Миллионер', 'legendary', '#ffd23f', '#3dffa2', '★', { legend: 'coins2' }),
     // achievement lines, step III
+    tt('tt_raidlord', 'Гроза колоссов', 'legendary', '#ff2d75', '#ffd23f', '⚔', { src: '«Босс-рейд»: пройди ступень V.' }),
+    tt('tt_twinpeak', 'Две вершины', 'legendary', '#3dffa2', '#ffd23f', '▲▲', { src: '«Классика»: после деления вырасти обе половины до 50 000.' }),
+    tt('tt_summit', 'Вершина', 'legendary', '#ffd23f', '#22e6ff', '▲', { src: '«Классика»: возьми последнюю веху — 30 000 массы.' }),
+    tt('tt_shoulder', 'Надёжное плечо', 'epic', '#3dffa2', '#22e6ff', '❂', { src: '«Спина к спине»: 100 очков помощи напарнику за все забеги.' }),
+    fr('fr_shoulder', 'Плечом к плечу', 'legendary', '#3dffa2', '#22e6ff', { src: '«Спина к спине»: 300 очков помощи напарнику за все забеги.' }),
     tt('tt_hardened', 'Несгибаемый', 'epic', '#ff6a00', '#ff2d55', '✦', { src: '«Хардкор»: 3 раунда подряд с массой 3 000 и больше.' }),
     fr('fr_tempered', 'Закалка', 'legendary', '#ff6a00', '#ffd23f', { src: '«Хардкор»: 5 раундов подряд с массой 3 000 и больше.' }),
     tt('tt_ln_duo', 'Несокрушимые', 'epic', '#3dffa2', '#22e6ff', '❖', { line: 'duo' }),
@@ -569,14 +683,14 @@
   // 2.1.0: mode cards — colours, icon (24×24 strokes) and short tags for each mode
   const MODE_ART = {
     classic:  { c: '#22e6ff', c2: '#7b3dff', ic: '<circle cx="10" cy="13" r="6.5"/><circle cx="8" cy="11.5" r="1" fill="currentColor"/><circle cx="12" cy="11.5" r="1" fill="currentColor"/><circle cx="19.5" cy="7.5" r="1.4"/><circle cx="20.5" cy="13.5" r="1.1"/><circle cx="18" cy="18.5" r="1"/>', tags: ['до поражения', 'боссы'] },
-    timed:    { c: '#ffd23f', c2: '#ff9a3d', ic: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M12 13.5l3 2M9.5 2.8h5M12 2.8v3M18.5 6.5l1.5-1.5"/>', tags: ['3 минуты', 'награда за место'] },
+    timed:    { c: '#ffd23f', c2: '#ff9a3d', ic: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M12 13.5l3 2M9.5 2.8h5M12 2.8v3M18.5 6.5l1.5-1.5"/>', tags: ['5 минут', 'награда за место'] },
     survival: { c: '#ff3d6e', c2: '#7a0030', ic: '<path d="M5 11a7 7 0 0 1 14 0v3l-2 2v3.5H7V16l-2-2z"/><circle cx="9.3" cy="12" r="1.7"/><circle cx="14.7" cy="12" r="1.7"/><path d="M10.5 19.5v-2M13.5 19.5v-2"/>', tags: ['волны боссов', 'каждые 15 с'] },
     crown:    { c: '#ffd23f', c2: '#ff4fd8', ic: '<path d="M3.5 18.5h17L19 8l-4.5 4L12 4.5 9.5 12 5 8z"/><path d="M3.5 21h17"/>', tags: ['до поражения', 'время с короной'] },
-    rbuild:   { c: '#b26bff', c2: '#ff4fd8', ic: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/>', tags: ['3 случайные способности', 'опыт ×1,2'], isNew: true },
+    rbuild:   { c: '#b26bff', c2: '#ff4fd8', ic: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/>', tags: ['3 случайные способности', 'опыт ×1,2'] },
     hardcore: { c: '#ff6a00', c2: '#ff2d55', ic: '<path d="M12 2.5c1 4 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.8 1.6-3.8 2.7-5.5.5 2.2 1.5 2.8 2.6 2.8 0-3.2-1-5.3.2-8.3z"/>', tags: ['без бонусов', 'монеты ×1,6'] },
     territory: { c: '#22e6ff', c2: '#ff4fd8', ic: '<circle cx="12" cy="12" r="9"/><path d="M13.5 3.2c-2.5 3-2.5 5.8 0 8.8s2.5 5.8 0 8.8" stroke-dasharray="2.2 1.8"/><circle cx="7.6" cy="12" r="2" fill="currentColor"/><circle cx="17" cy="12" r="1.6"/><path d="M9.8 9.2l1.6-1.5M9.8 14.8l1.6 1.5"/>', tags: ['4 минуты', 'граница поля'], duo: true },
     duoback:  { c: '#3dffa2', c2: '#22e6ff', ic: '<circle cx="8" cy="12" r="4.5"/><circle cx="16" cy="12" r="4.5"/><path d="M12 4.5v15" stroke-dasharray="2 2"/><path d="M3 5.5l2 2M21 5.5l-2 2M3 18.5l2-2M21 18.5l-2-2"/>', tags: ['волны боссов', 'вдвоём'], duo: true },
-    raid:     { c: '#ff2d75', c2: '#7b3dff', ic: '<circle cx="12" cy="13.5" r="6.5"/><path d="M7.2 9L4.5 3.5l4.8 3.3M16.8 9l2.7-5.5-4.8 3.3"/><path d="M9.3 12.5h1.4M13.3 12.5h1.4M9.5 16.3h5"/>', tags: ['босс недели', '3 попытки в день'] },
+    raid:     { c: '#ff2d75', c2: '#7b3dff', ic: '<circle cx="12" cy="13.5" r="6.5"/><path d="M7.2 9L4.5 3.5l4.8 3.3M16.8 9l2.7-5.5-4.8 3.3"/><path d="M9.3 12.5h1.4M13.3 12.5h1.4M9.5 16.3h5"/>', tags: ['босс недели', '5 ступеней'] },
     royale:   { c: '#ff4fd8', c2: '#22e6ff', ic: '<circle cx="12" cy="12" r="9" stroke-dasharray="3 2.4"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>', tags: ['арена сужается', 'только в лиге'] },
   };
   const modeArt = id => MODE_ART[id] || MODE_ART.classic;
@@ -681,7 +795,7 @@
 
   // skill achievements: one round, done right. Each gives its own title and coins; all of them — a frame and a skin
   const SKILL = [
-    { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, обходи шипы.', coins: 1500, title: ['Железный', '#c0c8e0'],
+    { id: 'sk_hardcore', name: 'Без права на ошибку', desc: 'В «Хардкоре» набери 5 000 массы, ни разу не разделившись', hint: 'Делиться нельзя совсем — расти на крошках и мелких каплях, держись подальше от крупных ботов.', coins: 1500, title: ['Железный', '#c0c8e0'],
       test: S => S.mode === 'hardcore' && !S.splits && S.maxMass >= 5000, best: S => S.mode === 'hardcore' && !S.splits ? Math.round(S.maxMass) : null, unit: 'массы' },
     { id: 'sk_giant60', name: 'Молниеносный', desc: 'Набери массу 1000 быстрее чем за 60 секунд', hint: 'Не отвлекайся на боссов: собирай крошки и ешь мелкие капли подряд, бонус «Двойная еда» очень помогает.', coins: 2000, title: ['Молния', '#ffd23f'],
       test: S => S.t1000 !== undefined && S.t1000 <= 60, best: S => S.t1000 !== undefined ? Math.floor(S.t1000) : null, lower: true, unit: 'с' },
@@ -709,7 +823,7 @@
       test: S => !!S.smallBoss },
   ];
   // 1.7.0: instead of 13 titles — 4 for 3 / 6 / 9 / 13 mastery achievements
-  const SKILL_TT = [[6, 'tt_sk6'], [13, 'tt_sk13']];   // 2.5: two titles instead of four
+  const SKILL_TT = [[9, 'tt_sk9'], [13, 'tt_sk13']];   // 2.7: «Виртуоз» and «Гроссмейстер»
   DECOR.push(tt('tt_sk3', 'Умелец', 'rare', '#7cf3ff', '#ffffff', '✪', { skillN: 3 }), tt('tt_sk6', 'Знаток', 'epic', '#3dffa2', '#22e6ff', '✪', { skillN: 6 }),
     tt('tt_sk9', 'Виртуоз', 'epic', '#ff9a3d', '#ffd23f', '✪', { skillN: 9 }), tt('tt_sk13', 'Гроссмейстер', 'legendary', '#ffd23f', '#ff4fd8', '✪', { skillN: 13 }));
   // promo-code exclusives: frame + title for each code (1.7.0)
@@ -744,7 +858,7 @@
   const LEGEND = [
     { id: 'kills',  name: 'Пожиратель миров',   desc: 'Съешь 100 000 капель',                 goal: 100000,  reward: ['skin', 'lg_worlds'] },
     { id: 'coins',  name: 'Золотой магнат I',   desc: 'Заработай 100 000 монет',              goal: 100000,  reward: ['skin', 'lg_tycoon'] },
-    { id: 'coins2', key: 'coins', name: 'Золотой магнат II', desc: 'Заработай 1 000 000 монет — больше, чем стоят все арены вместе', goal: 1000000, reward: [['fx', 'lg_moneyAura'], ['deco', 'fr_platinum'], ['deco', 'tt_millionaire'], ['badge', 'millionaire']], extra: true },
+    { id: 'coins2', key: 'coins', name: 'Золотой магнат II', desc: 'Заработай 1 000 000 монет — больше, чем стоят все арены вместе', goal: 1000000, reward: [['fx', 'lg_moneyAura'], ['deco', 'tt_millionaire'], ['badge', 'millionaire']], extra: true },
     { id: 'bosses', name: 'Истребитель титанов', desc: 'Победи 10 000 боссов',                goal: 10000,   reward: ['fx', 'lg_titanTrail'] },
     { id: 'stars1', key: 'stars', name: 'Гроза звёзд I',   desc: 'Съешь 1 000 ботов-звёзд',              goal: 1000,  reward: [['deco', 'fr_star']] },
     { id: 'stars2', key: 'stars', name: 'Гроза звёзд II',  desc: 'Съешь 5 000 ботов-звёзд',              goal: 5000,  reward: [['skin', 'lg_supernova'], ['pet', 'lg_starpet']], extra: true },
@@ -810,7 +924,7 @@
   };
   const arenaIs = id => !!(stats && stats.arena === id);
   // ---- weekly boss raid ----
-  const RAID_HP = 100000, RAID_ATTEMPT_CAP = 30000, RAID_TRIES = 3, RAID_LEN = 240;   // 2.5: twin colossi, much tougher (was 40 000 / 18 000)
+  const RAID_LEN = 240;   // 2.7: one fight of a ladder step (the steps and their damage are RAID_TIERS in 14f-modes)
   const RAID_NAMES = ['Пожиратель', 'Тёмная медуза', 'Кристальный голем', 'Неоновый кракен', 'Звёздный червь', 'Ледяной титан', 'Магматический страж', 'Призрачный левиафан'];
   const RAID_HEADS = ['horns', 'gem', 'flame', 'antenna', 'halo', 'star', 'wings'];
   const raidWeek = () => Math.floor((Date.now() / 864e5 + 3) / 7);   // weeks start on Monday
@@ -821,11 +935,14 @@
   };
   // 1.7.0: one trophy per quarter of the year (the Monday of the raid week decides the quarter)
   const raidQuarter = w => Math.floor(new Date((w * 7 - 3) * 864e5).getUTCMonth() / 3) + 1;
-  function ensureRaidSkin(w) { return 'raid_q' + raidQuarter(w); }
+  function ensureRaidSkin(w) { const q = raidQuarter(w); return q === 4 ? 'raid_q4f' : 'raid_q' + q; }
 
   // ================= pets (league rewards: Platinum and Neon; holiday pets in holiday seasons) =================
   const PET_SPECIES = { drop: 'Капелька', cat: 'Котик', cube: 'Кубик', pyramid: 'Пирамидка', jelly: 'Медуза', firefly: 'Светлячок', robot: 'Робот', ghost: 'Призрачок',
-    pumpkin: 'Тыковка', bat: 'Летучая мышка', snowman: 'Снеговичок', deer: 'Олешек', heart: 'Сердечко', cupid: 'Амурчик', cuckoo: 'Кукушка', mouse: 'Мышка', owl: 'Совёнок' };
+    pumpkin: 'Тыковка', bat: 'Летучая мышка', snowman: 'Снеговичок', deer: 'Олешек', heart: 'Сердечко', cupid: 'Амурчик', cuckoo: 'Кукушка', mouse: 'Мышка', owl: 'Совёнок',
+    // 2.7: the season, chest and raid species had no name — their pets read «undefined · …»
+    meteor: 'Метеорит', fox: 'Лисёнок', astro: 'Астронавт', qubit: 'Кубит', snake: 'Змейка', star: 'Звёздочка', tape: 'Кассета', beetle: 'Жучок',
+    crystal: 'Кристалл', hole: 'Чёрная дыра', dragon: 'Дракончик', slime: 'Слизень', brute: 'Громила' };
   const REG_SPECIES = ['drop', 'cat', 'cube', 'pyramid', 'jelly', 'firefly', 'robot', 'ghost'];
   const PET_BONUS = {
     magnet: { name: 'Сборщик', text: lv => `+${lv} к радиусу сбора крошек` },
@@ -849,7 +966,7 @@
     // 1.7.0: season frames (Platinum) and titles (Neon); league seasons collected in two halves of the year
     [['Первое', '#3dffa2', '#ffd23f'], ['Второе', '#ff4fd8', '#22e6ff']].forEach(([n, c, c2], q) => {
       DECOR.push(fr('fr_q' + (q + 1), `${n} полугодие`, 'epic', c, c2, { col: true }));
-      COLLECTIONS.push({ id: 'col_q' + (q + 1), group: 'seasons', name: `${n} полугодие · сезоны ${q * 13 + 1}–${q * 13 + 13}`, frame: 'fr_q' + (q + 1), arena: q ? 'retro' : 'sakura', coins: 5000,
+      COLLECTIONS.push({ id: 'col_q' + (q + 1), group: 'seasons', name: `${n} полугодие · сезоны ${q * 13 + 1}–${q * 13 + 13}`, arena: q ? 'retro' : 'sakura', coins: 5000,
         items: () => { const out = []; for (let id = q * 13 + 1; id <= q * 13 + 13; id++) { const sd = seasonData(id);
           if (sd.holiday) sd.items.forEach(it => out.push([it.kind, it.id])); else { if (sd.skin) out.push(['skin', sd.skin.id]); if (sd.fx) out.push(['fx', sd.fx.id]); }
           sd.pets.forEach(pt => out.push(['pet', pt.id])); } return out; } });
@@ -860,10 +977,10 @@
     DECOR.push(tt('tt_looks', 'Мастер обликов', 'epic', '#c46bff', '#22e6ff', '✦', { col: true }),
       tt('tt_cvetall', 'Вечный странник хаоса', 'legendary', '#ffd23f', '#ff4fd8', '✦', { col: true, old: true }));
     COLLECTIONS.push({ id: 'col_looks', group: 'chaos', looks: true, name: 'Облики способностей', title: 'tt_looks', coins: 0, items: () => allLooks().map(l => ['look', l.id]) });
-    COLLECTIONS.push({ id: 'col_cvet', group: 'chaos', name: 'Ветераны Хаоса', title: 'tt_cvet', coins: 0, items: () => CHAOS_VET.map(v => [v.kind, v.id]) });
+    COLLECTIONS.push({ id: 'col_cvet', group: 'chaos', name: 'Ветераны Хаоса', coins: 0, items: () => CHAOS_VET.map(v => [v.kind, v.id]) });
     DECOR.push(tt('tt_arsenal', 'Оружейник', 'epic', '#ff9a3d', '#ffd23f', '✦', { col: true }),
       fr('fr_arsenal', 'Оружейная', 'epic', '#ff9a3d', '#ffd23f', { col: true }));
-    COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', title: 'tt_arsenal', frame: 'fr_arsenal', coins: ABIL_CFG.arsenalCoins, items: () => BASE_ABIL.map(a => ['abil', a.id]) });
+    COLLECTIONS.push({ id: 'col_arsenal', group: 'abil', name: 'Арсенал', coins: ABIL_CFG.arsenalCoins, items: () => BASE_ABIL.map(a => ['abil', a.id]) });
     const HOL_TITLE = { newyear: ['Дух Нового года', '#9fe8ff'], valentine: ['Романтик', '#ff4f9a'], halloween: ['Ночной кошмар', '#ff7a00'] };
     Object.keys(HOLIDAYS).forEach(k => {
       DECOR.push(tt(`tt_hol_${k}`, HOL_TITLE[k][0], 'epic', HOL_TITLE[k][1], '#ffffff', '✦', { col: true }));
@@ -962,7 +1079,7 @@
   // season rewards by tier: Diamond = season skin + frame; Neon = + title + the next exclusive ability (table order)
   // the 3rd «Сингулярность» reward: the next exclusive ability not owned yet (table order, new quarterly ones included), then the next look
   const chaosNextThird = () => { const a = XA_ABIL.find(x => !save.abil.xa.includes(x.id)); if (a) return { kind: 'abil', a }; const l = allLooks().find(x => !save.abil.looks.includes(x.id)); return l ? { kind: 'look', l } : null; };
-  const CHAOS_VET = [{ n: 5, kind: 'deco', id: 'tt_cvet', what: 'титул «Ветеран Хаоса»' }, { n: 10, kind: 'deco', id: 'fr_cvet', what: 'рамка «Пульс бездны»' },
+  const CHAOS_VET = [   // 2.7: the title and frame of 5 and 10 seasons retired
     { n: 25, kind: 'skin', id: 'cv_skin', what: 'эксклюзивный скин «Хаосит»' }, { n: 50, kind: 'badge', id: 'chaosheart', what: 'особый значок «Сердце хаоса»' }];
   function chaosSeasonRewards(id, ti) {
     const out = [];
@@ -970,10 +1087,10 @@
       save.chaosRift = (save.chaosRift || 0) + 1;
       if (save.chaosRift >= 10 && !save.arenas.includes('inferno')) { save.arenas.push('inferno'); out.push('арена «Пекло»'); }
       const k = ensureChaosSkin(id); if (!save.skins.includes(k.id)) { save.skins.push(k.id); out.push(`скин «${k.name}»`); }
-      const f = decorById('fr_cq' + chaosQ(id)); if (!save.decor.includes(f.id)) { save.decor.push(f.id); out.push(`рамка «${f.name}»`); }
+      const f = decorById('fr_cq1');   // 2.7: one frame for every era of Chaos if (!save.decor.includes(f.id)) { save.decor.push(f.id); out.push(`рамка «${f.name}»`); }
     }
     if (ti >= 5) {
-      const t = decorById('tt_cq1');   // 2.5: one «Хаос-чемпион» for every quarter if (!save.decor.includes(t.id)) { save.decor.push(t.id); out.push(`титул «${t.name}»`); }
+      const t = decorById('tt_cq1'); if (!save.decor.includes(t.id)) { save.decor.push(t.id); out.push(`титул «${t.name}»`); }   // 2.5: one «Хаос-чемпион» for every quarter (2.7 fix: this line was inside the comment)
       save.chaosTop = (save.chaosTop || 0) + 1;   // personal counter of seasons finished in «Сингулярность»
       const nx = chaosNextThird();
       if (nx && nx.kind === 'abil') { save.abil.xa.push(nx.a.id); save.abil.owned.push(nx.a.id); out.push(`способность «${nx.a.name}»`); }
@@ -1058,6 +1175,49 @@
     boss:       { tag: 'босс',     sense: 2,   chase: 1,   flee: 0,   preyK: 1 },
   };
   // 2.5: fewer titles. These are no longer given out; whoever already has one keeps it and can wear it (an «archived» title)
-  const OLD_TITLES = ['tt_crumb', 'tt_tactic', 'tt_storm', 'tt_lord', 'tt_lg3', 'tt_sh2', 'tt_cq2', 'tt_cq3', 'tt_cq4', 'tt_cvetall', 'tt_xarsenal', 'tt_lv10', 'tt_ps5', 'tt_ps_sn', 'tt_starcatcher', 'tt_ln_star', 'tt_ln_league', 'tt_sk3', 'tt_sk9'];
+  // 2.7 (showcase with the owner): «Гроза ботов», «Повелитель арены», «Неоновая легенда», «Виртуоз», «Пылающая звезда» are given again; «Алмазный ас», «Ветеран Хаоса», «Гроза гигантов», «Исполин», «Знаток» retire
+  const OLD_TITLES = ['tt_crumb', 'tt_tactic', 'tt_lg3', 'tt_lg4', 'tt_sh2', 'tt_cq2', 'tt_cq3', 'tt_cq4', 'tt_cvet', 'tt_cvetall', 'tt_xarsenal', 'tt_lv10', 'tt_ps5', 'tt_starcatcher', 'tt_ln_star', 'tt_ln_giant', 'tt_giants', 'tt_sk3', 'tt_sk6'];
   OLD_TITLES.forEach(id => { const d = DECOR.find(x => x.id === id); if (d) d.old = true; });
   { const d = DECOR.find(x => x.id === 'tt_unbreak'); if (d) d.name = 'Повелитель волн'; }   // was «Несокрушимый», too close to «Несокрушимые»
+  // 2.7: frames cut down with the owner (the online-mode ones stay); an owner gets the nearest kept frame instead (save: deco27)
+  const OLD_FRAMES_27 = ['fr_cyan', 'fr_fire', 'fr_lg3', 'fr_lg4', 'fr_sh2', 'fr_q1', 'fr_q2', 'fr_cq2', 'fr_cq3', 'fr_cq4', 'fr_cvet', 'fr_lv20', 'fr_platinum', 'fr_arsenal'];
+  // applied now and again after addExtraCollections() (02-save.js), which adds the collection frames and titles later
+  function apply27Decor() {
+    OLD_FRAMES_27.forEach(id => { const d = DECOR.find(x => x.id === id); if (d) d.old = true; });
+    [['tt_arsenal', 'Мастер оружия'], ['tt_ps_sn', 'Пылающая звезда'], ['tt_summit', 'Покоритель Классики'], ['tt_twinpeak', 'Двуглавый титан']].forEach(([id, n]) => { const d = DECOR.find(x => x.id === id); if (d) d.name = n; });
+    { const d = DECOR.find(x => x.id === 'tt_arsenal'); if (d) { d.src = 'Прокачай все 12 обычных способностей до 5-го уровня.'; delete d.col; } }
+  }
+  apply27Decor();
+  // 2.7: skins reworked with the owner (the showcase). Same ids, so whoever owns one keeps the slot with the new look; renamed ones are listed once (save: deco27)
+  const LOOK_KEYS_27 = ['color', 'accent', 'pattern', 'mat', 'anim', 'head', 'shine', 'emi', 'emiColor', 'flow', 'glow', 'holo', 'holoBase', 'holoSpan', 'bubbles', 'crown', 'live', 'pulse', 'rainbow'];
+  const SKIN_27 = {
+    neon:        [null, 'неоновые дорожки микросхемы по тёмному телу', { color: '#0d0624', accent: '#22e6ff', pattern: 'circuit', emi: true, emiColor: '#22e6ff', mat: 'rim', anim: 'flicker', glow: true }],
+    marmalade:   ['Аквариум', 'стеклянный шар с волнами и пузырьками', { color: '#1f8bff', accent: '#bff4ff', mat: 'glass', pattern: 'waves', flow: [.04, 0], bubbles: true, glow: true }],
+    coral:       ['Мятная капля', 'свежая мятная капля, мягко дышит', { color: '#36f2c3', accent: '#e8fffb', pattern: 'gradient', anim: 'breath', glow: true }],
+    c_crystal:   [null, 'голубые грани, призма и блик', { color: '#1a8cff', accent: '#9fe8ff', pattern: 'facets', head: 'prism', shine: 'bolt', anim: 'breath', glow: true }],
+    c_lavalamp:  [null, 'капли воска всплывают в стекле', { color: '#3a0a6e', accent: '#ff7a3d', pattern: 'bubbles', flow: [0, .07], mat: 'glass', glow: true }],
+    c_nebula:    [null, 'облака газа переливаются, вокруг рой звёздочек', { color: '#1a0630', accent: '#ff9ef2', pattern: 'aurora', flow: [.02, 0], glow: true, head: 'swarm' }],
+    c_soda:      ['Ягодный пончик', 'розовая глазурь с посыпкой', { color: '#ff7ac8', accent: '#ffd23f', pattern: 'dots', mat: 'matte', glow: true }],
+    c_caramel:   ['Мыльный пузырь', 'прозрачный пузырь с радужными разводами', { color: '#e8f4ff', accent: '#ff9ef2', mat: 'glass', pattern: 'aurora', flow: [.03, .02], glow: true }],
+    lc_diamond:  [null, 'фиолетовые грани, звёздный взрыв над головой', { color: '#b26bff', accent: '#e8fbff', pattern: 'facets', mat: 'crystal', head: 'nova', shine: 'bolt', glow: true }],
+    lc_cup:      ['Турнирный факел', 'золотой факел турнира, бегущие волны огня', { color: '#ffb000', accent: '#ff3d00', pattern: 'waves', flow: [.05, 0], head: 'flame', anim: 'breath', glow: true }],
+    lc_shield:   ['Серебряная медаль', 'серебро с гравировкой, звезда и блик', { color: '#d8dee9', accent: '#8a94a8', pattern: 'rings', head: 'star', shine: 'stripe', glow: true }],
+    magma:       ['Вулкан', 'по чёрной породе текут реки лавы, на макушке бурлит кратер', { color: '#2a0e04', accent: '#ff7a1a', pattern: 'live', live: 'volcano', head: 'flame', glow: true }],
+    champion:    ['Гладиатор', 'стальная броня с золотыми швами, лавровый венок', { color: '#3a3f4c', accent: '#ffd23f', pattern: 'plates', mat: 'matte', head: 'laurel', shine: 'stripe', glow: true }],
+    s_25:        [null, 'синтвейв-сетка под неоновым контуром, корона', { color: '#14082e', accent: '#ff4fd8', pattern: 'synth', flow: [0, .1], mat: 'rim', anim: 'heartbeat', crown: true, glow: true }],
+    s_21:        [null, 'тёмная порода, кристаллы на орбите', { color: '#1a0a33', accent: '#9fe8ff', pattern: 'facets', mat: 'matte', head: 'shards', glow: true }],
+    s_19:        [null, 'голограмма с развёрткой и порталом', { color: '#22e6ff', accent: '#ff4fd8', pattern: 'scan', flow: [0, .2], holo: true, holoBase: .5, holoSpan: .12, glow: true, head: 'portal' }],
+    s_7:         ['Пульсар', 'по капле бегут лучи, на макушке пульсирует ядро', { color: '#0a1030', accent: '#9fe8ff', pattern: 'live', live: 'pulsar', head: 'ring', glow: true }],
+    h_valentine: [null, 'бархат с золотой сеткой, плывут сердца, на макушке бьётся сердце', { color: '#b3001e', accent: '#ffd23f', pattern: 'live', live: 'queen', head: 'wings', crown: true, anim: 'heartbeat', glow: true }],
+    h_halloween: [null, 'светится вырезанная ухмылка, мерцает свеча, летят искры', { color: '#ff7a00', accent: '#ffd23f', pattern: 'live', live: 'jack', head: 'stem', crown: true, glow: true }],
+    h_newyear:   [null, 'ледяной кристалл, снег внутри, корона', { color: '#cfefff', accent: '#4d7cff', pattern: 'snow', flow: [0, -.08], mat: 'crystal', head: 'icecrown', shine: 'bolt', glow: true }],
+    cs_q3:       [null, 'фрактал в стекле, призма', { color: '#120830', accent: '#3dffa2', pattern: 'fractal', flow: [.05, .05], mat: 'glass', head: 'prism', glow: true }],
+    cs_q1:       [null, 'сбоящий контур, цифровой сбой', { color: '#0a0a1a', accent: '#ff2d55', pattern: 'glitch', anim: 'glitch', mat: 'rim', glow: true }],
+  };
+  const SKIN_RENAMED_27 = {};
+  { const cy = SKINS.find(k => k.id === 'cyber'); if (cy) { cy.old = true; delete cy.price; delete cy.lvl; } }   // 2.7: «Кибер-сетка» repeated «Неон» — retired
+  for (const [id, [nm, sig, look]] of Object.entries(SKIN_27)) { const s = SKINS.find(k => k.id === id); if (!s) continue;
+    if (nm && nm !== s.name) { SKIN_RENAMED_27[id] = s.name; s.name = nm; } s.sig = sig; LOOK_KEYS_27.forEach(k => delete s[k]); Object.assign(s, look); }
+  // two new skins from the showcase: the boss hunter (challenge «Гроза гигантов») and obsidian (epic chest)
+  SKINS.push({ id: 'ch_hunter', name: 'Охотник на боссов', color: '#5a0a14', accent: '#ffd23f', pattern: 'scales', mat: 'matte', crown: true, anim: 'heartbeat', glow: true, ch: 'epic', sig: 'багровая чешуя с золотом, корона охотника' },
+    { id: 'c_obsidian', name: 'Обсидиан', color: '#08060c', accent: '#ff6a00', pattern: 'cracks', emi: true, emiColor: '#ff8a2a', mat: 'glass', anim: 'magma', glow: true, chest: 'epic', sig: 'чёрное вулканическое стекло, сквозь трещины пульсирует расплав' });

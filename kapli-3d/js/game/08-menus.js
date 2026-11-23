@@ -17,6 +17,14 @@
   $('startBtn').addEventListener('click', () => { pendingRanked = false; if (isDuoMode(save.mode)) { openDuoLobby(save.mode); return; } startRound(); });
   // ================= tutorial for new players =================
   const TUT_COINS = 500;
+  const MODE_SHORT = {
+    classic: 'Вехи до 50 000, на 50 000 — две половины; цель — обе по 50 000', timed: '5 минут, случайное правило раунда', survival: 'Волна боссов каждые 15 секунд, связки боссов',
+    crown: 'Держи корону как можно дольше — на тебя охотятся все', rbuild: '3 случайные способности, замена на 5 вехах, опыт ×1,2', hardcore: 'Без бонусов; на 50 000 — две половины, проклятия, монеты ×1,6',
+    raid: 'Колоссы недели: 5 ступеней, фазы и атаки', royale: 'Зона сужается, побеждает последний', territory: 'Двигай границу поля к сопернику, 4 минуты',
+    duoback: 'Вдвоём против 50 волн боссов',
+  };
+  let modesTabPick = null;
+  const modesTab = () => modesTabPick || (isDuoMode(save.mode) ? 'duo' : 'solo');
   const GUEST_WARN = 'Режим гостя: прогресс хранится только на этом телефоне. Если удалить игру, очистить данные браузера или потерять телефон, восстановить его мы не сможем. Войди в аккаунт — и прогресс, монеты и покупки сохранятся на сервере.';
   const pCenter = () => { const m = total(player) || 1; return player.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); };
   function tutBot(i, mass, dist, still) {
@@ -29,7 +37,7 @@
   }
   const TUT_STEPS = [
     { title: 'Движение', text: () => finePointer ? 'Веди мышью — капля плывёт за курсором. Можно и клавишами WASD или стрелками. Проплыви немного.' : 'Коснись экрана и веди пальцем — появится джойстик. Проплыви немного.',
-      init: t => { t.p0 = pCenter(); }, prog: t => { const [x, z] = pCenter(); return Math.hypot(x - t.p0[0], z - t.p0[1]) / 25; } },
+      init: t => { t.p0 = pCenter(); }, prog: t => { const [x, z] = pCenter(); return hyp(x - t.p0[0], z - t.p0[1]) / 25; } },
     { title: 'Крошки', text: () => 'Светящиеся точки на полу — крошки. Каждая делает тебя чуть тяжелее. Съешь 15 крошек.',
       init: t => { t.c0 = stats.crumbs; }, prog: t => (stats.crumbs - t.c0) / 15 },
     { title: 'Съешь каплю', text: () => 'Рядом появились маленькие капли. Съесть можно того, кто хотя бы на 25% легче тебя: подплыви и накрой её.',
@@ -79,10 +87,16 @@
     persist(); renderAll();
     tutModal(title, body, done && !save.tourSeen ? [['tourGo', 'Дальше: тур по меню', 'btn'], ['tutOk', 'Пропустить тур', 'btn ghost']] : [['tutOk', 'В меню', 'btn']]);
   }
+  // 2.7 release: the modes for two are closed while they move to the full online
+  function duoSoon() {
+    tutModal('👥 Режимы вдвоём — скоро', '<p>«Захват территории» и «Спина к спине» переезжают в полноценный онлайн: играть с другом можно будет из любого города, матч будет считать сервер игры.</p>' +
+      '<p>Пока идёт перенос, режимы закрыты. Рекорды пар сохранены — их видно в «Рейтинге». Как только откроем — напишем в «Обновлениях».</p>', [['tutOk', 'Понятно', 'btn']]);
+  }
+  if (DUO_SOON) { const n = document.getElementById('modesDuoNote'); if (n) n.innerHTML = '⏳ Режимы для двоих переезжают в полноценный онлайн и скоро вернутся. Рекорды пар сохранены в «Рейтинге».'; }
   function tutModal(title, body, btns) {
-    $('tutMName').textContent = title; $('tutMBody').innerHTML = body;
+    $('tutMName').textContent = title; $('tutMBody').innerHTML = body; $('tutModal').classList.remove('nw-wide');
     $('tutMActs').innerHTML = btns.map(([id, t, cls]) => `<button class="${cls}" id="${id}">${t}</button>`).join('');
-    $('tutModal').hidden = false; $(btns[0][0]).focus();
+    $('tutModal').hidden = false; $(btns[0][0]).focus({ preventScroll: true }); $('tutModal').querySelector('.modal-card').scrollTop = 0;   // the title stays in view (a long text on a landscape phone)
   }
   // ---- menu tour: shown once after the first finished tutorial, repeatable from «Информация» ----
   const TOUR = [
@@ -135,7 +149,7 @@
   $('tutSkip').addEventListener('click', () => { if (running && stats.tutorial) tutExit(false); });
   // 2.6: a guest's coins and purchases live only on this phone — said once before the first purchase (the next tap buys)
   function guestBuyWarn(b) {
-    if (Net.uid || save.guestBuyWarned || !['abuy', 'arch', 'aup', 'up', 'skin', 'fx', 'arena'].some(k => k in b.dataset) || !b.textContent.includes('◆')) return false;
+    if (Net.uid || save.guestBuyWarned || !['abuy', 'arch', 'aup', 'up', 'skin', 'fx', 'arena', 'wsh'].some(k => k in b.dataset) || !b.textContent.includes('◆')) return false;
     save.guestBuyWarned = true; persist();
     tutModal('Покупка без аккаунта', `<p class="guest-warn">⚠ ${GUEST_WARN}</p><p>Чтобы купить, нажми на кнопку ещё раз.</p>`, [['guestAcct', 'Войти в аккаунт', 'btn'], ['guestOk', 'Понятно', 'btn ghost']]);
     return true;
@@ -147,12 +161,51 @@
     [['tutGo', 'Пройти обучение', 'btn'], ['tutNo', 'Пропустить', 'btn ghost']]), 600);
   // ---- updates feed: short, player-facing notes (newest first) ----
   const NEWS = [
-    { id: 190, ver: '2.5.2', date: '23 ноября', title: 'Патч: боссы не отстают от большой капли, лимит монет за раунд', kind: 'patch',
-      lead: 'Закрыли способ бесконечно расти и фармить монеты, который нашли тестеры. Спасибо, что сообщаете!', items: [
-      'Боссы растут вместе с тобой: раньше их масса упиралась в 12 000, и большую каплю они больше не догоняли. Теперь, когда твоя самая большая часть набирает 10 000, боссы могут быть на 20% тяжелее неё. В «Выживании», рейде и режимах для двоих — как раньше.',
-      'За один раунд можно заработать не больше 15 000 ◆.',
-      'Если сервер не принял монеты (за сутки можно заработать не больше 100 000 ◆ — это защита от взлома), игра теперь честно об этом пишет, а не молчит.',
-      'Рекорды теперь отправляются вместе с коротким отчётом о раунде, чтобы быстрее и честнее проверять рекорды «на проверке».'] },
+    // 2.7: the first entry with cards — a hero card and a grid; each card opens big (newsBig). Older entries stay text in «Архив обновлений».
+    { id: 200, ver: '2.7.0', date: '23 ноября', title: 'Характеры и живая арена', kind: 'season',
+      lead: 'Характеры, события арены, эволюции скинов, новый Хардкор и новый вид меню. Режимы для двоих переезжают в полный онлайн.',
+      poster: { sub: 'Характеры · живая арена · эволюции скинов · новый Хардкор', foot: 'Нажми на плитку — откроется карточка',
+        tiles: [[0, '#22e6ff', 'chars', 'Характеры', 'Выбери характер перед раундом: у каждого плюс и минус'], [1, '#ff4fd8', 'events', 'Живая арена', 'Восемь событий меняют раунд прямо на ходу'],
+          [8, '#ffd23f', 'online', 'Вдвоём — скоро', '«Захват территории» и «Спина к спине» переезжают в полный онлайн'], [9, '#b26bff', 'evo', 'Эволюции скинов', 'Скины растут в формах I–III прямо в раунде'],
+          [5, '#ff2d55', 'hc', 'Хардкор', 'Две половины по 50 000, проклятия, стаи и «Берсерк»'], [15, '#ff9a3d', 'fps', 'Плавнее', 'Меньше рывков на телефонах — картинка та же']] },
+      hero: { imgs: ['neon', 'h_valentine', 's_7', 'h_halloween', 's_25'], body: '<p>Самое большое обновление осени: характеры, события арены, эволюции скинов, новый Хардкор и обновлённые режимы. Игра заметно плавнее на телефонах.</p><p>Нажимай на плитки или листай стрелками — каждая карточка коротко о главном.</p>' },
+      cards: [
+        { g: 'Игра', t: 'Характеры', l: 'Перед раундом выбери, каким будешь: у каждого свой плюс и минус.', v: 'chars',
+          b: '<ul><li><b>Хищник</b> +15% за ботов и боссов, но таешь быстрее · <b>Собиратель</b> +30% с крошек</li><li><b>Танк</b> (10 ур.) трудно съесть · <b>Призрак</b> (15) боты замечают позже · <b>Берсерк</b> (20) быстрая перезарядка</li><li>Выбираешь перед каждым одиночным раундом. В рейтинге характеров нет.</li></ul>' },
+        { g: 'Игра', t: 'События арены', l: 'Восемь событий меняют раунд прямо на ходу.', v: 'events',
+          b: '<ul><li>8 событий: Звездопад, Разлом, Ветер, Затмение, Золотая капля, Монетный дождь, Землетрясение, Награда за голову.</li><li>О событии предупреждают заранее, место видно на мини-карте.</li><li>Одни дают монеты и массу, другие мешают — подстраивайся.</li></ul>' },
+        { g: 'Игра', t: 'Способности', l: 'Две новые и честный баланс остальных.', v: 'abil',
+          b: '<ul><li><b>Метка</b> вместо Скачка: поставь метку и перенесись к ней.</li><li><b>Засада</b> вместо Маскировки: ешь при меньшем перевесе.</li><li>Сильные способности урезаны, слабые усилены.</li></ul>' },
+        { g: 'Игра', t: 'Рост и скорость', l: 'Все капли быстрее, большие растут медленнее.', v: 'grow',
+          b: '<ul><li>Все капли на 35% быстрее.</li><li>С 10 000 массы капля растёт медленнее — большая игра дольше.</li><li>Намного более тяжёлой капле достаточно накрыть центр меньшей.</li></ul>' },
+        { g: 'Режимы', t: 'Классика', l: 'На 50 000 капля делится — вырасти обе половины.', v: 'classic',
+          b: '<ul><li>Вехи массы с наградой, боты смелее, боссы растут вслед за тобой.</li><li>На 50 000 капля делится на две половины — вырасти обе.</li><li>Потерял половину — капля снова поделится на 50 000.</li></ul>' },
+        { g: 'Режимы', t: 'Хардкор', l: 'Две половины по 50 000, 11 вех улучшений, проклятия, стаи и скин «Берсерк».', v: 'hc',
+          b: '<ul><li><b>Цель:</b> обе половины держат по 50 000 15 секунд — «Корона Берсерка».</li><li>11 вех с карточками улучшений, проклятия, стаи ботов с 20 000.</li><li><b>Награды:</b> скин «Берсерк» с эволюцией, значки 75K и 88K.</li></ul>' },
+        { g: 'Режимы', t: 'Случайный билд — обновлён', l: 'На вехах — пауза и две карточки замены с редкостью.', v: 'rb',
+          b: '<ul><li>На пяти вехах массы — пауза и две карточки замены.</li><li>Можно заменить одну из своих способностей.</li><li>Чем реже карточка, тем больше уровней на раунд.</li></ul>' },
+        { g: 'Режимы', t: 'Босс-рейд — обновлён', l: 'Недельная лестница из пяти ступеней и пара колоссов.', v: 'raid',
+          b: '<ul><li>Недельная лестница: выбери ступень от I до V.</li><li>Колоссы-близнецы с тремя фазами, атаки видно заранее.</li><li>За ступень V — титул «Гроза колоссов».</li></ul>' },
+        { g: 'Вдвоём', t: 'Вдвоём — скоро', l: '«Захват территории» и «Спина к спине» переезжают в полный онлайн.', v: 'online',
+          b: '<ul><li>«Захват территории» и «Спина к спине» переезжают в полный онлайн.</li><li>Можно будет играть с другом из любого города, матч считает сервер.</li><li>Пока режимы закрыты. Рекорды пар сохранены в «Рейтинге».</li></ul>' },
+        { g: 'Коллекция', t: 'Эволюции скинов', l: 'Семь скинов растут в формах I–III прямо в раунде.', v: 'evo',
+          b: '<ul><li>Семь скинов меняют форму I → II → III, когда выполнишь цель.</li><li>Эволюция прямо в раунде: вспышка и окно «Эволюция!».</li><li>Любую открытую форму можно надеть в гардеробе.</li></ul>' },
+        { g: 'Коллекция', t: 'Обновлённые скины', l: 'Новый облик, годовые — с живой анимацией.', v: 'skins',
+          b: '<ul><li>Многие скины получили новый облик, годовые — живую анимацию.</li><li>Новые: «Мятная капля», «Ягодный пончик», «Аквариум», «Обсидиан», «Охотник на боссов».</li><li>Переделанные скины остались у тебя в новом виде.</li></ul>' },
+        { g: 'Коллекция', t: 'Рамки и титулы', l: 'Меньше, но ценнее, и новый вид титулов — жетоны.', v: 'deco',
+          b: '<ul><li>Титулы стали жетонами с рамкой цвета редкости.</li><li>Похожие рамки и титулы объединены — ты получил ближайшую или монеты.</li><li>«Мастер оружия» — за 5-й уровень всех обычных способностей.</li></ul>' },
+        { g: 'Коллекция', t: 'Хронос 2.0', l: 'Мастерская: 23 предмета и легендарный «Скелетон».', v: 'gear',
+          b: '<ul><li>Серия «Хронос» собрана заново: 23 предмета.</li><li>«Скелетон» — легендарный скин с эволюцией.</li><li>Убранные предметы остаются у тех, кто успел их создать.</li></ul>' },
+        { g: 'Меню', t: 'Вкладки и меню', l: 'Перекомпоновка экранов, группы и одна иконка на вещь.', v: 'tabs',
+          b: '<ul><li>Экраны перекомпонованы, справка обновлена.</li><li>Профиль, гардероб и питомцы — группы-кнопки вместо стопки ящиков.</li><li>Одна иконка на каждую вещь, обновления — карточками.</li></ul>' },
+        { g: 'Меню', t: 'Пауза с бафами', l: 'На паузе видно, какие улучшения ты выбрал.', v: 'pause',
+          b: '<ul><li>На паузе — блок «Твои бафы»: что выбрал и когда.</li><li>Минусы карточек отмечены отдельно.</li><li>Бафы скорости теперь действительно ускоряют.</li></ul>' },
+        { g: 'Техника', t: 'Плавнее на телефонах', l: 'Меньше рывков даже при огромной массе.', v: 'fps',
+          b: '<ul><li>Одинаковые детали рисуются за один раз.</li><li>Шейдеры готовятся до начала раунда.</li><li>Картинка та же, рывков заметно меньше.</li></ul>' },
+      ],
+      items: ['Характеры перед одиночным раундом.', 'Восемь событий арены.', 'Способности: Метка, Засада, баланс.', 'Все капли быстрее, большие растут медленнее.', 'Классика: деление на 50 000.', 'Хардкор: двойной укус, проклятия, стаи, награды лестницы.',
+        'Случайный билд обновлён: замена на вехах с редкостью.', 'Босс-рейд обновлён: недельная лестница из пяти ступеней.', 'Режимы для двоих через интернет, комната по ссылке.', 'Эволюции скинов I–III в раунде.', 'Обновлённые и новые скины.',
+        'Меньше рамок и титулов, титулы-жетоны.', 'Хронос 2.0: 23 предмета, «Скелетон».', 'Вкладки перекомпонованы, одна иконка на вещь.', 'Пауза с бафами.', 'Плавнее на телефонах.'] },
     { id: 189, ver: '2.5.0', date: '14 ноября', title: 'Вдвоём: «Захват территории» и «Спина к спине», обновлённые режимы', kind: 'season',
       lead: 'Два режима для двоих на двух телефонах и большая переработка старых режимов: у каждого теперь своя цель внутри раунда.', items: [
       '«Захват территории» вместо «Испытания дня»: поле поделено границей, ешь ботов на своей половине — граница ползёт к тому, кто легче. 4 минуты, досрочная победа при 80% поля.',
@@ -160,7 +213,7 @@
       'Рекорды режимов для двоих видят все: в «Рейтинге» появились вкладки «👥 Захват территории» и «👥 Спина к спине» — лучшие пары на каждой сложности.',
       'Режимы для двоих отмечены «👥 вдвоём · локально». Комната по коду, связь напрямую, если получится, иначе через сервер. Ник соперника виден над его каплей.',
       'Награды режимов для двоих: фоны чата «Граница» и «Плечом к плечу» за 20 игр, фоны профиля «Карта захвата» и «Двойная спираль» за 30. Линейка достижений «Спина к спине» и титул «Несокрушимые».',
-      '«Классика»: вехи массы с наградой и арена, которая накаляется каждые 3 минуты. После 5 минут — «Забрать награду и выйти».',
+      '«Классика»: вехи массы с наградой и арена, которая накаляется каждые 3 минуты. На 50 000 капля делится на две половины (как в «Хардкоре»), цель — вырастить обе до 50 000. После 5 минут или после цели — «Забрать награду и выйти».',
       '«На время»: случайное правило раунда, финальный рывок в последние 30 секунд и награда за любое место.',
       '«Выживание»: боссы тяжелеют мягче, тают со временем — под конец их можно съесть. Каждая 5-я волна особая, после неё передышка.',
       '«Захват короны»: корона переходит только к тому, кто съест владельца. Владелец медленнее, на него охотятся боты и боссы, волны крепчают.',
@@ -369,9 +422,77 @@
   // every entry is marked by scale: patch (small fixes), update (content and balance), season (big systems)
   const NEWS_KIND = { patch: ['k-patch', '🟢 Патч'], update: ['k-update', '🔵 Обновление'], season: ['k-season', '⭐ Сезон'] };
   const newsKind = n => { const k = NEWS_KIND[n.kind || 'update']; return `<i class="news-kind ${k[0]}">${k[1]}</i>`; };
-  function newsHtml(list) {
-    return list.map((n, k) => `<details class="news-item"${k === 0 ? ' open' : ''}><summary><span>${n.title}<small>${newsKind(n)}${n.ver} · ${n.date}</small></span></summary>${n.lead ? `<p>${n.lead}</p>` : ''}<ul${n.kinds ? ' class="news-kinds"' : ''}>${n.items.map(i => `<li>${i}</li>`).join('')}</ul>${newsGift(n) ? `<p class="news-gift">Подарок за обновление: +${newsGift(n)} ◆</p>` : ''}${n.refund && save.bal163Refund ? `<p class="news-gift">Тебе возвращено: +${save.bal163Refund} ◆</p>` : ''}${n.refundKey && save[n.refundKey] ? `<p class="news-gift">Тебе возвращено: +${save[n.refundKey]} ◆</p>` : ''}${n.id === 170 && save.mig170 && save.mig170.replaced ? `<p class="news-gift">Обновлён гардероб: заменено предметов — ${save.mig170.replaced}${save.mig170.coins ? `, за повторы начислено +${save.mig170.coins} ◆` : ''}.</p>` : ''}</details>`).join('');
+  // 2.7: compact — one line per entry (type mark · version · title · date), the first 6 changes shown, the rest under «ещё N»
+  const NEWS_SHOW = 6;
+  // ---- 2.7: the current update as cards (a hero and a grid), each opens big; the older ones folded in «Архив обновлений» as text ----
+  const NW_VIS = {
+    chars: () => `<div class="nw-v nw-chars">${CHARS.map(c => `<span style="--c:${c.color}"><i>${c.icon}</i>${c.name}</span>`).join('')}</div>`,
+    events: () => `<div class="nw-v nw-ev">${EVENTS.map(e => `<span style="--c:${e.color}">${e.name}</span>`).join('')}</div>`,
+    rb: () => `<div class="nw-v nw-rb"><span class="r1"><b>Рывок</b><small>обычное</small></span><span class="r3"><b>Пульс</b><small>эпическое</small></span><span class="r4"><b>Дыра</b><small>легендарное</small></span></div>`,
+    raid: () => `<div class="nw-v nw-raid">${[['I', 30], ['II', 45], ['III', 62], ['IV', 80], ['V', 100]].map(([r, h]) => `<span style="--h:${h}"><b>${r}</b></span>`).join('')}</div>`,
+    abil: () => `<div class="nw-v nw-swap"><span class="old">Скачок</span><b>→</b><span class="new">Метка</span><span class="old">Маскировка</span><b>→</b><span class="new">Засада</span></div>`,
+    online: () => DUO_SOON ? `<div class="nw-v nw-link"><span class="code">СКОРО</span><span class="lnk">⏳ переезжаем в онлайн</span></div>` : `<div class="nw-v nw-link"><span class="code">K7M-4QX</span><span class="lnk">🔗 Поделиться ссылкой</span></div>`,
+    pause: () => `<div class="nw-v nw-pause"><span class="hd">⏸ Твои бафы</span><span>Скорость +6%</span><span>Магнит +10%</span><span class="ep">Хищник +18%</span><span class="bad">Вязкость −5%</span></div>`,
+    skins: () => `<div class="nw-v nw-skins">${['h_valentine', 's_7', 'h_halloween'].map(f => `<img src="news/27_${f}.webp" alt="" loading="lazy">`).join('')}</div>`,
+    deco: () => `<div class="nw-v nw-deco"><span class="fr fn fr-l" style="--a:#22e6ff;--b:#b26bff">Капля</span>${titleTag('tt_sk13')}</div>`,
+    grow: () => `<div class="nw-v nw-grow"><span style="--s:14"></span><span style="--s:22"></span><span style="--s:30"></span><em>×1,35 скорость</em></div>`,
+    classic: () => `<div class="nw-v nw-classic"><span>25 000</span><b>+</b><span>25 000</span><em>цель: обе по 50 000</em></div>`,
+    hc: () => `<div class="nw-v nw-hc"><span>75K</span><span>88K</span><span class="win">100K</span><em>☠ двойной укус</em></div>`,
+    evo: () => `<div class="nw-v nw-evo"><span style="--s:18">I</span><b>→</b><span style="--s:26">II</span><b>→</b><span style="--s:34">III</span></div>`,
+    gear: () => `<div class="nw-v nw-gear"><span>⚙</span><span class="sm">⚙</span><em>23 предмета</em></div>`,
+    modes: () => `<div class="nw-v nw-modes"><span>Классика</span><span>Хардкор</span><span>Случ. билд</span><span>Босс-рейд</span></div>`,
+    tabs: () => `<div class="nw-v nw-tabs"><span class="on">Скины</span><span>Питомцы</span><span>Рамки</span><span>Титулы</span><span>Фоны</span></div>`,
+    fps: () => `<div class="nw-v nw-fps"><span style="--h:92"><small>было</small></span><span style="--h:38" class="now"><small>стало</small></span><em>рывков меньше</em></div>`,
+  };
+  let nwCur = null, nwI = 0, nwBack = null;
+  function newsCards(n) {
+    nwCur = n;
+    // 2.7: the main card is a poster (owner's reference): the logo, the version, a line of highlights, six neon tiles that open their cards, a footer
+    const P = n.poster, hero = `<section class="nw-poster" aria-label="Обновление ${n.ver}"><div class="nw-ph"><b class="nw-logo">Капли <i>3D</i></b><span class="nw-pill">Обновление ${n.ver}</span></div>` +
+      `<p class="nw-psub">${P.sub}</p><div class="nw-tiles">${P.tiles.map(([i, col, vis, t, l]) => `<button type="button" class="nw-tile" style="--c:${col}" data-nw="${i}" aria-haspopup="dialog"><b>${t}</b><span>${l}</span>${NW_VIS[vis]()}</button>`).join('')}</div>` +
+      `<div class="nw-pf"><span>${P.foot}</span><button type="button" data-nw="-1">Обзор обновления ›</button></div></section>`;
+    // 2.7 (owner): no list of cards under the poster — every other change is a small tile in it, a tap opens its card
+    const big = new Set(P.tiles.map(x => x[0])), IC = { abil: '✦', grow: '⤢', classic: '◎', rb: '🎲', raid: '☠', skins: '◐', deco: '❖', gear: '⚙', tabs: '▦', pause: 'Ⅱ', modes: '◈', evo: '⟳', online: '⇄', chars: '☺', events: '✺', fps: '⚡', hc: '☠' },
+      COL = { 'Игра': '#22e6ff', 'Режимы': '#3dff9a', 'Вдвоём': '#ffd23f', 'Коллекция': '#b26bff', 'Меню': '#ff9a3d', 'Техника': '#9fd8ff' };
+    const minis = n.cards.map((c, i) => big.has(i) ? '' : `<button type="button" class="nw-mini" style="--c:${COL[c.g] || '#22e6ff'}" data-nw="${i}" aria-haspopup="dialog"><i aria-hidden="true">${IC[c.v] || '•'}</i><b>${c.t}</b><span>${c.l}</span></button>`).join('');
+    return hero.replace('<div class="nw-pf">', `<div class="nw-minis">${minis}</div><div class="nw-pf">`) +
+      (newsGift(n) ? `<p class="news-gift">🎁 Подарок: ${newsGift(n)} ◆</p>` : '');
   }
+  function newsBig(i) {
+    const n = nwCur; if (!n) return;
+    let ov = $('nwOv'); if (!ov) { ov = document.createElement('div'); ov.id = 'nwOv'; ov.className = 'nw-ov'; ov.hidden = true; ov.innerHTML = '<div class="nw-big" id="nwBig" role="dialog" aria-modal="true" aria-labelledby="nwBt"></div>'; document.body.appendChild(ov); }
+    nwI = i; const hero = i < 0, c = hero ? { t: `${n.ver} — ${n.title}`, l: n.lead, b: n.hero.body } : n.cards[i], N = n.cards.length;
+    const vis = hero ? `<div class="nw-v nw-skins nw-wide">${n.hero.imgs.map(f => `<img src="news/27_${f}.webp" alt="">`).join('')}</div>` : NW_VIS[c.v]();
+    $('nwBig').innerHTML = vis + `<div class="nw-txt"><h2 id="nwBt">${c.t}</h2><p class="nw-bl">${c.l}</p><div class="nw-bb">${c.b}</div></div>` +
+      `<div class="nw-nav"><button type="button" data-nwgo="-1" aria-label="Предыдущая карточка">‹</button><span>${hero ? 'обзор' : (i + 1) + ' из ' + N}</span><button type="button" data-nwgo="1" aria-label="Следующая карточка">›</button><button type="button" class="nw-x" data-nwx>Закрыть</button></div>`;
+    ov.hidden = false; $('nwBig').scrollTop = 0; $('nwBig').querySelector('[data-nwx]').focus();
+  }
+  const newsBigClose = () => { const ov = $('nwOv'); if (ov) ov.hidden = true; if (nwBack) nwBack.focus(); };
+  const newsStep = d => { const N = nwCur.cards.length; newsBig(nwI < 0 ? (d > 0 ? 0 : N - 1) : (nwI + d + N) % N); };
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-nw]'); if (c) { nwBack = c; newsBig(+c.dataset.nw); return; }
+    const g = e.target.closest('[data-nwgo]'); if (g) { newsStep(+g.dataset.nwgo); return; }
+    if (e.target.closest('[data-nwx]') || (e.target.id === 'nwOv')) newsBigClose();
+  });
+  document.addEventListener('keydown', e => { const ov = $('nwOv'); if (!ov || ov.hidden) return; if (e.key === 'Escape') { e.stopPropagation(); newsBigClose(); } if (e.key === 'ArrowRight') newsStep(1); if (e.key === 'ArrowLeft') newsStep(-1); }, true);
+  { let sx = null; document.addEventListener('touchstart', e => { sx = e.target.closest && e.target.closest('#nwBig') ? e.touches[0].clientX : null; }, { passive: true });
+    document.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 60) newsStep(dx < 0 ? 1 : -1); }); }
+  function newsHtml(list) {
+    const cur = list[0] && list[0].cards ? list[0] : null, rest = cur ? list.slice(1) : list;
+    return (cur ? newsCards(cur) : '') + (rest.length ? (cur ? `<details class="nw-arch"><summary>Архив обновлений · ${rest.length}</summary>${newsTextHtml(rest)}</details>` : newsTextHtml(rest)) : '');
+  }
+  function newsTextHtml(list) {
+    const legend = '<p class="news-legend"><span><i class="nk k-patch"></i>патч</span><span><i class="nk k-update"></i>обновление</span><span><i class="nk k-season"></i>большое обновление</span></p>';
+    const ul = (items, kinds) => `<ul${kinds ? ' class="news-kinds"' : ''}>${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+    return legend + list.map((n, k) => {
+      const kc = NEWS_KIND[n.kind || 'update'][0], head = n.items.slice(0, NEWS_SHOW), rest = n.items.slice(NEWS_SHOW);
+      return `<details class="news-item"${k === 0 ? ' open' : ''}><summary><i class="nk ${kc}" title="${NEWS_KIND[n.kind || 'update'][1]}"></i><b class="nv">${n.ver}</b><span class="nt">${n.title}</span><small>${n.date}</small></summary>` +
+        (n.lead ? `<p>${n.lead}</p>` : '') + ul(head, n.kinds) +
+        (rest.length ? `<details class="news-more"><summary>ещё ${rest.length} ${(m => m > 10 && m < 20 ? 'изменений' : m % 10 === 1 ? 'изменение' : m % 10 >= 2 && m % 10 <= 4 ? 'изменения' : 'изменений')(rest.length % 100)}</summary>${ul(rest, n.kinds)}</details>` : '') +
+        (newsGift(n) ? `<p class="news-gift">🎁 Подарок: ${newsGift(n)} ◆</p>` : '') + '</details>';
+    }).join('');
+  }
+
   // gift: given once; giftBefore — only to players who had not seen that older announcement yet
   const newsGift = n => ((save.newsGot || {})[n.id]) || (n.gift && n.id > (save.newsSeen || 0) && (!n.giftBefore || (save.newsSeen || 0) < n.giftBefore) ? n.gift : 0);
   // 1.6.2–1.6.4 were merged into one entry: whoever already read them does not get it again
@@ -385,7 +506,7 @@
   function openNews(onlyNew) {
     const list = onlyNew ? newsUnseen() : NEWS;
     tutModal(onlyNew ? 'Что нового' : 'Обновления', newsHtml(list), onlyNew ? [['newsOk', 'Понятно', 'btn'], ['newsAll', 'Все обновления', 'btn ghost']] : [['newsOk', 'Закрыть', 'btn']]);
-    $('tutMBody').scrollTop = 0;
+    $('tutModal').classList.add('nw-wide'); $('tutMBody').scrollTop = 0; $('tutModal').querySelector('.modal-card').scrollTop = 0;   // the button's focus scrolled the window to its end
   }
   $('newsBtn').addEventListener('click', () => { const fresh = newsUnseen().length; openNews(false); if (fresh) newsMarkSeen(); });
   $('tutModal').addEventListener('click', e => {
@@ -419,6 +540,7 @@
     const dl = rows => rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
     const BONUS_TXT = { speed: '+45% к скорости', shield: 'тебя нельзя съесть', double: 'еда даёт вдвое больше массы', magnet: 'крошки сами летят к тебе', fountain: 'сразу рассыпает вокруг тебя горсть крошек: чем ты больше, тем их больше' };
     $('infoBonus').innerHTML = dl(Object.entries(BONUS).map(([k, b]) => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, b.instant ? `${BONUS_TXT[k] || ''}, сразу` : `${BONUS_TXT[k] || ''}, ${b.dur} с`]));
+    if ($('infoChars')) $('infoChars').innerHTML = dl(CHARS.map(c => [`${c.icon} ${c.name} <small>(с ${c.lvl} ур.)</small>`, `＋ ${c.plus}; − ${c.minus}`]));
     $('infoEvents').innerHTML = dl(EVENTS.map(e => [`<i class="dot" style="background:${e.color}"></i>${e.name}`, e.desc]));
     $('infoBosses').innerHTML = dl([...Object.values(BOSS_TYPES), BOSS_TYPES_EXTRA.colossus].map(b => [`<i class="dot" style="background:${b.color}"></i>${b.name}`, `${b.about}. Награда: ${b.coins} ◆, ${b.xp} опыта`]));
     $('infoModes').innerHTML = dl(MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => [m.name, m.desc + (id === leagueMode() ? ' <b>· сейчас режим лиги</b>' : '')]));
@@ -438,11 +560,111 @@
   // menu groups: each opens its own small window; ← back returns to the menu
   document.querySelectorAll('[data-hub]').forEach(b => b.addEventListener('click', () => { showCard(b.dataset.hub); const f = $(b.dataset.hub).querySelector('.hub-list button'); if (f) f.focus(); }));
   document.querySelectorAll('[data-hubback]').forEach(b => b.addEventListener('click', () => { showCard('menuCard'); $('startBtn').focus(); }));
+  // ---- 2.7: «Режимы» — two tabs, compact tiles, ⓘ with everything else ----
+  $('modesTabs').addEventListener('click', e => { const b = e.target.closest('[data-mtab]'); if (!b) return; modesTabPick = b.dataset.mtab; renderAll(); b.focus(); });
+  { const dh = $('modesDuoHow'); if (dh) dh.addEventListener('click', () => Duo.how(save.mode === 'duoback' ? 'duoback' : 'territory')); }   // gone while the modes for two are «скоро»
+  // what each «Хардкор» boost does, in plain words (the ⓘ window of «Режимы»)
+  const HC_DESC = {
+    speed: 'Капля двигается быстрее — легче догнать и легче убежать.',
+    absorb: 'Всё съеденное даёт больше массы: крошки, боты, боссы.',
+    cd: 'Способности перезаряжаются быстрее.',
+    melt: 'Масса тает медленнее — особенно важно на большой массе.',
+    skin: 'Чтобы съесть тебя, боту или боссу нужно быть заметно крупнее.',
+    magnet: 'Крошки притягиваются к тебе с большего расстояния.',
+    dash: 'Рывок перезаряжается быстрее.',
+    merge: 'После деления части сливаются обратно быстрее. После деления на половины — ещё и короче перезарядка кнопки «Слить половины».',
+    predator: 'После каждого съеденного бота 2 секунды ты быстрее.',
+    coins: 'Больше монет за этот раунд (общий потолок множителей ×2).',
+  };
+  // 2.7: the details of each mode under ⓘ — rewards, steps, rules; the numbers come from the game itself
+  function modeDetail(id) {
+    const X = ModeX.info(), n = v => v.toLocaleString('ru-RU'), li = a => `<li>${a}</li>`, sec = (t, body) => `<details class="mi-sec"><summary>${t}</summary><div class="mi-body">${body}</div></details>`;   // drawers: closed until tapped
+    const tbl = rows => `<div class="mi-tbl">${rows.map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('')}</div>`;
+    if (id === 'classic') return sec('Вехи массы — награда сразу', tbl(X.MILES.map(([m, c]) => [`${n(m)} массы`, `+${c} ◆${m === 30000 ? ' · титул «Вершина» (один раз) · легендарный сундук' : m === 50000 ? ' · деление на две половины' : ''}`]).concat([[`обе половины по ${n(X.CL_GOAL)}`, `+${n(X.CL_GOAL_COINS)} ◆ · титул «Две вершины» · легендарный сундук`]]))) +
+      sec('Две половины — с 50 000', `<ul>${li('капля сама делится на две равные половины по 25 000')}${li('«Двойной укус»: обе половины вместе съедают босса, которого не осилит одна')}${li('«Слить половины» — кнопка внизу: на 6 с можно слиться (−10% массы)')}${li('съеденная половина возрождается через 20 с с 5 000')}${li('после цели раунд продолжается — или «Забрать награду и выйти»')}</ul>`) +
+      sec('Чем сложнее на большой массе', `<ul>${li('с 10 000 крошки, боты и боссы дают меньше, а таяние сильнее (так во всех одиночных режимах, кроме «Хардкора» и рейда)')}${li('с 10 000 боссы растут вместе с тобой')}${li('с 20 000 боты смелее, а трое из них сбиваются в стаю')}${li('с 10 000 шипы исчезают')}</ul>`) +
+      sec('Арена накаляется', `<ul>${li(`каждые ${X.ESC_S / 60} минуты — новый уровень, всего ${X.ESC_MAX + 1}`)}${li('боты быстрее, боссы приходят чаще')}${li('за каждый уровень: +20 ◆ × номер уровня')}${li('после 5 минут можно «Забрать награду и выйти»')}</ul>`);
+    if (id === 'timed') return sec('Правило раунда — одно случайное', `<ul>${X.RULES.map(r => li(`<b>${r.name}</b> — ${r.about}`)).join('')}</ul>`) +
+      sec('Финальный рывок', `<ul>${li(`последние ${X.RUSH_S} с: крошки дают вдвое больше`)}</ul>`) +
+      sec('Награда за место', tbl(X.PLACE.map((c, i) => [`${i + 1}-е место`, `+${c} ◆`]).concat([['дальше', '+5 ◆'], ['за подъём во второй половине', '+5 ◆ за каждое место, до +25']])));
+    if (id === 'survival') return sec('Волны', `<ul>${li('новый босс каждые 15 с, каждая волна на 12% тяжелее')}${li('боссы тают: к концу жизни их можно съесть')}${li('каждая 5-я волна особая: босс в полтора раза крупнее, после неё передышка')}${li('со 5-й волны боссы могут повторяться, с 10-й их до 4 сразу')}</ul>`) +
+      sec('Связки — каждая 3-я волна', `<ul>${X.COMBOS.map(c => li(`<b>«${c.name}»</b>: ${c.how}`)).join('')}</ul><small>Пока двое из связки держатся рядом, они на 10% быстрее.</small>`);
+    if (id === 'crown') return sec('Правила', `<ul>${li('корона лежит на поле — подбери её первым')}${li('дальше она переходит только к тому, кто съест владельца (или большую его часть)')}${li('если владельца съест босс, корона падает на поле')}${li('владелец на 15% медленнее')}</ul>`) +
+      sec('Кто охотится на владельца', `<ul>${li('боссы — где бы он ни был')}${li('боты крупнее — через всю арену')}${li('боты мельче — за отколовшимися частями')}</ul>`) + sec('Рекорд', '<ul><li>время с короной за раунд</li></ul>');
+    if (id === 'rbuild') {   // 2.7: as detailed as «Хардкор» — rules, milestones with rarity, every ability a card can bring, rewards
+      const all = ABILITIES.filter(a => !a.xa && !a.cr), cards = all.filter(a => !a.branches), RN = X.RB_RN;
+      const short = d => { const t = String(d || '').split(/(?<=[.!])\s|:\s/)[0]; return t.length > 120 ? t.slice(0, 117) + '…' : t; };
+      return sec('Как устроен', `<ul>${li(`в начале раунда — 3 случайные способности из ${all.length} обычных, даже не купленные`)}${li('уровни способностей — как у тебя в «Коллекции»')}${li('опыт за раунд ×1,2')}${li(`на ${X.RB_MILES.length} вехах массы игра встаёт на паузу и предлагает заменить способность`)}${li(`открывается с ${MODES.rbuild.lvl} уровня`)}</ul>`) +
+        sec(`Вехи — ${X.RB_MILES.length} замен за раунд`, tbl(X.RB_MILES.map((m, k) => { const [f, up] = X.RB_TIER[k]; return [`${n(m)} массы`, `${RN[f]}, шанс ${Math.round(up * 100)}% на ${['обычную', 'редкую', 'эпическую', 'легендарную'][f + 1]}`]; }))) +
+        sec('Как работает замена', `<ul>${li('2 карточки новых способностей, у каждой своя редкость')}${li('выбери карточку, затем — какую из трёх своих способностей она заменит')}${li('«Оставить свои способности» — билд не меняется; «← назад» — вернуться к карточкам')}${li('15 с на выбор, не успел — билд остаётся прежним')}${li('новая способность готова сразу, перезарядки нет')}${li('уровни из карточки действуют до конца раунда, не выше 5-го')}${li('в карточках нет способностей, которые уже стоят в билде, а также «Рывка» и «Деления» — у них нет уровней')}</ul>`) +
+        sec(`Способности в карточках — ${cards.length} видов`, `<ul class="mi-boosts">${cards.map(a => `<li><span class="mib-ic" style="color:${a.color}">${a.icon}</span><span class="mib-tx"><b>${a.name}</b><small>${short(a.desc)}</small><span class="mib-v">${[0, 1, 2, 3].map(r => `<i class="r${r}">+${r + 1} ур.</i>`).join('')}</span></span></li>`).join('')}</ul>` +
+          `<small>Цвета: обычная · <span style="color:#4d7cff">редкая</span> · <span style="color:#b26bff">эпическая</span> · <span style="color:#ffd23f">легендарная</span>. Каждый уровень: перезарядка −${Math.round(ABIL_CFG.cdPerLv * 100)}%, сила +${String(Math.round(ABIL_CFG.powPerLv * 1000) / 10).replace('.', ',')}%.</small>`) +
+        sec('Награды', `<ul>${li('«Импровизатор» — стань лидером арены, применив все три способности, что стоят в билде')}${li('«Мастер импровизации» — 25 раундов в режиме: скин «Бездна»')}</ul>`);
+    }
+    if (id === 'hardcore') return sec('Без поблажек', `<ul>${li('нет бонусов на поле и второго шанса')}${li('случайные события арены (звездопад, разлом, ветер и другие) действуют и здесь')}${li('боты из стаи сытны только на 20% (их масса набрана искусственно), боссы с 30 000 — на 35%')}${li('укусив тебя, вся стая 2,5 с не может кусать снова')}${li('боты злее, масса тает быстрее, чем в других режимах')}${li('длинная защита на старте')}${li('на 50 000 капля делится на две половины; победа — обе держат по 50 000 одновременно 15 с')}${li('после деления обе половины 3 с неуязвимы')}${li('⇄ половины выравниваются сами: если одна тяжелее больше чем на 10%, масса перетекает к лёгкой (видна светящаяся нить), без потерь')}${li('пока идёт 15-секундный отсчёт победы, таяние вдвое меньше')}${li('🔗 «Двойной укус»: обе половины вместе касаются босса и вместе крупнее его в 1,25 раза — босс съеден')}${li('🔗 кнопка «Слить половины»: на 6 с половины сливаются в одну каплю (−10% массы); та же кнопка делит их раньше, а если рядом опасный босс, деление откладывается до 5 с; перезарядка 90 с, короче с «Быстрым слиянием»')}${li('с боссов 40% массы, «двойным укусом» и слитой каплей — 25%; таяние растёт с 15 000: ×1,45 к 25 000, ×1,8 с 60 000 (выше не растёт) («Таяние» снижает не больше чем на 40%); крошки дают 75% (после 50 000 — половину), боты после 50 000 — половину; с 10 000 на поле два босса; стаи выходят с 20 000; боты охотятся злее; после деления на поле всегда два босса, они видят вдвое дальше и разворачиваются быстрее; боссы крупнее твоей меньшей половины ×1,4 тают на 1% в секунду; слившаяся стая даёт 40%, а не 80%; после 20 000 — не больше одной карточки улучшения в 20 с; на каждой вехе одна из двух карточек «⚠ риск»: бонус ×1,5, но с минусом (у обычной минус — половина бонуса, у легендарной — пятая часть); с 10 000 раз в 60–90 с — проклятие на 15 с: вязкость, голод, туман, оковы или метка')}${li('при достижении 10 000 массы все шипы исчезают до конца раунда')}${li('монеты ×1,6')}</ul>`) +
+      sec(`Вехи — ${X.HC_MILES.length} улучшений за раунд`, tbl(X.HC_MILES.map((m, k) => { const [f, up] = X.HC_TIER[k]; return [`${n(m)} массы`, up ? `${X.HC_RN[f]}, шанс ${Math.round(up * 100)}% на ${X.HC_RN[f + 1].toLowerCase()}` : `${X.HC_RN[f]} — гарантированно`]; }))) +
+      sec(`Улучшения — ${Object.keys(X.HC_BOOST).length} видов`, `<ul class="mi-boosts">${Object.entries(X.HC_BOOST).map(([k, [ic, nm, v, kd]]) => `<li><span class="mib-ic">${ic}</span><span class="mib-tx"><b>${nm}</b><small>${HC_DESC[k] || X.HC_ABOUT[k]}</small><span class="mib-v">${v.map((x, r) => `<i class="r${r}">${(kd === '+' ? '+' : '−') + x + '%'}</i>`).join('')}</span></span></li>`).join('')}</ul>` +
+        `<small>Цвета: обычное · <span style="color:#4d7cff">редкое</span> · <span style="color:#b26bff">эпическое</span> · <span style="color:#ffd23f">легендарное</span>. Каждая веха — 2 карточки на выбор, редкость не ниже указанной в «Вехах». Одно улучшение — не больше ${X.HC_CAP} раз за раунд, одинаковые складываются. Не успел выбрать за 12 с — возьмётся первое.</small>`) +
+      sec('Особые карточки — плюс и минус', `<ul>${li('💥 <b>Стеклянная пушка</b>: еда сытнее на 15%, но съесть тебя легче на 5%')}${li('🪨 <b>Тяжеловес</b>: съесть тебя труднее на 10%, но ты медленнее на 8%')}${li('❄ <b>Ледяное сердце</b>: мороз и замедления вдвое слабее, но рывок перезаряжается на 20% дольше')}${li('♊ <b>Близнецы</b>: 30% съеденного одной половиной получает другая, но ты медленнее на 5%')}</ul><small>С вехи 10 000 одна из двух карточек может оказаться особой (шанс 35%). Каждая — один раз за раунд, «Близнецы» — после деления или с 40 000.</small>`) +
+      sec('Серия', `<ul>${li('3 раунда подряд с массой 3 000+ — титул «Несгибаемый»')}${li('5 раундов подряд — рамка «Закалка»')}</ul>`);
+    if (id === 'raid') return sec('Ступени недели', `<ul>${li('5 ступеней: каждая — один бой на 4 минуты, попыток сколько угодно')}${li('следующая открывается, когда пройдена предыдущая; награда за ступень — раз в неделю')}${li('монеты за урон — пока ступень не пройдена')}</ul>` + tbl(RAID_TIERS.map((t, i) => [`${RAID_ROMAN[i]} · ${n(t.hp)} урона`, `+${n(t.coins)} ◆${i === 2 ? ' · трофей недели, эпический сундук, +1 500 ◆' : i === 4 ? ' · легендарный сундук, титул «Гроза колоссов»' : ''}`]))) +
+      sec('Бой с близнецами', `<ul>${li('пока близнецы рядом, их связь гасит половину урона — разводи их')}${li('3 фазы: с ⅓ и ⅔ урона атаки чаще, появляются прислужники')}${li('атаки видно заранее: кольцо-волна, рывок, взрывы на полу')}${li('✦ слабые ядра у колоссов: съешь — урон ×3')}${li('у каждого босса недели своя особая атака: ' + RAID_SPECIAL.map((s, i) => `${RAID_NAMES[i]} — «${s[1]}»`).join(', '))}</ul>`) +
+      sec('Награды за победы в рейде', `<ul>${li('каждая победа (ступень III): +2% урона, до +10%')}${li('1-я: «Аура рейдера» (+3% монет в рейде)')}${li('3-я: «Шлем рейдера» (+20 с к бою)')}${li('5-я: «Знамя рейда» и питомец «Рейдер»')}</ul>`);
+    if (id === 'royale') return sec('Правила', `<ul>${li('зона сужается ступенями и смещается — следующий круг виден заранее')}${li('в новом круге падают бонусы')}${li('боты не возрождаются, побеждает последний')}${li('только в лиге, в свой сезон')}</ul>`);
+    if (id === 'territory') return sec('Матч', `<ul>${li('4 минуты, вдвоём через сервер игры')}${li('ешь ботов на своей половине — граница ползёт к сопернику')}${li('90% поля — досрочная победа, но не раньше 2:00')}${li('поле в 1,25 раза больше обычного, игроки на 12% быстрее, крошки вдвое сытнее и притягиваются чуть издалека, боты медленнее')}${li('ботов можно есть только на своей половине')}${li('20 матчей — фон чата «Граница»')}</ul>`);
+    if (id === 'duoback') return sec('Забег', `<ul>${li('вместе против 50 волн боссов, три сложности')}${li('каждая 5-я волна — особый босс, 50-я — финал')}${li('перерывы с едой и усилениями')}</ul>`) +
+      sec('Помощь напарнику', tbl([['ешь ботов, пока он ждёт возвращения', '+1 очко'], ['съешь босса, который гнался за ним', '+3 очка'], ['каждое очко', '+15 ◆ (× сложность)'], ['100 очков за все забеги', 'титул «Надёжное плечо»'], ['300 очков', 'рамка «Плечом к плечу»']]));
+    return '';
+  }
+  function modeInfo(id) {
+    const m = MODES[id], a = modeArt(id), ms = modeMastery(id), pts = (save.mastery || {})[id] || 0;
+    let el = $('modeInfoM');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'modeInfoM'; el.className = 'modal mode-info-m'; el.hidden = true; document.body.appendChild(el);
+      el.addEventListener('click', e => {
+        if (e.target === el || e.target.closest('[data-mix]')) { el.hidden = true; const t = $('mode-' + el.dataset.id); if (t) t.focus(); return; }
+        const pick = e.target.closest('[data-mipick]'); if (!pick) return;
+        el.hidden = true; if (DUO_SOON && isDuoMode(pick.dataset.mipick)) { duoSoon(); return; }
+        save.mode = pick.dataset.mipick; mode = save.mode; persist(); renderAll(); showCard('menuCard'); $('startBtn').focus();
+      });
+    }
+    el.dataset.id = id;
+    const lock = $('mode-' + id) && $('mode-' + id).disabled;
+    const league = LEAGUE_ROT.includes(id) ? (id === leagueMode() ? 'сейчас' : `сезон ${nextSeasonOf(id)}`) : '—';
+    el.innerHTML = `<div class="modal-card mi-card" role="dialog" aria-modal="true" aria-labelledby="miName" style="--mc:${a.c};--mc2:${a.c2}">` +
+      `<div class="mi-h"><span class="mi-art">${modeIcon(id)}</span><div><b id="miName">${m.name}</b><small>${m.duo ? '👥 вдвоём, на двух телефонах' : `Мастерство${ms.name ? ` · ${ms.name}` : ''} · ${pts} оч.`}</small></div><button class="modal-x" type="button" data-mix aria-label="Закрыть">×</button></div>` +
+      `<p class="mi-desc">${m.desc}</p>${modeDetail(id)}<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>` +
+      (m.duo ? `<div class="mi-st">${duoLine(id, 'rec')}</div>` : `<div class="mi-st"><span>Рекорд<b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство<b>${ms.name || '—'}</b></span><span>Лига<b>${league}</b></span></div>`) +
+      (lock ? '' : `<button class="btn mi-pick" type="button" data-mipick="${id}">${save.mode === id ? 'Выбран — в меню' : 'Выбрать режим'}</button>`) + '</div>';
+    el.hidden = false; el.querySelector('[data-mix]').focus();
+  }
+  $('modes').addEventListener('keydown', e => { const i = e.target.closest('[data-minfo]'); if (i && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); modeInfo(i.dataset.minfo); } });
   $('modes').addEventListener('click', e => {
+    const inf = e.target.closest('[data-minfo]'); if (inf) { e.stopPropagation(); modeInfo(inf.dataset.minfo); return; }
     const b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (b.dataset.soon) { duoSoon(); return; }
     save.mode = b.dataset.mode; mode = save.mode; persist(); renderAll();
     showCard('menuCard'); $('startBtn').focus();
   });
+  // 2.7 «Характер капли»: chosen before every round of a solo mode (the last choice for that mode is already marked)
+  const charSolo = () => !isDuoMode(save.mode);
+  function charPick(go) {
+    let m = $('charModal');
+    if (!m) { m = document.createElement('div'); m.id = 'charModal'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'Характер на этот раунд'); document.body.appendChild(m);
+      m.addEventListener('click', e => {
+        if (e.target === m || e.target.closest('[data-chx]')) { m.hidden = true; return; }
+        const t = e.target.closest('[data-char]'); if (t && !t.disabled) { m.dataset.sel = t.dataset.char; m.querySelectorAll('[data-char]').forEach(x => { const on = x === t; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); return; }
+        if (e.target.closest('[data-chgo]')) { const id = m.dataset.sel || null; save.char = id; (save.charMode = save.charMode || {})[save.mode] = id; persist(); m.hidden = true; m._go && m._go(); }
+      }); }
+    const lv = playerLevel(), last = (save.charMode || {})[save.mode], sel = last !== undefined ? last : save.char, ok = c => c && lv >= c.lvl, cur = ok(charById(sel)) ? sel : '';
+    const tile = c => { const lock = lv < c.lvl, on = cur === c.id;
+      return `<button type="button" class="ch-tile${on ? ' on' : ''}" data-char="${c.id}" ${lock ? 'disabled' : ''} style="--ac:${c.color}" aria-pressed="${on}"><span class="ch-ic">${c.icon}</span><b>${c.name}</b>${lock ? `<small class="ch-lock">🔒 с ${c.lvl} уровня</small>` : `<small class="ch-p">＋ ${c.plus}</small><small class="ch-m">− ${c.minus}</small>`}</button>`; };
+    m.dataset.sel = cur; m._go = go;
+    m.innerHTML = `<div class="ch-box"><button type="button" class="ch-x" data-chx aria-label="Закрыть">✕</button><h2>Характер на этот раунд</h2><p>${(MODES[save.mode] || {}).name || ''} · у каждого характера есть плюс и минус. Выбор запоминается для этого режима.</p>` +
+      `<div class="ch-grid">${CHARS.map(tile).join('')}<button type="button" class="ch-tile none${cur ? '' : ' on'}" data-char="" aria-pressed="${!cur}"><span class="ch-ic">○</span><b>Без характера</b><small class="ch-p">без плюсов и минусов</small></button></div>` +
+      `<button type="button" class="btn ch-go" data-chgo>В бой</button></div>`;
+    m.hidden = false; m.querySelector('[data-chgo]').focus();
+  }
   $('modeBtn').addEventListener('click', () => { renderAll(); showCard('modesCard'); const cur = $('mode-' + save.mode); (cur || $('modesBack')).focus(); });
   $('modesBack').addEventListener('click', () => { showCard('menuCard'); $('modeBtn').focus(); });
 
@@ -464,8 +686,10 @@
       prog: () => [Math.min(50, save.chaosTop || 0), 50], how: n => `Закончи 50 сезонов Хаос-лиги в «Сингулярности»: ${n[0]} из 50.` },
     { id: 'veteran', src: '26 значков сезонов', name: 'Ветеран сезонов', label: 'ВЕТЕРАН', c: '#ff9a3d', c2: '#5a2a00', glyph: '26',
       prog: () => [Math.min(26, save.seasonLog.length), 26], how: n => `Собери 26 значков сезонов — это год игры: ${n[0]} из 26.` },
-    { id: 'allhands', src: 'все 10 линеек достижений на III ступени', name: 'Мастер на все руки', label: 'ВСЕ РУКИ', c: '#3dffa2', c2: '#5a2a00', glyph: '✋',
+    { id: 'allhands', src: 'все 11 линеек достижений на III ступени', name: 'Мастер на все руки', label: 'ВСЕ РУКИ', c: '#3dffa2', c2: '#5a2a00', glyph: '✋',
       prog: () => { const L = ACH.filter(a => a.line); return [L.filter(a => save.ach.includes(a.id)).length, L.length]; }, how: n => `Доведи все линейки достижений до III ступени: ${n[0]} из ${n[1]}.` },
+    { id: 'hc100k', src: 'победа в «Хардкоре»: обе половины достигли 50 000 массы', name: 'Корона Берсерка', label: '100K', c: '#ffd27a', c2: '#28124f', glyph: '∞',
+      prog: () => [save.hc100k ? 1 : 0, 1], how: () => 'Пройди «Хардкор»: после разделения доведи каждую половину до 50 000 массы.' },
   ];
   // promo badges have their own detailed shapes (1.7.0)
   function promoBadgeSVG(b) {
@@ -490,6 +714,7 @@
   }
   function specialBadgeSVG(b, got) {
     if (PROMO_BADGES.includes(b)) return promoBadgeSVG(b);
+    if (b.id === 'hc100k') return hcBadgeSVG('c', `legend-badge ${got ? '' : 'off'}`);
     return `<svg class="legend-badge ${got ? '' : 'off'}" viewBox="0 0 100 100" role="img" aria-label="Значок «${b.name}»${got ? '' : ', ещё не получен'}"${got ? ` style="filter:drop-shadow(0 0 10px ${b.c}99)"` : ''}>
       <defs><linearGradient id="spb_${b.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="${b.c}"/><stop offset="1" stop-color="${b.c2}"/></linearGradient></defs>
       <path d="M50 4 L88 18 V48 C88 70 70 82 50 90 C30 82 12 70 12 48 V18 Z" fill="url(#spb_${b.id})" stroke="${b.c}" stroke-width="2"/>
@@ -501,7 +726,7 @@
   // exclusive badges from promo codes: shown in the profile only once received
   const PROMO_BADGES = [
     { id: 'beta', src: 'промокод', name: 'Бета-тестер', label: 'БЕТА', c: '#22e6ff', c2: '#0a2a6e', glyph: 'β', sc: '#7cf3ff', frame: 'fr_beta', title: 'tt_beta' },
-    { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a', frame: 'fr_creator', title: 'tt_creator' },
+    { id: 'creator', src: 'промокод', name: 'Создатель', label: 'СОЗДАТЕЛЬ', c: '#ffd23f', c2: '#5a2a00', glyph: '✦', sc: '#ffe98a', frame: 'fr_creator', title: 'tt_creator', skin: 'cr_architect', bgs: ['bg_cr_plan'] },
     { id: 'vet', src: 'промокод', name: 'Ветврач', label: 'ВЕТВРАЧ', c: '#3dffa2', c2: '#0b5e36', glyph: '✚', sc: '#a6ffd4', frame: 'fr_vet', title: 'tt_vet' },
     // holiday gift boxes (one edition a year): badge + frame
     { id: 'bday2026', src: 'праздничная коробка «День рождения 2026»', name: 'Именинник 2026', label: '2026', c: '#ff4fd8', c2: '#5a0a48', glyph: '🎂', sc: '#ffc2ec', frame: 'fr_bday2026', gift: true },
@@ -527,7 +752,7 @@
       return { coins: { ...(PROMO_COINS[r.id] || { name: code.toUpperCase(), c: '#ffd23f', sc: '#fff6a0' }), coins: r.coins } };
     }
     const b = PROMO_BADGES.find(x => x.id === r.badge); if (!b) return { err: PROMO_ERR.net };
-    save.badges[b.id] = today; [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) save.decor.push(d); }); pbgCheck(true); persist();
+    save.badges[b.id] = today; [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) save.decor.push(d); }); if (b.skin && !save.skins.includes(b.skin)) save.skins.push(b.skin); pbgCheck(true); persist();
     return { badge: b };
   }
   const promoCoinSVG = n => `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="pcg" cx=".35" cy=".3"><stop offset="0" stop-color="#fff6a0"/><stop offset=".6" stop-color="#ffd23f"/><stop offset="1" stop-color="#b07a00"/></radialGradient></defs>` +
@@ -539,7 +764,7 @@
     if (b.coins) { $('promoCoin').innerHTML = promoCoinSVG(b.coins); $('promoName').textContent = `+${b.coins.toLocaleString('ru-RU')} ◆`; $('promoWhat').textContent = `Подарок по промокоду «${b.name}» — монеты уже у тебя`; }
     else {
     $('promoCoin').innerHTML = specialBadgeSVG(b, true); $('promoName').textContent = `«${b.name}»`;
-    $('promoWhat').innerHTML = `Особый значок, рамка <span ${frameAttr(b.frame)}>${b.name}</span>, титул ${titleTag(b.title)} и фон профиля «${pbgById('bg_' + b.id).name}» — в профиле и гардеробе`; }
+    $('promoWhat').innerHTML = `Особый значок, рамка <span ${frameAttr(b.frame)}>${b.name}</span>, титул ${titleTag(b.title)}, ${b.bgs ? 'фоны профиля' : 'фон профиля'} «${[pbgById('bg_' + b.id), ...(b.bgs || []).map(pbgById)].filter(Boolean).map(x => x.name).join('» и «')}»${b.skin ? ` и скин «${(SKINS.find(k => k.id === b.skin) || {}).name}» с эволюцией` : ''} — в профиле и гардеробе`; }
     $('promoSparks').innerHTML = Array.from({ length: 36 }, (_, i) => { const a = i / 36 * Math.PI * 2 + Math.random() * .3, r = 110 + Math.random() * 170;
       return `<i style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r).toFixed(0)}px;animation-delay:${(Math.random() * .35).toFixed(2)}s;${i % 3 ? '' : 'background:#fff'}"></i>`; }).join('');
     fx.hidden = false; fx.querySelectorAll('.promo-coin, .promo-burst, .promo-ring, .promo-sparks i, .promo-text').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
@@ -548,7 +773,7 @@
   }
   // players who redeemed the beta code before the frame existed get it too
   // players who redeemed a code earlier get its newer frame and title too
-  PROMO_BADGES.forEach(b => { if ((save.promo || []).includes(b.id)) [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) { save.decor.push(d); persist(); } }); });
+  PROMO_BADGES.forEach(b => { if ((save.promo || []).includes(b.id) || (save.badges || {})[b.id]) { [b.frame, b.title].forEach(d => { if (d && !save.decor.includes(d)) { save.decor.push(d); persist(); } }); if (b.skin && !save.skins.includes(b.skin)) { save.skins.push(b.skin); persist(); } } });
   $('promoFx').addEventListener('click', () => { $('promoFx').hidden = true; });
   $('promoBtn').addEventListener('click', async () => {
     const m = $('promoMsg'), btn = $('promoBtn'); if (btn.disabled) return;
@@ -627,10 +852,10 @@
     }
     if (MB.vis) MB.scene.remove(MB.vis.mesh);
     const k = skin(); MB.vis = previewBlob(k, starsOf(k), save.hat); MB.vis.look = k;
-    const au = save.fx && save.fx.aura; if (au) setAura(MB.vis, au, k.color);
+    const au = save.fx && save.fx.aura; if (au && !evoOn()) setAura(MB.vis, au, k.color);
     MB.scene.add(MB.vis.mesh); $('mbName').textContent = k.name;
   }
-  function mbRefresh() { try { const k = JSON.stringify([save.skin, save.hat, save.fx && save.fx.aura, starsOf(skin())]); if (k !== MB.key) { MB.key = k; mbBuild(); } } catch (e) { try { MB.key = ''; } catch (e2) {} } }   // too early at start-up: try again on the next render
+  function mbRefresh() { try { const k = JSON.stringify([save.skin, save.hat, save.fx && save.fx.aura, starsOf(skin()), EVO[save.skin] ? evoForm(save.skin) : 0]); if (k !== MB.key) { MB.key = k; mbBuild(); } } catch (e) { try { MB.key = ''; } catch (e2) {} } }   // too early at start-up: try again on the next render
   (function mbLoop(now) {
     requestAnimationFrame(mbLoop);
     const el = $('menuBlob'); if (!MB.on || !MB.vis || running || $('overlay').hidden || $('menuCard').hidden || document.hidden || !el.offsetParent) return;
@@ -643,7 +868,7 @@
     if (lk.holo) { const h = ((lk.holoBase ?? .5) + (lk.holoSpan ?? .17) * (1 + Math.sin(now / 900))) % 1; m.color.setHSL(h, 1, .62); m.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
     if (lk.rainbow) { const h = (now / 4000) % 1; m.color.setHSL(h, 1, .6); m.emissive.setHSL(h, 1, .5); v.glow.material.color.setHSL(h, 1, .6); }
     animateLook(v, now, null);
-    MB.r.render(MB.scene, MB.cam);
+    alphaSafe(MB.scene); MB.r.render(MB.scene, MB.cam);
   })(performance.now());
   $('menuBlob').addEventListener('click', () => openView('wardrobe', 'wskin'));
   function checkSpecialBadges() {
@@ -651,7 +876,7 @@
     for (const b of SPECIAL) { if (save.badges[b.id]) continue; const [v, n] = b.prog(); if (v >= n) { save.badges[b.id] = today; toast(`Новый особый значок «${b.name}»! Он в профиле.`); persist(); } }
   }
   function renderAll() {
-    checkSpecialBadges(); renderChaosBtn(); mbRefresh(); try { prestigeCheck(); } catch (e) {} requestAnimationFrame(goalFade);
+    checkSpecialBadges(); renderChaosBtn(); mbRefresh(); try { $('wardBtn').classList.toggle('evo-new', Object.keys(save.evoNew || {}).length > 0); setTimeout(evoShowQueue, 400); } catch (e) {} try { prestigeCheck(); } catch (e) {} requestAnimationFrame(goalFade);
     // menu chip = a mini profile: your avatar with its frame and the emblem of your league
     { const av = $('acctChip').querySelector('.ac-ava'), sc = myShowcase(), li = leagueOf(save.season.pts), k = JSON.stringify([sc.skin, sc.frame, li]);
       if (av.dataset.k !== k) { av.dataset.k = k; av.innerHTML = pcAvatar({ ...sc, badge: '' }, 36); av.classList.add('has-av'); $('acctRank').innerHTML = rankEmblem(li, 18, { still: true }); } }
@@ -684,16 +909,22 @@
       mb.classList.add('mt'); mb.style.setProperty('--mc', a.c); mb.style.setProperty('--mc2', a.c2);
       mb.classList.toggle('duo', isDuoMode(id)); mb.innerHTML = `<span class="art">${modeIcon(id)}</span><span class="hd"><span class="k">${isDuoMode(id) ? '👥 Вдвоём · локально' : id === ModeX.dayMode() ? '🔥 Режим дня · ×1,25' : 'Режим'}</span><b class="n">${MODES[id].name}</b></span><span class="more">все ▸</span>` +
         (isDuoMode(id) ? `<span class="ln">${duoLine(id)}</span>` : `<span class="ln"><span>Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span>Мастерство <b style="color:#ffd23f">${ms.name ? `«${ms.name}»` : '—'}</b></span></span>`) + `<span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>`; }
-    { const plv = playerLevel();
-      $('modes').innerHTML = MODE_IDS.map(id => [id, MODES[id]]).map(([id, m]) => {
+    { const plv = playerLevel(), tab = modesTab();
+      const ids = MODE_IDS.filter(id => !!MODES[id].duo === (tab === 'duo'));
+      $('mtSolo').textContent = MODE_IDS.filter(id => !MODES[id].duo).length; $('mtDuo').textContent = MODE_IDS.filter(id => MODES[id].duo).length;
+      document.querySelectorAll('#modesTabs [data-mtab]').forEach(b => b.setAttribute('aria-selected', b.dataset.mtab === tab));
+      $('modesDuoNote').hidden = tab !== 'duo';
+      // 2.7: compact tiles — one line of what the mode is; the full text, the league season and the mastery points are under ⓘ
+      $('modes').innerHTML = ids.map(id => [id, MODES[id]]).map(([id, m]) => {
         const a = modeArt(id), ms = modeMastery(id), on = save.mode === id;
         const lock = id === 'royale' && !TEST_MODE ? `<span>🔒</span>Только в лиге<small>сезон ${nextSeasonOf('royale')}</small>` : m.lvl && plv < m.lvl ? `<span>🔒</span>С ${m.lvl} уровня<small>сейчас ${plv}</small>` : '';
-        const tag = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="lg-tag" style="color:var(--boss)">${b.name} · ${rs.done ? 'повержен, новый в понедельник' : `здоровье ${Math.ceil((RAID_HP - rs.dmg) / RAID_HP * 100)}% · попыток ${RAID_TRIES - rs.tries}/${RAID_TRIES}`}</span>`; })()
-          : id === 'royale' ? (TEST_MODE ? `<span class="lg-tag">Открыта для теста · сезон ${nextSeasonOf('royale')}</span>` : '') : id === leagueMode() ? `<span class="lg-tag">Сейчас режим лиги</span>` : LEAGUE_ROT.includes(id) ? `<span class="lg-tag" style="opacity:.6">лига: сезон ${nextSeasonOf(id)}</span>` : '';
-        return `<button class="mode mcard${m.duo ? ' duo' : ''}" id="mode-${id}" data-mode="${id}" role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
-          (on ? '<span class="sel" aria-hidden="true">✓</span>' : '') + (a.isNew && !lock ? '<span class="nw">новый</span>' : '') +
-          `<span class="art">${modeIcon(id)}</span><span class="tx">${m.duo ? '<span class="duo-mark">👥 вдвоём · локально</span>' : ModeX.dayMark(id)}<b>${m.name}</b><small>${m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${tag}</span>` +
-          (m.duo ? `<span class="ft">${duoLine(id, 'rec')}</span>` : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` «${ms.name}»` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
+        const chips = (id === leagueMode() ? '<span class="mchip lg">🏆 режим лиги</span>' : '') + (id === ModeX.dayMode() ? '<span class="mchip day">🔥 режим дня · ◆×1,25</span>' : '') + (a.isNew && !lock ? '<span class="mchip fresh">новый</span>' : '');
+        const raid = id === 'raid' ? (() => { const rs = raidState(), b = raidBoss(rs.week); return `<span class="m-raid">${b.name} · ступени ${rs.cleared.length}/5${rs.cleared.length >= 5 ? ' — всё пройдено, новый босс в понедельник' : ''}</span>`; })() : '';
+        const soon = m.duo && DUO_SOON;
+        return `<button class="mode mcard m27${m.duo ? ' duo' : ''}${soon ? ' soon' : ''}" id="mode-${id}" data-mode="${id}"${soon ? ' data-soon="1"' : ''} role="radio" aria-checked="${on}" style="--mc:${a.c};--mc2:${a.c2}" ${lock ? 'disabled' : ''}>` +
+          `<span class="art">${modeIcon(id)}<span class="minf" data-minfo="${id}" role="button" tabindex="0" aria-label="Подробнее о режиме «${m.name}»">i</span>${on ? '<span class="sel" aria-hidden="true">✓</span>' : ''}</span>` +
+          `<span class="tx">${chips || soon ? `<span class="mchips">${soon ? '<span class="mchip soon">⏳ скоро</span>' : ''}${chips}</span>` : ''}<b>${m.name}</b><small>${MODE_SHORT[id] || m.desc}</small><span class="tg">${a.tags.map(t => `<i>${t}</i>`).join('')}</span>${raid}</span>` +
+          (m.duo ? `<span class="ft">${duoLine(id, 'rec')}</span>` : `<span class="ft"><span class="rec">Рекорд <b>${fmtBest(id, save.bests[id] || 0)}</b></span><span class="ms">Мастерство${ms.name ? ` · ${ms.name}` : ''}<i><s style="width:${(ms.pct * 100).toFixed(0)}%"></s></i></span></span>`) +
           (lock ? `<span class="lk">${lock}</span>` : '') + `</button>`; }).join(''); }
     $('abilCount').textContent = `${save.abil.owned.length}/${ABILITIES.length}`;
     $('achCount').textContent = `${save.ach.length + save.chDone.length}/${ACH.length + CHALLENGES.length}`;
@@ -731,6 +962,7 @@
     crystal: 'conic-gradient(from 30deg, rgba(255,255,255,.45), transparent 15%, rgba(255,255,255,.25) 30%, transparent 45%, rgba(255,255,255,.4) 60%, transparent 75%, rgba(255,255,255,.2) 90%), ',
     rim: '', magma: '', matte: '' };
   function swatch(s) {
+    if (EVO_SW[s.id]) return EVO_SW[s.id];
     if ((s.pattern && !OLD_PAT.includes(s.pattern)) || s.mat) {
       const base = s.pattern ? `url(${swatchUrl(s)}) center/cover` : s.color;
       const rim = s.mat === 'rim' ? `box-shadow:inset 0 0 8px 3px ${s.accent || s.color}, 0 0 14px ${s.accent || s.color};` : s.glow ? `box-shadow:0 0 14px ${s.color};` : '';
@@ -754,7 +986,7 @@
   }
   // the shop sells what you don't own yet; the wardrobe holds everything you own
   const SHOP_VIEWS = {
-    shop:     { title: 'Магазин', groups: [['Для боя', ['up', 'abil']], ['Внешний вид', ['skin', 'fx', 'arena']], ['Архив', ['archive']]], tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
+    shop:     { title: 'Магазин', groups: [['Для боя', ['up', 'abil']], ['Внешний вид', ['wshow', 'skin', 'fx', 'arena']], ['Архив', ['archive']]], tabs: [['up', 'Улучшения'], ['abil', 'Способности'], ['wshow', 'Витрина недели'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['arena', 'Арены'], ['archive', 'Архив']] },
     wardrobe: { title: 'Гардероб', tabs: [['wskin', 'Скины'], ['wfx', 'Эффекты'], ['wdeco', 'Украшения'], ['warena', 'Арены']] },
     collections: { title: 'Коллекции', tabs: [['wcol', 'Коллекции']] },
     abilities: { title: 'Способности', tabs: [['mab', 'Мои способности']] },
@@ -941,7 +1173,8 @@
     else if (lv < (s.lvl || 1)) { label = `С ур. ${s.lvl}`; dis = 'disabled'; }
     else { label = `${s.price} ◆`; if (save.coins < s.price) dis = 'disabled'; }
     const inf = ` data-info="skin:${s.id}" tabindex="0" role="button" aria-label="Предпросмотр: ${s.name}"`;
-    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}><div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
+    const dna = EVO[s.id] ? `${(save.evoNew || {})[s.id] ? '<span class="evo-newmark">новое</span>' : ''}<span class="evo-dna" title="Скин с эволюцией${save.skins.includes(s.id) && evoForm(s.id) ? ` · форма ${['', 'I', 'II', 'III'][evoForm(s.id)]}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg>${save.skins.includes(s.id) && evoForm(s.id) ? ['', 'I', 'II', 'III'][evoForm(s.id)] : ''}</span>` : '';
+    return `<div class="skin ${dis && mode !== 'own' ? 'locked' : ''}"${inf}>${dna}<div class="${swClass(s)}" style="${swatch(s)}">${headIcon(s)}</div>
       ${starsOf(s) ? `<span class="stars-on" title="Звёзды скина: ${STAR_TEXT[starsOf(s)]}; ${starBonusOf(s) ? starBonusOf(s).text(starsOf(s)) : ''}">${'★'.repeat(starsOf(s))}</span>` : ''}<span class="name">${s.name}</span>${starRow(s)}${sourceBadge(s)}<button class="${cls}" id="skin-${s.id}" data-skin="${s.id}" ${dis}>${label}</button></div>`;
   }
   function fxRow(f, mode) {
@@ -954,6 +1187,55 @@
     return `<div class="fxrow ${f.ex || f.chest || f.season || f.craft ? 'ex' : ''}"${inf}><span class="ico thumb">${thumbImg('fx', f.id)}</span><span class="name">${f.name} ${sourceBadge(f)}</span>` +
       `<span class="desc">${f.desc}.</span><button class="${cls}" id="fx-${f.id}" data-fx="${f.id}" ${dis}>${label}</button></div>`;
   }
+  // ---- 2.7: «Достижения» — counts on the tabs, «почти готово» first, the done ones folded, 👁 on rewards ----
+  function goalCount(id) {
+    if (id === 'ach') { const L = ACH.filter(a => a.line); return [L.reduce((t, a) => t + achTier(a), 0), L.reduce((t, a) => t + a.steps.length, 0)]; }
+    if (id === 'ch') return [save.chDone.length, CHALLENGES.length];
+    if (id === 'skill') return [save.skillDone.length, SKILL.length];
+    return [LEGEND.filter(L => save.legendDone.includes(L.id)).length, LEGEND.length];
+  }
+  // items: [{ pct 0..1, done, html }]; «near» = at least 60% of the way
+  function goalGroups(items, near = 'Почти готово', rest = 'В процессе', doneName = 'Выполнено') {
+    const open = items.filter(x => !x.done).sort((a, b) => b.pct - a.pct), done = items.filter(x => x.done);
+    const hot = open.filter(x => x.pct >= .6), mid = open.filter(x => x.pct < .6);
+    const grid = l => `<div class="g-grid">${l.map(x => x.html).join('')}</div>`;
+    return (hot.length ? `<h3 class="g-h">🔥 ${near}</h3>${grid(hot)}` : '') + (mid.length ? `<h3 class="g-h">${rest}</h3>${grid(mid)}` : '') +
+      (done.length ? `<details class="res-drawer g-done"><summary>✓ ${doneName} <small class="cnt">${done.length}</small></summary>${grid(done)}</details>` : '');
+  }
+  // a reward you can look at: tapping it opens the item window (the same as in the wardrobe)
+  const rewardChip = (r, label) => { const [t, id] = r || []; const kind = t === 'fx' ? 'fx' : t === 'skin' ? 'skin' : t === 'deco' ? 'deco' : t === 'pet' ? 'pet' : t === 'arena' ? 'arena' : null;
+    return kind ? `<span class="rwb" data-info="${kind}:${id}" tabindex="0" role="button" aria-label="Посмотреть награду">${label}<em aria-hidden="true">👁</em></span>` : `<span class="rw">${label}</span>`; };
+  $('shop').addEventListener('click', e => { const t = e.target.closest('[data-coltab]'); if (!t) return; save.settings.colTab = t.dataset.coltab; persist(); renderShop(); const b = document.querySelector(`[data-coltab="${t.dataset.coltab}"]`); if (b) b.focus(); });
+  // ---- 2.7 «Витрина недели»: 4 chest-only items the player does not have, for coins; new every Monday, one paid refresh a week ----
+  const WSH_PRICE = { common: 8000, rare: 15000, epic: 30000, legendary: 60000 }, WSH_REFRESH = 3000;
+  const wshOwned = (t, id) => (t === 'skin' ? save.skins : t === 'fx' ? save.fxOwned : t === 'pet' ? save.pets : save.decor).includes(id);
+  const wshItem = (t, id) => t === 'skin' ? SKINS.find(k => k.id === id) : t === 'fx' ? FX.find(f => f.id === id) : t === 'pet' ? PETS.find(x => x.id === id) : decorById(id);
+  function wshMake(skip = []) {
+    const week = raidWeek(), legOk = week - (save.wshowLeg ?? -99) >= 4;
+    const pool = t => (t === 'skin' ? SKINS : t === 'fx' ? FX : t === 'pet' ? PETS : DECOR.filter(d => !d.old)).filter(x => x.chest && (legOk || x.chest !== 'legendary') && !wshOwned(t, x.id) && !skip.includes(x.id)).map(x => [t, x]);
+    const pick = (list, taken) => { const L = list.filter(([, x]) => !taken.some(([, y]) => y.id === x.id)); if (!L.length) return null;
+      const r = pickRarity(Object.values(RARITY).map(v => v.w)), same = L.filter(([, x]) => x.chest === r); const from = same.length ? same : L; return from[Math.floor(Math.random() * from.length)]; };
+    const out = [];
+    for (const slot of [['skin'], ['skin'], ['fx'], ['pet', 'deco']]) { const it = pick(slot.flatMap(pool), out) || pick(['skin', 'fx', 'pet', 'deco'].flatMap(pool), out); if (it) { out.push(it); if (it[1].chest === 'legendary') { save.wshowLeg = week; } } }
+    return out.map(([t, x]) => ({ t, id: x.id }));
+  }
+  function wshState() {
+    const week = raidWeek();
+    if (!save.wshow || save.wshow.week !== week) { save.wshow = { week, items: wshMake(), re: false }; persist(); }
+    return save.wshow;
+  }
+  function wshHtml() {
+    const W = wshState(), days = Math.max(1, Math.ceil((W.week + 1) * 7 - 3 - Date.now() / 864e5));
+    const card = (o, i) => { const x = wshItem(o.t, o.id); if (!x) return ''; const rar = x.chest, own = wshOwned(o.t, o.id), price = WSH_PRICE[rar];
+      const ico = o.t === 'skin' ? `<span class="${swClass(x)}" style="${swatch(x)};width:52px;height:52px">${headIcon(x)}</span>` : thumbImg(o.t === 'deco' ? 'deco' : o.t, o.id);
+      const kind = o.t === 'skin' ? 'скин' : o.t === 'fx' ? 'эффект' : o.t === 'pet' ? 'питомец' : (x.kind === 'frame' ? 'рамка' : x.kind === 'title' ? 'титул' : 'украшение');
+      return `<div class="wsh-card" style="--rc:${RARITY[rar].color}" data-info="${o.t}:${o.id}" tabindex="0" role="button" aria-label="${escHtml(x.name)} — посмотреть"><span class="wsh-ico">${ico}</span><b>${escHtml(x.name)}</b><small>${kind} · <span style="color:${RARITY[rar].color}">${RARITY[rar].name}</span></small>` +
+        (own ? '<button class="buy sel" disabled>Куплено</button>' : `<button class="buy" data-wsh="${i}" ${save.coins >= price ? '' : 'disabled'}>${price.toLocaleString('ru-RU')} ◆</button>`) + '<em aria-hidden="true">👁</em></div>'; };
+    return `<p class="empty-note">Предметы, которые обычно выпадают только из сундуков. Своя витрина у каждого игрока: здесь только то, чего у тебя ещё нет. Обновится через ${days} дн.</p>` +
+      (W.items.length ? `<div class="wsh-grid">${W.items.map(card).join('')}</div>` : '<p class="empty-note">🎉 У тебя уже есть все предметы из сундуков — витрине нечего предложить.</p>') +
+      `<div class="wsh-foot">${W.re ? '<small>Витрину уже обновляли на этой неделе.</small>' : `<button class="btn ghost" type="button" data-wshre="1" ${save.coins >= WSH_REFRESH ? '' : 'disabled'}>🔄 Обновить витрину сейчас · ${WSH_REFRESH.toLocaleString('ru-RU')} ◆</button><small>Один раз в неделю.</small>`}</div>` +
+      `<ul class="quests arch-odds">${Object.entries(WSH_PRICE).map(([r, p]) => `<li><span><b style="color:${RARITY[r].color}">${RARITY[r].name}</b></span><span class="rw">${p.toLocaleString('ru-RU')} ◆</span></li>`).join('')}</ul><small class="wsh-note">Легендарный предмет появляется на витрине не чаще раза в 4 недели.</small>`;
+  }
   function renderShop() {
     renderAll();
     const lv = playerLevel(), view = SHOP_VIEWS[shopView];
@@ -965,8 +1247,14 @@
       $('shopTabs').innerHTML = `<div class="tab-groups">${view.groups.map(([name, ids]) => `<button class="tab tab-g" role="tab" data-tab="${ids[0]}" aria-selected="${ids.includes(shopTab)}">${ico(ids[0])}${name}</button>`).join('')}</div>` +
         (g[1].length > 1 ? `<div class="tab-sub">${g[1].map(id => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${ico(id)}${view.tabs.find(t => t[0] === id)[1]}</button>`).join('')}</div>` : '');
     } else
-    $('shopTabs').innerHTML = view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
-    if (shopTab === 'skin') {
+    $('shopTabs').innerHTML = view === SHOP_VIEWS.wardrobe   // 2.7: four tabs in one row, with icons
+      ? `<div class="ward-tabs">${view.tabs.map(([id, name]) => `<button class="tab gtab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${hubLogoSVG(({ wskin: 'skin', wfx: 'fx', wdeco: 'deco', warena: 'arena' })[id], 22).replace('class="hub-logo"', 'class="tab-ico"')}<b>${name}</b></button>`).join('')}</div>`
+      : view === SHOP_VIEWS.goals
+      ? `<div class="goal-tabs4">${view.tabs.map(([id, name]) => { const [d, n] = goalCount(id); return `<button class="tab gtab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}" style="--hc:${HUB_ICON['g_' + id][0]}">${hubLogoSVG('g_' + id, 30).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${name}</b><small>${d}/${n}</small></span></button>`; }).join('')}</div>`
+      : view.tabs.map(([id, name]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${shopTab === id}">${name}</button>`).join('');
+    if (shopTab === 'wshow') {
+      $('shop').innerHTML = wshHtml();
+    } else if (shopTab === 'skin') {
       const list = SKINS.filter(k => buyable(k) && !save.skins.includes(k.id));
       $('shop').innerHTML = list.length ? `<div class="skins">${list.map(k => skinTile(k, 'buy')).join('')}</div>`
         : '<p class="empty-note">Все скины магазина уже твои.</p>';
@@ -978,7 +1266,7 @@
       $('shop').innerHTML = html || '<p class="empty-note">Все эффекты магазина уже твои.</p>';
     } else if (shopTab === 'wskin') {
       const own = sortOwned(SKINS.filter(k => save.skins.includes(k.id)), save.skins, 'wskin');
-      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.length}. Нажми на группу, чтобы открыть.</p>` +
+      $('shop').innerHTML = sortBar('wskin') + `<p class="empty-note">Собрано ${own.length} из ${SKINS.filter(k => !k.old || save.skins.includes(k.id)).length}. Выбери группу.</p>` +
         groupDrawers('ws_', own, sourceOf, ['Магазин', ...SOURCE_ORDER], part => `<div class="skins">${part.map(k => skinTile(k, 'own')).join('')}</div>`);
     } else if (shopTab === 'wfx') {
       const ownAll = sortOwned(FX.filter(f => save.fxOwned.includes(f.id)), save.fxOwned, 'wfx');
@@ -996,21 +1284,20 @@
             `<button class="buy ${sel ? 'sel' : ''}" id="pet-${pt.id}" data-pet="${pt.id}">${sel ? 'Убрать' : 'Взять'}</button></div>`; }).join(''))
           : '<p class="empty-note">Пока пусто: дойди до лиги «Платина» в любом сезоне.</p>');
     } else if (shopTab === 'pcat') {
-      const rows = [0, 1, 2, 3, 4, 5].map(k => save.season.id + k).map(id => {
-        const sd = seasonData(id), hk = sd.holiday;
-        return drawer('pc_' + id, `Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''} <small class="cnt">${sd.pets.filter(pt => save.pets.includes(pt.id)).length}/${sd.pets.length}</small>`, sd.pets.map((pt, i) => {
-          const own = save.pets.includes(pt.id), lg = lgView(i ? 5 : 3, hk);
-          return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-ex" style="color:${lg.color}">${lg.name}</span></span>` +
-            `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
-            `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : `лига «${lg.name}»`}</span></div>`;
-        }).join(''));
-      }).join('');
-      const cp = PETS.filter(pt => pt.chest || pt.lchest);
-      const chestRows = drawer('pc_chest', `Из сундуков и сундуков лиги <small class="cnt">${cp.filter(pt => save.pets.includes(pt.id)).length}/${cp.length}</small>`, cp.map(pt => { const own = save.pets.includes(pt.id), rc = RARITY[pt.chest || pt.lchest];
-        return `<div class="fxrow ex" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span><span class="name">${pt.name} <span class="badge-r" style="color:${rc.color}">${rc.name}</span></span>` +
-          `<span class="desc">${PET_SPECIES[pt.species]} · ${PET_BONUS[pt.bonus].name}: ${PET_BONUS[pt.bonus].text(pt.lv)}</span>` +
-          `<span class="rw" style="grid-column:3;grid-row:1/span 2;font-size:.78rem;color:${own ? 'var(--prey)' : 'var(--muted)'}">${own ? 'есть' : pt.lchest ? 'сундук лиги' : 'сундук'}</span></div>`; }).join(''));
-      $('shop').innerHTML = rows + chestRows;
+      // 2.7: one card per source in a grid (seasons ahead, chests, the workshop, holidays, legends, the raid), pets as small tiles
+      const pwPet = (pt, note) => { const own = save.pets.includes(pt.id);
+        return `<div class="pw-pet${own ? ' own' : ''}" data-info="pet:${pt.id}" tabindex="0" role="button" aria-label="Подробнее: ${pt.name}"><span class="ico thumb">${thumbImg('pet', pt.id)}</span>` +
+          `<b>${pt.name}</b><small>${own ? '✓ есть' : note}</small></div>`; };
+      const sec = (title, pets, note, extra = '') => !pets.length ? '' : `<section class="pw-sec"><h3>${title} <small>${pets.filter(pt => save.pets.includes(pt.id)).length}/${pets.length}</small></h3>${extra}<div class="pw-list">${pets.map(pt => pwPet(pt, typeof note === 'function' ? note(pt) : note)).join('')}</div></section>`;
+      const seasons = [0, 1, 2, 3, 4, 5].map(k => save.season.id + k).map(id => { const sd = seasonData(id), hk = sd.holiday;
+        return sec(`📅 Сезон ${id} · ${sd.name}${id === save.season.id ? ' · идёт' : ''}`, sd.pets, pt => `лига «${lgView(sd.pets.indexOf(pt) ? 5 : 3, hk).name}»`); }).join('');
+      const by = f => PETS.filter(f);
+      $('shop').innerHTML = '<div class="pw-grid">' + seasons +
+        sec('🎁 Из сундуков', by(pt => pt.chest || pt.lchest), pt => pt.lchest ? 'сундук лиги' : `сундук · ${RARITY[pt.chest].name.toLowerCase()}`) +
+        sec('🛠 Мастерская', by(pt => pt.craft), 'создаётся из осколков') +
+        sec('🎉 Праздники', by(pt => pt.holiday), 'в праздничный сезон') +
+        sec('👑 Легендарные', by(pt => pt.legend), 'легендарное достижение') +
+        sec('⚔ Босс-рейд', by(pt => pt.raid), '5 побед над боссом недели') + '</div>';
     } else if (shopTab === 'arena' || shopTab === 'warena') {
       const shop = shopTab === 'arena', list = ARENAS.filter(a => shop ? a.id !== 'default' && !save.arenas.includes(a.id) : a.id === 'default' || save.arenas.includes(a.id)).sort((x, y) => (x.price || 1e9) - (y.price || 1e9));
       $('shop').innerHTML = (list.length ? list.map(a => {
@@ -1035,36 +1322,45 @@
       const colCard = c => {
         const items = colItems(c), have = colOwned(c), full = have === items.length, got = save.colDone.includes(c.id);
         const chips = colList(c).map(([t, id]) => { const own = ownedList(t).includes(id);
-          if (t === 'skin') { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${own ? '' : 'off'}" title="${k.name}" style="${swatch(k)}"></span>`; }
+          if (t === 'skin') { const k = SKINS.find(x => x.id === id); return `<span class="col-sw ${own ? '' : 'off'}" title="${k.name}" style="${swatch(k)}" data-info="skin:${id}" tabindex="0" role="button"></span>`; }
           if (t === 'abil') { const a = abilById(id); return `<span class="col-sw ab ${own ? '' : 'off'}" title="${a.name}" style="--ac:${a.color}">${a.icon}</span>`; }
           if (t === 'deco') { const d = decorById(id); return `<span class="col-sw ab ${own ? '' : 'off'}" title="${d.name}" style="--ac:${d.color || '#ff4fd8'}">${d.kind === 'frame' ? '▢' : 'Аа'}</span>`; }
           if (t === 'badge') return `<span class="col-sw ab ${own ? '' : 'off'}" title="Особый значок" style="--ac:#ff4fd8">★</span>`;
           if (t === 'look') return '';
-          const it = t === 'pet' ? petById(id) : FX.find(x => x.id === id); return `<span class="col-sw fx ${own ? '' : 'off'}" title="${it.name}">${thumbImg(t, id)}</span>`; }).join('');
+          const it = t === 'pet' ? petById(id) : FX.find(x => x.id === id); return `<span class="col-sw fx ${own ? '' : 'off'}" title="${it.name}" data-info="${t}:${id}" tabindex="0" role="button">${thumbImg(t, id)}</span>`; }).join('');
         const names = c.fx ? `<small class="col-names">${items.map(id => FX.find(x => x.id === id).name).join(' · ')}</small>` : c.looks ? `<div class="look-sets">${ABILITIES.map(a => { const ls = [0, 1, 2].map(k => lookOf(a, k)), n = ls.filter(l => save.abil.looks.includes(l.id)).length;
           return `<span class="${n === 3 ? 'full' : ''}" style="--ac:${a.color}" title="${a.name}"><i>${a.icon}</i>${ls.map(l => `<em style="background:${save.abil.looks.includes(l.id) ? l.c : 'transparent'};border-color:${l.c}" title="${l.name}"></em>`).join('')}${n === 3 ? '<b>✓</b>' : ''}</span>`; }).join('')}</div><small class="col-names">✓ — набор из 3 обликов собран</small>` : '';
-        const reward = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : [c.title && `титул ${titleTag(c.title)}`, c.frame && `рамка <span ${frameAttr(c.frame)}>Ты</span>`].filter(Boolean).join(' + ');
+        const rwRef = c.hat ? 'hat:' + c.hat : c.frame ? 'deco:' + c.frame : c.title ? 'deco:' + c.title : '';
+        const reward0 = c.hat ? `<span class="hat-ico sm">${hatIcon(c.hat)}</span> ${HATS[c.hat].name}` : [c.title && `титул ${titleTag(c.title)}`, c.frame && `рамка <span ${frameAttr(c.frame)}>Ты</span>`].filter(Boolean).join(' + ');
+        const reward = rwRef ? `<span class="rwb" data-info="${rwRef}" tabindex="0" role="button" aria-label="Посмотреть награду">${reward0}${c.coins ? ` + ${c.coins} ◆` : ''}<em aria-hidden="true">👁</em></span>` : `${reward0}${c.coins ? ` + ${c.coins} ◆` : ''}`;
+        const miss = !got && !full ? (n => n ? `<small class="col-miss">не хватает: ${n} — нажми на тусклый, чтобы узнать, где взять</small>` : '')(items.length - have) : '';
         return `<div class="chal ${got ? 'done' : ''}"><div class="chal-top"><b>${got ? '✓ ' : ''}${c.name}</b><span>${have} / ${items.length}</span></div>` +
           `<div class="col-row">${chips}</div>${names}<div class="track"><div class="fill" style="width:${(have / items.length * 100).toFixed(0)}%"></div></div>` +
-          `<div class="col-foot"><span class="rw">${reward}${c.coins ? ` + ${c.coins} ◆` : ''}</span>` +
+          miss + `<div class="col-foot"><span class="rw">${reward}</span>` +
           (got ? '<span class="rw" style="color:var(--prey)">получено</span>' : `<button class="buy" id="col-${c.id}" data-col="${c.id}" ${full ? '' : 'disabled'}>${full ? 'Забрать' : 'Не собрано'}</button>`) + '</div></div>';
       };
-      $('shop').innerHTML = '<h3>Скины</h3>' + COLLECTIONS.filter(c => c.skins).map(colCard).join('') +
-        '<h3>Эффекты</h3>' + COLLECTIONS.filter(c => c.fx).map(colCard).join('') +
-        '<h3>Питомцы</h3>' + COLLECTIONS.filter(c => c.group === 'pets').map(colCard).join('') +
-        '<h3>Способности</h3>' + COLLECTIONS.filter(c => c.group === 'abil').map(colCard).join('') +
-        '<h3>Хаос-лига</h3>' + COLLECTIONS.filter(c => c.group === 'chaos').map(colCard).join('') +
-        '<h3>Лига</h3>' + COLLECTIONS.filter(c => c.group === 'league').map(colCard).join('') +
-        '<h3>Сезоны лиги</h3>' + COLLECTIONS.filter(c => c.group === 'seasons').map(colCard).join('') +
-        '<h3>Праздники</h3>' + (COLLECTIONS.filter(c => c.group === 'holiday').map(colCard).join('') || '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
+      // 2.7: four tabs — skins, effects, league & chaos, special (pets, abilities, holidays)
+      const CT = [['skin', 'Скины', c => !!c.skins, 'Наборы скинов', 'Собери все скины набора — получишь предмет над головой и монеты'],
+        ['fx', 'Эффекты', c => !!c.fx, 'Наборы эффектов', 'Собери все эффекты набора — получишь монеты'],
+        ['league', 'Лига и Хаос', c => ['league', 'seasons', 'chaos'].includes(c.group), 'Лига и Хаос-лига', 'Награды сезонов, Хаос-арсенал и ветераны Хаоса'],
+        ['special', 'Особые', c => ['pets', 'abil', 'holiday'].includes(c.group), 'Особые наборы', 'Питомцы, способности и праздники']];
+      const cur = CT.find(t => t[0] === (save.settings.colTab || 'skin')) || CT[0];
+      const cnt = f => { const L = COLLECTIONS.filter(f); return [L.filter(c => save.colDone.includes(c.id)).length, L.length]; };
+      const list = COLLECTIONS.filter(cur[2]), [cd, cn] = cnt(cur[2]), coins = list.filter(c => save.colDone.includes(c.id)).reduce((t, c) => t + (c.coins || 0), 0), ready = list.filter(c => !save.colDone.includes(c.id) && colOwned(c) === colItems(c).length).length;
+      $('shop').innerHTML = `<div class="goal-tabs4 col-tabs" role="tablist">${CT.map(([k, name, f]) => { const [d, n] = cnt(f); return `<button type="button" class="tab gtab" role="tab" data-coltab="${k}" aria-selected="${k === cur[0]}" style="--hc:${HUB_ICON['c_' + k][0]}">${hubLogoSVG('c_' + k, 30).replace('class="hub-logo"', 'class="tab-ico"')}<span><b>${name}</b><small>${d}/${n}</small></span></button>`; }).join('')}</div>` +
+        `<div class="g-sum" style="--hc:${HUB_ICON['c_' + cur[0]][0]}">${hubLogoSVG('c_' + cur[0], 44)}<div><b>${cur[3]} · ${cd} из ${cn}</b><small>${cur[4]}. ${[ready ? `<b style="color:#3dffa2">Можно забрать: ${ready}</b>` : '', coins ? `получено ${coins.toLocaleString('ru-RU')} ◆` : ''].filter(Boolean).join(' · ')}</small><div class="track"><div class="fill" style="width:${cn ? (cd / cn * 100).toFixed(0) : 0}%"></div></div></div></div>` +
+        (list.length ? goalGroups(list.map(c => { const n = colItems(c).length, h = colOwned(c), got = save.colDone.includes(c.id); return { done: got, pct: n ? h / n : 0, html: colCard(c) }; }), 'Почти собрано', 'В процессе', 'Собрано')
+          : '<p class="empty-note">Праздничные наборы появятся с первым праздничным сезоном.</p>');
     } else if (shopTab === 'ch') {
-      $('shop').innerHTML = CHALLENGES.map(ch => {
-        const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
-        const shown = ch.time ? `${fmtTime(v)} / ${fmtTime(ch.goal)}` : `${Math.floor(v)} / ${ch.goal}`;
-        return `<div class="chal ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : ''}${ch.name}</b><span>${shown}</span></div>` +
-          `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
-          `<span class="rw">Награда: ${rewardName(ch.reward)}${done ? ' — в гардеробе' : ''}</span></div>`;
-      }).join('');
+      const [cd, cn] = goalCount('ch');
+      $('shop').innerHTML = `<div class="g-sum" style="--hc:${HUB_ICON.g_ch[0]}">${hubLogoSVG('g_ch', 44)}<div><b>Испытания · ${cd} из ${cn}</b><small>Большие цели на всё время игры: прогресс копится между раундами. Награда — предмет, нажми 👁, чтобы посмотреть.</small><div class="track"><div class="fill" style="width:${(cd / cn * 100).toFixed(0)}%"></div></div></div></div>` +
+        goalGroups(CHALLENGES.map(ch => {
+          const done = save.chDone.includes(ch.id), v = Math.min(ch.goal, ch.prog());
+          const shown = ch.time ? `${fmtTime(v)} / ${fmtTime(ch.goal)}` : `${Math.floor(v)} / ${ch.goal}`;
+          return { done, pct: v / ch.goal, html: `<div class="chal ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : ''}${ch.name}</b><span>${shown}</span></div>` +
+            `<small>${ch.desc}</small><div class="track"><div class="fill" style="width:${(v / ch.goal * 100).toFixed(0)}%"></div></div>` +
+            `<div class="col-foot">${rewardChip(ch.reward, `${done ? '✓ ' : ''}${rewardName(ch.reward)}`)}</div></div>` };
+        }));
     } else if (shopTab === 'archive') {
       const lv = playerLevel();
       const icon = o => o.kind === 'skin' ? (k => `<span class="${swClass(k)}" style="${swatch(k)};width:44px;height:44px">${headIcon(k)}</span>`)(SKINS.find(x => x.id === o.id)) : thumbImg(o.kind, o.id);
@@ -1077,7 +1373,7 @@
       if (lv < ARCHIVE_LVL) {
         $('shop').innerHTML = `<p class="empty-note">🔒 Архив сезонов откроется на ${ARCHIVE_LVL}-м уровне (сейчас ${lv}-й). В нём за монеты можно получить награды сезонов, которые ты пропустил.</p>`;
       } else if (!seasonStarted || seasonNow === 1) {
-        $('shop').innerHTML = `<p class="empty-note">Архив пока пуст: у тебя ещё не закончился ни один сезон. Здесь будут награды прошедших сезонов, которые ты не успел получить в лиге.</p>` + preview;
+        $('shop').innerHTML = `<p class="empty-note">Архив пока пуст: у тебя ещё не закончился ни один сезон. Здесь будут награды прошедших сезонов, которые ты не успел получить в лиге.</p>` + (nOffers.length ? preview : '');   // 2.7: an empty archive no longer also says «у тебя есть все награды»
       } else {
         const all = archiveOffers(), show = archiveShowcase(), days = Math.max(1, Math.ceil(((raidWeek() + 1) * 7 - 3) - Date.now() / 864e5));
         const left = archBuysLeft(), tok = save.archTok || 0;
@@ -1105,23 +1401,23 @@
       $('shop').innerHTML = `<div class="legend-head skill-head"><span class="legend-pics"><span class="legend-pic"><span class="${swClass(vir)}" style="${swatch(vir)}"></span></span><span class="legend-pic"><span ${frameAttr('fr_master')}>Ты</span></span></span>` +
         `<div><b>Мастерские · ${done} из ${SKILL.length}</b><small>Проверяют умение, а не время: всё нужно сделать за один раунд. Каждое даёт монеты; за 3, 6, 9 и 13 выполненных — титулы ${SKILL_TT.map(([n, id]) => titleTag(id)).join(' ')}.</small>` +
         `<small>За все — рамка «Мастер» и скин «Виртуоз»${save.decor.includes('fr_master') ? ' (получены)' : ''}.</small></div></div>` +
-        SKILL.map(k => { const ok = save.skillDone.includes(k.id), b = fmtB(k);
-          return `<div class="chal skill-card ${ok ? 'done' : ''}"><div class="chal-top"><b>${ok ? '✓ ' : '🎯 '}${k.name}</b><span>${ok ? 'выполнено' : b}</span></div><small>${k.desc}</small>` +
+        goalGroups(SKILL.map(k => { const ok = save.skillDone.includes(k.id), b = fmtB(k);
+          return { done: ok, pct: 0, html: `<div class="chal skill-card ${ok ? 'done' : ''}"><div class="chal-top"><b>${ok ? '✓ ' : '🎯 '}${k.name}</b><span>${ok ? 'выполнено' : b}</span></div><small>${k.desc}</small>` +
             `<small class="skill-hint">Подсказка: ${k.hint}</small>` +
-            `<div class="col-foot"><span class="rw">+${k.coins} ◆</span>${ok && b ? `<span class="rw" style="color:var(--muted)">${b}</span>` : ''}</div></div>`; }).join('');
+            `<div class="col-foot"><span class="rw">+${k.coins} ◆</span>${ok && b ? `<span class="rw" style="color:var(--muted)">${b}</span>` : ''}</div></div>` }; }), '', 'Не выполнено');
     } else if (shopTab === 'legend') {
       const fmt = (L, v) => L.time ? `${Math.floor(v / 3600)} / ${L.goal / 3600} ч` : `${Math.min(v, L.goal).toLocaleString('ru-RU')} / ${L.goal.toLocaleString('ru-RU')}`;
       $('shop').innerHTML = `<div class="legend-head">${legendBadgeSVG(!!save.legendBadge)}<div><b>${save.legendBadge ? 'Ты — Легенда Капель!' : 'Значок «Легенда Капель»'}</b>` +
         `<small>${save.legendBadge ? 'Все легендарные достижения выполнены.' : `Выполни ${LEGEND_BASE.length} легендарных достижений (у «Грозы звёзд» и «Непобедимого» хватит первой ступени). Готово: ${LEGEND_BASE.filter(L => save.legendDone.includes(L.id)).length} из ${LEGEND_BASE.length}.`}</small>` +
         `<small>Прогресс считается с ${new Date(save.legend.since).toLocaleDateString('ru-RU')}. Каждое достижение даёт эксклюзивную награду, которую больше нигде не получить.</small></div></div>` +
-        LEGEND.map(L => {
+        goalGroups(LEGEND.map(L => {
           const v = legendVal(L), done = save.legendDone.includes(L.id);
           const pics = rewardsOf(L).map(([t, id]) => t === 'badge' ? millionBadgeSVG(true, 40) : t === 'deco' && decorById(id).kind === 'title' ? titleTag(id) : t === 'skin' ? `<span class="${swClass(SKINS.find(k => k.id === id))}" style="${swatch(SKINS.find(k => k.id === id))}"></span>` : t === 'fx' ? thumbImg('fx', id) : t === 'pet' ? thumbImg('pet', id)
-            : t === 'deco' ? `<span ${frameAttr(id)}>Ты</span>` : (a => `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`)(ARENAS.find(a => a.id === id))).map(x => `<span class="legend-pic">${x}</span>`).join('');
-          return `<div class="chal legend-card ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : '👑 '}${L.name}</b><span>${fmt(L, v)}</span></div><small>${L.desc}</small>` +
+            : t === 'deco' ? `<span ${frameAttr(id)}>Ты</span>` : (a => `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`)(ARENAS.find(a => a.id === id))).map((x, k) => { const r = rewardsOf(L)[k], info = r && ['skin', 'fx', 'deco', 'pet', 'arena'].includes(r[0]) ? ` data-info="${r[0]}:${r[1]}" tabindex="0" role="button" aria-label="Посмотреть награду"` : ''; return `<span class="legend-pic${info ? ' g-eye' : ''}"${info}>${x}</span>`; }).join('');
+          return { done, pct: Math.min(1, v / L.goal), html: `<div class="chal legend-card ${done ? 'done' : ''}"><div class="chal-top"><b>${done ? '✓ ' : '👑 '}${L.name}</b><span>${fmt(L, v)}</span></div><small>${L.desc}</small>` +
             `<div class="track"><div class="fill" style="width:${Math.min(100, v / L.goal * 100).toFixed(1)}%"></div></div>` +
-            `<div class="col-foot"><span class="legend-pics">${pics}</span><span class="rw">${legendNames(L)}${done ? ' — получено' : ''}</span></div></div>`;
-        }).join('');
+            `<div class="col-foot"><span class="legend-pics">${pics}</span><span class="rw">${legendNames(L)}${done ? ' — получено' : ''}</span></div></div>` };
+        }), 'Ближе всего', 'Впереди');
     } else if (shopTab === 'ach') {
       const T = achTotals(), B = save.achBest || {}, lines = ACH.filter(a => a.line), hol = ACH.filter(a => a.hol);
       const cnt = [0, 0, 0, 0]; lines.forEach(a => { const t = achTier(a); for (let k = 1; k <= t; k++) cnt[k]++; });
@@ -1141,7 +1437,8 @@
       const holSeen = hol.filter(a => achTier(a) > 0), holNext = hol.filter(a => !achTier(a));
       $('shop').innerHTML = `<div class="ach-sum"><div><b>${lines.filter(a => achTier(a) >= 3).length}<small>/${lines.length}</small></b><span>линеек на золоте</span></div>` +
         [1, 2, 3].map(k => `<div class="m${k}">${achEmblem({ id: 'ln_star', steps: ['', '', ''] }, k, 34)}<span><b>${cnt[k]}</b> ${METAL_NAME[k].toLowerCase()}</span></div>`).join('') + '</div>' +
-        `<div class="achc-grid">${lines.map(card).join('')}</div>` +
+        goalGroups(lines.map(a => { const t = achTier(a), n = a.steps.length, v = ACH_VAL[a.id], T2 = T, val = v ? v[0](T2, B) : 0, goal = v && t < n ? v[1][t] : 0, prev = v && t ? v[1][t - 1] : 0;
+          return { done: t >= n, pct: goal ? Math.min(1, Math.max(0, (val - prev) / (goal - prev))) : 0, html: card(a) }; })).replace(/class="g-grid"/g, 'class="g-grid achc-grid"') +
         (holSeen.length ? `<h3 class="ach-h">Праздники</h3><div class="achc-grid">${holSeen.map(card).join('')}</div>` : '') +
         `<details class="res-drawer ach-hol"><summary>Праздничные достижения впереди <small class="cnt">${holNext.length}</small></summary><div class="achc-grid">${holNext.map(card).join('')}</div></details>`;
     } else if (shopTab === 'abil') {
@@ -1149,14 +1446,15 @@
     } else if (shopTab === 'mab') {
       $('shop').innerHTML = myAbilHtml();
     } else {
-      $('shop').innerHTML = CATS.map(([title, ids]) => drawer('up_' + title, `${title} <small class="cnt">${ids.map(id => `${save.up[id]}/${UPG.find(u => u.id === id).cost.length}`).join(' · ')}</small>`, ids.map(id => UPG.find(u => u.id === id)).map(u => {
+      // 2.7: every upgrade on screen at once — tiles under short group titles (they used to hide in four drawers)
+      $('shop').innerHTML = '<div class="up-grid">' + CATS.map(([title, ids]) => `<section class="up-sec"><h3 class="up-h">${drawerIcon(title)}${title} <small class="cnt">${ids.map(id => `${save.up[id]}/${UPG.find(u => u.id === id).cost.length}`).join(' · ')}</small></h3><div class="up-tiles">` + ids.map(id => UPG.find(u => u.id === id)).map(u => {
         const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
         const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
         const label = locked ? `С ур. ${u.lvl}` : l >= max ? 'Макс.' : `${price} ◆`;
         const dis = locked || l >= max || save.coins < price ? 'disabled' : '';
         return `<div class="up ${locked ? 'locked' : ''}"><span class="name">${u.name}</span><span class="desc">${u.desc}${u.info ? `<br><span class="now">Сейчас: ${u.info(l)}${l < max ? ` → дальше: ${u.info(l + 1)}` : ''}</span>` : ''}</span>
           <span class="pips">${pips}</span><button class="buy" id="buy-${u.id}" data-up="${u.id}" ${dis}>${label}</button></div>`;
-      }).join(''))).join('');
+      }).join('') + '</div></section>').join('') + '</div>';
     }
     const tName = (view.tabs.find(t => t[0] === shopTab) || [, view.title])[1];
     if (TAB_INFO[shopTab]) $('shop').insertAdjacentHTML('afterbegin', `<button class="tab-info-btn" id="tabInfoBtn" data-tabinfo="${shopTab}">ⓘ Информация · ${tName}</button>`);
@@ -1164,6 +1462,7 @@
   // ---- «Способности»: build editor + list (buy / upgrade); dash and split upgrade through their old upgrade branches ----
   // ---- 2.3: icons for every drawer, matched by its title (the first match wins, so longer names go first) ----
   const DI = {
+    chat: ICON_SVG.chat,
     sprout: '<path d="M12 21v-9M12 12c0-4 3-6.5 7-6.5 0 4-3 6.5-7 6.5zM12 14.5c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>',
     bolt: '<path d="M13 2 4.5 14h6.5l-1 8 8.5-12H12z"/>',
     shield: '<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/>',
@@ -1175,6 +1474,7 @@
     calendar: '<rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/>',
     sparkle: '<path d="M12 3l1.8 5.6 5.7 1.9-5.7 1.9L12 18l-1.8-5.6-5.7-1.9 5.7-1.9zM19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
     crown: '<path d="M3.5 8.5l4.5 4 4-7 4 7 4.5-4-2 10.5h-13z"/>',
+    dna: '<path d="M7 2.5c0 5 10 5 10 9.5S7 17 7 21.5M17 2.5c0 5-10 5-10 9.5s10 5 10 9.5"/><path d="M8.6 5.5h6.8M10 8.3h4M10 15.7h4M8.6 18.5h6.8"/>',   // 2.7: skins with evolution
     star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4l-5.3 3 1.2-6-4.5-4.1 6-.7z"/>',
     workshop: '<circle cx="9" cy="14" r="4.2"/><circle cx="9" cy="14" r="1.4"/><path d="M9 8.3v1.5M9 18.2v1.5M3.3 14h1.5M13.2 14h1.5M14.5 3.5l6 6-2 2-6-6zM15.5 8.5l-3.2 3.2"/>',
     cap: '<path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2.2 9 2.2 12 0v-5M22 9v6"/>',
@@ -1213,20 +1513,20 @@
   };
   const DRAWER_ICONS = [
     ['фоны чата', 'chatbg', '#ff6ad5'], ['арены', 'hub:arena'], ['эмоции', 'smile', '#ffd23f'],
-    ['значки хаос', 'chaos', '#ff4fd8'], ['хаос', 'chaos', '#ff4fd8'], ['значки сезон', 'hex', '#ffd23f'], ['особые значки', 'hex', '#22e6ff'],
+    ['эволюция', 'dna', '#3dffa2'], ['обычные', 'palette', '#c9c2ff'], ['уровни', 'star', '#22e6ff'], ['коллекции', 'hub:col'], ['достижения', 'medal', '#3dffa2'], ['особые', 'ticket', '#ff4fd8'], ['архивные', 'hub:arch'], ['сундуки', 'hub:chest'], ['значки хаос', 'chaos', '#ff4fd8'], ['хаос', 'chaos', '#ff4fd8'], ['значки сезон', 'hex', '#ffd23f'], ['особые значки', 'hex', '#22e6ff'],
     ['мастерские достижения', 'medal', '#3dffa2'], ['легендарные достижения', 'crown', '#ffd23f'], ['праздничные достижения', 'gift', '#ff6ad5'],
     ['мастерство', 'medal', '#3dffa2'], ['мастерская', 'workshop', '#ffd27a'], ['все награды престижа', 'star', '#ffd23f'], ['престиж', 'star', '#ffd23f'],
     ['эффект поедания', 'burst', '#ff9a3d'], ['след', 'trail', '#22e6ff'], ['аура', 'aura', '#b26bff'],
     ['босс-рейд', 'skull', '#ff3d6e'], ['рейд', 'skull', '#ff3d6e'], ['боссы', 'skull', '#ff3d6e'], ['боты', 'robot', '#7fe8ff'],
     ['сундук', 'hub:chest'], ['из сундуков', 'hub:chest'], ['каких сколько', 'hub:chest'],
-    ['над головой', 'hat', '#ff6ad5'], ['рамки', 'frame', '#22e6ff'], ['титулы', 'tag', '#ffd23f'], ['фоны профиля', 'image', '#7fe8ff'],
+    ['над головой', 'hub:deco'], ['рамки', 'hub:p_frame'], ['титулы', 'hub:p_title'], ['фоны профиля', 'hub:p_bg'],
     ['скины', 'hub:skin'], ['эффекты', 'hub:fx'], ['питомц', 'hub:pet'], ['способност', 'hub:abil'],
     ['рост', 'sprout', '#3dffa2'], ['движение', 'bolt', '#ffd23f'], ['защита', 'shield', '#7fe8ff'], ['награды', 'gift', '#ff9a3d'],
     ['магазин', 'shop', '#22e6ff'], ['испытани', 'target', '#ff6ad5'], ['легенд', 'crown', '#ffd23f'], ['праздни', 'gift', '#ff6ad5'], ['обучение', 'cap', '#7fe8ff'],
     ['как играть', 'pad', '#22e6ff'], ['управление', 'pad', '#22e6ff'], ['цвета колец', 'rings', '#3dffa2'], ['арена', 'hub:arena'], ['режим', 'flag', '#ff6ad5'],
     ['лига', 'flag', '#ffd23f'], ['архив', 'hub:arch'], ['монеты', 'coin', '#ffd23f'], ['задания', 'check', '#3dffa2'], ['внешний вид', 'palette', '#ff4fd8'],
     ['статистика', 'bars', '#22e6ff'], ['последние раунды', 'line', '#22e6ff'], ['рекорды', 'flag', '#ffd23f'], ['сезон', 'calendar', '#ffd23f'],
-    ['удалить аккаунт', 'trash', '#ff3d6e'], ['подробности', 'list', '#c9c2ff'], ['активность', 'flame', '#ff9a3d'], ['графика', 'monitor', '#22e6ff'], ['звук', 'sound', '#b26bff'], ['промокод', 'ticket', '#ffd23f'],
+    ['удалить аккаунт', 'trash', '#ff3d6e'], ['подробности', 'list', '#c9c2ff'], ['активность', 'flame', '#ff9a3d'], ['графика', 'monitor', '#22e6ff'], ['поддержка', 'chat', '#7fe8ff'], ['звук', 'sound', '#b26bff'], ['промокод', 'ticket', '#ffd23f'],
   ];
   function decorateDrawers(root = document) {
     root.querySelectorAll('details > summary:not([data-ic])').forEach(sm => {
@@ -1245,12 +1545,25 @@
     });
   }
   { let q = 0; new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; decorateDrawers(); }); }).observe(document.body, { childList: true, subtree: true }); requestAnimationFrame(() => decorateDrawers()); }
+  // 2.7: the drawn icon of a group by its name (the same table as the drawers use)
+  function drawerIcon(label) {
+    const key = String(label).replace(/^[^0-9A-Za-zА-Яа-яЁё«(]+/, '').toLowerCase(), hit = DRAWER_ICONS.find(([k]) => key.startsWith(k)) || DRAWER_ICONS.find(([k]) => k.length > 4 && key.includes(k)); if (!hit) return '';
+    const hub = hit[1].startsWith('hub:') && HUB_ICON[hit[1].slice(4)], art = hub ? hub[2] : DI[hit[1]], col = hub ? hub[0] : hit[2];
+    return `<i class="dr-ic" style="--ic:${col}" aria-hidden="true"><svg viewBox="0 0 24 24">${art}</svg></i>`;
+  }
+  // 2.7: groups as one row of chips; only the chosen group is shown below — no stack of drawers to scroll through
+  const catSel = {};
+  function catChips(prefix, cats, cur) {
+    return `<div class="cat-chips" role="tablist">${cats.map(([name, n, all]) => `<button type="button" role="tab" class="cat-chip" data-gcat="${prefix}|${escHtml(name)}" aria-selected="${name === cur}">${drawerIcon(name)}<span>${escHtml(name)}</span><small>${all !== undefined ? `${n}/${all}` : n}</small></button>`).join('')}</div>`;
+  }
   function groupDrawers(prefix, list, keyOf, order, render) {
     const keys = [...new Set(list.map(keyOf))].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
-    return keys.map(k => { const part = list.filter(x => keyOf(x) === k); return drawer(prefix + k, `${k} <small class="cnt">${part.length}</small>`, render(part)); }).join('');
+    if (!keys.length) return '';
+    const cur = keys.includes(catSel[prefix]) ? catSel[prefix] : keys[0];
+    return catChips(prefix, keys.map(k => [k, list.filter(x => keyOf(x) === k).length]), cur) + render(list.filter(x => keyOf(x) === cur));
   }
-  const PET_SRC = pt => pt.craft ? 'Мастерская' : pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
-  const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные', 'Мастерская'];
+  const PET_SRC = pt => pt.raid ? 'Рейд' : pt.craft ? 'Мастерская' : pt.legend ? 'Легендарные' : pt.lchest ? 'Из сундуков лиги' : pt.chest ? 'Из сундуков' : pt.holiday ? 'Праздничные' : 'Сезонные (лига)';
+  const PET_ORDER = ['Сезонные (лига)', 'Праздничные', 'Из сундуков', 'Из сундуков лиги', 'Легендарные', 'Мастерская', 'Рейд'];
   function upRowHtml(u, lv) {
     const l = save.up[u.id], max = u.cost.length, price = u.cost[l], locked = lv < u.lvl;
     const pips = u.cost.map((_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
@@ -1283,22 +1596,27 @@
       return `<div class="b-slot" style="--ac:${a ? a.color : 'var(--line)'}"><small>Слот ${i + 1} · ${ABIL_CFG.slotKeyName[i]}</small><span class="b-ico">${a ? a.icon : '＋'}</span>` +
         `<div class="build-picker"><button type="button" class="build-picker-trigger" data-picker-toggle="${i}" aria-label="Выбрать способность для слота ${i + 1}" aria-haspopup="listbox" aria-expanded="false" aria-controls="build-picker-list-${i}"><span class="build-picker-current">${a ? a.name : 'Выбрать способность'}</span><span class="build-picker-arrow" aria-hidden="true">⌄</span></button><div class="build-picker-menu" id="build-picker-list-${i}" role="listbox" aria-label="Способности для слота ${i + 1}" hidden><button type="button" class="build-picker-option" role="option" aria-selected="${!id}" data-build-option="${i}" data-abil=""><span class="build-picker-option-icon">＋</span><span>Пусто</span>${!id ? '<span aria-hidden="true">✓</span>' : ''}</button>${options}</div></div>` +
         (a && [0, 1, 2].some(k => save.abil.looks.includes(lookOf(a, k).id)) ? `<select data-look="${a.id}" aria-label="Облик: ${a.name}"><option value="">Стандартный облик</option>${[0, 1, 2].map(k => lookOf(a, k)).filter(l => save.abil.looks.includes(l.id)).map(l => `<option value="${l.id}" ${save.abil.lookOn[a.id] === l.id ? 'selected' : ''}>${l.name.split(': ')[1]}</option>`).join('')}</select>` : '') +
-        `<button class="buy" data-slotclear="${i}" ${a ? '' : 'disabled'}>Очистить слот</button></div>`;
+        `<button class="buy b-clear" data-slotclear="${i}" ${a ? '' : 'disabled'} aria-label="Очистить слот ${i + 1}" title="Очистить слот">✕</button></div>`;   // 2.7: a small ✕ in the corner instead of a full-width button
     }).join('');
   }
   const abLevelText = a => a.branches ? 'улучшения: ' + a.branches.map(id => { const u = UPG.find(x => x.id === id); return `«${u.name}» ${save.up[id]}/${u.cost.length}`; }).join(', ') : `уровень ${save.abil.lv[a.id] || 0}/${ABIL_CFG.levels}`;
   const abLooksText = a => { const n = [0, 1, 2].filter(k => save.abil.looks.includes(lookOf(a, k).id)).length; return n ? ` · обликов ${n}/3` : ''; };
   // «Коллекция → Способности»: the build + what you own, split into upgradable and not upgradable
+  // 2.7: owned abilities as compact tiles in a grid (two lines of description, the full text on hover / long press)
   function myAbilHtml() {
-    const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small>${a.desc}.</small><small class="now">${extra}</small></div></div>`;
+    const own = save.abil.owned, row = (a, extra) => `<div class="ab-row own" style="--ac:${a.color}"><span class="ab-big">${a.icon}</span><div class="ab-txt"><b>${a.name}${save.build.includes(a.id) ? ' <span class="badge-ex">в билде</span>' : ''}</b><small class="ab-desc" title="${a.desc.replace(/"/g, '&quot;')}.">${a.desc}.</small><small class="now">${extra}</small></div></div>`;
     const up = BASE_ABIL.filter(a => own.includes(a.id)), fixed = XA_ABIL.filter(a => own.includes(a.id)), crafted = CR_ABIL.filter(a => own.includes(a.id));
-    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +
+    const lvNow = playerLevel(), chTile = c => { const lock = lvNow < c.lvl, on = save.char === c.id;
+      return `<button type="button" class="ch-tile${on ? ' on' : ''}" data-char="${c.id}" ${lock ? 'disabled' : ''} style="--ac:${c.color}" aria-pressed="${on}"><span class="ch-ic">${c.icon}</span><b>${c.name}</b>${lock ? `<small class="ch-lock">🔒 с ${c.lvl} уровня</small>` : `<small class="ch-p">＋ ${c.plus}</small><small class="ch-m">− ${c.minus}</small>`}</button>`; };
+    const charSec = `<h3>Характер капли · ${save.char ? charById(save.char)?.name : 'не выбран'}</h3><div class="ch-grid">${CHARS.map(chTile).join('')}<button type="button" class="ch-tile none${save.char ? '' : ' on'}" data-char="" aria-pressed="${!save.char}"><span class="ch-ic">○</span><b>Без характера</b><small class="ch-p">без плюсов и минусов</small></button></div>` +
+      `<p class="empty-note">Действует в одиночных режимах. В лиге, Хаос-лиге, обучении и режимах для двоих — нет.</p>`;
+    return `<h3>Билд · ${save.build.filter(Boolean).length} из ${ABIL_CFG.slots}</h3><div class="b-slots">${buildSlotsHtml()}</div>` +   /* 2.7 (owner): characters are picked before a round only, not in the collection */
       `<p class="empty-note">Билд меняется только здесь, между боями. В рейтинге и «Королевской битве» у всех рывок, деление и выброс.</p>` +
-      `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') +
+      `<h3>Улучшаемые · ${up.length} из ${BASE_ABIL.length}</h3>` + '<div class="ab-tiles">' + up.map(a => row(a, `${a.price ? 'куплена' : 'есть у всех'} · ${abLevelText(a)}${abLooksText(a)}`)).join('') + '</div>' +
       `<p class="empty-note">Улучшать — в «Магазине» → «Способности». Новые способности тоже там.</p>` +
-      `<h3>Без улучшений · ${fixed.length} из ${XA_ABIL.length}</h3>` + (fixed.length ? fixed.map(a => row(a, `эксклюзив Хаос-лиги · перезарядка ${a.cd} с${abLooksText(a)}`)).join('')
+      `<h3>Без улучшений · ${fixed.length} из ${XA_ABIL.length}</h3>` + (fixed.length ? '<div class="ab-tiles">' + fixed.map(a => row(a, `эксклюзив Хаос-лиги · перезарядка ${a.cd} с${abLooksText(a)}`)).join('') + '</div>'
         : '<p class="empty-note">Эксклюзивные способности даёт «Сингулярность» в Хаос-лиге — по одной за сезон.</p>') +
-      `<h3>Из мастерской · ${crafted.length} из ${CR_ABIL.length}</h3>` + (crafted.length ? crafted.map(a => row(a, `создана из осколков · только обычные режимы · перезарядка ${a.cd} с`)).join('')
+      `<h3>Из мастерской · ${crafted.length} из ${CR_ABIL.length}</h3>` + (crafted.length ? '<div class="ab-tiles">' + crafted.map(a => row(a, `создана из осколков · только обычные режимы · перезарядка ${a.cd} с`)).join('') + '</div>'
         : '<p class="empty-note">Эти способности создаются из осколков в «Мастерской» (плитка в главном меню).</p>');
   }
   // «Магазин → Способности»: buy new ones; upgrades of owned ones in drawers
@@ -1338,10 +1656,10 @@
       `Свои ступени: Искра, Помеха, Сбой, Шторм, Разлом, Сингулярность; очков нужно вдвое меньше, чем в основной лиге. Взнос за бой со «Сбоя»: ${CHAOS_CFG.fee.slice(2).join(' / ')}. Ниже порога своей ступени не опустишься. Монеты за бой — как в рейтинге (×1,5).`,
       `«Разлом» открывается с ${CHAOS_CFG.tierLevel[4]} уровня, «Сингулярность» — с ${CHAOS_CFG.tierLevel[5]}-го. Награды: монеты всем; «Разлом» — скин и рамка сезона; «Сингулярность» — ещё титул сезона и эксклюзивная способность (по одной за сезон), а когда получены все — облик способности. За 5, 10, 25 и 50 сезонов в «Сингулярности» — особые награды.`,
       'Полученные эксклюзивные способности можно ставить в билд в обычных режимах (без улучшений). В рейтинге основной лиги и в Хаос-лиге их выбрать нельзя.'],
-    mab: () => ['Здесь билд — три слота способностей (Пробел, E, Q) — и все способности, которые у тебя есть.', 'Улучшаемые — купленные в магазине, а также рывок и деление (они есть у всех). Улучшения — в «Магазине» → «Способности».', 'Без улучшений — эксклюзивы Хаос-лиги: даются за «Сингулярность».', 'Облик способности выбирается под слотом, если он у тебя есть. Облики меняют только вид и работают в обычных режимах и в Хаос-лиге.'],
+    mab: () => ['Здесь билд — три слота способностей (Пробел, E, Q) — и все способности, которые у тебя есть.', 'Улучшаемые — купленные в магазине, а также рывок и деление (они есть у всех). Улучшения — в «Магазине» → «Способности».', 'Без улучшений — эксклюзивы Хаос-лиги (даются за «Сингулярность») и способности из Мастерской (только в обычных режимах).', 'Облик способности выбирается под слотом, если он у тебя есть. Облики меняют только вид и работают в обычных режимах и в Хаос-лиге.'],
     abil: () => ['Здесь покупаются новые способности и улучшаются купленные. Улучшения каждой способности — в своей шторке: до 5 уровней, за уровень перезарядка −4% и эффект +6,5%. У рывка и деления свои улучшения.',
       'Билд (что стоит в трёх слотах), купленные и полученные способности и облики — в «Коллекция» → «Способности».', 'В рейтинге и «Королевской битве» у всех рывок, деление и выброс, купленное там не действует. Эксклюзивы Хаос-лиги не улучшаются.'],
-    up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.', 'Улучшения дают небольшой прирост — так прогресс равномернее: прокачанный игрок сильнее, но не в разы, и всё решает умение. Например, «Жадность» на максимуме +30% монет, «Пищеварение» +20% массы, «Обтекаемость» +10% скорости, «Крупный старт» +20 массы; «Больше частей» — до 8 частей, «Второй шанс» — до 2 спасений.'],
+    up: () => ['Улучшения покупаются за монеты навсегда и действуют в обычных боях.', 'В рейтинговом бою лиги улучшения не действуют — там все на равных.', 'Часть улучшений открывается только с определённого уровня игрока. Верхние уровни каждого улучшения дороже.', 'Улучшения дают небольшой прирост — так прогресс равномернее: прокачанный игрок сильнее, но не в разы, и всё решает умение. Например, «Жадность» на максимуме +20% монет, «Пищеварение» +12% массы с еды, «Обтекаемость» +10% скорости, «Крупный старт» +10 массы; «Больше частей» — до 8 частей, «Второй шанс» — до 2 спасений.'],
     skin: () => ['Здесь скины, которые можно купить за монеты. Купленный скин появляется в гардеробе.', 'Остальные скины выпадают из сундуков, даются за испытания, достижения, лигу и сезоны.', 'Нажми на скин, чтобы посмотреть его подробнее.'],
     fx: () => ['Эффекты бывают трёх видов: след, аура и эффект поедания. В каждом слоте можно надеть один.', 'Здесь эффекты, которые продаются за монеты. Остальные — в сундуках, испытаниях и коллекциях.'],
     arena: () => ['Тема арены меняет пол, сетку, края арены, туманности и частицы вокруг.', 'Темы открываются с определённого уровня игрока, эксклюзивные — с 30-го. Купленные темы — в гардеробе.'],
@@ -1353,13 +1671,13 @@
     wcol: () => ['Скины: собери все скины коллекции и получи предмет над головой, который надевается на любой скин.', 'Эффекты: собери все эффекты набора и получи уникальный титул.',
       'Лига: все 12 эксклюзивов сундука лиги — предмет над головой «Кубок лиги».', 'Сезоны лиги: скины, эффекты и питомцы 13 сезонов подряд (за «Платину», «Алмаз» и «Неон» или из архива) — своя рамка.',
       'Праздники: все скины, эффекты и питомцы праздничного сезона года — праздничный титул. Каждый год новый набор.', 'Способности: «Арсенал» — все 12 способностей (рывок и деление уже есть) — титул «Оружейник», рамка «Оружейная» и 5 000 ◆.',
-      'Питомцы: «Зверинец» — все 12 питомцев из сундуков, титул «Укротитель». Питомцы сезонов входят в «Сезоны лиги» по четвертям, праздничные — в праздничные наборы года.',
+      'Питомцы: «Зверинец» — все 10 питомцев из сундуков, титул «Укротитель». Питомцы сезонов входят в «Сезоны лиги» по четвертям, праздничные — в праздничные наборы года.',
       'Хаос-лига: «Хаос-арсенал» (эксклюзивные способности), «Облики способностей» (по 3 на каждую способность), «Сезоны Хаоса» по четвертям (скин, рамка и титул каждого сезона) и «Ветераны Хаоса» (награды за 5, 10, 25 и 50 сезонов в «Сингулярности»). За каждую — титул или рамка, без монет.', 'Каждая коллекция даёт ещё и монеты. Награду нужно забрать кнопкой «Забрать».'],
-    wpet: () => ['Питомец летает рядом и даёт бонус: монеты, опыт, скорость, магнит и другие. Можно взять одного.', 'Питомцы — награда лиги («Платина» и «Неон» в каждом сезоне свои, в праздники — праздничные) и добыча из сундуков.', 'Бонус питомца не действует в рейтинговом бою.'],
-    pcat: () => ['Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги).', 'Ещё питомцы выпадают из обычных сундуков и сундуков лиги: чем реже питомец, тем сильнее его бонус.', 'Пропущенных сезонных питомцев можно купить в архиве с 20-го уровня.'],
+    wpet: () => ['Питомец летает рядом и даёт бонус: монеты, опыт, скорость, магнит и другие. Можно взять одного.', 'Питомцы — награда лиги («Платина» и «Неон» в каждом сезоне свои, в праздники — праздничные), добыча из сундуков, предметы Мастерской, а за 5 побед в рейде — «Рейдер».', 'Бонус питомца не действует в рейтинговом бою.'],
+    pcat: () => ['Питомцы выдаются в конце сезона за лиги «Платина» и «Неон» (в праздники — за праздничные лиги).', 'Ещё питомцы выпадают из обычных сундуков и сундуков лиги (чем реже питомец, тем сильнее бонус) и создаются в Мастерской из осколков.', 'Пропущенных сезонных питомцев можно купить в архиве с 20-го уровня.'],
     week: () => ['Новые задания каждый понедельник: лёгкое, среднее и сложное.', `За все три задания — один сундук «${RARITY[WEEK_CHEST].name}», +${WEEK_BONUS} ◆ и жетон архива 🎟 (для покупок в «Архиве»).`],
     ch: () => ['Испытания — большие цели на всё время игры: прогресс копится между раундами.', 'Каждое даёт уникальный предмет и сундук, редкость которого зависит от сложности.'],
-    ach: () => ['10 линеек по 3 ступени: I — 150 ◆, II — 400 ◆, III — 1 000 ◆ и опыт.', 'III ступень линеек «Боссобой», «Звездобой», «Исполин», «Лига» и «Хаос» даёт ещё и титул.', 'Все 10 линеек на III ступени — особый значок «Мастер на все руки».', 'Праздничные достижения идут отдельно: по ступеням лиги праздничного сезона.'],
+    ach: () => ['11 линеек по 3 ступени: I — 150 ◆, II — 400 ◆, III — 1 000 ◆ и опыт.', 'III ступень линеек «Боссобой», «Звездобой», «Исполин», «Лига» и «Хаос» даёт ещё и титул.', 'Все 11 линеек на III ступени — особый значок «Мастер на все руки».', 'Праздничные достижения идут отдельно: по ступеням лиги праздничного сезона.'],
     skill: () => ['Мастерские достижения проверяют умение, а не время: всё нужно сделать за один раунд.', 'Каждое даёт свой титул и монеты. За все — рамка «Мастер» и скин «Виртуоз».'],
     legend: () => ['Легендарные достижения — самые долгие цели игры. Каждое даёт эксклюзивную награду, которую больше нигде не получить.', 'За все — значок «Легенда Капель». Дата начала отсчёта прогресса указана вверху вкладки.'],
   };
@@ -1372,6 +1690,7 @@
   let tiReturn = null;
   const closeTabInfo = () => { $('tabInfoModal').hidden = true; if (tiReturn && tiReturn.isConnected) tiReturn.focus(); };
   $('shop').addEventListener('click', e => { const b = e.target.closest('[data-tabinfo]'); if (b) openTabInfo(b.dataset.tabinfo); });
+  $('shop').addEventListener('click', e => { const b = e.target.closest('[data-char]'); if (!b || b.disabled) return; const id = b.dataset.char || null; save.char = id; persist(); renderShop(); const c = charById(id); toast(c ? `Характер «${c.name}»: ${c.plus}; ${c.minus}` : 'Без характера'); });   // 2.7
   $('tiOk').addEventListener('click', closeTabInfo); $('tiClose').addEventListener('click', closeTabInfo);
   $('tabInfoModal').addEventListener('click', e => { if (e.target === $('tabInfoModal')) closeTabInfo(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('tabInfoModal').hidden) { e.stopPropagation(); closeTabInfo(); } }, true);
@@ -1379,8 +1698,8 @@
   renderShop = function () { _renderShop(); fillThumbs(); };
   // ---- sorting for wardrobe and pets ----
   const SORTS = { new: 'Новые сначала', old: 'Старые сначала', rarity: 'По редкости', source: 'По источнику', name: 'По названию', bonus: 'По бонусу' };
-  const SOURCE_ORDER = ['Престиж', 'Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда', 'Мастерская'];
-  const sourceOf = x => x.craft ? 'Мастерская' : x.prestige ? 'Престиж' : x.tut ? 'Обучение' : x.chaos ? 'Хаос-лига' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
+  const SOURCE_ORDER = ['Эволюция', 'Престиж', 'Магазин', 'Сундук', 'Сундук лиги', 'Испытание', 'Рейд', 'Сезон', 'Праздник', 'Легенда', 'Мастерская'];
+  const sourceOf = x => x.evoSkin ? 'Эволюция' : x.craft ? 'Мастерская' : x.prestige ? 'Престиж' : x.tut ? 'Обучение' : x.chaos ? 'Хаос-лига' : x.legend ? 'Легенда' : x.skill ? 'Испытание' : x.raid || x.special === 'raid' ? 'Рейд' : x.special ? 'Сезон' : x.lchest ? 'Сундук лиги' : x.chest ? 'Сундук' : x.ex ? 'Испытание' : x.holiday ? 'Праздник' : x.season || x.tier ? 'Сезон' : 'Магазин';
   // higher = rarer: legendary 4 … common 1; season/holiday and challenge rewards rank high, shop items by price
   const rarityScore = x => {
     if (x.legend) return 5;
@@ -1411,6 +1730,8 @@
     save.settings.sort = { ...(save.settings.sort || {}), [e.target.dataset.tab]: e.target.value };
     persist(); renderShop(); const sel = $('sortSel'); if (sel) sel.focus();
   });
+  $('shop').addEventListener('click', e => { const b = e.target.closest('[data-gcat]'); if (!b) return; const [p, name] = b.dataset.gcat.split('|'); catSel[p] = name; renderShop();
+    const again = document.querySelector(`#shop [data-gcat="${CSS.escape(b.dataset.gcat)}"]`); if (again) { again.focus(); const row = again.parentElement; row.scrollLeft = Math.max(0, again.offsetLeft - row.offsetLeft - 24); } });
   $('shopTabs').addEventListener('click', e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     shopTab = b.dataset.tab; renderShop(); $('overlay').scrollTop = 0;
@@ -1451,9 +1772,20 @@
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     if (guestBuyWarn(b)) return;
     if (b.dataset.apv) { openArenaPreview(b.dataset.apv, b.id); return; }
+    if (b.dataset.wsh !== undefined) {
+      const W = wshState(), o = W.items[+b.dataset.wsh]; if (!o) return; const x = wshItem(o.t, o.id), price = WSH_PRICE[x.chest];
+      if (wshOwned(o.t, o.id) || save.coins < price) return;
+      coinsSpend(price, 'showcase'); (o.t === 'skin' ? save.skins : o.t === 'fx' ? save.fxOwned : o.t === 'pet' ? save.pets : save.decor).push(o.id);
+      toast(`Витрина недели: «${x.name}» теперь твой`); Sound.play('chest'); persist(); renderShop(); renderAll(); return;
+    }
+    if (b.dataset.wshre) {
+      const W = wshState(); if (W.re || save.coins < WSH_REFRESH) return;
+      coinsSpend(WSH_REFRESH, 'showcase-refresh'); W.items = wshMake(W.items.map(o => o.id)); W.re = true; persist(); toast('Витрина обновлена'); renderShop(); renderAll(); return;
+    }
     if (b.dataset.arch) {
       const o = archiveOffers().find(x => x.id === b.dataset.arch); if (!o || save.coins < o.price || (save.archTok || 0) < ARCH_TOK[o.rar] || archBuysLeft() < 1) return;
       coinsSpend(o.price, 'archive'); save.archTok -= ARCH_TOK[o.rar]; save.archBuys.n++; grantArchive(o); toast(`Из архива: ${offerKind(o)} «${offerName(o)}»`); Sound.play('chest');
+    } else if (b.dataset.hat && evoOn() && save.hat !== b.dataset.hat) { toast(`Нельзя с «${skin().name}»: у скина свои эффекты`); return;
     } else if (b.dataset.hat) { save.hat = save.hat === b.dataset.hat ? null : b.dataset.hat; refreshSkin(); }
     else if (b.dataset.deco) { const d = decorById(b.dataset.deco), k = d.kind === 'frame' ? 'frame' : 'title'; save[k] = save[k] === d.id ? null : d.id; }
     else if (b.dataset.col) {
@@ -1477,6 +1809,7 @@
         if (!buyable(f) || save.coins < f.price || playerLevel() < f.lvl) return;
         coinsSpend(f.price, 'fx'); save.fxOwned.push(f.id);
       } else if (save.fx[f.slot] === f.id) { save.fx[f.slot] = null; persist(); applyAura(); renderShop(); const again = $(b.id); if (again) again.focus(); return; }
+      if (evoOn()) { toast(`Нельзя с «${skin().name}»: у скина свои след, аура и эффект поедания`); persist(); renderShop(); return; }
       save.fx[f.slot] = f.id; applyAura();
     } else if (b.dataset.abuy) {
       const a = abilById(b.dataset.abuy); if (save.abil.owned.includes(a.id) || save.coins < a.price) return;
@@ -1486,7 +1819,7 @@
     } else if (b.dataset.aup) {
       const a = abilById(b.dataset.aup), l = save.abil.lv[a.id] || 0, cost = abUpCost(a, l);
       if (!save.abil.owned.includes(a.id) || l >= ABIL_CFG.levels || save.coins < cost) return;
-      coinsSpend(cost, 'abilup'); save.abil.lv[a.id] = l + 1; toast(`«${a.name}»: уровень ${l + 1}`); checkAbilAch();
+      coinsSpend(cost, 'abilup'); save.abil.lv[a.id] = l + 1; toast(`«${a.name}»: уровень ${l + 1}`); checkAbilAch(); if (arsenalTitleCheck()) setTimeout(() => toast('Новый титул «Мастер оружия»: все обычные способности на 5-м уровне!'), 1600);
     } else if (b.dataset.slotclear) {
       save.build[+b.dataset.slotclear] = null;
     } else if (b.dataset.up) {

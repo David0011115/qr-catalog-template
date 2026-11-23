@@ -106,7 +106,7 @@
     if (persistHook) persistHook();
   };
   if (saveRestored) setTimeout(() => { try { toast(saveRestored === 'missing' ? 'Сохранение не нашлось — прогресс восстановлен из резервной копии' : 'Сохранение было повреждено — прогресс восстановлен из резервной копии'); } catch (e) {} }, 2500);
-  save.mode = MODES[save.mode] && !REMOVED_MODES.includes(save.mode) ? save.mode : 'classic';
+  save.mode = MODES[save.mode] && !REMOVED_MODES.includes(save.mode) && !(DUO_SOON && isDuoMode(save.mode)) ? save.mode : 'classic';
   // ranked (league) battles: only these modes, league points only here, purchased upgrades switched off
   // each league season is played in one mode; they rotate season by season
   // 2.5: «Гонка массы» left the game (replaced by the mode for two «Спина к спине»), «Выживание» takes its place in the league circle
@@ -167,11 +167,13 @@
   save.raid = save.raid || { week: 0, dmg: 0, done: false, day: '', tries: 0 };
   function raidState() {
     const r = save.raid, w = raidWeek();
-    if (r.week !== w) Object.assign(r, { week: w, dmg: 0, done: false });
+    if (r.week !== w) Object.assign(r, { week: w, dmg: 0, done: false, cleared: [] });
+    if (!Array.isArray(r.cleared)) r.cleared = r.done ? [1, 2, 3] : [];   // 2.7: the weekly pool became a ladder of 5 steps; an old win counts as steps I–III
     if (r.day !== today) Object.assign(r, { day: today, tries: 0 });
     return r;
   }
   save.history = save.history || [];
+  if (save.char === undefined) save.char = null;   // 2.7 «Характер капли»: none until the player picks one
   save.totals.modeRounds = save.totals.modeRounds || {};
   save.settings = { quality: 'high', joySize: 'm', joyAlpha: .35, vibrate: true, minimap: true, miniSize: 'm', sfxVol: .7, musVol: .45, autoQ: true, showFps: false, ...(save.settings || {}) };
   delete save.settings.botLevel; // единая сложность ботов для всех игроков
@@ -213,6 +215,7 @@
   }
   if (!save.ss || save.ss.id !== save.season.id) save.ss = ssNew(save.season.id);
   addExtraCollections();   // after the Chaos League tables: its collections need them
+  apply27Decor();   // 2.7: retire and rename what the collections just added
   styleDecor();
   // ---- Chaos League save (schema 3) ----
   save.chaos = save.chaos || { id: chaosStarted ? chaosNow : 1, pts: 0 };
@@ -258,7 +261,7 @@
     const PET_MAP = { c_p_ice: ['c_p_lav', 'rare'], c_p_plasma: ['c_p_slime', 'epic'], c_p_star: ['c_p_rainbow', 'legendary'], lc_p_jelly: ['lc_p_cupbot', 'epic'] };
     const seasonIdx = (n, even) => { let m = ((n - 1) % 26) + 1; if (even ? m % 2 : !(m % 2)) m = even ? Math.min(26, m + 1) : m - 1; return m; };
     const mapSkin = id => { if (SKINS.some(k => k.id === id)) return null; if (SK_MAP[id]) return SK_MAP[id];
-      let m = /^raid_(\d+)$/.exec(id); if (m) return ['raid_q' + raidQuarter(+m[1]), 'epic'];
+      let m = /^raid_(\d+)$/.exec(id); if (m) return [ensureRaidSkin(+m[1]), 'epic'];
       m = /^cs_(\d+)$/.exec(id); if (m) return ['cs_q' + chaosQ(+m[1]), 'epic'];
       m = /^s_(\d+)$/.exec(id); if (m) return ['s_' + seasonIdx(+m[1], false), 'epic'];
       m = /^h_(\w+?)_\d{4}_\d$/.exec(id); if (m) return ['h_' + m[1], 'epic'];
@@ -290,7 +293,7 @@
     save.mig170 = { replaced, coins: coinsBack };
     persist();
   }
-  const LEVEL_DECOR = { 25: ['fr_lv20'], 50: ['fr_lv40', 'tt_lv50'] };
+  const LEVEL_DECOR = { 50: ['fr_lv40', 'tt_lv50'] };   // 2.7: the level-25 frame retired
   if (!save.arena170) {   // 1.7.0: «Джунгли», «Пустыня», «Полярная ночь» removed without refund (nobody had them yet)
     save.arenas = save.arenas || [];
     save.arenas = save.arenas.filter(id => ARENAS.some(a => a.id === id));
@@ -324,6 +327,35 @@
     save.deco170 = { replaced, coins: 0 };   // no refund: nobody has the removed ones yet
     persist();
   }
+  // 2.7: frames and titles cut down, skins reworked (with the owner). A retired frame or title becomes the nearest kept one (a repeat — coins by rarity),
+  // what you wore follows; «Мастер оружия» is earned by abilities now; whoever had done «Гроза гигантов» gets its new skin. One message lists the changes.
+  const DECO_MAP_27 = { fr_cyan: 'fr_glow', fr_fire: 'fr_rainbow', fr_lg3: 'fr_lg5', fr_lg4: 'fr_lg5', fr_sh2: 'fr_sh1', fr_q1: 'fr_sh1', fr_q2: 'fr_sh1', fr_cq2: 'fr_cq1', fr_cq3: 'fr_cq1', fr_cq4: 'fr_cq1',
+    fr_cvet: 'fr_sing', fr_lv20: 'fr_lv40', fr_platinum: 'fr_legend', fr_arsenal: 'fr_xarsenal',
+    tt_crumb: 'tt_storm', tt_tactic: 'tt_storm', tt_lg3: 'tt_lg5', tt_lg4: 'tt_lg5', tt_sh2: 'tt_sh1', tt_cq2: 'tt_cq1', tt_cq3: 'tt_cq1', tt_cq4: 'tt_cq1', tt_cvet: 'tt_chaos', tt_cvetall: 'tt_chaos', tt_xarsenal: 'tt_chaos',
+    tt_lv10: 'tt_lv50', tt_starcatcher: 'tt_starstorm', tt_ln_star: 'tt_starstorm', tt_ln_giant: 'tt_raidlord', tt_giants: 'tt_raidlord', tt_sk3: 'tt_sk9', tt_sk6: 'tt_sk9', tt_ps5: 'tt_ps25' };
+  function arsenalTitleCheck() {
+    if (!save.decor.includes('tt_arsenal') && BASE_ABIL.every(a => !a.price || ((save.abil.lv || {})[a.id] || 0) >= ABIL_CFG.levels)) { save.decor.push('tt_arsenal'); return true; }
+    return false;
+  }
+  if (!save.deco27) {
+    const MC = { common: 300, rare: 750, epic: 1800, legendary: 4500 }, lines = []; let coins = 0; const out = [];
+    for (const id of save.decor || []) { const to = DECO_MAP_27[id]; if (!to) { if (!out.includes(id)) out.push(id); continue; }
+      const a = decorById(id), b = decorById(to);
+      if (!out.includes(to) && !(save.decor || []).includes(to)) { out.push(to); lines.push(`${a.kind === 'frame' ? 'Рамка' : 'Титул'} «${a.name}» → «${b.name}»`); }
+      else { const c = MC[decoRarity(a)] || 750; coins += c; lines.push(`${a.kind === 'frame' ? 'Рамка' : 'Титул'} «${a.name}» → +${c} ◆ (у тебя уже есть «${b.name}»)`); } }
+    save.decor = out;
+    for (const k of ['frame', 'title']) if (save[k] && DECO_MAP_27[save[k]]) save[k] = DECO_MAP_27[save[k]];
+    if ((save.chDone || []).includes('ch_giant5') && !save.skins.includes('ch_hunter')) { save.skins.push('ch_hunter'); lines.push('Испытание «Гроза гигантов» теперь даёт скин «Охотник на боссов» — он уже у тебя'); }
+    for (const [id, was] of Object.entries(SKIN_RENAMED_27)) if (save.skins.includes(id)) lines.push(`Скин «${was}» → «${SKINS.find(k => k.id === id).name}»`);
+    if (save.skins.includes('cyber')) { save.skins = save.skins.filter(x => x !== 'cyber');
+      if (!save.skins.includes('neon')) { save.skins.push('neon'); lines.push('Скин «Кибер-сетка» убран (повторял «Неон») → «Неон»'); }
+      else { coins += 7200; lines.push('Скин «Кибер-сетка» убран (повторял «Неон») → +7200 ◆ (у тебя уже есть «Неон»)'); }
+      if (save.skin === 'cyber') save.skin = 'neon'; }
+    arsenalTitleCheck();
+    if (coins) coinsAdd(coins, 'refund');
+    save.deco27 = { lines: lines.length, coins }; if (lines.length) save.notice27 = lines;
+    persist();
+  }
   if (!save.upg170) {   // levels above the new maximum come back as coins at their price
     let back = 0;
     UPG.forEach(u => { const l = save.up[u.id] || 0; if (u.cutCost && l > u.cost.length) { back += u.cutCost.slice(0, l - u.cost.length).reduce((a, b) => a + b, 0); save.up[u.id] = u.cost.length; } });
@@ -340,7 +372,7 @@
   }
   if (TEST_MODE) {
     // unlock all content for testing; achievements and challenges stay open so they can be tried
-    save.skins = SKINS.map(k => k.id);
+    save.skins = SKINS.filter(k => k.id !== 'cyber').map(k => k.id);
     save.fxOwned = FX.map(f => f.id);
     save.pets = PETS.map(pt => pt.id);
     UPG.forEach(u => save.up[u.id] = u.cost.length);
@@ -367,7 +399,7 @@
     { id: 'ch_race2',     name: 'Плечом к плечу',     desc: 'Пройдите 10 волн вдвоём в «Спине к спине»',  goal: 1,    prog: () => (save.bests.race > 0 && save.bests.race <= 300) || duoBestWave() >= 10 ? 1 : 0, reward: ['deco', 'fr_finish'] },
     { id: 'ch_crown5',    name: 'Венценосный',        desc: 'Победи в «Захвате короны» 5 раз',           goal: 5,    prog: () => save.totals.crownWins, reward: ['deco', 'tt_crowned'] },
     { id: 'ch_daily7',    name: 'Постоянство',        desc: 'Выиграй 7 матчей в «Захвате территории»', goal: 7,    prog: () => Math.max(save.totals.dailies || 0, (save.duo && save.duo.territory && save.duo.territory.wins) || 0),   reward: ['deco', 'fr_calendar'] },
-    { id: 'ch_giant5',    name: 'Гроза гигантов',     desc: 'Победи босса недели в «Босс-рейде» 2 раза',  goal: 2,    prog: () => Math.max(save.raidWins || 0, Math.floor((save.totals.giantWins || 0) / 2.5)), reward: ['deco', 'tt_giants'] },
+    { id: 'ch_giant5',    name: 'Гроза гигантов',     desc: 'Победи босса недели в «Босс-рейде» 2 раза',  goal: 2,    prog: () => Math.max(save.raidWins || 0, Math.floor((save.totals.giantWins || 0) / 2.5)), reward: ['skin', 'ch_hunter'] },
     { id: 'ch_hard1500',  name: 'Тёмная сторона',     desc: 'Набери массу 5000 в «Хардкоре»',            goal: 5000, prog: () => save.bests.hardcore || 0, reward: ['deco', 'fr_dark'] },
     { id: 'ch_surv20',    name: 'Двадцатая волна',    desc: 'Дойди до 20-й волны в «Выживании»',         goal: 20,   prog: () => save.totals.bestWave,  reward: ['deco', 'tt_unbreak'] },
   ];
@@ -407,6 +439,7 @@
   }
   // one-time reset of score stats after the runaway-growth bug
   if (!save.scoreReset1) { save.best = 0; save.bests.classic = 0; save.coins = 0; save.scoreReset1 = true; persist(); }
+  if (!save.timedReset27) { save.bests.timed = 0; save.timedReset27 = true; }   // 2.7: «На время» is 5 minutes now, the 3-minute records start again
   if (TEST_MODE) save.coins = Math.max(save.coins, 999999);
   // every level pays 50 × level coins; every 5th a chest; 10/20/30/40/50 a frame or a title
   const levelChest = L => L % 10 ? null : L <= 10 ? 'rare' : L <= 30 ? 'epic' : 'legendary';   // 1.7.0: every 10 levels

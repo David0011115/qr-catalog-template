@@ -1,0 +1,107 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  ROOM_CODE_ALPHABET, createRoomCode, getBearerToken, normalizeRoomCode,
+  parseClientMessage, parseMode, sanitizeNickname,
+} from '../../server/cloudflare/protocol.js';
+
+test('room codes normalize only the five-character game alphabet', () => {
+  assert.equal(normalizeRoomCode(' ab2cd '), 'AB2CD');
+  assert.equal(normalizeRoomCode('AB0CD'), null);
+  assert.equal(normalizeRoomCode('AB-CD'), null);
+  assert.equal(normalizeRoomCode('ABCD'), null);
+});
+
+test('room code generation uses injectable cryptographic bytes', () => {
+  const bytes = Uint8Array.from([0, 1, 2, 3, 4]);
+  const code = createRoomCode(length => {
+    assert.equal(length, 5);
+    return bytes;
+  });
+  assert.equal(code, [...bytes].map(n => ROOM_CODE_ALPHABET[n]).join(''));
+});
+
+test('nickname is plain bounded text', () => {
+  assert.equal(sanitizeNickname('  <Игрок>\nA  '), 'ИгрокA');
+  assert.equal(sanitizeNickname(''), 'Игрок');
+  assert.equal(sanitizeNickname('x'.repeat(40)).length, 20);
+});
+
+test('input commands accept normalized direction but never client coordinates', () => {
+  assert.deepEqual(parseClientMessage(JSON.stringify({ type: 'input', seq: 3, x: 0.6, z: 0.8 })), {
+    ok: true, command: { type: 'input', seq: 3, x: 0.6, z: 0.8 },
+  });
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'input', seq: 3, x: 2, z: 0 })).reason, 'invalid-input');
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'input', seq: 3, x: 0, z: 0, px: 100 })).command.px, undefined);
+});
+
+test('ability commands contain only a slot, never an ability ID', () => {
+  assert.deepEqual(parseClientMessage(JSON.stringify({ type: 'ability', seq: 1, slot: 2, id: 'x_over' })), {
+    ok: true, command: { type: 'ability', seq: 1, slot: 2 },
+  });
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'ability', seq: 1, slot: 3 })).reason, 'invalid-ability');
+});
+
+test('message size, JSON, type and ping are validated', () => {
+  assert.equal(parseClientMessage('x').reason, 'invalid-json');
+  assert.equal(parseClientMessage(' '.repeat(30), 10).reason, 'message-too-large');
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'teleport', x: 1 })).reason, 'unsupported-message-type');
+  assert.deepEqual(parseClientMessage(JSON.stringify({ type: 'ping', sentAt: 123 })), {
+    ok: true, command: { type: 'ping', sentAt: 123 },
+  });
+});
+
+test('mode and bearer parsing are strict', () => {
+  assert.equal(parseMode('territory'), 'territory');
+  assert.equal(parseMode('classic'), null);
+  assert.equal(getBearerToken('Bearer abc.def'), 'abc.def');
+  assert.equal(getBearerToken('Basic abc'), null);
+});
+
+
+test('DuoBack boost commands accept only a stable offered boost identifier and sequence', () => {
+  assert.deepEqual(parseClientMessage(JSON.stringify({ type: 'boost', seq: 7, id: 'mass' })), {
+    ok: true, command: { type: 'boost', seq: 7, id: 'mass' },
+  });
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'boost', seq: 0, id: 'mass' })).reason, 'invalid-boost');
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'boost', seq: 7, id: 'not valid' })).reason, 'invalid-boost');
+});
+
+
+test('core-action protocol accepts only split, dash and eject with monotonic positive sequence numbers', () => {
+  assert.deepEqual(parseClientMessage(JSON.stringify({ type: 'action', seq: 2, action: 'split' })), {
+    ok: true, command: { type: 'action', seq: 2, action: 'split' },
+  });
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'action', seq: 0, action: 'split' })).reason, 'invalid-action');
+  assert.equal(parseClientMessage(JSON.stringify({ type: 'action', seq: 3, action: 'teleport' })).reason, 'invalid-action');
+});
+
+
+test('WebSocket command budget allows 30 Hz movement with scheduling headroom and rejects floods', async () => {
+  const { consumeSocketMessageBudget, SOCKET_INPUT_LIMIT_PER_SECOND, SOCKET_MESSAGE_LIMIT_PER_SECOND } =
+    await import('../../server/cloudflare/protocol.js');
+  const windows = new Map();
+  for (let i = 0; i < 20; i++) {
+    assert.equal(consumeSocketMessageBudget(windows, 'player', 1000 + i * 40, 'input').ok, true);
+  }
+  const burstWindows = new Map();
+  for (let i = 0; i < 40; i++) {
+    assert.equal(consumeSocketMessageBudget(burstWindows, 'burst-player', 1500, 'input').ok, true);
+  }
+  const inputWindows = new Map();
+  let result;
+  for (let i = 0; i < SOCKET_INPUT_LIMIT_PER_SECOND + 1; i++) {
+    result = consumeSocketMessageBudget(inputWindows, 'player', 2000, 'input');
+  }
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'input-rate-limit');
+  const messageWindows = new Map();
+  for (let i = 0; i < SOCKET_MESSAGE_LIMIT_PER_SECOND; i++) {
+    result = consumeSocketMessageBudget(messageWindows, 'player', 3000, 'ability');
+  }
+  assert.equal(result.ok, true);
+  result = consumeSocketMessageBudget(messageWindows, 'player', 3000, 'ability');
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'message-rate-limit');
+  assert.equal(consumeSocketMessageBudget(messageWindows, 'player', 4000, 'ping').ok, true);
+});

@@ -16,7 +16,7 @@
     const glow = glowSprite(s.color, 3.2, .85); mesh.add(glow);
     [-0.35, 0.35].forEach(x => { const e = new THREE.Mesh(eyeGeo, eyeMat); e.position.set(x, 0.35, 0.86); const pu = new THREE.Mesh(pupilGeo, pupilMat); pu.position.set(0, 0, .09); e.add(pu); mesh.add(e); });
     const crown = makeCrown(); crown.visible = false; mesh.add(crown);
-    const v = { mesh, glow, crown, ring: { material: new THREE.MeshBasicMaterial() }, jig: 0 };
+    const v = { mesh, glow, crown, ring: { material: new THREE.MeshBasicMaterial() }, jig: 0, mine: true };
     applySkin(v, s, stars, hat);
     return v;
   }
@@ -30,14 +30,17 @@
   const MAT_NAME = { chrome: 'зеркальный металл', glass: 'стекло', jelly: 'желе', crystal: 'кристалл', rim: 'неоновый контур', magma: 'раскалённый камень', matte: 'матовый камень' };
   const ANIM_NAME = { breath: 'дышит', heartbeat: 'бьётся как сердце', flicker: 'мерцает как неон', glitch: 'сбоит', magma: 'трещины пульсируют', dissolve: 'рассыпается и собирается', chameleon: 'меняет цвет от скорости', twin: 'двоится' };
   function sourceText(x) {
+    if (x.evoSrc) return x.evoSrc;
     if (save.archived && save.archived.includes(x.id)) return 'куплен в архиве сезонов';
     if (x.legend) return `легендарное достижение «${LEGEND.find(l => l.id === x.legend).name}»`;
     if (x.skill) return 'все мастерские достижения';
+    if (x.craft && CR_RETIRED.has(x.id)) return 'был в Мастерской, серия «Хронос» — больше не создаётся, остаётся у тех, кто успел';
     if (x.craft) return `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(x.id)) || PACKS[0]).name}» · ${RARITY[x.craft].name.toLowerCase()}: создаётся только из осколков`;
     if (x.prestige) return `престиж после 50-го уровня, ${x.prestige}`;
     if (x.tut) return 'награда за обучение';
     if (x.chaos === 'vet') return '25 сезонов Хаос-лиги в «Сингулярности»';
     if (x.chaosQ) return `Хаос-лига, ${['I', 'II', 'III', 'IV'][x.chaosQ - 1]} квартал: первый сезон в «Разломе» или выше`;
+    if (x.old && x.raid) return 'архивный трофей рейда: больше не выдаётся, остаётся у тех, кто его получил';
     if (x.raidQ) return `Босс-рейд: победа в ${['I', 'II', 'III', 'IV'][x.raidQ - 1]} квартале года`;
     if (x.chaos) return `Хаос-лига, сезон ${x.chaos}: «Разлом» или «Сингулярность»`;
     if (x.raid) return 'трофей босс-рейда';
@@ -63,14 +66,30 @@
       const k = SKINS.find(x => x.id === id), st = starsOf(k);
       name = k.name; tag = rarTag(k.chest || k.lchest || k.craft) + sourceBadge(k).replace(/badge-r[^>]*>[^<]*<\/span>/, '');
       imVis = previewBlob(k, st, null); imObj = imVis.mesh; imVis.look = k;
+      if (EVO[id] && evoPv[id]) { imVis.evoF = evoPv[id]; evoApply(imVis, k, true); }
       const look = k.craft ? k.sig : [k.pattern ? `узор «${PATTERN_NAME[k.pattern] || k.pattern}»` : 'однотонный', k.mat && MAT_NAME[k.mat], k.anim && ANIM_NAME[k.anim], k.flow && 'живой узор', k.glow && 'свечение', k.pulse && 'пульсация', k.holo && 'голограмма (переливается)', k.rainbow && 'радужный перелив', k.crown && 'корона'].filter(Boolean).join(', ');
-      rows.push(['Откуда', sourceText(k)], ['Вид', look]);
+      rows.push(['Откуда', EVO[id] ? `${sourceText(k)} — это форма I; формы II и III открываются дальше (см. «Эволюция»)` : sourceText(k)], ['Вид', EVO[id] ? k.sig : look]);
+      if (EVO[id]) { const E = EVO[id], n = evoOpen(id), cur = evoForm(id), freshF = (save.evoNew || {})[id] || 0; if (freshF) { delete save.evoNew[id]; persist(); }
+        if (E.rar) tag = '<span class="badge-r" style="color:#ff3d2d">Хардкор</span>' + tag;
+        tag += `<span class="badge-ex evo-tag"><svg viewBox="0 0 24 24" aria-hidden="true">${DI.dna}</svg>эволюция</span>`;
+        const shown = evoPv[id] || Math.max(1, cur);
+        const R = ['', 'I', 'II', 'III'], own = save.skins.includes(id);
+        // 2.7: a tap on a form only shows it; the button below puts it on (it used to be put on silently)
+        rows.push(['Эволюция', `<span class="evo-forms">${[1, 2, 3].map(f => f <= n && own ? `<button type="button" class="evo-f${f === shown ? ' on' : ''}${f === cur ? ' worn' : ''}${f === freshF && f !== cur ? ' fresh' : ''}" data-evof="${f}">${R[f]}<small>${f === cur ? 'надета' : f === freshF ? 'новая!' : E.need[f - 1]}</small></button>` : `<button type="button" class="evo-f lock${f === shown ? ' on' : ''}" data-evopv="${f}" title="Посмотреть форму · ${E.need[f - 1]} ${E.unit}">🔒 ${R[f]}<small>${E.need[f - 1]}</small></button>`).join('')}</span>` +
+          `<small class="evo-u">${[1, 2, 3].map(f => `${R[f]} — ${E.need[f - 1]}`).join(' · ')}${E.unit ? ' ' + E.unit : ''}</small>` +
+          (evoPv[id] && !(evoPv[id] <= n && own) ? `<small class="evo-u" style="color:#ffd23f">Это предпросмотр формы ${R[evoPv[id]]} — она ещё закрыта</small>` : `<small class="evo-u">нажми на форму, чтобы посмотреть${own && n > 1 ? '; надеть — кнопкой ниже' : ''}</small>`)],
+          ['Свои эффекты', 'след, аура, предмет над головой и эффект поедания — свои и растут с формой; дополнительные не надеваются']); }
       if (k.head) rows.push(['Над головой', HEAD_NAME[k.head] || k.head]);
       if (isShiny(k)) rows.push(['Блик', k.shine === 'bolt' ? 'молния' : 'полоса']);
       if (k.chest || k.lchest) rows.push(['Звёзды', `${'★'.repeat(st)}${'☆'.repeat(3 - st)} — ${st ? STAR_TEXT[st] + `; бонус, пока скин надет: ${starBonusOf(k).text(st)}` : `пока нет; звёзды этого скина дадут: ${STAR_BONUS[k.chest || k.lchest].text(1)} за каждую`}${st < 3 ? `. Следующая за повтор из сундука: ${STAR_TEXT[st + 1]}` : ''}`]);
       const cw = colsWith(id); if (cw) rows.push(['Коллекция', cw]);
       if (save.hat) rows.push(['Сейчас надето', `${HATS[save.hat].name} вместо предмета скина`]);
       act = !save.skins.includes(id) ? `<button class="btn ghost" disabled>${k.craft ? 'Создаётся в мастерской' : buyable(k) ? 'Купить можно в магазине' : 'Ещё не получен'}</button>` : save.skin === id ? '<button class="btn ghost" disabled>Выбран</button>' : `<button class="btn" data-act="skin-${id}">Выбрать</button>`;
+      if (EVO[id] && save.skins.includes(id)) {   // the button names the form it puts on
+        const R = ['', 'I', 'II', 'III'], n = evoOpen(id), cur = Math.max(1, evoForm(id)), pv = evoPv[id] && evoPv[id] <= n ? evoPv[id] : cur;
+        act = save.skin === id ? (pv === cur ? `<button class="btn ghost" disabled>Выбран · форма ${R[cur]}</button>` : `<button class="btn" data-evoset="${pv}">Применить форму ${R[pv]}</button>`)
+          : `<button class="btn" data-act="skin-${id}" data-evoset="${pv}">Выбрать · форма ${R[pv]}</button>`;
+      }
     } else if (kind === 'fx') {
       const f = FX.find(x => x.id === id), on = save.fx[f.slot] === id;
       name = f.name; tag = rarTag(f.chest || f.lchest || f.craft) + `<span class="badge-ex">${SLOT_NAME[f.slot]}</span>`;
@@ -81,7 +100,8 @@
       act = !save.fxOwned.includes(id) ? `<button class="btn ghost" disabled>${f.craft ? 'Создаётся в мастерской' : buyable(f) ? 'Купить можно в магазине' : 'Ещё не получен'}</button>` : `<button class="btn ${on ? 'ghost' : ''}" data-act="fx-${id}">${on ? 'Снять' : 'Надеть'}</button>`;
     } else if (kind === 'pet') {
       const pt = petById(id), own = save.pets.includes(id), on = save.pet === id, B = PET_BONUS[pt.bonus];
-      name = pt.name; tag = rarTag(pt.chest || pt.lchest || pt.craft) + (pt.tier ? `<span class="badge-ex">${pt.tier}</span>` : '');
+      const prr = pt.chest || pt.lchest || pt.craft;   // 2.7: the tier is not repeated when it says the same as the rarity («РЕДКИЙ РЕДКИЙ»)
+      name = pt.name; tag = rarTag(prr) + (pt.tier && !(prr && RARITY[prr].name.toLowerCase() === String(pt.tier).toLowerCase()) ? `<span class="badge-ex">${pt.tier}</span>` : '');
       const g = buildPet(pt); scene.remove(g); g.visible = true; g.position.set(0, 0, 0); imObj = g;
       rows.push(['Вид', PET_SPECIES[pt.species]], ['Бонус', `${B.name}: ${B.text(pt.lv)}`], ...(pt.craft ? [] : [['Сила', `уровень ${pt.lv} из 3`]]),
         ['Откуда', pt.craft ? sourceText(pt) : save.archived && save.archived.includes(pt.id) ? 'куплен в архиве сезонов' : pt.legend ? `легендарное достижение «${LEGEND.find(l => l.id === pt.legend).name}»` : pt.lchest ? 'сундук лиги' : pt.chest ? 'сундук' : pt.holiday ? 'праздничная лига' : `лига «${pt.tier}» в конце сезона`], ['В лиге', 'бонус не действует в рейтинговом бою']);
@@ -95,7 +115,7 @@
     } else if (kind === 'pbg') {
       const b = pbgById(id), own = (save.pbg || []).includes(id), on = (save.pc || {}).bg === id;
       name = b.name; tag = rarTag(b.rar) + '<span class="badge-ex">фон профиля</span>';
-      flat = `<span class="im-pbg"><canvas data-pbg="${id}"></canvas><span class="im-pbg-av">${pcAvatar({ skin: save.skin, frame: save.frame }, 64)}</span></span>`;
+      flat = `<span class="im-pbg"><canvas data-pbg="${pbgKey(id)}"></canvas><span class="im-pbg-av">${pcAvatar({ skin: save.skin, frame: save.frame }, 64)}</span></span>`;
       rows.push(['Где видно', 'фон твоей карточки игрока: в профиле, в рейтинге и у друзей'], ['Откуда', b.craft ? `Мастерская, серия «${(PACKS.find(pk => pk.id === packOf(id)) || PACKS[0]).name}»: создаётся только из осколков` : b.src]);
       act = own ? (on ? '<button class="btn ghost" disabled>Стоит в профиле</button>' : `<button class="btn" data-act="pbg-${id}">Поставить в профиль</button>`) : `<button class="btn ghost" disabled>${b.craft ? 'Создаётся в мастерской' : 'Ещё не получен'}</button>`;
     } else if (kind === 'abil') {
@@ -125,7 +145,7 @@
     $('imActions').innerHTML = act + '<button class="btn ghost" id="imOk">Закрыть</button>';
     $('imFlat').innerHTML = flat; $('imFlat').hidden = !flat; $('imCanvas').hidden = !!flat; if (flat) pbgMount($('imFlat'));
     if (imObj) imScene.add(imObj);
-    const big = kind === 'pet' ? 3.6 : imFxSlot === 'trail' ? 12.5 : imFxSlot ? 10 : imVis && imVis.aura ? 7.4 : 6.4, y = kind === 'pet' ? 0 : imFxSlot ? .4 : .6;
+    const big = kind === 'pet' ? 3.6 : imFxSlot === 'trail' ? 12.5 : imFxSlot ? 10 : imVis && imVis.aura ? 7.4 : imVis && imVis.evo ? 8.4 : 6.4, y = kind === 'pet' ? 0 : imFxSlot ? .4 : .6;
     if (imFxSlot && !imFx) imFx = makePreviewFx(imScene, 1);
     imR.setClearColor(imFxSlot ? '#160c36' : 0x000000, imFxSlot ? 1 : 0);   // glowing particles need a dark backdrop
     imCam.position.set(0, y + big * .28, big); imCam.lookAt(0, y, 0);
@@ -156,20 +176,24 @@
           if (v.starGlow && v.starGlow.visible) v.starGlow.material.opacity = .3 + .25 * Math.sin(now / 320);
         } else if (imKind === 'pet') imObj.position.y = Math.sin(now / 400) * .08;
         shineT.value = now / 1000;
-        imR.render(imScene, imCam);
+        alphaSafe(imScene); imR.render(imScene, imCam);
       }
       imAnim = requestAnimationFrame(loop);
     };
     imAnim = requestAnimationFrame(loop);
   }
   function closeItem() {
-    $('itemModal').hidden = true; cancelAnimationFrame(imAnim);
+    $('itemModal').hidden = true; cancelAnimationFrame(imAnim); evoPv = {};
     if (imReturn && imReturn.isConnected) imReturn.focus();
   }
   $('imClose').addEventListener('click', closeItem);
   $('itemModal').addEventListener('click', e => {
     if (e.target === $('itemModal') || e.target.id === 'imOk') { closeItem(); return; }
     const pv = e.target.closest('button[data-apv]'); if (pv) { const ret = imReturn; closeItem(); openArenaPreview(pv.dataset.apv, ret && ret.id); return; }
+    const ef = e.target.closest('button[data-evof]'); if (ef) { evoPv[imId] = +ef.dataset.evof; openItem(imKind + ':' + imId); return; }
+    const es = e.target.closest('button[data-evoset]'); if (es) { const f = +es.dataset.evoset; save.evo = { ...(save.evo || {}), [imId]: f }; persist(); refreshSkin(); toast(`Форма ${['', 'I', 'II', 'III'][f]} надета`);
+      if (!es.dataset.act) { openItem(imKind + ':' + imId); return; } }
+    const ep = e.target.closest('button[data-evopv]'); if (ep) { evoPv[imId] = +ep.dataset.evopv; openItem(imKind + ':' + imId); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const orig = $(b.dataset.act);
     if (orig && !orig.disabled) orig.click();
@@ -189,7 +213,7 @@
   // ================= chests =================
   const LEAGUE_CHEST_W = { 1: [55, 38, 6, 1], 2: [35, 45, 17, 3], 3: [20, 42, 30, 8], 4: [5, 35, 45, 15], 5: [0, 20, 50, 30] };
   // round chest: chance grows with round length; mass and a win add a bit; capped; a guarantee after a dry streak
-  const CHEST_RULE = { normal: { rate: .03, cap: .35, pity: 15 }, ranked: { rate: .04, cap: .45, pity: 10 } };   // 1.7.0: rarer, the catalog is smaller
+  const CHEST_RULE = { normal: { rate: .02, cap: .25, pity: 15 }, ranked: { rate: .03, cap: .35, pity: 10 } };   // 1.7.0: rarer, the catalog is smaller; 2.7 (owner): rarer still — about 2 an hour in normal rounds, 3 in rated
   function roundChestChance(minutes, mass, win, ranked) {
     const R = CHEST_RULE[ranked ? 'ranked' : 'normal'];
     return Math.min(R.cap, minutes * R.rate * (1 + Math.min(.25, mass / 80000) + (win ? .1 : 0)));
@@ -347,6 +371,9 @@
     return `class="fr fn ${d.cls || ''}" style="${d.css}"${g ? ` data-g="${g}"` : ''}`; };
   const titleTag = id => { const d = decorById(id); return d ? `<em class="ttl ${d.cls || ''} tt-r-${decoRarity(d)}" style="color:${d.color};--a:${d.a || d.color};--b:${d.b || '#fff'}">${d.ico ? `<i class="tt-i">${d.ico}</i>` : ''}${d.name}</em>` : ''; };
   const decoPreview = d => d.kind === 'frame' ? `<span class="deco-pv"><span ${frameAttr(d.id)}>Ты</span></span>` : `<span class="deco-pv">${titleTag(d.id)}</span>`;
+  const spSig = c => [c.kind, c.title, c.rar, c.league ?? ''].join('|');
+  const spOpts = c => { const o = c.kind === 'league' ? { league: c.league } : { rar: c.rar };
+    o.src = c.kind === 'league' ? 'league' : /^Уровень /.test(c.title) ? 'level' : c.title === 'Неделя' ? 'week' : c.title === 'Рейд' ? 'raid' : 'challenge'; return o; };
   function chestRows() {
     const rows = [];
     const daily = save.dailyChestDay !== today;
@@ -355,9 +382,13 @@
     if (save.shardChests) rows.push({ key: 'shard', look: chestLook('shard'), title: `Сундук осколков ×${save.shardChests}`, sub: '20–30 осколков', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.shardChests) });
     if (save.chests) rows.push({ key: 'normal', look: chestLook('normal'), title: `Сундук за раунды ×${save.chests}`, sub: 'Обычные шансы редкости', btn: 'Открыть', multi: Math.min(CHEST_MULTI, save.chests) });
     (save.giftBoxes || []).forEach(id => { const ev = GIFT_EVENTS.find(e => e.id === id); if (ev) rows.unshift({ key: 'gift' + id, look: chestLook('gift', null, ev), title: `${ev.cake} ${ev.box}`, sub: 'Подарок от разработчика — открой!', btn: 'Открыть', gift: true }); });
-    save.special.forEach((c, i) => rows.push(c.kind === 'league'
-      ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть' }
-      : { key: 'sp' + i, look: chestLook('challenge', c.rar), title: `Сундук испытания «${c.title}»`, sub: `Редкость: ${RARITY[c.rar].name}`, btn: 'Открыть' }));
+    // 2.7: the same special chests (kind, name, rarity) make one row «×N» with «open» and «×5» — they were a long list one by one
+    const groups = new Map();
+    save.special.forEach((c, i) => { const k = spSig(c); if (groups.has(k)) groups.get(k).n++; else groups.set(k, { c, i, n: 1 }); });
+    for (const { c, i, n } of groups.values()) { const x = n > 1 ? ` ×${n}` : '', multi = Math.min(CHEST_MULTI, n);
+      rows.push(c.kind === 'league'
+        ? { key: 'sp' + i, look: chestLook('league'), title: `Сундук лиги «${c.title}»${x}`, sub: 'Эксклюзивные предметы лиги', btn: 'Открыть', multi }
+        : { key: 'sp' + i, look: chestLook('challenge', c.rar), title: `Сундук испытания «${c.title}»${x}`, sub: `Редкость: ${RARITY[c.rar].name}`, btn: 'Открыть', multi }); }
     return rows;
   }
   function renderChest() {
@@ -475,7 +506,7 @@
   const chatBgOwned = id => (save.chatBg || []).includes(id);
   const CR_BASE = { emo_tick: [['common', 20]], emo_wait: [['common', 20]], emo_late: [['rare', 15]], emo_windup: [['rare', 15]], chronos: [['legendary', 40]], 'chronos-workshop': [['rare', 30]], 'chronos-city': [['epic', 30]], 'chronos-heart': [['legendary', 20]], bg_cr_gears: [['common', 30]], bg_cr_sand: [['rare', 30]], bg_cr_behind: [['epic', 30]], bg_cr_void: [['legendary', 20]],
     fr_cr_dial: [['common', 30]], fr_cr_roman: [['rare', 30]], fr_cr_pend: [['epic', 30]], fr_cr_gyro: [['legendary', 20]],
-    cr_engrave: [['epic', 45]], cr_watch: [['rare', 45]], cr_windup: [['rare', 40]], cr_skeleton: [['epic', 45]], cr_sandup: [['epic', 40]], cr_spiral: [['legendary', 30]], cr_moon: [['legendary', 30]],
+    cr_engrave: [['epic', 45]], cr_watch: [['rare', 45]], cr_windup: [['rare', 40]], cr_skeleton: [['legendary', 30]], cr_sandup: [['epic', 40]], cr_spiral: [['legendary', 30]], cr_moon: [['legendary', 30]],
     cr_cogs: [['rare', 45]], cr_tick: [['rare', 45]], cr_marks: [['epic', 45]], cr_cogwings: [['epic', 45]], cr_freeze: [['legendary', 30]], cr_halo: [['legendary', 30]], cr_foucault: [['legendary', 30]],
     cr_p_cuckoo: [['rare', 60]], cr_p_mouse: [['epic', 60]], cr_p_owl: [['legendary', 40]],
     cr_gearwall: [['epic', 90], ['legendary', 15]], cr_rewind: [['epic', 90], ['legendary', 15]], cr_swap: [['epic', 90], ['legendary', 15]] };
@@ -493,7 +524,8 @@
   const WS_CATS = [['bg', 'Фоны профиля'], ['chatbg', 'Фоны чата'], ['frame', 'Рамки'], ['skin', 'Скины'], ['fx', 'Эффекты'], ['pet', 'Питомцы'], ['abil', 'Способности'], ['arena', 'Арены'], ['emo', 'Эмоции']];
   const CR_EMO = [[':tick:', 'common'], [':wait:', 'common'], [':late:', 'rare'], [':windup:', 'rare']], emoId = k => 'emo_' + k.replace(/:/g, '');
   // the series pays for progress: an emote at 10 and at 20 crafted items, the frame, the title and a profile background for all of them
-  const SERIES_EMO = [[10, ':freeze:'], [20, ':cuckoo:']], SERIES_ALL = { decor: ['fr_cr_tourb', 'tt_cr_master'], pbg: ['bg_cr_astro'] };
+  const SERIES_EMO = [[8, ':freeze:'], [15, ':cuckoo:']],   // 2.7: the series has 23 items now (was 36: 10 and 20)
+   SERIES_ALL = { decor: ['fr_cr_tourb', 'tt_cr_master'], pbg: ['bg_cr_astro'] };
   function wsSeries() {
     const all = WS_CATS.flatMap(([cat]) => wsItems(cat)), n = all.filter(x => x.own).length, got = [];
     save.emo = save.emo || []; save.pbg = save.pbg || [];
@@ -504,7 +536,12 @@
     }
     return { n, total: all.length, got };
   }
-  function wsItems(cat) {
+  // 2.7: what the workshop offers — the retired items are gone from it (their owners keep them)
+  function wsItems(cat) { return wsItemsAll(cat).filter(x => !CR_RETIRED.has(x.id)); }
+  // how many items of the series you own (cached for a second: the evolution of «Скелетон» asks every frame)
+  let wsNCache = [0, 0];
+  function wsSeriesN() { const now = Date.now(); if (now - wsNCache[0] > 1000) wsNCache = [now, WS_CATS.flatMap(([cat]) => wsItems(cat)).filter(x => x.own).length]; return wsNCache[1]; }
+  function wsItemsAll(cat) {
     if (cat === 'emo') return CR_EMO.map(([k, rar]) => ({ id: emoId(k), name: KapliEmo.E[k].n, rar, sub: 'эмоция для чата', pv: `<span class="emo-play" data-emote="${k}" style="display:block;width:62px;height:62px">${KapliEmo.svg(k)}</span>`, own: (save.emo || []).includes(k), give: () => { save.emo = save.emo || []; save.emo.push(k); } }));
     if (cat === 'arena') return ARENAS.filter(a => a.craft).map(a => ({ id: a.id, name: a.name, rar: a.craft, sub: 'Особенность: ' + ARENA_FX[a.id], pv: `<span class="arena-pv" style="--fl:${a.floor};--gr:${a.grid};--rm:${a.rim}"></span>`, own: save.arenas.includes(a.id), give: () => save.arenas.push(a.id), info: 'arena:' + a.id }));
     if (cat === 'chatbg') return CHAT_BG.map(b => ({ id: b.id, name: b.name, rar: b.rar, sub: 'живой фон для общего чата и личных сообщений', info: 'chatbg:' + b.id, pv: `<img src="chat-${b.id}.svg" alt="">`, own: chatBgOwned(b.id), give: () => { save.chatBg = save.chatBg || []; save.chatBg.push(b.id); } }));
@@ -517,7 +554,13 @@
   }
   const priceText = id => CR_PRICE[id].map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}" title="${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}">${shardIco(r, 16)}${n}</span>`).join(' ');
   const WS_LUCK = .1; // «Удачная ковка» chance
-  const canPay = id => CR_PRICE[id].every(([r, n]) => save.shards[r] >= n);
+  const canPay = (id, risky) => crPrice(id, risky).every(([r, n]) => save.shards[r] >= n);
+  // 2.7 «Рискованная ковка»: 30% cheaper, 75% success; a break burns half of what was paid (the other half comes back),
+  // and after a break the next risky forge of the same item cannot fail
+  const RISK = { k: .7, ok: .75 };
+  const crPrice = (id, risky) => CR_PRICE[id].map(([r, n]) => [r, risky ? Math.ceil(n * RISK.k) : n]);
+  const SH_GEN = { common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' };
+  const shList = list => list.map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 16)}${n}</span>`).join(' ');
   const wsOwned = id => save.skins.includes(id) || save.fxOwned.includes(id) || save.pets.includes(id) || save.decor.includes(id) || (save.pbg || []).includes(id) || (save.chatBg || []).includes(id) || save.arenas.includes(id) || CR_EMO.some(([k]) => emoId(k) === id && (save.emo || []).includes(k)) || save.abil.owned.includes(id);
   // what is still missing for a recipe, how far along it is (0…1), and an item by its id
   const wsMiss = id => CR_PRICE[id].map(([r, n]) => [r, n - save.shards[r]]).filter(([, n]) => n > 0);
@@ -527,31 +570,71 @@
   let wsAsk = null;
   const wsModalClose = () => { $('wsModal').hidden = true; wsAsk = null; };
   function wsConfirm(cat, id) {
-    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) return;
+    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id, true)) return;
     wsAsk = { cat, id }; const c = $('wsMCard'); c.style.setProperty('--rc', RARITY[it.rar].color);
+    if (!canPay(id)) { wsRiskAsk(cat, id); return; }   // only the risky price fits
     c.innerHTML = `<h2 id="wsMTitle">Создать «${it.name}»?</h2><div class="pv">${it.pv}</div><div class="rows"><span>Цена</span><span>${priceText(id)}</span>` +
       `<span>Останется</span><span>${RAR_KEYS.map(r => { const need = (CR_PRICE[id].find(([k]) => k === r) || [0, 0])[1]; return need ? `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 16)}${save.shards[r] - need}</span>` : ''; }).join(' ')}</span></div>` +
-      `<small style="color:var(--muted)">Осколки спишутся сразу, отменить нельзя.</small><div class="acts"><button class="btn ghost" type="button" id="wsNo">Отмена</button><button class="btn" type="button" id="wsYes">Создать</button></div>`;
+      `<small style="color:var(--muted)">Осколки спишутся сразу, отменить нельзя.</small><div class="acts"><button class="btn ghost" type="button" id="wsNo">Отмена</button><button class="btn ghost ws-risk-btn" type="button" id="wsRisk">🎲 Рискнуть −30%</button><button class="btn" type="button" id="wsYes">Создать</button></div>`;
     $('wsModal').hidden = false; $('wsYes').focus();
   }
-  function wsCraft(cat, id) {
-    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id)) { wsModalClose(); return; }
-    CR_PRICE[id].forEach(([r, n]) => { save.shards[r] -= n; }); it.give(); if (save.wsPin === id) delete save.wsPin;
+  // the second, separate confirmation of a risky forge — a misclick on «Рискнуть» costs nothing
+  function wsRiskAsk(cat, id) {
+    const it = wsItems(cat).find(x => x.id === id); if (!it) return;
+    wsAsk = { cat, id, risky: true }; const c = $('wsMCard'), pr = crPrice(id, true), guard = !!(save.wsPity || {})[id];
+    const burn = pr.map(([r, n]) => [r, n - Math.floor(n / 2)]);
+    c.innerHTML = `<h2 id="wsMTitle">🎲 Рискованная ковка</h2><div class="pv">${it.pv}</div><b>«${it.name}»</b>` +
+      `<div class="rows"><span>Цена</span><span>${shList(pr)} <s style="color:var(--muted);font-size:.72rem">${shList(CR_PRICE[id])}</s></span>` +
+      `<span>Шанс успеха</span><span><b style="color:${guard ? '#3dffa2' : '#ffd23f'}">${guard ? '100% — гарантия после поломки' : '75%'}</b></span>` +
+      (guard ? '' : `<span>Если сломается</span><span>сгорит ${shList(burn)}, остальное вернётся</span>`) + '</div>' +
+      (guard ? '' : '<small class="ws-risk-note">В 1 случае из 4 предмет ломается. Зато после поломки следующая рискованная ковка этого предмета получится точно.</small>') +
+      `<div class="acts"><button class="btn ghost" type="button" id="wsRiskNo">Назад</button><button class="btn ws-risk-yes" type="button" id="wsRiskYes" ${canPay(id, true) ? '' : 'disabled'}>Да, рискнуть</button></div>`;
+    $('wsModal').hidden = false; $('wsRiskNo').focus();   // the safe button gets the focus
+  }
+  // the forge: shards fly into the anvil, the ingot heats, three blows — then the item, or cracks and pieces
+  const forgeHtml = (it, spent, broke) => `<div class="ws-forge2${broke ? ' broke' : ''}"><div class="wf-stage">` +
+    spent.map(([r], k) => `<span class="wf-fly f${k % 4}">${shardIco(r, 22)}</span>`).join('') +
+    `<span class="wf-anvil"></span><span class="wf-ingot"></span><span class="wf-crack"></span><span class="wf-half l"></span><span class="wf-half r"></span>` +
+    `<span class="wf-hammer"></span><span class="wf-sparks s1"></span><span class="wf-sparks s2"></span><span class="wf-sparks s3"></span><span class="wf-burst"></span></div></div>`;
+  function wsCraft(cat, id, risky) {
+    const it = wsItems(cat).find(x => x.id === id); if (!it || it.own || !canPay(id, risky)) { wsModalClose(); return; }
+    const price = crPrice(id, risky); save.wsPity = save.wsPity || {};
+    const broke = !!risky && !save.wsPity[id] && Math.random() >= RISK.ok;
+    price.forEach(([r, n]) => { save.shards[r] -= n; });
+    if (broke) {
+      const back = price.map(([r, n]) => [r, Math.floor(n / 2)]).filter(([, n]) => n > 0);
+      back.forEach(([r, n]) => { save.shards[r] += n; }); save.wsPity[id] = true; save.wsBroke = (save.wsBroke || 0) + 1;
+      persist(); Sound.play('eaten'); buzz([60, 40, 120]);
+      const c = $('wsMCard');
+      c.innerHTML = forgeHtml(it, price, true) + `<div class="made fail"><h2 id="wsMTitle">Сломалось!</h2><b>Предмет «${it.name}» раскололся на наковальне</b>` +
+        `<p class="lucky">Вернулось: ${shList(back)}</p><p class="lucky ok">🛡 Следующая рискованная ковка этого предмета получится точно</p>` +
+        `<div class="acts"><button class="btn" type="button" id="wsDone">Понятно</button></div></div>`;
+      wsAsk = null; renderWorkshop(); renderAll(); setTimeout(() => { const d = $('wsDone'); if (d) d.focus(); }, 50); return;
+    }
+    if (risky) delete save.wsPity[id];
+    it.give(); if (save.wsPin === id) delete save.wsPin;
     // «Удачная ковка»: with WS_LUCK chance a quarter of every spent shard kind comes back (never a loss, only a bonus)
-    const back = Math.random() < WS_LUCK ? CR_PRICE[id].map(([r, n]) => [r, Math.floor(n / 4)]).filter(([, n]) => n > 0) : [];
+    const back = Math.random() < WS_LUCK ? price.map(([r, n]) => [r, Math.floor(n / 4)]).filter(([, n]) => n > 0) : [];
     back.forEach(([r, n]) => { save.shards[r] += n; }); save.wsLucky = (save.wsLucky || 0) + (back.length ? 1 : 0);
     const prize = wsSeries().got;   // progress rewards earned by this very item
     persist(); Sound.play('chest'); buzz(back.length ? [30, 60, 30] : 30);
     const c = $('wsMCard');
-    c.innerHTML = `<div class="ws-forge" style="display:grid;gap:10px;justify-items:center"><div class="ws-anvil"><i class="ws-hammer"></i><span class="ws-sparks"></span></div>` +
+    c.innerHTML = forgeHtml(it, price, false) +
       `<div class="made"><h2 id="wsMTitle">Создано!</h2><div class="pv">${it.pv}</div><span class="rar">${RARITY[it.rar].name}</span><b>${it.name}</b>` +
-      (cat === 'abil' ? '<small style="color:var(--muted)">Поставь в билд: Коллекция → Способности</small>' : cat === 'chatbg' ? '<small style="color:var(--muted)">Включи его в чате: шестерёнка ⚙ вверху справа</small>' : '') + `</div>` +
+      (cat === 'abil' ? '<small style="color:var(--muted)">Поставь в билд: Коллекция → Способности</small>' : cat === 'chatbg' ? '<small style="color:var(--muted)">Включи его в чате: шестерёнка ⚙ вверху справа</small>' : '') +
       prize.map(t => `<p class="lucky">🎁 Награда: ${t}</p>`).join('') +
       (back.length ? `<p class="lucky">✨ Удачная ковка! Вернулось: ${back.map(([r, n]) => `${n} ${{ common: 'обычных', rare: 'редких', epic: 'эпических', legendary: 'легендарных' }[r]}`).join(', ')}</p>` : '') +
       `<div class="acts"><button class="btn" type="button" id="wsDone">Отлично</button></div></div>`;
     wsAsk = null; renderWorkshop(); renderAll(); $('wsDone').focus();
   }
-  $('wsModal').addEventListener('click', e => { if (e.target === $('wsModal') || e.target.id === 'wsNo' || e.target.id === 'wsDone') wsModalClose(); else if (e.target.id === 'wsYes' && wsAsk) wsCraft(wsAsk.cat, wsAsk.id); });
+  $('wsModal').addEventListener('click', e => {
+    const t = e.target.id;
+    if (e.target === $('wsModal') || t === 'wsNo' || t === 'wsDone') wsModalClose();
+    else if (t === 'wsYes' && wsAsk) wsCraft(wsAsk.cat, wsAsk.id, false);
+    else if (t === 'wsRisk' && wsAsk) wsRiskAsk(wsAsk.cat, wsAsk.id);
+    else if (t === 'wsRiskNo' && wsAsk) { if (canPay(wsAsk.id)) wsConfirm(wsAsk.cat, wsAsk.id); else wsModalClose(); }
+    else if (t === 'wsRiskYes' && wsAsk && wsAsk.risky) wsCraft(wsAsk.cat, wsAsk.id, true);
+  });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wsModal').hidden) wsModalClose(); });
   function renderWorkshop() {
     const sp = wsSeries(); if (sp.got.length) { persist(); sp.got.forEach((t, i) => setTimeout(() => toast('🎁 ' + t), i * 1800)); }
@@ -564,7 +647,7 @@
     const card = x => `<div class="ws-it" style="--rc:${RARITY[x.rar].color}"${x.info ? ` data-info="${x.info}" tabindex="0" role="button" aria-label="Подробнее: ${x.name}"` : ''}><div class="pv">${x.pv}</div><span class="rar">${RARITY[x.rar].name}</span><b>${x.name}</b>${x.sub ? `<small>${x.sub}</small>` : ''}` +
         (x.info ? '<span class="ws-look">👁 нажми, чтобы посмотреть</span>' : '') + (x.own ? '<span class="own">✓ Создано</span>' : `<small>${priceText(x.id)}</small>` +
           (canPay(x.id) ? '' : `<small class="ws-miss">не хватает: ${wsMiss(x.id).map(([r, n]) => `<span class="sh-pr" style="color:${RARITY[r].color}">${shardIco(r, 14)}${n}</span>`).join(' ')}</small>`) +
-          `<button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id) ? '' : 'disabled'}>Создать</button>` +
+          `<button class="buy" type="button" data-wscraft="${x.cat}:${x.id}" ${canPay(x.id, true) ? '' : 'disabled'}>${canPay(x.id) ? 'Создать' : '🎲 Рискнуть'}</button>` +
           `<button class="ws-pin" type="button" data-wspin="${x.id}" aria-pressed="${save.wsPin === x.id}" aria-label="${save.wsPin === x.id ? 'Снять цель' : 'Сделать целью'}: ${x.name}">${save.wsPin === x.id ? '★ цель' : '☆ в цель'}</button>`) + '</div>';
     $('wsList').innerHTML = '<h2 class="section-title">Серии</h2>' + PACKS.map(pk => {
       const all = WS_CATS.flatMap(([cat]) => wsItems(cat).filter(x => packOf(x.id) === pk.id).map(x => ({ ...x, cat }))), own = all.filter(x => x.own).length, can = all.filter(x => !x.own && canPay(x.id)).length;
@@ -595,10 +678,18 @@
   // 2.3: open up to CHEST_MULTI round chests or shard chests in one go; the reveal shows everything at once
   function openChestMany(key) {
     if (chestBusy) return;
-    const left = key === 'shard' ? save.shardChests : save.chests, n = Math.min(CHEST_MULTI, left || 0); if (n < 2) return openChest(key);
-    if (key === 'shard') save.shardChests -= n; else save.chests -= n;
+    let specs = null, look = null;
+    if (key.startsWith('sp')) {   // 2.7: several special chests of one kind at once
+      const c0 = save.special[+key.slice(2)]; if (!c0) return;
+      const idx = save.special.map((c, i) => spSig(c) === spSig(c0) ? i : -1).filter(i => i >= 0).slice(0, CHEST_MULTI);
+      if (idx.length < 2) return openChest(key);
+      specs = idx.map(i => spOpts(save.special[i])); [...idx].sort((a, b) => b - a).forEach(i => save.special.splice(i, 1));
+      look = c0.kind === 'league' ? chestLook('league') : chestLook('challenge', c0.rar);
+    }
+    const left = key === 'shard' ? save.shardChests : save.chests, n = specs ? specs.length : Math.min(CHEST_MULTI, left || 0); if (n < 2) return openChest(key);
+    if (specs) {} else if (key === 'shard') save.shardChests -= n; else save.chests -= n;
     chestBusy = true;
-    const box = $('chestBox'); $('reveal').hidden = true; box.classList.remove('gift'); box.setAttribute('style', chestLook(key === 'shard' ? 'shard' : 'normal')); box.dataset.kind = key;
+    const box = $('chestBox'); $('reveal').hidden = true; box.classList.remove('gift'); box.setAttribute('style', look || chestLook(key === 'shard' ? 'shard' : 'normal')); box.dataset.kind = specs ? (specs[0].league ? 'league' : 'challenge') : key;
     box.classList.remove('open', 'empty'); void box.offsetWidth; box.classList.add('shake');
     buzz(60); Sound.play('chest'); $('overlay').scrollTop = 0;
     setTimeout(() => {
@@ -610,7 +701,7 @@
         el.style.setProperty('--rc', '#22e6ff'); box.style.setProperty('--rc', got.legendary ? RARITY.legendary.color : '#22e6ff');
         el.innerHTML = `<span class="rar">Сундуков осколков: ${n} · ${tot} шт.</span><div class="ws-bal" style="width:100%">${RAR_KEYS.map(k => `<span style="--rc:${RARITY[k].color}">${shardIco(k, 30)}<b>+${got[k]}</b>${RARITY[k].name}</span>`).join('')}</div><small>Создавать предметы — в «Мастерской» в главном меню.</small>`;
       } else {
-        const res = []; for (let c = 0; c < n; c++) { const r = rollChest({}); logChest('normal', r.rar); res.push(r); }
+        const res = []; for (let c = 0; c < n; c++) { const o = specs ? specs[c] : {}; const r = rollChest(o); logChest(specs ? o.src : 'normal', r.rar); res.push(r); }
         const best = res.reduce((a, r) => RAR_KEYS.indexOf(r.rar) > RAR_KEYS.indexOf(a.rar) ? r : a, res[0]), coins = res.reduce((a, r) => a + (r.coins || 0), 0);
         el.style.setProperty('--rc', RARITY[best.rar].color); box.style.setProperty('--rc', RARITY[best.rar].color);
         el.innerHTML = `<span class="rar">Открыто сундуков: ${n}</span><div class="rv-multi">${res.map(r => { const R2 = RARITY[r.rar];
@@ -625,10 +716,15 @@
 
   // ================= settings =================
   function buzz(ms) { if (save.settings.vibrate && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} }
+  // 2.7: dynamic resolution — on FPS drops the render scale goes down a step (not below 0.7 of a pixel), and back up once the game is smooth
+  let dynPx = 1;
+  const basePx = () => QUALITY === 'high' ? Math.min(devicePixelRatio, 2) : QUALITY === 'medium' ? Math.min(devicePixelRatio, 1.25) : 1;
+  const pxRatio = () => Math.max(Math.min(.7, basePx()), basePx() * dynPx);
+  function setDynPx(k) { const was = pxRatio(); dynPx = k; const now = pxRatio(); if (Math.abs(now - was) < .01) return false; renderer.setPixelRatio(now); resize(); return true; }
   function applySettings() {
     const st = save.settings;
-    const qWas = QUALITY; QUALITY = st.quality; if (qWas !== QUALITY && typeof applyArena === 'function') applyArena();
-    renderer.setPixelRatio(QUALITY === 'high' ? Math.min(devicePixelRatio, 2) : QUALITY === 'medium' ? Math.min(devicePixelRatio, 1.25) : 1);
+    const qWas = QUALITY; QUALITY = st.quality; if (qWas !== QUALITY && typeof applyArena === 'function') { applyArena(); try { prewarmAgain(); } catch (e) {} }
+    renderer.setPixelRatio(pxRatio());
     resize();
     allVis.forEach(v => v.glow.visible = QUALITY !== 'low');
     stars.visible = QUALITY !== 'low'; nebulae.forEach(n => n.visible = QUALITY !== 'low');

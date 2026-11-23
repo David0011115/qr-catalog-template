@@ -1,6 +1,8 @@
   // ================= bonuses =================
   const bonusCore = new THREE.OctahedronGeometry(0.7);
   const bonusRing = new THREE.TorusGeometry(1.1, 0.08, 8, 32);
+  // the mass limit of an ordinary boss (per drop) in this mode; 2.7: «Спина к спине» sets its own one that follows the pair (it used to stop at 12 000)
+  const bossMassCap = () => mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : mode === 'hardcore' ? HC_BOSS_MASS_CAP : mode === 'classic' ? CL_BOSS_MASS_CAP : (DuoM.bossCap && DuoM.bossCap()) || BOSS_MASS_CAP;
   function spawnBonus() {
     if (mode === 'hardcore') return;
     if (bonuses.length >= MAX_BONUS) return;
@@ -43,7 +45,7 @@
   const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0 };
   function joyMove(e) {
     let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
-    const d = Math.hypot(dx, dy), k = d > JOY_R ? JOY_R / d : 1;
+    const d = hyp(dx, dy), k = d > JOY_R ? JOY_R / d : 1;
     dx *= k; dy *= k;
     joy.mag = Math.min(1, d / JOY_R);
     if (d > 0) { joy.x = dx / Math.max(d * k, 0.001); joy.y = dy / Math.max(d * k, 0.001); }
@@ -71,9 +73,10 @@
   ABIL_CFG.slotBtn.forEach((bid, i) => $(bid).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSlot(i); }));
 
   function dash() {
-    if (DuoM.guest) { DuoM.act('dash'); return; }
+    if (DuoM.server || DuoM.guest) { DuoM.act('dash'); return; }
     if (splitRules() || !running || !player.cells.length || player.dashCd > 0 || paused) return;
-    player.dashT = 0.35 + 0.035 * U.light; player.dashCd = dashCdBase; stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
+    if (ModeX.hcNoDash()) { toast('⛓ Оковы: рывок недоступен'); return; }
+    player.dashT = (0.35 + 0.035 * U.light) * ModeX.hcDashLenK(); player.dashCd = dashCdBase * ModeX.hcK('dash'); stats.dashes = (stats.dashes || 0) + 1; abUsed('dash');
     { const [x, z] = pCenterXZ(); abFlash('dash', x, z, null, 'dash'); }
     const cost = 0.03 * (1 - 0.08 * U.light);
     player.cells.forEach(c => c.mass = Math.max(START_MASS * 0.5, c.mass * (1 - cost)));
@@ -87,8 +90,9 @@
       const r = cellR(c);
       const n = addCell(o, c.x + c.hx * r, c.z + c.hz * r, c.mass, o.free.pop());
       n.hx = c.hx; n.hz = c.hz;
+      if (o.isPlayer && c.hcHalf !== undefined) n.hcHalf = c.hcHalf;
       n.vx = c.hx * 75; n.vz = c.hz * 75;
-      c.mergeT = n.mergeT = mergeTime;
+      c.mergeT = n.mergeT = mergeTime * (o.isPlayer ? ModeX.hcK('merge') : 1);
       c.vis.jig = n.vis.jig = 1;
       emit(n.x, r, n.z, cellColor(c), 14, 14, .5);
       did = true;
@@ -97,7 +101,7 @@
     return did;
   }
   function split() {
-    if (DuoM.guest) { DuoM.act('split'); return; }
+    if (DuoM.server || DuoM.guest) { DuoM.act('split'); return; }
     if (dailyIs('dashonly')) return;
     if (!running || paused || !player.cells.length || player.splitCd > 0) return;
     if (splitOwner(player, playerMaxParts(), playerMergeTime())) { player.splitCd = playerSplitCd(); stats.splits++; abUsed('split'); rebuildCells(); buzz(20); { const [x, z] = pCenterXZ(); abFlash('split', x, z, null, 'split'); } }
@@ -109,16 +113,59 @@
   const botSkill = () => BOT_SKILL.normal;
   const botLead = o => botSkill().lead * (o.persona === 'hunter' || o.star ? 1.5 : 1);
   function think(o) {
-    const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.25 + .1), flee: p0.flee * .8 } : p0;
-    const r = cellR(c), sense = (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense;
+    const c = o.cells.reduce((a, b) => a.mass >= b.mass ? a : b), p0 = PERSONA[o.persona] || PERSONA.normal, p = mode === 'hardcore' && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.5 + .2), flee: p0.flee * .6 } : ModeX.clAngry() && o.kind === 'bot' ? { ...p0, chase: Math.min(1, p0.chase * 1.3 + .1), flee: p0.flee * .75 } : p0;   // «Классика» after 20 000: bolder bots
+    const r = cellR(c), sense = (ev.active === 'eclipse' ? .5 : ev.active === 'bounty' && ev.target === player ? 1.6 : 1) * (14 + r * 3) * p.sense * (o.star ? 1.35 : 1) * 1.3 * (o.jit || 1) * botSkill().sense * (o.kind === 'boss' ? ModeX.hcBossSenseK() : 1) * (o.kind === 'bot' || o.kind === 'boss' ? ModeX.hcSenseK() : 1);
+    if (o.hcPack && ModeX.splitMode()) { const p = ModeX.hcPackTarget(o); if (p) { o.target = p.t; o.tx = p.x; o.tz = p.z; return; } }
     if (mode === 'crown' && running && crownHolder && crownHolder !== o && crownHolder.cells.length && (o.kind === 'bot' || o.kind === 'boss')) {   // everyone hunts the crown
-      const t = mainOf(crownHolder), d = Math.hypot(t.x - c.x, t.z - c.z);
-      if (canEat(c, t) && d < sense * (o.kind === 'boss' ? 4 : 2.5)) { o.target = t; o.tx = t.x; o.tz = t.z; return; }
+      // 2.7: bosses go for the holder wherever it is; a bot bigger than the holder hunts it across the whole arena;
+      // a smaller bot goes for any piece of the holder it can swallow (after a split) within a wide range
+      const t = mainOf(crownHolder), d = hyp(t.x - c.x, t.z - c.z);
+      if (o.kind === 'boss' || canEat(c, t)) { o.target = t; o.tx = t.x; o.tz = t.z; return; }
+      let bit = null, bd = sense * 3;
+      for (const h of crownHolder.cells) { const dh = hyp(h.x - c.x, h.z - c.z); if (dh < bd && canEat(c, h)) { bd = dh; bit = h; } }
+      if (bit) { o.target = bit; o.tx = bit.x; o.tz = bit.z; return; }
     }
-    if (mode === 'royale' && running) { const Z = ModeX.zoneC; if (Math.hypot(c.x - Z.x, c.z - Z.z) > zoneR * .8) { o.tx = Z.x + (c.x - Z.x) * .3; o.tz = Z.z + (c.z - Z.z) * .3; o.target = null; return; } }   // run from the storm
+    if (mode === 'royale' && running) { const Z = ModeX.zoneC; if (hyp(c.x - Z.x, c.z - Z.z) > zoneR * .8) { o.tx = Z.x + (c.x - Z.x) * .3; o.tz = Z.z + (c.z - Z.z) * .3; o.target = null; return; } }   // run from the storm
+    if (o.kind === 'boss' && mode === 'hardcore' && ModeX.hcBossPressure() >= .2 && player.cells.length) {
+      const t = ModeX.hcBossTarget(o);
+      if (t) {
+        const pressure = ModeX.hcBossPressure(), dx = t.x - c.x, dz = t.z - c.z, d = hyp(dx, dz) || 1;
+        // Predict movement only a little: the boss aims ahead, but never tracks a perfect future position.
+        const lead = .25 + pressure * .85;
+        let tx = t.x + Math.max(-14, Math.min(14, t.vx || 0)) * lead;
+        let tz = t.z + Math.max(-14, Math.min(14, t.vz || 0)) * lead;
+        // One of two bosses pressures the target directly; the other tries to cut off its escape line.
+        if (o.hcRole === 'intercept' && pressure >= .4) {
+          const side = 10 + pressure * 12;
+          tx += -dz / d * side; tz += dx / d * side;
+        }
+        // Громила tries to push the player away from the safer outer edge.
+        if (o.bossType === 'giant' && pressure >= .3) {
+          const edge = hyp(t.x, t.z) || 1, block = 4 + pressure * 9;
+          tx -= t.x / edge * block; tz -= t.z / edge * block;
+        }
+        o.target = t; o.tx = tx; o.tz = tz;
+        // Шустрик announces a dash before accelerating, leaving a readable dodge window.
+        if (o.bossType === 'hunter' && o.dashCd <= 0 && !o.hcDashWarn && d < 38 + pressure * 18) {
+          o.hcDashWarn = .48; o.hcDashTarget = t;
+          wave(c.x, c.z, '#ff6b3d', cellR(c), cellR(c) + 18 + pressure * 8, .5);
+        }
+        // Мимик сохраняет маскировку, но на поздних этапах готовит короткую засаду.
+        if (o.bossType === 'chameleon' && pressure >= .65 && o.dashCd <= 0 && !o.hcDashWarn && d < 28 + pressure * 12) {
+          o.hcDashWarn = .62; o.hcDashTarget = t;
+          wave(c.x, c.z, '#3dffa2', cellR(c), cellR(c) + 14, .62);
+        }
+        // Делитель deliberately opens a second angle after the player has grown.
+        if (o.bossType === 'splitter' && pressure >= .35 && o.splitCd <= 0 && o.cells.length < 6 && c.mass / 2 > t.mass * 1.25) {
+          o.cells.forEach(k => { k.hx = dx / d; k.hz = dz / d; });
+          if (splitOwner(o, 6, 10)) { o.splitCd = 6; rebuildCells(); }
+        }
+        return;
+      }
+    }
     if (o.bossType === 'hunter' && player.cells.length) {
       let best = null, bd = Infinity;
-      if (!abOn('cloak')) for (const t of player.cells) { const d = Math.hypot(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
+      if (!abOn('cloak')) for (const t of player.cells) { const d = hyp(t.x - c.x, t.z - c.z); if (canEat(c, t) && d < bd) { bd = d; best = t; } }
       if (best) {
         o.target = best; o.tx = best.x; o.tz = best.z;
         if (o.dashCd <= 0 && bd < 35) { o.dashT = 0.5; o.dashCd = 5; }
@@ -128,8 +175,8 @@
     let fx = 0, fz = 0, prey = null, preyScore = Infinity;
     for (const t of cells) {
       if (t.owner === o || abOn('cloak', t.owner)) continue;
-      const d = Math.hypot(t.x - c.x, t.z - c.z);
-      if (d > sense) continue;
+      const d = hyp(t.x - c.x, t.z - c.z);
+      if (d > sense || (t.owner === player && d > sense * .5 && charIs('ghost'))) continue;   // «Призрак»: seen at half the distance
       if (p.flee > 0 && canEat(t, c) && d < sense * Math.min(1, p.flee)) {
         const w = p.flee / Math.max(d, 1); fx -= (t.x - c.x) * w; fz -= (t.z - c.z) * w;
       } else if (p.chase > 0 && c.mass > t.mass * 1.25 * p.preyK && canEat(c, t)) {
@@ -141,36 +188,38 @@
     const careful = o.kind === 'boss' ? .35 : o.star ? .85 : ({ coward: .7, farmer: .5, normal: .4, hunter: .3, aggressive: .2 })[o.persona] ?? .4;
     if ((o.spikeMemT = (o.spikeMemT || 0) - .35) <= 0) { o.spikeMemT = 3 + Math.random() * 2; o.spikeBlind = Math.random() >= careful * botSkill().careful; }   // a decision kept for 3–5 s
     if (c.mass > VIRUS_MASS * 1.3 && !o.spikeBlind) for (const v of viruses) {
-      const d = Math.hypot(v.x - c.x, v.z - c.z);
+      const d = hyp(v.x - c.x, v.z - c.z);
       if (d < cellR(c) + 4) { const w = 1.4 / Math.max(d, 1); fx -= (v.x - c.x) * w; fz -= (v.z - c.z) * w; }
     }
     if (fx || fz) {   // fleeing: never into the wall
-      const dc = Math.hypot(c.x, c.z); if (dc > R - 25 - r) { const l = Math.hypot(fx, fz) || 1, k = (dc - (R - 25 - r)) / 25 + .5; fx = fx / l - c.x / dc * k; fz = fz / l - c.z / dc * k; }
+      const dc = hyp(c.x, c.z); if (dc > R - 25 - r) { const l = hyp(fx, fz) || 1, k = (dc - (R - 25 - r)) / 25 + .5; fx = fx / l - c.x / dc * k; fz = fz / l - c.z / dc * k; }
       o.tx = c.x + fx * 20; o.tz = c.z + fz * 20; o.target = null; return; }
     // hunters share a target with their partner
     if (o.persona === 'hunter' && o.partner && o.partner.target && !o.partner.target.gone) {
       const t = o.partner.target;
-      if (canEat(c, t) && Math.hypot(t.x - c.x, t.z - c.z) < sense * 1.6) prey = t;
+      if (canEat(c, t) && hyp(t.x - c.x, t.z - c.z) < sense * 1.6) prey = t;
     }
     if (prey && Math.random() < p.chase) {
       o.target = prey; o.tx = prey.x; o.tz = prey.z;
       // bold bots split to snatch prey that is close and small enough for a half
       const isSplitter = o.bossType === 'splitter', maxParts = isSplitter ? 6 : BOT_PARTS;
       if (running && ((o.kind === 'bot' && (!o.build || o.build.includes('split'))) || isSplitter) && p.chase >= .85 && o.splitCd <= 0 && o.cells.length < maxParts) {
-        const d = Math.hypot(prey.x - c.x, prey.z - c.z), rc = cellR(c);
+        const d = hyp(prey.x - c.x, prey.z - c.z), rc = cellR(c);
         if (c.mass / 2 > prey.mass * eatRatio(prey) && d > rc * 0.8 && d < 6 + rc * 4) {
-          o.cells.forEach(k => { k.hx = (prey.x - k.x) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); k.hz = (prey.z - k.z) / (Math.hypot(prey.x - k.x, prey.z - k.z) || 1); });
+          o.cells.forEach(k => { k.hx = (prey.x - k.x) / (hyp(prey.x - k.x, prey.z - k.z) || 1); k.hz = (prey.z - k.z) / (hyp(prey.x - k.x, prey.z - k.z) || 1); });
           if (splitOwner(o, maxParts, isSplitter ? 10 : 14)) { if (isSplitter) o.splitCd = 6; rebuildCells(); }
         }
       }
       return;
     }
     o.target = null;
-    if (Math.hypot(c.x, c.z) > R - 12 - r && Math.random() < .5) { o.tx = c.x * .6; o.tz = c.z * .6; return; }
+    if (hyp(c.x, c.z) > R - 12 - r && Math.random() < .5) { o.tx = c.x * .6; o.tz = c.z * .6; return; }
     let best = null, bd = Infinity;
-    for (let i = (Math.random() * 3) | 0; i < FOOD; i += 3) {
-      const f = foods[i], d = (f.x - c.x) ** 2 + (f.z - c.z) ** 2;
-      if (d < bd) { bd = d; best = f; }
+    { // 2.7 FPS: the nearest crumb from the grid around the bot (it went through a third of all 5 000+ crumbs at every thought); far from any crumbs — the old sampled scan
+      const gx = fgCell(c.x), gz = fgCell(c.z);
+      for (let x = Math.max(0, gx - 3); x <= Math.min(FGN - 1, gx + 3); x++) for (let z = Math.max(0, gz - 3); z <= Math.min(FGN - 1, gz + 3); z++) { const b = fgrid[x * FGN + z];
+        for (let j = 0; j < b.length; j++) { const i = b[j]; if (i >= FOOD) continue; const f = foods[i], dx = f.x - c.x, dz = f.z - c.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = f; } } }
+      if (!best) for (let i = (Math.random() * 7) | 0; i < FOOD; i += 7) { const f = foods[i], dx = f.x - c.x, dz = f.z - c.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = f; } }
     }
     for (const e of ejects) {                     // ejected blobs are tasty bait
       const d = ((e.x - c.x) ** 2 + (e.z - c.z) ** 2) * 0.3;
@@ -182,17 +231,18 @@
   // ================= simulation =================
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
   function clampArena(c) {
-    const rr = R - cellR(c) * 0.6, dc = Math.hypot(c.x, c.z);
+    const rr = R - cellR(c) * 0.6, dc = hyp(c.x, c.z);
     if (dc > rr) { c.x *= rr / dc; c.z *= rr / dc; }
   }
   function steer(c, tx, tz, dt) {
     let dx = tx - c.x, dz = tz - c.z;
-    const d = Math.hypot(dx, dz);
+    const d = hyp(dx, dz);
     if (d > 0.05) {
       dx /= d; dz /= d;
-      const k = Math.min(1, dt * (c.owner.iceT > 0 ? 1.2 : arenaIs('ice') ? 3 : 8));
+      const turnK = c.owner.kind === 'boss' && mode === 'hardcore' ? ModeX.hcBossTurnK() : 1;
+      const k = Math.min(1, dt * (c.owner.iceT > 0 ? 1.2 : arenaIs('ice') ? 3 : 8) * turnK);
       c.hx += (dx - c.hx) * k; c.hz += (dz - c.hz) * k;
-      const hl = Math.hypot(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl;
+      const hl = hyp(c.hx, c.hz) || 1; c.hx /= hl; c.hz /= hl;
       const v = speedOf(c) * Math.min(1, d / 1.5 + (c.owner.isPlayer || c.owner.kind === 'rival' ? 0.35 : 1));
       c.x += c.hx * v * dt; c.z += c.hz * v * dt;
     }
@@ -233,7 +283,7 @@
       ModeX.zoneTick(dt);   // 2.5: the zone moves in steps (see 14f-modes.js)
       const Z = ModeX.zoneC, zk = ModeX.zoneDmgK();
       for (const c of [...cells]) {
-        if (c.gone || c.owner.kind === 'boss' || c.owner.kind === 'minion' || Math.hypot(c.x - Z.x, c.z - Z.z) <= zoneR) continue;
+        if (c.gone || c.owner.kind === 'boss' || c.owner.kind === 'minion' || hyp(c.x - Z.x, c.z - Z.z) <= zoneR) continue;
         c.mass -= (c.mass * .06 + 2) * zk * dt;          // the storm outside the zone eats mass
         if (c.mass < 6) { const o = c.owner; removeCell(c); rebuildCells(); lostCell(o, 6, { name: 'Зона', cells: [] }); }
       }
@@ -260,9 +310,10 @@
     if (mode === 'raid') {
       if (stats.raidSpawned && !colossus.cells.length && !colossus2.cells.length) {
         if (spawnRaidChunk()) toast('Босс собирается снова!');
-        else { finishRound(`${colossus.name} повержен!`, 0, true); return true; }
+        else { finishRound(`Ступень ${['I', 'II', 'III', 'IV', 'V'][RaidX.tierI()]} пройдена!`, 0, true); return true; }
       }
-      if (stats.time >= RAID_LEN) { finishRound('Время рейда вышло', 0, false); return true; }
+      if (stats.raidDmg >= RaidX.tier().hp) { finishRound(`Ступень ${['I', 'II', 'III', 'IV', 'V'][RaidX.tierI()]} пройдена!`, 0, true); return true; }
+      if (stats.time >= RAID_LEN + raidPerk().time) { finishRound('Время рейда вышло', 0, false); return true; }
     }
     if (mode === 'raid') {
       // the colossus splits a part off whenever the player swims close
@@ -270,9 +321,9 @@
         for (const c of colossus.cells) {
           if (c.mass < 120) continue;
           const rc = cellR(c);
-          const att = player.cells.find(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rc + cellR(pc) + 6);
+          const att = player.cells.find(pc => hyp(pc.x - c.x, pc.z - c.z) < rc + cellR(pc) + 6);
           if (!att) continue;
-          const dx = c.x - att.x, dz = c.z - att.z, d = Math.hypot(dx, dz) || 1, side = Math.random() < .5 ? 1 : -1;
+          const dx = c.x - att.x, dz = c.z - att.z, d = hyp(dx, dz) || 1, side = Math.random() < .5 ? 1 : -1;
           c.mass /= 2;
           const n = addCell(colossus, c.x + dx / d * rc * 0.5, c.z + dz / d * rc * 0.5, c.mass, colossus.free.pop());
           n.vx = (dx / d * 0.5 - dz / d * side) * 40; n.vz = (dz / d * 0.5 + dx / d * side) * 40;
@@ -287,15 +338,17 @@
   }
   let historyT = 0;
   // Spatial broad phase for eating: only inspect cells in the eater's reachable area.
-  const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatCandidates = [];
+  const EAT_GRID_SIZE = 48, eatGrid = new Map(), eatBuckets = [], eatCandidates = [], byIndex = (x, y) => x - y;
   const eatGridKey = (x, z) => ((x & 65535) << 16) | (z & 65535);
   function update(dt) {
+    if (DuoM.server) { DuoM.serverTick(dt); return; }
     if (DuoM.paused) return;   // a match for two waits while the link to the other phone is silent
     if (DuoM.guest) { DuoM.guestTick(dt); return; }   // the second phone of a match for two only draws what the host sends
     stats.time += dt; stats.fr = (stats.fr || 0) + 1; if (dt > .05) stats.slow = (stats.slow || 0) + 1;
     player.ejectCd = Math.max(0, (player.ejectCd || 0) - dt);
     if (modeRules(dt)) return;
     ModeX.tick(dt);
+    if (dying) return;
     for (const o of owners) { o.splitCd = Math.max(0, o.splitCd - dt); if (o.stunT) o.stunT = Math.max(0, o.stunT - dt); for (const c of o.cells) c.mergeT = Math.max(0, c.mergeT - dt); }
     for (const k in effects) effects[k] = Math.max(0, effects[k] - dt);
     player.dashT -= dt; player.dashCd = Math.max(0, player.dashCd - dt);
@@ -307,17 +360,25 @@
     if (bossesOn()) bossTimer -= dt;
     if (bossTimer <= 0) {
       // survival: a new wave every 15 s, even if the arena is full of bosses
-      if (mode === 'survival') { stats.wave++; spawnBoss(); bossTimer = ModeX.survWave(); }
-      else bossTimer = (spawnBoss() ? (dailyIs('bosses') ? 20 : 40 * ModeX.bossK()) : 5);
+      if (mode === 'survival') { stats.wave++; const cb = ModeX.survCombo(); if (cb) spawnCombo(cb); else spawnBoss(); bossTimer = ModeX.survWave(); }
+      else bossTimer = (spawnBoss() ? (dailyIs('bosses') ? 20 : mode === 'hardcore' ? ModeX.hcBossSpawnInterval() : 40 * ModeX.bossK()) : 5);
     }
     for (const o of bossOwners) {
       if (!o.cells.length) continue;
       o.dashT -= dt; o.dashCd = Math.max(0, o.dashCd - dt);
-      if (o.bossType === 'queen') { o.spawnT -= dt; if (o.spawnT <= 0) { spawnMinion(o); o.spawnT = 5; } }
+      if (o.hcDashWarn > 0) {
+        o.hcDashWarn -= dt;
+        if (o.hcDashWarn <= 0) {
+          const target = o.hcDashTarget;
+          if (target && !target.gone && mode === 'hardcore') { o.dashT = .48 + .12 * ModeX.hcBossPressure(); o.dashCd = Math.max(2.5, 5 - ModeX.hcBossPressure() * 2.5); }
+          o.hcDashTarget = null; o.hcDashWarn = 0;
+        }
+      }
+      if (o.bossType === 'queen') { o.spawnT -= dt; if (o.spawnT <= 0) { spawnMinion(o); o.spawnT = mode === 'hardcore' ? Math.max(3.2, 5 - 1.5 * ModeX.hcBossPressure()) : 5; } }
       if (o.bossType === 'frost') {   // a cold cloud around it: everyone close is slowed (players and the second player of a match for two)
-        const c = o.cells[0], rc = cellR(c), reach = rc + 26;
-        for (const p of [player, DuoM.rival]) for (const pc of p.cells) if (Math.hypot(pc.x - c.x, pc.z - c.z) < reach + cellR(pc)) { p.slowT = Math.max(p.slowT || 0, .35); break; }
-        o.frT = (o.frT ?? 0) - dt; if (o.frT <= 0) { o.frT = 1.4; if (nearView(c.x, c.z)) wave(c.x, c.z, '#9ff0ff', rc, reach, .9); }
+        const c = o.cells[0], rc = cellR(c), reach = rc + 26 + (mode === 'hardcore' ? 10 * ModeX.hcBossPressure() : 0);
+        for (const p of [player, DuoM.rival]) for (const pc of p.cells) if (hyp(pc.x - c.x, pc.z - c.z) < reach + cellR(pc)) { ccAura(p, dt); break; }
+        o.frT = (o.frT ?? 0) - dt; if (o.frT <= 0) { o.frT = mode === 'hardcore' ? Math.max(1.0, 1.4 - .3 * ModeX.hcBossPressure()) : 1.4; if (nearView(c.x, c.z)) wave(c.x, c.z, '#9ff0ff', rc, reach, .9); }
       }
       o.life -= dt;
       if (o.life <= 0) { [...o.cells].forEach(removeCell); rebuildCells(); toast(`${o.name} ушёл с арены`); }
@@ -332,7 +393,7 @@
     for (const c of player.cells) {
       if (twin && c === twin.cb) {   // «Зеркальный двойник»: moves as the mirror image (left ↔ right) of the main part
         const m = twin.ca, [ax, az] = kx || kz ? [kx, kz] : joy.id !== null && joy.mag > 0.15 ? [joy.x, joy.y] : aim ? [aim.x - m.x, aim.z - m.z] : [m.hx, m.hz];
-        const l = Math.hypot(ax, az) || 1; steer(c, c.x - ax / l * 10, c.z + az / l * 10, dt); continue; }
+        const l = hyp(ax, az) || 1; steer(c, c.x - ax / l * 10, c.z + az / l * 10, dt); continue; }
       if (kx || kz) steer(c, c.x + kx * 10, c.z + kz * 10, dt);
       else if (joy.id !== null && joy.mag > 0.15) steer(c, c.x + joy.x * 1.5 * joy.mag, c.z + joy.y * 1.5 * joy.mag, dt);
       else if (aim) steer(c, aim.x, aim.z, dt);
@@ -345,9 +406,10 @@
       const a = pc[i], b = pc[j];
       if (a.gone || b.gone) continue;
       const ra = cellR(a), rb = cellR(b);
-      let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 0.001;
-      const mergeCap = o.isPlayer ? Infinity : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP) : MAX_MASS;
-      if (a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > mergeCap) {   // parts that would exceed this owner's cap stay apart
+      let dx = b.x - a.x, dz = b.z - a.z; const d = hyp(dx, dz) || 0.001;
+      const mergeCap = o.isPlayer ? Infinity : o.kind === 'bot' ? BOT_MASS_CAP : o.kind === 'boss' ? bossMassCap() : MAX_MASS;
+      const hcDifferentHalves = ModeX.splitMode() && o.isPlayer && a.hcHalf !== undefined && b.hcHalf !== undefined && a.hcHalf !== b.hcHalf && !ModeX.hcFusing();
+      if (hcDifferentHalves || a.mergeT > 0 || b.mergeT > 0 || a.mass + b.mass > mergeCap) {   // parts that would exceed this owner's cap stay apart
         if (d < ra + rb) {
           const push = (ra + rb - d) / 2 * Math.min(1, dt * 10); dx /= d; dz /= d;
           a.x -= dx * push; a.z -= dz * push; b.x += dx * push; b.z += dz * push;
@@ -369,24 +431,24 @@
       o.think -= dt;
       if (o.kind === 'bot' && o.dashT) o.dashT = Math.max(0, o.dashT - dt);
       if (o.think <= 0) {
-        think(o); o.think = 0.25 + Math.random() * 0.25;
+        think(o); o.think = o.kind === 'boss' && mode === 'hardcore' ? (0.25 + Math.random() * 0.25) / (1 + .75 * ModeX.hcBossPressure()) : 0.25 + Math.random() * 0.25;
         if (o.target && o.target.owner) { const dc = o.target.owner === player ? decoy : botDecoys.find(d => d.src === o.target.owner); if (dc) o.target = dc; }
         botAI(o);
       }
       if (o.target && !o.target.gone) {   // 1.7.0: aim where the prey will be, not where it is
         const t = o.target, lead = o.target.owner && o.target.owner.decoy ? 0 : botLead(o), v = t.owner && t.owner.cells ? speedOf(t) : 0;
         o.tx = t.x + (t.hx || 0) * v * lead; o.tz = t.z + (t.hz || 0) * v * lead; }
-      o.cells.forEach(k => steer(k, o.tx, o.tz, dt));
+      for (let k = 0; k < o.cells.length; k++) steer(o.cells[k], o.tx, o.tz, dt);
     }
     rebuildCells();
 
     // food + decay
-    const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet');
-    const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * ModeX.gainK();
+    const pMagnet = starBonus('magnet') + 0.8 * U.magnet + (effects.magnet > 0 ? 6 : 0) + petLv('magnet') + (charIs('gatherer') ? 3 : 0);
+    const pGain = (1 + 0.015 * (U.digest || 0)) * (effects.double > 0 ? 2 : 1) * (dailyIs('feast') ? 2 : 1) * ModeX.gainK() * (charIs('gatherer') ? 1.3 : charIs('ghost') ? .9 : 1);
     for (const c of cells) {
       const isP = c.owner.isPlayer;
       const fx2 = c.owner.eff;   // the second player of a match for two keeps their bonuses here
-      const r = cellR(c) + (isP ? pMagnet : fx2 && fx2.magnet > 0 ? 6 : 0);
+      const r = cellR(c) + (isP ? (pMagnet + (ModeX.hcK('magnet') - 1) * (cellR(c) * .5 + 4)) * ModeX.hcMagnetK() : fx2 && fx2.magnet > 0 ? 6 : 0);
       const gain = (isP ? pGain : fx2 && fx2.double > 0 ? 2 : 1) * (abOn('pulse', c.owner) ? 2 : 1) * (c.owner.dbAbs || 1);
       const gx0 = fgCell(c.x - r), gx1 = fgCell(c.x + r), gz0 = fgCell(c.z - r), gz1 = fgCell(c.z + r);
       for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) { const bucket = fgrid[gx * FGN + gz];
@@ -401,14 +463,16 @@
         }
       } }
       // decay grows with size, so mass can't snowball forever
-      if (c.mass > 100 && c.owner.kind !== 'boss') c.mass -= c.mass * 0.003 * Math.pow(c.mass / 100, 0.25) * (isP ? 1 - 0.04 * U.guard : 1) * dt;
+      // 2.7: half as fast and only from 500 mass (a small drop does not melt); «Хардкор» keeps the old, harsh one
+      if (c.mass > (mode === 'hardcore' ? 100 : 500) && c.owner.kind !== 'boss' && !abOn('pulse', c.owner)) c.mass -= c.mass * (mode === 'hardcore' ? ModeX.HC_DECAY : 0.0015) * Math.pow(c.mass / 100, 0.25) * (isP ? (1 - 0.04 * U.guard) * ModeX.meltK() * (charIs('predator') ? 1.1 : 1) : 1) * dt;
     }
 
     // bonuses (player only)
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const b = bonuses[i];
       if (DuoM.rivalPick(b)) { scene.remove(b.mesh); bonuses.splice(i, 1); continue; }
-      if (player.cells.some(c => Math.hypot(c.x - b.x, c.z - b.z) < cellR(c) + 1)) {
+      let touch = false; for (const c of player.cells) { const dx = c.x - b.x, dz = c.z - b.z, rr = cellR(c) + 1; if (dx * dx + dz * dz < rr * rr) { touch = true; break; } }
+      if (touch) {
         // same bonus stacks its time, capped at 30 s
         const stacked = !BONUS[b.type].instant && effects[b.type] > 0;
         if (BONUS[b.type].instant) fountainBurst();
@@ -426,19 +490,21 @@
     // lostCell() may rebuild the global cells array (for example on an extra life),
     // but candidate indices must continue to refer to the array used to build eatGrid.
     const eatCells = cells;
-    eatGrid.clear();
-    let eatMassTotal = 0;
+    for (let q = 0; q < eatBuckets.length; q++) eatBuckets[q].length = 0;   // 2.7 FPS: buckets are reused, not rebuilt every frame (a plain array: a Map iterator allocated each step)
+    let eatMaxR = 0;
     for (let i = 0; i < eatCells.length; i++) {
       const c = eatCells[i]; if (c.gone) continue;
-      eatMassTotal += c.mass;
+      const cr = cellR(c); if (cr > eatMaxR) eatMaxR = cr;
       const gx = Math.floor(c.x / EAT_GRID_SIZE), gz = Math.floor(c.z / EAT_GRID_SIZE), key = eatGridKey(gx, gz);
-      let bucket = eatGrid.get(key); if (!bucket) eatGrid.set(key, bucket = []);
+      let bucket = eatGrid.get(key); if (!bucket) { eatGrid.set(key, bucket = []); eatBuckets.push(bucket); }
       bucket.push(i);
     }
     for (const a of eatCells) {
       if (dying || a.gone) continue;
-      // Upper bound includes all current mass and the maximum temporary hunt/cloak eating bonus.
-      const searchR = 0.38 * Math.sqrt(Math.max(0, eatMassTotal * 1.27)) * (a.owner.rs || 1);
+      // 2.7 FPS: a can only eat what has its centre inside a (cover ≥ 0) — before, the search radius was that of ALL the mass on the arena, so every drop checked almost every drop.
+      // Only a player half that can make a «double bite» reaches further: up to its radius + .55 of the biggest drop.
+      const ra = cellR(a), pairCan = a.owner.isPlayer && a.hcHalf !== undefined;
+      const searchR = pairCan ? ra + eatMaxR * .55 : ra, searchR2 = searchR * searchR;
       const gx0 = Math.floor((a.x - searchR) / EAT_GRID_SIZE), gx1 = Math.floor((a.x + searchR) / EAT_GRID_SIZE);
       const gz0 = Math.floor((a.z - searchR) / EAT_GRID_SIZE), gz1 = Math.floor((a.z + searchR) / EAT_GRID_SIZE);
       eatCandidates.length = 0;
@@ -446,24 +512,35 @@
         const bucket = eatGrid.get(eatGridKey(gx, gz));
         if (bucket) for (let j = 0; j < bucket.length; j++) eatCandidates.push(bucket[j]);
       }
-      eatCandidates.sort((x, y) => x - y);
+      eatCandidates.sort(byIndex);
       for (let ci = 0; ci < eatCandidates.length; ci++) {
       const b = eatCells[eatCandidates[ci]];
-      if (dying || a.gone || b.gone || a.owner === b.owner || !canEat(a, b)) continue;
-      if (Math.hypot(a.x - b.x, a.z - b.z) < cellR(a) - cellR(b) * 0.35) {
+      if (dying || a.gone || b.gone || a.owner === b.owner) continue;
+      { const dx = a.x - b.x, dz = a.z - b.z; if (dx * dx + dz * dz >= searchR2) continue; }   // cheap distance test before the eat rules
+      const ceat = canEat(a, b), pmerge = !ceat && ModeX.hcPackMerge(a, b);
+      const pairMate = !ceat && !pmerge && pairCan ? ModeX.hcPairBite(a, b) : null;
+      if (!(ceat || pmerge || pairMate)) continue;
+      // 2.7: after a pack bites the player, the whole pack waits 2.5 s before the next bite (4 bites in a second felt unfair)
+      if (a.owner.hcPack && b.owner.isPlayer && stats.time < (stats.packBiteUntil || 0)) continue;
+      // 2.7: above 20 000 the radius grows slowly, so a far heavier eater barely looks bigger — the more it outweighs the player, the less of them it must cover (×2 and more: the centre inside is enough)
+      const coverK = b.owner.isPlayer && !a.owner.isPlayer ? Math.max(0, .35 * (2 - a.mass / b.mass) / .75) : .35;
+      const reach = cellR(a) - cellR(b) * coverK, ddx = a.x - b.x, ddz = a.z - b.z;
+      if (pairMate || (reach > 0 && ddx * ddx + ddz * ddz < reach * reach)) {
         if (a.owner.isPlayer) { stats.biggestPrey = Math.max(stats.biggestPrey || 0, b.mass); if (b.owner.kind === 'boss') stats.biggestBoss = Math.max(stats.biggestBoss || 0, b.mass); if (mode === 'raid' && raidTwins.includes(b.owner)) {
-          stats.raidDmg = Math.min(RAID_ATTEMPT_CAP, (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK()));
-          const raidLeft = RAID_HP - raidState().dmg - stats.raidDmg;
-          if (stats.raidDmg >= RAID_ATTEMPT_CAP && raidLeft > 0) {
-            toast('Колосс отступает! Урон сохранён для следующей попытки');
-            finishRound(`Близнецы отступили после ${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')} урона`, 0, false);
-          }
+          stats.raidDmg = (stats.raidDmg || 0) + Math.round(b.mass * ModeX.raidDmgK());
         } }
-        a.mass += b.mass * 0.8 * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.15) : 1);
+        const gain = b.mass * 0.8 * (mode === 'hardcore' && b.owner.kind === 'boss' ? (pairMate || ModeX.hcFusing() ? .22 : total(player) >= 30000 ? .35 : .5) : 1) * (mode === 'hardcore' && a.owner.isPlayer && b.owner.kind !== 'boss' ? (b.owner.hcPack ? .2 : total(player) >= 50000 ? .5 : 1) : 1) * (a.owner.isPlayer && b.owner.kind !== 'boss' ? ModeX.clGainK() * (b.owner.hcPack && mode === 'classic' ? .25 : 1) : 1) * (a.owner.isPlayer && b.owner.kind === 'boss' ? ModeX.clBossGainK(pairMate) : 1) * (a.owner.huntT > 0 && b.owner.kind !== 'boss' ? 1.1 : 1) * (a.owner.cloakBonus && abOn('cloak', a.owner) && b.owner.kind !== 'minion' ? (a.owner.cloakBonus = false, 1.2) : 1) * (abOn('pulse', a.owner) && b.owner.kind === 'bot' ? 1.3 : 1) * (a.owner.isPlayer ? (b.owner.kind === 'bot' || b.owner.kind === 'boss' ? (charIs('predator') ? 1.15 : charIs('gatherer') ? .85 : 1) : 1) * (charIs('ghost') ? .9 : 1) : 1);
+        const ordinaryBoss = a.owner.kind === 'boss' && !['colossus', 'colossus2'].includes(a.owner.bossType);
+        const bossCap = bossMassCap();
+        a.mass += ordinaryBoss ? Math.min(gain, Math.max(0, bossCap - total(a.owner))) : gain;
+        if (TEST_MODE && a.owner.isPlayer && gain >= 1500) TLog.ev('съел', (b.owner.kind === 'boss' ? 'босс ' + b.owner.bossType : b.owner.hcPack ? 'стая' : b.owner.kind) + ' ' + Math.round(b.mass) + ' → +' + Math.round(gain));   // 2.7: where the big jumps of mass come from
+        if (pairMate) { const share = gain * pairMate.mass / (a.mass - gain + pairMate.mass); a.mass -= share; pairMate.mass += share; pairMate.vis.jig = 1; toast('🔗 Двойной укус! Половины съели босса вместе'); }
         const victim = b.owner, lastMass = b.mass;
         if (mode === 'crown') ModeX.crownBite(a, b, victim, lastMass);
-        if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
-        { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) eatFx(b.x, b.z, rb, cellColor(b)); else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
+        if (victim.isPlayer && a.owner.hcPack) stats.packBiteUntil = stats.time + 2.5;
+        if (victim.isPlayer) { buzz(60); Sound.play('eaten'); stats.partsLost = (stats.partsLost || 0) + 1; (stats.bites = stats.bites || []).push([Math.round(stats.time), a.owner.kind === 'boss' ? 'boss:' + a.owner.bossType : a.owner.hcPack ? 'pack' : a.owner.kind || '?', Math.round(a.mass), Math.round(lastMass)]); if (stats.bites.length > 12) stats.bites.shift(); } else if (a.owner.isPlayer) { Sound.play('eat'); stats.eatenCells = (stats.eatenCells || 0) + 1; }
+        { const rb = cellR(b); emit(b.x, rb, b.z, cellColor(b), Math.min(70, 16 + Math.round(b.mass / 12)), 10 + rb * 2.5, .8); a.vis.jig = Math.max(a.vis.jig, .6); if (a.owner.isPlayer) { if (skin().id === 'cr_sandup') { const tn = performance.now() / 1000; if (tn - (liveState.sandFlip ?? -99) > 1.4) liveState.sandFlip = tn; }   // 2.7 «Время вспять»: the hourglass turns over
+          if (evoOn()) evoEat(b.x, b.z, rb); else eatFx(b.x, b.z, rb, cellColor(b)); } else if (a.owner.fx && a.owner.fx.eat && nearView(b.x, b.z)) eatFx(b.x, b.z, rb, cellColor(a), a.owner.fx.eat); }
         removeCell(b);
         if (a.owner.isPlayer) {
           if (victim.kind === 'boss') {
@@ -478,7 +555,7 @@
             }
           } else if (victim.kind === 'minion') { if (!victim.cells.length) stats.minions++; }
           else if (!victim.cells.length) {
-            stats.kills++; if (player.dashT > 0) stats.dashKills = (stats.dashKills || 0) + 1;
+            stats.kills++; ModeX.hcKill(); if (player.dashT > 0) stats.dashKills = (stats.dashKills || 0) + 1;
             if (victim.star) {   // a star bot: bonus coins and experience
               stats.starKills = (stats.starKills || 0) + 1; stats.bossCoins += STAR_COINS; stats.bossXp += 40; if (stats.firstStarT === undefined) stats.firstStarT = stats.time;
               toast(`Звезда «${victim.name}» повержена! +${STAR_COINS} ◆`); Sound.play('star');
@@ -499,22 +576,27 @@
     rebuildCells();
 
     for (const c of cells) {
-      const cap = c.owner.kind === 'bot' ? BOT_MASS_CAP
-        : c.owner.kind === 'boss' ? (mode === 'survival' ? SURV_BOSS_CAP : mode === 'raid' ? RAID_BOSS_CAP : BOSS_MASS_CAP)
+      const cap = c.owner.kind === 'bot' ? ModeX.botCap(c.owner)
+        : c.owner.kind === 'boss' ? bossMassCap()
         : MAX_MASS;
-      if (!c.owner.isPlayer && c.mass > cap) c.mass = cap;
+      if (!c.owner.isPlayer && c.mass > cap && !((mode === 'hardcore' || mode === 'classic') && c.owner.kind === 'boss')) c.mass = cap;
     }
     // The regular bot limit is shared by all of its parts, not repeated per part.
+    if (mode === 'hardcore' || mode === 'classic') for (const o of bossOwners) {
+      const mass = total(o), cap = mode === 'classic' ? CL_BOSS_MASS_CAP : HC_BOSS_MASS_CAP;
+      if (mode === 'classic' && mass > cap * 1.5) { const k = cap * 1.5 / mass; for (const c of o.cells) c.mass *= k; }   // 2.7: never far above the cap
+      if (mass > cap) { const k = Math.max(cap / mass, 1 - .01 * dt); for (const c of o.cells) c.mass *= k; }   // 2.7: melts down 1%/s, a comeback stays possible
+    }
     for (const o of bots) {
-      const mass = total(o);
-      if (mass > BOT_MASS_CAP) {
-        const scale = BOT_MASS_CAP / mass;
+      const mass = total(o), bcap = ModeX.botCap(o);
+      if (mass > bcap) {
+        const scale = bcap / mass;
         for (const c of o.cells) c.mass *= scale;
       }
     }
     updateEjects(dt);
     updateViruses(dt);
-    if (mode !== 'territory') updateEvent(dt);   // «Захват территории»: no random arena events
+    if (mode !== 'territory' && mode !== 'raid') updateEvent(dt);   // no random arena events in «Захват территории» and «Босс-рейд» (2.7)
     for (const c of player.cells) stats.maxPart = Math.max(stats.maxPart, c.mass);
     stats.maxParts = Math.max(stats.maxParts, player.cells.length);
     const tm = total(player);
@@ -528,39 +610,43 @@
   function showCombo(n, bonus) {
     const el = $('combo');
     el.innerHTML = `Комбо ×${n}!<small>+${bonus} ◆</small>`;
-    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(comboTimer); comboTimer = setTimeout(() => el.classList.remove('show'), 1200);
+    // 2.7 FPS: restarted by switching between two animation names — «void offsetWidth» forced a layout of the whole page in the middle of a frame at every combo
+    const nx = el.classList.contains('show') ? 'show2' : 'show'; el.classList.remove('show', 'show2'); el.classList.add(nx);
+    clearTimeout(comboTimer); comboTimer = setTimeout(() => el.classList.remove('show', 'show2'), 1200);
   }
   let toastTimer;
   function toast(text) {
     const t = $('toast'); t.textContent = text; t.classList.toggle('show', !!text);
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1500);
   }
-  let hudT = 0;
+  let hudT = 0, leadersLast = '';
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const setText = (id, t) => { const el = $(id); if (el.textContent !== t) el.textContent = t; };
   let boardOpen = false;   // in-battle leaderboard: top 3 + you, «ещё N» shows the top 6
   const meName = () => DuoM.on && Net.nick ? escHtml(Net.nick) : 'Ты';   // matches for two: your nickname, like the other player sees it
   function updateHud(now) {
-    $('mass').textContent = Math.round(total(player));
+    setText('mass', String(Math.round(total(player))));   // 2.7 FPS: the HUD is written only when it changes (it was rewritten every frame)
     if (player.cells.length) {
       let m = 0, v = 0;
       for (const c of player.cells) { m += c.mass; v += speedOf(c) * c.mass; }
       const sp = $('speed');
-      sp.textContent = `${Math.round(v / m / BASE_SPEED * 100)}%`;
+      setText('speed', `${Math.round(v / m / BASE_SPEED * 100)}%`);
       sp.classList.toggle('boost', player.dashT > 0 || effects.speed > 0);
       const parts = [];
       if (U.speed) parts.push(`+${U.speed}% улучш.`);
       if (effects.speed > 0) parts.push('+45% бонус');
       if (player.dashT > 0) parts.push('рывок');
-      const mult = (1 + 0.01 * U.speed) * (effects.speed > 0 ? 1.45 : 1) * (player.dashT > 0 ? DASH_MULT / Math.pow(Math.max(1, m / player.cells.length) / START_MASS, -0.15) : 1);
-      setText('buff', mult > 1 ? `бафы +${Math.round((mult - 1) * 100)}%` : '');
-      sp.title = parts.join(', ') || 'Без бафов';
-    } else $('speed').textContent = '–';
+      const mult = speedBuffK();   // 2.7: the real effect of every buff and slow (the dash is shown on its own; it used to read «бафы +680%»)
+      // 2.7: what slows you down right now, with the seconds left (stun from «Отражение», the frost boss and slowing abilities, ice)
+      const slowTxt = player.freezeT > 0 ? `💫 оглушение ${player.freezeT.toFixed(1)} с` : player.slowT > 0 ? `❄ замедление −${Math.round((1 - ABIL_CFG.slowFactor) * 100)}% · ${Math.ceil(player.slowT)} с` : player.iceT > 0 ? `❄ лёд · ${Math.ceil(player.iceT)} с` : '';
+      setText('buff', slowTxt || (player.dashT > 0 ? 'рывок' : mult > 1.005 ? `бафы +${Math.round((mult - 1) * 100)}%` : mult < .995 ? `бафы −${Math.round((1 - mult) * 100)}%` : ''));
+      $('buff').classList.toggle('debuff', !!slowTxt);
+      { const t = parts.join(', ') || 'Без бафов'; if (sp.title !== t) sp.title = t; }
+    } else setText('speed', '–');
     if (player.abCd) runBuild.forEach((id, i) => {
       if (!id) return;
       const v = slotView(id), b = $(ABIL_CFG.slotBtn[i]);
-      b.style.setProperty('--ready', Math.max(0, Math.min(1, v.ready)).toFixed(3)); b.classList.toggle('off', v.off);
+      { const r = Math.max(0, Math.min(1, v.ready)).toFixed(2); if (b._rd !== r) { b._rd = r; b.style.setProperty('--ready', r); } } if (b._off !== !!v.off) { b._off = !!v.off; b.classList.toggle('off', !!v.off); }
       setText('slotSub' + i, v.sub || (finePointer ? ABIL_CFG.slotKeyName[i] : 'готов'));
     });
     if (now - hudT < 250) return;
@@ -572,12 +658,14 @@
       stats.bestRank = Math.min(stats.bestRank, rank); if (rank <= 3) stats.top3T = (stats.top3T || 0) + .25;
       if (rank === 1 && !stats.leader) { stats.leader = 1; toast('Ты лидер арены!'); }
     }
-    $('leaders').innerHTML = ranked.slice(0, boardOpen ? 6 : 3).map((o, i) => {
-      const tag = o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
-      const fr = o.isPlayer ? save.frame : o.frame, lvl = o.isPlayer ? playerLevel() : o.lvl;
-      return `<li class="${o.isPlayer ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${o.isPlayer ? meName() : o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
+    const leadersHtml = ranked.slice(0, boardOpen ? 6 : 3).map((o, i) => {
+      const me = o === player;   // 2.7: online the other player is «isPlayer» too — it showed your nickname and frame
+      const tag = me ? '' : o.team ? (o.team === player.team ? 'союзник' : 'соперник') : mode === 'crown' && o.crownT > 0 ? `♛ ${fmtTime(o.crownT)}` : o.persona ? PERSONA[o.persona].tag : '';
+      const fr = me ? save.frame : o.frame, lvl = me ? playerLevel() : o.lvl;
+      return `<li class="${me ? 'me' : o.kind === 'boss' ? 'boss' : o.star ? 'star' : ''}"><span>${i + 1}. ${o.kind === 'boss' ? '<b class="boss-tag">☠</b>' : ''}${o.star ? '<b class="star-tag">★</b>' : ''}${lvl ? `<b class="lv-tag">${lvl}</b>` : ''}<span ${frameAttr(fr)}>${me ? meName() : o.name}</span>${o.isPlayer ? ' ' + titleTag(save.title) + (starsOf(skin()) ? ` <b class="star-tag" title="Звёзды скина">${'★'.repeat(starsOf(skin()))}</b>` : '') : ''}${tag ? ` <em>${tag}</em>` : ''}</span><span>${Math.round(total(o))}</span></li>`;
     }).join('') + (rank > (boardOpen ? 6 : 3) ? `<li class="me"><span>${rank}. <span ${frameAttr(save.frame)}>${meName()}</span> ${titleTag(save.title)}</span><span>${Math.round(total(player))}</span></li>` : '') +
       (ranked.length > 3 ? `<li class="bd-more"><button type="button" id="boardMore" aria-expanded="${boardOpen}">${boardOpen ? '▴ свернуть' : `▾ ещё ${Math.min(ranked.length, 6) - 3}`}</button></li>` : '');
+    if (leadersHtml !== leadersLast) { leadersLast = leadersHtml; $('leaders').innerHTML = leadersHtml; }   // 2.7: rebuild the board only when it changed (fewer layouts)
     // ---- in-battle HUD: one short mode line, a separate mode timer with a clock, and round icon badges with a countdown ring ----
     let modeChip = '', timer = '';
     const T = (left, total) => ({ left: Math.max(0, left), total });
@@ -588,7 +676,7 @@
       if (mode === 'royale') modeChip = `${ModeX.zoneChip()} · в живых ${bots.filter(b => b.cells.length).length + (player.cells.length ? 1 : 0)}/13`;
       if (mode === 'crown') modeChip = ModeX.crownChip();
       if (mode === 'team') modeChip = `Синие ${Math.round(teamTotal('A'))} : ${Math.round(teamTotal('B'))} Красные`;
-      if (mode === 'raid') { const rs = raidState(), left = Math.max(0, RAID_HP - rs.dmg - (stats.raidDmg || 0)); modeChip = `Близнецы ${Math.ceil(left / RAID_HP * 100)}% · заход ${Math.round(stats.raidDmg || 0).toLocaleString('ru-RU')}/${RAID_ATTEMPT_CAP.toLocaleString('ru-RU')}`; }
+      if (mode === 'raid') { const hp = RaidX.tier().hp, left = Math.max(0, hp - (stats.raidDmg || 0)); modeChip = `Ступень ${['I', 'II', 'III', 'IV', 'V'][RaidX.tierI()]} · близнецы ${Math.ceil(left / hp * 100)}% · фаза ${RaidX.phase()}`; }
       if (mode === 'survival') modeChip = `Волна ${stats.wave}`;
       if (mode === 'territory') { modeChip = DuoM.chip(); if (DuoM.on) timer = DuoM.rules.territory.timer(); }
       if (mode === 'duoback') { modeChip = DuoM.chip(); timer = `⏱ ${fmtTime(stats.time)}`; }
@@ -597,6 +685,7 @@
     const badges = [];
     const badge = (icon, color, left, total, title) => badges.push(`<div class="eb${left !== null && total && left <= 3 ? ' low' : ''}" title="${title}" aria-label="${title}" style="--c:${color};--f:${total ? Math.max(0, Math.min(1, left / total)).toFixed(3) : 1}"><span class="eb-in"><b>${String(icon).startsWith('<') ? icon : icon + '\uFE0E'}</b><small>${left === null ? '' : Math.ceil(left)}</small></span></div>`);
     if (running) {
+      { const ch = charById(charNow()); if (ch) stats.charUsed = ch.id; if (ch) badge(ch.icon, ch.color, null, 0, `Характер «${ch.name}»: ${ch.plus}; ${ch.minus}`); }   // 2.7
       const SV = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
       const BICON = { speed: SV('M13.5 2 4 13.5h6.5L9 22l11-12.5h-6.8z'), shield: SV('M12 2 4 5.2v6.1c0 5 3.4 9 8 10.7 4.6-1.7 8-5.7 8-10.7V5.2z'), double: '×2',
         magnet: SV('M5 3h4v8.5a3 3 0 0 0 6 0V3h4v8.5a7 7 0 0 1-14 0zM5 3v3h4V3zm10 0v3h4V3z') };
@@ -636,35 +725,46 @@
       `<span class="bar wide"><span style="width:${pct.toFixed(0)}%"></span></span></div>`;
   }
   const mini = $('minimap'), mctx = mini.getContext('2d');
+  // 2.7 FPS: the minimap is drawn 4 times a second — its size and CSS colours are read once (reading them after a HUD change forced a style recalculation)
+  let miniSize = 0, miniTok = null;
+  addEventListener('resize', () => { miniSize = 0; });
   function drawMinimap() {
-    const size = mini.clientWidth || 140, dpr = Math.min(devicePixelRatio, 2);
+    if (!miniSize) miniSize = mini.clientWidth || 0;
+    if (!miniTok) miniTok = { line: tok('--line'), threat: tok('--threat'), prey: tok('--prey') };
+    const size = miniSize || 140, dpr = Math.min(devicePixelRatio, 2);
     if (mini.width !== size * dpr) { mini.width = mini.height = size * dpr; }
     const s = size / (2 * R + 4);
     mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     mctx.clearRect(0, 0, size, size);
     mctx.fillStyle = 'rgba(12, 8, 34, .92)';
     mctx.beginPath(); mctx.arc(size / 2, size / 2, R * s, 0, Math.PI * 2); mctx.fill();
-    mctx.strokeStyle = tok('--line'); mctx.lineWidth = 1; mctx.stroke();
+    mctx.strokeStyle = miniTok.line; mctx.lineWidth = 1; mctx.stroke();
     const P = (x, z) => [size / 2 + x * s, size / 2 + z * s];
     if (mode === 'territory' && DuoM.on) DuoM.rules.territory.mini(mctx, size, s);
     if (mode === 'crown' && running) ModeX.crownMini(mctx, P);
     if (mode === 'royale' && running) ModeX.zoneMini(mctx, P, s);
-    mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const [x, y] = P(v.x, v.z); mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
-    if (ev.active === 'meteor' || ev.warn === 'meteor') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 22 * s, 0, Math.PI * 2); mctx.stroke(); }
-    for (const b of bonuses) { const [x, y] = P(b.x, b.z); mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }
+    mctx.fillStyle = VIRUS_COLOR; for (const v of viruses) { const x = size / 2 + v.x * s, y = size / 2 + v.z * s; mctx.beginPath(); mctx.arc(x, y, 2.2, 0, Math.PI * 2); mctx.fill(); }
+    if (ev.active === 'starfall' || ev.warn === 'starfall') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#ffd23f'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, 40 * s, 0, Math.PI * 2); mctx.stroke(); }
+    if (ev.active === 'rift') { const [x, y] = P(ev.x, ev.z); mctx.strokeStyle = '#b26bff'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(x, y, RIFT_R * s, 0, Math.PI * 2); mctx.stroke(); mctx.fillStyle = '#000'; mctx.beginPath(); mctx.arc(x, y, 3, 0, Math.PI * 2); mctx.fill(); }
+    if (ev.active === 'quake') { mctx.strokeStyle = '#ff6a00'; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(size / 2, size / 2, R * QUAKE_K * s, 0, Math.PI * 2); mctx.stroke(); }
+    if (ev.active === 'golden' && ev.gold) { const [x, y] = P(ev.gold.x, ev.gold.z); mctx.fillStyle = '#ffd23f'; mctx.beginPath(); mctx.arc(x, y, 4, 0, Math.PI * 2); mctx.fill(); }
+    if (ev.active === 'bounty' && ev.target && ev.target.cells.length && ev.target !== player) { const t = mainOf(ev.target), [x, y] = P(t.x, t.z); mctx.strokeStyle = '#ff2d55'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(x, y, Math.max(5, cellR(t) * s + 3), 0, Math.PI * 2); mctx.stroke(); }
+    for (const b of bonuses) { const x = size / 2 + b.x * s, y = size / 2 + b.z * s; mctx.fillStyle = BONUS[b.type].color; mctx.fillRect(x - 2, y - 2, 4, 4); }
     for (const c of cells) {
       if (c.owner.isPlayer || (c.owner.bossType === 'chameleon' && !c.seen)) continue;
-      const [x, y] = P(c.x, c.z);
-      const danger = player.cells.some(p => canEat(c, p)), food = player.cells.some(p => canEat(p, c));
-      mctx.fillStyle = c.owner.kind === 'boss' ? bossInfo(c.owner).color : c.owner.kind === 'minion' ? MINION_COLOR : c.owner.team && c.owner.team === player.team ? ALLY_COLOR : danger ? tok('--threat') : food ? tok('--prey') : '#8088c0';
+      const x = size / 2 + c.x * s, y = size / 2 + c.z * s;
+      let col;
+      if (c.owner.kind === 'boss') col = bossInfo(c.owner).color; else if (c.owner.kind === 'minion') col = MINION_COLOR; else if (c.owner.team && c.owner.team === player.team) col = ALLY_COLOR;
+      else { let danger = false, food = false; for (const p of player.cells) { if (!danger && canEat(c, p)) danger = true; if (!food && canEat(p, c)) food = true; } col = danger ? miniTok.threat : food ? miniTok.prey : '#8088c0'; }
+      mctx.fillStyle = col;
       mctx.beginPath(); mctx.arc(x, y, Math.max(2, cellR(c) * s), 0, Math.PI * 2); mctx.fill();
       if (c.owner.kind === 'boss') { const rr = Math.max(5, cellR(c) * s); mctx.strokeStyle = '#ffffff'; mctx.lineWidth = 1.2; mctx.stroke();
         mctx.fillStyle = '#ffffff'; mctx.font = `${Math.round(rr * 1.3)}px sans-serif`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.fillText('☠', x, y + .5); }
     }
     for (const c of player.cells) {
-      const [x, y] = P(c.x, c.z);
+      const x = size / 2 + c.x * s, y = size / 2 + c.z * s;
       mctx.fillStyle = skin().color; mctx.strokeStyle = '#ffffff'; mctx.lineWidth = 1.5;
-      mctx.beginPath(); mctx.arc(x, y, Math.max(2.5, cellR(c) * s), 0, Math.PI * 2); mctx.fill(); mctx.stroke();
+      mctx.beginPath(); mctx.arc(x, y, Math.max(2.5, visualCellR(c) * s), 0, Math.PI * 2); mctx.fill(); mctx.stroke();
     }
   }
 

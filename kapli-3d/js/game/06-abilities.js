@@ -1,8 +1,9 @@
   // ================= abilities: runtime =================
   let runBuild = [...ABIL_CFG.oldBuild], decoy = null;
-  const abLv = id => stats && stats.ranked ? 0 : save.abil.lv[id] || 0;
+  let rbLvUp = {};   // 2.7 «Случайный билд»: levels added for this round by a milestone swap
+  const abLv = id => stats && stats.ranked ? 0 : Math.min(ABIL_CFG.levels, (save.abil.lv[id] || 0) + (rbLvUp[id] || 0));
   const arenaCd = () => arenaIs('chronos') ? .9 : 1;   // arena «Часовой механизм»: every cooldown is 10% shorter
-  const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd();
+  const abCdOf = id => abilById(id).cd * (1 - ABIL_CFG.cdPerLv * abLv(id)) * arenaCd() * (charIs('berserk') ? .85 : 1);   // «Берсерк»
   const abPow = id => 1 + ABIL_CFG.powPerLv * abLv(id);
   const abOn = (id, o = player) => !!(o && o.abT && o.abT[id] > 0);
   const abUsed = id => { if (stats && stats.abUsed) { stats.abUsed[id] = 1; stats.abilUses = (stats.abilUses || 0) + 1; } if (id !== 'dash' && id !== 'split') recEv('a', 0, id); };
@@ -24,7 +25,7 @@
     Sound.play(lk.sfx);
   }
   function abReset() {
-    owners.forEach(o => { o.freezeT = 0; o.slowT = 0; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
+    owners.forEach(o => { if (o.blinkMark) { scene.remove(o.blinkMark.mesh); o.blinkMark = null; } o.freezeT = 0; o.slowT = 0; o.ccImm = 0; o.auraT = 0; o.auraImm = 0; o.auraOn = false; o.abCd = o.isPlayer || o.kind === 'bot' || o.kind === 'rival' ? {} : null; o.abT = {}; o.rs = 1; o.phase2 = 0; });
     xfx.forEach(f => { if (f.mesh) scene.remove(f.mesh); }); xfx = [];
     crfx.forEach(f => scene.remove(f.mesh)); crfx = []; crHist = [];
     botDecoys.forEach(d => scene.remove(d.mesh)); botDecoys = [];
@@ -41,6 +42,7 @@
     });
   }
   function useSlot(i) {
+    if (DuoM.server) { if (running && !dying) DuoM.act('slot', i); return; }
     if (DuoM.guest) { if (running && !dying) DuoM.act('slot', i); return; }
     const id = runBuild[i];
     if (!id || !running || paused || dying || slotBlocked(id)) return;
@@ -51,13 +53,13 @@
   const mainOf = o => o.cells.reduce((x, y) => x.mass >= y.mass ? x : y);
   const centerOf = o => { const m = total(o) || 1; return o.cells.reduce((a, c) => [a[0] + c.x * c.mass / m, a[1] + c.z * c.mass / m], [0, 0]); };
   const foesOf = o => owners.filter(x => x !== o && x.cells.length && !(o.team && x.team === o.team));
-  const nearOf = (o, x, rad) => x.cells.some(c => o.cells.some(pc => Math.hypot(pc.x - c.x, pc.z - c.z) < rad + cellR(pc) + cellR(c)));
+  const nearOf = (o, x, rad) => x.cells.some(c => o.cells.some(pc => hyp(pc.x - c.x, pc.z - c.z) < rad + cellR(pc) + cellR(c)));
   let botDecoys = [];
   // a clone grabbed by a bigger foe crumbles into food and slows the one who grabbed it (the blink shadow just vanishes)
   function decoyCaught(d) {
-    for (const x of foesOf(d.src)) for (const c of x.cells) if (cellR(c) > d.r * .9 && Math.hypot(c.x - d.x, c.z - d.z) < cellR(c)) {
+    for (const x of foesOf(d.src)) for (const c of x.cells) if (cellR(c) > d.r * .9 && hyp(c.x - d.x, c.z - d.z) < cellR(c)) {
       scene.remove(d.mesh); d.gone = true; emit(d.x, d.r, d.z, '#ffffff', 26, 9, .5);
-      if (!d.still) { burstFood(d.x, d.z, d.r + 4, 18); if (x.kind !== 'boss') x.slowT = Math.max(x.slowT || 0, 2); }
+      if (!d.still) { burstFood(d.x, d.z, d.r + 4, 18); if (x.kind !== 'boss') ccSlow(x, 2); }
       owners.forEach(o => { if (o.target === d) o.target = null; }); return true; }
     return false;
   }
@@ -70,8 +72,17 @@
   function castAbility(id, o = player) {
     if (!o.cells.length || !o.abCd || (o.abCd[id] || 0) > 0) return false;
     const me = o === player, a = abilById(id), pw = me ? abPow(id) : 1, [px, pz] = centerOf(o);
-    if (id === 'shield') { if (me) effects.shield = Math.max(effects.shield, a.dur * pw); else o.abT.shield = a.dur; o.abT.shieldB = a.dur * pw; o.shHit = new Set(); }
+    if (id === 'shield') { if (me) effects.shield = Math.max(effects.shield, a.dur * pw * (charIs('berserk') ? .75 : 1)); else o.abT.shield = a.dur; o.abT.shieldB = a.dur * pw; o.shHit = new Set(); }
     else if (id === 'pulse') { o.abT.pulse = a.dur * pw; }
+    else if (id === 'blink' && me) {   // 2.7 «Метка»: the first press marks the spot, the second (within 10 s) jumps there
+      const m = mainOf(o);
+      if (!o.blinkMark) { o.blinkMark = { x: m.x, z: m.z, t: a.dur, mesh: markMesh(m.x, m.z, cellR(m), a.color) }; o.abCd[id] = .4; abFlash(id, m.x, m.z, a.color, 'bonus'); buzz(15); toast('⌖ Метка поставлена — нажми ещё раз, чтобы вернуться к ней'); return true; }
+      const mk = o.blinkMark; o.blinkMark = null; scene.remove(mk.mesh);
+      const sh = makeDecoy(o, a, 1); sh.still = true; sh.mesh.material.opacity = .35; if (decoy) scene.remove(decoy.mesh); decoy = sh;
+      owners.forEach(x => { if (x.target && x.target.owner === o) x.target = sh; });
+      const dx = mk.x - m.x, dz = mk.z - m.z; for (const c of o.cells) { emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); emit(c.x, cellR(c), c.z, a.color, 18, 10, .5); }
+      wave(mk.x, mk.z, a.color, 2, cellR(m) + 10, .6);
+    }
     else if (id === 'blink') { const sh = makeDecoy(o, a, 1); sh.still = true; sh.mesh.material.opacity = .35;
       if (me) { if (decoy) scene.remove(decoy.mesh); decoy = sh; } else botDecoys.push(sh);
       owners.forEach(x => { if (x.target && x.target.owner === o) x.target = sh; }); blinkBy(o, a.dist * pw, a.color); }
@@ -80,7 +91,7 @@
       for (const x of foesOf(o)) {
         if (!nearOf(o, x, rad)) continue;
         // The wave suppresses movement and dash acceleration; it does not push targets physically.
-        x.slowT = Math.max(x.slowT || 0, a.dur * pw);
+        ccSlow(x, ccPl(x) ? a.dur : Math.min(IMPULSE_BOT_MAX, a.dur));   // 2.7 audit: levels grow the radius only; bots are held 6 s at most (15–20 s made them a farm)
       }
       // Clearly visible expanding ground rings; particle bursts alone were too subtle.
       [1, .78, .56].forEach((k, i) => {
@@ -100,8 +111,8 @@
     else if (id === 'push') {
       const rad = a.radius * pw;
       for (const x of foesOf(o)) for (const c of x.cells) {
-        const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1, edge = d - cellR(c);
-        if (edge < rad + Math.sqrt(total(o)) * .4) { const massBoost = Math.min(1.6, Math.pow(Math.max(1, c.mass / 25), .12)); const f = a.force * pw * massBoost * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; if (x.kind !== 'boss') x.freezeT = Math.max(x.freezeT || 0, a.stun); }
+        const dx = c.x - px, dz = c.z - pz, d = hyp(dx, dz) || 1, edge = d - cellR(c);
+        if (edge < rad + Math.sqrt(total(o)) * .4) { const massBoost = Math.min(1.6, Math.pow(Math.max(1, c.mass / 25), .12)); const f = a.force * pw * massBoost * Math.max(.35, 1 - edge / (rad * 1.5)); c.vx += dx / d * f; c.vz += dz / d * f; if (x.kind !== 'boss') ccFreeze(x, a.stun); }
       }
       emit(px, 2, pz, a.color, 70, rad, .7);
     } else if (id === 'shrink' || id === 'cloak') { o.abT[id] = a.dur * pw; if (id === 'cloak') { o.cloakBonus = true; owners.forEach(x => { if (x.target && x.target.owner === o) x.target = null; }); } }
@@ -132,55 +143,72 @@
       [-1.9, 0, 1.9].forEach((k, i) => { const x = cx + nx * gr * k, z = cz + nz * gr * k; segs.push({ x, z }); const ge = new THREE.Mesh(gearGeo(gr, 12, .6), gm); ge.position.set(x, gr * .8, z); ge.rotation.order = 'YXZ'; ge.rotation.y = Math.atan2(main.hx, main.hz); ge.rotation.x = -1.05; ge.userData.dir = i % 2 ? -1 : 1; ge.add(glowSprite(a.color, gr * 2.4, .35)); grp.add(ge); emit(x, gr, z, a.color, 16, 6, .5); });
       scene.add(grp); crfx.push({ id, t: a.dur, segs, gr, o, mesh: grp, hit: new Set() }); return true;
     }
+    // the cells an ability moves: after the split into two halves only the half of `c` (the bigger one), else every part
+    const halfCells = (o, c) => (c && (c.hcHalf === 0 || c.hcHalf === 1) && o.cells.some(k => k.hcHalf === 1 - c.hcHalf)) ? o.cells.filter(k => k.hcHalf === c.hcHalf) : o.cells;
     if (id === 'cr_rewind') {
       if (!me) return false;
       const want = crClock - a.back; let h = null; for (const e of crHist) if (e.t <= want) h = e;
       if (!h) { toast('Перемотка: прошло меньше 4 секунд — пока некуда вернуться'); return false; }
-      const dx = h.x - px, dz = h.z - pz, m0 = total(o);
-      emitIcons(px, 3, pz, 'clock', a.color, 4, 1.6); emit(px, 2, pz, a.color, 30, 8, .6);
-      for (const c of o.cells) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (h.m > m0) c.mass *= h.m / m0; }
-      wave(h.x, h.z, a.color, 2, 14, .7); emit(h.x, 2, h.z, '#ffffff', 30, 10, .5); Sound.play('dash'); return true;
+      const L = halfCells(o, main), half = L !== o.cells ? main.hcHalf : -1, hh = half >= 0 && h.h ? h.h[half] : null;
+      if (half >= 0 && !hh) { toast('Перемотка: после деления путь половины ещё не записан — попробуй через 4 секунды'); return false; }
+      const sx = half >= 0 ? L.reduce((s, c) => s + c.x * c.mass, 0) / L.reduce((s, c) => s + c.mass, 0) : px, sz = half >= 0 ? L.reduce((s, c) => s + c.z * c.mass, 0) / L.reduce((s, c) => s + c.mass, 0) : pz;
+      const tx = hh ? hh[0] : h.x, tz = hh ? hh[1] : h.z, hm = hh ? hh[2] : h.m, dx = tx - sx, dz = tz - sz, m0 = L.reduce((s, c) => s + c.mass, 0);
+      emitIcons(sx, 3, sz, 'clock', a.color, 4, 1.6); emit(sx, 2, sz, a.color, 30, 8, .6);
+      for (const c of L) { c.x += dx; c.z += dz; c.vx = c.vz = 0; clampArena(c); if (hm > m0) c.mass *= Math.min(1.1, hm / m0); }   // 2.7 audit: the mass comes back +10% at most (it undid any bite); after the split — the bigger half only
+      wave(tx, tz, a.color, 2, 14, .7); emit(tx, 2, tz, '#ffffff', 30, 10, .5); Sound.play('dash'); return true;
     }
     if (id === 'cr_swap') {
       let best = null, bd = a.radius + cellR(main);
-      for (const x of foesOf(o)) { if (x.kind === 'boss' || x.kind === 'minion') continue; for (const c of x.cells) { const dx = c.x - main.x, dz = c.z - main.z, d = Math.hypot(dx, dz); if (d < bd && d > .1 && (dx * main.hx + dz * main.hz) / d > .2) { bd = d; best = c; } } }
+      for (const x of foesOf(o)) { if (x.kind === 'boss' || x.kind === 'minion') continue; for (const c of x.cells) { const dx = c.x - main.x, dz = c.z - main.z, d = hyp(dx, dz); if (d < bd && d > .1 && (dx * main.hx + dz * main.hz) / d > .2) { bd = d; best = c; } } }
       if (!best) { if (me) toast('Рокировка: впереди в радиусе 25 нет капли'); return false; }
       const mx = main.x, mz = main.z, dx = best.x - mx, dz = best.z - mz;
       emit(mx, 2, mz, a.color, 24, 7, .5); emit(best.x, 2, best.z, a.color, 24, 7, .5);
-      for (const c of o.cells) { c.x += dx; c.z += dz; clampArena(c); } best.x = mx; best.z = mz; best.vx = best.vz = 0;
+      for (const c of halfCells(o, main)) { c.x += dx; c.z += dz; clampArena(c); } best.x = mx; best.z = mz; best.vx = best.vz = 0;   // after the split: only the bigger half swaps
       wave(mx, mz, a.color, 1, 8, .5); wave(mx + dx, mz + dz, a.color, 1, 8, .5); if (me) Sound.play('dash'); return true;
     }
     return false;
   }
   function crTick(dt) {
     crClock += dt; crHistT -= dt;
-    if (crHistT <= 0 && player.cells.length) { crHistT = .1; const [x, z] = centerOf(player); crHist.push({ t: crClock, x, z, m: total(player) }); while (crHist.length && crHist[0].t < crClock - 6) crHist.shift(); }
+    if (crHistT <= 0 && player.cells.length) { crHistT = .1; const [x, z] = centerOf(player); const hs = [0, 1].map(k => { const L = player.cells.filter(c => c.hcHalf === k), m = L.reduce((s, c) => s + c.mass, 0); return m > 0 && player.cells.some(c => c.hcHalf === 1 - k) ? [L.reduce((s, c) => s + c.x * c.mass, 0) / m, L.reduce((s, c) => s + c.z * c.mass, 0) / m, m] : null; }); crHist.push({ t: crClock, x, z, m: total(player), h: hs[0] || hs[1] ? hs : null }); while (crHist.length && crHist[0].t < crClock - 6) crHist.shift(); }
     for (const f of crfx) {
       f.t -= dt; f.mesh.children.forEach(g => { g.rotation.z += dt * 3 * g.userData.dir; });
       for (const x of foesOf(f.o)) for (const c of x.cells) for (const sg of f.segs) {
-        const dx = c.x - sg.x, dz = c.z - sg.z, d = Math.hypot(dx, dz) || .01, lim = f.gr + cellR(c);
+        const dx = c.x - sg.x, dz = c.z - sg.z, d = hyp(dx, dz) || .01, lim = f.gr + cellR(c);
         if (d >= lim) continue;
         c.x = sg.x + dx / d * lim; c.z = sg.z + dz / d * lim; c.vx += dx / d * 38; c.vz += dz / d * 38;
         if (!f.hit.has(c)) { f.hit.add(c); c.mass *= 1 - abilById('cr_gearwall').dmg; if (nearView(c.x, c.z)) emit(c.x, cellR(c), c.z, '#ffd27a', 18, 7, .4); }
       }
       if (f.t < .4) f.mesh.scale.setScalar(Math.max(.01, f.t / .4));
     }
-    crfx = crfx.filter(f => { if (f.t > 0) return true; scene.remove(f.mesh); return false; });
+    if (crfx.length) crfx = crfx.filter(f => { if (f.t > 0) return true; scene.remove(f.mesh); return false; });
   }
   let xfx = [];   // timed world effects: hole, meteor, anchor, twin (each remembers its caster)
+  // the mark on the floor for «Метка»
+  function markMesh(x, z, r, color) {
+    const m = new THREE.Mesh(new THREE.RingGeometry(.86, 1, 48), decal(new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .85, depthWrite: false, side: THREE.DoubleSide })));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, .12, z); m.scale.setScalar(Math.max(4, r)); scene.add(m); return m;
+  }
+  function markTick(o, dt) {
+    const mk = o.blinkMark; if (!mk) return;
+    mk.t -= dt; mk.mesh.material.opacity = .45 + .4 * Math.abs(Math.sin(mk.t * 4));
+    if (mk.t <= 0 || !o.cells.length) { scene.remove(mk.mesh); o.blinkMark = null; if (o.abCd) o.abCd.blink = Math.max(o.abCd.blink || 0, 8); }
+  }
   function blinkBy(o, d, color) {
     const main = mainOf(o);
     for (const c of o.cells) { emit(c.x, cellR(c), c.z, color, 18, 10, .5); c.x += main.hx * d; c.z += main.hz * d; clampArena(c); emit(c.x, cellR(c), c.z, color, 18, 10, .5); }
   }
+  const OVER_KEEP = new Set(['x_over', 'shield', 'x_ghost']);
   function castXa(id, a, px, pz, o) {
     const me = o === player, main = mainOf(o);
-    const ahead = d => { let x = px + main.hx * d, z = pz + main.hz * d; const dc = Math.hypot(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; } return [x, z]; };
+    const ahead = d => { let x = px + main.hx * d, z = pz + main.hz * d; const dc = hyp(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; } return [x, z]; };
     if (['x_refl', 'x_ghost', 'x_vamp', 'x_typhoon'].includes(id)) { o.abT[id] = a.dur; if (id === 'x_refl') o.spHit = new Set(); return true; }
-    if (id === 'x_over') { for (const k in o.abCd) if (k !== 'x_over') o.abCd[k] = 0; if (me) { player.dashCd = 0; player.splitCd = 0; effects.speed = Math.max(effects.speed, a.dur); } else o.dashT = Math.max(o.dashT || 0, .6); return true; }
+    // 2.7 audit: «Перегрузка» does not reset «Щит» / «Фантом» (no second one in a row)
+    if (id === 'x_over') { for (const k in o.abCd) if (!OVER_KEEP.has(k)) o.abCd[k] = 0; if (me) { player.dashCd = 0; player.splitCd = 0; effects.speed = Math.max(effects.speed, a.dur); } else o.dashT = Math.max(o.dashT || 0, .6); return true; }
     if (id === 'x_ice') { o.abT.x_ice = a.dur; o.iceDrop = 0; return true; }
     if (id === 'x_meteor') {   // three meteors in a fan ahead
       const ang = Math.atan2(main.hz, main.hx);
-      [[-.35, .8, 1], [0, 1.15, 1.3], [.35, .8, 1.6]].forEach(([da, dk, t]) => { let x = px + Math.cos(ang + da) * a.dist * dk, z = pz + Math.sin(ang + da) * a.dist * dk; const dc = Math.hypot(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; }
+      [[-.35, .8, 1], [0, 1.15, 1.3], [.35, .8, 1.6]].forEach(([da, dk, t]) => { let x = px + Math.cos(ang + da) * a.dist * dk, z = pz + Math.sin(ang + da) * a.dist * dk; const dc = hyp(x, z), rr = R - 4; if (dc > rr) { x *= rr / dc; z *= rr / dc; }
         const mesh = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 10), new THREE.MeshBasicMaterial({ color: a.color })); mesh.add(glowSprite(a.color, 4, .8)); mesh.position.set(x, 1 + t * 12, z); scene.add(mesh);
         xfx.push({ id, x, z, t, a, mesh, o }); });
       return true;
@@ -202,9 +230,9 @@
     }
     if (id === 'x_hunt') {
       let best = null, bd = a.radius;
-      for (const x of foesOf(o)) for (const c of x.cells) { const d = Math.hypot(c.x - main.x, c.z - main.z); if (d < bd && canEat(main, c)) { bd = d; best = c; } }
+      for (const x of foesOf(o)) for (const c of x.cells) { const d = hyp(c.x - main.x, c.z - main.z); if (d < bd && canEat(main, c)) { bd = d; best = c; } }
       if (!best) { if (me) toast('Охотничий рывок: рядом нет добычи меньше тебя'); return false; }
-      for (const c of o.cells) { const dx = best.x - c.x, dz = best.z - c.z, d = Math.hypot(dx, dz) || 1; c.vx += dx / d * a.force; c.vz += dz / d * a.force; c.hx = dx / d; c.hz = dz / d; }
+      for (const c of o.cells) { const dx = best.x - c.x, dz = best.z - c.z, d = hyp(dx, dz) || 1; c.vx += dx / d * a.force; c.vz += dz / d * a.force; c.hx = dx / d; c.hz = dz / d; }
       o.dashT = Math.max(o.dashT || 0, .3); o.huntT = 1.5; return true;
     }
     if (id === 'x_phase') {
@@ -215,17 +243,23 @@
     }
     return false;
   }
+  const pullIdxBuf = [];   // 2.7 FPS: reused by pullFood
   function xaTick(dt) {
     let foodMoved = false;
-    const pullFood = (x, z, rad, sp) => { for (let i = 0; i < FOOD; i++) { const fd = foods[i], dx = x - fd.x, dz = z - fd.z, d = Math.hypot(dx, dz);
-      if (d < rad && d > .3) { const st = Math.min(d, sp * dt); fd.x += dx / d * st; fd.z += dz / d * st; fgSet(i); dummy.position.set(fd.x, .35, fd.z); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix); foodMoved = true; } } };
+    const pullIdx = pullIdxBuf;
+    // 2.7 FPS: only the crumbs in the grid cells under the pull (it went through all 5 000+ crumbs for every puller, every frame)
+    const pullFood = (x, z, rad, sp) => { pullIdx.length = 0; const gx0 = fgCell(x - rad), gx1 = fgCell(x + rad), gz0 = fgCell(z - rad), gz1 = fgCell(z + rad);
+      for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++) { const b = fgrid[gx * FGN + gz]; for (let j = 0; j < b.length; j++) pullIdx.push(b[j]); }
+      const r2 = rad * rad;
+      for (let q = 0; q < pullIdx.length; q++) { const i = pullIdx[q]; if (i >= FOOD) continue; const fd = foods[i], dx = x - fd.x, dz = z - fd.z, d2 = dx * dx + dz * dz; if (d2 >= r2 || d2 <= .09) continue; const d = Math.sqrt(d2);
+      { const st = Math.min(d, sp * dt); fd.x += dx / d * st; fd.z += dz / d * st; fgSet(i); dummy.position.set(fd.x, .35, fd.z); dummy.updateMatrix(); foodMesh.setMatrixAt(i, dummy.matrix); foodMoved = true; } } };
     for (const o of owners) {
-      if (o.freezeT) o.freezeT = Math.max(0, o.freezeT - dt);
+      if (o.freezeT) { const was = o.freezeT; o.freezeT = Math.max(0, o.freezeT - dt); if (!o.freezeT) ccWore(o, was); }
       if (!o.abT || !o.cells.length) continue;
       if (o.huntT > 0) o.huntT -= dt;
       // «Фантом»: a shock wave when it ends
       if (o.ghostOn && !abOn('x_ghost', o)) { const a = abilById('x_ghost'), [gx, gz] = centerOf(o);
-        for (const x of foesOf(o)) for (const c of x.cells) { const dx = c.x - gx, dz = c.z - gz, d = Math.hypot(dx, dz) || 1; if (d < a.radius + cellR(c)) { c.vx += dx / d * a.force; c.vz += dz / d * a.force; } }
+        for (const x of foesOf(o)) for (const c of x.cells) { const dx = c.x - gx, dz = c.z - gz, d = hyp(dx, dz) || 1; if (d < a.radius + cellR(c)) { c.vx += dx / d * a.force; c.vz += dz / d * a.force; } }
         if (nearView(gx, gz)) { emit(gx, 2, gz, a.color, 60, a.radius, .7); if (o === player) Sound.play('spike'); } }
       o.ghostOn = abOn('x_ghost', o);
       // «Ледяной след»: drops ice patches behind
@@ -237,27 +271,28 @@
       if (!refl && !typh && !pul && !shb && !vamp) continue;
       const [px, pz] = centerOf(o), main = mainOf(o), foes = foesOf(o);
       if (pul) { if (o !== player) pullFood(main.x, main.z, 8 + cellR(main), 18);
-        const rad = 14 + cellR(main); for (const e of ejects) { const dx = main.x - e.x, dz = main.z - e.z, d = Math.hypot(dx, dz) || 1; if (d < rad) { e.vx += (dx / d * 70 - dz / d * 25) * dt; e.vz += (dz / d * 70 + dx / d * 25) * dt; } } }
+        const rad = 14 + cellR(main); for (const e of ejects) { const dx = main.x - e.x, dz = main.z - e.z, d = hyp(dx, dz) || 1; if (d < rad) { e.vx += (dx / d * 70 - dz / d * 25) * dt; e.vz += (dz / d * 70 + dx / d * 25) * dt; } } }
       // «Щит» and «Шипастая броня»: a bigger foe that touches you bounces off and loses mass (once per foe)
       if (refl || shb) for (const x of foes) for (const c of x.cells) for (const pc of o.cells) {
-        const dx = c.x - pc.x, dz = c.z - pc.z, d = Math.hypot(dx, dz) || 1;
+        const dx = c.x - pc.x, dz = c.z - pc.z, d = hyp(dx, dz) || 1;
         if (d < cellR(c) + cellR(pc) + .5 && c.mass > pc.mass && x.kind !== 'minion') { const set = refl ? o.spHit : o.shHit, f = refl ? abilById('x_refl').force : 40;
           if (set && !set.has(x)) { set.add(x); c.mass *= refl ? .85 : .95; if (nearView(c.x, c.z)) { emit(pc.x, cellR(pc), pc.z, refl ? '#c0c8e0' : '#9fe8ff', 26, 8, .5); if (o === player || x === player) Sound.play('spike'); } }
           c.vx = dx / d * f; c.vz = dz / d * f; c.x = pc.x + dx / d * (cellR(c) + cellR(pc) + .6); c.z = pc.z + dz / d * (cellR(c) + cellR(pc) + .6); clampArena(c); }
       }
       // «Кровопийца»: smaller neighbours slowly lose mass to you
       if (vamp) { const rad = abilById('x_vamp').radius + cellR(main);
-        for (const x of foes) if (x.kind !== 'boss') for (const c of x.cells) { if (c.mass >= main.mass || c.mass < 12) continue; const d = Math.hypot(c.x - main.x, c.z - main.z);
+        for (const x of foes) if (x.kind !== 'boss') for (const c of x.cells) { if (c.mass >= main.mass || c.mass < 12) continue; const d = hyp(c.x - main.x, c.z - main.z);
           if (d < rad + cellR(c)) { const k = c.mass * .07 * dt; c.mass -= k; main.mass += k; if (Math.random() < .25 && nearView(c.x, c.z)) emit(c.x, cellR(c), c.z, '#c2185b', 1, 2, .5); } } }
       if (typh) {
         const a = abilById('x_typhoon'), rad = a.radius + cellR(main);
-        for (const e of ejects) { const dx = e.x - px, dz = e.z - pz, d = Math.hypot(dx, dz) || 1; if (d < rad) { e.vx += dx / d * 120 * dt; e.vz += dz / d * 120 * dt; } }
-        for (const x of foes) for (const c of x.cells) { const dx = c.x - px, dz = c.z - pz, d = Math.hypot(dx, dz) || 1;
-          if (d < rad + cellR(c) && c.mass < main.mass * .6) { c.vx += dx / d * 90 * dt; c.vz += dz / d * 90 * dt; c.hx = dx / d; c.hz = dz / d; if (x.kind === 'bot') { x.target = null; x.tx = c.x + dx / d * 30; x.tz = c.z + dz / d * 30; x.think = .6; } } }
+        for (const e of ejects) { const dx = e.x - px, dz = e.z - pz, d = hyp(dx, dz) || 1; if (d < rad) { e.vx += dx / d * 120 * dt; e.vz += dz / d * 120 * dt; } }
+        for (const x of foes) for (const c of x.cells) { const dx = c.x - px, dz = c.z - pz, d = hyp(dx, dz) || 1;
+          if (d < rad + cellR(c)) { const k = c.mass < main.mass * .6 ? 90 : 45; c.vx += dx / d * k * dt; c.vz += dz / d * k * dt;   // 2.7 audit: bigger foes too (half force)
+            c.hx = dx / d; c.hz = dz / d; if (x.kind === 'bot') { x.target = null; x.tx = c.x + dx / d * 30; x.tz = c.z + dz / d * 30; x.think = .6; } } }
         if (Math.random() < .5 && nearView(px, pz)) { const ang = Math.random() * Math.PI * 2; emit(px + Math.cos(ang) * rad, 1, pz + Math.sin(ang) * rad, a.color, 2, 3, .4); }
       }
     }
-    for (const f of [...xfx]) {
+    if (xfx.length) for (const f of [...xfx]) {   // 2.7 FPS: no copy when nothing is active
       f.t -= dt;
       const foes = foesOf(f.o), main = f.o.cells.length ? mainOf(f.o) : null;
       if (f.id === 'slowwave') {
@@ -266,16 +301,17 @@
         f.mesh.material.opacity = .95 * (1 - progress);
       } else if (f.id === 'x_hole') {
         pullFood(f.x, f.z, f.a.radius, 26);
-        for (const e of ejects) { const dx = f.x - e.x, dz = f.z - e.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius) { e.vx += dx / d * 80 * dt; e.vz += dz / d * 80 * dt; } }
+        for (const e of ejects) { const dx = f.x - e.x, dz = f.z - e.z, d = hyp(dx, dz) || 1; if (d < f.a.radius) { e.vx += dx / d * 80 * dt; e.vz += dz / d * 80 * dt; } }
+        if (main) { const lim = total(f.o) * .1; for (const x of foes) if (x.kind !== 'boss') for (const c of x.cells) { if (c.mass >= lim) continue; const dx = f.x - c.x, dz = f.z - c.z, d = hyp(dx, dz) || 1; if (d < f.a.radius + cellR(c) && d > 1) { c.vx += dx / d * 60 * dt; c.vz += dz / d * 60 * dt; } } }   // 2.7 audit: small drops too
         f.mesh.rotation.y += dt * 4;
-      } else if (f.id === 'x_anchor') { for (const x of foes) for (const c of x.cells) { const dx = f.x - c.x, dz = f.z - c.z, d = Math.hypot(dx, dz) || 1; if (d < f.a.radius + cellR(c) && d > 1) { const k = 38 * dt * (x.kind === 'boss' ? .3 : 1); c.vx += dx / d * k * 6; c.vz += dz / d * k * 6; } } f.mesh.rotation.z += dt * 3; }
-      else if (f.id === 'icepatch') { for (const x of foes) if (x.cells.some(c => Math.hypot(c.x - f.x, c.z - f.z) < f.r + cellR(c) * .5)) x.iceT = .35; f.mesh.material.opacity = .45 * Math.min(1, f.t); }
+      } else if (f.id === 'x_anchor') { for (const x of foes) for (const c of x.cells) { const dx = f.x - c.x, dz = f.z - c.z, d = hyp(dx, dz) || 1; if (d < f.a.radius + cellR(c) && d > 1) { const k = 38 * dt * (x.kind === 'boss' ? .3 : 1); c.vx += dx / d * k * 6; c.vz += dz / d * k * 6; } } f.mesh.rotation.z += dt * 3; }
+      else if (f.id === 'icepatch') { for (const x of foes) if (x.cells.some(c => hyp(c.x - f.x, c.z - f.z) < f.r + cellR(c) * .5)) x.iceT = .35; f.mesh.material.opacity = .45 * Math.min(1, f.t); }
       else if (f.id === 'x_twin' && f.o !== player) { if (!f.ca.gone && !f.cb.gone) { f.cb.hx = -f.ca.hx; f.cb.hz = f.ca.hz; } }
       else if (f.id === 'x_meteor') { f.mesh.position.y = .5 + f.t * 12; }
       if (f.t > 0) continue;
       if (f.id === 'x_meteor') {
         let popped = false;
-        for (const x of foes) for (const c of [...x.cells]) { const dx = c.x - f.x, dz = c.z - f.z, d = Math.hypot(dx, dz) || 1; if (d >= f.a.radius + cellR(c)) continue;
+        for (const x of foes) for (const c of [...x.cells]) { const dx = c.x - f.x, dz = c.z - f.z, d = hyp(dx, dz) || 1; if (d >= f.a.radius + cellR(c)) continue;
           if (c.mass >= 120 && x.kind !== 'minion') { popCell(c, { x: f.x, z: f.z, mass: 0 }); popped = true; } else { c.vx += dx / d * f.a.force; c.vz += dz / d * f.a.force; } }
         if (popped) rebuildCells();
         emit(f.x, 1, f.z, f.a.color, 80, f.a.radius, .9); if (nearView(f.x, f.z)) Sound.play('spike');
@@ -308,15 +344,15 @@
     if (!running || o.kind !== 'bot' || !o.build || !o.cells.length || Math.random() > .35) return;
     const c = mainOf(o), p = PERSONA[o.persona] || PERSONA.normal;
     let threat = null, td = Infinity;
-    for (const t of cells) { if (t.owner === o || (o.team && t.owner.team === o.team) || !canEat(t, c)) continue; const d = Math.hypot(t.x - c.x, t.z - c.z) - cellR(t); if (d < td) { td = d; threat = t; } }
-    const prey = o.target && o.target.owner && !o.target.owner.decoy && !o.target.gone ? o.target : null, pd = prey ? Math.hypot(prey.x - c.x, prey.z - c.z) : Infinity;
+    for (const t of cells) { if (t.owner === o || (o.team && t.owner.team === o.team) || !canEat(t, c)) continue; const d = hyp(t.x - c.x, t.z - c.z) - cellR(t); if (d < td) { td = d; threat = t; } }
+    const prey = o.target && o.target.owner && !o.target.owner.decoy && !o.target.gone ? o.target : null, pd = prey ? hyp(prey.x - c.x, prey.z - c.z) : Infinity;
     const def = threat && td < 12 + cellR(c) * 2, off = prey && pd < 30;
     const list = def && (p.flee >= 1 || !off) ? BOT_DEF : off ? BOT_OFF : def ? BOT_DEF : BOT_FARM;
     const inRange = id => { const a = abilById(id); if (list !== BOT_OFF || !a) return true; const reach = (a.radius || a.dist || 20) + cellR(c) * 2; return id === 'dash' || id === 'blink' || pd < reach; };
     const pick = list.find(id => o.build.includes(id) && !((o.abCd[id] || 0) > 0) && inRange(id));
     if (!pick || (pick === 'x_over' && !o.build.some(id => (o.abCd[id] || 0) > 0))) return;
     const aim = def ? { x: c.x * 2 - threat.x, z: c.z * 2 - threat.z } : off ? prey : null;   // run away from danger, face the prey
-    if (aim) for (const k of o.cells) { const dx = aim.x - k.x, dz = aim.z - k.z, d = Math.hypot(dx, dz) || 1; k.hx = dx / d; k.hz = dz / d; }
+    if (aim) for (const k of o.cells) { const dx = aim.x - k.x, dz = aim.z - k.z, d = hyp(dx, dz) || 1; k.hx = dx / d; k.hz = dz / d; }
     if (pick === 'dash') { o.dashT = .45; o.abCd.dash = 4; if (nearView(c.x, c.z)) emit(c.x, cellR(c), c.z, abilById('dash').color, 10, 5, .4); }
     else if (pick === 'eject') { botEject(o); o.abCd.eject = 1.5; }
     else castAbility(pick, o);
@@ -338,10 +374,35 @@
     el.innerHTML = `<small>${label || 'Хаос-лига · твои способности на этот бой'}</small><div>` + runBuild.map((id, i) => { const a = abilById(id); return `<span style="--ac:${a.color}"><i>${a.icon}</i><b>${a.name}</b><small>${ABIL_CFG.slotKeyName[i]}</small></span>`; }).join('') + '</div>';
     el.hidden = false; clearTimeout(chaosBanner.t); chaosBanner.t = setTimeout(() => { el.hidden = true; }, CHAOS_CFG.showSec * 1000);
   }
+  // 2.7: control on a player (you or the other player of a match for two): slows last 35% of their time (at most 4 s),
+  // stuns 60%; when one wears off there are 2.5 s in which a new slow or stun does not land — no more chains of slowdowns
+  const CC = { slowK: .35, slowMax: 4, stunK: .6, immune: 2.5 };
+  const ccPl = x => !!x && (x.isPlayer || x.kind === 'rival');
+  const IMPULSE_BOT_MAX = 6;
+  function ccSlow(x, d) { if (abOn('shrink', x)) return; if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d = Math.min(CC.slowMax, d * CC.slowK); } x.slowT = Math.max(x.slowT || 0, d); }
+  function ccFreeze(x, d) { if (abOn('shrink', x)) return; if (ccPl(x)) { if ((x.ccImm || 0) > 0) return; d *= CC.stunK; } x.freezeT = Math.max(x.freezeT || 0, d); }
+  // 2.7: a slowing cloud (the frost boss, ice fields of the raid) — on a player it may hold 3 s in a row at most, then 5 s of immunity; then 10 s without clouds
+  //  (it was renewed every frame, so the immunity never came: a 46 s slowdown in the owner's report)
+  function ccAura(x, dt) {
+    if (abOn('shrink', x)) return;   // 2.7 audit: «Сжатие» ignores slows and stuns
+    if (!ccPl(x)) { x.slowT = Math.max(x.slowT || 0, .35); return; }
+    if ((x.ccImm || 0) > 0 || (x.auraImm || 0) > 0) return;
+    x.auraOn = true; x.auraTouch = performance.now();
+    x.auraT = (x.auraT || 0) + dt * 1.5;   // decays at 0.5 per second outside (abTick): 3 s inside fills it
+    if (x.auraT >= 3) { x.auraT = 0; x.slowT = 0; x.ccImm = 5; x.auraImm = 10; x.auraOn = false; return; }   // 2.7: 5 s of immunity after a cloud (2.5 left the player slowed over half the time)
+    x.slowT = Math.max(x.slowT || 0, .35);
+  }
+  function ccWore(o, was) { if (was > 0 && ccPl(o) && !(o.slowT > 0) && !(o.freezeT > 0)) o.ccImm = CC.immune; }
   function abTick(dt) {
     xaTick(dt); crTick(dt); if (TEST_MODE && testEatShow) testEatTick(dt);
     for (const o of owners) {
-      if (o.slowT) o.slowT = Math.max(0, o.slowT - dt);
+      if (o.slowT) { const was = o.slowT; o.slowT = Math.max(0, o.slowT - dt); if (!o.slowT) ccWore(o, was); }
+      // 2.7 (owner: the frost cloud every 7–8 s at a big mass broke a win): after a cloud — sat out or left — 10 s without clouds
+      if (o.auraImm) o.auraImm = Math.max(0, o.auraImm - dt);
+      if (o.auraOn && performance.now() - (o.auraTouch || 0) > 300) { o.auraOn = false; if (ccPl(o)) o.auraImm = 10; }
+      if (o.ccImm) o.ccImm = Math.max(0, o.ccImm - dt);
+      if (o.blinkMark) markTick(o, dt);
+      if (o.auraT) o.auraT = Math.max(0, o.auraT - dt * .5);
       if (o.iceT) o.iceT = Math.max(0, o.iceT - dt);
       if (!o.abCd) continue;
       for (const k in o.abCd) o.abCd[k] = Math.max(0, o.abCd[k] - dt);
@@ -355,7 +416,7 @@
       if (d.ttl <= 0 || !d.src.cells.length) { scene.remove(d.mesh); d.gone = true; continue; }
       if (decoyCaught(d)) continue;
       const sp = d.still ? 0 : BASE_SPEED * ABIL_CFG.decoySpeed; d.x += d.hx * sp * dt; d.z += d.hz * sp * dt;
-      const dc = Math.hypot(d.x, d.z), rr = R - d.r; if (dc > rr) { d.x *= rr / dc; d.z *= rr / dc; d.hx = -d.hx; d.hz = -d.hz; }
+      const dc = hyp(d.x, d.z), rr = R - d.r; if (dc > rr) { d.x *= rr / dc; d.z *= rr / dc; d.hx = -d.hx; d.hz = -d.hz; }
       d.mesh.position.set(d.x, d.r, d.z);
     }
     if (botDecoys.some(d => d.gone)) { botDecoys = botDecoys.filter(d => !d.gone); owners.forEach(o => { if (o.target && o.target.owner && o.target.owner.decoy && o.target.gone) o.target = null; }); }
@@ -366,7 +427,7 @@
       else {
         const sp = decoy.still ? 0 : BASE_SPEED * ABIL_CFG.decoySpeed;
         decoy.x += decoy.hx * sp * dt; decoy.z += decoy.hz * sp * dt;
-        const dc = Math.hypot(decoy.x, decoy.z), rr = R - decoy.r; if (dc > rr) { decoy.x *= rr / dc; decoy.z *= rr / dc; decoy.hx = -decoy.hx; decoy.hz = -decoy.hz; }
+        const dc = hyp(decoy.x, decoy.z), rr = R - decoy.r; if (dc > rr) { decoy.x *= rr / dc; decoy.z *= rr / dc; decoy.hx = -decoy.hx; decoy.hz = -decoy.hz; }
         decoy.mesh.position.set(decoy.x, decoy.r, decoy.z);
       }
     }
@@ -384,6 +445,7 @@
       const maxParts = playerMaxParts(), n = player.cells.length, cd = player.splitCd, heavy = player.cells.some(c => c.mass >= 20), can = n > 0 && n < maxParts && heavy && cd <= 0;
       return { ready: cd > 0 ? 1 - cd / playerSplitCd() : can ? 1 : 0, off: !can, sub: cd > 0 ? `${cd.toFixed(1)} с` : n >= maxParts ? `${n}/${maxParts} макс.` : !heavy ? 'нужно 20' : n > 1 ? `${n}/${maxParts}` : null };
     }
+    if (id === 'blink' && player.blinkMark) return { ready: 1, off: false, sub: `к метке · ${Math.ceil(player.blinkMark.t)} с` };
     if (id === 'x_phase' && player.phase2 > 0) return { ready: 1, off: false, sub: `ещё раз ${player.phase2.toFixed(1)} с` };
     const cd = player.abCd[id] || 0, act = player.abT[id] || 0;
     return { ready: cd > 0 ? 1 - cd / abCdOf(id) : 1, off: false, sub: act > 0 ? `${act.toFixed(1)} с ✓` : cd > 0 ? `${cd.toFixed(1)} с` : null };
@@ -399,7 +461,7 @@
       const up = {}; for (const k in save.up) if (save.up[k]) up[k] = save.up[k];
       return { v: typeof APP_LABEL !== 'undefined' ? APP_LABEL : '?', s: Math.round(score), m: mode, r: !!stats.ranked, t: Math.round(stats.time),
         wall: stats.wall0 ? Math.round((performance.now() - stats.wall0) / 1000) : 0, peak: Math.round(stats.maxMass), coins: Math.round(coins || 0), lives,
-        g, gs, ev: (stats.ev || []).slice(0, 120), st, ab, up, skin: save.skin || '', pet: save.pet || '', arena: stats.arena || '',
+        g, gs, ev: (stats.ev || []).slice(0, 120), st, ab, up, skin: save.skin || '', ch: stats.charUsed || '', pet: save.pet || '', arena: stats.arena || '',
         fps: stats.time > 0 ? Math.round((stats.fr || 0) / stats.time) : 0, slow: stats.slow || 0,
         dev: { ua: navigator.userAgent.replace(/\s*\([^)]*KHTML[^)]*\)/, '').slice(0, 140), w: innerWidth, h: innerHeight, dpr: Math.round((devicePixelRatio || 1) * 100) / 100, q: QUALITY } };
     } catch (e) { return null; }
@@ -419,6 +481,7 @@
     const cBase = cParts.reduce((t, [, v]) => t + v, 0), cMul = [];
     if (U.greed) cMul.push([`«Жадность» +${2 * U.greed}%`, 1 + .02 * U.greed]);
     if (mode === 'hardcore') cMul.push(['«Хардкор»', 1.6]);
+    if (ModeX.hcK('coins') > 1) cMul.push([`«Добытчик» +${Math.round((ModeX.hcK('coins') - 1) * 100)}%`, ModeX.hcK('coins')]);
     if (arenaIs('olympus')) cMul.push(['Арена «Олимп»', 1.05]);
     // П8: every star of the skin you wear gives +1% coins (normal modes only)
     if (starBonus('coins')) cMul.push([`Звёзды скина ${'★'.repeat(starsOf(skin()))}`, 1 + starBonus('coins') / 100]);
@@ -428,25 +491,31 @@
     if (petLv('coins')) cMul.push([`Питомец +${5 * petLv('coins')}%`, 1 + .05 * petLv('coins')]);
     // 2.0.9: all coin multipliers together give at most ×2
     { const m = cMul.reduce((t, [, x]) => t * x, 1); if (m > COIN_MULT_CAP) cMul.push([`Потолок множителей ×${COIN_MULT_CAP}`, COIN_MULT_CAP / m]); }
-    { const raw = cMul.reduce((t, [, m]) => t * m, cBase); if (raw > ROUND_COIN_CAP) cMul.push([`Потолок за раунд: ${ROUND_COIN_CAP.toLocaleString('ru-RU')} ◆`, ROUND_COIN_CAP / raw]); }   // 2.5.1 (beta tester): a 37-min round paid 5 million
+    { const raw = cMul.reduce((t, [, m]) => t * m, cBase); if (raw > ROUND_COIN_CAP) cMul.push([`Потолок за раунд: ${ROUND_COIN_CAP.toLocaleString('ru-RU')} ◆`, ROUND_COIN_CAP / raw]); }   // 2.7 (beta tester): a 37-min round paid 5 million
     let coins = Math.round(cMul.reduce((t, [, m]) => t * m, cBase));
     const cExtra = [];
     let raidLine = '';
     if (mode === 'raid') {
-      const rs = raidState(), dmg = stats.raidDmg || 0;
-      rs.dmg = Math.min(RAID_HP, rs.dmg + dmg); coins += Math.round(dmg / 25); if (dmg) cExtra.push(['Урон в рейде', Math.round(dmg / 25)]);
-      if (rs.dmg >= RAID_HP && !rs.done) {
+      // 2.7: a ladder — a step's reward once a week; coins for damage only while the step is not cleared yet (no farming of a cleared step)
+      const rs = raidState(), dmg = stats.raidDmg || 0, ti = (stats.raidTier || 1) - 1, T = RAID_TIERS[ti], first = !rs.cleared.includes(ti + 1), won = dmg >= T.hp;
+      if (first && dmg) { coins += Math.round(dmg / 25); cExtra.push(['Урон в рейде', Math.round(dmg / 25)]); }
+      if (won && first) {
+        rs.cleared.push(ti + 1); coins += T.coins; cExtra.push([`Ступень ${RAID_ROMAN[ti]}`, T.coins]);
+        raidLine = `<li class="done"><span>Ступень ${RAID_ROMAN[ti]} пройдена!</span><span class="rw">+${T.coins.toLocaleString('ru-RU')} ◆</span></li>`;
+        if (ti === 4) { save.special.push({ kind: 'challenge', rar: 'legendary', title: 'Рейд V' }); if (!save.decor.includes('tt_raidlord')) save.decor.push('tt_raidlord'); raidLine += '<li class="done"><span>Высшая ступень рейда</span><span class="rw">легендарный сундук · титул «Гроза колоссов»</span></li>'; }
+      }
+      if (won && first && ti === 2 && !rs.done) {
         rs.done = true; const id = ensureRaidSkin(rs.week), had = save.skins.includes(id);
         if (!had) save.skins.push(id); else { coins += RARITY.epic.dup; cExtra.push(['Трофей уже есть', RARITY.epic.dup]); }
         coins += 1500; cExtra.push(['Победа в рейде', 1500]); save.special.push({ kind: 'challenge', rar: 'epic', title: 'Рейд' });
-        raidLine = `<li class="done"><span>Босс недели повержен! Скин «${SKINS.find(k => k.id === id).name}»</span><span class="rw">+1500 ◆ + эпический сундук</span></li>`;
+        raidLine += `<li class="done"><span>Трофей недели! Скин «${SKINS.find(k => k.id === id).name}»</span><span class="rw">+1500 ◆ + эпический сундук</span></li>`;
         save.raidWins = (save.raidWins || 0) + 1;
         const extra = save.raidWins >= 1 && !save.fxOwned.includes('raidAura') ? (save.fxOwned.push('raidAura'), 'аура «Аура рейдера»')
           : save.raidWins >= 3 && !save.hats.includes('helm') ? (save.hats.push('helm'), 'предмет «Шлем рейдера»')
           : save.raidWins >= 5 && !save.hats.includes('banner') ? (save.hats.push('banner'), save.pets.includes('raid_p') || save.pets.push('raid_p'), 'предмет «Знамя рейда» и питомец «Рейдер»') : '';
         if (extra) raidLine += `<li class="done"><span>Награда за ${save.raidWins}-ю победу в рейде</span><span class="rw">${extra}</span></li>`;
       }
-      stats.raidLeft = RAID_HP - rs.dmg;
+      stats.raidLeft = Math.max(0, T.hp - dmg); stats.raidHp = T.hp;
     }
     let xp = (arenaIs('galaxy') ? 1.1 : 1) * (mode === 'rbuild' ? 1.2 : 1) * Math.round(Math.sqrt(stats.maxMass) * 4 + stats.kills * 8 + stats.minions * 2 + stats.bossXp + stats.time / 5);
     xp = Math.round(xp * (1 + 0.05 * petLv('xp')) * (1 + starBonus('xp') / 100));
@@ -456,6 +525,9 @@
       return `<li class="${done ? 'done' : ''}"><span>${done ? '✓ ' : ''}${q.text}</span><span class="rw">+${qCoins(q)} ◆ · +${qXp(q)} оп.</span></li>`;
     }).join('');
     coinsAdd(coins, 'round'); save.xp += xp;
+    if (TEST_MODE) TLog.end({ dur: Math.round(stats.time), peak: Math.round(stats.maxMass), final: Math.round(total(player)),
+      place: stats.finalRank || (stats.bestRank < 99 ? stats.bestRank : null), kills: stats.kills, bosses: stats.bosses || 0, minions: stats.minions,
+      coins, xp, win: !!stats.win, end: stats.endTitle || '', abUsed: stats.abUsed, splits: stats.splits, duoWave: stats.duoWave ?? null, bites: stats.bites || [] });   // 2.7 test journal; bites: [time, who, its mass, the part it ate]
     if (seasonStarted && save.ss) { const S = save.ss; S.r++; S.t += stats.time; S.m = Math.max(S.m, Math.round(stats.maxMass)); S.w += stats.win ? 1 : 0; S.c += coins; S.x += xp; S.md[mode] = (S.md[mode] || 0) + 1; }
     const t = save.totals;
     t.splits += stats.splits; if (mode === 'timed' && stats.win) t.timedWins++;
@@ -478,7 +550,7 @@
     if (LOWER_BETTER[mode]) score = stats.win ? Math.max(1, Math.floor(stats.time)) : 0;
     if (mode === 'team') score = prev + (stats.win ? 1 : 0);
     const record = isDuoMode(mode) ? false : mode === 'team' ? stats.win : LOWER_BETTER[mode] ? score > 0 && (!prev || score < prev) : score > prev;
-    if (record) { save.bests[mode] = score; Net.submitRecord(mode, score, recReport(score, coins)); }
+    if (record) { save.bests[mode] = score; (save.bestChar = save.bestChar || {})[mode] = stats.charUsed || null; Net.submitRecord(mode, score, recReport(score, coins)); }   // 2.7: which character set the record (for the rating, after the server migration)
     stats.crownT = player.crownT;
     // weekly tasks
     let weekLine = '';
@@ -498,6 +570,7 @@
     { const G = save.legend; const add = (k, v) => G[k] = (G[k] || 0) + v;
       add('kills', stats.kills); add('coins', coins); add('bosses', stats.bosses); add('stars', stats.starKills || 0); add('wins', stats.win ? 1 : 0);
       add('time', Math.round(stats.time)); add('crumbs', stats.crumbs); add('lwins', stats.ranked && !stats.chaos && stats.win ? 1 : 0); G.combo = Math.max(G.combo || 0, stats.bestCombo || 0); }
+    evoCheck();
     const legendLine = checkLegend().map(L => L.badge ? '<li class="done legend"><span>👑 Все легендарные достижения! Значок «Легенда Капель»</span><span class="rw">в профиле</span></li>'
       : `<li class="done legend"><span>👑 Легендарное достижение «${L.name}»</span><span class="rw">${legendNames(L)}</span></li>`).join('');
     // mode mastery
@@ -564,10 +637,12 @@
     if (stats.starKills) cellsHtml.push(['Звёзд повержено', stats.starKills]);
     if (stats.minions) cellsHtml.push(['Прислужников', stats.minions]);
     if (mode === 'survival') cellsHtml.push(['Волна', stats.wave]);
+    if (mode === 'survival' && stats.combos) cellsHtml.push(['Связок боссов', stats.combos]);
+    if (mode === 'duoback' && stats.duoHelp !== undefined) cellsHtml.push(['Помощь напарнику', `${stats.duoHelp} · +${Math.round(stats.duoHelp * 15)} ◆`]);
     if (stats.ejects) cellsHtml.push(['Выбросов', stats.ejects]);
     if (placeBonus) cellsHtml.push(['Бонус режима', `+${placeBonus} ◆`]);
     if (mode === 'crown') cellsHtml.push(['С короной', fmtTime(player.crownT)]);
-    if (mode === 'raid') cellsHtml.push(['Урон боссу', stats.raidDmg || 0], ['Здоровье босса', `${Math.ceil(stats.raidLeft / RAID_HP * 100)}%`], ['Попыток сегодня', `${RAID_TRIES - raidState().tries} из ${RAID_TRIES}`]);
+    if (mode === 'raid') cellsHtml.push(['Урон боссу', stats.raidDmg || 0], ['Здоровье близнецов', `${Math.ceil(stats.raidLeft / (stats.raidHp || 1) * 100)}%`], ['Ступени недели', `${raidState().cleared.length} из 5`]);
     if (mode === 'hardcore') cellsHtml.push(['Хардкор', 'монеты ×1,6']);
     $('resGrid').innerHTML = cellsHtml.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     // tap the coins to see what they were made of
@@ -623,6 +698,7 @@
 
   function lostCell(o, lastMass, eater) {
     if (o.cells.length) return;
+    try { evOwnerEaten(o, eater, lastMass); if (eater === player) evKillCoins(o); } catch (e) {}   // 2.7 events: «Награда за голову», «Монетный дождь»
     if (DuoM.on && DuoM.lost(o, lastMass, eater)) return;   // a match for two: both players come back instead of ending the round
     if (o.isPlayer) {
       if (lives > 0) {

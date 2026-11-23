@@ -234,7 +234,7 @@
     if (ti >= CHAOS_CFG.topTier) {
       const skin = ensureChaosSkin(seasonId);
       if (skin) items.push({ ...skin, kind:'skin', description:'Эксклюзивный скин Хаос-лиги за достижение ступени «Разлом» или выше.' });
-      const frame = decorById('fr_cq' + chaosQ(seasonId));
+      const frame = decorById('fr_cq1');
       if (frame) items.push({ ...frame, kind:'frame', name:frame.name, description:'Квартальная рамка Хаос-лиги за достижение ступени «Разлом» или выше.' });
     }
     if (ti >= 5) {

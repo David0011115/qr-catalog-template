@@ -919,3 +919,7 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 }
 @media (orientation: landscape) and (max-height: 420px) { #tutModal.nw-wide .nw-compact .nw-mini { height: 46px; } #tutModal.nw-wide .nw-compact .nw-ph { min-height: 0; } #tutModal.nw-wide .nw-compact .nw-logo { font-size: 1rem; } }
 @media (orientation: landscape) and (max-height: 380px) { #tutModal.nw-wide .nw-compact .nw-mini { height: 38px; } #tutModal.nw-wide .nw-compact .nw-mini > span { -webkit-line-clamp: 1; } #tutModal.nw-wide .nw-compact .nw-mini > i { width: 24px; height: 24px; } }
+
+/* 2.7.2: a live scene in the big update card */
+.nw-big .nw-scene { padding: 0; background: #07031a; display: grid; place-items: center; overflow: hidden; border-radius: 14px; }
+.nw-big .nw-scene canvas { width: 100%; height: auto; max-height: 100%; aspect-ratio: 16 / 10; display: block; object-fit: contain; }

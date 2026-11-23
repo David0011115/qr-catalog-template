@@ -122,6 +122,7 @@
     } else if (a.cr) { if (!castCr(id, a, px, pz, o)) return false; }
     else if (a.xa) { if (!castXa(id, a, px, pz, o)) return false; if (id === 'x_phase') { if (me) abUsed(id); return true; } }
     else if (id === 'trap') {
+      if (o.kind === 'bot') return false;   // 2.7.7: bots never plant spikes (a build from an older save included)
       const mine = viruses.filter(v => v.trap && v.trap.owner === o);
       if (mine.length >= ABIL_CFG.maxTraps) removeVirus(mine[0]);
       const v = { x: px, z: pz, vx: 0, vz: 0, mass: VIRUS_MASS, feed: 0, mesh: makeVirusMesh(), trap: { ttl: a.dur, owner: o } };
@@ -324,10 +325,11 @@
   }
   // ===== bots: builds and when to use them, by character =====
   // normal modes: 3 random classic abilities; main league: dash, split, eject (like the player); Chaos League: 3 random of all (like the player)
+  // 2.7.7 (owner): bots never get «Ловушка» — they do not plant spikes
   function botBuild(chaos, mainRanked) {
-    if (chaos) return chaosDraw();
+    if (chaos) { const b = chaosDraw(); if (b.includes('trap')) { const pool = ABILITIES.filter(a => !a.cr && !b.includes(a.id) && a.id !== 'trap').map(a => a.id); b[b.indexOf('trap')] = pool[Math.floor(Math.random() * pool.length)] || 'dash'; } return b; }
     if (mainRanked) return [...ABIL_CFG.rankedBuild];
-    const pool = BASE_ABIL.map(a => a.id), out = [];
+    const pool = BASE_ABIL.map(a => a.id).filter(id => id !== 'trap'), out = [];
     while (out.length < 3) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
     return out;
   }
@@ -337,7 +339,7 @@
     mesh.scale.setScalar(radius(EJECT_MASS)); scene.add(mesh);
     ejects.push({ x: c.x - c.hx * r, z: c.z - c.hz * r, vx: -c.hx * 60 + c.vx, vz: -c.hz * 60 + c.vz, mass: EJECT_MASS, age: 0, mesh });
   }
-  const BOT_DEF = ['shield', 'x_ghost', 'cloak', 'decoy', 'x_refl', 'push', 'x_phase', 'blink', 'shrink', 'x_typhoon', 'x_ice', 'slow', 'trap', 'dash', 'eject'];
+  const BOT_DEF = ['shield', 'x_ghost', 'cloak', 'decoy', 'x_refl', 'push', 'x_phase', 'blink', 'shrink', 'x_typhoon', 'x_ice', 'slow', 'dash', 'eject'];
   const BOT_OFF = ['x_hunt', 'x_ice', 'slow', 'x_meteor', 'x_anchor', 'x_vamp', 'dash', 'blink', 'x_twin'];
   const BOT_FARM = ['pulse', 'x_hole', 'x_over'];
   function botAI(o) {

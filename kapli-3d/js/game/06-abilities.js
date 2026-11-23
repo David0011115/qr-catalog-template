@@ -501,21 +501,29 @@
       // 2.7: a ladder — a step's reward once a week; coins for damage only while the step is not cleared yet (no farming of a cleared step)
       const rs = raidState(), dmg = stats.raidDmg || 0, ti = (stats.raidTier || 1) - 1, T = RAID_TIERS[ti], first = !rs.cleared.includes(ti + 1), won = dmg >= T.hp;
       if (first && dmg) { coins += Math.round(dmg / 25); cExtra.push(['Урон в рейде', Math.round(dmg / 25)]); }
+      const got = [];   // 2.7.12: what the step gave — its own window after the round, like the «Хардкор» rewards
       if (won && first) {
-        rs.cleared.push(ti + 1); coins += T.coins; cExtra.push([`Ступень ${RAID_ROMAN[ti]}`, T.coins]);
+        rs.cleared.push(ti + 1); rs.newDay = today; coins += T.coins; cExtra.push([`Ступень ${RAID_ROMAN[ti]}`, T.coins]); got.push(`+${T.coins.toLocaleString('ru-RU')} ◆ за ступень`);
         raidLine = `<li class="done"><span>Ступень ${RAID_ROMAN[ti]} пройдена!</span><span class="rw">+${T.coins.toLocaleString('ru-RU')} ◆</span></li>`;
-        if (ti === 4) { save.special.push({ kind: 'challenge', rar: 'legendary', title: 'Рейд V' }); if (!save.decor.includes('tt_raidlord')) save.decor.push('tt_raidlord'); raidLine += '<li class="done"><span>Высшая ступень рейда</span><span class="rw">легендарный сундук · титул «Гроза колоссов»</span></li>'; }
+        if (ti === 3) { save.special.push({ kind: 'challenge', rar: 'epic', title: 'Рейд IV' }); got.push('эпический сундук'); raidLine += '<li class="done"><span>Ступень IV</span><span class="rw">эпический сундук</span></li>'; }
+        if (ti === 4) { save.special.push({ kind: 'challenge', rar: 'legendary', title: 'Рейд V' }); const tt = !save.decor.includes('tt_raidlord'); if (tt) save.decor.push('tt_raidlord'); got.push('легендарный сундук'); if (tt) got.push('титул «Гроза колоссов»'); raidLine += `<li class="done"><span>Высшая ступень рейда</span><span class="rw">легендарный сундук${tt ? ' · титул «Гроза колоссов»' : ''}</span></li>`; }
       }
       if (won && first && ti === 2 && !rs.done) {
         rs.done = true; const id = ensureRaidSkin(rs.week), had = save.skins.includes(id);
         if (!had) save.skins.push(id); else { coins += RARITY.epic.dup; cExtra.push(['Трофей уже есть', RARITY.epic.dup]); }
         coins += 1500; cExtra.push(['Победа в рейде', 1500]); save.special.push({ kind: 'challenge', rar: 'epic', title: 'Рейд' });
         raidLine += `<li class="done"><span>Трофей недели! Скин «${SKINS.find(k => k.id === id).name}»</span><span class="rw">+1500 ◆ + эпический сундук</span></li>`;
+        got.push(had ? `трофей недели уже был: +${RARITY.epic.dup} ◆` : `трофей недели — скин «${SKINS.find(k => k.id === id).name}»`, '+1 500 ◆ за победу', 'эпический сундук');
         save.raidWins = (save.raidWins || 0) + 1;
         const extra = save.raidWins >= 1 && !save.fxOwned.includes('raidAura') ? (save.fxOwned.push('raidAura'), 'аура «Аура рейдера»')
           : save.raidWins >= 3 && !save.hats.includes('helm') ? (save.hats.push('helm'), 'предмет «Шлем рейдера»')
           : save.raidWins >= 5 && !save.hats.includes('banner') ? (save.hats.push('banner'), save.pets.includes('raid_p') || save.pets.push('raid_p'), 'предмет «Знамя рейда» и питомец «Рейдер»') : '';
-        if (extra) raidLine += `<li class="done"><span>Награда за ${save.raidWins}-ю победу в рейде</span><span class="rw">${extra}</span></li>`;
+        if (extra) { raidLine += `<li class="done"><span>Награда за ${save.raidWins}-ю победу в рейде</span><span class="rw">${extra}</span></li>`; got.push(`за ${save.raidWins}-ю победу: ${extra}`); }
+      }
+      if (won && first) {
+        save.raidMax = Math.max(save.raidMax || 0, ti + 1);
+        if (rs.cleared.length >= 5 && !rs.full) { rs.full = true; save.raidFull = (save.raidFull || 0) + 1; got.push(`вся лестница недели — ${save.raidFull}-я неделя`); }
+        try { raidRewardCheck({ kind: 'step', id: ti + 1, lines: got }); } catch (e) {}
       }
       stats.raidLeft = Math.max(0, T.hp - dmg); stats.raidHp = T.hp;
     }

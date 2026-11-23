@@ -674,7 +674,7 @@
       chNow.map(ch => `<li class="done"><span>★ Испытание «${ch.name}»</span><span class="rw">${ch.reward ? rewardName(ch.reward) + ' + ' : ''}сундук «${RARITY[CH_TIER[ch.id] || 'rare'].name}»</span></li>`).join('') +
       weekLine + shardGoalLine + skillLine + legendLine + raidLine + masteryLine + (gotChest ? '<li class="done"><span>Выпал сундук</span><span class="rw">открой в меню «Сундуки»</span></li>' : '') +
       (lgAfter > lgBefore ? `<li class="done"><span>Новая лига: ${lgView(lgAfter, holidayOf(save.season.id)).name} + сундук лиги</span><span class="rw">сезон ${save.season.id}</span></li>` : '');
-    // 2.7.4: signed-in players see before the coins are sent how much of them today's limit (100 000 ◆ a day) will still take
+    // 2.7.4: signed-in players see before the coins are sent how much of them today's limit (WAL_DAY ◆ a day) will still take
     if (save.wal && save.wal.uid && coins > 0) { const used = walDayUsed(), f = v => v.toLocaleString('ru-RU'), take = Math.max(0, Math.min(coins, coins - (used - WAL_DAY)));
       if (take < coins) $('resQuests').innerHTML += `<li class="wal-lim"><span>⚠ ${take ? `Дневной лимит ${f(WAL_DAY)} ◆: из ${f(coins)} ◆ за раунд засчитается ${f(take)}` : `Дневной лимит ${f(WAL_DAY)} ◆ исчерпан — монеты за раунд не засчитаются`}</span><span class="rw">обновится в ${walResetAt()}</span></li>`;
       else if (used >= WAL_DAY * .8) $('resQuests').innerHTML += `<li class="wal-lim soft"><span>Сегодня заработано ${f(Math.min(used, WAL_DAY))} из ${f(WAL_DAY)} ◆</span><span class="rw">лимит обновится в ${walResetAt()}</span></li>`; }

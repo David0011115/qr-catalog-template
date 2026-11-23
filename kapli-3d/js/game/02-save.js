@@ -16,9 +16,9 @@
   // (save.wal.q) with its own id; 14-net.js sends the queue and takes the server's balance. A guest has only the number here.
   const coinDev = (() => { try { let d = localStorage.getItem('kapli3d-dev'); if (!d) { d = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('kapli3d-dev', d); } return d.replace(/[^A-Za-z0-9]/g, '').slice(1, 11) || 'x'; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 10); } })();
   let coinSeq = 0;
-  // 2.7.4: the server takes at most 20 000 in one earning and 100 000 a day (UTC day). It refuses a whole piece that goes over the day,
+  // 2.7.4: the server takes at most 20 000 in one earning and 250 000 a day (UTC day; 100 000 before 2.7.5). It refuses a whole piece that goes over the day,
   // so the game cuts the piece at what is left of the day: everything that fits is counted, only the rest is refused
-  const WAL_DAY = 100000, utcDay = () => new Date().toISOString().slice(0, 10);
+  const WAL_DAY = 250000, utcDay = () => new Date().toISOString().slice(0, 10);
   function walDayUsed() {   // earned today on this account as far as this phone knows: confirmed by the server + still in the queue
     const d = utcDay(), W = save.wal, done = save.walDay && save.walDay.d === d ? save.walDay.e : 0;
     return done + (W && Array.isArray(W.q) ? W.q.filter(o => o.k === 'e' && (!o.d || o.d === d)).reduce((t, o) => t + o.n, 0) : 0);

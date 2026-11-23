@@ -6,7 +6,10 @@ if os.path.exists(out): shutil.rmtree(out)
 shutil.copytree(src, out, ignore=shutil.ignore_patterns('tools', 'server', 'tests', '*.sql', '*.md'))
 def sub(path, a, b, n=1):
     s = open(out + path, encoding='utf-8').read(); assert s.count(a) == n, (path, a); open(out + path, 'w', encoding='utf-8').write(s.replace(a, b))
-sub('js/game/01-config.js', 'const TEST_MODE = false;', 'const TEST_MODE = true;')
+sub('js/game/01-config.js', 'const TEST_FLAG = false;', 'const TEST_FLAG = true;')
+# the test panel, stress tests and the journal live in their own file that only the test copy loads
+sub('js/loader.js', "'14-net.js', '14-net-end.js'", "'14-net.js', '14-tpanel.js', '14-net-end.js'")
+sub('sw.js', '"js/game/14-net.js", ', '"js/game/14-net.js", "js/game/14-tpanel.js", ')
 # 2.7 + online: the test copy talks only to the owner's TEST Supabase project (the same one the test game server checks
 # accounts against), never to the real game's project — accounts, ratings and saves there are test data only
 TEST_SB_URL, TEST_SB_KEY = 'https://kccwtpveezsrgwfnflhf.supabase.co', 'sb_publishable_oyO2ubBpXo3h1IBB-DPdsQ_gnYaO0Mf'

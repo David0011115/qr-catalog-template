@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const sql = await readFile(new URL('../../ONLINE-SERVER-RESULTS-MIGRATION.sql', import.meta.url), 'utf8');
-const privacySql = await readFile(new URL('../../PRIVACY-CONSENT-MIGRATION.sql', import.meta.url), 'utf8');
+const sql = await readFile(new URL('../../sql/17-ONLINE-SERVER-RESULTS-MIGRATION.sql', import.meta.url), 'utf8');
+const privacySql = await readFile(new URL('../../sql/05-PRIVACY-CONSENT-MIGRATION.sql', import.meta.url), 'utf8');
 const connectGuide = await readFile(new URL('../../ONLINE-SERVER-CONNECT.md', import.meta.url), 'utf8');
 
 test('server result RPCs acknowledge matching retries before applying player rate limits', () => {

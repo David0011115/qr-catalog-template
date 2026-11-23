@@ -3,8 +3,10 @@ import re, shutil, sys, os
 src, out = sys.argv[1].rstrip('/') + '/', sys.argv[2].rstrip('/') + '/'
 if os.path.exists(out): shutil.rmtree(out)
 shutil.copytree(src, out)
-c = open(out + 'js/game/01-config.js', encoding='utf-8').read(); assert c.count('const TEST_MODE = false;') == 1
-open(out + 'js/game/01-config.js', 'w', encoding='utf-8').write(c.replace('const TEST_MODE = false;', 'const TEST_MODE = true;'))
+c = open(out + 'js/game/01-config.js', encoding='utf-8').read(); assert c.count('const TEST_FLAG = false;') == 1
+open(out + 'js/game/01-config.js', 'w', encoding='utf-8').write(c.replace('const TEST_FLAG = false;', 'const TEST_FLAG = true;'))
+c = open(out + 'js/loader.js', encoding='utf-8').read(); assert c.count("'14-net.js', '14-net-end.js'") == 1
+open(out + 'js/loader.js', 'w', encoding='utf-8').write(c.replace("'14-net.js', '14-net-end.js'", "'14-net.js', '14-tpanel.js', '14-net-end.js'"))
 s = open(out + 'index.html', encoding='utf-8').read()
 for pat in [r'<!doctype html>\s*', r'<html[^>]*>\s*', r'</?head>\s*', r'<body>\s*', r'</body>\s*', r'</html>\s*', r'<meta name="viewport"[^>]*>\s*', r'<meta charset[^>]*>\s*',
             r'<link rel="(manifest|icon|apple-touch-icon)"[^>]*>\s*', r'<meta name="(apple|mobile)[^>]*>\s*']:

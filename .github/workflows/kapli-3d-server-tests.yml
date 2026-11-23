@@ -12,10 +12,11 @@ on:
       - 'kapli-3d/js/game/**'
       - 'kapli-3d/js/loader.js'
       - 'kapli-3d/index.html'
-      - 'kapli-3d/*.sql'
+      - 'kapli-3d/sql/**'
+      - 'kapli-3d/sw.js'
+      - 'kapli-3d/tools/**'
       - 'kapli-3d/README.md'
       - 'kapli-3d/ONLINE-SERVER-*.md'
-      - 'kapli-3d/ONLINE-SERVER-*.sql'
       - 'kapli-3d/server/cloudflare/**'
       - '.github/workflows/kapli-3d-server-tests.yml'
 

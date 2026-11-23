@@ -178,17 +178,21 @@
     addEventListener('offline', () => { if (sess) setSync('err'); });
 
     // ---------- records ----------
-    let recDetOk = true;   // RECORDS-DETAILS-MIGRATION.sql not run yet: records go the old way, without a report
+    let recDetOffUntil = 0;   // RECORDS-DETAILS-MIGRATION.sql not run yet: records go the old way, without a report
+    // 2.7.6: a record's report is kept with the save until the record has really reached the server — a record sent later
+    // (no connection or no sign-in at the end of the round) goes with its report too; «no such function» is only remembered for 5 minutes
     async function submitRecord(m, score, det) {
+      if (det && RANK_MODES.includes(m)) { save.recDet = { ...(save.recDet || {}), [m]: det }; persist(); }
+      det = det || ((save.recDet || {})[m] && save.recDet[m].s === Math.round(score) ? save.recDet[m] : null);
       if (!sb || !sess || privacyPending || !RANK_MODES.includes(m) || !(score > 0)) return false;
       let res = null;
-      if (det && recDetOk) {
+      if (det && Date.now() > recDetOffUntil) {
         res = await sb.rpc('kapli_submit_record_d', { p_mode: m, p_score: Math.round(score), p_details: det }).then(r => r, e => ({ error: e }));
-        if (res.error && /PGRST202|could not find the function|kapli_submit_record_d/i.test(`${res.error.code} ${res.error.message}`)) { recDetOk = false; res = null; }
+        if (res.error && /PGRST202|could not find the function|kapli_submit_record_d/i.test(`${res.error.code} ${res.error.message}`)) { recDetOffUntil = Date.now() + 5 * 60000; res = null; }
       }
       if (!res) res = await sb.rpc('kapli_submit_record', { p_mode: m, p_score: Math.round(score) }).then(r => r, e => ({ error: e }));
       const { error } = res;
-      if (!error) { meta.recSent[m] = score; saveMeta(); return true; }
+      if (!error) { meta.recSent[m] = score; saveMeta(); if (save.recDet && save.recDet[m] && save.recDet[m].s === Math.round(score)) { delete save.recDet[m]; persist(); } return true; }
       return false;
     }
     // Duo online ratings are submitted only by the authoritative Cloudflare room server.

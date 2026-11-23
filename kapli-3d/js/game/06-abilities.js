@@ -411,6 +411,7 @@
     if (petLv('coins')) cMul.push([`Питомец +${5 * petLv('coins')}%`, 1 + .05 * petLv('coins')]);
     // 2.0.9: all coin multipliers together give at most ×2
     { const m = cMul.reduce((t, [, x]) => t * x, 1); if (m > COIN_MULT_CAP) cMul.push([`Потолок множителей ×${COIN_MULT_CAP}`, COIN_MULT_CAP / m]); }
+    { const raw = cMul.reduce((t, [, m]) => t * m, cBase); if (raw > ROUND_COIN_CAP) cMul.push([`Потолок за раунд: ${ROUND_COIN_CAP.toLocaleString('ru-RU')} ◆`, ROUND_COIN_CAP / raw]); }   // 2.5.1 (beta tester): a 37-min round paid 5 million
     let coins = Math.round(cMul.reduce((t, [, m]) => t * m, cBase));
     const cExtra = [];
     let raidLine = '';

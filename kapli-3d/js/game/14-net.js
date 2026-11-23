@@ -982,6 +982,8 @@
             const { data, error } = await withTimeout(sb.rpc('kapli_wallet_sync', { p_init: 0, p_ops: batch }), 10000); if (error) throw error;
             if (!data || data.err || typeof data.coins !== 'number') return;
             const gone = new Set([...(data.done || []), ...(data.bad || [])]);
+            { const ref = batch.filter(o => o.k === 'e' && (data.bad || []).includes(o.id)).reduce((t, o) => t + o.n, 0);   // 2.5.1: refused coins are named
+              if (ref > 0) toast(`Сервер не принял ${ref.toLocaleString('ru-RU')} ◆: за сутки можно заработать не больше 100 000 (защита от взлома)`); }
             if ((data.bad || []).length) KapliErr.log(new Error(`wallet refused ${data.bad.length}: ${batch.filter(o => data.bad.includes(o.id)).map(o => o.k + o.n + ':' + o.s).join(',').slice(0, 200)}`), 'wallet');
             W.q = W.q.filter(o => !gone.has(o.id));
             save.coins = Math.max(0, data.coins + qSum(W.q));

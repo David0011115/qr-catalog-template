@@ -6,6 +6,7 @@
   const R_BASE = R, FOOD_BASE = FOOD, R_MAX = R * 2, FOOD_MAX = 12000, START_MASS = 10, MAX_BONUS = 6;
   const MAX_MASS = 15000;   // fallback cap for non-player cell types; player cells have no mass cap
   const BOT_MASS_CAP = 10000;  // total mass cap for each regular bot
+  const ROUND_COIN_CAP = 15000;   // 2.5.1: coins for a round's play at most (quests and the rest come on top)
   const BOSS_MASS_CAP = 12000; // ordinary bosses; survival and raid have separate caps
   const MODES = {
     classic:  { name: 'Классика',       desc: 'Раунд до поражения: вехи массы с наградой и арена, которая накаляется каждые 3 минуты' },

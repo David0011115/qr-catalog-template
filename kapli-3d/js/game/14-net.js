@@ -866,6 +866,19 @@
     });
 
     // ---------- ranking by mode ----------
+    // 2.7.14 (owner): ▲ / ▼ — how many places a player moved since the last time you opened this rating (kept on this device);
+    // the first look in a session is the base, so the arrows stay while you switch tabs
+    const RK_SEEN = 'kapli-rank-seen', rkBase = {};
+    function rankMoves(key, list) {
+      let all = {}; try { all = JSON.parse(localStorage.getItem(RK_SEEN) || '{}') || {}; } catch (e) {}
+      if (!(key in rkBase)) rkBase[key] = all[key] || null;
+      const prev = rkBase[key], out = new Map();
+      if (prev) for (const [id, pl] of list) { const was = prev[id];
+        out.set(id, was === undefined ? '<i class="rk-mv mv-new" title="Новый в списке">нов</i>' : was > pl ? `<i class="rk-mv mv-up" title="Поднялся на ${was - pl}">▲${was - pl}</i>` : was < pl ? `<i class="rk-mv mv-dn" title="Опустился на ${pl - was}">▼${pl - was}</i>` : ''); }
+      all[key] = Object.fromEntries(list); try { localStorage.setItem(RK_SEEN, JSON.stringify(all)); } catch (e) {}
+      return out;
+    }
+    const mvTxt = h => h ? ` (${h.replace(/<[^>]+>/g, '').replace('нов', 'новое')})` : '';
     let rankMode = 'classic';
     let rankDiff = 0;
     $('rankModes').innerHTML = RANK_MODES.map(m => `<button type="button" data-rm="${m}" aria-pressed="false">${MODES[m].name}</button>`).join('') +
@@ -876,12 +889,13 @@
       const list = $('rankList');
       const { data, error } = await withTimeout(sb.rpc('kapli_coins_top', { p_limit: 20 }), 9000); if (error) throw error;
       if (rankMode !== 'coins') return;
-      list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${Number(r.total).toLocaleString('ru-RU')} ◆</span></li>`).join('')
+      const mv = rankMoves('coins', data.map(r => [r.nickname, r.place]));
+      list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}${mv.get(r.nickname) || ''}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${Number(r.total).toLocaleString('ru-RU')} ◆</span></li>`).join('')
         : `<li class="rk-empty">${emptyHTML('Здесь будут те, кто заработал больше всех монет в игре, — начиная с версии 2.6.', 'search')}</li>`;
       decorateWho(list);
       if (!sess) { $('rankMe').textContent = 'Войди в аккаунт: монеты считает сервер, только у игроков с аккаунтом.'; return; }
       const me = await sb.rpc('kapli_coins_me'); const row = me.data && me.data[0];
-      $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.players} · заработано ${Number(row.total).toLocaleString('ru-RU')} ◆ с версии 2.6` : 'Считаются монеты, заработанные в игре с версии 2.6: раунды, достижения, сундуки, лиги. Промокоды и подарки не входят.';
+      $('rankMe').textContent = row ? `Твоё место: ${row.place}${mvTxt(rankMoves('coins:me', [['me', row.place]]).get('me'))} из ${row.players} · заработано ${Number(row.total).toLocaleString('ru-RU')} ◆ с версии 2.6` : 'Считаются монеты, заработанные в игре с версии 2.6: раунды, достижения, сундуки, лиги. Промокоды и подарки не входят.';
     }
     // the ratings of the modes for two: «Захват территории» — most wins; «Спина к спине» — the best pairs on each difficulty
     async function loadDuoRank(m) {
@@ -890,13 +904,14 @@
       const head = m === 'duoback' ? `<li class="rk-diff" role="group" aria-label="Сложность">${DF.map((n, i) => `<button type="button" data-rdf="${i}" aria-pressed="${i === rankDiff}">${n}</button>`).join('')}</li>` : '';
       const { data, error } = await withTimeout(m === 'territory' ? sb.rpc('kapli_duo_territory_top', { p_limit: 20 }) : sb.rpc('kapli_duo_coop_top', { p_diff: rankDiff, p_limit: 20 }), 9000); if (error) throw error;
       if (rankMode !== m) return;
+      const pid = r => m === 'territory' ? r.nickname : r.nickname + '+' + r.mate_nickname, mv = rankMoves(m === 'territory' ? m : m + rankDiff, data.map(r => [pid(r), r.place]));
       list.innerHTML = head + (data.length ? data.map(r => m === 'territory'
-        ? `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${r.wins} поб. · ${r.best_share}%</span></li>`
-        : `<li class="${r.is_me ? 'me' : ''} rk-pair"><span class="pl">${r.place}</span><span class="rk-pair-who">${escHtml(r.nickname)} <i>+</i> ${escHtml(r.mate_nickname)}<small>${fmtTime(r.time_s)} · боссов ${r.bosses} · ботов ${r.bots} · возвращений ${r.respawns}</small></span><span class="sc">${r.waves} волн</span></li>`).join('')
+        ? `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}${mv.get(pid(r)) || ''}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${r.wins} поб. · ${r.best_share}%</span></li>`
+        : `<li class="${r.is_me ? 'me' : ''} rk-pair"><span class="pl">${r.place}${mv.get(pid(r)) || ''}</span><span class="rk-pair-who">${escHtml(r.nickname)} <i>+</i> ${escHtml(r.mate_nickname)}<small>${fmtTime(r.time_s)} · боссов ${r.bosses} · ботов ${r.bots} · возвращений ${r.respawns}</small></span><span class="sc">${r.waves} волн</span></li>`).join('')
         : `<li class="rk-empty">${emptyHTML(m === 'territory' ? 'Пока никто не выиграл матч — стань первым!' : 'На этой сложности пока нет забегов — пройдите первыми!', 'search')}</li>`);
       decorateWho(list);
       if (!sess) { $('rankMe').textContent = 'Войди в аккаунт, чтобы твои матчи попали в рейтинг.'; return; }
-      if (m === 'territory') { const me = await sb.rpc('kapli_duo_territory_me'); const row = me.data && me.data[0]; $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.total} · побед ${row.wins} из ${row.games} · лучшая доля ${row.best_share}%` : 'У тебя пока нет побед в этом режиме.'; }
+      if (m === 'territory') { const me = await sb.rpc('kapli_duo_territory_me'); const row = me.data && me.data[0]; $('rankMe').textContent = row ? `Твоё место: ${row.place}${mvTxt(rankMoves('territory:me', [['me', row.place]]).get('me'))} из ${row.total} · побед ${row.wins} из ${row.games} · лучшая доля ${row.best_share}%` : 'У тебя пока нет побед в этом режиме.'; }
       else { const mine = data.find(r => r.is_me); $('rankMe').textContent = mine ? `Ваша лучшая пара: ${mine.place}-е место · ${mine.waves} волн` : 'Рейтинг пар: забег засчитывает сервер игры, когда матч закончен. Матчи напрямую — без рейтинга.'; }
     }
     async function loadRank(m) {
@@ -909,14 +924,15 @@
         if (sess) await syncBests();
         const { data, error } = await withTimeout(sb.rpc('kapli_leaderboard', { p_mode: m, p_limit: 20 }), 9000); if (error) throw error;
         if (rankMode !== m) return;
-        list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${fmtBest(m, r.score)}</span></li>`).join('')
+        const mv = rankMoves(m, data.map(r => [r.nickname, r.place]));
+        list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}${mv.get(r.nickname) || ''}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${fmtBest(m, r.score)}</span></li>`).join('')
           : emptyHTML('В этом режиме пока нет рекордов — стань первым!', 'search');
         decorateWho(list);
         if (!sess) { $('rankMe').textContent = 'Войди в аккаунт, чтобы твои рекорды попали в рейтинг.'; return; }
         const [me, hd] = await Promise.all([sb.rpc('kapli_my_place', { p_mode: m }), sb.rpc('kapli_my_held').then(r => r, () => ({}))]);
         const row = me.data && me.data[0], held = Array.isArray(hd.data) && hd.data.includes(m);
         if (held) { const li = list.querySelector('li.me .sc'); if (li) li.insertAdjacentHTML('beforeend', '<small class="rk-held">⏳ на проверке</small>'); }
-        $('rankMe').textContent = row ? `Твоё место: ${row.place} из ${row.total} · ${fmtBest(m, row.score)}${held ? ' · ⏳ рекорд на проверке: другие увидят его после одобрения' : ''}` : 'У тебя пока нет рекорда в этом режиме — сыграй раунд.';
+        $('rankMe').textContent = row ? `Твоё место: ${row.place}${mvTxt(rankMoves(m + ':me', [['me', row.place]]).get('me'))} из ${row.total} · ${fmtBest(m, row.score)}${held ? ' · ⏳ рекорд на проверке: другие увидят его после одобрения' : ''}` : 'У тебя пока нет рекорда в этом режиме — сыграй раунд.';
       } catch (e) {
         list.innerHTML = `<p class="empty-note">${netErr(e) ? 'Нет связи с сервером.' : /kapli_|function|PGRST20/i.test(String(e.message || e.code)) ? 'Рейтинг ещё не включён на сервере.' : 'Рейтинг сейчас недоступен.'}</p>`;
       }

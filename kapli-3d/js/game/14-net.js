@@ -869,16 +869,26 @@
     // 2.7.14 (owner): ▲ / ▼ — how many places a player moved since the last time you opened this rating (kept on this device);
     // the first look in a session is the base, so the arrows stay while you switch tabs
     const RK_SEEN = 'kapli-rank-seen', rkBase = {};
+    // 2.7.15: with 22-RANK-MOVES-MIGRATION.sql the server remembers the places once a day (00:00 Moscow time) — the arrows are the same for everyone;
+    // without it (or offline) — the old way, since your last look on this device
+    let rkSrvOff = false; const rkSrv = {};
+    async function rankSrvBase(key) {
+      if (rkSrvOff) return null;
+      try { const r = await withTimeout(sb.rpc('kapli_rank_moves', { p_key: key }), 6000); if (r.error) throw r.error; return (rkSrv[key] = Object.fromEntries((r.data || []).map(x => [x.id, x.place]))); }
+      catch (e) { if (/PGRST202|kapli_rank_moves|function/i.test(`${e.code} ${e.message}`)) rkSrvOff = true; return null; }
+    }
+    const mvHtml = (was, pl, day) => was === undefined ? `<i class="rk-mv mv-new" title="Новый в списке${day ? ' за сегодня' : ''}">нов</i>` : was > pl ? `<i class="rk-mv mv-up" title="Поднялся на ${was - pl}${day ? ' за сегодня' : ''}">▲${was - pl}</i>` : was < pl ? `<i class="rk-mv mv-dn" title="Опустился на ${pl - was}${day ? ' за сегодня' : ''}">▼${pl - was}</i>` : '';
     function rankMoves(key, list) {
+      const out = new Map(), srv = rkSrv[key.replace(/:me$/, '')];
+      if (srv) { if (/:me$/.test(key)) { for (const [, pl] of list) out.set('me', Net.nick ? mvHtml(srv[Net.nick], pl, true) : ''); } else for (const [id, pl] of list) out.set(id, mvHtml(srv[id], pl, true)); return out; }
       let all = {}; try { all = JSON.parse(localStorage.getItem(RK_SEEN) || '{}') || {}; } catch (e) {}
       if (!(key in rkBase)) rkBase[key] = all[key] || null;
-      const prev = rkBase[key], out = new Map();
-      if (prev) for (const [id, pl] of list) { const was = prev[id];
-        out.set(id, was === undefined ? '<i class="rk-mv mv-new" title="Новый в списке">нов</i>' : was > pl ? `<i class="rk-mv mv-up" title="Поднялся на ${was - pl}">▲${was - pl}</i>` : was < pl ? `<i class="rk-mv mv-dn" title="Опустился на ${pl - was}">▼${pl - was}</i>` : ''); }
+      const prev = rkBase[key];
+      if (prev) for (const [id, pl] of list) out.set(id, mvHtml(prev[id], pl));
       all[key] = Object.fromEntries(list); try { localStorage.setItem(RK_SEEN, JSON.stringify(all)); } catch (e) {}
       return out;
     }
-    const mvTxt = h => h ? ` (${h.replace(/<[^>]+>/g, '').replace('нов', 'новое')})` : '';
+    const mvTxt = h => h ? ` (${h.replace(/<[^>]+>/g, '').replace('нов', 'новое')}${/за сегодня/.test(h) ? ' за сегодня' : ''})` : '';
     let rankMode = 'classic';
     let rankDiff = 0;
     $('rankModes').innerHTML = RANK_MODES.map(m => `<button type="button" data-rm="${m}" aria-pressed="false">${MODES[m].name}</button>`).join('') +
@@ -887,7 +897,7 @@
     // 2.6: coins earned in the game since 2.6, counted by the server wallet (COINS-RATING-MIGRATION.sql)
     async function loadCoinsRank() {
       const list = $('rankList');
-      const { data, error } = await withTimeout(sb.rpc('kapli_coins_top', { p_limit: 20 }), 9000); if (error) throw error;
+      const [{ data, error }] = await Promise.all([withTimeout(sb.rpc('kapli_coins_top', { p_limit: 20 }), 9000), rankSrvBase('coins')]); if (error) throw error;
       if (rankMode !== 'coins') return;
       const mv = rankMoves('coins', data.map(r => [r.nickname, r.place]));
       list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}${mv.get(r.nickname) || ''}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${Number(r.total).toLocaleString('ru-RU')} ◆</span></li>`).join('')
@@ -902,7 +912,7 @@
       const list = $('rankList');
       const DF = ['Обычный', 'Сложный', 'Безумие'];
       const head = m === 'duoback' ? `<li class="rk-diff" role="group" aria-label="Сложность">${DF.map((n, i) => `<button type="button" data-rdf="${i}" aria-pressed="${i === rankDiff}">${n}</button>`).join('')}</li>` : '';
-      const { data, error } = await withTimeout(m === 'territory' ? sb.rpc('kapli_duo_territory_top', { p_limit: 20 }) : sb.rpc('kapli_duo_coop_top', { p_diff: rankDiff, p_limit: 20 }), 9000); if (error) throw error;
+      const [{ data, error }] = await Promise.all([withTimeout(m === 'territory' ? sb.rpc('kapli_duo_territory_top', { p_limit: 20 }) : sb.rpc('kapli_duo_coop_top', { p_diff: rankDiff, p_limit: 20 }), 9000), rankSrvBase(m === 'territory' ? m : m + rankDiff)]); if (error) throw error;
       if (rankMode !== m) return;
       const pid = r => m === 'territory' ? r.nickname : r.nickname + '+' + r.mate_nickname, mv = rankMoves(m === 'territory' ? m : m + rankDiff, data.map(r => [pid(r), r.place]));
       list.innerHTML = head + (data.length ? data.map(r => m === 'territory'
@@ -922,7 +932,7 @@
         if (m === 'territory' || m === 'duoback') { await loadDuoRank(m); return; }
         if (m === 'coins') { await loadCoinsRank(); return; }
         if (sess) await syncBests();
-        const { data, error } = await withTimeout(sb.rpc('kapli_leaderboard', { p_mode: m, p_limit: 20 }), 9000); if (error) throw error;
+        const [{ data, error }] = await Promise.all([withTimeout(sb.rpc('kapli_leaderboard', { p_mode: m, p_limit: 20 }), 9000), rankSrvBase(m)]); if (error) throw error;
         if (rankMode !== m) return;
         const mv = rankMoves(m, data.map(r => [r.nickname, r.place]));
         list.innerHTML = data.length ? data.map(r => `<li class="${r.is_me ? 'me' : ''}" data-pc="${escHtml(r.nickname)}" tabindex="0" role="button" aria-label="Профиль игрока ${escHtml(r.nickname)}"><span class="pl">${r.place}${mv.get(r.nickname) || ''}</span><span class="rk-who" data-who="${escHtml(r.nickname)}">${whoHTML(r.nickname, r.is_me ? myShowcase() : null)}</span><span class="sc">${fmtBest(m, r.score)}</span></li>`).join('')

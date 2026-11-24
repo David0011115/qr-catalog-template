@@ -945,9 +945,8 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
 @media (orientation: landscape) and (max-height: 560px) {
   #rankCard { display: flex; flex-direction: column; gap: 6px; max-width: min(960px, 100%) !important; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 8px 14px 10px; }
   #rankCard > h1 { font-size: 1.15rem; margin: 2px 52px 0; line-height: 1.2; }
-  #rankCard .rank-modes { flex: none; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: 0 2px; }
-  #rankCard .rank-modes::-webkit-scrollbar { display: none; }
-  #rankCard .rank-modes button { flex: none; padding: 4px 10px; font-size: .72rem; white-space: nowrap; }
+  #rankCard .rank-modes { flex: none; flex-wrap: wrap; justify-content: center; gap: 4px 5px; padding: 0 2px; margin: 0; }
+  #rankCard .rank-modes button { flex: none; padding: 3px 9px; font-size: .7rem; line-height: 1.25; white-space: nowrap; }
   #rankCard .rank-list { flex: 1 1 auto; min-height: 0; max-height: none; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 4px; }
   #rankCard .rank-list li { grid-template-columns: 1.9em minmax(0, 1fr) auto; gap: 6px; padding: 3px 8px; font-size: .8rem; min-height: 40px; }
   #rankCard .rank-list li.rk-diff, #rankCard .rank-list li.rk-empty { min-height: 0; }
@@ -959,7 +958,7 @@ body.raid-ink #stage { filter: brightness(.45) saturate(.7); transition: filter 
   #rankCard .rank-list li .sc { font-size: .82rem; }
   #rankCard .rk-pair-who small { font-size: 10px; }
   #rankCard .rank-me { flex: none; font-size: .74rem; }
-  #rankCard .rank-review { flex: none; margin: 0; min-height: 32px; padding: 4px 12px; font-size: .82rem; }
+  #rankCard .rank-review { flex: none; align-self: flex-end; width: auto; margin: -2px 0 0; min-height: 28px; padding: 3px 12px; font-size: .76rem; }
   #rankCard #rankBack { flex: none; }
 }
 /* 2.7.14 (owner): the ⓘ windows of the tabs on a landscape phone — wide, the help in two columns, the header and the button stay in view */

@@ -847,7 +847,7 @@
       clearInterval(FR.dmPoll); FR.dmPoll = setInterval(() => { if (!$('dmCard').hidden) dmFetch(true).catch(() => {}); }, 6000);
     }
     function closeDm() { clearInterval(FR.dmPoll); FR.dmPoll = null; FR.dm = null; openFriends(true); }
-    const DM_ERR = { not_friends: 'Писать можно только друзьям', too_fast: 'Не так быстро — подожди секунду', daily_limit: 'На сегодня лимит сообщений исчерпан', empty: '' };
+    const DM_ERR = { not_friends: 'Писать можно только друзьям', too_fast: 'Не так быстро — подожди секунду', daily_limit: 'На сегодня лимит сообщений исчерпан', muted: 'Отправка сообщений временно заблокирована модерацией.', banned: 'Отправка сообщений недоступна: аккаунт заблокирован.', empty: '' };
     $('dmForm').addEventListener('submit', async e => {
       e.preventDefault(); const t = emoGuard($('dmIn').value.trim()); if (!t || !FR.dm || FR.dmBusy) return;
       FR.dmBusy = true; $('dmSend').disabled = true;

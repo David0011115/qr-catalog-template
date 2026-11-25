@@ -431,7 +431,7 @@ begin
   order by case when lower(p.nickname) = lower(q) then 0 else 1 end, p.created_at desc
   limit 30;
 end;
-$;
+$$;
 create or replace function public.kapli_mod_admin_review_event(p_event_id bigint, p_status text, p_note text default '')
 returns boolean
 language plpgsql
@@ -449,7 +449,7 @@ begin
    where id = p_event_id;
   return found;
 end;
-$;
+$$;
 create or replace function public.kapli_mod_admin_set_sanction(
   p_user_id uuid, p_kind text, p_minutes integer, p_reason text
 )

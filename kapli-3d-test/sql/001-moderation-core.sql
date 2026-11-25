@@ -432,7 +432,6 @@ begin
   limit 30;
 end;
 $;
-
 create or replace function public.kapli_mod_admin_review_event(p_event_id bigint, p_status text, p_note text default '')
 returns boolean
 language plpgsql
@@ -451,7 +450,6 @@ begin
   return found;
 end;
 $;
-
 create or replace function public.kapli_mod_admin_set_sanction(
   p_user_id uuid, p_kind text, p_minutes integer, p_reason text
 )

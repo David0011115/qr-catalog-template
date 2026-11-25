@@ -15,7 +15,38 @@
     $('infoOdds').innerHTML = dl(Object.values(RARITY).map(r => [`<i class="dot" style="background:${r.color}"></i>${r.name}`, `${Math.round(r.w / tot * 100)}% в обычном сундуке · повтор (кроме скинов) = ${r.dup} ◆`]));
     $('infoPets').innerHTML = dl(Object.values(PET_BONUS).map(b => [b.name, b.text(1) + ' (сильнее у редких)']));
   }
-  $('infoBtn').addEventListener('click', () => { renderInfo(); resetGroups($('infoCard')); showCard('infoCard'); $('infoBack').focus(); });
+  // The moderation entry is shown only after the server confirms administrator rights.
+  async function refreshAdminModerationButton() {
+    const button = $('adminModBtn');
+    button.hidden = true;
+    try {
+      if (typeof Net === 'undefined' || typeof Net.client !== 'function') return false;
+      const client = await Net.client();
+      const { data: { session } = {} } = await client.auth.getSession();
+      if (!session || !session.user) return false;
+      const { error } = await client.rpc('kapli_mod_admin_dashboard');
+      if (error) return false;
+      button.hidden = false;
+      return true;
+    } catch (_) {
+      button.hidden = true;
+      return false;
+    }
+  }
+  $('adminModBtn').addEventListener('click', async () => {
+    const button = $('adminModBtn');
+    button.disabled = true;
+    try {
+      if (await refreshAdminModerationButton()) window.location.assign('moderation.html');
+      else toast('Доступ к панели модерации не подтверждён');
+    } finally {
+      button.disabled = false;
+    }
+  });
+  $('infoBtn').addEventListener('click', () => {
+    renderInfo(); resetGroups($('infoCard')); showCard('infoCard'); $('infoBack').focus();
+    refreshAdminModerationButton();
+  });
   $('infoBack').addEventListener('click', () => { showCard('menuCard'); $('infoBtn').focus(); });
   $('achBtn').addEventListener('click', () => openView('goals', 'ach'));
 

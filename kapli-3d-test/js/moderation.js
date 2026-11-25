@@ -16,7 +16,7 @@
     if(!session?.user){showLoggedOut();return;}
     currentUser=session.user;$('loginPanel').classList.add('hidden');$('appPanel').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
     $('who').textContent='Вход: '+(currentUser.email||currentUser.id);note('Проверяем права администратора…');
-    try{const data=await rpc('kapli_mod_admin_dashboard');isAdmin=true;$('tabs').classList.remove('hidden');$('stats').classList.remove('hidden');note('Доступ администратора подтверждён.','ok');renderStats(data||{});await loadAll();}
+    try{const data=await rpc('kapli_mod_admin_dashboard');isAdmin=true;$('tabs').classList.remove('hidden');$('stats').classList.remove('hidden');['players','queue','appeals','events'].forEach(k=>$('tab-'+k).classList.remove('hidden'));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='players'));note('Доступ администратора подтверждён.','ok');renderStats(data||{});await loadAll();}
     catch(e){isAdmin=false;$('tabs').classList.add('hidden');$('stats').classList.add('hidden');note(errorText(e),'error');['players','queue','appeals','events'].forEach(k=>$('tab-'+k).classList.add('hidden'));}
   }
   function renderStats(d){$('stats').innerHTML=[['queue_pending','Жалобы в работе'],['appeals_pending','Апелляции'],['events_new','События на проверке'],['active_mutes','Активные муты'],['active_bans','Перманентные баны']].map(([k,t])=>'<div class="stat"><b>'+Number(d[k]||0).toLocaleString('ru-RU')+'</b><span>'+t+'</span></div>').join('');}

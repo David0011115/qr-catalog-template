@@ -515,10 +515,10 @@
       chatBusy = true; $('chatSend').disabled = true;
       try {
         const { data, error } = await withTimeout(sb.from('kapli_chat').insert({ body: t }).select('id, nickname, body, created_at'), 9000);
-        if (error) throw error; $('chatIn').value = ''; if (data && data[0]) chatAdd(data[0]);
+        if (error) throw error; if (data && data[0]) { $('chatIn').value = ''; chatAdd(data[0]); } else { toast('Сообщение отклонено модерацией. Проверь текст или статус блокировки.'); }
       } catch (er) {
         const m = String((er && er.message) || '');
-        toast(/chat_too_fast/.test(m) ? 'Не так быстро — подожди пару секунд' : /chat_forbidden/.test(m) ? 'В сообщении есть запрещённые слова' : /no_profile/.test(m) ? 'У аккаунта нет ника' : netErr(er) ? 'Нет связи с сервером' : 'Сообщение не отправлено');
+        toast(/muted/.test(m) ? 'Отправка сообщений временно заблокирована модерацией.' : /banned/.test(m) ? 'Отправка сообщений недоступна: аккаунт заблокирован.' : /invalid_message/.test(m) ? 'Сообщение пустое или слишком длинное' : /profile_missing/.test(m) ? 'У аккаунта нет ника' : netErr(er) ? 'Нет связи с сервером' : 'Сообщение не отправлено');
       } finally { chatBusy = false; $('chatSend').disabled = !sess; $('chatIn').focus(); }
     });
     $('chatEmojiBtn').addEventListener('click', () => {

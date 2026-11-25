@@ -851,7 +851,11 @@
     $('dmForm').addEventListener('submit', async e => {
       e.preventDefault(); const t = emoGuard($('dmIn').value.trim()); if (!t || !FR.dm || FR.dmBusy) return;
       FR.dmBusy = true; $('dmSend').disabled = true;
-      try { await frRpc('kapli_dm_send', { p_nick: FR.dm, p_body: t }); $('dmIn').value = ''; await dmFetch(true); }
+      try {
+        const sent = await frRpc('kapli_dm_send', { p_nick: FR.dm, p_body: t });
+        if (!sent || !sent.length) { toast('Сообщение отклонено модерацией. Проверь текст и статус блокировки.'); }
+        else { $('dmIn').value = ''; await dmFetch(true); }
+      }
       catch (er) { const k = Object.keys(DM_ERR).find(k => String(er.message || '').includes(k)); toast(k ? DM_ERR[k] || 'Пустое сообщение' : frErr(er)); }
       FR.dmBusy = false; $('dmSend').disabled = false; $('dmIn').focus();
     });

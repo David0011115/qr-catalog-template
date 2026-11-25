@@ -417,7 +417,7 @@ language plpgsql
 stable
 security definer
 set search_path = ''
-as $
+as $ 
 declare q text := trim(coalesce(p_query,''));
 begin
   if not public.kapli_mod_is_admin() then raise exception 'admin_only' using errcode = 'P0001'; end if;
@@ -438,7 +438,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $ 
 begin
   if not public.kapli_mod_is_admin() then raise exception 'admin_only' using errcode = 'P0001'; end if;
   if p_status not in ('reviewing','cleared','confirmed') then raise exception 'invalid_status' using errcode = 'P0001'; end if;

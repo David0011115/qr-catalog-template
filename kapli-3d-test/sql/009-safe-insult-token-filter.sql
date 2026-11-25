@@ -28,9 +28,13 @@ as $function$
     regexp_replace(
       replace(
         translate(
-          lower(coalesce(p, '')),
-          'абвгдеёжзийклмнопрстуфхцчшщыэюя',
-          'abvgdeezziiklmnoprstufxccssyeua'
+          translate(
+            lower(coalesce(p, '')),
+            'абвгдеёжзийклмнопрстуфхцчшщыэюя',
+            'abvgdeezziiklmnoprstufxccssyeua'
+          ),
+          '012456789|!$@',
+          'oizasgtbgiisa'
         ),
         '3',
         case

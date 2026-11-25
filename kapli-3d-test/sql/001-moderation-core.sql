@@ -201,10 +201,10 @@ declare
   expiry timestamptz;
   active_id bigint;
 begin
-  if p_user_id is null or p_type not in ('insult','spam') then
+  if p_user_id is null or p_type is null or p_type not in ('insult','spam') then
     raise exception 'invalid_violation' using errcode = 'P0001';
   end if;
-  if p_source not in ('chat','dm','manual','system') then
+  if p_source is null or p_source not in ('chat','dm','manual','system') then
     raise exception 'invalid_source' using errcode = 'P0001';
   end if;
 
@@ -411,6 +411,47 @@ begin
 end;
 $$;
 
+create or replace function public.kapli_mod_admin_find_players(p_query text)
+returns table (user_id uuid, nickname text, public_id bigint, created_at timestamptz)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $
+declare q text := trim(coalesce(p_query,''));
+begin
+  if not public.kapli_mod_is_admin() then raise exception 'admin_only' using errcode = 'P0001'; end if;
+  if char_length(q) < 2 then raise exception 'query_too_short' using errcode = 'P0001'; end if;
+  return query
+  select p.user_id, p.nickname, p.public_id, p.created_at
+  from public.player_profiles p
+  where p.nickname ilike '%' || q || '%'
+     or p.public_id::text = q
+     or p.user_id::text = q
+  order by case when lower(p.nickname) = lower(q) then 0 else 1 end, p.created_at desc
+  limit 30;
+end;
+$;
+
+create or replace function public.kapli_mod_admin_review_event(p_event_id bigint, p_status text, p_note text default '')
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  if not public.kapli_mod_is_admin() then raise exception 'admin_only' using errcode = 'P0001'; end if;
+  if p_status not in ('reviewing','cleared','confirmed') then raise exception 'invalid_status' using errcode = 'P0001'; end if;
+  update public.kapli_suspicious_events
+     set review_status = p_status,
+         reviewed_by = auth.uid(),
+         reviewed_at = case when p_status in ('cleared','confirmed') then now() else null end,
+         review_note = left(coalesce(p_note,''),1000)
+   where id = p_event_id;
+  return found;
+end;
+$;
+
 create or replace function public.kapli_mod_admin_set_sanction(
   p_user_id uuid, p_kind text, p_minutes integer, p_reason text
 )
@@ -422,7 +463,7 @@ as $$
 declare new_id bigint;
 begin
   if not public.kapli_mod_is_admin() then raise exception 'admin_only' using errcode = 'P0001'; end if;
-  if p_user_id is null or p_kind not in ('mute','ban') then raise exception 'invalid_sanction' using errcode = 'P0001'; end if;
+  if p_user_id is null or p_kind is null or p_kind not in ('mute','ban') then raise exception 'invalid_sanction' using errcode = 'P0001'; end if;
   if char_length(trim(coalesce(p_reason,''))) < 3 or char_length(p_reason) > 500 then raise exception 'reason_required' using errcode = 'P0001'; end if;
   if p_kind = 'mute' and (p_minutes is null or p_minutes < 1 or p_minutes > 43200) then raise exception 'invalid_duration' using errcode = 'P0001'; end if;
   insert into public.kapli_sanctions(user_id, kind, reason, source, created_by, ends_at)
@@ -503,6 +544,8 @@ revoke all on function public.kapli_mod_admin_queue(text) from public, anon, aut
 revoke all on function public.kapli_mod_admin_appeals(text) from public, anon, authenticated;
 revoke all on function public.kapli_mod_admin_events(text) from public, anon, authenticated;
 revoke all on function public.kapli_mod_admin_sanctions(uuid) from public, anon, authenticated;
+revoke all on function public.kapli_mod_admin_find_players(text) from public, anon, authenticated;
+revoke all on function public.kapli_mod_admin_review_event(bigint,text,text) from public, anon, authenticated;
 revoke all on function public.kapli_mod_admin_set_sanction(uuid,text,integer,text) from public, anon, authenticated;
 revoke all on function public.kapli_mod_admin_revoke_sanction(bigint,text) from public, anon, authenticated;
 revoke all on function public.kapli_mod_admin_resolve_queue(bigint,text,text) from public, anon, authenticated;
@@ -516,6 +559,8 @@ grant execute on function public.kapli_mod_admin_queue(text) to authenticated;
 grant execute on function public.kapli_mod_admin_appeals(text) to authenticated;
 grant execute on function public.kapli_mod_admin_events(text) to authenticated;
 grant execute on function public.kapli_mod_admin_sanctions(uuid) to authenticated;
+grant execute on function public.kapli_mod_admin_find_players(text) to authenticated;
+grant execute on function public.kapli_mod_admin_review_event(bigint,text,text) to authenticated;
 grant execute on function public.kapli_mod_admin_set_sanction(uuid,text,integer,text) to authenticated;
 grant execute on function public.kapli_mod_admin_revoke_sanction(bigint,text) to authenticated;
 grant execute on function public.kapli_mod_admin_resolve_queue(bigint,text,text) to authenticated;

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080613">
+<title>Капли 3D — модерация</title>
+<style>
+:root{color-scheme:dark;--bg:#080613;--panel:#15102a;--line:#3b2b66;--fg:#f4f0ff;--muted:#aaa0cc;--pink:#ff4fd8;--cyan:#22e6ff;--gold:#ffd23f;--red:#ff5577;--green:#50e6a8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#1c1240 0,#080613 55%);color:var(--fg);font:15px system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+a{color:var(--cyan);text-decoration:none}.wrap{max-width:1120px;margin:auto;padding:22px 16px 50px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}.brand{font-weight:900;letter-spacing:.04em}.brand span{color:var(--pink)}.sub{color:var(--muted);font-size:.85rem;margin-top:4px}
+.panel{background:rgba(21,16,42,.92);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 12px 40px #0004}.hidden{display:none!important}
+h1{font-size:1.35rem;margin:0}h2{font-size:1.05rem;margin:0 0 12px}.muted{color:var(--muted)}.small{font-size:.82rem;color:var(--muted)}
+input,select,textarea{width:100%;background:#0d0a1b;color:var(--fg);border:1px solid #514078;border-radius:10px;padding:11px;font:inherit;min-width:0}
+textarea{min-height:86px;resize:vertical}label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}
+button{border:1px solid #594582;background:#251a46;color:var(--fg);border-radius:10px;padding:10px 13px;font:600 .9rem system-ui;cursor:pointer}
+button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#a55cae}button.good{border-color:#267d62;color:#8ff0c5}button.warn{border-color:#a44a5c;color:#ff9eae}button:disabled{opacity:.45;cursor:wait}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.row>*{flex:1}.row button{flex:0 0 auto}.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.tabs button.active{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset;color:#b8f8ff}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.stat{background:#0d0a1b;border:1px solid #30234f;border-radius:12px;padding:13px}.stat b{display:block;font-size:1.65rem;font-variant-numeric:tabular-nums}.stat span{font-size:.8rem;color:var(--muted)}
+.item{border:1px solid #382b58;border-radius:12px;padding:13px;margin:9px 0;background:#0e0a1e}.item-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.tag{font-size:.72rem;border:1px solid #55416f;border-radius:30px;padding:3px 8px;color:#c8b9ee}.evidence{white-space:pre-wrap;overflow-wrap:anywhere;background:#090713;padding:9px;border-radius:8px;font-size:.78rem;color:#c4badf;margin-top:8px;max-height:220px;overflow:auto}
+.status{padding:10px 12px;border-radius:10px;background:#17112b;color:var(--muted);margin:10px 0}.status.error{color:#ff9eae;border:1px solid #7c3549}.status.ok{color:#8ff0c5;border:1px solid #267d62}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.right{margin-left:auto}
+@media(max-width:560px){.wrap{padding:14px 10px 35px}.panel{padding:13px}.row>*{flex-basis:100%}.row button{flex:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><div class="brand">КАПЛИ <span>3D</span> · MODERATION</div><div class="sub">Закрытая тестовая панель администратора</div></div>
+    <div class="row" style="flex:0 0 auto"><a href="./index.html">← Вернуться в игру</a><button id="logoutBtn" class="hidden">Выйти</button></div>
+  </header>
+
+  <section id="loginPanel" class="panel">
+    <h1>Вход администратора</h1>
+    <p class="small">Используется тот же тестовый аккаунт, что и в игре. Доступ проверяется сервером по списку администраторов.</p>
+    <form id="loginForm">
+      <label for="email">Электронная почта</label><input id="email" type="email" autocomplete="username" required>
+      <label for="password">Пароль</label><input id="password" type="password" autocomplete="current-password" required>
+      <div class="row" style="margin-top:12px"><button class="primary" type="submit">Войти</button></div>
+    </form>
+  </section>
+
+  <section id="appPanel" class="hidden">
+    <div class="panel">
+      <div class="item-head"><div><h1>Панель модерации</h1><div id="who" class="small"></div></div><button id="refreshBtn">↻ Обновить</button></div>
+      <div id="notice" class="status">Проверка доступа…</div>
+      <div id="stats" class="stats"></div>
+    </div>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="players" class="active">Игроки и санкции</button>
+      <button data-tab="queue">Очередь жалоб</button>
+      <button data-tab="appeals">Апелляции</button>
+      <button data-tab="events">Античит · события</button>
+    </nav>
+
+    <section id="tab-players" class="panel">
+      <h2>Поиск игрока</h2>
+      <div class="row"><input id="playerQuery" placeholder="Ник, публичный ID или UUID"><button id="searchBtn" class="primary">Найти</button></div>
+      <div id="playerResults"></div>
+      <div class="divider"></div>
+      <h2>Выдать санкцию вручную</h2>
+      <div class="grid2">
+        <div><label for="targetId">UUID игрока</label><input id="targetId" placeholder="Выбери игрока выше или вставь UUID"></div>
+        <div><label for="sanctionKind">Тип санкции</label><select id="sanctionKind"><option value="mute">Мут</option><option value="ban">Перманентный бан</option></select></div>
+        <div id="minutesWrap"><label for="minutes">Длительность мута, минут</label><input id="minutes" type="number" min="1" max="43200" value="5"></div>
+        <div><label for="reason">Причина</label><input id="reason" maxlength="500" placeholder="Причина санкции"></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button id="applySanction" class="warn">Выдать санкцию</button><span class="small">Бан блокирует общение и вход в игру после подключения серверной проверки.</span></div>
+      <div class="divider"></div>
+      <h2>Последние санкции</h2><div id="sanctionsList" class="small">Загрузка…</div>
+    </section>
+
+    <section id="tab-queue" class="panel hidden"><h2>Очередь модерации</h2><div id="queueList">Загрузка…</div></section>
+    <section id="tab-appeals" class="panel hidden"><h2>Апелляции игроков</h2><div id="appealsList">Загрузка…</div></section>
+    <section id="tab-events" class="panel hidden"><h2>Подозрительные игровые события</h2><p class="small">События только попадают на проверку. Автоматических банов или мутов за читерство нет.</p><div id="eventsList">Загрузка…</div></section>
+  </section>
+</div>
+<script src="./supabase.js"></script>
+<script src="./js/moderation.js"></script>
+</body>
+</html>

@@ -90,6 +90,8 @@
     const id=Number(button.dataset.id),act=button.dataset.action;button.disabled=true;
     try{
       if(act==='choose-player'){$('targetId').value=button.dataset.uid;note('Игрок выбран. Теперь можно выдать санкцию.','ok');return;}
+      if(act==='choose-role-player'){$('roleUserId').value=button.dataset.uid;$('roleSelected').textContent='Выбран: '+button.dataset.nick+' · UUID: '+button.dataset.uid;note('Игрок выбран для управления ролью.','ok');return;}
+      if(act==='role-revoke'){const uid=button.dataset.uid;if(!confirm('Снять роль модератора у этого игрока?'))return;await rpc('kapli_mod_admin_set_moderator',{p_user_id:uid,p_on:false});note('Роль модератора снята.','ok');await loadModerators();return;}
       if(act==='sanction-revoke'){const reason=prompt('Причина снятия санкции (необязательно):','');if(reason===null)return;await rpc('kapli_mod_admin_revoke_sanction',{p_sanction_id:id,p_reason:reason});}
       if(act==='queue-review'||act==='queue-resolve'||act==='queue-dismiss'){const status=act==='queue-review'?'in_review':act==='queue-resolve'?'resolved':'dismissed';const noteText=prompt('Комментарий к решению (необязательно):','');if(noteText===null)return;await rpc('kapli_mod_admin_resolve_queue',{p_queue_id:id,p_status:status,p_note:noteText});}
       if(act==='appeal-accept'||act==='appeal-reject'){const noteText=$('appeal-note-'+id)?.value||'';await rpc('kapli_mod_admin_review_appeal',{p_appeal_id:id,p_decision:act==='appeal-accept'?'accepted':'rejected',p_note:noteText});}
@@ -100,7 +102,17 @@
   }
   function renderModerators(rows){
     if(!rows?.length)return '<p class="small">Назначенных модераторов пока нет.</p>';
-    return rows.map(x=>'<article class="item"><b>🛡️ '+esc(x.nickname||'Игрок без профиля')+'</b><p class="small">UUID: '+esc(x.user_id)+' · назначен '+dt(x.granted_at)+'</p></article>').join('');
+    return rows.map(x=>'<article class="item"><div class="item-head"><b>🛡️ '+esc(x.nickname||'Игрок без профиля')+'</b><button class="warn" data-action="role-revoke" data-uid="'+esc(x.user_id)+'">Снять права</button></div><p class="small">UUID: '+esc(x.user_id)+' · назначен '+dt(x.granted_at)+'</p></article>').join('');
+  }
+  async function searchRolePlayers(){
+    const q=$('roleSearch').value.trim();
+    if(q.length<2){$('roleSearchResults').innerHTML='<p class="small">Введи минимум 2 символа ника.</p>';return;}
+    $('roleSearchBtn').disabled=true;
+    try{
+      const rows=await rpc('kapli_mod_admin_find_players',{p_query:q});
+      $('roleSearchResults').innerHTML=rows?.length?rows.map(x=>'<article class="item"><div class="item-head"><b>'+esc(x.nickname)+'</b><span class="tag">ID '+esc(x.public_id)+'</span></div><p class="small">UUID: '+esc(x.user_id)+'</p><button data-action="choose-role-player" data-uid="'+esc(x.user_id)+'" data-nick="'+esc(x.nickname)+'">Выбрать</button></article>').join(''):'<p class="small">Игрок не найден.</p>';
+    }catch(e){$('roleSearchResults').innerHTML='<p class="small">'+esc(errorText(e))+'</p>';}
+    finally{$('roleSearchBtn').disabled=false;}
   }
   async function loadModerators(){
     if(!isAdmin)return;
@@ -122,6 +134,8 @@
   $('searchBtn').addEventListener('click',searchPlayers);
   $('playerQuery').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchPlayers();}});
   $('applySanction').addEventListener('click',applySanction);
+  $('roleSearchBtn').addEventListener('click',searchRolePlayers);
+  $('roleSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchRolePlayers();}});
   $('grantModerator').addEventListener('click',()=>setModerator(true));
   $('revokeModerator').addEventListener('click',()=>setModerator(false));
   $('sanctionKind').addEventListener('change',()=>$('minutesWrap').classList.toggle('hidden',$('sanctionKind').value==='ban'));

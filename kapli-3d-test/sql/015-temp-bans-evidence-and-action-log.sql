@@ -30,6 +30,27 @@ create table if not exists public.kapli_sanction_evidence (
 );
 create index if not exists kapli_sanction_evidence_sanction_idx
   on public.kapli_sanction_evidence(sanction_id, created_at desc);
+
+-- Backfill evidence already stored in the existing violation history.
+-- A violation is attached only to an automatic mute that was active at that timestamp.
+insert into public.kapli_sanction_evidence
+  (sanction_id, violation_id, source, source_id, violation_type, body_snapshot, created_at)
+select s.id, v.id, v.source, v.source_id, v.violation_type, v.body_snapshot, v.created_at
+from public.kapli_moderation_violations v
+join lateral (
+  select sa.id
+  from public.kapli_sanctions sa
+  where sa.user_id = v.user_id
+    and sa.kind = 'mute'
+    and sa.source = 'automatic'
+    and sa.created_at <= v.created_at
+    and sa.ends_at >= v.created_at
+    and (sa.revoked_at is null or sa.revoked_at >= v.created_at)
+  order by sa.created_at desc
+  limit 1
+) s on true
+on conflict (violation_id) do nothing;
+
 alter table public.kapli_sanction_evidence enable row level security;
 revoke all on public.kapli_sanction_evidence from public, anon, authenticated;
 

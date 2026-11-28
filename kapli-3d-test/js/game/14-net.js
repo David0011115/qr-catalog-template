@@ -8,7 +8,7 @@
     const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'rbuild', 'hardcore', 'royale'];
     const NICK_RE = [/^[A-Za-z0-9_]{3,16}$/, /^[А-Яа-яЁё0-9_]{3,16}$/];
     let sb = null, sess = null, canPush = false, pushing = false, pushTimer = null, retryMs = 0, sync = 'guest', pending = null, recoverPending = false, splashOn = true, privacyPending = false;
-    let modStatus = null, modStatusBusy = false, modStatusPoll = null, modStatusTick = null;
+    let modStatus = null, modStatusBusy = false, modStatusPoll = null, modStatusTick = null, modLockGuardInstalled = false;
     async function checkPrivacyConsent() {
       if (!sess) return false;
       const { data, error } = await withTimeout(sb.rpc('kapli_has_privacy_consent'), 8000);
@@ -77,7 +77,7 @@
       if (!document.getElementById('modStatusStyle')) {
         const style = document.createElement('style');
         style.id = 'modStatusStyle';
-        style.textContent = '.mod-status{margin:8px 0;padding:10px 12px;border:1px solid rgba(255,61,110,.55);border-radius:12px;background:rgba(65,12,38,.9);color:#fff;display:grid;gap:4px;font-size:.82rem;line-height:1.35}.mod-status[hidden]{display:none!important}.mod-status-title{font-weight:700}.mod-status-reason{color:rgba(255,255,255,.82);font-size:.76rem}.mod-status-time{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.mod-status-clock{font:700 1.35rem var(--display);font-variant-numeric:tabular-nums;color:#ff8aa2;text-shadow:0 0 10px rgba(255,61,110,.35)}';
+        style.textContent = '.mod-status{margin:8px 0;padding:10px 12px;border:1px solid rgba(255,61,110,.55);border-radius:12px;background:rgba(65,12,38,.9);color:#fff;display:grid;gap:4px;font-size:.82rem;line-height:1.35}.mod-status[hidden]{display:none!important}.mod-status-title{font-weight:700}.mod-status-reason{color:rgba(255,255,255,.82);font-size:.76rem}.mod-status-time{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.mod-status-clock{font:700 1.35rem var(--display);font-variant-numeric:tabular-nums;color:#ff8aa2;text-shadow:0 0 10px rgba(255,61,110,.35)}#modGameLock{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:22px;background:rgba(8,4,18,.97);color:#fff;text-align:center}#modGameLock[hidden]{display:none!important}.mod-game-lock-card{width:min(520px,100%);padding:26px 22px;border:1px solid rgba(255,90,130,.7);border-radius:20px;background:linear-gradient(145deg,#28102d,#100b20);box-shadow:0 18px 70px #000b}.mod-game-lock-title{font-size:1.35rem;font-weight:900;margin-bottom:10px}.mod-game-lock-reason{color:#e8dced;margin:8px 0}.mod-game-lock-clock{font-size:1.5rem;font-weight:900;color:#ff8aa2;font-variant-numeric:tabular-nums;margin-top:14px}';
         document.head.appendChild(style);
       }
       [['chatCard','chatForm','modStatusChat'],['dmCard','dmForm','modStatusDm']].forEach(([cardId,formId,nodeId]) => {
@@ -88,9 +88,24 @@
         node.setAttribute('role', 'status'); node.setAttribute('aria-live', 'off');
         form.parentNode.insertBefore(node, form);
       });
+      if (!document.getElementById('modGameLock')) {
+        const overlay = document.createElement('section');
+        overlay.id = 'modGameLock'; overlay.hidden = true;
+        overlay.setAttribute('role', 'alertdialog');
+        overlay.setAttribute('aria-modal', 'true');
+        document.body.appendChild(overlay);
+      }
+      if (!modLockGuardInstalled) {
+        document.addEventListener('keydown', e => {
+          if (sess && modStatus?.active && (modStatus.kind === 'temp_ban' || modStatus.kind === 'ban')) {
+            e.preventDefault(); e.stopImmediatePropagation();
+          }
+        }, true);
+        modLockGuardInstalled = true;
+      }
     }
     function modEscape(value) {
-      return String(value == null ? '' : value).replace(/[&<>\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;' }[ch]));
+      return String(value == null ? '' : value).replace(/[&<>\\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\\"': '&quot;', "'": '&#39;' }[ch]));
     }
     function modClock(ms) {
       const sec = Math.max(0, Math.ceil(ms / 1000));
@@ -107,15 +122,33 @@
           if (sess && sb && !modStatusBusy) Promise.resolve().then(refreshModerationStatus);
         }
       }
-      [['modStatusChat','modStatusDm']].flat().forEach(id => {
+      const accountBlocked = active && (st.kind === 'temp_ban' || st.kind === 'ban');
+      const overlay = document.getElementById('modGameLock');
+      if (overlay) {
+        overlay.hidden = !accountBlocked;
+        if (accountBlocked) {
+          const permanent = st.kind === 'ban';
+          overlay.innerHTML = '<div class="mod-game-lock-card"><div class="mod-game-lock-title">' +
+            (permanent ? '⛔ Аккаунт заблокирован' : '⛔ Временная блокировка аккаунта') +
+            '</div><div class="mod-game-lock-reason">Причина: ' + modEscape(st.reason || 'Нарушение правил') +
+            '</div><div>Доступ к игре закрыт до окончания санкции.</div>' +
+            (permanent ? '<div class="mod-game-lock-clock">Бессрочно</div>' :
+              '<div class="mod-game-lock-clock">Осталось ' + modClock(remain) + '</div>') +
+            '</div>';
+        }
+      }
+      ['modStatusChat','modStatusDm'].forEach(id => {
         const node = document.getElementById(id);
         if (!node) return;
         node.hidden = !active;
         if (active) {
-          const banned = st.kind === 'ban';
-          node.innerHTML = '<div class="mod-status-title">' + (banned ? '⛔ Аккаунт заблокирован' : '⛔ Общение временно заблокировано') + '</div>' +
+          const permanent = st.kind === 'ban';
+          const tempBan = st.kind === 'temp_ban';
+          node.innerHTML = '<div class="mod-status-title">' +
+            (permanent ? '⛔ Аккаунт заблокирован' : tempBan ? '⛔ Аккаунт временно заблокирован' : '⛔ Общение временно заблокировано') + '</div>' +
             '<div class="mod-status-reason">Причина: ' + modEscape(st.reason || 'Нарушение правил') + '</div>' +
-            (banned ? '<div class="mod-status-time">Блокировка бессрочная</div>' : '<div class="mod-status-time">До окончания <b class="mod-status-clock">' + modClock(remain) + '</b></div>');
+            (permanent ? '<div class="mod-status-time">Блокировка бессрочная</div>' :
+              '<div class="mod-status-time">До окончания <b class="mod-status-clock">' + modClock(remain) + '</b></div>');
         }
       });
       const locked = active;

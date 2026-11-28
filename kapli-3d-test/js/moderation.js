@@ -5,12 +5,12 @@
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const dt = value => value ? new Date(value).toLocaleString('ru-RU', {dateStyle:'short',timeStyle:'short'}) : '—';
-  const nice = value => ({pending:'Ожидает',in_review:'На проверке',resolved:'Решено',dismissed:'Отклонено',accepted:'Удовлетворена',rejected:'Отклонена',new:'Новое',reviewing:'Проверяется',cleared:'Не подтвердилось',confirmed:'Подтверждено',mute:'Мут',ban:'Перманентный бан',insult:'Оскорбления',spam:'Спам / флуд',impossible_move:'Невозможное перемещение',cooldown_abuse:'Нарушение перезарядки',resource_anomaly:'Аномалия ресурсов',result_anomaly:'Подозрительный результат',request_tampering:'Подмена запроса',repeated_anomaly:'Повторяющиеся аномалии',other:'Другое'})[value] || value || '—';
+  const nice = value => ({pending:'Ожидает',in_review:'На проверке',resolved:'Решено',dismissed:'Отклонено',accepted:'Удовлетворена',rejected:'Отклонена',new:'Новое',reviewing:'Проверяется',cleared:'Не подтвердилось',confirmed:'Подтверждено',mute:'Мут',temp_ban:'Временный бан аккаунта',ban:'Перманентный бан',insult:'Оскорбления',spam:'Спам / флуд',impossible_move:'Невозможное перемещение',cooldown_abuse:'Нарушение перезарядки',resource_anomaly:'Аномалия ресурсов',result_anomaly:'Подозрительный результат',request_tampering:'Подмена запроса',repeated_anomaly:'Повторяющиеся аномалии',other:'Другое'})[value] || value || '—';
   const client = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'kapli3dtest-auth'}});
   let currentUser = null, isAdmin = false, isModerator = false;
   const rpc = async (name, args={}) => { const {data,error}=await client.rpc(name,args); if(error)throw error; return data; };
   function note(message,kind=''){const el=$('notice');el.textContent=message;el.className='status'+(kind?' '+kind:'');}
-  function errorText(e){const m=String(e?.message||e||'Ошибка');if(m.includes('admin_only')||m.includes('staff_only'))return 'У этого аккаунта нет прав сотрудника модерации.';if(m.includes('admin_ban_only'))return 'Постоянный бан может выдавать только администратор.';if(m.includes('admin_role_protected'))return 'Нельзя изменить роль администратора.';if(/invalid login credentials/i.test(m))return 'Неверная почта или пароль.';return m;}
+  function errorText(e){const m=String(e?.message||e||'Ошибка');if(m.includes('admin_only')||m.includes('staff_only'))return 'У этого аккаунта нет прав сотрудника модерации.';if(m.includes('admin_ban_only'))return 'Временные и перманентные блокировки аккаунта доступны только администратору.';if(m.includes('admin_role_protected'))return 'Нельзя изменить роль администратора.';if(/invalid login credentials/i.test(m))return 'Неверная почта или пароль.';return m;}
   function showLoggedOut(){currentUser=null;isAdmin=false;isModerator=false;$('loginPanel').classList.remove('hidden');$('appPanel').classList.add('hidden');$('logoutBtn').classList.add('hidden');}
   async function boot(session){
     if(!session?.user){showLoggedOut();return;}
@@ -22,14 +22,17 @@
       if(!isModerator)throw new Error('staff_only');
       const data=await rpc('kapli_mod_admin_dashboard');
       $('tabs').classList.remove('hidden');$('stats').classList.remove('hidden');
-      ['overview','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.add('hidden'));
-      $('tab-overview').classList.remove('hidden');
+      ['overview','permissions','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.add('hidden'));
+      $('tab-overview').classList.remove('hidden');$('tab-permissions').classList.remove('hidden');
       $('tab-events').classList.toggle('hidden',!isAdmin);
       $('tab-roles').classList.add('hidden');
       $('rolesTab').classList.toggle('hidden',!isAdmin);
       if(isAdmin){$('tab-roles').classList.remove('hidden');}
       $('sanctionKind').querySelector('option[value="ban"]').hidden=!isAdmin;
-      if(!isAdmin&&$('sanctionKind').value==='ban')$('sanctionKind').value='mute';
+      $('sanctionKind').querySelector('option[value="temp_ban"]').hidden=!isAdmin;
+      if(!isAdmin&&$('sanctionKind').value!=='mute')$('sanctionKind').value='mute';
+      $('minutesWrap').classList.toggle('hidden',$('sanctionKind').value!=='mute');
+      $('tempDaysWrap').classList.toggle('hidden',$('sanctionKind').value!=='temp_ban');
       document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='overview'));
       $('who').textContent=(currentUser.email||currentUser.id)+' · '+(isAdmin?'👑 Администратор':'🛡️ Модератор');
       note(isAdmin?'Доступ администратора подтверждён.':'Доступ модератора подтверждён.','ok');
@@ -37,19 +40,20 @@
     }catch(e){
       isAdmin=false;isModerator=false;$('tabs').classList.add('hidden');$('stats').classList.add('hidden');
       note(errorText(e),'error');
-      ['overview','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.add('hidden'));
+      ['overview','permissions','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.add('hidden'));
     }
   }
-  function renderStats(d){$('stats').innerHTML=[['queue_pending','Жалобы в работе'],['appeals_pending','Апелляции'],['events_new','События на проверке'],['active_mutes','Активные муты'],['active_bans','Перманентные баны']].map(([k,t])=>'<div class="stat"><b>'+Number(d[k]||0).toLocaleString('ru-RU')+'</b><span>'+t+'</span></div>').join('');}
+  function renderStats(d){$('stats').innerHTML=[['queue_pending','Жалобы в работе'],['appeals_pending','Апелляции'],['events_new','События на проверке'],['active_mutes','Активные муты'],['active_temp_bans','Временные баны'],['active_bans','Перманентные баны']].map(([k,t])=>'<div class="stat"><b>'+Number(d[k]||0).toLocaleString('ru-RU')+'</b><span>'+t+'</span></div>').join('');}
   async function loadAll(){
     if(!isModerator)return;
-    const jobs=await Promise.allSettled([rpc('kapli_mod_admin_queue',{p_status:'pending'}),rpc('kapli_mod_admin_appeals',{p_status:'pending'}),isAdmin?rpc('kapli_mod_admin_events',{p_status:'new'}):Promise.resolve([]),rpc('kapli_mod_admin_sanctions',{p_user_id:null}),rpc('kapli_mod_admin_dashboard')]);
-    const [q,a,e,s,d]=jobs;
+    const jobs=await Promise.allSettled([rpc('kapli_mod_admin_queue',{p_status:'pending'}),rpc('kapli_mod_admin_appeals',{p_status:'pending'}),isAdmin?rpc('kapli_mod_admin_events',{p_status:'new'}):Promise.resolve([]),rpc('kapli_mod_admin_sanctions',{p_user_id:null}),rpc('kapli_mod_admin_dashboard'),rpc('kapli_mod_admin_actions')]);
+    const [q,a,e,s,d,h]=jobs;
     $('queueList').innerHTML=q.status==='fulfilled'?renderQueue(q.value):'<p class="small">'+esc(errorText(q.reason))+'</p>';
     $('appealsList').innerHTML=a.status==='fulfilled'?renderAppeals(a.value):'<p class="small">'+esc(errorText(a.reason))+'</p>';
     $('eventsList').innerHTML=e.status==='fulfilled'?renderEvents(e.value):'<p class="small">'+esc(errorText(e.reason))+'</p>';
     $('sanctionsList').innerHTML=s.status==='fulfilled'?renderSanctions(s.value):'<p class="small">'+esc(errorText(s.reason))+'</p>';
     if(d.status==='fulfilled')renderStats(d.value||{});
+    $('actionsList').innerHTML=h.status==='fulfilled'?renderActions(h.value):'<p class="small">'+esc(errorText(h.reason))+'</p>';
     if(isAdmin)await loadModerators();
   }
   function renderQueue(rows){
@@ -66,7 +70,19 @@
   }
   function renderSanctions(rows){
     if(!rows?.length)return '<p class="small">Санкций пока нет.</p>';
-    return rows.map(x=>{const issuer=x.source==='automatic'?'⚖️ Арбитр чата':(x.issuer_nickname?'Выдал: '+(x.issuer_role==='admin'?'👑 ':x.issuer_role==='moderator'?'🛡️ ':'')+esc(x.issuer_nickname):x.source==='admin'?'Ручная санкция':'Система');return '<article class="item"><div class="item-head"><b>#'+x.id+' · '+esc(nice(x.kind))+' · '+esc(x.nickname||x.user_id)+'</b><span class="tag">'+(x.revoked_at?'Снята':(x.kind==='ban'?'Без срока':(new Date(x.ends_at)>new Date()?'Активна':'Истекла')))+'</span></div><p class="small">UUID: '+esc(x.user_id)+'<br>Причина: '+esc(x.reason)+'<br>'+issuer+' · Выдана: '+dt(x.created_at)+' · До: '+(x.kind==='ban'?'—':dt(x.ends_at))+'</p>'+(!x.revoked_at&&(x.kind==='ban'||new Date(x.ends_at)>new Date())&&(isAdmin||x.kind==='mute')?'<button class="warn" data-action="sanction-revoke" data-id="'+x.id+'">Снять санкцию</button>':'')+'</article>';}).join('');
+    return rows.map(x=>{
+      const issuer=x.issuer_role==='arbiter'?'⚖️ Арбитр чата':(x.issuer_nickname?'Выдал: '+(x.issuer_role==='admin'?'👑 ':x.issuer_role==='moderator'?'🛡️ ':'')+esc(x.issuer_nickname):x.source==='admin'?'Сотрудник':'Система');
+      const active=!x.revoked_at&&(x.kind==='ban'||new Date(x.ends_at)>new Date());
+      const status=x.revoked_at?'Снята':x.kind==='ban'?'Без срока':active?'Активна':'Истекла';
+      const evidence=Array.isArray(x.evidence)?x.evidence:[];
+      const evidenceHtml=evidence.length?'<div class="evidence">'+evidence.map(ev=>'['+esc(nice(ev.violation_type))+'] '+dt(ev.created_at)+' · '+esc(ev.source)+'\\n'+esc(ev.body_snapshot||'Текст отсутствует')).join('\\n\\n')+'</div>':(x.source==='automatic'?'<div class="evidence">Доказательство не сохранено для этой старой санкции.</div>':'');
+      const canRevoke=active&&(isAdmin||x.kind==='mute');
+      return '<article class="item"><div class="item-head"><b>#'+x.id+' · '+esc(nice(x.kind))+' · '+esc(x.nickname||x.user_id)+'</b><span class="tag">'+status+'</span></div><p class="small">UUID: '+esc(x.user_id)+'<br>Причина: '+esc(x.reason)+'<br>'+issuer+' · Выдана: '+dt(x.created_at)+' · До: '+(x.kind==='ban'?'—':dt(x.ends_at))+(x.revoke_reason?'<br>Причина снятия: '+esc(x.revoke_reason):'')+'</p>'+evidenceHtml+(canRevoke?'<button class="warn" data-action="sanction-revoke" data-id="'+x.id+'">Снять санкцию</button>':'')+'</article>';
+    }).join('');
+  }
+  function renderActions(rows){
+    if(!rows?.length)return '<p class="small">Журнал пока пуст.</p>';
+    return rows.map(x=>'<article class="item"><b>#'+x.id+' · '+(x.action==='sanction_issued'?'Выдана санкция':x.action==='sanction_revoked'?'Санкция снята':'Апелляция удовлетворена')+' · '+esc(nice(x.sanction_kind))+'</b><p class="small">Игрок: '+esc(x.target_nickname||x.target_user_id||'—')+' · Сотрудник: '+(x.actor_role==='admin'?'👑 Администратор':'🛡️ Модератор')+' '+esc(x.actor_nickname||'')+'<br>'+dt(x.created_at)+' · '+esc(x.reason||'Без комментария')+'</p></article>').join('');
   }
   async function searchPlayers(){
     const q=$('playerQuery').value.trim();if(q.length<2){$('playerResults').innerHTML='<p class="small">Введи минимум 2 символа.</p>';return;}
@@ -76,14 +92,18 @@
     finally{$('searchBtn').disabled=false;}
   }
   async function applySanction(){
-    const uid=$('targetId').value.trim(),kind=$('sanctionKind').value,reason=$('reason').value.trim(),minutes=Number($('minutes').value);
+    const uid=$('targetId').value.trim(),kind=$('sanctionKind').value,reason=$('reason').value.trim();
+    const minutes=Number($('minutes').value),days=Number($('tempDays').value);
     if(!uid||!reason){note('Укажи UUID игрока и причину санкции.','error');return;}
-    if(kind==='ban'&&!isAdmin){note('Постоянный бан может выдавать только администратор.','error');return;}
+    if(kind!=='mute'&&!isAdmin){note('Временный и перманентный бан может выдавать только администратор.','error');return;}
     if(!isModerator){note('Недостаточно прав для выдачи санкции.','error');return;}
     if(kind==='mute'&&(!Number.isInteger(minutes)||minutes<1||minutes>43200)){note('Длительность мута должна быть от 1 до 43 200 минут.','error');return;}
-    if(!confirm(kind==='ban'?'Выдать перманентный бан этому аккаунту?':'Выдать мут на '+minutes+' минут?'))return;
+    if(kind==='temp_ban'&&(!Number.isInteger(days)||days<1||days>7)){note('Срок временного бана — от 1 до 7 дней.','error');return;}
+    const duration=kind==='mute'?minutes+' минут':kind==='temp_ban'?days+' дн.':'без срока';
+    const label=kind==='mute'?'мут':kind==='temp_ban'?'временный бан':'перманентный бан';
+    if(!confirm('Выдать '+label+' ('+duration+') этому аккаунту?'))return;
     $('applySanction').disabled=true;
-    try{await rpc('kapli_mod_admin_set_sanction',{p_user_id:uid,p_kind:kind,p_minutes:kind==='ban'?null:minutes,p_reason:reason});note('Санкция выдана.','ok');await loadAll();}
+    try{await rpc('kapli_mod_admin_set_sanction',{p_user_id:uid,p_kind:kind,p_minutes:kind==='ban'?null:kind==='temp_ban'?days*1440:minutes,p_reason:reason});note('Санкция выдана.','ok');await loadAll();}
     catch(e){note(errorText(e),'error');}
     finally{$('applySanction').disabled=false;}
   }
@@ -139,8 +159,8 @@
   $('roleSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchRolePlayers();}});
   $('grantModerator').addEventListener('click',()=>setModerator(true));
   $('revokeModerator').addEventListener('click',()=>setModerator(false));
-  $('sanctionKind').addEventListener('change',()=>$('minutesWrap').classList.toggle('hidden',$('sanctionKind').value==='ban'));
-  $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b||b.classList.contains('hidden'))return;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['overview','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.toggle('hidden',k!==b.dataset.tab));});
+  $('sanctionKind').addEventListener('change',()=>{const k=$('sanctionKind').value;$('minutesWrap').classList.toggle('hidden',k!=='mute');$('tempDaysWrap').classList.toggle('hidden',k!=='temp_ban');});
+  $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b||b.classList.contains('hidden'))return;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['overview','permissions','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.toggle('hidden',k!==b.dataset.tab));});
   document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(b)action(b);});
   client.auth.getSession().then(({data})=>boot(data.session)).catch(()=>showLoggedOut());
   client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showLoggedOut();else if(session)boot(session);});

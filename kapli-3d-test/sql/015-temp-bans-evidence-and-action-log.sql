@@ -127,6 +127,11 @@ begin
     (sanction_id, violation_id, source, source_id, violation_type, body_snapshot)
   values (new_sanction_id, violation_id, p_source, p_source_id, p_type, left(coalesce(p_body,''),1000));
 
+  insert into public.kapli_moderation_actions
+    (action, actor_user_id, actor_role, target_user_id, sanction_id, sanction_kind, reason)
+  values ('automatic_mute_issued', null, 'arbiter', p_user_id, new_sanction_id, 'mute',
+    case p_type when 'insult' then 'Оскорбления' else 'Спам или флуд' end);
+
   return jsonb_build_object('count', n, 'mute_minutes', mins, 'day_utc', d, 'violation_id', violation_id);
 end;
 $$;

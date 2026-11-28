@@ -75,7 +75,7 @@
       const active=!x.revoked_at&&(x.kind==='ban'||new Date(x.ends_at)>new Date());
       const status=x.revoked_at?'Снята':x.kind==='ban'?'Без срока':active?'Активна':'Истекла';
       const evidence=Array.isArray(x.evidence)?x.evidence:[];
-      const evidenceHtml=evidence.length?'<div class="evidence">'+evidence.map(ev=>'['+esc(nice(ev.violation_type))+'] '+dt(ev.created_at)+' · '+esc(ev.source)+'\\n'+esc(ev.body_snapshot||'Текст отсутствует')).join('\\n\\n')+'</div>':(x.source==='automatic'?'<div class="evidence">Доказательство не сохранено для этой старой санкции.</div>':'');
+      const evidenceHtml=evidence.length?'<div class="evidence">'+evidence.map(ev=>'['+esc(nice(ev.violation_type))+'] '+dt(ev.created_at)+' · '+esc(ev.source)+'\n'+esc(ev.body_snapshot||'Текст отсутствует')).join('\n\n')+'</div>':(x.source==='automatic'?'<div class="evidence">Доказательство не сохранено для этой старой санкции.</div>':'');
       const canRevoke=active&&(isAdmin||x.kind==='mute');
       return '<article class="item"><div class="item-head"><b>#'+x.id+' · '+esc(nice(x.kind))+' · '+esc(x.nickname||x.user_id)+'</b><span class="tag">'+status+'</span></div><p class="small">UUID: '+esc(x.user_id)+'<br>Причина: '+esc(x.reason)+'<br>'+issuer+' · Выдана: '+dt(x.created_at)+' · До: '+(x.kind==='ban'?'—':dt(x.ends_at))+(x.revoke_reason?'<br>Причина снятия: '+esc(x.revoke_reason):'')+'</p>'+evidenceHtml+(canRevoke?'<button class="warn" data-action="sanction-revoke" data-id="'+x.id+'">Снять санкцию</button>':'')+'</article>';
     }).join('');

@@ -22,21 +22,22 @@
       if(!isModerator)throw new Error('staff_only');
       const data=await rpc('kapli_mod_admin_dashboard');
       $('tabs').classList.remove('hidden');$('stats').classList.remove('hidden');
-      ['players','queue','appeals'].forEach(k=>$('tab-'+k).classList.remove('hidden'));
+      ['overview','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.add('hidden'));
+      $('tab-overview').classList.remove('hidden');
       $('tab-events').classList.toggle('hidden',!isAdmin);
       $('tab-roles').classList.add('hidden');
       $('rolesTab').classList.toggle('hidden',!isAdmin);
       if(isAdmin){$('tab-roles').classList.remove('hidden');}
       $('sanctionKind').querySelector('option[value="ban"]').hidden=!isAdmin;
       if(!isAdmin&&$('sanctionKind').value==='ban')$('sanctionKind').value='mute';
-      document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='players'));
+      document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='overview'));
       $('who').textContent=(currentUser.email||currentUser.id)+' · '+(isAdmin?'👑 Администратор':'🛡️ Модератор');
       note(isAdmin?'Доступ администратора подтверждён.':'Доступ модератора подтверждён.','ok');
       renderStats(data||{});await loadAll();
     }catch(e){
       isAdmin=false;isModerator=false;$('tabs').classList.add('hidden');$('stats').classList.add('hidden');
       note(errorText(e),'error');
-      ['players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.add('hidden'));
+      ['overview','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.add('hidden'));
     }
   }
   function renderStats(d){$('stats').innerHTML=[['queue_pending','Жалобы в работе'],['appeals_pending','Апелляции'],['events_new','События на проверке'],['active_mutes','Активные муты'],['active_bans','Перманентные баны']].map(([k,t])=>'<div class="stat"><b>'+Number(d[k]||0).toLocaleString('ru-RU')+'</b><span>'+t+'</span></div>').join('');}
@@ -139,7 +140,7 @@
   $('grantModerator').addEventListener('click',()=>setModerator(true));
   $('revokeModerator').addEventListener('click',()=>setModerator(false));
   $('sanctionKind').addEventListener('change',()=>$('minutesWrap').classList.toggle('hidden',$('sanctionKind').value==='ban'));
-  $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b||b.classList.contains('hidden'))return;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.toggle('hidden',k!==b.dataset.tab));});
+  $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b||b.classList.contains('hidden'))return;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['overview','players','queue','appeals','events','roles'].forEach(k=>$('tab-'+k).classList.toggle('hidden',k!==b.dataset.tab));});
   document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(b)action(b);});
   client.auth.getSession().then(({data})=>boot(data.session)).catch(()=>showLoggedOut());
   client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showLoggedOut();else if(session)boot(session);});

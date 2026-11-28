@@ -683,7 +683,7 @@
         if (error) throw error; if (data && data[0]) { $('chatIn').value = ''; chatAdd(data[0]); } else { toast('Сообщение отклонено модерацией. Проверь текст или статус блокировки.'); }
       } catch (er) {
         const m = String((er && er.message) || '');
-        toast(/muted/.test(m) ? 'Отправка сообщений временно заблокирована модерацией.' : /banned/.test(m) ? 'Отправка сообщений недоступна: аккаунт заблокирован.' : /invalid_message/.test(m) ? 'Сообщение пустое или слишком длинное' : /profile_missing/.test(m) ? 'У аккаунта нет ника' : netErr(er) ? 'Нет связи с сервером' : 'Сообщение не отправлено');
+        toast(/muted/.test(m) ? 'Отправка сообщений временно заблокирована модерацией.' : /banned/.test(m) ? 'Отправка сообщений недоступна: аккаунт заблокирован.' : /too_fast/.test(m) ? 'Отправлять сообщения можно не чаще одного раза в 3 секунды' : /daily_limit/.test(m) ? 'Достигнут суточный лимит публичного чата — 500 сообщений' : /invalid_message/.test(m) ? 'Сообщение пустое или слишком длинное' : /profile_missing/.test(m) ? 'У аккаунта нет ника' : netErr(er) ? 'Нет связи с сервером' : 'Сообщение не отправлено');
         if (/muted|banned/.test(m)) await refreshModerationStatus();
       } finally { chatBusy = false; renderModStatus(); if (!modStatus?.active) $('chatIn').focus(); }
     });
@@ -1015,7 +1015,7 @@
       clearInterval(FR.dmPoll); FR.dmPoll = setInterval(() => { if (!$('dmCard').hidden) dmFetch(true).catch(() => {}); }, 6000);
     }
     function closeDm() { clearInterval(FR.dmPoll); FR.dmPoll = null; FR.dm = null; openFriends(true); }
-    const DM_ERR = { not_friends: 'Писать можно только друзьям', too_fast: 'Не так быстро — подожди секунду', daily_limit: 'На сегодня лимит сообщений исчерпан', muted: 'Отправка сообщений временно заблокирована модерацией.', banned: 'Отправка сообщений недоступна: аккаунт заблокирован.', empty: '' };
+    const DM_ERR = { not_friends: 'Писать можно только друзьям', too_fast: 'Отправлять сообщения можно не чаще одного раза в 3 секунды', daily_limit: 'На сегодня лимит сообщений исчерпан', muted: 'Отправка сообщений временно заблокирована модерацией.', banned: 'Отправка сообщений недоступна: аккаунт заблокирован.', empty: '' };
     $('dmForm').addEventListener('submit', async e => {
       e.preventDefault(); const t = emoGuard($('dmIn').value.trim()); if (!t || !FR.dm || FR.dmBusy) return;
       FR.dmBusy = true; $('dmSend').disabled = true;

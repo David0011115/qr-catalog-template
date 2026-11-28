@@ -52,6 +52,7 @@ button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#
       <button data-tab="queue">Очередь жалоб</button>
       <button data-tab="appeals">Апелляции</button>
       <button data-tab="events">Античит · события</button>
+      <button data-tab="roles" id="rolesTab" class="hidden">Управление ролями</button>
     </nav>
 
     <section id="tab-players" class="panel">
@@ -74,6 +75,13 @@ button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#
     <section id="tab-queue" class="panel hidden"><h2>Очередь модерации</h2><div id="queueList">Загрузка…</div></section>
     <section id="tab-appeals" class="panel hidden"><h2>Апелляции игроков</h2><div id="appealsList">Загрузка…</div></section>
     <section id="tab-events" class="panel hidden"><h2>Подозрительные игровые события</h2><p class="small">События только попадают на проверку. Автоматических банов или мутов за читерство нет.</p><div id="eventsList">Загрузка…</div></section>
+    <section id="tab-roles" class="panel hidden">
+      <h2>Управление модераторами</h2>
+      <p class="small">Только администратор может назначать и снимать модераторов. Введи UUID аккаунта игрока — назначение проверяется сервером.</p>
+      <label for="roleUserId">UUID аккаунта</label><input id="roleUserId" placeholder="UUID игрока">
+      <div class="row" style="margin-top:10px"><button id="grantModerator" class="good">Назначить модератором</button><button id="revokeModerator" class="warn">Снять роль модератора</button></div>
+      <h2 style="margin-top:20px">Текущие модераторы</h2><div id="moderatorsList">Загрузка…</div>
+    </section>
   </section>
 </div>
 <script src="./supabase.js"></script>

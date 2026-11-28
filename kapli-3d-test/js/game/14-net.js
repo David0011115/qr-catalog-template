@@ -105,7 +105,7 @@
       }
     }
     function modEscape(value) {
-      return String(value == null ? '' : value).replace(/[&<>\\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\\"': '&quot;', "'": '&#39;' }[ch]));
+      return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     }
     function modClock(ms) {
       const sec = Math.max(0, Math.ceil(ms / 1000));

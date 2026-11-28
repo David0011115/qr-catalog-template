@@ -24,7 +24,7 @@ revoke all on public.kapli_message_guard_events from public, anon, authenticated
 -- so parallel requests cannot race around the thresholds.
 create or replace function public.kapli_message_guard_check(
   p_user_id uuid, p_source text, p_body text
-) returns boolean
+) returns text
 language plpgsql security definer set search_path = ''
 as $$
 declare
@@ -69,14 +69,15 @@ begin
     perform public.kapli_mod_record_violation(
       p_user_id, 'spam', p_source, null, left(p_body, 1000)
     );
-    return false;
+    return 'spam';
   end if;
 
   if prior_at is not null and prior_at > event_at - interval '3 seconds' then
-    raise exception 'too_fast' using errcode = 'P0001';
+    -- Return instead of raising: the attempt must commit so burst detection can count it.
+    return 'too_fast';
   end if;
 
-  return true;
+  return 'ok';
 end;
 $$;
 
@@ -91,6 +92,7 @@ declare
   nick text;
   clean_body text := btrim(coalesce(new.body, ''));
   banned_kind text;
+  guard_result text;
   daily_n integer;
 begin
   if me is null then raise exception 'not_signed_in' using errcode = 'P0001'; end if;
@@ -138,9 +140,8 @@ begin
     raise exception 'daily_limit' using errcode = 'P0001';
   end if;
 
-  if not public.kapli_message_guard_check(me, 'chat', clean_body) then
-    return null;
-  end if;
+  guard_result := public.kapli_message_guard_check(me, 'chat', clean_body);
+  if guard_result <> 'ok' then return null; end if;
 
   new.user_id := me;
   new.nickname := nick;
@@ -160,6 +161,7 @@ declare
   other uuid := public.kapli_find_player(p_nick);
   t text := btrim(coalesce(p_body, ''));
   banned_kind text;
+  guard_result text;
 begin
   if me is null then raise exception 'not_signed_in' using errcode = 'P0001'; end if;
   if t = '' then raise exception 'empty'; end if;
@@ -196,9 +198,8 @@ begin
     return;
   end if;
 
-  if not public.kapli_message_guard_check(me, 'dm', t) then
-    return;
-  end if;
+  guard_result := public.kapli_message_guard_check(me, 'dm', t);
+  if guard_result <> 'ok' then return; end if;
 
   return query
     insert into public.kapli_dm(sender,recipient,body)

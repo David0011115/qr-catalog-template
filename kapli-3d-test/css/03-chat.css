@@ -176,3 +176,8 @@
 @keyframes emoCrack{0%{stroke-dashoffset:1}100%{stroke-dashoffset:0}}
 @keyframes emoPop{0%,100%{transform:translateY(55%) scale(.6);opacity:0}18%,38%{transform:translateY(-70%);opacity:1}48%{transform:translateY(40%) scale(.7);opacity:0}62%,84%{transform:translateY(-70%);opacity:1}}
 @keyframes emoNotes{0%{opacity:0;transform:translateY(40%) scale(.5)}25%{opacity:1;transform:translateY(-10%) scale(1.1)}55%{opacity:.4;transform:none}75%{opacity:1;transform:translateY(-14%) scale(1.1)}100%{opacity:1;transform:none}}
+
+/* TEST staff role badges */
+.kapli-role-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:4px;padding:0 3px;border-radius:6px;font-size:12px;line-height:1.25;vertical-align:middle;white-space:nowrap}
+.kapli-role-badge.admin{background:rgba(255,210,63,.12);border:1px solid rgba(255,210,63,.35)}
+.kapli-role-badge.moderator{background:rgba(90,190,255,.10);border:1px solid rgba(90,190,255,.32)}

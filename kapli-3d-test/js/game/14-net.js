@@ -8,6 +8,7 @@
     const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'rbuild', 'hardcore', 'royale'];
     const NICK_RE = [/^[A-Za-z0-9_]{3,16}$/, /^[А-Яа-яЁё0-9_]{3,16}$/];
     let sb = null, sess = null, canPush = false, pushing = false, pushTimer = null, retryMs = 0, sync = 'guest', pending = null, recoverPending = false, splashOn = true, privacyPending = false;
+    let modStatus = null, modStatusBusy = false, modStatusPoll = null, modStatusTick = null;
     async function checkPrivacyConsent() {
       if (!sess) return false;
       const { data, error } = await withTimeout(sb.rpc('kapli_has_privacy_consent'), 8000);
@@ -62,12 +63,97 @@
       if (!user) { canPush = false; setSync('guest'); frStop(); } else { if (!privacyPending) setTimeout(() => pushShowcase(), 3000); if (!privacyPending && Net.uid !== frStart.uid) frStart(); }
       frStart.uid = Net.uid;
       renderChip();
+      watchModerationStatus(!!user);
     }
     async function loadProfile() {
       const { data } = await withTimeout(sb.from('player_profiles').select('nickname, public_id').eq('user_id', sess.user.id).maybeSingle(), 8000);
       const nick = data ? data.nickname : (sess.user.user_metadata && sess.user.user_metadata.nickname) || null;
       if (nick) { meta.nick = nick; saveMeta(); }
       setUser(sess.user, nick, data && data.public_id);
+    }
+
+    // ---------- personal moderation status ----------
+    function ensureModStatusUi() {
+      if (!document.getElementById('modStatusStyle')) {
+        const style = document.createElement('style');
+        style.id = 'modStatusStyle';
+        style.textContent = '.mod-status{margin:8px 0;padding:10px 12px;border:1px solid rgba(255,61,110,.55);border-radius:12px;background:rgba(65,12,38,.9);color:#fff;display:grid;gap:4px;font-size:.82rem;line-height:1.35}.mod-status[hidden]{display:none!important}.mod-status-title{font-weight:700}.mod-status-reason{color:rgba(255,255,255,.82);font-size:.76rem}.mod-status-time{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.mod-status-clock{font:700 1.35rem var(--display);font-variant-numeric:tabular-nums;color:#ff8aa2;text-shadow:0 0 10px rgba(255,61,110,.35)}';
+        document.head.appendChild(style);
+      }
+      [['chatCard','chatForm','modStatusChat'],['dmCard','dmForm','modStatusDm']].forEach(([cardId,formId,nodeId]) => {
+        const form = $(formId);
+        if (!form || document.getElementById(nodeId)) return;
+        const node = document.createElement('section');
+        node.id = nodeId; node.className = 'mod-status'; node.hidden = true;
+        node.setAttribute('role', 'status'); node.setAttribute('aria-live', 'off');
+        form.parentNode.insertBefore(node, form);
+      });
+    }
+    function modClock(ms) {
+      const sec = Math.max(0, Math.ceil(ms / 1000));
+      return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+    }
+    function renderModStatus() {
+      ensureModStatusUi();
+      const st = modStatus;
+      let active = !!(sess && st && st.active), remain = null;
+      if (active && st.kind !== 'ban') {
+        remain = Date.parse(st.ends_at) - Date.now();
+        if (!Number.isFinite(remain) || remain <= 0) {
+          active = false; modStatus = { active: false };
+          if (sess && sb && !modStatusBusy) Promise.resolve().then(refreshModerationStatus);
+        }
+      }
+      [['modStatusChat','modStatusDm']].flat().forEach(id => {
+        const node = document.getElementById(id);
+        if (!node) return;
+        node.hidden = !active;
+        if (active) {
+          const banned = st.kind === 'ban';
+          node.innerHTML = '<div class="mod-status-title">' + (banned ? '⛔ Аккаунт заблокирован' : '⛔ Общение временно заблокировано') + '</div>' +
+            '<div class="mod-status-reason">Причина: ' + escHtml(st.reason || 'Нарушение правил') + '</div>' +
+            (banned ? '<div class="mod-status-time">Блокировка бессрочная</div>' : '<div class="mod-status-time">До окончания <b class="mod-status-clock">' + modClock(remain) + '</b></div>');
+        }
+      });
+      const locked = active;
+      if ($('chatIn')) $('chatIn').disabled = !sess || locked;
+      if ($('chatSend')) $('chatSend').disabled = !sess || locked;
+      if ($('chatEmojiBtn')) $('chatEmojiBtn').disabled = !sess || locked;
+      const dmCanWrite = $('dmCard') && $('dmCard').dataset.canWrite === '1';
+      if ($('dmIn')) {
+        $('dmIn').disabled = !dmCanWrite || locked;
+        $('dmIn').placeholder = locked ? 'Общение временно заблокировано' : dmCanWrite ? 'Сообщение…' : 'Вы больше не друзья — писать нельзя';
+      }
+      if ($('dmSend')) $('dmSend').disabled = !dmCanWrite || locked;
+    }
+    async function refreshModerationStatus() {
+      if (!sess) { modStatus = { active: false }; renderModStatus(); return; }
+      if (!sb || modStatusBusy) return;
+      modStatusBusy = true;
+      try {
+        const { data, error } = await withTimeout(sb.rpc('kapli_mod_my_status'), 7000);
+        if (error) throw error;
+        modStatus = data && typeof data === 'object' ? data : { active: false };
+      } catch (e) {
+        if (!modStatus) modStatus = { active: false };
+      } finally {
+        modStatusBusy = false;
+        renderModStatus();
+      }
+    }
+    function watchModerationStatus(enabled) {
+      clearInterval(modStatusPoll); modStatusPoll = null;
+      clearInterval(modStatusTick); modStatusTick = null;
+      if (!enabled) {
+        modStatus = { active: false };
+        renderModStatus();
+        return;
+      }
+      if (!modStatus) modStatus = { active: false };
+      ensureModStatusUi();
+      refreshModerationStatus();
+      modStatusPoll = setInterval(refreshModerationStatus, 10000);
+      modStatusTick = setInterval(renderModStatus, 1000);
     }
 
     // ---------- sync status shown in the menu chip and the account window ----------
@@ -499,7 +585,7 @@
       $('chatNote').textContent = sess ? 'Не больше одного сообщения в 3 секунды. Будь вежлив: ⚑ — пожаловаться.' : 'Читать могут все. Чтобы писать, войди в аккаунт.';
       $('chatIn').disabled = $('chatSend').disabled = $('chatEmojiBtn').disabled = !sess; $('chatEmojiPicker').hidden = true; $('chatIn').placeholder = sess ? 'Сообщение… (не чаще раза в 3 с)' : 'Войди в аккаунт, чтобы писать';
       try {
-        await ensureClient(); await chatFetch(false); list.querySelectorAll('.skel, .sr-only').forEach(x => x.remove());
+        await ensureClient(); await refreshModerationStatus(); await chatFetch(false); list.querySelectorAll('.skel, .sr-only').forEach(x => x.remove());
         if (!list.children.length) list.innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep');
         list.scrollTop = list.scrollHeight;
         chatCh = sb.channel('kapli-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kapli_chat' }, p => { if (p.new && p.new.id) chatAdd(p.new); }).subscribe();
@@ -519,7 +605,8 @@
       } catch (er) {
         const m = String((er && er.message) || '');
         toast(/muted/.test(m) ? 'Отправка сообщений временно заблокирована модерацией.' : /banned/.test(m) ? 'Отправка сообщений недоступна: аккаунт заблокирован.' : /invalid_message/.test(m) ? 'Сообщение пустое или слишком длинное' : /profile_missing/.test(m) ? 'У аккаунта нет ника' : netErr(er) ? 'Нет связи с сервером' : 'Сообщение не отправлено');
-      } finally { chatBusy = false; $('chatSend').disabled = !sess; $('chatIn').focus(); }
+        if (/muted|banned/.test(m)) await refreshModerationStatus();
+      } finally { chatBusy = false; renderModStatus(); if (!modStatus?.active) $('chatIn').focus(); }
     });
     $('chatEmojiBtn').addEventListener('click', () => {
       if (!sess) return;
@@ -840,9 +927,11 @@
       $('dmList').innerHTML = skelHTML(4); $('dmNote').textContent = 'Личные сообщения видите только вы двое. ⚑ — пожаловаться.';
       const th = FR.threads.find(x => x.nickname.toLowerCase() === nick.toLowerCase());
       const canWrite = !!(f && f.status === 'friend') || !!(th && th.can_write) || !!(save.badges || {}).creator;
+      $('dmCard').dataset.canWrite = canWrite ? '1' : '0';
       $('dmIn').value = ''; $('dmIn').disabled = $('dmSend').disabled = !canWrite; $('dmIn').placeholder = canWrite ? 'Сообщение…' : 'Вы больше не друзья — писать нельзя';
+      renderModStatus();
       if (canWrite) $('dmIn').focus(); else $('dmBack').focus();
-      try { await dmFetch(false); $('dmList').querySelectorAll('.skel, .sr-only').forEach(x => x.remove()); if (!$('dmList').querySelector('li')) $('dmList').innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep'); }
+      try { await refreshModerationStatus(); await dmFetch(false); $('dmList').querySelectorAll('.skel, .sr-only').forEach(x => x.remove()); if (!$('dmList').querySelector('li')) $('dmList').innerHTML = emptyHTML('Сообщений пока нет — напиши первым!', 'sleep'); }
       catch (e) { $('dmList').innerHTML = `<p class="empty-note">${frErr(e)}</p>`; }
       clearInterval(FR.dmPoll); FR.dmPoll = setInterval(() => { if (!$('dmCard').hidden) dmFetch(true).catch(() => {}); }, 6000);
     }
@@ -856,8 +945,8 @@
         if (!sent || !sent.length) { toast('Сообщение отклонено модерацией. Проверь текст и статус блокировки.'); }
         else { $('dmIn').value = ''; await dmFetch(true); }
       }
-      catch (er) { const k = Object.keys(DM_ERR).find(k => String(er.message || '').includes(k)); toast(k ? DM_ERR[k] || 'Пустое сообщение' : frErr(er)); }
-      FR.dmBusy = false; $('dmSend').disabled = false; $('dmIn').focus();
+      catch (er) { const k = Object.keys(DM_ERR).find(k => String(er.message || '').includes(k)); toast(k ? DM_ERR[k] || 'Пустое сообщение' : frErr(er)); if (k === 'muted' || k === 'banned') await refreshModerationStatus(); }
+      FR.dmBusy = false; renderModStatus(); if (!modStatus?.active && $('dmCard').dataset.canWrite === '1') $('dmIn').focus();
     });
     $('dmBack').addEventListener('click', closeDm);
     $('dmHead').addEventListener('click', e => { const w = e.target.closest('[data-pc]'); if (w) openPlayerCard(w.dataset.pc); });

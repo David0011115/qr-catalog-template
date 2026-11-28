@@ -1013,11 +1013,18 @@
     if (!list.length) return '';
     return `<div class="pc-shelf">${list.map(([a, t]) => `<span class="pc-tr" style="--ac:${achArtOf(a)[0]}">${achEmblem(a, Math.min(t, a.steps.length), 34)}<span style="min-width:0"><b>${a.name}</b><small>${a.steps.length <= 3 ? `${ROM3[Math.min(t, 3)]} · ${METAL_NAME[achMetal(a, t)]}` : `${t} из ${a.steps.length}`}</small></span></span>`).join('')}</div>`;
   }
+  function paintProfileRole(nick, role) {
+    const el = [...document.querySelectorAll('.pc-role-badge[data-role-nick]')].find(x => x.dataset.roleNick === nick);
+    if (!el) return;
+    el.textContent = role === 'admin' ? '👑 Администратор' : role === 'moderator' ? '🛡️ Модератор' : '';
+    el.hidden = !role;
+    el.style.cssText = role ? 'display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 7px;border:1px solid rgba(255,210,63,.45);border-radius:20px;font-size:11px;line-height:1.4;color:#ffe59a;width:max-content' : 'display:none';
+  }
   function pcardHTML(d, nick, opt = {}) {
     const lv = Math.max(1, Math.min(50, d.lvl || 1)), li = Math.max(0, Math.min(5, d.league || 0)), ci = Math.max(0, Math.min(5, d.chaos || 0)), bg = pbgById(d.bg), bgk = d.bgf && PBG_EVO[bg.id] ? `${bg.id}_f${d.bgf}` : String(d.bg || '').replace(/_f[123]$/, '') === bg.id ? d.bg : bg.id;
     const lvInfo = opt.me ? levelInfo(save.xp) : null, pct = lvInfo ? (lvInfo.max ? 100 : lvInfo.into / lvInfo.need * 100) : 100;
     return `<div class="pcard r-${bg.rar}${bg.top ? ' top' : ''}" data-bgid="${bg.id}"><canvas class="pc-bg" data-pbg="${bgk}"></canvas><div class="pc-edge"></div>` +
-      `<div class="pc-main">${pcAvatar(d, opt.mini ? 64 : 88)}<div class="pc-info"><b class="pc-nick">${escHtml(nick || 'Ты')}</b>${d.title && decorById(d.title) ? `<span class="pc-title">${titleTag(d.title)}</span>` : ''}` +
+      `<div class="pc-main">${pcAvatar(d, opt.mini ? 64 : 88)}<div class="pc-info"><b class="pc-nick">${escHtml(nick || 'Ты')}</b><span class="pc-role-badge" data-role-nick="${escHtml(nick || '')}"></span>${d.title && decorById(d.title) ? `<span class="pc-title">${titleTag(d.title)}</span>` : ''}` +
       `<small class="pc-lg">${rankEmblem(li, 22)}<span style="color:${LG_COLS[li]}">${LG_NAMES[li]}</span>${ci ? ` · ${chaosEmblem(ci, 22)}${ctTag(ci)}` : ''}</small></div>` +
       `<div class="pc-lvl"><svg viewBox="0 0 60 66" aria-hidden="true"><path d="M30 2 L57 17 V49 L30 64 L3 49 V17 Z" fill="rgba(20,10,50,.75)" stroke="url(#pcLvG${++pcUid})" stroke-width="${d.ps ? 3.2 : 2.5}"/><defs><linearGradient id="pcLvG${pcUid}" x1="0" y1="0" x2="1" y2="1">${(st => st.map((c, i) => `<stop offset="${(i / (st.length - 1)).toFixed(2)}" stop-color="${c}"/>`).join(''))(psStops(d.ps))}</linearGradient></defs></svg><small>Уровень</small><b>${lv}</b>${d.ps ? `<span class="ps-mark${d.ps.n ? ' nova' : ''}">${psLabel(d.ps)}</span>` : ''}${lvInfo ? `<i style="--p:${pct.toFixed(0)}%"></i>` : ''}</div></div>` +
       `<div class="pc-stats"><span><b>${(d.wins || 0).toLocaleString('ru-RU')}</b><small>побед</small></span><span><b>${(d.best || 0).toLocaleString('ru-RU')}</b><small>рекорд «Классики»</small></span><span><b>${d.ach || 0}</b><small>достижений</small></span></div>` + shelfHTML(d.shelf) + '</div>';
@@ -1189,8 +1196,10 @@
     let d = me ? myShowcase() : null;
     if (!me) { const m = await Net.getShowcases([nick]); d = m.get(nick); }
     if ($('pcModal').hidden) return;
+    const role = Net.getRole ? await Net.getRole(nick) : null;
     $('pcBody').innerHTML = pcardHTML(d || { bg: 'bg_base', skin: 'coral', lvl: 1 }, nick, { me }) + (d ? '' : '<p class="info-note">Игрок ещё не оформил профиль.</p>') + (d && !me ? (actOtherHTML(d.act) || '<p class="info-note pc-act-none">🔥 Календарь активности этого игрока появится, когда он зайдёт в игру обновлённой версии.</p>') + rcOtherHTML(d.rc) : '') + (me ? '' : '<div class="pc-social" id="pcSocial"></div>');
     pbgMount($('pcBody'));
+    paintProfileRole(nick, role);
     if (!me) Net.pcSocial(nick, $('pcSocial'));
   }
   pbgCheck(true);   // what the player already has gets unlocked silently

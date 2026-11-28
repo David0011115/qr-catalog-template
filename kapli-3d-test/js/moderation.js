@@ -41,7 +41,7 @@
   }
   function renderStats(d){$('stats').innerHTML=[['queue_pending','Жалобы в работе'],['appeals_pending','Апелляции'],['events_new','События на проверке'],['active_mutes','Активные муты'],['active_bans','Перманентные баны']].map(([k,t])=>'<div class="stat"><b>'+Number(d[k]||0).toLocaleString('ru-RU')+'</b><span>'+t+'</span></div>').join('');}
   async function loadAll(){
-    if(!isAdmin)return;
+    if(!isModerator)return;
     const jobs=await Promise.allSettled([rpc('kapli_mod_admin_queue',{p_status:'pending'}),rpc('kapli_mod_admin_appeals',{p_status:'pending'}),isAdmin?rpc('kapli_mod_admin_events',{p_status:'new'}):Promise.resolve([]),rpc('kapli_mod_admin_sanctions',{p_user_id:null}),rpc('kapli_mod_admin_dashboard')]);
     const [q,a,e,s,d]=jobs;
     $('queueList').innerHTML=q.status==='fulfilled'?renderQueue(q.value):'<p class="small">'+esc(errorText(q.reason))+'</p>';

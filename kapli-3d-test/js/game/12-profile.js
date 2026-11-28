@@ -1023,11 +1023,13 @@
   function pcardHTML(d, nick, opt = {}) {
     const lv = Math.max(1, Math.min(50, d.lvl || 1)), li = Math.max(0, Math.min(5, d.league || 0)), ci = Math.max(0, Math.min(5, d.chaos || 0)), bg = pbgById(d.bg), bgk = d.bgf && PBG_EVO[bg.id] ? `${bg.id}_f${d.bgf}` : String(d.bg || '').replace(/_f[123]$/, '') === bg.id ? d.bg : bg.id;
     const lvInfo = opt.me ? levelInfo(save.xp) : null, pct = lvInfo ? (lvInfo.max ? 100 : lvInfo.into / lvInfo.need * 100) : 100;
-    return `<div class="pcard r-${bg.rar}${bg.top ? ' top' : ''}" data-bgid="${bg.id}"><canvas class="pc-bg" data-pbg="${bgk}"></canvas><div class="pc-edge"></div>` +
+    const html = `<div class="pcard r-${bg.rar}${bg.top ? ' top' : ''}" data-bgid="${bg.id}"><canvas class="pc-bg" data-pbg="${bgk}"></canvas><div class="pc-edge"></div>` +
       `<div class="pc-main">${pcAvatar(d, opt.mini ? 64 : 88)}<div class="pc-info"><b class="pc-nick">${escHtml(nick || 'Ты')}</b><span class="pc-role-badge" data-role-nick="${escHtml(nick || '')}"></span>${d.title && decorById(d.title) ? `<span class="pc-title">${titleTag(d.title)}</span>` : ''}` +
       `<small class="pc-lg">${rankEmblem(li, 22)}<span style="color:${LG_COLS[li]}">${LG_NAMES[li]}</span>${ci ? ` · ${chaosEmblem(ci, 22)}${ctTag(ci)}` : ''}</small></div>` +
       `<div class="pc-lvl"><svg viewBox="0 0 60 66" aria-hidden="true"><path d="M30 2 L57 17 V49 L30 64 L3 49 V17 Z" fill="rgba(20,10,50,.75)" stroke="url(#pcLvG${++pcUid})" stroke-width="${d.ps ? 3.2 : 2.5}"/><defs><linearGradient id="pcLvG${pcUid}" x1="0" y1="0" x2="1" y2="1">${(st => st.map((c, i) => `<stop offset="${(i / (st.length - 1)).toFixed(2)}" stop-color="${c}"/>`).join(''))(psStops(d.ps))}</linearGradient></defs></svg><small>Уровень</small><b>${lv}</b>${d.ps ? `<span class="ps-mark${d.ps.n ? ' nova' : ''}">${psLabel(d.ps)}</span>` : ''}${lvInfo ? `<i style="--p:${pct.toFixed(0)}%"></i>` : ''}</div></div>` +
       `<div class="pc-stats"><span><b>${(d.wins || 0).toLocaleString('ru-RU')}</b><small>побед</small></span><span><b>${(d.best || 0).toLocaleString('ru-RU')}</b><small>рекорд «Классики»</small></span><span><b>${d.ach || 0}</b><small>достижений</small></span></div>` + shelfHTML(d.shelf) + '</div>';
+    if (nick && Net.getRole) Net.getRole(nick).then(role => paintProfileRole(nick, role));
+    return html;
   }
   // unlocks: backgrounds and the Singularity avatar frame are checked against progress; new ones are announced once
   // prestige rewards: granted the moment a step is reached (and at once for players who already have the experience)

@@ -89,6 +89,9 @@
         form.parentNode.insertBefore(node, form);
       });
     }
+    function modEscape(value) {
+      return String(value == null ? '' : value).replace(/[&<>\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;' }[ch]));
+    }
     function modClock(ms) {
       const sec = Math.max(0, Math.ceil(ms / 1000));
       return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
@@ -111,7 +114,7 @@
         if (active) {
           const banned = st.kind === 'ban';
           node.innerHTML = '<div class="mod-status-title">' + (banned ? '⛔ Аккаунт заблокирован' : '⛔ Общение временно заблокировано') + '</div>' +
-            '<div class="mod-status-reason">Причина: ' + escHtml(st.reason || 'Нарушение правил') + '</div>' +
+            '<div class="mod-status-reason">Причина: ' + modEscape(st.reason || 'Нарушение правил') + '</div>' +
             (banned ? '<div class="mod-status-time">Блокировка бессрочная</div>' : '<div class="mod-status-time">До окончания <b class="mod-status-clock">' + modClock(remain) + '</b></div>');
         }
       });

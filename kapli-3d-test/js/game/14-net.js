@@ -483,6 +483,7 @@
 
     // ---------- profile showcase (others see it in the ranking and the chat) ----------
     const scCache = new Map(); let scTimer = null, scLast = '';
+    const roleCache = new Map();
     // ---- test build only: a pretend friend served locally, so the friend screens and a friend's card can be seen without the server ----
     const TN = TEST_MODE ? (() => {
       const now = Date.now(), iso = m => new Date(now - m * 60000).toISOString();
@@ -528,17 +529,41 @@
       if (Net.nick) scCache.set(Net.nick, myShowcase());
       return scCache;
     }
+    async function getRoles(nicks) {
+      const need = [...new Set(nicks)].filter(n => n && !roleCache.has(n)).slice(0, 80);
+      if (need.length) {
+        try {
+          await ensureClient();
+          const { data, error } = await withTimeout(sb.rpc('kapli_public_roles', { p_nicks: need }), 9000);
+          if (error) throw error;
+          need.forEach(n => roleCache.set(n, null));
+          (data || []).forEach(r => roleCache.set(r.nickname, r.role));
+        } catch (e) { need.forEach(n => roleCache.set(n, null)); }
+      }
+      return roleCache;
+    }
+    async function getRole(nick) {
+      if (!nick) return null;
+      const roles = await getRoles([nick]);
+      return roles.get(nick) || null;
+    }
     function pushShowcase() {
       if (!sess || privacyPending) return; clearTimeout(scTimer);
       scTimer = setTimeout(async () => { const d = myShowcase(); if (d.bgf) d.bg = pbgKey(d.bg, d.bgf); delete d.bgf; const js = JSON.stringify(d); if (js === scLast) return;
         try { await ensureClient(); const { error } = await withTimeout(sb.rpc('kapli_set_showcase', { p: d }), 9000); if (!error) scLast = js; } catch (e) {} }, 1500);
     }
     // a small avatar + title next to a nickname; tapping opens the player's card
-    const whoHTML = (nick, d) => `<span class="rk-av">${d ? pcAvatar(d, 34) : ''}</span><span class="rk-n">${d && d.league !== undefined ? rankEmblem(d.league, 18, { still: true }) : ''}${escHtml(nick)}${d && d.ps && (d.ps.n || d.ps.s >= 10) ? `<small class="ps-nick${d.ps.n ? ' nova' : ''}">${psLabel(d.ps)}</small>` : ''}${d && d.title && decorById(d.title) ? `<small class="rk-t">${titleTag(d.title)}</small>` : ''}</span>`;
+    const roleBadge = role => role === 'admin' ? '<small class="kapli-role-badge admin" title="Администратор" aria-label="Администратор">👑</small>' : role === 'moderator' ? '<small class="kapli-role-badge moderator" title="Модератор" aria-label="Модератор">🛡️</small>' : '';
+    const whoHTML = (nick, d, role) => `<span class="rk-av">${d ? pcAvatar(d, 34) : ''}</span><span class="rk-n">${d && d.league !== undefined ? rankEmblem(d.league, 18, { still: true }) : ''}${escHtml(nick)}${roleBadge(role)}${d && d.ps && (d.ps.n || d.ps.s >= 10) ? `<small class="ps-nick${d.ps.n ? ' nova' : ''}">${psLabel(d.ps)}</small>` : ''}${d && d.title && decorById(d.title) ? `<small class="rk-t">${titleTag(d.title)}</small>` : ''}</span>`;
     async function decorateWho(root) {
       const els = [...root.querySelectorAll('[data-who]')]; if (!els.length) return;
-      const m = await getShowcases(els.map(e => e.dataset.who));
-      els.forEach(e => { if (!e.isConnected) return; const d = m.get(e.dataset.who); if (d && !e.dataset.done) { e.dataset.done = 1; e.innerHTML = whoHTML(e.dataset.who, d); } });
+      const names = els.map(e => e.dataset.who);
+      const [m, roles] = await Promise.all([getShowcases(names), getRoles(names)]);
+      els.forEach(e => {
+        if (!e.isConnected || e.dataset.done) return;
+        e.dataset.done = 1;
+        e.innerHTML = whoHTML(e.dataset.who, m.get(e.dataset.who), roles.get(e.dataset.who));
+      });
     }
 
     // ---------- chat ----------
@@ -1286,7 +1311,7 @@
       } catch (e) {}
     }
     setTimeout(errFlush, 15000); setInterval(errFlush, 5 * 60000);
-    Object.assign(Net, { boot, submitRecord: (m, v, det) => { submitRecord(m, v, det); },   /* 2.7.9: the report went missing here — only (mode, score) were passed on */ redeemPromo, walletSoon, walletSync, openAccount, pushShowcase, getShowcases, pcSocial, pcSocialClick });
+    Object.assign(Net, { boot, submitRecord: (m, v, det) => { submitRecord(m, v, det); },   /* 2.7.9: the report went missing here — only (mode, score) were passed on */ redeemPromo, walletSoon, walletSync, openAccount, pushShowcase, getShowcases, getRole, pcSocial, pcSocialClick });
     renderChip();
   }
 

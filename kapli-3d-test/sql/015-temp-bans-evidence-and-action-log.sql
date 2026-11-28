@@ -372,7 +372,7 @@ revoke all on function public.kapli_mod_admin_actions() from public, anon, authe
 revoke all on function public.kapli_chat_before_insert() from public, anon, authenticated;
 revoke all on function public.kapli_dm_send(text,text) from public, anon;
 grant execute on function public.kapli_mod_my_status() to authenticated;
-grant execute on function public.kapli_mod_record_violation(uuid,text,text,bigint,text) to authenticated;
+-- kapli_mod_record_violation remains internal; only SECURITY DEFINER moderation paths invoke it.
 grant execute on function public.kapli_mod_admin_dashboard() to authenticated;
 grant execute on function public.kapli_mod_admin_sanctions(uuid) to authenticated;
 grant execute on function public.kapli_mod_admin_set_sanction(uuid,text,integer,text) to authenticated;

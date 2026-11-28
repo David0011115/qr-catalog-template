@@ -680,7 +680,7 @@
       chatBusy = true; $('chatSend').disabled = true;
       try {
         const { data, error } = await withTimeout(sb.from('kapli_chat').insert({ body: t }).select('id, nickname, body, created_at'), 9000);
-        if (error) throw error; if (data && data[0]) { $('chatIn').value = ''; chatAdd(data[0]); } else { toast('Сообщение отклонено модерацией. Проверь текст или статус блокировки.'); }
+        if (error) throw error; if (data && data[0]) { $('chatIn').value = ''; chatAdd(data[0]); } else { toast('Сообщение не отправлено: проверь текст и соблюдай интервал 3 секунды. Не повторяй одинаковые сообщения.'); }
       } catch (er) {
         const m = String((er && er.message) || '');
         toast(/muted/.test(m) ? 'Отправка сообщений временно заблокирована модерацией.' : /banned/.test(m) ? 'Отправка сообщений недоступна: аккаунт заблокирован.' : /too_fast/.test(m) ? 'Отправлять сообщения можно не чаще одного раза в 3 секунды' : /daily_limit/.test(m) ? 'Достигнут суточный лимит публичного чата — 500 сообщений' : /invalid_message/.test(m) ? 'Сообщение пустое или слишком длинное' : /profile_missing/.test(m) ? 'У аккаунта нет ника' : netErr(er) ? 'Нет связи с сервером' : 'Сообщение не отправлено');
@@ -1021,7 +1021,7 @@
       FR.dmBusy = true; $('dmSend').disabled = true;
       try {
         const sent = await frRpc('kapli_dm_send', { p_nick: FR.dm, p_body: t });
-        if (!sent || !sent.length) { toast('Сообщение отклонено модерацией. Проверь текст и статус блокировки.'); }
+        if (!sent || !sent.length) { toast('Сообщение не отправлено: проверь текст и соблюдай интервал 3 секунды. Не повторяй одинаковые сообщения.'); }
         else { $('dmIn').value = ''; await dmFetch(true); }
       }
       catch (er) { const k = Object.keys(DM_ERR).find(k => String(er.message || '').includes(k)); toast(k ? DM_ERR[k] || 'Пустое сообщение' : frErr(er)); if (k === 'muted' || k === 'banned') await refreshModerationStatus(); }

@@ -8,7 +8,7 @@
     const RANK_MODES = ['classic', 'timed', 'survival', 'crown', 'rbuild', 'hardcore', 'royale'];
     const NICK_RE = [/^[A-Za-z0-9_]{3,16}$/, /^[А-Яа-яЁё0-9_]{3,16}$/];
     let sb = null, sess = null, canPush = false, pushing = false, pushTimer = null, retryMs = 0, sync = 'guest', pending = null, recoverPending = false, splashOn = true, privacyPending = false;
-    let modStatus = null, modStatusBusy = false, modStatusPoll = null, modStatusTick = null, modLockGuardInstalled = false;
+    let modStatus = null, modStatusBusy = false, modStatusPoll = null, modStatusTick = null, modStatusPromise = null, modLockGuardInstalled = false;
     async function checkPrivacyConsent() {
       if (!sess) return false;
       const { data, error } = await withTimeout(sb.rpc('kapli_has_privacy_consent'), 8000);
@@ -164,18 +164,23 @@
     }
     async function refreshModerationStatus() {
       if (!sess) { modStatus = { active: false }; renderModStatus(); return; }
-      if (!sb || modStatusBusy) return;
+      if (!sb) return;
+      if (modStatusPromise) return modStatusPromise;
       modStatusBusy = true;
-      try {
-        const { data, error } = await withTimeout(sb.rpc('kapli_mod_my_status'), 7000);
-        if (error) throw error;
-        modStatus = data && typeof data === 'object' ? data : { active: false };
-      } catch (e) {
-        if (!modStatus) modStatus = { active: false };
-      } finally {
-        modStatusBusy = false;
-        renderModStatus();
-      }
+      modStatusPromise = (async () => {
+        try {
+          const { data, error } = await withTimeout(sb.rpc('kapli_mod_my_status'), 7000);
+          if (error) throw error;
+          modStatus = data && typeof data === 'object' ? data : { active: false };
+        } catch (e) {
+          if (!modStatus) modStatus = { active: false };
+        } finally {
+          modStatusBusy = false;
+          modStatusPromise = null;
+          renderModStatus();
+        }
+      })();
+      return modStatusPromise;
     }
     function watchModerationStatus(enabled) {
       clearInterval(modStatusPoll); modStatusPoll = null;
@@ -335,7 +340,14 @@
           const { data } = await withTimeout(sb.auth.getSession(), 8000); sess = data.session;
           if (sess) {
             privacyPending = true; canPush = false;
-            await loadProfile().catch(() => setUser(sess.user, meta.nick)); step('acct', 'ok');
+            await loadProfile().catch(() => setUser(sess.user, meta.nick));
+            await refreshModerationStatus();
+            if (modStatus?.active && (modStatus.kind === 'temp_ban' || modStatus.kind === 'ban')) {
+              step('acct', 'warn', modStatus.kind === 'ban' ? 'Аккаунт заблокирован' : 'Временная блокировка аккаунта');
+              step('save', 'warn', 'Доступ к игре закрыт до окончания санкции');
+              return 'account_blocked';
+            }
+            step('acct', 'ok');
             let consentOk = false;
             try { consentOk = await checkPrivacyConsent(); } catch (e) { privacyPending = true; canPush = false; }
             if (consentOk) {

@@ -155,17 +155,20 @@ create function public.kapli_mod_admin_sanctions(p_user_id uuid default null)
 returns table (
   id bigint, user_id uuid, nickname text, kind text, reason text,
   source text, created_at timestamptz, ends_at timestamptz, revoked_at timestamptz,
-  issuer_nickname text
+  issuer_nickname text, issuer_role text
 ) language plpgsql stable security definer set search_path = ''
 as $$
 begin
   if not public.kapli_mod_is_moderator() then raise exception 'staff_only' using errcode = 'P0001'; end if;
   return query
     select s.id, s.user_id, p.nickname, s.kind, s.reason, s.source,
-           s.created_at, s.ends_at, s.revoked_at, issuer.nickname
+           s.created_at, s.ends_at, s.revoked_at, issuer.nickname,
+           case when ia.user_id is not null then 'admin' when im.user_id is not null then 'moderator' else null end
     from public.kapli_sanctions s
     left join public.player_profiles p on p.user_id = s.user_id
     left join public.player_profiles issuer on issuer.user_id = s.created_by
+    left join public.kapli_admins ia on ia.user_id = s.created_by
+    left join public.kapli_moderators im on im.user_id = s.created_by
     where p_user_id is null or s.user_id = p_user_id
     order by s.created_at desc limit 200;
 end;

@@ -135,6 +135,7 @@
           overlay.innerHTML = '<div class="mod-game-lock-card"><div class="mod-game-lock-title">' +
             (permanent ? '⛔ Аккаунт заблокирован' : '⛔ Временная блокировка аккаунта') +
             '</div><div class="mod-game-lock-reason">Причина: ' + modEscape(st.reason || 'Нарушение правил') +
+            '</div><div class="mod-game-lock-reason">Кем выдано: ' + modEscape(st.issuer_role === 'arbiter' ? '⚖️ Арбитр чата' : (st.issuer_role === 'admin' ? '👑 Администратор' : st.issuer_role === 'moderator' ? '🛡️ Модератор' : 'Сотрудник') + (st.issuer_nickname ? ' · ' + st.issuer_nickname : '')) +
             '</div><div>Доступ к игре закрыт до окончания санкции.</div>' +
             (permanent ? '<div class="mod-game-lock-clock">Бессрочно</div>' :
               '<div class="mod-game-lock-clock">Осталось ' + modClock(remain) + '</div>') +
@@ -151,6 +152,7 @@
           node.innerHTML = '<div class="mod-status-title">' +
             (permanent ? '⛔ Аккаунт заблокирован' : tempBan ? '⛔ Аккаунт временно заблокирован' : '⛔ Общение временно заблокировано') + '</div>' +
             '<div class="mod-status-reason">Причина: ' + modEscape(st.reason || 'Нарушение правил') + '</div>' +
+            '<div class="mod-status-reason">Кем выдано: ' + modEscape(st.issuer_role === 'arbiter' ? '⚖️ Арбитр чата' : (st.issuer_role === 'admin' ? '👑 Администратор' : st.issuer_role === 'moderator' ? '🛡️ Модератор' : 'Сотрудник') + (st.issuer_nickname ? ' · ' + st.issuer_nickname : '')) + '</div>' +
             (permanent ? '<div class="mod-status-time">Блокировка бессрочная</div>' :
               '<div class="mod-status-time">До окончания <b class="mod-status-clock">' + modClock(remain) + '</b></div>');
         }

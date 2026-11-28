@@ -43,7 +43,7 @@ join lateral (
   where sa.user_id = v.user_id
     and sa.kind = 'mute'
     and sa.source = 'automatic'
-    and sa.created_at <= v.created_at
+    and sa.created_at <= v.created_at + interval '1 minute'
     and sa.ends_at >= v.created_at
     and (sa.revoked_at is null or sa.revoked_at >= v.created_at)
   order by sa.created_at desc

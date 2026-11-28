@@ -82,7 +82,7 @@
   }
   function renderActions(rows){
     if(!rows?.length)return '<p class="small">Журнал пока пуст.</p>';
-    return rows.map(x=>'<article class="item"><b>#'+x.id+' · '+(x.action==='sanction_issued'?'Выдана санкция':x.action==='sanction_revoked'?'Санкция снята':'Апелляция удовлетворена')+' · '+esc(nice(x.sanction_kind))+'</b><p class="small">Игрок: '+esc(x.target_nickname||x.target_user_id||'—')+' · Сотрудник: '+(x.actor_role==='admin'?'👑 Администратор':'🛡️ Модератор')+' '+esc(x.actor_nickname||'')+'<br>'+dt(x.created_at)+' · '+esc(x.reason||'Без комментария')+'</p></article>').join('');
+    return rows.map(x=>'<article class="item"><b>#'+x.id+' · '+(x.action==='sanction_issued'?'Выдана санкция':x.action==='sanction_revoked'?'Санкция снята':x.action==='automatic_mute_issued'?'Автоматически выдан мут':'Апелляция удовлетворена')+' · '+esc(nice(x.sanction_kind))+'</b><p class="small">Игрок: '+esc(x.target_nickname||x.target_user_id||'—')+' · Сотрудник: '+(x.actor_role==='admin'?'👑 Администратор':x.actor_role==='arbiter'?'⚖️ Арбитр чата':'🛡️ Модератор')+' '+esc(x.actor_nickname||'')+'<br>'+dt(x.created_at)+' · '+esc(x.reason||'Без комментария')+'</p></article>').join('');
   }
   async function searchPlayers(){
     const q=$('playerQuery').value.trim();if(q.length<2){$('playerResults').innerHTML='<p class="small">Введи минимум 2 символа.</p>';return;}

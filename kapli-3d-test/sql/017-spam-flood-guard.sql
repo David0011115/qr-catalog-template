@@ -185,6 +185,8 @@ begin
      or public.kapli_is_blocked(me, other) then
     raise exception 'not_friends';
   end if;
+  -- Serialize the existing DM daily cap as well, preventing parallel requests from exceeding it.
+  perform pg_advisory_xact_lock(hashtextextended(me::text, 0));
   if (select count(*) from public.kapli_dm d
        where d.sender = me and d.created_at > now() - interval '1 day') >= 500 then
     raise exception 'daily_limit';

@@ -48,12 +48,34 @@ button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#
 
     <nav class="tabs" id="tabs" aria-label="Разделы панели модерации">
       <button data-tab="overview" class="active">Обзор</button>
+      <button data-tab="permissions">Роли и полномочия</button>
       <button data-tab="players">Игроки и санкции</button>
       <button data-tab="queue">Очередь жалоб</button>
       <button data-tab="appeals">Апелляции</button>
       <button data-tab="events">Античит · события</button>
       <button data-tab="roles" id="rolesTab" class="hidden">Управление ролями</button>
     </nav>
+
+    <section id="tab-permissions" class="panel tab-pane hidden">
+      <h2>Роли и полномочия</h2>
+      <p class="small">Арбитр чата — автоматическая система. Галочки показывают, какие действия разрешены каждой роли.</p>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:560px">
+          <thead><tr><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line)">Действие</th><th style="padding:9px;border-bottom:1px solid var(--line)">⚖️ Арбитр</th><th style="padding:9px;border-bottom:1px solid var(--line)">🛡️ Модератор</th><th style="padding:9px;border-bottom:1px solid var(--line)">👑 Администратор</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Автоматически выявлять нарушения чата и выдавать мут</td><td style="text-align:center">✓</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Просматривать жалобы, апелляции и доказательства</td><td style="text-align:center">—</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td></tr>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Выдать временный мут</td><td style="text-align:center">✓ авто</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td></tr>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Снять временный мут</td><td style="text-align:center">—</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td></tr>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Выдать временную блокировку аккаунта (1–7 дней)</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✓</td></tr>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Снять временную блокировку аккаунта</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✓</td></tr>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Выдать / снять перманентный бан</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✓</td></tr>
+            <tr><td style="padding:9px;border-bottom:1px solid #30234f">Назначать и снимать модераторов</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small">Мут запрещает чат и личные сообщения, но не мешает играть. Временный бан блокирует доступ к игре до указанного срока. Перманентный бан блокирует аккаунт бессрочно.</p>
+    </section>
 
     <section id="tab-overview" class="panel tab-pane">
       <div class="section-head"><h2>Обзор модерации</h2><span class="tag">TEST</span></div>
@@ -69,13 +91,16 @@ button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#
       <h2>Выдать санкцию вручную</h2>
       <div class="grid2">
         <div><label for="targetId">UUID игрока</label><input id="targetId" placeholder="Выбери игрока выше или вставь UUID"></div>
-        <div><label for="sanctionKind">Тип санкции</label><select id="sanctionKind"><option value="mute">Мут</option><option value="ban">Перманентный бан</option></select></div>
+        <div><label for="sanctionKind">Тип санкции</label><select id="sanctionKind"><option value="mute">Мут — запрет общения</option><option value="temp_ban">Временный бан аккаунта</option><option value="ban">Перманентный бан</option></select></div>
         <div id="minutesWrap"><label for="minutes">Длительность мута, минут</label><input id="minutes" type="number" min="1" max="43200" value="5"></div>
+        <div id="tempDaysWrap" class="hidden"><label for="tempDays">Срок блокировки аккаунта</label><select id="tempDays"><option value="1">1 день</option><option value="2">2 дня</option><option value="3" selected>3 дня</option><option value="4">4 дня</option><option value="5">5 дней</option><option value="6">6 дней</option><option value="7">7 дней</option></select></div>
         <div><label for="reason">Причина</label><input id="reason" maxlength="500" placeholder="Причина санкции"></div>
       </div>
-      <div class="row" style="margin-top:12px"><button id="applySanction" class="warn">Выдать санкцию</button><span class="small">Бан блокирует общение и вход в игру после подключения серверной проверки.</span></div>
+      <div class="row" style="margin-top:12px"><button id="applySanction" class="warn">Выдать санкцию</button><span class="small">Временный бан: от 1 до 7 дней. Перманентный бан — без срока.</span></div>
       <div class="divider"></div>
-      <h2>Последние санкции</h2><div id="sanctionsList" class="small">Загрузка…</div>
+      <h2>Последние санкции и доказательства</h2><div id="sanctionsList" class="small">Загрузка…</div>
+      <div class="divider"></div>
+      <h2>Журнал действий сотрудников</h2><div id="actionsList" class="small">Загрузка…</div>
     </section>
 
     <section id="tab-queue" class="panel tab-pane hidden"><h2>Очередь модерации</h2><div id="queueList">Загрузка…</div></section>

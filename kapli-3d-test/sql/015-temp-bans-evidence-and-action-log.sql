@@ -11,7 +11,7 @@ alter table public.kapli_sanctions
   add constraint kapli_sanctions_kind_check check (kind in ('mute','temp_ban','ban'));
 alter table public.kapli_sanctions
   add constraint kapli_sanctions_duration_check
-  check ((kind = 'ban' and ends_at is null) or (kind in ('mute','temp_ban') and ends_at is not null));
+  check ((kind = 'ban' and ends_at is null) or kind = 'mute' or (kind = 'temp_ban' and ends_at is not null));
 
 create index if not exists kapli_sanctions_active_kind_idx
   on public.kapli_sanctions(kind, ends_at)

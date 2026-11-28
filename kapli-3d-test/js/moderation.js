@@ -5,7 +5,7 @@
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const dt = value => value ? new Date(value).toLocaleString('ru-RU', {dateStyle:'short',timeStyle:'short'}) : '—';
-  const nice = value => ({pending:'Ожидает',in_review:'На проверке',resolved:'Решено',dismissed:'Отклонено',accepted:'Удовлетворена',rejected:'Отклонена',new:'Новое',reviewing:'Проверяется',cleared:'Не подтвердилось',confirmed:'Подтверждено',mute:'Мут',temp_ban:'Временный бан аккаунта',ban:'Перманентный бан',insult:'Оскорбления',spam:'Спам / флуд',impossible_move:'Невозможное перемещение',cooldown_abuse:'Нарушение перезарядки',resource_anomaly:'Аномалия ресурсов',result_anomaly:'Подозрительный результат',request_tampering:'Подмена запроса',repeated_anomaly:'Повторяющиеся аномалии',other:'Другое'})[value] || value || '—';
+  const nice = value => ({pending:'Ожидает',in_review:'На проверке',resolved:'Решено',dismissed:'Отклонено',accepted:'Удовлетворена',rejected:'Отклонена',new:'Новое',reviewing:'Проверяется',cleared:'Не подтвердилось',confirmed:'Подтверждено',mute:'Мут',temp_ban:'Временный бан аккаунта',ban:'Перманентный бан',insult:'Оскорбления',spam:'Спам / флуд',impossible_move:'Невозможное перемещение',cooldown_abuse:'Нарушение перезарядки',resource_anomaly:'Аномалия ресурсов',result_anomaly:'Подозрительный результат',request_tampering:'Подмена запроса',repeated_anomaly:'Повторяющиеся аномалии',other:'Другое',chat:'Публичный чат',dm:'Личные сообщения'})[value] || value || '—';
   const client = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'kapli3dtest-auth'}});
   let currentUser = null, isAdmin = false, isModerator = false;
   const rpc = async (name, args={}) => { const {data,error}=await client.rpc(name,args); if(error)throw error; return data; };
@@ -75,14 +75,14 @@
       const active=!x.revoked_at&&(x.kind==='ban'||new Date(x.ends_at)>new Date());
       const status=x.revoked_at?'Снята':x.kind==='ban'?'Без срока':active?'Активна':'Истекла';
       const evidence=Array.isArray(x.evidence)?x.evidence:[];
-      const evidenceHtml=evidence.length?'<div class="evidence">'+evidence.map(ev=>'['+esc(nice(ev.violation_type))+'] '+dt(ev.created_at)+' · '+esc(ev.source)+'\n'+esc(ev.body_snapshot||'Текст отсутствует')).join('\n\n')+'</div>':(x.source==='automatic'?'<div class="evidence">Доказательство не сохранено для этой старой санкции.</div>':'');
+      const evidenceHtml=evidence.length?'<div class="evidence">'+evidence.map(ev=>'['+esc(nice(ev.violation_type))+'] '+dt(ev.created_at)+' · '+esc(nice(ev.source))+'\n'+esc(ev.body_snapshot||'Текст отсутствует')).join('\n\n')+'</div>':(x.source==='automatic'?'<div class="evidence">Доказательство не сохранено для этой старой санкции.</div>':'');
       const canRevoke=active&&(isAdmin||x.kind==='mute');
       return '<article class="item"><div class="item-head"><b>#'+x.id+' · '+esc(nice(x.kind))+' · '+esc(x.nickname||x.user_id)+'</b><span class="tag">'+status+'</span></div><p class="small">UUID: '+esc(x.user_id)+'<br>Причина: '+esc(x.reason)+'<br>'+issuer+' · Выдана: '+dt(x.created_at)+' · До: '+(x.kind==='ban'?'—':dt(x.ends_at))+(x.revoke_reason?'<br>Причина снятия: '+esc(x.revoke_reason):'')+'</p>'+evidenceHtml+(canRevoke?'<button class="warn" data-action="sanction-revoke" data-id="'+x.id+'">Снять санкцию</button>':'')+'</article>';
     }).join('');
   }
   function renderActions(rows){
     if(!rows?.length)return '<p class="small">Журнал пока пуст.</p>';
-    return rows.map(x=>'<article class="item"><b>#'+x.id+' · '+(x.action==='sanction_issued'?'Выдана санкция':x.action==='sanction_revoked'?'Санкция снята':x.action==='automatic_mute_issued'?'Автоматически выдан мут':'Апелляция удовлетворена')+' · '+esc(nice(x.sanction_kind))+'</b><p class="small">Игрок: '+esc(x.target_nickname||x.target_user_id||'—')+' · Сотрудник: '+(x.actor_role==='admin'?'👑 Администратор':x.actor_role==='arbiter'?'⚖️ Арбитр чата':'🛡️ Модератор')+' '+esc(x.actor_nickname||'')+'<br>'+dt(x.created_at)+' · '+esc(x.reason||'Без комментария')+'</p></article>').join('');
+    return rows.map(x=>'<article class="item"><b>#'+x.id+' · '+(x.action==='sanction_issued'?'Выдана санкция':x.action==='sanction_revoked'?'Санкция снята':x.action==='automatic_mute_issued'?'Арбитр: мут выдан / продлён':'Апелляция удовлетворена')+' · '+esc(nice(x.sanction_kind))+'</b><p class="small">Игрок: '+esc(x.target_nickname||x.target_user_id||'—')+' · Сотрудник: '+(x.actor_role==='admin'?'👑 Администратор':x.actor_role==='arbiter'?'⚖️ Арбитр чата':'🛡️ Модератор')+' '+esc(x.actor_nickname||'')+'<br>'+dt(x.created_at)+' · '+esc(x.reason||'Без комментария')+'</p></article>').join('');
   }
   async function searchPlayers(){
     const q=$('playerQuery').value.trim();if(q.length<2){$('playerResults').innerHTML='<p class="small">Введи минимум 2 символа.</p>';return;}

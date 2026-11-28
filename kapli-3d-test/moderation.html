@@ -77,8 +77,11 @@ button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#
     <section id="tab-events" class="panel hidden"><h2>Подозрительные игровые события</h2><p class="small">События только попадают на проверку. Автоматических банов или мутов за читерство нет.</p><div id="eventsList">Загрузка…</div></section>
     <section id="tab-roles" class="panel hidden">
       <h2>Управление модераторами</h2>
-      <p class="small">Только администратор может назначать и снимать модераторов. Введи UUID аккаунта игрока — назначение проверяется сервером.</p>
-      <label for="roleUserId">UUID аккаунта</label><input id="roleUserId" placeholder="UUID игрока">
+      <p class="small">Найди игрока по игровому нику. Перед назначением проверь ник и публичный ID. Изменение роли подтверждается сервером.</p>
+      <label for="roleSearch">Игровой ник</label><div class="row"><input id="roleSearch" placeholder="Например, Test02"><button id="roleSearchBtn" class="primary">Найти игрока</button></div>
+      <div id="roleSearchResults"></div>
+      <input id="roleUserId" type="hidden">
+      <p id="roleSelected" class="small">Игрок не выбран.</p>
       <div class="row" style="margin-top:10px"><button id="grantModerator" class="good">Назначить модератором</button><button id="revokeModerator" class="warn">Снять роль модератора</button></div>
       <h2 style="margin-top:20px">Текущие модераторы</h2><div id="moderatorsList">Загрузка…</div>
     </section>

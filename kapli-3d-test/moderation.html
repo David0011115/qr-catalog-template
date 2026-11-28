@@ -15,7 +15,7 @@ input,select,textarea{width:100%;background:#0d0a1b;color:var(--fg);border:1px s
 textarea{min-height:86px;resize:vertical}label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}
 button{border:1px solid #594582;background:#251a46;color:var(--fg);border-radius:10px;padding:10px 13px;font:600 .9rem system-ui;cursor:pointer}
 button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#a55cae}button.good{border-color:#267d62;color:#8ff0c5}button.warn{border-color:#a44a5c;color:#ff9eae}button:disabled{opacity:.45;cursor:wait}
-.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.row>*{flex:1}.row button{flex:0 0 auto}.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.tabs button.active{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset;color:#b8f8ff}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.row>*{flex:1}.row button{flex:0 0 auto}.tabs{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;margin:14px 0;padding:7px;background:rgba(21,16,42,.88);border:1px solid var(--line);border-radius:14px;position:sticky;top:8px;z-index:5;backdrop-filter:blur(12px)}.tabs button{flex:0 0 auto;white-space:nowrap}.tabs button.active{border-color:var(--cyan);background:rgba(34,230,255,.10);box-shadow:0 0 0 1px var(--cyan) inset;color:#b8f8ff}.tab-pane{min-width:0}.tab-pane[hidden]{display:none!important}.overview-lead{color:var(--muted);font-size:.88rem;margin:6px 0 12px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.section-head h2{margin:0}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.stat{background:#0d0a1b;border:1px solid #30234f;border-radius:12px;padding:13px}.stat b{display:block;font-size:1.65rem;font-variant-numeric:tabular-nums}.stat span{font-size:.8rem;color:var(--muted)}
 .item{border:1px solid #382b58;border-radius:12px;padding:13px;margin:9px 0;background:#0e0a1e}.item-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.tag{font-size:.72rem;border:1px solid #55416f;border-radius:30px;padding:3px 8px;color:#c8b9ee}.evidence{white-space:pre-wrap;overflow-wrap:anywhere;background:#090713;padding:9px;border-radius:8px;font-size:.78rem;color:#c4badf;margin-top:8px;max-height:220px;overflow:auto}
 .status{padding:10px 12px;border-radius:10px;background:#17112b;color:var(--muted);margin:10px 0}.status.error{color:#ff9eae;border:1px solid #7c3549}.status.ok{color:#8ff0c5;border:1px solid #267d62}
@@ -44,18 +44,24 @@ button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#
     <div class="panel">
       <div class="item-head"><div><h1>Панель модерации</h1><div id="who" class="small"></div></div><button id="refreshBtn">↻ Обновить</button></div>
       <div id="notice" class="status">Проверка доступа…</div>
-      <div id="stats" class="stats"></div>
     </div>
 
-    <nav class="tabs" id="tabs">
-      <button data-tab="players" class="active">Игроки и санкции</button>
+    <nav class="tabs" id="tabs" aria-label="Разделы панели модерации">
+      <button data-tab="overview" class="active">Обзор</button>
+      <button data-tab="players">Игроки и санкции</button>
       <button data-tab="queue">Очередь жалоб</button>
       <button data-tab="appeals">Апелляции</button>
       <button data-tab="events">Античит · события</button>
       <button data-tab="roles" id="rolesTab" class="hidden">Управление ролями</button>
     </nav>
 
-    <section id="tab-players" class="panel">
+    <section id="tab-overview" class="panel tab-pane">
+      <div class="section-head"><h2>Обзор модерации</h2><span class="tag">TEST</span></div>
+      <p class="overview-lead">Краткая сводка. Для работы с обращениями, санкциями и ролями переключай разделы выше.</p>
+      <div id="stats" class="stats"></div>
+    </section>
+
+    <section id="tab-players" class="panel tab-pane" hidden>
       <h2>Поиск игрока</h2>
       <div class="row"><input id="playerQuery" placeholder="Ник, публичный ID или UUID"><button id="searchBtn" class="primary">Найти</button></div>
       <div id="playerResults"></div>
@@ -72,10 +78,10 @@ button.primary{background:linear-gradient(110deg,#792b85,#3b3b91);border-color:#
       <h2>Последние санкции</h2><div id="sanctionsList" class="small">Загрузка…</div>
     </section>
 
-    <section id="tab-queue" class="panel hidden"><h2>Очередь модерации</h2><div id="queueList">Загрузка…</div></section>
-    <section id="tab-appeals" class="panel hidden"><h2>Апелляции игроков</h2><div id="appealsList">Загрузка…</div></section>
-    <section id="tab-events" class="panel hidden"><h2>Подозрительные игровые события</h2><p class="small">События только попадают на проверку. Автоматических банов или мутов за читерство нет.</p><div id="eventsList">Загрузка…</div></section>
-    <section id="tab-roles" class="panel hidden">
+    <section id="tab-queue" class="panel tab-pane" hidden><h2>Очередь модерации</h2><div id="queueList">Загрузка…</div></section>
+    <section id="tab-appeals" class="panel tab-pane" hidden><h2>Апелляции игроков</h2><div id="appealsList">Загрузка…</div></section>
+    <section id="tab-events" class="panel tab-pane" hidden><h2>Подозрительные игровые события</h2><p class="small">События только попадают на проверку. Автоматических банов или мутов за читерство нет.</p><div id="eventsList">Загрузка…</div></section>
+    <section id="tab-roles" class="panel tab-pane" hidden>
       <h2>Управление модераторами</h2>
       <p class="small">Найди игрока по игровому нику. Перед назначением проверь ник и публичный ID. Изменение роли подтверждается сервером.</p>
       <label for="roleSearch">Игровой ник</label><div class="row"><input id="roleSearch" placeholder="Например, Test02"><button id="roleSearchBtn" class="primary">Найти игрока</button></div>

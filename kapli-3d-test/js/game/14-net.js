@@ -85,8 +85,12 @@
         if (!form || document.getElementById(nodeId)) return;
         const node = document.createElement('section');
         node.id = nodeId; node.className = 'mod-status'; node.hidden = true;
-        node.setAttribute('role', 'status'); node.setAttribute('aria-live', 'off');
-        form.parentNode.insertBefore(node, form);
+        node.setAttribute('role', 'status'); node.setAttribute('aria-live', 'polite');
+        const card = $(cardId);
+        const messages = card && card.querySelector('.chat-list');
+        // Keep the sanction explanation at the top of the conversation, not below the message history.
+        if (card) card.insertBefore(node, messages || form);
+        else form.parentNode.insertBefore(node, form);
       });
       if (!document.getElementById('modGameLock')) {
         const overlay = document.createElement('section');
